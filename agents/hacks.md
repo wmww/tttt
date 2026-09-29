@@ -241,6 +241,9 @@ src` finds the code-side markers; every significant one has an entry here.
   skip-round instantiation) broke typeInferenceWithExcessProperties & co. and vue (47 -> 443): checking the literal
   with another contextual type leaves memos of its members behind. Real fix: side-effect-free speculative checks
   (not resolve-once, which only covers calls: plan 38 "Stage 3").
+- Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): tsc's
+  pickLongestCandidateSignature candidate is used only when it was checked (among `unfit`), else the last unfit one;
+  the "no candidate got checked" branches (union of every candidate's inferred return) aren't tsc's at all.
 - `KEY_CONTEXT_RETURN` is rewritten per check (`set_contextual_return()`); `ExprCtx.sig_contextual` only where
   `may_want_signature()`. A call re-entered while in flight is resolved again (`call_return_type()`, not remembered)
   where tsc returns resolvingSignature (any): doing tsc's costs 10 tests (plan 38 "Stage 3" not done 1).

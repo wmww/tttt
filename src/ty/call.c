@@ -1814,12 +1814,22 @@ static Resolution resolve_with_signatures(
             free(return_types);
         } else if (unfit_count) {
             // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
-            // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure)
-            Candidate fallback = unfit[unfit_count - 1];
+            // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure). Which one: tsc's
+            // pickLongestCandidateSignature, the first overload with a rest parameter or enough parameters for the
+            // arguments (getLongestCandidateIndex), when that one got as far as being checked
+            u32 picked = unfit_count - 1;
+            for (u32 i = 0; i < count; i++) {
+                if (!ty_signature_has_rest(signatures[i]) && ty_signature_param_count(signatures[i]) < args->len) continue;
+                for (u32 u = 0; u < unfit_count; u++) {
+                    if (unfit[u].sig == signatures[i]) picked = u;
+                }
+                break;
+            }
+            Candidate fallback = unfit[picked];
             if (fallback.sig->type_params.len && !info->type_arg_nodes) {
                 fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
-                ParamShape shape = call_param_shape(me, info, unfit[unfit_count - 1].sig, unfit[unfit_count - 1].mapper);
+                ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
                 check_args(me, &shape, args, false);
                 free(shape.types);
             }

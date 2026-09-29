@@ -9666,7 +9666,7 @@ const baselines = {
         types: true,
     },
     'destructuringTuple': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
