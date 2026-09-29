@@ -105,6 +105,10 @@ typedef struct BaselineTestCase {
     // In the body of a `with`: tsc's getTypeOfNode and getSymbolAtLocation answer nothing there, every types line is
     // the error type and there are no symbols lines
     bool in_with;
+    // The first local import in the file being walked of a shorthand ambient module (`declare module "m";`): the name
+    // tsc's symbolToString finds for the module symbol, which every specifier's property name of it resolves to
+    struct Symbol const* shorthand_module;
+    Span shorthand_alias;
     cstr lib_list;
     cstr lib_files; // `@libFiles: react.d.ts,lib.d.ts`: files of tsc's tests/lib (at /.lib) that are roots too
     cstr last_unit; // The name of the test's last unit (the only one whose content ends where the test file does)

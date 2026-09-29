@@ -799,8 +799,24 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool 
     baseline_test_case_add_symbol_value(ctx, my decl_name, my symbol);
 }
 
+// See BaselineTestCase.shorthand_module
+static Symbol const* shorthand_module_of(PortItem const* item, BaselineTestCase* ctx) {
+    if (!item->module_ref || !item->symbol) return nullptr;
+    Symbol const* module = binder_module_of_ref(item->symbol->binder, item->module_ref);
+    if (!module || !module->is_shorthand_module) return nullptr;
+    bool local_import = item->tag == PORT_IMPORT_DEFAULT || item->tag == PORT_IMPORT_GATHER || item->tag == PORT_IMPORT_SPECIFIC;
+    bool same_file = ctx->shorthand_module == module && span_valid(ctx->shorthand_alias) &&
+        ctx->shorthand_alias.source == item->decl_name.source;
+    if (local_import && !same_file) {
+        ctx->shorthand_module = module;
+        ctx->shorthand_alias = item->decl_name;
+    }
+    return module;
+}
+
 void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase* ctx) {
     if (my jsdoc) return;
+    shorthand_module_of(&my main, ctx);
     switch (my main.tag) {
         case PORT_IMPORT_DEFAULT:
         case PORT_IMPORT_GATHER:
@@ -852,6 +868,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
     }
     for_each (i, vec_port_item, &my items) {
         if (!i->symbol) continue;
+        Symbol const* shorthand = shorthand_module_of(i, ctx);
         if (i->tag == PORT_IMPORT_GATHER) { // `import d, * as ns`
             port_item_add_alias(i, ctx, false);
             continue;
@@ -864,6 +881,15 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .declarations = symbol_declaration_spans(i->source_symbol),
                     .span = i->source_name,
                     .text = i->source_symbol->is_placeholder ? cstr_init() : symbol_text(ctx, i->source_symbol),
+                });
+            } else if (shorthand && !quoted) {
+                // (tsc's getExternalModuleMember: any member of a shorthand ambient module is the module)
+                bool aliased = ctx->shorthand_module == shorthand && span_valid(ctx->shorthand_alias) &&
+                    ctx->shorthand_alias.source == i->source_name.source;
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = symbol_declaration_spans(shorthand),
+                    .span = i->source_name,
+                    .text = aliased ? cstr_from_sv(ctx->shorthand_alias.sv) : symbol_text(ctx, shorthand),
                 });
             }
             ctx->any_keeps_underline = true;
