@@ -780,6 +780,9 @@ static bool hop_private_name(Parser* parent) {
     parent->pos++;
     if (!parse_identifier_or_keyword(parent, nullptr)) {
         parse_error(parent, span_from(a), 1127, "Invalid character.");
+    } else if (span_equals(span_from(a), "#constructor")) {
+        // (tsc's binder, checkPrivateIdentifier: unless the file has parse errors, see is_grammar_code())
+        parse_error(parent, span_from(a), 18012, "'#constructor' is a reserved word.");
     }
     return true;
 }
@@ -10984,7 +10987,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1248, 1253, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18019,
+        1248, 1253, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;
