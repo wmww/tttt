@@ -32526,7 +32526,7 @@ const baselines = {
         types: true,
     },
     'unusedInvalidTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

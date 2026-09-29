@@ -1305,7 +1305,14 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     }
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_expr_type(me, &class_decl->extends);
     Ty const* base = ty_class_base_instance(me, class_decl);
-    if (!base) return any_type(me);
+    if (!base) {
+        // (Extending any or the error type, e.g. an unresolved import, it's the base type as it is: tsc's
+        // resolveBaseTypesOfClass. So `super.m<T>()` on the error type isn't TS2347)
+        Expr const* extends = &class_decl->extends;
+        if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+        Ty const* constructor = ty_expr_type(me, extends);
+        return constructor->flags & TYF_ANY ? constructor : any_type(me);
+    }
     Ty const* declared = ty_declared_type_of(me, identifier->target);
     Ty const* this_param = declared->kind == TY_DECLARED ? declared->declared.this_param : nullptr;
     return this_param ? ty_with_this_arg(me, base, this_param) : base;
