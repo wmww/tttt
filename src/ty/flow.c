@@ -1871,7 +1871,41 @@ static Ty const* constructor_instance_type(Checker* me, Ty const* constructor, v
     return ty_empty_object_type(me);
 }
 
-// TODO: `[Symbol.hasInstance]` methods with a type predicate
+// What the `[Symbol.hasInstance]` method of the right operand of `instanceof` says its parameter is, if its signature
+// has a type predicate about it (tsc's getEffectsSignature of an InstanceofExpression). A union's members' predicates
+// make a union (tsc's union signatures). A generic method is only instantiated with `this` (`<T>(this: T, v)`).
+// TODO: overloads and other generic methods, which tsc resolves as a call with the left operand
+static Ty const* has_instance_predicate_type(Checker* me, Ty const* right_type, Atom const* name) {
+    if (right_type->kind == TY_UNION) {
+        TyBuf types = {0};
+        for (u32 i = 0; i < right_type->composite.types.len; i++) {
+            Ty const* part = has_instance_predicate_type(me, right_type->composite.types.data[i], name);
+            if (!part) {
+                ty_buf_drop(&types);
+                return nullptr;
+            }
+            ty_buf_push(&types, part);
+        }
+        Ty const* ret = ty_union(me, types.data, types.len, nullptr, (TyList){0});
+        ty_buf_drop(&types);
+        return ret;
+    }
+    Ty const* apparent = ty_apparent_type(me, right_type);
+    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
+    FoundProp prop = ty_find_prop(me, apparent, name);
+    if (!prop.found || !(prop.type->flags & TYF_OBJECT)) return nullptr;
+    Members const* members = ty_members(me, prop.type);
+    if (members->call_count != 1) return nullptr;
+    Signature const* sig = members->call[0];
+    signature_resolve(me, sig);
+    if (sig->type_params.len) {
+        if (sig->type_params.len != 1 || sig->this_type != sig->type_params.data[0]) return nullptr;
+        sig = ty_signature_instantiation(me, sig, (TyList){ .data = &right_type, .len = 1 });
+    }
+    TyPredicate const* predicate = signature_predicate(me, sig);
+    return predicate && !predicate->is_this && !predicate->asserts && predicate->param_index == 0 ? predicate->type : nullptr;
+}
+
 static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr const* binary, bool assume_true) {
     Checker* me = q->me;
     Expr const* left = reference_candidate(&binary->left);
@@ -1885,6 +1919,9 @@ static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr
     Ty const* object = ty_global_object_type(me);
     Ty const* function = ty_global_function_type(me);
     if (!object || !function || !is_type_derived_from(me, right_type, object)) return type;
+    Atom const* has_instance = ty_well_known_symbol_name(me, "hasInstance");
+    Ty const* predicate = has_instance ? has_instance_predicate_type(me, right_type, has_instance) : nullptr;
+    if (predicate) return narrowed_type(me, type, predicate, assume_true, true);
     if (!is_type_derived_from(me, right_type, function)) return type;
     Ty const* instance = map_type(me, right_type, constructor_instance_type, nullptr);
     if ((type->flags & TYF_ANY) && (instance == object || instance == function)) return type;

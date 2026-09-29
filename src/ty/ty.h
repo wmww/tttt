@@ -1802,5 +1802,7 @@ void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
+// The property name of `Symbol.<name>` (a unique symbol), null if the lib has no such symbol
+Atom const* ty_well_known_symbol_name(Checker* me, char const* name);
 cstr ty_prop_name_cstr(Checker* me, Atom const* name); // As messages show it: `x`, `[Symbol.iterator]`
 cstr ty_prop_written_name(Checker* me, Prop const* prop); // As declared if not an identifier (`"a"`, `2.0`, `["a"]`)

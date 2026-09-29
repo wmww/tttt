@@ -47,7 +47,7 @@ typedef struct IterationState {
 // The iteration types of "doesn't iterate": a distinct pointer, like tsc's noIterationTypes
 static TyIterationTypes const no_iteration_types;
 
-static Atom const* well_known_symbol_name(Checker* me, char const* name) {
+Atom const* ty_well_known_symbol_name(Checker* me, char const* name) {
     Symbol const* symbol = program_get_global(my program, c_sv("Symbol"), SYMBOL_VALUE);
     if (!symbol) return nullptr;
     Ty const* key = ty_access(me, ty_type_of_symbol(me, symbol), ty_string_literal(me, csview_from(name)));
@@ -63,8 +63,8 @@ static IterationState const* iteration_state(Checker* me) {
         Ty const* declared = ty_declared_type_of(me, decl);
         if (declared->kind == TY_DECLARED && declared->declared.type_params.len) state->globals[i] = declared;
     }
-    state->iterator_name = well_known_symbol_name(me, "iterator");
-    state->async_iterator_name = well_known_symbol_name(me, "asyncIterator");
+    state->iterator_name = ty_well_known_symbol_name(me, "iterator");
+    state->async_iterator_name = ty_well_known_symbol_name(me, "asyncIterator");
     my iteration = state;
     return state;
 }

@@ -47098,7 +47098,7 @@ const baselines = {
     'instanceofOperatorWithRHSHasSymbolHasInstance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instanceofOperatorWithRHSIsSubtypeOfFunction': {
         errors: true,
