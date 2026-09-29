@@ -88,6 +88,18 @@ __tests__ plus packages-private/dts-test, through `corpora-locks/vue.overlay/tsc
 without composite/isolatedDeclarations/noUnusedLocals; dts-test's built.test-d.ts needs a build, excluded). tsc 5.8: 0
 in 11.6 s. Pinning found a parser bug (`return` + line break + `let x`) and a crash (an alias with 17 type arguments).
 
+`packages/` (88 of the 107) went to 0 the same day (probes `test/probes/plan19/vue/`, one commit each): optional
+fields' initializers against `T | undefined`, TS2564 through `this[Enum.X] = v`, contextual `any` kept (literals
+asserted/annotated any, untyped call arguments: `this` is any), default constructors of `extends Array<T>` taking the
+written type arguments, TS2405 by the object's keys, identical union members inferred between (`InjectionKey<T> |
+string`), a generic index distributed over an intersection in inference (`LooseRequired<Readonly<P> & ...>`), an
+unannotated `this` parameter's contextual this type, variadic rest arguments inferred before the second pass
+(puppeteer's `evaluate`), overloads relating a context-sensitive literal in the skip round (ReadableStream), TS2540
+through Function's `name`, and the immediate distributive constraint (reactive.ts `toReactive`). Left over from those:
+- reduce_intersection_target() doesn't infer between identical members (tsc's inferFromMatchingTypes does:
+  `symbol & IC<number>` to `symbol & IC<T>`, probe `infer_identical_members.ts` `d`); porting it made zod's
+  recursive-types.test.ts:474 TS2589. Two hacks.md entries (skip-round literals, distributive constraints).
+
 ### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
