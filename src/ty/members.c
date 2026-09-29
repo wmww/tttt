@@ -347,11 +347,58 @@ static void builder_add_interface_member(
     }
 }
 
+// Like computed_index_kind() for a member of an interface or type literal
+static u32 interface_computed_index_kind(Checker* me, InterfaceMember const* i) {
+    if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr.ref || !expr_is_entity_name(i->key.expr.ref)) return 0;
+    Ty const* key_type = ty_regular(me, ty_expr_type(me, i->key.expr.ref));
+    if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_NEVER)) return 0;
+    Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+    if (!ty_is_related(me, key_type, ty_union(me, keys, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) return 0;
+    bool number = ty_is_related(me, key_type, keys[1], TY_RELATION_ASSIGNABLE);
+    bool symbol = ty_is_related(me, key_type, keys[2], TY_RELATION_ASSIGNABLE);
+    u32 makes = number ? 1 : symbol ? 2 : 0;
+    return (symbol ? 0 : 1) | (number ? 2 : 0) | (symbol ? 4 : 0) | 8 | (makes << 4);
+}
+
 static void builder_add_interface(
     Checker* me, MembersBuilder* builder, Interface const* interface, LowerCtx ctx, Symbol const* parent
 ) {
+    bool computed[3] = {0}, readonly[3] = { true, true, true };
     for_each (i, vec_interface_member, &interface->members) {
         builder_add_interface_member(me, builder, i, ctx, parent);
+        u32 kind = interface_computed_index_kind(me, i);
+        if (!kind) continue;
+        computed[kind >> 4] = true;
+        readonly[kind >> 4] &= i->readonly;
+    }
+    // A member named by an expression of type string, number or symbol makes an index signature for that key of every
+    // member (tsc's getIndexInfosOfIndexSymbol with hasLateBindableIndexSignature, see builder_add_computed_index_infos())
+    static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
+    for (u32 k = 0; k < 3; k++) {
+        if (!computed[k]) continue;
+        Ty const* key = ty_intrinsic(me, keys[k]);
+        bool declared = false;
+        for (u32 j = 0; j < builder->index_count; j++) declared |= builder->index[j].key == key;
+        if (declared) continue;
+        TyBuf types = {0};
+        for_each (i, vec_interface_member, &interface->members) {
+            if (!(interface_computed_index_kind(me, i) & (1u << k))) continue;
+            ty_buf_push(&types, ty_from_node(me, &i->type, ctx));
+        }
+        for (u32 j = 0; j < builder->props_count; j++) {
+            Atom const* name = builder->props[j]->name;
+            bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
+            bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
+            if (included) ty_buf_push(&types, prop_type(me, builder->props[j]));
+        }
+        IndexInfo info = {
+            .key = key,
+            .value = types.len ? ty_union_subtype_reduced(me, types.data, types.len) : ty_intrinsic(me, TY_UNDEFINED),
+            .param_name = checker_atom(me, c_sv("x")),
+            .readonly = readonly[k],
+        };
+        ty_buf_drop(&types);
+        builder_push(builder, index, info);
     }
 }
 

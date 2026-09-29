@@ -26303,7 +26303,7 @@ const baselines = {
     'propertyAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyIdentityWithPrivacyMismatch': {
         errors: true,
@@ -56378,7 +56378,7 @@ const baselines = {
     'parserES5ComputedPropertyName8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES5ComputedPropertyName9': {
         errors: true,
@@ -59103,12 +59103,12 @@ const baselines = {
     'parserES5SymbolProperty8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserES5SymbolProperty9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'TupleType1': {
         errors: true,
@@ -59548,12 +59548,12 @@ const baselines = {
     'parserComputedPropertyName13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName15': {
         errors: true,
@@ -59573,12 +59573,12 @@ const baselines = {
     'parserComputedPropertyName18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName19': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName2': {
         errors: true,
