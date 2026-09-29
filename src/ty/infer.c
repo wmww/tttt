@@ -1511,6 +1511,13 @@ static bool has_primitive_constraint(Checker* me, Ty const* param) {
 }
 
 Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals) {
+    return inference_call_result_fallback(me, inf, i, keep_literals, nullptr);
+}
+
+// `*fallback` (if asked for) gets the inference of the other variance when there are both, which the constraint
+// check takes instead of the constraint if it fits (tsc's getInferredType fallbackType)
+Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, bool keep_literals, Ty const** fallback) {
+    if (fallback) *fallback = nullptr;
     InferParam* param = &inf->params[i];
     if (param->fixed) return param->fixed;
     Ty const* co = nullptr;
@@ -1564,6 +1571,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
         // The covariant inference wins if it fits what the contravariant positions ask for
         // ... and neither its own candidates (it isn't one of a conflicting set) nor those of a type parameter constrained
         // to this one have one it wouldn't cover
+        if (fallback) *fallback = co;
         if (co->flags & (TYF_NEVER | TYF_ANY)) return contra;
         bool fits_some = false;
         for (u32 j = 0; j < param->contra_len; j++) {
@@ -1577,6 +1585,7 @@ Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_li
                 if (!ty_is_related(me, other->co[k], co, TY_RELATION_ASSIGNABLE)) return contra;
             }
         }
+        if (fallback) *fallback = contra;
         return co;
     }
     return co ? co : contra;
@@ -1595,6 +1604,7 @@ typedef struct ConstraintPass {
     Signature const* sig;
     Inference* inf;
     Ty const** results;
+    Ty const* const* fallbacks; // The other variance's inference, see inference_call_result_fallback()
     bool const* inferred;
     uint8_t* state; // Per type parameter: 0 not yet, 1 in progress, 2 done
     TyMapper const* mapper; // What the results say so far
@@ -1615,7 +1625,11 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
         bool fits = pass->inferred[i] && (pass->inf->within_relation ? ty_is_related_within(me, pass->results[i], instantiated) :
             ty_is_related(me, pass->results[i], instantiated, TY_RELATION_ASSIGNABLE));
         if (!fits) {
-            pass->results[i] = instantiated;
+            // (The inference of the other variance if that fits: co `[Ref<string>]` when contra `[string]` doesn't)
+            Ty const* fallback = pass->fallbacks[i];
+            bool fallback_fits = fallback && (pass->inf->within_relation ? ty_is_related_within(me, fallback, instantiated) :
+                ty_is_related(me, fallback, instantiated, TY_RELATION_ASSIGNABLE));
+            pass->results[i] = fallback_fits ? fallback : instantiated;
             pass->mapper = ty_mapper_new(me, params, (TyList){ .data = pass->results, .len = params.len });
         }
     }
@@ -1631,12 +1645,13 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     Ty const* return_type = predicate ? predicate->type : signature_return_type(me, sig);
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool* inferred = calloc(params.len ? params.len : 1, sizeof(bool));
+    Ty const** fallbacks = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     for (u32 i = 0; i < params.len; i++) {
         // tsc: literals widen unless the type parameter is at the top level of the return type and hasn't been fixed
         // (or the constraint is primitive, see inference_call_result())
         bool keep_literals = !fixing && !inf->params[i].fixed && return_type &&
             is_param_at_top_level(me, return_type, params.data[i]);
-        results[i] = inference_call_result(me, inf, i, keep_literals);
+        results[i] = inference_call_result_fallback(me, inf, i, keep_literals, &fallbacks[i]);
         inferred[i] = results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
     }
@@ -1660,7 +1675,9 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     // sees the other type parameters as they end up (tsc instantiates it with the non-fixing mapper, which infers them
     // on demand): `<U extends T, T extends A>` without inferences is U = T = A
     uint8_t* state = calloc(params.len ? params.len : 1, 1);
-    ConstraintPass pass = { .sig = sig, .inf = inf, .results = results, .inferred = inferred, .state = state, .mapper = mapper };
+    ConstraintPass pass = {
+        .sig = sig, .inf = inf, .results = results, .fallbacks = fallbacks, .inferred = inferred, .state = state, .mapper = mapper,
+    };
     for (u32 i = 0; i < params.len; i++) constraint_pass_resolve(me, &pass, i);
     free(state);
     free(inferred);

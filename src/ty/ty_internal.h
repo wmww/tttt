@@ -246,6 +246,7 @@ void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target
 // What a call infers for parameter i: common supertype of the candidates, widened unless `keep_literals`. Null if
 // there were no candidates
 Ty const* inference_call_result(Checker* me, Inference* inf, u32 i, bool keep_literals);
+Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, bool keep_literals, Ty const** fallback);
 // What a conditional type infers: union of the covariant candidates, else intersection of the contravariant ones
 Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
 // What `inf` (over sig's type parameters) has inferred for them: call results, then defaults, then unknown; one that
