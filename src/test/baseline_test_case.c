@@ -1495,6 +1495,23 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
 }
 
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type) {
+    if (span_valid(my jsdoc_paren_span) && span_eq(my jsdoc_paren_span, outer_span)) {
+        // The outermost parentheses, then what is inside them
+        my jsdoc_paren_span = span_null;
+        if (span_eq(outer_span, inner_span)) {
+            baseline_test_case_add_type_recursive(me, outer_span, inner_span, my jsdoc_paren_type);
+            return;
+        }
+        baseline_test_case_add_type_recursive(me, outer_span, outer_span, my jsdoc_paren_type);
+        const char* start = span_start_ptr(outer_span);
+        const char* last = span_end_ptr(outer_span) - 1;
+        while (start < span_start_ptr(inner_span) && *start != '(') start++;
+        while (last > span_end_ptr(inner_span) - 1 && *last != ')') last--;
+        if (start < span_start_ptr(inner_span) && last > span_end_ptr(inner_span) - 1) {
+            baseline_test_case_add_type_recursive(me, span_make(outer_span.source, start + 1, last), inner_span, type);
+        }
+        return;
+    }
     if (my in_with) type = ty_intrinsic(current_checker, TY_ERROR);
     cstr rendered = cstr_null;
     cstr underline = cstr_null;

@@ -101,6 +101,11 @@ typedef struct BaselineTestCase {
     // heritage clause's expression where a type is meant). Set around the traversal of such an expression
     Span hidden_type_spans[8];
     u32 hidden_type_span_count;
+    // The parenthesized initializer of a variable a JSDoc `@type` annotates: its outermost parentheses show that type
+    // (tsc's getQuickTypeOfExpression takes the tag through isJSDocTypeAssertion, which walks up to the statement's
+    // JSDoc; the checker doesn't, checkParenthesizedExpression looks at the node's own JSDoc)
+    Span jsdoc_paren_span;
+    struct Ty const* jsdoc_paren_type;
     bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)
     // In the body of a `with`: tsc's getTypeOfNode and getSymbolAtLocation answer nothing there, every types line is
     // the error type and there are no symbols lines

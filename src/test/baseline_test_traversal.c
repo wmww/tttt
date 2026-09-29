@@ -931,7 +931,16 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     for_each (i, vec_initialized_binding, &my initializers) {
+        Expr const* value = &i->value;
+        if (i->binding.has_explicit_type && i->binding.explicit_type.from_jsdoc && value->tag != EXPR_IMPLICIT_ANY &&
+            (value->tag == EXPR_AS_TYPE && value->as_type->is_jsdoc ? value->as_type->is_satisfies &&
+                !span_eq(value->outer_span, value->as_type->expr.outer_span) : !span_eq(value->outer_span, value->inner_span))
+        ) {
+            ctx->jsdoc_paren_span = value->outer_span;
+            ctx->jsdoc_paren_type = ty_of_node(&i->binding.explicit_type);
+        }
         initialized_binding_compile_test_info(i, ctx);
+        ctx->jsdoc_paren_span = span_null;
     }
 }
 
