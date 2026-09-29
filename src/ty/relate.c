@@ -707,6 +707,29 @@ static bool constraint_resolves_through(Ty const* ty, Ty const* source, Ty const
     return false;
 }
 
+// Whether instantiating the target for the synthetic parameter makes an intersection of it and a primitive, `object`
+// or `{}` (`NonNullable<T>`, `T & string`): tsc's getIntersectionType resolves the base constraint of the type variable
+// of such a pair (its constraint reduction), before reportRelationError gives the parameter its constraint, so that is
+// no constraint and never circular
+static bool constraint_resolved_early(Checker* me, Ty const* ty, Ty const* source, Ty const* declared, u32 depth) {
+    if (depth > 8) return false;
+    if (ty->kind == TY_UNION || (ty->kind == TY_INTERSECTION && ty->composite.types.len != 2)) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (constraint_resolved_early(me, ty->composite.types.data[i], source, declared, depth + 1)) return true;
+        }
+        return false;
+    }
+    if (ty->kind != TY_INTERSECTION) return false;
+    Ty const* const* pair = ty->composite.types.data;
+    u32 variable = pair[0] == source || pair[0] == declared ? 0 : pair[1] == source || pair[1] == declared ? 1 : 2;
+    if (variable == 2) return false;
+    Ty const* other = pair[1 - variable];
+    u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_UNDEFINED | TYF_NULL | TYF_ENUM | TYF_NON_PRIMITIVE;
+    bool generic_string = (other->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) && !ty_is_pattern_literal(other); // (tsc's isGenericStringLikeType)
+    return ((other->flags & primitive) && !generic_string) || ty_is_empty_anonymous_object(me, other);
+}
+
 // An unconstrained type parameter source could have been constrained to the target (tsc's reportRelationError: unless
 // that constraint would be circular)
 static void report_missing_constraint(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
@@ -720,7 +743,7 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     // (Nor when the source as constrained by the target would have a circular base constraint, tsc's
     // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
     // parameter is no such target: instantiating it leaves it, and its own constraint mentions the original)
-    if (constraint_resolves_through(target, source, declared)) return;
+    if (!constraint_resolved_early(me, target, source, declared, 0) && constraint_resolves_through(target, source, declared)) return;
     // (tsc's typeToString(target, the type parameter's declaration): names as reachable from there, `JSX.X`)
     Symbol const* param_symbol = item ? item->owned_symbol : infer_symbol;
     Scope const* enclosing = param_symbol && param_symbol->decl_count ? param_symbol->decls[0].block : nullptr;
