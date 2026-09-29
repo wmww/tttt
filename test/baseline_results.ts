@@ -39681,7 +39681,7 @@ const baselines = {
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39691,7 +39691,7 @@ const baselines = {
         types: true,
     },
     'arbitraryModuleNamespaceIdentifiers_module(module=es6)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

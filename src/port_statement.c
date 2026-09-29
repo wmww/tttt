@@ -207,6 +207,17 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
     }
 }
 
+static void report_string_export_name(Span name, ErrorCtx* errs) {
+    if (!span_valid(name) || !name.sv.size || (name.sv.buf[0] != '"' && name.sv.buf[0] != '\'')) return;
+    error_ctx_grammar_error_d(errs, name, 18057,
+        "String literal import and export names are not supported when the '--module' flag is set to 'es2015' or 'es2020'.");
+}
+
+static void report_string_export_names(PortItem const* item, ErrorCtx* errs) {
+    report_string_export_name(item->source_name, errs);
+    if (!span_eq(item->source_name, item->decl_name)) report_string_export_name(item->decl_name, errs);
+}
+
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
     if (my in_namespace && !my jsdoc) {
         if (port_statement_is_export_declaration(me)) {
@@ -260,6 +271,11 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
                 error_ctx_error_d(errs, first, 2708, "Cannot use namespace '", first, "' as a value.");
             }
         }
+    }
+    // tsc's checkModuleExportName: `import { "a" as b }`, `export { a as "b" }` can't be emitted as ES2015/ES2020 modules
+    if ((module_kind == MODULE_KIND_ES2015 || module_kind == MODULE_KIND_ES2020) && !my jsdoc) {
+        report_string_export_names(&my main, errs);
+        for_each (i, vec_port_item, &my items) report_string_export_names(i, errs);
     }
     // tsc's checkImportEqualsDeclaration: `import type A = N.B`
     if (alias->tag == PORT_IMPORT_ALIAS && alias->type_only) {
