@@ -2793,8 +2793,21 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
         return;
     }
     if (symbol_is_pure_alias(existing)) {
+        Symbol* alias = existing;
         existing = symbol_resolve_alias(existing);
         if (!existing || existing->is_placeholder) return;
+        // (tsc's mergeSymbol resolves the target to compare, and reports a conflict at the alias's declarations)
+        if (existing->binder == binder && !(source->flags & SYMBOL_ALIAS) && (existing->flags & excluded_flags(source->flags))) {
+            report_conflicts(errs, alias, source->decls[0].name, source->flags, true, (csview){0});
+            for (u32 i = 1; i < source->decl_count; i++) report_conflict(errs, source->decls[i].name, 2300);
+            // (What mergeSymbol returns then is the source: the name now means the augmentation's declaration)
+            i32 own = symbol_table_own_index(owner->exports, name, hash);
+            if (own >= 0 && owner->exports->entries[own].symbol == alias) {
+                owner->exports->entries[own].symbol = source;
+                source->parent = owner;
+            }
+            return;
+        }
     }
     merge_symbol(binder, existing, source, errs);
 }

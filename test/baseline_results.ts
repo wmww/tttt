@@ -21046,17 +21046,17 @@ const baselines = {
         types: true,
     },
     'mergeSymbolReexportInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'mergeSymbolReexportedTypeAliasInstantiation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'mergeSymbolRexportFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
