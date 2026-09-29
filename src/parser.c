@@ -77,6 +77,9 @@ typedef struct ParserShared {
     // type forms (`?T`, `T=`, `*`, `function(...)`...) are allowed
     bool in_jsdoc;
     const char* jsdoc_end; // The `*/` of the comment being parsed, with in_jsdoc
+    // In the type of a tag tsc's checker doesn't visit (`@returns`, `@throws`: checkSourceElementWorker has no case for
+    // them), whose grammar errors (TS1099, TS7014) aren't reported
+    bool jsdoc_unchecked;
     // The last postfix `T?` parsed in JSDoc, from T's start to after the `?`: a tuple element that is exactly this is
     // an optional element (tsc's parseTupleElementType)
     const char* jsdoc_postfix_nullable_start;
@@ -2181,8 +2184,8 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         if (fail_on_error) { goto fail; }
     }
 
-    // (tsc's checkGrammarTypeArguments, which doesn't see JSDoc)
-    if (vec_spanned_type_is_empty(ret) && !p.shared->in_jsdoc) {
+    // (tsc's checkGrammarTypeArguments)
+    if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked)) {
         parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
 
@@ -2343,7 +2346,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
     Parser p = parser(parent);
     hop_whitespace(&p);
     if (!hop_char(&p, '(')) return parse_fail(&p);
-    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true };
+    FunctionImpl function = { .args = vec_function_arg_init(), .jsdoc_type = true, .jsdoc_unchecked = p.shared->jsdoc_unchecked };
     Anchor args_start = { .parser = &p, .start = p.pos - 1 };
     hop_whitespace(&p);
     u32 index = 0;
@@ -3070,6 +3073,8 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     const char* outer_end = p.shared->jsdoc_end;
     p.shared->in_jsdoc = true;
     p.shared->jsdoc_end = end;
+    bool outer_unchecked = p.shared->jsdoc_unchecked;
+    p.shared->jsdoc_unchecked = tag->kind == JSDOC_TAG_RETURNS || tag->kind == JSDOC_TAG_THROWS;
     hop_whitespace(&p);
     Anchor module_start = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "module")) {
@@ -3085,6 +3090,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         *pos = p.pos;
         p.shared->in_jsdoc = outer_in_jsdoc;
         p.shared->jsdoc_end = outer_end;
+        p.shared->jsdoc_unchecked = outer_unchecked;
         parse_fail(&p);
         return;
     }
@@ -3127,6 +3133,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
     }
     p.shared->in_jsdoc = outer_in_jsdoc;
     p.shared->jsdoc_end = outer_end;
+    p.shared->jsdoc_unchecked = outer_unchecked;
     jsdoc_keep_errors(&p);
     parse_fail(&p);
 }
@@ -3531,19 +3538,46 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
         }
         return false;
     }
-    // The comments before it (only whitespace between) for their `@overload` tags (tsc's getJSDocOverloadTags)
+    // The JSDoc comments before it among the leading comments (other comments may come between) are the host's too:
+    // their `@overload` tags count (tsc's getJSDocOverloadTags), and their errors (tsc parses and checks every one)
     isize first = lo;
     while (first > 0) {
         const char* start = comments->data[first].start;
-        while (start > file_start && is_js_ascii_space(start[-1])) start--;
-        if (comments->data[first - 1].end != start) break;
+        bool adjacent = false;
+        while (true) {
+            while (start > file_start && is_js_ascii_space(start[-1])) start--;
+            if (start == comments->data[first - 1].end) {
+                adjacent = true;
+                break;
+            }
+            if (start - file_start >= 4 && start[-1] == '/' && start[-2] == '*') {
+                const char* open = start - 2;
+                while (open > file_start + 1 && !(open[-2] == '/' && open[-1] == '*')) open--;
+                if (open <= file_start + 1) break;
+                start = open - 2;
+                continue;
+            }
+            const char* line = start;
+            while (line > file_start && line[-1] != '\n' && line[-1] != '\r') line--;
+            const char* text = line;
+            while (text < start && is_js_ascii_space(*text)) text++;
+            if (start - text >= 2 && text[0] == '/' && text[1] == '/' && line < start) {
+                start = line;
+                continue;
+            }
+            break;
+        }
+        if (!adjacent) break;
         first--;
     }
     for (isize i = first; i < lo; i++) {
         JsDocRange range = comments->data[i];
-        if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) continue;
         VecJsDocTag earlier = {0};
         parse_jsdoc_comment(parent, range, &earlier);
+        if (!csview_contains(csview_from_range(range.start, range.end), "@overload")) {
+            vec_jsdoc_tag_drop(&earlier);
+            continue;
+        }
         bool in_overload = false;
         for_each (t, vec_jsdoc_tag, &earlier) {
             if (t->kind == JSDOC_TAG_OVERLOAD) in_overload = true;

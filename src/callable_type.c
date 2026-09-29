@@ -32,7 +32,7 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
 
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     // A JSDoc `function(...)` without `: R` (tsc's checkJSDocFunctionType, whatever noImplicitAny says)
-    if (my function->jsdoc_type && !my function->jsdoc_callback && !my function->ret_explicit &&
+    if (my function->jsdoc_type && !my function->jsdoc_callback && !my function->jsdoc_unchecked && !my function->ret_explicit &&
         !my function->is_constructor
     ) {
         error_ctx_error_d(errs, my function->full_span, 7014,
