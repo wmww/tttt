@@ -4377,7 +4377,9 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
 // statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
 // declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
 // containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
-static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to, bool bind, bool toplevel, VecStatement* out) {
+static void jsdoc_bind_comments(
+    Parser* parent, const char* from, const char* to, const char* inner_from, bool bind, bool toplevel, VecStatement* out
+) {
     VecJsDocRange* comments = &parent->shared->jsdoc_comments;
     isize lo = 0, hi = comments->size;
     while (lo < hi) {
@@ -4481,6 +4483,9 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                     .type = type,
                     .jsdoc = true,
                     .jsdoc_twice = *after == '(',
+                    // (A comment inside a statement no inner list claimed, a class member's: its typedef isn't named
+                    // when printed, like a local one)
+                    .local = inner_from && range.start > inner_from,
                 },
                 .span = span,
             });
@@ -10594,7 +10599,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 p.shared->jsdoc_enum = nullptr;
             }
             if (p.shared->source->is_js) {
-                jsdoc_bind_comments(&p, jsdoc_from, p.pos, true, toplevel, ret);
+                jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span), true, toplevel, ret);
                 jsdoc_from = p.pos;
             }
             bool ended_on_brace = p.pos > source_file_start(p.shared->source) && *(p.pos - 1) == '}';
@@ -10635,7 +10640,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     shrink_list(vec_statement, ret);
     p.shared->statement_parent = outer_parent;
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
-    if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
+    if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
 
     return parse_success(&p);
 }
