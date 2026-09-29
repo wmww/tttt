@@ -1824,7 +1824,7 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             mark_would_report(info);
             error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
         }
-        return callee->flags & TYF_ERROR ? callee : any;
+        return callee->flags & TYF_ERROR ? ty_intrinsic(me, TY_ERROR) : any; // (resolveErrorCall: an unresolved name's any too)
     }
 
     bool super_call = is_super_call(call);

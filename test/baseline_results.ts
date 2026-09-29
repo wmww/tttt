@@ -2393,7 +2393,7 @@ const baselines = {
     'bigintWithoutLib': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'binaryArithmatic1': {
         errors: true,
@@ -9133,7 +9133,7 @@ const baselines = {
     'decoratorMetadataWithImportDeclarationNameCollision4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorMetadataWithImportDeclarationNameCollision5': {
         errors: true,
@@ -9148,7 +9148,7 @@ const baselines = {
     'decoratorMetadataWithImportDeclarationNameCollision7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorMetadataWithImportDeclarationNameCollision8': {
         errors: true,
@@ -22528,7 +22528,7 @@ const baselines = {
     'multiLinePropertyAccessAndArrowFunctionIndent1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multiModuleClodule1': {
         errors: true,
@@ -25753,7 +25753,7 @@ const baselines = {
     'primaryExpressionMods': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'primitiveConstraints1': {
         errors: true,
@@ -49938,7 +49938,7 @@ const baselines = {
     'umd2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd3': {
         errors: true,
@@ -56188,7 +56188,7 @@ const baselines = {
     'parserClass2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserClassDeclaration1': {
         errors: true,
@@ -56928,7 +56928,7 @@ const baselines = {
     'parserMissingLambdaOpenBrace1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserModifierOnPropertySignature1': {
         errors: true,
@@ -58118,7 +58118,7 @@ const baselines = {
     'parserindenter': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser509534': {
         errors: true,
@@ -59383,22 +59383,22 @@ const baselines = {
     'parserRealSource11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource2': {
         errors: true,
@@ -59418,12 +59418,12 @@ const baselines = {
     'parserRealSource5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource7': {
         errors: true,
@@ -59433,12 +59433,12 @@ const baselines = {
     'parserRealSource8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserRealSource9': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserS12.11_A3_T4': {
         errors: true,
@@ -61038,7 +61038,7 @@ const baselines = {
     'scannerClass2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerEnum1': {
         errors: true,
