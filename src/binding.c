@@ -188,7 +188,8 @@ void binding_flow_assign(Binding const* me, Scope* names) {
 
 // tsc's getTypeFromBindingElement with reportErrors: an element with a default takes the default's type, so only the
 // elements without one (and the patterns without one, element by element) are implicitly any
-void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs) {
+void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, ErrorCtx* errs) {
+    bool toplevel = span_valid(parameter);
     if (!toplevel && my default_value) {
         // A default of null or undefined widens to any without strictNullChecks (tsc's reportErrorsFromWidening)
         if (my tag != BINDING_IDENTIFIER || compiler_options()->strict_null_checks) return;
@@ -200,20 +201,20 @@ void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, Erro
 
         case BINDING_IDENTIFIER:
             error_ctx_error_d(
-                errs, my content_span, toplevel ? 7006 : 7031,
+                errs, toplevel ? parameter : my content_span, toplevel ? 7006 : 7031,
                 toplevel ? "Parameter" : "Binding element", " '", my content_span, "' implicitly has an 'any' type."
             );
             break;
 
         case BINDING_ARRAY:
             for_each (i, vec_binding, &my array) {
-                binding_add_implicit_any_type_errors(i, false, errs);
+                binding_add_implicit_any_type_errors(i, span_null, errs);
             }
             break;
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
-                binding_add_implicit_any_type_errors(&i->target, false, errs);
+                binding_add_implicit_any_type_errors(&i->target, span_null, errs);
             }
             break;
     }
@@ -711,7 +712,8 @@ bool binding_report_widening_errors_in_type(Ty const* ty, ErrorCtx* errs) {
     return report_widening_errors_in_type(current_checker, ty, errs, 0);
 }
 
-static void report_errors_from_widening(InitializedBinding* me, ErrorCtx* errs) {
+// `parameter`: the whole parameter when `me` is one (tsc reports at the declaration, a variable's at its name)
+static void report_errors_from_widening(InitializedBinding* me, Span parameter, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
     if (my binding.has_explicit_type || my value.tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
@@ -723,7 +725,7 @@ static void report_errors_from_widening(InitializedBinding* me, ErrorCtx* errs) 
     if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
     if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));
-    error_ctx_error_d(errs, my binding.content_span, symbol->is_parameter ? 7006 : 7005, symbol->is_parameter ? "Parameter '" : "Variable '",
+    error_ctx_error_d(errs, span_valid(parameter) ? parameter : my binding.content_span, symbol->is_parameter ? 7006 : 7005, symbol->is_parameter ? "Parameter '" : "Variable '",
         my binding.content_span, "' implicitly has an '", type, "' type.");
     cstr_drop(&type);
 }
@@ -736,7 +738,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
     binding_typecheck_at(&my binding, initializer, span_null, initializer, errs);
-    report_errors_from_widening(me, errs);
+    report_errors_from_widening(me, span_null, errs);
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
@@ -744,7 +746,7 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, 
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
     binding_typecheck_at(&my binding, initializer, span, initializer, errs);
-    report_errors_from_widening(me, errs);
+    report_errors_from_widening(me, span, errs);
     if (!initializer || my binding.has_explicit_type) return;
     // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it
     // was the initializer's type instead (tsc's assignContextualParameterTypes: when the contextual type is assignable

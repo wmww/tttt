@@ -830,7 +830,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
             error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
                 "' implicitly has an 'any[]' type.");
         } else {
-            binding_add_implicit_any_type_errors(&i->initializer.binding, true, errs);
+            binding_add_implicit_any_type_errors(&i->initializer.binding, i->span, errs);
         }
     }
 }

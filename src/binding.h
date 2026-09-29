@@ -63,7 +63,8 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs);
 void binding_flow_assign(Binding const* me, Scope* names);
 // An expression that is only evaluated sometimes (a default)
 void expr_lookup_names_initializer(Expr* me, Scope* names, ErrorCtx* errs);
-void binding_add_implicit_any_type_errors(Binding const* me, bool toplevel, ErrorCtx* errs);
+// `parameter`: the whole parameter when `me` is one's (TS7006 at it), null for a binding element (TS7031)
+void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, ErrorCtx* errs);
 // A parameter's array pattern with a tuple initializer: the elements past its end that have no default are implicitly
 // any (tsc's padTupleType)
 void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initializer, ErrorCtx* errs);

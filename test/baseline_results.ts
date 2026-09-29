@@ -6681,7 +6681,7 @@ const baselines = {
         types: false,
     },
     'contextuallyTypedParametersWithInitializers1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15841,7 +15841,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyDeclareFunctionWithoutFormalType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60711,7 +60711,7 @@ const baselines = {
         types: true,
     },
     'typeFromJSInitializer4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
