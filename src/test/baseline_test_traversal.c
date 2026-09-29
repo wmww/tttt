@@ -1267,7 +1267,19 @@ static void class_extends_compile_test_info(Expr* extends, Ty const* instance, B
     bool generic = extends->tag == EXPR_GENERIC_PARAMS;
     Expr* base = generic ? &extends->generic_params->expr : extends;
     if (instance && !(instance->flags & TYF_ANY)) {
-        baseline_test_case_add_type_recursive(ctx, base->outer_span, base->inner_span, instance);
+        // (Only the clause's expression itself is the base type: what's parenthesized in it is an expression like
+        // any other, `class D extends (await p)` has `await p : typeof C`)
+        baseline_test_case_add_type_recursive(ctx, base->outer_span, base->outer_span, instance);
+        if (!span_eq(base->outer_span, base->inner_span)) {
+            const char* start = span_start_ptr(base->outer_span);
+            const char* end = span_end_ptr(base->outer_span);
+            while (start < end && *start != '(') start++;
+            while (end > start && end[-1] != ')') end--;
+            if (end - start >= 2) {
+                Span inside = span_make(base->outer_span.source, start + 1, end - 1);
+                baseline_test_case_add_type_recursive(ctx, inside, base->inner_span, ty_regular(current_checker, expr_get_type(base)));
+            }
+        }
         expr_compile_test_info_inner(base, ctx);
     } else {
         expr_compile_test_info(base, ctx);

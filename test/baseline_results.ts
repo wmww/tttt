@@ -26658,7 +26658,7 @@ const baselines = {
     'readonlyAssignmentInSubclassOfClassExpression': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'readonlyFloat32ArrayAssignableWithFloat32Array': {
         errors: true,
@@ -33843,7 +33843,7 @@ const baselines = {
     'awaitClassExpression_es2017': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitInheritedPromise_es2017': {
         errors: true,
@@ -34173,7 +34173,7 @@ const baselines = {
     'awaitClassExpression_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitUnion_es5': {
         errors: true,
@@ -34488,7 +34488,7 @@ const baselines = {
     'awaitClassExpression_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitUnion_es6': {
         errors: true,
@@ -55658,7 +55658,7 @@ const baselines = {
     'override1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'override10': {
         errors: true,
