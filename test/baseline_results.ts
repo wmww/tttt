@@ -1876,7 +1876,7 @@ const baselines = {
         types: true,
     },
     'assignmentToInstantiationExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

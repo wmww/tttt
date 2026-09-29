@@ -723,6 +723,50 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
 }
 
 // `f<A, B>` outside of a call (there the type arguments are the call's business, ty/call.c)
+// tsc's getInstantiationExpressionType, as far as its TS2635 goes: what signatures a type (a part of a union member) has
+typedef struct InstantiationScan {
+    u32 written; // Type arguments
+    bool has_signatures, has_applicable; // Of the union member being looked at
+    bool some_applicable; // Of any
+    Ty const* non_applicable; // The first union member with signatures and none that take the type arguments
+} InstantiationScan;
+
+static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, Ty const* type, u32 depth);
+
+static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, Ty const* type, u32 depth) {
+    if (depth > 8) return;
+    if (type->kind == TY_UNION && !(type->flags & TYF_BOOLEAN)) {
+        for (u32 i = 0; i < type->composite.types.len; i++) instantiation_scan_type(checker, scan, type->composite.types.data[i], depth + 1);
+    } else if (type->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < type->composite.types.len; i++) instantiation_scan_part(checker, scan, type->composite.types.data[i], depth + 1);
+    } else if (type->flags & TYF_OBJECT) {
+        Members const* members = ty_members(checker, type);
+        for (u32 i = 0; i < members->call_count + members->construct_count; i++) {
+            Signature const* sig = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
+            scan->has_signatures = true;
+            signature_resolve(checker, sig);
+            u32 min = 0;
+            for (u32 j = 0; j < sig->type_params.len; j++) {
+                if (!ty_param_default(checker, sig->type_params.data[j])) min = j + 1;
+            }
+            if (sig->type_params.len && scan->written >= min && scan->written <= sig->type_params.len) scan->has_applicable = true;
+        }
+    } else if (type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) { // (tsc's InstantiableNonPrimitive)
+        Ty const* constraint = ty_base_constraint(checker, type);
+        if (constraint && constraint != type) instantiation_scan_part(checker, scan, constraint, depth + 1);
+    }
+}
+
+static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, Ty const* type, u32 depth) {
+    bool outer_has = scan->has_signatures, outer_applicable = scan->has_applicable;
+    scan->has_signatures = scan->has_applicable = false;
+    instantiation_scan_part(checker, scan, type, depth);
+    scan->some_applicable |= scan->has_applicable;
+    if (scan->has_signatures && !scan->has_applicable && !scan->non_applicable) scan->non_applicable = type;
+    scan->has_signatures = outer_has;
+    scan->has_applicable = outer_applicable;
+}
+
 void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     expr_typecheck(&my expr, errs);
     for_each (i, vec_spanned_type, &my params) {
@@ -735,6 +779,7 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     Members const* members = ty_members(checker, callee);
     Signature const* sig = members->call_count ? members->call[0] : members->construct_count ? members->construct[0] : nullptr;
     u32 written = (u32)vec_spanned_type_size(&my params);
+    bool fits = false;
     for (u32 i = 0; i < members->call_count + members->construct_count; i++) {
         Signature const* each = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
         signature_resolve(checker, each);
@@ -744,23 +789,21 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         }
         if (written >= min && written <= each->type_params.len) {
             sig = each;
+            fits = true;
             break;
         }
     }
     if (sig) signature_resolve(checker, sig);
     if ((!sig || !sig->type_params.len) && my heritage) return;
-    if (!sig || !sig->type_params.len) {
-        error_ctx_error_d(
-            errs,
-            span_between(
-                vec_spanned_type_at(&my params, 0)->span,
-                vec_spanned_type_back(&my params)->span
-            ),
-            2558,
-            "Expected 0 type arguments, but got ", vec_spanned_type_size(&my params), "."
-        );
-        return;
+    InstantiationScan scan = { .written = written };
+    if (!my heritage) instantiation_scan_type(checker, &scan, callee, 0);
+    Ty const* error_type = my heritage ? nullptr : scan.some_applicable ? scan.non_applicable : callee;
+    if (error_type) {
+        error_ctx_error_d(errs, span_between(vec_spanned_type_at(&my params, 0)->span, vec_spanned_type_back(&my params)->span),
+            2635, "Type '", error_type, "' has no signatures for which the type argument list is applicable.");
     }
+    // (Only the signatures that take the type arguments have their constraints checked: getInstantiatedSignatures)
+    if (!sig || !sig->type_params.len || (!fits && !my heritage)) return;
     for (u32 i = 0; i < sig->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
         Ty const* constraint = ty_param_constraint(checker, sig->type_params.data[i]);
         if (!constraint || ty_type_argument_satisfies_constraint(checker, sig->type_params, &my params, i)) continue;
