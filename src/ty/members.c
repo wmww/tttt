@@ -2591,6 +2591,12 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
         value = &((InitializedBinding const*)binding)->value;
     } else if (assignment) {
         value = assignment->node;
+        // (`ns.F = ns.F || function () {}`)
+        if (value && value->tag == EXPR_BINARY_OP && !expr_is_perenthisized(value) &&
+            (value->binary_op->op == BINARY_OP_OR_OR || value->binary_op->op == BINARY_OP_EH_EH)
+        ) {
+            value = &value->binary_op->right;
+        }
     }
     if (!value || value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span)) return false;
     SourceFile const* file = value->inner_span.source;

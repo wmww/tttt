@@ -1337,7 +1337,10 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
 // assigned (several assignments merge)
 // A function expression assigned to a declared property (`exports.F = function () {}`, `ns.F = function () {}`) is a
 // class of that symbol if it assigns `this.x` (tsc's bindThisPropertyAssignment: the function's own symbol)
+static Expr const* defaulted_initializer(Expr const* value);
+
 static void set_function_class_symbol(Expr* value, Symbol* symbol) {
+    value = (Expr*)defaulted_initializer(value);
     if (value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span) || value->function->class_symbol) return;
     SourceFile const* file = value->inner_span.source;
     if (file && file->is_js) value->function->class_symbol = symbol;
@@ -3109,6 +3112,7 @@ FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl) {
         case SYMBOL_DECL_ASSIGNMENT: value = decl->node; break;
         default: return nullptr;
     }
+    value = defaulted_initializer(value);
     return value->tag == EXPR_FUNCTION && !span_valid(value->function->arrow_span) ? value->function : nullptr;
 }
 
@@ -3152,6 +3156,16 @@ OuterGenerics const* symbol_outer_generics(Symbol const* me) {
 }
 
 // Expandos
+
+// `a || v` / `a ?? v` (a defaulted initializer, tsc's getDefaultedExpandoInitializer): v, else the expression itself
+static Expr const* defaulted_initializer(Expr const* value) {
+    if (value->tag == EXPR_BINARY_OP && !expr_is_perenthisized(value) &&
+        (value->binary_op->op == BINARY_OP_OR_OR || value->binary_op->op == BINARY_OP_EH_EH)
+    ) {
+        return &value->binary_op->right;
+    }
+    return value;
+}
 
 // `window.x`, `self.x`, `global.x`, `this.x` for a name x (tsc's isSameEntityName)
 static bool is_global_like_access(Expr const* access, Span name) {
