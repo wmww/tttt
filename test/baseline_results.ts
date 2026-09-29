@@ -65266,9 +65266,9 @@ const baselines = {
         types: true,
     },
     'objectSpreadNegative': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'objectSpreadNegativeParse': {
         errors: true,

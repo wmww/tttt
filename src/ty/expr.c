@@ -2214,7 +2214,24 @@ typedef struct LiteralBuilder {
     IndexInfo index[3];
     u32 index_count;
     bool empty_object; // Spreads: nothing, tsc's emptyObjectType, rather than an object literal without properties
+    // Spreads: the names of private and protected properties the spread object has, which remove what came before
+    // (tsc's getSpreadType: skippedPrivateMembers)
+    Atom const** skipped;
+    u32 skipped_count;
 } LiteralBuilder;
+
+static void literal_builder_skip(LiteralBuilder* builder, Atom const* name) {
+    builder->skipped = realloc(builder->skipped, sizeof(Atom const*) * (builder->skipped_count + 1));
+    panic_if(!builder->skipped, "out of memory");
+    builder->skipped[builder->skipped_count++] = name;
+}
+
+static bool literal_builder_skips(LiteralBuilder const* builder, Atom const* name) {
+    for (u32 i = 0; i < builder->skipped_count; i++) {
+        if (builder->skipped[i] == name) return true;
+    }
+    return false;
+}
 
 static ObjectLiteralProp* literal_builder_find(LiteralBuilder* builder, Atom const* name) {
     for (u32 i = 0; i < builder->count; i++) {
@@ -2241,11 +2258,14 @@ static ObjectLiteralProp* literal_builder_add(LiteralBuilder* builder, ObjectLit
 
 static void literal_builder_drop(LiteralBuilder* builder) {
     free(builder->props);
+    free(builder->skipped);
     *builder = (LiteralBuilder){0};
 }
 
 static LiteralBuilder literal_builder_clone(LiteralBuilder const* builder) {
     LiteralBuilder ret = *builder;
+    ret.skipped = nullptr;
+    ret.skipped_count = 0;
     ret.cap = builder->count;
     ret.props = builder->count ? malloc(sizeof(ObjectLiteralProp) * builder->count) : nullptr;
     panic_if(builder->count && !ret.props, "out of memory");
@@ -2292,6 +2312,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
                 }
             }
             for (u32 j = 0; j < part.index_count && all.index_count < c_arraylen(all.index); j++) all.index[all.index_count++] = part.index[j];
+            for (u32 j = 0; j < part.skipped_count; j++) literal_builder_skip(out, part.skipped[j]);
             literal_builder_drop(&part);
         }
         for (u32 j = 0; j < all.count; j++) {
@@ -2319,6 +2340,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
     Members const* members = ty_members(me, object);
     for (u32 j = 0; j < members->prop_count; j++) {
         Prop const* prop = members->props[j];
+        if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) literal_builder_skip(out, prop->name);
         if (!ty_is_spreadable_prop(me, prop)) continue;
         if ((prop->flags & PROP_METHOD) && prop->decl->function) continue; // (a class method)
         Prop const* origin = prop;
@@ -2388,6 +2410,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         literal_builder_add(&result, merged);
     }
     for (u32 i = 0; i < left->count; i++) {
+        if (literal_builder_skips(right, left->props[i].name)) continue;
         if (!literal_builder_find((LiteralBuilder*)right, left->props[i].name)) literal_builder_add(&result, left->props[i]);
     }
     // Index signatures: right's into nothing, else the keys both have (tsc's getUnionIndexInfos)
@@ -2407,6 +2430,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         }
     }
     free(left->props);
+    free(left->skipped);
     *left = result;
 }
 
