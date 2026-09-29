@@ -2779,6 +2779,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
         if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
         if (ctx.is_const) flags |= PROP_READONLY;
+        // A destructuring target's member with a default is optional (tsc's checkObjectLiteral inDestructuringPattern)
+        if (expr->assignment_pattern && ((i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) ||
+            (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL))
+        ) {
+            flags |= PROP_OPTIONAL;
+        }
         literal_builder_add(&builder, (ObjectLiteralProp){
             .name = name,
             .flags = flags,
