@@ -290,6 +290,16 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
     if (!symbol) symbol = declared->declared.merged_value;
     if (!symbol && declared->declared.kind == TY_DECLARED_NAMESPACE) symbol = declared->declared.namespace_symbol;
     if (declared->kind == TY_DECLARED && declared->declared.commonjs_exports) {
+        // (Without a place to be named from, the `module.exports` symbol tsc copies from the file is a module named
+        // by its file name, extension included: getSpecifierForModuleSymbol without a resolver host)
+        Symbol const* module = declared->declared.namespace_symbol;
+        SourceFile const* file = !d.enclosing && module && module->module ? module->module->file : nullptr;
+        if (file) {
+            out_lit(d, "import(\"");
+            out(d, source_file_display_path(file));
+            out_lit(d, "\")");
+            return;
+        }
         out(d, atom_sv(declared->declared.name));
         return;
     }
