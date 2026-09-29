@@ -16091,7 +16091,7 @@ const baselines = {
         types: false,
     },
     'importDeclTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

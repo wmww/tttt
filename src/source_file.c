@@ -215,8 +215,17 @@ static void module_ref_add_not_found_chain(ModuleRef const* me, Error* error, cs
     cstr_drop(&mangled);
 }
 
+// tsc's resolveExternalModule: `@types/x` names a declaration package, whether or not it resolves
+static void report_types_package(ModuleRef const* me, ErrorCtx* errs) {
+    csview path = cstr_sv(&my path);
+    if (!csview_starts_with(path, "@types/")) return;
+    error_ctx_error_d(errs, my span, 6137, "Cannot import type declaration files. Consider importing '",
+        csview_slice(path, 7, path.size), "' instead of '", path, "'.");
+}
+
 void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
+    report_types_package(me, errs);
     switch (my failure) {
         case MODULE_REF_IS_JSON:
             return;
@@ -280,6 +289,7 @@ static csview declaration_extension(csview path) {
 
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
+    report_types_package(me, errs);
     if (my failure == MODULE_REF_JSX_NOT_SET) {
         error_ctx_error_d(errs, my span, 6142,
             "Module '", my path, "' was resolved to '", my resolved_path, "', but '--jsx' is not set.");
