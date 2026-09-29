@@ -236,6 +236,17 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             error_ctx_error_d(errs, my module_ref->span, 1147, "Import declarations in a namespace cannot reference a module.");
         }
     }
+    // tsc's checkGrammarNamedImportsOrExports: the first specifier with a redundant `type`
+    if (my main.type_only && !my jsdoc) {
+        for_each (i, vec_port_item, &my items) {
+            if (!i->type_modifier) continue;
+            bool is_import = i->tag == PORT_IMPORT_SPECIFIC;
+            error_ctx_grammar_error_d(errs, span_make(i->full_span.source, i->full_span.sv.buf, i->full_span.sv.buf + 4),
+                is_import ? 2206 : 2207, "The 'type' modifier cannot be used on a named ", is_import ? "import" : "export",
+                " when '", is_import ? "import" : "export", " type' is used on its ", is_import ? "import" : "export", " statement.");
+            break;
+        }
+    }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
     // `export * from "./script"` (tsc's checkExportDeclaration: resolveExternalModuleName; aliases say it themselves)
     if (my main.tag == PORT_REEXPORT_SPLAT && my module_ref && my module_ref->file && !my jsdoc && !my wrong_context &&

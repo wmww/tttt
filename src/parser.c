@@ -10200,6 +10200,7 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
             } else {
                 parse_success(&type_p);
                 item.type_only = true;
+                item.type_modifier = true;
             }
         } else {
             parse_fail(&type_p);

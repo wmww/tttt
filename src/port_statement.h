@@ -43,6 +43,7 @@ typedef struct PortItem {
     Span full_span; // Span of declaration
     Span keyword_span; // The statement's `import` or `export` (set when the item is declared)
     bool type_only; // Has the "type" keyword for the main import
+    bool type_modifier; // A specifier with its own `type` (`{ type a }`)
     Span source_name; // Only used for _SPECIFIC ports
     VecSpan alias_path; // Only used for PORT_IMPORT_ALIAS, the dotted name after the =
     VecSymbolCPtr alias_path_symbols; // What each item of alias_path found (maybe an alias), shorter if resolution failed
