@@ -4141,6 +4141,8 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                 }
             }
             Span span = jsdoc_tag_decl_span(i);
+            const char* after = range.end;
+            while (is_js_ascii_space(*after)) after++;
             vec_statement_push(out, (Statement){
                 .tag = STATEMENT_DECL_TYPE,
                 .decl.type = {
@@ -4149,6 +4151,7 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                     .generic = jsdoc_template_generic(&tags),
                     .type = type,
                     .jsdoc = true,
+                    .jsdoc_twice = *after == '(',
                 },
                 .span = span,
             });

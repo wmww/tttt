@@ -76,6 +76,9 @@ typedef struct TypeDecl {
     // exported from a module's top level (tsc's jsdocTreatAsExported)
     bool jsdoc;
     bool jsdoc_enum; // `/** @enum {T} */ const E = ...`: named by the variable, of type T
+    // A typedef whose comment is before a parenthesized expression statement: tsc attaches the comment to the statement
+    // and to the parenthesized expression, declaring it twice, and doesn't reuse references to it when printing
+    bool jsdoc_twice;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);
