@@ -10991,7 +10991,7 @@ const baselines = {
         types: true,
     },
     'enumAssignmentCompat6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -24182,7 +24182,7 @@ const baselines = {
     },
     'numericEnumMappedType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'numericIndexExpressions': {
@@ -33558,7 +33558,7 @@ const baselines = {
     'ambientDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientDeclarationsExternal': {
         errors: true,

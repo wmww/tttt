@@ -281,13 +281,15 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
         if (decl->decls[decl_index].kind != SYMBOL_DECL_ENUM) continue;
         EnumDecl const* enum_decl = decl->decls[decl_index].node;
         EnumValue previous = enum_value_number(-1);
+        // (In an ambient non-const enum, a member without initializer is computed, not the next number: tsc's
+        // computeEnumMemberValue)
+        bool ambient = enum_decl->ambient && !enum_decl->is_const;
         for_each (i, vec_enum_case, &enum_decl->cases) {
             EnumValue value;
             if (i->computed_name) {
                 value = enum_value_unknown;
             } else if (i->value.tag == EXPR_IMPLICIT_ANY) {
-                // TODO: members of an ambient non-const enum without initializer are computed
-                bool can_increment = previous.known && !previous.is_string;
+                bool can_increment = !ambient && previous.known && !previous.is_string;
                 value = can_increment ? enum_value_number(previous.number + 1) : enum_value_unknown;
             } else {
                 EnumCase const* outer = my enum_evaluating;

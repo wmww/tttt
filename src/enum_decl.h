@@ -31,6 +31,7 @@ struct EnumDecl {
     Span name;
     Span full_span;
     bool is_const; // `const enum`, TODO: nothing checks the extra restrictions on these yet
+    bool ambient; // This declaration is ambient (`declare`, in a `declare namespace` or a .d.ts), set by add_names
     VecEnumCase cases;
     Scope* namespace;
     Symbol* symbol;

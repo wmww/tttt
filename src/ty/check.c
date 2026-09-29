@@ -1373,7 +1373,7 @@ static void check_access(
     if (depth > 8) return;
     if (object->flags & TYF_ERROR) return; // (tsc's checkElementAccessExpression: nothing to say about an error type)
     // `string & Tag` is a string as far as indexing goes (tsc's isTypeAssignableToKind)
-    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL;
+    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     if (index->kind == TY_UNION || (index->kind == TY_INTERSECTION && !(ty_key_flags(index) & key_like))) {
         for (u32 i = 0; i < index->composite.types.len; i++) {
             check_access(
@@ -1556,7 +1556,7 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
     if (index->flags & TYF_NEVER) return;
     // What can't be a key is an error even on any (tsc's isTypeAssignableToKind(StringLike | NumberLike | ESSymbolLike),
     // any included, before the object is looked at)
-    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL;
+    u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     bool is_key = !(index->flags & TYF_NULLABLE) && (ty_key_flags(index) & key_like);
     if (is_key && (apparent->flags & (TYF_ANY | TYF_NEVER))) return;
     if (is_key && (index->flags & TYF_ANY)) {

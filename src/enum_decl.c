@@ -20,6 +20,7 @@ void enum_decl_drop(EnumDecl* me) {
 }
 
 void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclExported exported, bool declared) {
+    my ambient = declared || scope->ambient || (my name.source && my name.source->is_declaration);
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
@@ -131,11 +132,9 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             continue;
         }
         // A computed member: an enum literal type of neither
-        bool ambient = i->symbol->is_ambient || (my symbol && my symbol->is_ambient) ||
-            (my name.source && my name.source->is_declaration);
         if (my is_const) {
             error_ctx_error_d(errs, at, 2474, "const enum member initializers must be constant expressions.");
-        } else if (ambient) {
+        } else if (my ambient) {
             error_ctx_error_d(errs, at, 1066, "In ambient enum declarations member initializer must be constant expression.");
         } else {
             ty_check_enum_member_value(current_checker, ty_expr_type(current_checker, &i->value), at, errs);
