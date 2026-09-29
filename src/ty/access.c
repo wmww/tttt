@@ -41,6 +41,14 @@ static Ty const* with_undefined(Checker* me, Ty const* type) {
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
 
+// noUncheckedIndexedAccess's undefined of an index signature read: tsc's missingType, which `"k" in o` takes out of
+// `o.k` (narrow_missing_by_presence()) and an optional property's undefined isn't
+static Ty const* with_missing(Checker* me, Ty const* type) {
+    if (!compiler_options()->strict_null_checks) return type;
+    Ty const* parts[2] = { type, ty_intrinsic(me, TY_MISSING) };
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
 Atom const* ty_literal_name(Checker* me, Ty const* index) {
     if (!(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return nullptr;
     if (index->literal.string) return index->literal.string;
@@ -202,7 +210,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         if (apparent->flags & TYF_ANY) return apparent;
         IndexInfo const* info = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return index;
-        return include_undefined ? with_undefined(me, info->value) : info->value;
+        return include_undefined ? with_missing(me, info->value) : info->value;
     }
     if (index->flags & TYF_ANY) {
         // What the index signatures say (any is assignable to every key type: the specific ones, else a string one,
@@ -210,7 +218,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         Ty const* apparent = ty_apparent_type(me, object);
         IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return ty_intrinsic(me, TY_ANY);
-        return include_undefined ? with_undefined(me, info->value) : info->value;
+        return include_undefined ? with_missing(me, info->value) : info->value;
     }
     bool simple = (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (!simple) return nullptr;
@@ -296,7 +304,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
     if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) {
         Ty const* element = ty_rest_element_type(me, object);
-        return include_undefined ? with_undefined(me, element) : element;
+        return include_undefined ? with_missing(me, element) : element;
     }
 
     Atom const* name = ty_literal_name(me, index);
@@ -336,7 +344,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
     // (Not an enum object indexed by its own members: `E[E.A]`)
     bool own_enum = (index->flags & TYF_ENUM_LITERAL) && object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT;
-    return value && include_undefined && !own_enum ? with_undefined(me, value) : value;
+    return value && include_undefined && !own_enum ? with_missing(me, value) : value;
 }
 
 Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index) {

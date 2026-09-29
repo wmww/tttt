@@ -16803,7 +16803,7 @@ const baselines = {
     'inKeywordNarrowingWithNoUncheckedIndexedAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inKeywordTypeguard(strict=false)': {
         errors: true,
