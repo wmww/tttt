@@ -114,6 +114,16 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) expr_lookup_names(i, scope, nullptr);
     if (my wrong_context) return;
+    // `export { x }` of a local `let`: it may be assigned from anywhere, closures don't see its narrowing (tsc's
+    // markNodeAssignments of an ExportSpecifier)
+    if (!my module_ref && port_statement_is_export_declaration(me)) {
+        for_each (i, vec_port_item, &my items) {
+            Symbol* target = (Symbol*)symbol_resolve_alias(i->symbol); // (Local: this file's walk owns it)
+            if (target && target->is_local && (target->flags & SYMBOL_VARIABLE) && !target->is_const) {
+                target->last_assignment_end = (char const*)UINTPTR_MAX;
+            }
+        }
+    }
     // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
     // (In a namespace it is TS1147/TS1194 instead, and nothing is resolved: tsc's checkExternalImportOrExportDeclaration)
     bool unchecked = (my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports) || my in_namespace;

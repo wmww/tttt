@@ -130,6 +130,9 @@ typedef struct FunctionImpl {
     Block body; // Initialized to empty block if has_body is false
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
+    // A method or accessor of a class expression: narrowing continues into it like into a function expression (tsc's
+    // isObjectLiteralOrClassExpressionMethodOrAccessor), it has an outer_flow
+    bool in_class_expression;
     FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
     FlowNode* return_flow; // Constructors: every way out
     bool has_explicit_return; // A reachable `return`

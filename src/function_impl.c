@@ -210,9 +210,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         flow.parameter_initializing = outer->parameter_initializing;
         flow.parameter_function_scope = outer->parameter_function_scope;
     } else {
-        if (kind == FUNCTION_IS_EXPRESSION) my outer_flow = flow_builder_reference(outer, span_null);
+        bool continues = kind == FUNCTION_IS_EXPRESSION || my in_class_expression;
+        if (continues) my outer_flow = flow_builder_reference(outer, span_null);
         // Signatures and function types (the libs are full of them) have nothing that flows
-        if (my has_body) flow.current = flow_new_start(&flow, me, kind == FUNCTION_IS_EXPRESSION);
+        if (my has_body) flow.current = flow_new_start(&flow, me, continues);
     }
     // (A JavaScript function may be a constructor function: `this.x = v` has its type at the end of it too)
     bool js_constructor_candidate = names->file && names->file->is_js && !span_valid(my arrow_span) && !my is_method &&

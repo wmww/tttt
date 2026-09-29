@@ -22831,9 +22831,9 @@ const baselines = {
         types: true,
     },
     'narrowedConstInMethod': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowedImports': {
         errors: true,
@@ -22908,12 +22908,12 @@ const baselines = {
     'narrowingPastLastAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingPastLastAssignmentInModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingPlainJsNoCrash1': {
         errors: true,
