@@ -16956,7 +16956,7 @@ const baselines = {
         types: true,
     },
     'indexSignatureMustHaveTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17146,7 +17146,7 @@ const baselines = {
         types: true,
     },
     'indexerConstraints2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57501,7 +57501,7 @@ const baselines = {
         types: true,
     },
     'parserIndexSignature7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -6898,6 +6898,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     }
     list_leave(&p, saved_context);
     expect_char(&p, ']');
+    char const* bracket_end = p.pos; // (the trivia after it is no part of the node)
     hop_whitespace(&p);
 
     Span name = ret->key.index.name;
@@ -6925,7 +6926,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     }
     ret->key.index.valid = count == 1 && first_has_type;
     ret->key.index.grammar_reported = reported;
-    ret->key.span = span_from(a);
+    ret->key.span = span_make(p.shared->source, a.start, bracket_end);
 
     if (hop_char(&p, ':')) {
         hop_whitespace(&p);
@@ -6934,7 +6935,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     }
 
     // The node ends after the member's `;` or `,` (tsc's parseTypeMemberSemicolon)
-    Span node = span_from(a);
+    Span node = ret->key.index.has_value_type ? span_from(a) : ret->key.span;
     {
         Parser q = parser(&p);
         hop_whitespace(&q);
