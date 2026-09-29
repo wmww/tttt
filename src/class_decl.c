@@ -1017,6 +1017,18 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, span, 2506, "'", span, "' is referenced directly or indirectly in its own base expression.");
         base = nullptr;
     }
+    // `extends null` with an interface merged into the class that extends something: that is its base type (tsc's
+    // getBaseTypes of the class type), and the static side is compared with null's
+    bool null_base = false;
+    if (!base && my extends.tag != EXPR_IMPLICIT_ANY && (ty_expr_type(checker, &my extends)->flags & TYF_NULL)) {
+        for (u32 d = 0; d < my symbol->decl_count && !base; d++) {
+            if (my symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+            InterfaceDecl const* interface = my symbol->decls[d].node;
+            if (!vec_spanned_type_size(&interface->extends)) continue;
+            base = ty_of_node(&vec_spanned_type_at(&interface->extends, 0)->type);
+            null_base = true;
+        }
+    }
     class_check_mixin(me, errs);
     class_check_base_accessibility(me, errs);
     class_check_override_modifiers(me, base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? base : nullptr, errs);
@@ -1026,7 +1038,13 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
             2415, "Class", "incorrectly extends base class", span, errs);
         // The static side only when the instance side fits
         Ty const* base_static = ty_apparent_type(checker, ty_expr_type(checker, &my extends));
-        if (fits && !(base_static->flags & (TYF_ANY | TYF_NULLABLE))) {
+        if (fits && null_base) {
+            Ty const* static_type = ty_type_of_symbol(checker, my symbol);
+            cstr derived_str = ty_to_cstr(checker, static_type);
+            ty_report_unassignable_with_head(checker, static_type, base_static, 2417, cstr_d("Class static side '", derived_str,
+                "' incorrectly extends base class static side 'null'."), span, errs);
+            cstr_drop(&derived_str);
+        } else if (fits && !(base_static->flags & (TYF_ANY | TYF_NULLABLE))) {
             // (The value of the class, with what merges into it: a namespace's exports are static members too)
             ty_check_static_heritage(checker, ty_type_of_symbol(checker, my symbol), base_static, span, errs);
         }
