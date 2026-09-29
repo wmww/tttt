@@ -910,9 +910,16 @@ static Ty const* apparent_type(Checker* me, Ty const* ty) {
         return ret;
     }
     if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || ty->kind == TY_SUBSTITUTION) {
-        // (tsc's getApparentType: an instantiable type is its base constraint)
+        // (tsc's getApparentType: an instantiable type is its base constraint, which sees it as its `this` when that is
+        // a class or interface or an intersection: a chain of `this`-returning builder methods on `T` stays generic,
+        // `PgSelectJoin<PgSelectJoin<T, ...>, ...>`)
         Ty const* constraint = base_constraint(me, ty, 0);
-        if (constraint && constraint != ty) return apparent_type(me, constraint);
+        if (constraint && constraint != ty) {
+            if (constraint->kind == TY_REFERENCE || constraint->kind == TY_INTERSECTION) {
+                return apparent_type(me, ty_with_this_arg(me, constraint, ty));
+            }
+            return apparent_type(me, constraint);
+        }
     }
     u32 f = ty->flags;
     Ty const* global = nullptr;
