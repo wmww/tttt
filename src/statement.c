@@ -609,6 +609,10 @@ void statement_drop(Statement* me) {
         case STATEMENT_TRY_CATCH:
             block_drop(&my try_catch->try_block);
             binding_drop(&my try_catch->catch_var);
+            if (my try_catch->catch_initializer) {
+                expr_drop(my try_catch->catch_initializer);
+                free(my try_catch->catch_initializer);
+            }
             block_drop(&my try_catch->catch_block);
             block_drop(&my try_catch->finally_block);
             free(my try_catch);
@@ -705,7 +709,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
             error_ctx_error_d(
                 scope->errs,
                 initializer->binding.content_span,
-                1189,
+                my keyword == FOR_EACH_LOOP_OF ? 1190 : 1189,
                 "The variable declaration of a 'for...",
                 for_each_loop_statement_keyword_str(me).str,
                 "' statement cannot have an initializer."
@@ -1180,6 +1184,7 @@ static void try_catch_resolve_names(TryCatchStatement* me, bool has_catch, bool 
         Scope* catch_scope = scope_new(names, SCOPE_BLOCK);
         binding_add_names(&my catch_var, nullptr, catch_scope, (BindingAddNamesProps){});
         binding_lookup_names(&my catch_var, catch_scope, errs);
+        if (my catch_initializer) expr_lookup_names(my catch_initializer, catch_scope, errs);
         block_resolve_names(&my catch_block, catch_scope, errs);
         flow_add_antecedent(flow, normal_exit, flow->current);
     }

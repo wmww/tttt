@@ -358,6 +358,7 @@ typedef struct WithStatement {
 typedef struct TryCatchStatement {
     Block try_block;
     Binding catch_var;
+    Expr* catch_initializer; // Owned, `catch (e = 1)` (TS1197): only its names are looked up and it's typed
     Block catch_block;
     Block finally_block;
     bool has_catch;

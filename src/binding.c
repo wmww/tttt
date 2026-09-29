@@ -334,6 +334,17 @@ static Ty const* element_parent_type(Binding const* me, Expr const* initializer)
     return type;
 }
 
+// tsc's checkGrammarBindingElement: a rest element's initializer, at its `=`
+static void binding_report_rest_initializer(Binding const* element, ErrorCtx* errs) {
+    Span value = element->default_value->outer_span;
+    if (!span_valid(value)) return;
+    char const* at = span_start_ptr(value);
+    char const* start = span_start_ptr(element->content_span);
+    while (at > start && at[-1] != '=') at--;
+    if (at <= start) return;
+    error_ctx_grammar_error_d(errs, span_make(value.source, at - 1, at), 1186, "A rest element cannot have an initializer.");
+}
+
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     binding_typecheck_at(me, initializer, span_null, errs);
 }
@@ -428,6 +439,8 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
             for_each (i, vec_binding, &my array) {
                 if (i->rest && i_index + 1 < vec_binding_size(&my array)) { // (tsc's checkGrammarBindingElement)
                     error_ctx_grammar_error_d(errs, i->content_span, 2462, "A rest element must be last in a destructuring pattern.");
+                } else if (i->rest && i->default_value) {
+                    binding_report_rest_initializer(i, errs);
                 }
                 // Past the end of a tuple (TS2493), unless there's a default
                 if (parent && i->tag != BINDING_NOOP && !i->rest && !i->default_value) {
@@ -444,6 +457,10 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->target.rest && i_index + 1 < vec_object_binding_item_size(&my object)) {
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2462, "A rest element must be last in a destructuring pattern.");
+                } else if (i->target.rest_property_name) {
+                    error_ctx_grammar_error_d(errs, i->target.content_span, 2566, "A rest element cannot have a property name.");
+                } else if (i->target.rest && i->target.default_value) {
+                    binding_report_rest_initializer(&i->target, errs);
                 }
                 if (parent && !i->computed_key && !i->target.rest && !(i->target.default_value &&
                     parent->kind == TY_ANONYMOUS && parent->anonymous.object_literal)

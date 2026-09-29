@@ -2166,6 +2166,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_TRY_CATCH:
             block_compile_test_info(&my try_catch->try_block, ctx);
             if (my try_catch->catch_var.tag != BINDING_NOOP) binding_compile_test_info(&my try_catch->catch_var, ctx);
+            if (my try_catch->catch_initializer) expr_compile_test_info(my try_catch->catch_initializer, ctx);
             if (my try_catch->has_catch) block_compile_test_info(&my try_catch->catch_block, ctx);
             block_compile_test_info(&my try_catch->finally_block, ctx);
             break;

@@ -358,6 +358,7 @@ static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
 static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
+static void parse_computed_key_comma(Parser* p, Expr* key);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_template_type(Parser* parent, TypeNode* ret);
@@ -5637,6 +5638,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         if (!parse_expr(&p, expr_ctx_null, &key)) {
             return parse_fail(&p);
         }
+        parse_computed_key_comma(&p, &key);
         hop_whitespace(&p);
         if (!hop_char(&p, ']')) {
             expr_drop(&key);
@@ -6179,6 +6181,18 @@ static bool is_construct_signature_start(const char* pos) {
 }
 
 // The `[k]` of a class member
+// tsc's parseComputedPropertyName takes a whole expression, a comma expression too (checkGrammarComputedPropertyName:
+// TS1171 on it)
+static void parse_computed_key_comma(Parser* p, Expr* key) {
+    Parser comma = parser(p);
+    hop_whitespace(&comma);
+    bool is_comma = *comma.pos == ',';
+    parse_fail(&comma);
+    if (!is_comma) return;
+    parse_comma_ops_right_side(p, key);
+    parse_error(p, key->outer_span, 1171, "A comma expression is not allowed in a computed property name.");
+}
+
 static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     Parser p = parser(parent);
     if (*p.pos != '[' || is_index_signature_start(&p)) return parse_fail(&p);
@@ -6186,6 +6200,7 @@ static bool parse_class_computed_key(Parser* parent, Expr** ret) {
     hop_whitespace(&p);
     Expr key;
     if (!parse_expr(&p, expr_ctx_null, &key)) return parse_fail(&p);
+    parse_computed_key_comma(&p, &key);
     hop_whitespace(&p);
     if (!hop_char(&p, ']')) {
         expr_drop(&key);
@@ -7659,9 +7674,26 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    // (A tagged template is part of a member expression, `new` included: tsc's parseMemberExpressionRest)
+    // (A tagged template is part of a member expression, `new` included: tsc's parseMemberExpressionRest). After `?.`
+    // too, which the checker refuses (TS1358 on the template's first token)
+    bool optional_template = false;
+    if (!ctx.entity_name && new_keyword_precedence >= ctx.min_precedence && p.pos[0] == '?' && p.pos[1] == '.') {
+        Parser q = parser(&p);
+        q.pos += 2;
+        hop_whitespace(&q);
+        optional_template = *q.pos == '`';
+        if (optional_template) parse_success(&q);
+        else parse_fail(&q);
+    }
     if (!ctx.entity_name && new_keyword_precedence >= ctx.min_precedence && *p.pos == '`') {
         Anchor template_a = anchor(&p);
+        if (optional_template) {
+            char const* end = template_a.start + 1;
+            while (*end && *end != '`' && !(end[0] == '$' && end[1] == '{')) end += end[0] == '\\' && end[1] ? 2 : 1;
+            end += *end == '`' ? 1 : *end ? 2 : 0;
+            parse_error(&p, span_make(p.shared->source, template_a.start, end), 1358,
+                "Tagged template expressions are not permitted in an optional chain.");
+        }
         cstr plain_string = cstr_null;
         if (!parse_template(&p, &parsed.args, nullptr)) {
             parsed.args = vec_expr_init();
@@ -9449,7 +9481,28 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
             bool shorthand_allowed = false;
             binding = (Binding){0};
             if (*p.pos == '.' && parse_binding_element(&p, &binding)) {
-                // `...rest`
+                // `...rest`. `...rest: x` is a rest element with a property name to tsc's parseObjectBindingElement
+                // (TS2566 from the checker)
+                Parser colon = parser(&p);
+                hop_whitespace(&colon);
+                if (binding.tag == BINDING_IDENTIFIER && !binding.default_value && hop_char(&colon, ':')) {
+                    hop_whitespace(&colon);
+                    Binding target = {0};
+                    if (parse_binding_element(&colon, &target)) {
+                        parse_success(&colon);
+                        target.rest = true;
+                        target.rest_property_name = true;
+                        Span key_name = binding.content_span;
+                        binding_drop(&binding);
+                        vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
+                            .source = value_string(cstr_from_span(key_name)),
+                            .source_span = key_name,
+                            .target = target,
+                        });
+                        goto object_item_done;
+                    }
+                }
+                parse_fail(&colon);
                 vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
                     .source_span = binding.content_span,
                     .target = binding,
@@ -10564,6 +10617,18 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                 }
                 hop_whitespace(&p);
                 if (parse_binding_type(&p, &try_catch.catch_var)) hop_whitespace(&p);
+                if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
+                    // tsc parses a variable declaration there, initializer included (checkGrammarCatchClause:
+                    // TS1197 on it)
+                    p.pos++;
+                    hop_whitespace(&p);
+                    Expr initializer;
+                    if (expect_expr(&p, expr_ctx_null, &initializer)) {
+                        parse_error(&p, initializer.outer_span, 1197, "Catch clause variable cannot have an initializer.");
+                    }
+                    try_catch.catch_initializer = c_new(Expr, initializer);
+                    hop_whitespace(&p);
+                }
 
                 expect_char(&p, ')');
                 hop_whitespace(&p);
@@ -11364,7 +11429,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1248, 1253, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019,
+        1171, 1197, 1248, 1253, 1358, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

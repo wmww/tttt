@@ -22,6 +22,7 @@ typedef struct Binding {
     };
     Span content_span; // Just the name/array/object, not the type/value
     bool rest; // `...x` as an element of an array or object pattern
+    bool rest_property_name; // `{ ...a: x }`: a rest element with a property name (TS2566)
     Span element_span; // With the `...` and the default, only valid for elements of a pattern
     Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
     bool definitely_assigned; // `let x!: T`
