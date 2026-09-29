@@ -1281,10 +1281,25 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     if (sig->this_type) {
         out(reused_if(d, d.reused || (function && !jsdoc_this)), c_sv("this"));
         out_lit(d, ": ");
-        FunctionArg const* this_decl = function ? vec_function_arg_at(&function->args, 0) : nullptr;
+        FunctionArg const* this_decl = function && vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
         Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
+        if (binding && !(binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) binding = nullptr;
         bool reused = reusable && !jsdoc_this && binding && binding->has_explicit_type &&
             (!instantiated || (sig->this_type == root->this_type && !mentions(me, sig->this_type, d.fresh_params)));
+        // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
+        // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
+        Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
+        while (contextual && contextual->target && !contextual->function) contextual = contextual->target;
+        FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
+        FunctionArg const* context_this = context_function && vec_function_arg_size(&context_function->args) ?
+            vec_function_arg_at(&context_function->args, 0) : nullptr;
+        if (context_this && context_this->initializer.binding.tag == BINDING_IDENTIFIER &&
+            span_equals(context_this->initializer.binding.content_span, "this") &&
+            context_this->initializer.binding.has_explicit_type && contextual->this_type == sig->this_type
+        ) {
+            binding = &context_this->initializer.binding;
+            reused = true;
+        }
         display_annotated(me, reused_if(d, false), reused ? &binding->explicit_type : nullptr, sig->this_type, false);
         if (param_count) out_lit(d, ", ");
     }

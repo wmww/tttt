@@ -2695,6 +2695,11 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             sig->this_type = params[0].type;
             params++;
             count--;
+        } else if (function->is_expression && ty_function_is_context_sensitive(function)) {
+            // A function expression without one takes its contextual signature's `this` (tsc's
+            // assignContextualParameterTypes gives the signature a thisParameter)
+            u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
+            sig->this_type = intern_get(&my links, this_key, 2);
         }
         sig->params = params;
         sig->param_count = count;
