@@ -16086,7 +16086,7 @@ const baselines = {
         types: false,
     },
     'importDeclRefereingExternalModuleWithNoResolve': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
