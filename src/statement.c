@@ -106,7 +106,8 @@ static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* er
         if (decl && decl->jsdoc_enum) enum_decl = decl;
     }
     if (!enum_decl) return;
-    Ty const* type = ty_of_node(&enum_decl->type);
+    // (The alias's type, which names it: lowering the node on its own first would give the alias an unnamed type)
+    Ty const* type = ty_declared_type_of(current_checker, symbol);
     for_each (i, vec_object_expr_item, &my value.object) {
         if (i->tag != OBJECT_ITEM_PROPERTY || i->jsdoc_type) continue;
         ty_check_assignable_expr(current_checker, expr_get_type(&i->value), type, i->span, &i->value, errs);
