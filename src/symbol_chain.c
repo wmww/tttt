@@ -1,4 +1,5 @@
 #include "symbol_chain.h"
+#include "class_decl.h"
 #include "unicode_identifiers.h"
 #include "compiler_options.h"
 #include "port_statement.h"
@@ -427,6 +428,12 @@ static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol
             if (additional) out[count++] = additional;
             out[count++] = container;
         }
+        return count;
+    }
+    // A JavaScript class expression a CommonJS module exports (`module.exports = class {}`, `exports.C = class {}`)
+    ClassDecl const* class_expression = symbol->flags & SYMBOL_CLASS ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
+    if (class_expression && class_expression->is_expression && class_expression->commonjs_module) {
+        out[count++] = class_expression->commonjs_module;
         return count;
     }
     // A declaration directly in a module that the module exports under another name (`export = C`, `export { C as D }`)

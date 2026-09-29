@@ -137,6 +137,9 @@ typedef struct ClassDecl {
     // A JavaScript class expression that `exports.C = class {}` aliases: the scope with its name, made (with the
     // class's symbol) by the declare step, which the resolve walk takes instead of making one (scope_add_commonjs_export())
     struct Scope* name_scope;
+    // The module whose export it is then (tsc's getContainersOfSymbol for a class expression assigned to
+    // `module.exports` or `exports.C`): names of the class go through the module
+    Symbol const* commonjs_module;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

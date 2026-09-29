@@ -1351,7 +1351,7 @@ static void declare_commonjs_export(
     // (A class expression is an alias of its class, tsc's isAliasableExpression: at the top level, where the declare
     // step can make the class's symbol in the scope the resolve walk would)
     bool class_alias = value->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(value) && top_level &&
-        kind == ASSIGNMENT_DECL_PROPERTY && !jsdoc_type && !csview_equals(name, "export=");
+        kind == ASSIGNMENT_DECL_PROPERTY && !jsdoc_type;
     bool alias = (value->tag == EXPR_IDENTIFIER && !value->identifier.keyword) || class_alias;
     u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_PROPERTY;
     bool merged;
@@ -1373,6 +1373,7 @@ static void declare_commonjs_export(
                 class_decl_add_names(class_decl, class_decl->name_scope, DECL_EXPORTED_NO, false);
             }
             symbol->alias->class_expr = class_decl;
+            class_decl->commonjs_module = my container;
         } else {
             symbol->alias->name = value->identifier.name;
         }
