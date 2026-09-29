@@ -1528,12 +1528,15 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 IndexComponent const* component = &info->components[j];
                 // (Those with a literal or unique symbol name are properties too)
                 if (ty_expr_type(me, component->name)->kind == TY_LITERAL) continue;
-                if (info->readonly) out_lit(d, "readonly ");
-                out_lit(d, "[");
-                out(d, component->name->outer_span.sv);
-                out_lit(d, "]: ");
+                // (The member is its declaration reused, the type is made: the baseline's `^` line)
+                TyDisplay reused = reused_if(d, true);
+                if (info->readonly) out_lit(reused, "readonly ");
+                out_lit(reused, "[");
+                out(reused, component->name->outer_span.sv);
+                out_lit(reused, "]: ");
                 ty_display(me, d, component->type);
-                out_lit(d, "; ");
+                out_lit(reused, ";");
+                out_lit(d, " ");
             }
             continue;
         }
