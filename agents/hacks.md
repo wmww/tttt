@@ -492,6 +492,10 @@ src` finds the code-side markers; every significant one has an entry here.
   table has (the static `prototype`) without joining it; tsc's source of that TS2300 isn't pinned down, and tsc also
   reports an early `a` against a later `get [k]` (k = "a") at both, with the late text '[k]', which this doesn't.
 
+- `ty_check_destructured_member` (check.c, `from_this`): `({ m } = this)` inside method m isn't a read of private m (tsc's
+  markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m, where
+  tsc would count the read (its containing function is the nested one).
+
 ## JavaScript and JSDoc (plan 26)
 - JSDoc is consumed at parse time, not stored: `jsdoc_before()` re-parses the last comment before the host into
   transient `JsDocTag`s; JSDoc parse errors dropped (no TS8032). `jsdoc_bind_comments()` parses every

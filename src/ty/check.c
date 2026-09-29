@@ -3024,13 +3024,22 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     for (u32 i = 0; i < prop->decl->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl->decl_spans[i]);
 }
 
-void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, Span span, ErrorCtx* errs) {
+void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, ErrorCtx* errs) {
     if (object->flags & TYF_ANY) return;
     Atom const* name = ty_literal_name(me, key);
     MemberRefs refs = {0};
     if (!name || member_refs(me, object, name, &refs, 0) < 0) return;
-    if (unused_enabled()) {
-        for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], nullptr);
+    for (u32 i = 0; unused_enabled() && i < refs.len; i++) {
+        // `({ m } = this)` in m itself isn't a read of m (tsc's markPropertyAsReferenced with rightIsThis). HACK: by
+        // position, a function nested in m counts as m
+        Prop const* prop = refs.props[i];
+        while (prop->target) prop = prop->target;
+        bool self = false;
+        for (u32 d = 0; from_this && span_valid(span) && (prop->flags & PROP_METHOD) && d < prop->decl->decl_span_count; d++) {
+            Span decl = prop->decl->decl_spans[d];
+            self |= decl.source == span.source && span_contains_span(decl, span);
+        }
+        if (!self) mark_member_referenced(me, refs.props[i], nullptr);
     }
     // tsc's checkPropertyAccessibility of a binding element or destructuring assignment property: a private member
     // outside its class. TODO: protected members (the classes around the pattern aren't known here)
