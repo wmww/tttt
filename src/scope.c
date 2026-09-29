@@ -3111,6 +3111,17 @@ OuterGenerics const* symbol_outer_generics(Symbol const* me) {
 
 // Expandos
 
+// `window.x`, `self.x`, `global.x`, `this.x` for a name x (tsc's isSameEntityName)
+static bool is_global_like_access(Expr const* access, Span name) {
+    Span access_name = expr_static_property_name(access);
+    if (!span_valid(access_name) || !csview_equals_sv(access_name.sv, name.sv)) return false;
+    Expr const* object = &access->property->expr;
+    if (object->tag != EXPR_IDENTIFIER || expr_is_perenthisized(object)) return false;
+    if (object->identifier.keyword) return object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
+    return span_equals(object->identifier.name, "window") || span_equals(object->identifier.name, "self") ||
+        span_equals(object->identifier.name, "global");
+}
+
 // The expression a variable of this initializer is an expando container of (tsc's getDeclaredExpandoInitializer):
 // a function or arrow function, in JavaScript also a class expression or `{}`, possibly defaulted (`var ns = ns || {}`)
 Expr* expando_initializer(Expr* init, Span name, bool js) {
@@ -3130,8 +3141,8 @@ Expr* expando_initializer(Expr* init, Span name, bool js) {
     ) {
         // `var ns = ns || {}`, `ns.a = ns.a || {}` (tsc's getDefaultedExpandoInitializer: the same name on the left)
         Expr const* left = &init->binary_op->left;
-        bool same = span_valid(name) ? left->tag == EXPR_IDENTIFIER && csview_equals_sv(left->identifier.name.sv, name.sv) :
-            left->tag == EXPR_PROPERTY || left->tag == EXPR_IDENTIFIER;
+        bool same = span_valid(name) ? (left->tag == EXPR_IDENTIFIER && csview_equals_sv(left->identifier.name.sv, name.sv)) ||
+            is_global_like_access(left, name) : left->tag == EXPR_PROPERTY || left->tag == EXPR_IDENTIFIER;
         if (!js || !same) return nullptr;
         init = &init->binary_op->right;
     }
