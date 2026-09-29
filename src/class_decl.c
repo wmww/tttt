@@ -1527,8 +1527,21 @@ static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, b
         *arg_count = (u32)vec_spanned_type_size(&base->generic_params->params);
         base = &base->generic_params->expr;
     }
-    if (base->tag != EXPR_IDENTIFIER || base->identifier.keyword || expr_is_perenthisized(base)) return nullptr;
-    Symbol const* target = base->identifier.target;
+    if (expr_is_perenthisized(base)) return nullptr;
+    Symbol const* target = nullptr;
+    if (base->tag == EXPR_IDENTIFIER && !base->identifier.keyword) {
+        target = base->identifier.target;
+    } else if (base->tag == EXPR_PROPERTY && base->property->form == PROPERTY_EXPR_DOT &&
+        base->property->expr.tag == EXPR_IDENTIFIER && !expr_is_perenthisized(&base->property->expr)
+    ) {
+        // A class in a namespace, `M.E` (like the members' class_base())
+        Symbol const* namespace = symbol_for_meaning(base->property->expr.identifier.target, SYMBOL_NAMESPACE);
+        Expr const* name = &base->property->prop;
+        if (namespace && !namespace->is_placeholder && (name->tag == EXPR_IDENTIFIER || name->tag == EXPR_LITERAL)) {
+            target = symbol_get_export(namespace, name->inner_span.sv);
+        }
+    }
+    target = symbol_for_meaning(target, SYMBOL_CLASS);
     if (!target || target->is_placeholder || !(target->flags & SYMBOL_CLASS)) return nullptr;
     return target;
 }

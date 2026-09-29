@@ -65231,9 +65231,9 @@ const baselines = {
         types: true,
     },
     'genericTypeReferenceWithoutTypeArgument': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTypeReferenceWithoutTypeArgument2': {
         errors: true,
