@@ -3659,7 +3659,12 @@ static Ternary structured_related_members(
         // A generic source can still be related through its constraint, further down. The members of the union don't
         // check excess properties, the union as a whole did (tsc relates the regular object literal)
         isize_t saved = vec_ty_report_line_size(&st->lines);
+        // (A member of an intersection source relates to the union's members as one still: tsc's typeRelatedToSomeType
+        // passes the intersectionState on, so `{}` of `{ a: number } & {}` has no inferable index signature there either)
+        bool saved_source = st->intersection_source;
+        st->intersection_source = st->member_of_intersection_source;
         Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report && !source_is_generic);
+        st->intersection_source = saved_source;
         if (!related && (source->flags & TYF_OBJECT)) {
             related = related_to_discriminated(me, st, source, target);
             if (related) report_truncate(st, saved);
