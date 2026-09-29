@@ -31,8 +31,9 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    TS1xxx 196 -> 47 tests, suite 11274 -> 11472 (0 lost), corpora unchanged. Instructions +1-2.5% (nest), partly
    clawed back; measurements.md for the perf session. Plan 27 is essentially done: its "Leftovers" are per-test items
    for triage/checker sessions, no further parser session.
-9. **Types component** (plan 35's queue, sub-agents): `./displaydiff.py` "other" alone fixes 307 TS + 22 JS tests,
-   underlines/order 74 + 6, we-any 59 + 8 (2026-09-29 numbers).
+9. ~~Types component~~ done (four Opus sub-agents by first differing line kind): suite 11472 -> 11962 (0 lost), types
+   component failures 1368 -> 807, JS 885 -> 892, corpora unchanged, instructions +0.3-1.2%. Plan 35 "Queue (after
+   stage 3)" has the leftovers; no second types session is needed before the insights.
 10. **Triage**, including a pass over hacks.md (811 lines: merge, delete what plans 37/38 made stale) and the two
     log_error tests (`Error added with invalid span`, TS2503/TS2304 on `_`).
 11. **Insights.**

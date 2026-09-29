@@ -55,28 +55,43 @@ The queue below from stage 1, worked top to bottom, and what the buckets showed 
 - we-any/declaration (first differing line) 95 -> 50; line-missing 73 -> 72 (the heritage/null/catch fixes moved tests
   into other buckets as much as out); `./displaydiff.py` fixed-by-one: other 383 + 54, we-any 65 + 41.
 
-## Queue (after stage 2)
-TS tests by the kind of their first differing line: underlines/order 106 (display), line-missing 72, shape-other/
-declaration 59, union-order 56 (display), we-any/declaration 50, signature-differs/declaration 50, union-differs/
-declaration 44, our-typeof 42, object-differs/declaration 38. Mechanisms seen, roughly by size:
-1. **Now plan 37 A** (prototype +48). **Non-widening null/undefined** (~25 non-strict tests, 11 fixed by it alone: bestCommonTypeOfTuple(2),
-   tupleLengthCheck, castingTuple, indexerWithTuple, noImplicitAnyIndexing...): tsc has undefinedWideningType /
-   nullWideningType for the `undefined`/`null` expressions, `void`, `[]`; only those widen to any. tttt widens every
-   null/undefined (`widen_nullable()` HACK, and now inference too). Needs two more intrinsics (non-strict only,
-   printing the same) that `widen_nullable` alone widens, union/intersection construction treating both as nullable,
-   and the `== ty_intrinsic(TY_UNDEFINED)` comparisons (~47 in ty/) checked. Medium, risky; measure first.
-2. **Now plan 37 C** (prototype +14). **Decorators contextually typed as calls** (esDecorators-contextualTypes, legacyDecorators-contextualTypes: `t`,
-   `c : ClassDecoratorContext<...>`): a decorator expression is checked like a call with the decorated thing's
-   arguments (tsc's getEffectiveCallArguments for Decorator). A feature, ~2 big tests plus whatever the corpora use.
-3. **BigInt literals are doubles** (`Value.bigint`): parseBigInt, localesObjectArgument print rounded values.
-4. **Dynamic import of CommonJS under node16+** is `{ default: typeof import(...) }` (nodeModulesDeclarationEmit
-   DynamicImportWithPackageExports, nodeModulesSynchronousCallErrors, esModuleIntersectionCrash).
-5. JS `Outer.Inner` vs `Inner` naming (typeFromPropertyAssignment13/14/16), `Array<T>` written in JSDoc prints `T[]`.
-6. Parser-side line-missing: `interface\nI` ASI (asiPreventsParsingAsInterface01-04), `export * from Aaa` in a namespace,
-   `-(3` recovery spans, `for ()` missing expressions.
-7. Generators: TNext from the yields' contextual types (generatorReturnTypeFallback.4, needs a parent-context lookup),
-   a `yield` in a class static initializer still counts for the generator (generatorTypeCheck58).
-8. From stage 1, not done: union/keyof origins and alias names (display.md says not now).
+## Stage 3 (done, 2026-09-29, todo entry 9): suite 11472 -> 11962
+Four Opus sub-agents, each owning the failing tests whose **first** differing line was in one family
+(`./displaydiff.py --fine --first-tsv`): A any/error recovery, B inference/signatures, C objects/unions/literals, D
+display/type writer. ~150 commits, 0 lost, corpora unchanged, instructions +0.3-1.2%. Tests with errors passing and
+types failing 968 -> 467. Mostly tsc error-recovery rules (errorType for unresolved names, element accesses, bad
+spreads), binder-style member symbol merging (`ClassItem.symbol_first`, duplicate interface properties), index
+signatures from computed names, accessor pairs with setters (write types), property-name printing, union order from
+tsc's early `""`/`0`/`0n` literals, `NonNullable<T>` for `||`/`??`, `removeNullableByIntersection`, higher-order
+inference for generic functions in literal arguments, reverse mapping for Readonly/Partial-like mapped types,
+noUncheckedIndexedAccess's missingType, `import x = N.C` and instantiation expression lines, `typeof f` for
+self-referencing functions. Split by first-line kind duplicated little (accessor pairs C/D, non-array rest targets and
+`!` in optional chains B/C).
+
+## Queue (after stage 3)
+What the agents left, roughly by size (their test names are examples):
+1. **Union order** (~24 first-line, 18 alone): creation order of types; no general fix found (arrayFrom,
+   controlFlowCaching, spreadUnion, subtypesOfTypeParameter). Plan 21 territory.
+2. **node16 `import * as` of a CommonJS module** (~24: nodeModules1, nodeModulesAllowJs1, *PackageExports*): tsc
+   clones the module symbol per import (prints `typeof m4`); needs a per-import type, not a naming tweak. Notes in
+   `bugs/display.md`.
+3. **Line-missing one-offs** (~50): alias vs structure for recursive conditional/mapped types
+   (recursiveConditionalCrash1-3), imports/exports inside functions (moduleElementsInWrongContext2/3), missing
+   identifier recovery (`for ()`, reservedWords3, JSX namespaced names).
+4. **Underlines** (~40): annotation reuse on instantiated overloaded interface methods (ipromise2-4,
+   twoMergedInterfacesWithDifferingOverloads) and inside mapped types.
+5. **One type per expression** (~5): tsc re-checks arguments outside inference mode, or has a separate rest-element
+   check (voidReturnIndexUnionInference, narrowingDestructuring, callChain.3, mappedTypeIndexedAccessConstraint).
+6. **Inference**: variadic middle rest parameters (`...args: [unknown, ...T, unknown]`, typeParameterConstModifiers:
+   the parameter shape can't represent it), reverse-mapped `?`/`-?` keeping undefined (mappedTypesArraysTuples),
+   deep cases (multiSignatureTypeInference, nestedGenericSpreadInference, reverseMappedTypeRecursiveInference).
+7. **Spread of a union with generic members** (spreadObjectOrFalsy, spreadInvalidArgumentType): `SpreadAcc` can't keep
+   them, a refactor.
+8. `yield` outside a generator's body (FunctionDeclaration6/7/10_es6, generatorTypeCheck57-59); merged/duplicate
+   declarations (defaultNamedExportWithType1, typeAliasesForObjectTypes); scanner `\u` escapes in property names
+   (scannerUnicodeEscapeInKeyword2); enum members with numeric names use the source text; declaration visibility
+   (privacyInterface: depends on declaration emit); JS tests (~25) belong to plan 26.
+9. tsc artefacts not worth mimicking: awaitedType x2 (first alias a union was created with), fixingTypeParametersRepeatedly1.
 
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an

@@ -132,3 +132,14 @@ smaller leftovers to `bugs/*.md` and hacks.md.
     intersect to never).
   - derivedClassSuperProperties fails ERR on ai-main already (TS2376 at `(() => this)()` before super()) though the
     saved baseline had it passing.
+- From the 2026-09-29 types session's sub-agents (not yet in hacks.md):
+  - `ty_union_signatures` allocates a fresh unknownSignature each time it meets `Function` in a union: a per-checker
+    singleton would be cleaner (and cheaper if that path gets hot).
+  - The JSX attribute types (`KEY_JSX_ATTRIBUTE`) and an IIFE parameter's contextual type depend on check order (the
+    last check wins).
+  - augmentExportEquals3-6: the symbols baseline names an augmentation of an `export =` module `Symbol("./file1")`,
+    tttt `Symbol(x)`.
+  - `./tscbaseline.sh` writes no `.symbols` for a file with an interface member named `[-1]` (tsc's symbol writer
+    throws), so `./filetest.sh` reports "did not run": avoid that syntax in probes, or make the harness say why.
+  - Two sub-agents' wait loops on `pgrep -f 'ninja -C release'` matched other worktrees' builds and never ended: waits
+    keyed on process names aren't safe with parallel agents (wait on a PID or a file).

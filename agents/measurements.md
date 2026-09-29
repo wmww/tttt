@@ -10,31 +10,28 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Suite (2026-09-29, parser session, todo entry 8, 82f0b81a)
-**11472 / 13540** full pass (errors 12661, symbols 12865, types 12172; session start 11274, 0 components lost).
-`./failstats.py`: errors component fails in 879 tests (1074 at the start): same codes+positions, other text 257, only
-missing 165, both missing and spurious 165, tsc reports errors and tttt nothing 155, only spurious 66, tttt errors
-where tsc has none 59. **47 tests have a spurious TS1xxx** (196). Top missing codes: TS2339 62 in 12 tests, TS1335
-51/1, TS2322 47/28, TS2304 44/25, TS9007 36/6; top spurious: TS2304 137 in 39, TS2339 97/31, TS2345 69/22, TS2322
-59/30. `./unimplemented_codes.sh`: TS1335, TS9007 (isolatedDeclarations: TS9007/9010/9038/9012/9011), TS18057,
-TS2700. `./jsstats.py`: **888** of 1049 JS tests pass. `./syntaxstats.py`: **34** tests whose parser diagnostics
-differ (197 at the start; 3 JS): A 8, B 4, C 0, D 2, E 16, M 1; clusters other:E 11, other:B 4, recovery:list-context
-4, other:A 3, then 1-2 each (plan 27 "Leftovers"). `./displaydiff.py`, tests fixed by one kind (TS, JS): other 307 +
-22, underlines/order only 74 + 6, we-any 59 + 8, union-order 45, tsc-any 41, line-missing 31 + 1, tsc-typeof 26 + 4,
-our-typeof 25 + 1. The `--fine`, errtextdiff and older jsstats category lines of the previous entry weren't rerun.
+## Suite (2026-09-29, types session, todo entry 9, bc2752f2)
+**11962 / 13540** full pass (errors 12681, symbols 12952, types 12733; session start 11472, 0 components lost). The
+types component fails in 807 tests (1368 at the start). `./displaydiff.py`, tests (errors pass, types fail) 467 (73
+JS; 968 at the start); fixed by one kind (TS, JS): other 153 + 17, underlines/order only 47 + 5, line-missing 25 + 1,
+union-order 18, tsc-any 11, we-any 10 + 8, tsc-import() 9 + 2. `--fine`, TS tests by first differing line:
+line-missing 50, underlines/order 47, shape-other/declaration 34, union-order 24, signature-differs/declaration 22,
+typeof-other-name/declaration 19, object-differs/declaration 13, tsc-import() 12. `./failstats.py`: errors component
+fails in 859 tests (247 other text, 166 only missing, 161 missing+spurious, 153 tsc errors/tttt none, 65 only
+spurious, 55 tttt errors/tsc none); 47 tests have a spurious TS1xxx; log_error only in the two `_` tests (triage).
+`./jsstats.py`: **892** of 1049 JS tests pass. `./syntaxstats.py`: 34 parser-divergent tests (unchanged). The
+errtextdiff and older per-code lines of the previous entry weren't rerun.
 
-## Corpora (2026-09-29, parser session, 82f0b81a)
+## Corpora (2026-09-29, types session, bc2752f2)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **6**, **xstate 19** (plan 19 "xstate"), all unchanged this session. **zod-root** reports 55
-like tsc. Output identical at 1 and 4 threads (`./threadcheck.sh`). Instructions (`perf stat -e instructions:u`,
-`TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q --keep-going`), JS session end (9b547473) -> parser session end: tsc
-5.080 -> 5.132 G (+1.0%), type-fest 3.439 -> 3.447, valibot 5.530 -> 5.554, react 2.047 -> 2.072 (+1.2%), **nest 1.201
--> 1.231 (+2.5%)**, webpack 3.901 -> 3.956 (+1.4%), zod 4.507 -> 4.542, xstate 2.907 -> 2.929. The parser's recovery
-work ran the tokenizer (`tok_peek`/`tok_scan_end`) on valid code in several places; 82f0b81a removed the hottest
-(nest 1.239 -> 1.231). What's left is spread thin: `parse_type` became `parse_type_inner` + an out-of-line
-`parse_identifier_type` (nest: 3.85% -> 4.2% of samples), `scope_init_declaration` +0.7%, `parse_class_item_inner`,
-`parse_identifier`, `parse_modifier_list` +0.3-0.6% each. Owed to the next perf session together with the checker
-bugs sessions' 2-5% (instructions have crept up ~2-8% per corpus over the last three sessions).
+**0**, zod **0**, webpack **6**, **xstate 19** (plan 19 "xstate"; `./threadcheck.sh` counts 23 there, also at the
+session start), all unchanged this session. **zod-root** reports 58. Output identical at 1 and 4 threads
+(`./threadcheck.sh`). Instructions (`perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q
+--keep-going`), parser session end (e8f2e22c) -> types session end: tsc 5.132 -> 5.181 G (+1.0%), type-fest 3.446 ->
+3.455, valibot 5.554 -> 5.608 (+1.0%), react 2.074 -> 2.087, nest 1.234 -> 1.247 (+1.1%), webpack 3.962 -> 3.985,
+zod 4.544 -> 4.598 (+1.2%), xstate 2.933 -> 2.951. Not profiled: 150 small commits, no single suspect. Still owed to
+the next perf session, with the parser session's tokenizer leftovers and the checker bugs sessions' 2-5% (instructions
+have crept up ~3-10% per corpus over the last four sessions).
 ## Memory and variances (2026-09-28, todo entry 9, f0dd10eb + 0c6b4a80)
 `TTTT_NO_REEXEC=1 --checkers 1 --threads 1`, `perf stat -e instructions:u`, arena / types from `--time`:
 | corpus | before | after |
