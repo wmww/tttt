@@ -23711,7 +23711,7 @@ const baselines = {
         types: true,
     },
     'noInferCommonPropertyCheck1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

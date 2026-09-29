@@ -4945,12 +4945,14 @@ static bool has_index_for_name(Checker* me, Members const* members, Atom const* 
 
 // tsc's isKnownProperty
 static bool is_known_property(Checker* me, Ty const* target, Atom const* name) {
+    if (target->kind == TY_SUBSTITUTION) return is_known_property(me, target->substitution.base, name);
     if (target->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, target);
-        if (members->mapped) return true; // TODO: the keys of a mapped type
+        // (A mapped type whose keys aren't known yet takes anything; one over known keys has them as properties)
+        bool generic = false;
+        if (members->mapped && (mapped_info_of(me, target, &generic), generic)) return true;
         if (ty_get_prop(me, target, name) || has_index_for_name(me, members, name)) return true;
     }
-    if (target->kind == TY_SUBSTITUTION) return is_known_property(me, target->substitution.base, name);
     if ((target->kind == TY_UNION || target->kind == TY_INTERSECTION) && is_excess_property_check_target(target)) {
         for (u32 i = 0; i < target->composite.types.len; i++) {
             if (is_known_property(me, target->composite.types.data[i], name)) return true;
@@ -5315,6 +5317,7 @@ static bool is_known_property(Checker* me, Ty const* target, Atom const* name);
 
 // tsc's isWeakType: an object type whose properties (at least one) are all optional, and nothing else
 static bool is_weak_type(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_SUBSTITUTION) return is_weak_type(me, ty->substitution.base); // (NoInfer<X>)
     if (ty->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
             if (!is_weak_type(me, ty->composite.types.data[i])) return false;
