@@ -346,7 +346,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
             if (i->constructor.func.ret_explicit) {
-                error_ctx_error_d(
+                // (tsc's checkGrammarConstructorTypeAnnotation: grammarErrorOnNode)
+                error_ctx_grammar_error_d(
                     errs,
                     i->constructor.func.ret_span,
                     1093,

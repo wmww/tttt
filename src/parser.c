@@ -7599,7 +7599,11 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
         hop_whitespace(&p);
     }
     list_leave(&p, saved_context);
-    expect_char(&p, ')');
+    if (!expect_char(&p, ')')) {
+        // The call ends with its last token, not the whitespace after it
+        const char* open = parent->pos;
+        while (p.pos > open + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
+    }
     shrink_list(vec_expr, args);
 
     return parse_success(&p);
@@ -11415,7 +11419,8 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
 static bool parse_label(Parser* parent, Span* ret) {
     Parser p = parser(parent);
     Span label;
-    if (yield_await_is_keyword_here(&p) || !parse_identifier(&p, &label)) {
+    // (a reserved word is no label: `while : x` is a while statement missing its '(')
+    if (yield_await_is_keyword_here(&p) || !parse_identifier(&p, &label) || is_reserved_word(label.sv)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);

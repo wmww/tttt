@@ -56578,7 +56578,7 @@ const baselines = {
     'parserErrorRecovery_ArgumentList1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ArgumentList2': {
         errors: true,
@@ -56588,12 +56588,12 @@ const baselines = {
     'parserErrorRecovery_ArgumentList3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ArgumentList4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_ArgumentList6': {
         errors: true,
