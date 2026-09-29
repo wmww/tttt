@@ -1300,7 +1300,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     }
     if (!decl && identifier->is_arguments) {
         Symbol const* arguments = program_get_global(my program, c_sv("IArguments"), SYMBOL_TYPE);
-        return arguments ? ty_declared_type_of(me, arguments) : any_type(me);
+        return arguments ? ty_declared_type_of(me, arguments) : ty_empty_object_type(me); // (tsc's getGlobalType fallback)
     }
     if (!decl) {
         // TODO: `this` outside of anything that has one is `typeof globalThis` (or implicitly any)

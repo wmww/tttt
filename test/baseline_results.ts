@@ -21448,7 +21448,7 @@ const baselines = {
     'modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'modularizeLibrary_ErrorFromUsingES6FeaturesWithOnlyES5Lib': {
         errors: true,
