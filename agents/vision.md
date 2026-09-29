@@ -83,7 +83,7 @@ state is in `Checker`; the AST is read-only while checking.
 The five foundational problems the first insights found are all fixed: value-semantic types (-> interned `Ty`),
 string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05), scopes discarded after resolution
 (-> plan 04), checker state in the AST (-> per-`Checker` slots). What's left to watch:
-- **Parser**: error-recovery fidelity (plan 27: lists and commit points, no rewrite), unbounded recursion depth (binary chains need ~8 MB of
+- **Parser**: error-recovery fidelity is essentially done (plan 27: 34 tests still differ, 2026-09-29; the framework held, no rewrite needed), unbounded recursion depth (binary chains need ~8 MB of
   stack; tsc walks them iteratively), backtracking cost.
 - **Binder**: still writes to shared tables and one arena (`hacks.md`, "Parallelism contract audit"), the one phase
   that doesn't shard per file. JS support will add declarations from assignments; design it with that in mind.

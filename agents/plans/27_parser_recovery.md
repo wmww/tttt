@@ -3,6 +3,17 @@
 Written 2026-09-26 (planning session, todo entry 5).
 
 ## Status
+**Essentially done (2026-09-29, todo entry 8, parser session: four Opus sub-agents by syntaxstats cluster, recovery /
+permissive / missing checks / commit points)**: 197 -> 34 tests whose parser diagnostics differ, spurious TS1xxx 196 ->
+47 tests, suite 11274 -> 11472 (0 lost), corpora unchanged, +1-2.5% instructions (measurements.md; partly clawed
+back). Built: list contexts for import/export specifiers, object and array binding patterns; `Expr.missing` and
+`token_full_start()`/`unhop_trivia()` (missing nodes at tsc's full start); a `TYPE_PREDICATE` node (misplaced `this
+is T`/`asserts x`), a `TYPE_JSDOC` wrapper (`?T`, `T!`... in TS files); tsc's top-level-await reparse (a whole-file
+second pass); escaped keywords (TS1260); committed function types (isUnambiguouslyStartOfFunctionType) and return
+types; `grammar_error()` for per-error grammar marking; many commit points (typeof entity names, try at
+catch/finally, `import x`, `global x`, accessors after their name). **What is left is the "Leftovers" list at the end;
+no further parser session is planned**: take its items one at a time from triage/checker sessions. The stage
+sections below are history.
 **Stage 3 done (2026-09-28, todo entry 6, one session + one sub-agent for the regex port)**: 402 -> 263 tests whose
 parser diagnostics differ (lexical clusters 92 -> 11; M 78 -> 31 with a sweep of `other:M`), suite 9729 -> 9833,
 corpora unchanged, parse time on the tsc corpus 104 -> 109 ms (after clawing back a 116 ms regression, see
@@ -214,43 +225,40 @@ it's paying off unusually well.
 - `./bench.sh`: parse time on react and the tsc corpus within noise (the list predicates run on every element).
 - binderBinaryExpressionStress still passes at the default stack (don't add frames per list element).
 
-## Leftovers collected by triage (2026-09-27)
-Parser items that were in triage.md; fold them into whichever stage they fit.
-- Stage 1 follow-ups: `other:E` grew 78 -> 81 and `other:D` barely moved (tests whose first error agrees now but
-  later recovery differs; sample `./syntaxstats.py --list other:E`). `parse_class_item_inner()` still fails where tsc
-  commits (nameless `*`, `get`/`set` members); function types in type position backtrack freely (tsc's
-  isUnambiguouslyStartOfFunctionType). The parser's `saw_jsx`/`saw_import_meta` are set by attempts that backtrack too.
-- Permissive grammar (stage 2) shapes seen in other buckets: private names outside classes (object literals,
-  interfaces, parameters, enums: TS18016/TS1451, `--syntax -f '^privateName.*'`; `{ #y: 1 }`: objectLiteralErrors);
-  modifiers on object literal members (TS1042, modifiersInObjectLiterals); enum members named `1`/`[2]`/`"3"`
-  (TS2452/TS1357: enumErrors, literalsInComputedProperties1, parserEnum5/7; TS1164 done); `class void {}` / `type void = I`
-  (TS1005/TS2457); `import { as as as }` (importSpecifiers1);
-  `this is T` predicates in more positions (TS1228, typeGuardOfFormThisMember); a bare `super` (TS1034); `let x!` misplaced (TS1263/1264); `const c;` in ambient files; malformed import types
-  (nodeModulesImport*DeclarationEmitErrors); `bigintPropertyName` (a parse failure in a.ts line 12).
-- Recovery fidelity where the harness typechecks next to parse errors: parserGreaterThanTokenAmbiguity12-14/17-19
-  (`1 >> = 2` parses as an assignment and gets TS2364); arrow functions in `?:` recovery (`(a?) => {} ? b : c`) give
-  TS1005 where tsc's tokens may differ; spurious TS2300/TS2304 after bad recovery (`with`, `await`, `yield`, `public`).
-- Lexical (stage 3): done but for escaped identifier names (duplicateObjectLiteralProperty,
-  `bugs/escaped_identifiers.md`) and conflictMarkerTrivia3/4 (a marker inside JSX).
-- JSX long tail (plan 22 left it; `./failstats.py --jsx --syntax`): jsxInvalidEsprimaTestSuite,
-  jsxNamespacePrefixInName(React) (`<:a>`, `<a:>`), tsxAttributeInvalidNames (`32data`: TS1351 and a number token), an
-  unclosed fragment's TS17014 span (tsc starts it at the previous token's end: tsxFragmentErrors), jsxAndTypeAssertion
-  (two errors at EOF where tsc's one-error-per-position rule should have dropped one: not understood).
-- `infer T extends U ?` (tsc's speculative lookahead in parseTypeParameterOfInferType / tryParseConstraintOfInferType):
-  `T extends (infer U extends number ? 1 : 0) ? 1 : 0` is a conditional in parentheses, and `infer U extends number)
-  ?` (inferTypesWithExtends1 X12/X13) the other half of the rule; tttt gets TS1005s.
-- Small: `parse_type` turns a leading `&`/`|` into an `any`/`never` operand that every consumer must skip (hacks.md).
-  Overloads of `*()`-style nameless members. `override`/TS4112+.
-- (triage 2026-09-28) Rest element grammar: TS2566 (`{ ...rest: x }`: tsc parses a property name after `...`, tttt
-  doesn't), TS2501, TS2462, TS1186; `a?.\`x\`` (tsc TS1358, tttt TS1003); a comma expression as a computed key
-  (`[a, b]: 1`: tsc parses it and reports TS1171, tttt TS1136). All in plainJSGrammarErrors, whose parse errors hide
-  ~50 grammar errors.
-- `interface void {}` / `type void = I` (interfacesWithPredefinedTypesAsNames, reservedNamesInAliases): tsc gives
-  both TS2304 "Cannot find name 'interface'" and TS2427 at `void`: its statement-start lookahead refuses the
-  declaration, but something still declares it. tttt reports only TS2427. Not understood.
-- Tagged templates: `new tag<T> \`...\`<U>(...)` parses wrong (taggedTemplatesWithTypeArguments1/2: tttt TS7009/
-  TS2347/TS2693, tsc TS2345s), `super<T> \`\``, incomplete templates' types (taggedTemplatesWithIncomplete
-  TemplateExpressions4/5), taggedTemplateChain.
-- TransportStream (a binary file, `G@` then bytes): tsc's TS1128 is at 1:4 spanning the rest of the file, tttt's at
-  1:2 (TS1490 is right).
-- `function f3(function) {}` (reservedWords3) makes TS2813/TS2814 with an invalid span (a checker `log_error`).
+## Leftovers (2026-09-29, after the parser session)
+`./syntaxstats.py --list A` (etc.) for the current state. By cause:
+- Not the parser: duplicatePackage(_withErrors) (tsc redirects a duplicate package's file and never parses it: program
+  level); parseErrorIncorrectReturnToken and templateInsideCallback expect the harness's "TS-1 Pre-emit/post-emit"
+  line (an excess emit-resolver diagnostic), which the harness can't produce; objectCreationOfElementAccessExpression.
+- Escaped identifier *names* (`bugs/escaped_identifiers.md`; keywords are done): unicodeEscapesInNames02,
+  constructorWithIncompleteTypeAnnotation's `\u0066`, scannerUnicodeEscapeInKeyword2 (types).
+- NUL bytes: the parser treats `\0` as end of file everywhere (scannerUnexpectedNullCharacter1,
+  scannerStringLiteralWithContainingNullCharacter1); TransportStream (binary file, TS1128 span).
+- Decorators with no declaration after them: tsc makes a MissingDeclaration node the baselines walk but the checker
+  skips; tttt has none (esDecorators-decoratorExpression.3, esDecorators-classDeclaration-exportModifier.2,
+  parseUnmatchedTypeAssertion). A first attempt lost symbols in other decorator tests.
+- Reserved words: `type void = I` / `interface void {}` (reservedNamesInAliases: TS2304 'interface' plus TS2427),
+  `function function()` (commonMissingSemicolons), `...this: C` (thisTypeInFunctionsNegative), `<in in>`
+  (varianceAnnotationsWithCircularlyReferencesError), destructuringParameterDeclaration6 (TS1359 vs TS1003).
+  reservedWords3 shows TS1390 where tsc has TS1359 (errors match anyway: worth a look).
+- Recovery: variable declaration list skipping a token that made no progress (ambiguousGenericAssertion1), `<-` in a
+  type literal (dontShowCompilerGeneratedMembers), `import<T>` / `import<...>("x")` (importWithTypeArguments,
+  importCallExpressionWithTypeArgument), `import foo = require(x)` (importNonStringLiteral), `import type from`
+  (importDefaultNamedType), `f?.<number>;` (instantiationExpressionErrors), `async * x: 1` in object literals,
+  `var v: X<T \` (parserSkippedTokens20), `new X([), ...` (parser0_004152), `(await) => {}` in a static block
+  (classStaticBlock26), `{ 0n: f }` (bigintPropertyName), labeledStatementDeclarationListInLoopNoCrash4.
+- JSX: jsxAndTypeAssertion (two errors at EOF), tsxAttributeInvalidNames (`32data`), tsxFragmentErrors (TS17014 span
+  from the previous token's end), jsxInvalidEsprimaTestSuite, conflictMarkerTrivia3 (a marker in JSX children),
+  jsxNamespacePrefixInName.
+- JSDoc: jsdocAugmentsMissingType (an @augments tag replaces the extends clause as the base type),
+  jsdocFunctionTypeFalsePositive (`{<}`: type parameter list recovery).
+- Downstream of now-correct parses, checker work: TS2775/TS2776 (assertion call targets need explicit types:
+  assertionTypePredicates1), TS2833 namespace name suggestions, TS1230 predicate checks, TS2206, TS2580 next to TS2503
+  (`import fs = module("fs")`), TS7031/TS2842 on missing names (parametersSyntaxErrorNoCrash1/2), TS2542
+  (readonlyArraysAndTuples), accessor bodies in type literals don't infer a return type (accessorBodyInTypeContext),
+  duplicate object literal methods don't merge (callSignaturesWithParameterInitializers2), overload checks skip
+  literal computed names (`[1]`: TS2391).
+- Types/symbols baselines of recovered code: a missing function type annotation prints as a reused `any` (tsc: not
+  reused), an import's non-string module specifier isn't in the AST, `a<b>?.()` doesn't print `a<b>`, `extends (B)`
+  prints `B : B` (tsc `typeof B`), the alias position of a decorated import-equals, literal property names in binding
+  patterns (renamingDestructuredPropertyInFunctionType), `typeof foo<unknown>` / `...any` vs `...any[]` printing.

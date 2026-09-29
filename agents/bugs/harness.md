@@ -7,6 +7,12 @@
   modularizeLibrary_ErrorFromUsingES6ArrayWithOnlyES6ArrayLib (`@lib: es2015.core` alone: 27 diagnostics inside lib
   files, `Cannot find name '_'`, which error_ctx_error_s() drops; harmless, but find what in the lib refers to `_`)
   and reservedWords3 (plan 27 leftovers). `grep "invalid span" build/failstats/stderr.txt`.
+- tsc's harness adds `error TS-1: Pre-emit (N) and post-emit (M) diagnostic counts do not match!` with the excess
+  diagnostics as related info when the emit resolver adds a semantic error (parseErrorIncorrectReturnToken,
+  templateInsideCallback). tttt's harness has no emit and can't produce it; those tests can only pass their errors if
+  the harness learns which diagnostics tsc's emit resolver would add.
+- STC's `cregex` silently matches nothing once a `-f` pattern gets long (~100 alternatives); the harness says so when
+  a filter selected no tests. Use `-f @names.txt`.
 - `@baselineFile`, `@fullEmitPaths` are ignored; bad option values are ignored (tsc's harness throws).
 - `filetest.sh`/diffapp with a multi-config test file: `run_baseline_test_case()` gets an empty configuration.
 - The harness reruns a test when the first run leaves net allocations (lib cache fill), ~170 times per suite run.

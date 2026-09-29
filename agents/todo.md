@@ -27,11 +27,12 @@ numbers (`./realworld.py --corpus X` for every pinned corpus) and a commit.
    1049, suite 10830 -> 11274 (0 lost), webpack 9 -> 6, the rest unchanged. Instructions +0.2-1.6%, nest +4.6%
    (module resolution), webpack +5.1% (checks more): measurements.md, for the next perf session. Leftovers: plan 26
    "Leftovers".
-8. **Parser session** (plan 27 stage 1 leftovers and `./syntaxstats.py` clusters): 225 tests have a spurious TS1xxx;
-   many spurious TS2304/TS1005/TS1128 are downstream of recovery (constructorWithIncompleteTypeAnnotation alone: 22
-   TS2304).
-9. **Types component** (plan 35's queue, sub-agents): `./displaydiff.py` "other" alone fixes 333 TS + 54 JS tests,
-   underlines/order 113 + 24, we-any 59 + 36.
+8. ~~Parser session~~ done (four Opus sub-agents by syntaxstats cluster): parser-divergent tests 197 -> 34, spurious
+   TS1xxx 196 -> 47 tests, suite 11274 -> 11472 (0 lost), corpora unchanged. Instructions +1-2.5% (nest), partly
+   clawed back; measurements.md for the perf session. Plan 27 is essentially done: its "Leftovers" are per-test items
+   for triage/checker sessions, no further parser session.
+9. **Types component** (plan 35's queue, sub-agents): `./displaydiff.py` "other" alone fixes 307 TS + 22 JS tests,
+   underlines/order 74 + 6, we-any 59 + 8 (2026-09-29 numbers).
 10. **Triage**, including a pass over hacks.md (811 lines: merge, delete what plans 37/38 made stale) and the two
     log_error tests (`Error added with invalid span`, TS2503/TS2304 on `_`).
 11. **Insights.**
