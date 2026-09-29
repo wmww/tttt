@@ -183,13 +183,16 @@ static bool in_lib(Span span) { return !span_valid(span) || !span.source || span
 // The property a target has for a name (tsc's getPropertyOfType): of a union, only if every member has it
 static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* name) {
     if (target->kind != TY_UNION && target->kind != TY_INTERSECTION) return ty_get_prop(me, ty_apparent_type(me, target), name);
+    // (tsc's union or intersection property has the declarations of all of them: the first one declared)
     Prop const* first = nullptr;
+    Prop const* first_declared = nullptr;
     for (u32 i = 0; i < target->composite.types.len; i++) {
         Prop const* prop = target_prop_of(me, target->composite.types.data[i], name);
         if (!prop && target->kind == TY_UNION) return nullptr;
         if (!first) first = prop;
+        if (prop && !first_declared && span_valid(ty_prop_decl_span(prop))) first_declared = prop;
     }
-    return first;
+    return first_declared ? first_declared : first;
 }
 
 // tsc's getBestMatchIndexedAccessTypeOrUndefined

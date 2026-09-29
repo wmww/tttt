@@ -53491,7 +53491,7 @@ const baselines = {
         types: true,
     },
     'tsxLibraryManagedAttributes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
