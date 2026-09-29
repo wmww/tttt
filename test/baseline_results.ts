@@ -48468,7 +48468,7 @@ const baselines = {
     'decrementOperatorWithAnyOtherTypeInvalidOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decrementOperatorWithEnumType': {
         errors: true,
@@ -48538,7 +48538,7 @@ const baselines = {
     'incrementOperatorWithAnyOtherTypeInvalidOperations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incrementOperatorWithEnumType': {
         errors: true,
@@ -66488,7 +66488,7 @@ const baselines = {
     'nullAssignedToUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'numberAssignableToEnum': {
         errors: true,
