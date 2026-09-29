@@ -1120,7 +1120,13 @@ static void assign_contextual_signature_as(
     u32 index = 0;
     for_each (i, vec_function_arg, &function->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
-        if (is_this) continue;
+        if (is_this) {
+            // An unannotated `this` parameter takes the contextual signature's (tsc's assignContextualParameterTypes)
+            if (!i->initializer.binding.has_explicit_type && sig->this_type) {
+                *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer }, 2) = sig->this_type;
+            }
+            continue;
+        }
         u32 at = index++;
         // A parameter with an initializer takes the contextual type too (tsc's getContextuallyTypedParameterType)
         if (i->initializer.binding.has_explicit_type) continue;

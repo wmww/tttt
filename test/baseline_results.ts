@@ -46558,7 +46558,7 @@ const baselines = {
     'esDecorators-contextualTypes.2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esDecorators-contextualTypes': {
         errors: true,
@@ -65617,8 +65617,8 @@ const baselines = {
     },
     'thisTypeInFunctions': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'thisTypeInFunctions2': {
         errors: true,
