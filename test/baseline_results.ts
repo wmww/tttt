@@ -2003,37 +2003,37 @@ const baselines = {
     'augmentExportEquals3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals3_1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals4': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals4_1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals6_1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'augmentExportEquals7': {
         errors: false,

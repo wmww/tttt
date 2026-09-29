@@ -287,6 +287,9 @@ typedef struct Symbol {
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
 // Placeholders mean everything
 Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning);
+// A symbol that isn't a module but that a module augmentation (`declare module "./a" {}`) declares too: what an
+// `export =` assigns (tsc's hasNonGlobalAugmentationExternalModuleSymbol of one of its declarations)
+bool symbol_is_augmented_export_equals(Symbol const* me);
 /// tsc's isPrimitiveTypeName: the type keywords that are no symbol (`any`, `string`, `number`, `boolean`, `never`,
 /// `unknown`)
 bool is_primitive_type_name(csview name);

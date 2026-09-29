@@ -2667,6 +2667,14 @@ static void merge_augmentations(Binder* me) {
     }
 }
 
+bool symbol_is_augmented_export_equals(Symbol const* me) {
+    if (my is_module || !(my flags & SYMBOL_NAMESPACE)) return false;
+    for (u32 i = 0; i < my decl_count; i++) {
+        if (my decls[i].kind == SYMBOL_DECL_NAMESPACE && ((NamespaceDecl const*)my decls[i].node)->is_augmentation) return true;
+    }
+    return false;
+}
+
 void binder_resolve_remaining_aliases(Binder* me) {
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];

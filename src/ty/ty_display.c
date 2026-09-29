@@ -130,7 +130,21 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module
     SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, true);
     u32 start = 0;
-    if (chain.len && chain.items[0]->is_module) {
+    // (What an augmented `export =` assigns is a module to tsc's printer, not named by its own local, see
+    // is_external_module_symbol() in symbol_chain.c, and not as the module it is assigned to either)
+    if (d.enclosing && symbol_is_augmented_export_equals(symbol) && chain.len == 1 && chain.items[0]->is_module) {
+        chain.items[0] = symbol;
+        chain.len = 1;
+    }
+    if (chain.len && d.enclosing && symbol_is_augmented_export_equals(chain.items[0])) {
+        // What an augmented `export =` assigns is a module to tsc's printer, named by the file of its first
+        // declaration as that is called (getSpecifierForModuleSymbol without a resolver host: the extension stays)
+        SourceFile const* file = chain.items[0]->decls[0].full.source;
+        out_lit(d, "import(\"");
+        out(d, file ? source_file_display_path(file) : c_sv(""));
+        out_lit(d, "\")");
+        start = 1;
+    } else if (chain.len && chain.items[0]->is_module) {
         cstr module_name = module_name_for_error(chain.items[0], nullptr, false);
         csview name = cstr_sv(&module_name);
         out_lit(d, "import(");
@@ -201,7 +215,7 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
     }
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
     if (d.enclosing && symbol && symbol_members(symbol)->is_module) {
-        out_symbol_name(me, d, symbol_members(symbol), meaning);
+        out_symbol_name(me, d, symbol_is_augmented_export_equals(symbol) ? symbol : symbol_members(symbol), meaning);
         return;
     }
     // (without a place to be named from, as the module: messages say `typeof import("m")`)

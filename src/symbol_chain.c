@@ -108,7 +108,7 @@ static bool same_reference(ChainCtx const* me, Symbol const* a, Symbol const* b)
 
 // tsc's hasNonGlobalAugmentationExternalModuleSymbol for any declaration: a module file or `declare module "m"`
 static bool is_external_module_symbol(Symbol const* symbol) {
-    return symbol->is_module;
+    return symbol->is_module || symbol_is_augmented_export_equals(symbol);
 }
 
 static bool is_export_specifier(Symbol const* symbol) {
