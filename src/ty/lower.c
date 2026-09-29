@@ -919,8 +919,10 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     if (assigned != module) {
         exports = assigned->merged_export_equals_of ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
     } else if (symbol_table_get(module->exports, c_sv("export="))) {
-        // `module.exports = window.nonprop`: an alias that resolves to nothing (tsc's unknownSymbol)
-        exports = ty_intrinsic(me, TY_ERROR);
+        // `module.exports = window.nonprop`: an alias that resolves to nothing (tsc's unknownSymbol). One of the
+        // module itself (`module.exports = exports` in a function) is the module's namespace, `typeof import("m")`
+        bool itself = symbol_resolve_alias(symbol_table_get(module->exports, c_sv("export="))) == module;
+        exports = itself ? ty_namespace_type(me, module) : ty_intrinsic(me, TY_ERROR);
     } else {
         // The module's namespace object under the name `module.exports` (tsc gives `module` a copy of the file's
         // symbol by that name)

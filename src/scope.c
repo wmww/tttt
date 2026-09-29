@@ -1407,7 +1407,7 @@ static Expr* rightmost_assigned(Expr* value) {
     return value;
 }
 
-static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level);
+static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, bool in_function);
 
 // tsc's isExportsOrModuleExportsOrAlias: `exports`, `module.exports`, or a variable of the module initialized with one
 // of them (through assignments: `var a = module.exports = {}`)
@@ -1453,14 +1453,14 @@ void scope_add_commonjs_export(Scope* me, Expr* assignment) {
     if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container) return;
     // Every assignment of a chain (`exports = module.exports = C`)
     while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
-        add_commonjs_export(me, assignment, true);
+        add_commonjs_export(me, assignment, true, false);
         assignment = &assignment->binary_op->right;
     }
     add_define_property_export(me, assignment, true);
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
-static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
+static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, bool in_function) {
     BinaryOpExpr* op = assignment->binary_op;
     Span statement = assignment->outer_span;
     Span name = span_null;
@@ -1481,8 +1481,9 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
             break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
-            // `module.exports = exports` declares nothing (tsc's bindModuleExportsAssignment)
-            if (is_exports_alias(me, value)) break;
+            // `module.exports = exports` declares nothing (tsc's bindModuleExportsAssignment), at the top level: in a
+            // function it's an alias of the module
+            if (!in_function && is_exports_alias(me, value)) break;
             if (value->tag == EXPR_OBJECT) {
                 // `module.exports = {}` declares nothing, `{ a, b }` its shorthands (tsc's
                 // bindExportAssignedObjectMemberAlias)
@@ -1502,19 +1503,25 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
 
 // The CommonJS exports of the statements nested in the top level's (`if (c) { exports.x = 1 }`): the file is their
 // container (tsc's bindSpecialPropertyAssignment: container === file), declared with the others before linking
-static void add_nested_commonjs_exports(Scope* module, Statement* statement, bool nested);
+static void add_nested_commonjs_exports(Scope* module, Statement* statement, bool nested, bool in_function);
 
-static void add_nested_commonjs_block(Scope* module, VecStatement* statements) {
-    for_each (i, vec_statement, statements) add_nested_commonjs_exports(module, i, true);
+static void add_nested_commonjs_block(Scope* module, VecStatement* statements, bool in_function) {
+    for_each (i, vec_statement, statements) add_nested_commonjs_exports(module, i, true, in_function);
 }
 
-static void add_nested_commonjs_exports(Scope* module, Statement* statement, bool nested) {
+static void add_nested_commonjs_exports(Scope* module, Statement* statement, bool nested, bool in_function) {
     switch (statement->tag) {
         case STATEMENT_EXPR:
+            // An immediately invoked function's body too (tsc binds them from any container)
+            if (statement->expr.tag == EXPR_CALL && !statement->expr.call->uses_new &&
+                statement->expr.call->callable.tag == EXPR_FUNCTION
+            ) {
+                add_nested_commonjs_block(module, &statement->expr.call->callable.function->body.statements, true);
+            }
             if (nested) {
                 Expr* assignment = &statement->expr;
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
-                    add_commonjs_export(module, assignment, false);
+                    add_commonjs_export(module, assignment, false, in_function);
                     assignment = &assignment->binary_op->right;
                 }
                 add_define_property_export(module, assignment, false);
@@ -1527,23 +1534,23 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL &&
                     !expr_is_perenthisized(assignment)
                 ) {
-                    add_commonjs_export(module, assignment, false);
+                    add_commonjs_export(module, assignment, false, in_function);
                     assignment = &assignment->binary_op->right;
                 }
             }
             break;
-        case STATEMENT_BLOCK: add_nested_commonjs_block(module, &statement->block.statements); break;
-        case STATEMENT_IF_ELSE: add_nested_commonjs_block(module, &statement->if_else.statements); break;
-        case STATEMENT_FOR_LOOP: add_nested_commonjs_exports(module, &statement->for_loop->body, true); break;
-        case STATEMENT_FOR_EACH_LOOP: add_nested_commonjs_exports(module, &statement->for_each_loop->body, true); break;
-        case STATEMENT_LABELED: add_nested_commonjs_exports(module, statement->labeled.body, nested); break;
+        case STATEMENT_BLOCK: add_nested_commonjs_block(module, &statement->block.statements, in_function); break;
+        case STATEMENT_IF_ELSE: add_nested_commonjs_block(module, &statement->if_else.statements, in_function); break;
+        case STATEMENT_FOR_LOOP: add_nested_commonjs_exports(module, &statement->for_loop->body, true, in_function); break;
+        case STATEMENT_FOR_EACH_LOOP: add_nested_commonjs_exports(module, &statement->for_each_loop->body, true, in_function); break;
+        case STATEMENT_LABELED: add_nested_commonjs_exports(module, statement->labeled.body, nested, in_function); break;
         case STATEMENT_SWITCH:
-            for_each (i, vec_switch_case, &statement->switch_->cases) add_nested_commonjs_block(module, &i->statements);
+            for_each (i, vec_switch_case, &statement->switch_->cases) add_nested_commonjs_block(module, &i->statements, in_function);
             break;
         case STATEMENT_TRY_CATCH:
-            add_nested_commonjs_block(module, &statement->try_catch->try_block.statements);
-            if (statement->try_catch->has_catch) add_nested_commonjs_block(module, &statement->try_catch->catch_block.statements);
-            if (statement->try_catch->has_finally) add_nested_commonjs_block(module, &statement->try_catch->finally_block.statements);
+            add_nested_commonjs_block(module, &statement->try_catch->try_block.statements, in_function);
+            if (statement->try_catch->has_catch) add_nested_commonjs_block(module, &statement->try_catch->catch_block.statements, in_function);
+            if (statement->try_catch->has_finally) add_nested_commonjs_block(module, &statement->try_catch->finally_block.statements, in_function);
             break;
         default: break;
     }
@@ -1551,7 +1558,7 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
 
 void scope_add_commonjs_module(Scope* me) {
     if (my kind == SCOPE_MODULE && my file && my file->is_commonjs && my container && my block) {
-        for_each (i, vec_statement, &((Block*)my block)->statements) add_nested_commonjs_exports(me, i, false);
+        for_each (i, vec_statement, &((Block*)my block)->statements) add_nested_commonjs_exports(me, i, false, false);
     }
     SourceFile* file = my file;
     if (my kind != SCOPE_MODULE || !file || !file->is_commonjs || !span_valid(file->module_exports_span)) return;
@@ -2242,6 +2249,13 @@ static Symbol* resolve_alias_target(Symbol* me) {
     if (!item) {
         // `export default x`, TS2304 comes from the expression
         Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
+        // (`exports` of a CommonJS module is the module itself before any global, like identifier_expr_lookup_names())
+        SourceFile const* file = my alias->scope->file;
+        if (file && file->is_js && file->is_commonjs && csview_equals(my alias->name.sv, "exports") &&
+            (!found || found == symbol_table_get(&my binder->globals, c_sv("exports"))) && file->scope
+        ) {
+            found = file->scope->container;
+        }
         if (found == me) return nullptr;
         // A local type and an exported value of the name are one symbol in tsc (the local one has the exported one as
         // its exportSymbol): `interface F {}` + `export const F = ...` + `export default F` exports both
