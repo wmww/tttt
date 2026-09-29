@@ -402,6 +402,14 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             (my is_global || my is_ambient_module) ? "An ambient module declaration is only allowed at the top level in a file." :
             "A namespace declaration is only allowed at the top level of a namespace or module.");
     }
+    // tsc's bindModuleDeclaration: an ambient module (not an augmentation) is a pattern with at most one `*`
+    if (my is_ambient_module && my module_ref && scope->kind != SCOPE_MODULE && errs) {
+        csview path = cstr_sv(&my module_ref->path);
+        char const* star = memchr(path.buf, '*', (size_t)path.size);
+        if (star && memchr(star + 1, '*', (size_t)(path.buf + path.size - star - 1))) {
+            error_ctx_error_d(errs, my name, 5061, "Pattern '", path, "' can have at most one '*' character.");
+        }
+    }
     // tsc's bindModuleDeclaration: an ambient module or augmentation is visible anyway (on the first token, `export`)
     if ((my is_global || my is_ambient_module) && props.exported && errs) {
         error_ctx_error_d(errs, block_first_token(my full_span), 2668, "'export' modifier cannot be applied to ambient modules "

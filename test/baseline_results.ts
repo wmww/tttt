@@ -33586,7 +33586,7 @@ const baselines = {
         types: true,
     },
     'ambientDeclarationsPatterns_tooManyAsterisks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
