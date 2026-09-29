@@ -88,6 +88,9 @@ typedef struct FunctionImpl {
     // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
     // untyped signature whose arguments are all optional
     bool jsdoc_typed;
+    // JavaScript: its JSDoc has `@class`/`@constructor`: a constructor function even without `this.x = v` (tsc's
+    // isJSConstructor: getJSDocClassTag)
+    bool jsdoc_class;
     // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
     bool uses_arguments;
     LazyType lazy_type;

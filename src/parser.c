@@ -3821,6 +3821,7 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
     jsdoc_apply_template(tags, &function->generic);
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
+        function->jsdoc_class |= i->kind == JSDOC_TAG_CLASS && !i->nested && !i->earlier && !span_valid(function->arrow_span);
     }
     // `@this {T}`: the function's `this` parameter (tsc's getJSDocThisTag in getSignatureFromDeclaration and
     // getTypeForThisExpressionFromJSDoc). Not of an arrow function, which has no `this` of its own
@@ -10888,7 +10889,13 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             }
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
                 BinaryOpExpr* assignment = statement->expr.binary_op;
-                FunctionImpl* function = jsdoc_function_of(&assignment->right);
+                // (Through a chain `a = b = function () {}`: tsc's getNextJSDocCommentLocation goes up through
+                // assignments)
+                Expr* assigned = &assignment->right;
+                while (assigned->tag == EXPR_BINARY_OP && assigned->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(assigned)) {
+                    assigned = &assigned->binary_op->right;
+                }
+                FunctionImpl* function = jsdoc_function_of(assigned);
                 if (function) {
                     jsdoc_apply_function(&tags, function);
                 } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {

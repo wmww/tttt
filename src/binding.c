@@ -542,6 +542,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
         names->file && names->file->is_js
     ) {
         my value.function->class_symbol = my binding.symbol;
+        scope_mark_jsdoc_class(names->binder, my binding.symbol, my value.function);
     }
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
     if (my binding.tag == BINDING_IDENTIFIER && my value.tag == EXPR_FUNCTION) my value.function->variable_name = my binding.content_span;

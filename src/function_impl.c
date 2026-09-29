@@ -46,6 +46,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported export
         .function_scoped = hoisted,
         .is_ambient = declared,
     });
+    if (scope->file && scope->file->is_js) scope_mark_jsdoc_class(scope->binder, my symbol, me);
 }
 
 // tsc's requiresScopeChange (useOuterVariableScopeInParameter): whether the downlevel emit of a parameter has to move it

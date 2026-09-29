@@ -2593,7 +2593,9 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
 
 Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
     if (function->is_type || span_valid(function->arrow_span) || function->this_literal) return nullptr;
-    Symbol const* symbol = function->class_symbol ? function->class_symbol : function->is_expression ? nullptr : function->symbol;
+    // (A named function expression tagged `@class` that isn't assigned to anything is a class of its own name)
+    Symbol const* symbol = function->class_symbol ? function->class_symbol :
+        function->is_expression && !function->jsdoc_class ? nullptr : function->symbol;
     if (!symbol || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;
     SourceFile const* file = function->full_span.source;
     return file && file->is_js ? symbol : nullptr;

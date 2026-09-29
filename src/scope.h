@@ -558,6 +558,8 @@ static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symb
 // Declares props in the scope (or the exports of its container, or the nearest function scope), merging with an
 // existing symbol when tsc's rules allow it. Checks that ret was previously null
 void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
+// A JavaScript function tagged `@class`/`@constructor` makes `symbol` a class (with a members table), like `this.x = v`
+void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, struct FunctionImpl const* function);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
 void scope_export_default_expr(Scope* me, Expr* expr, struct TypeNode const* jsdoc_type, Span statement, bool export_equals);

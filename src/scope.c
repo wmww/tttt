@@ -1323,6 +1323,13 @@ static void set_function_class_symbol(Expr* value, Symbol* symbol) {
     if (value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span) || value->function->class_symbol) return;
     SourceFile const* file = value->inner_span.source;
     if (file && file->is_js) value->function->class_symbol = symbol;
+    if (file && file->is_js && symbol) scope_mark_jsdoc_class(symbol->binder, symbol, value->function);
+}
+
+void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, FunctionImpl const* function) {
+    if (!symbol || !function->jsdoc_class) return;
+    symbol->flags |= SYMBOL_CLASS;
+    if (!symbol->members) symbol->members = arena_new(&binder->arena, SymbolTable);
 }
 
 static void declare_commonjs_export(
