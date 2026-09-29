@@ -22656,9 +22656,9 @@ const baselines = {
         types: true,
     },
     'namedImportNonExistentName': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'namespaceDisambiguationInUnion': {
         errors: true,

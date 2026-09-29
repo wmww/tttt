@@ -1197,7 +1197,25 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_ALIAS: // `import * as ns`
             return ty_namespace_type(me, symbol);
         case SYMBOL_DECL_EXPORT_EQUALS_PROPERTY: {
-            Ty const* type = ty_prop_type_of(me, ty_type_of_symbol(me, decl->node), checker_atom(me, symbol->name));
+            Ty const* assigned = ty_type_of_symbol(me, decl->node);
+            Atom const* name = checker_atom(me, symbol->name);
+            // (Of a union, a property every member has: tsc's getPropertyOfType makes a union property, without
+            // Object's members, skipObjectFunctionPropertyAugment)
+            if (assigned->kind == TY_UNION && !(assigned->flags & TYF_BOOLEAN)) {
+                TyList members = assigned->composite.types;
+                Ty const** types = malloc(sizeof(Ty const*) * members.len);
+                panic_if(!types, "out of memory");
+                u32 count = 0;
+                for (u32 i = 0; i < members.len; i++) {
+                    Ty const* part = ty_prop_type_of(me, members.data[i], name);
+                    if (!part) break;
+                    types[count++] = part;
+                }
+                Ty const* ret = count == members.len ? ty_union(me, types, count, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ERROR);
+                free(types);
+                return ret;
+            }
+            Ty const* type = ty_prop_type_of(me, assigned, name);
             return type ? type : ty_intrinsic(me, TY_ERROR);
         }
         default:
