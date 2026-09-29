@@ -9,6 +9,7 @@
 #include "callable_type.h"
 #include "symbol_chain.h"
 #include "port_statement.h"
+#include "class_decl.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -181,7 +182,12 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
         cstr_drop(&module_name);
         return;
     }
-    if (symbol && !symbol->is_module && span_valid(symbol->name_span)) {
+    // (An anonymous class expression a CommonJS module exports is named through the module: `import("m")`)
+    ClassDecl const* exported_class = symbol && !span_valid(symbol->name_span) && (symbol->flags & SYMBOL_CLASS) ?
+        symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
+    if (symbol && !symbol->is_module && (span_valid(symbol->name_span) ||
+        (exported_class && exported_class->is_expression && exported_class->commonjs_module && d.enclosing))
+    ) {
         out_symbol_name(me, d, symbol, meaning);
     } else {
         out(d, atom_sv(declared->declared.name));
