@@ -46566,12 +46566,12 @@ const baselines = {
         types: true,
     },
     'esDecorators-decoratorExpression.1(experimentaldecorators=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-decoratorExpression.1(experimentaldecorators=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

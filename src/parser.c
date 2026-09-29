@@ -580,10 +580,10 @@ static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr messag
 
 // A grammar error (tsc's checker's, dropped in a file with parse errors, see is_grammar_code()) whose code is also a
 // parse error's elsewhere (TS1003)
-static void grammar_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+static Error* grammar_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
     my shared->errors_attempted++;
-    add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_PARSE,
-        .grammar = true });
+    return add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code,
+        .phase = ERROR_PHASE_PARSE, .grammar = true });
 }
 #define grammar_error(me, span, ts_code, ...) grammar_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 
@@ -8854,6 +8854,46 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
 }
 
 // Zero or more decorators (`@a @b.c(d)`), fails if there are none. Whitespace after them is hopped
+// The `?.` after an expression
+static Span question_dot_after(Parser* p, Expr const* e) {
+    const char* c = span_end_ptr(e->outer_span);
+    while (*c && *c != '?') c++;
+    return span_make(p->shared->source, c, c + 2);
+}
+
+// tsc's checkGrammarDecorator: a decorator that isn't `(expr)` is an identifier and `.name`s, maybe called once at the
+// end (non-null assertions and type arguments anywhere): TS1497, with TS1498 on the first part that isn't
+static void decorator_check_grammar(Parser* p, Expr const* decorator) {
+    if (expr_is_perenthisized(decorator)) return;
+    Expr const* node = decorator;
+    bool can_call = true;
+    Span error_at = span_null;
+    while (true) {
+        bool paren = expr_is_perenthisized(node);
+        if (!paren && node->tag == EXPR_GENERIC_PARAMS) {
+            node = &node->generic_params->expr;
+        } else if (!paren && node->tag == EXPR_UNARY_OP && node->unary_op->op == UNARY_OP_RIGHT_BANG) {
+            node = &node->unary_op->expr;
+        } else if (!paren && node->tag == EXPR_CALL && !node->call->uses_new) {
+            if (!can_call) error_at = node->outer_span;
+            if (node->call->optional_chain) error_at = question_dot_after(p, &node->call->callable);
+            node = &node->call->callable;
+            can_call = false;
+        } else if (!paren && node->tag == EXPR_PROPERTY && node->property->form == PROPERTY_EXPR_DOT) {
+            if (node->property->optional_chain) error_at = question_dot_after(p, &node->property->expr);
+            node = &node->property->expr;
+            can_call = false;
+        } else {
+            if (paren || node->tag != EXPR_IDENTIFIER || node->identifier.keyword) error_at = node->outer_span;
+            break;
+        }
+    }
+    if (!span_valid(error_at)) return;
+    Error* e = grammar_error(p, decorator->outer_span, 1497,
+        "Expression must be enclosed in parentheses to be used as a decorator.");
+    error_add_related_d(e, error_at, 1498, "Invalid syntax in decorator.");
+}
+
 static bool parse_decorators(Parser* parent, VecExpr* ret) {
     if (*parent->pos != '@') {
         return false;
@@ -8882,6 +8922,7 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
             parse_expr_right_side(&p, ctx, &expr);
             vec_expr_push(ret, expr);
         } else if (expect_expr(&p, ctx, &expr)) {
+            decorator_check_grammar(&p, &expr);
             vec_expr_push(ret, expr);
         }
         hop_whitespace(&p);
