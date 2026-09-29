@@ -1326,7 +1326,8 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
 }
 
 static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDecl const* enum_decl) {
-    bool any_numeric = false;
+    // (An enum without members is tsc's computed enum type, TypeFlags.Enum: it has the reverse mapping too)
+    bool any_numeric = !vec_enum_case_size(&enum_decl->cases) && enum_decl->symbol && enum_decl->symbol->decl_count == 1;
     for_each (i, vec_enum_case, &enum_decl->cases) {
         if (!i->symbol) continue;
         Atom const* name = checker_atom(me, i->name.sv);
