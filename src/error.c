@@ -352,6 +352,10 @@ static bool same_message_chain(Error const* a, Error const* b) {
     return same_message_chain(a_next, b_next);
 }
 
+static bool error_is_js_syntax(Error const* error) {
+    return (error->ts_code >= 8002 && error->ts_code <= 8017) || error->ts_code == 8037;
+}
+
 static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
     for (intptr_t i = vec_error_size(&my errors); i > 0; i--) {
         int cmp = error_cmp(vec_error_at(&my errors, i - 1), error);
@@ -366,6 +370,13 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
                 }
                 // Allow multiple typechecking errors for the same span
                 return i - 1;
+            } else if (error->phase == ERROR_PHASE_PARSE && error_is_js_syntax(error) !=
+                error_is_js_syntax(vec_error_at(&my errors, i - 1))
+            ) {
+                // A JavaScript file's TypeScript-only syntax error (tsc's getJSSyntacticDiagnosticsForFile) is a
+                // diagnostic of its own next to a parse or grammar error there: by code
+                Error const* other = vec_error_at(&my errors, i - 1);
+                return other->ts_code < error->ts_code ? i : i - 1;
             } else {
                 // Do not allow multiple errors for the same span of other types
                 return -1;
