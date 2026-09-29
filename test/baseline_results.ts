@@ -2002,37 +2002,37 @@ const baselines = {
     },
     'augmentExportEquals3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals3_1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals4_1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals6_1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'augmentExportEquals7': {
@@ -8052,7 +8052,7 @@ const baselines = {
     },
     'declarationEmitExportAssignedNamespaceNoTripleSlashTypesReference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExportAssignment': {
@@ -12627,7 +12627,7 @@ const baselines = {
     },
     'exportAssignmentMembersVisibleInAugmentation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAssignmentOfDeclaredExternalModule': {
@@ -20237,7 +20237,7 @@ const baselines = {
     },
     'jsxNamespacedNameNotComparedToNonMatchingIndexSignature': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxNestedWithinTernaryParsesCorrectly': {
@@ -26652,7 +26652,7 @@ const baselines = {
     },
     'reactTransitiveImportHasValidDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'readonlyAssignmentInSubclassOfClassExpression': {
@@ -30762,8 +30762,8 @@ const baselines = {
     },
     'tsxResolveExternalModuleExportsTypes': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'tsxSpreadDoesNotReportExcessProps': {
         errors: true,
@@ -49917,12 +49917,12 @@ const baselines = {
     },
     'umd-augmentation-3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd-augmentation-4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd-errors': {

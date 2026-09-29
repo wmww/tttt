@@ -163,7 +163,9 @@ static bool is_accessible(
     if (!from_table) return false;
     Symbol const* named = resolved ? resolved : from_table;
     if (named != symbol && identity(me, named) != identity(me, symbol)) return false;
-    if (is_external_module_symbol(from_table)) return false;
+    // (A table holds the symbol as it was declared: an `export =` target augmented later is tsc's merged clone, so
+    // only modules themselves are skipped here)
+    if (from_table->is_module) return false;
     return ignore_qualification || can_qualify(me, merged(me, from_table), meaning);
 }
 

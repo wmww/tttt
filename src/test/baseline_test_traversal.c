@@ -1428,7 +1428,17 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         for_each (i, vec_span, &own) vec_span_push(&decls, *i);
         vec_span_drop(&own);
         // An ambient module's name is its string in double quotes
-        if (!file && my is_ambient_module && my module_ref) file_name = cstr_d("\"", my module_ref->path, "\"");
+        // (an augmentation of an `export =` module declares into the exported symbol: named like any symbol)
+        if (!file && my is_ambient_module && my module_ref) {
+            if (my symbol->is_module) {
+                file_name = cstr_d("\"", my module_ref->path, "\"");
+            } else {
+                Scope const* inner = ctx->enclosing;
+                ctx->enclosing = outer;
+                file_name = symbol_text(ctx, my symbol);
+                ctx->enclosing = inner;
+            }
+        }
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = decls,
             .span = my name,
