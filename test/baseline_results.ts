@@ -49708,7 +49708,7 @@ const baselines = {
     'implementsClause': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importClause_default': {
         errors: true,

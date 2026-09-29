@@ -693,7 +693,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                         });
                     }
                     ctx->any_keeps_underline = true;
-                    if (decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE)) {
+                    if (decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
+                        !symbol_type_only_declaration(decl)) {
                         baseline_test_case_add_symbol_value(ctx, prefix, decl);
                     } else {
                         baseline_test_case_add_type_node(ctx, prefix, &type_any);
@@ -707,7 +708,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     *vec_symbol_cptr_at(&my identifier->namespace_symbols, index) :
                     nullptr;
                 ctx->any_keeps_underline = true; // Part of a qualified name
-                if (heritage && decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE)) {
+                if (heritage && decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
+                    (i_index == 0 || !symbol_type_only_declaration(decl))) {
                     // A heritage clause's name is an expression to tsc's writer (ExpressionWithTypeArguments)
                     baseline_test_case_add_symbol_value(ctx, *i, decl);
                 } else {
