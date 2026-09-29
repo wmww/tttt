@@ -348,7 +348,8 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
             }
         }
     }
-    if (my used_ts_extension && !allowed && my file && !dts.size) {
+    // (Not for a type-only import or export, or an import type: tsc's resolveExternalModule)
+    if (my used_ts_extension && !allowed && !type_only && my file && !dts.size) {
         isize dot = cstr_size(&my path);
         while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;
         error_ctx_error_d(errs, my span, 5097,

@@ -49521,7 +49521,7 @@ const baselines = {
         types: true,
     },
     'allowsImportingTsExtension': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49871,7 +49871,7 @@ const baselines = {
         types: false,
     },
     'typeOnlyESMImportFromCJS(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
