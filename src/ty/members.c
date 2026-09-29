@@ -551,13 +551,15 @@ static bool base_signature_type_args(
     if (count > params.len) return false;
     if (!params.len) return true;
     Ty const** args = arena_new_n(&my arena, Ty const*, params.len);
+    // (Those not filled in yet are the error type while a default is instantiated: tsc's fillMissingTypeArguments)
+    for (u32 j = 0; j < params.len; j++) args[j] = ty_intrinsic(me, TY_ERROR);
     for (u32 j = 0; j < params.len; j++) {
         if (j < count) {
             args[j] = ty_from_node(me, &vec_spanned_type_at(written, j)->type, ctx);
         } else {
             // A default can mention the parameters before it (tsc's fillMissingTypeArguments)
-            args[j] = ty_param_default(me, params.data[j]);
-            if (args[j] && j) args[j] = ty_instantiate(me, args[j], ty_mapper_new(me, (TyList){ .data = params.data, .len = j }, (TyList){ .data = args, .len = j }));
+            Ty const* fallback = ty_param_default(me, params.data[j]);
+            args[j] = fallback ? ty_instantiate(me, fallback, ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len })) : nullptr;
         }
         if (!args[j]) return false;
     }
@@ -647,6 +649,7 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     Ty const* args[32];
     if (params.len > c_arraylen(args)) return false;
     u32 outer = base->declared.outer_count; // (A local base class: the same outer type parameters)
+    for (u32 i = 0; i < params.len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
     for (u32 i = 0; i < params.len; i++) {
         if (i < outer) {
             args[i] = params.data[i];
@@ -660,9 +663,10 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
             ) {
                 fallback = nullptr;
             }
-            if (fallback && i) {
-                // A default can mention the parameters before it (tsc's fillMissingTypeArguments)
-                fallback = ty_instantiate(me, fallback, ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = args, .len = i }));
+            if (fallback) {
+                // A default can mention the parameters before it, later ones are the error type (tsc's
+                // fillMissingTypeArguments)
+                fallback = ty_instantiate(me, fallback, ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len }));
             }
             args[i] = fallback ? fallback : ty_intrinsic(me, TY_ANY);
         }

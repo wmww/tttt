@@ -29411,9 +29411,9 @@ const baselines = {
         types: true,
     },
     'subclassThisTypeAssignable01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subclassThisTypeAssignable02': {
         errors: true,
@@ -30881,9 +30881,9 @@ const baselines = {
         types: true,
     },
     'typeArgumentDefaultUsesConstraintOnCircularDefault': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentInferenceApparentType1': {
         errors: true,

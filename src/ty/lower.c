@@ -291,6 +291,8 @@ static TyList lower_type_args(
 ) {
     panic_if(params.len > MAX_TYPE_ARGS, "too many type parameters");
     u32 written_len = (u32)vec_spanned_type_size(written) + outer;
+    // (Those not filled in yet are the error type while a default is instantiated: tsc's fillMissingTypeArguments)
+    for (u32 i = 0; i < params.len; i++) args[i] = ty_intrinsic(me, TY_ERROR);
     for (u32 i = 0; i < params.len; i++) {
         if (i < outer) {
             args[i] = params.data[i];
@@ -301,7 +303,7 @@ static TyList lower_type_args(
             if (fallback) {
                 // A default can mention the parameters before it
                 // Arena-allocated: instantiation can keep the mapper (deferred conditional and object types)
-                TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params.data, .len = i }, (TyList){ .data = args, .len = i });
+                TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = args, .len = params.len });
                 fallback = ty_instantiate(me, fallback, mapper);
             }
             // TODO: TS2314 when there's no default. tsc fills in the error type too
