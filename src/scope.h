@@ -493,6 +493,9 @@ typedef struct Binder {
     Symbol** global_expandos; // malloc'd
     u32 global_expando_count;
     u32 global_expando_cap;
+    // Some SymbolDecl.flow_container is set (a dot assignment declaration): only then can a read be one in the container
+    // that declares it (TS2565, is_read_in_declaring_container())
+    bool has_assignment_flow_containers;
 } Binder;
 
 Binder* binder_new(ErrorCtx* errs);

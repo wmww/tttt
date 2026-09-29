@@ -1,6 +1,7 @@
 #pragma once
 
 #include "prelude.h"
+#include <stdatomic.h>
 
 typedef struct SourceFile SourceFile;
 
@@ -30,9 +31,13 @@ static inline Span sv_make_span(csview sv) {
 // An identifier's name with its unicode escapes decoded (`\u0061` is `a`, tsc's escapedText): what names are keyed and
 // compared by (symbol tables, checker_atom()). Messages that quote the source (and symbol names as printed) keep the
 // raw text. Only a view of the text of a file that has escapes (names_register_source()) is cooked, so a string that
-// is already a value (a string literal's) never is; costs a memchr() on names without a `\`
+// is already a value (a string literal's) never is. Costs a load of names_escaped_files in a program without escaped names
 csview name_cooked_slow(csview sv);
+// How many files have an identifier with an escape (registered by the parser when it scans one): usually none, and
+// then no name needs cooking
+extern _Atomic u32 names_escaped_files;
 static inline csview name_cooked(csview sv) {
+    if (!atomic_load_explicit(&names_escaped_files, memory_order_relaxed)) return sv;
     if (sv.size <= 0 || !memchr(sv.buf, '\\', (size_t)sv.size)) return sv;
     return name_cooked_slow(sv);
 }

@@ -135,21 +135,19 @@ typedef struct EscapedSource {
     u32 cap;
 } EscapedSource;
 
+_Atomic u32 names_escaped_files;
 static pthread_mutex_t escaped_lock = PTHREAD_MUTEX_INITIALIZER;
 static EscapedSource* escaped_sources;
 static u32 escaped_source_count;
 static u32 escaped_source_cap;
 
 void names_register_source(SourceFile* file) {
-    const char* start = source_file_start(file);
-    isize size = cstr_size(&file->contents);
     if (file->escaped_names) return;
-    const char* end = start + size;
-    const char* c = start;
-    while ((c = memchr(c, '\\', (size_t)(end - c))) && c + 1 < end && c[1] != 'u') c++;
-    if (!c || c + 1 >= end) return;
+    const char* start = source_file_start(file);
+    const char* end = start + cstr_size(&file->contents);
     file->escaped_names = true;
     pthread_mutex_lock(&escaped_lock);
+    atomic_fetch_add_explicit(&names_escaped_files, 1, memory_order_relaxed);
     if (escaped_source_count == escaped_source_cap) {
         escaped_source_cap = escaped_source_cap ? escaped_source_cap * 2 : 8;
         escaped_sources = realloc(escaped_sources, sizeof(EscapedSource) * escaped_source_cap);
@@ -167,6 +165,7 @@ void names_unregister_source(SourceFile* file) {
         for (u32 j = 0; j < source->count; j++) free(source->names[j].cooked);
         free(source->names);
         escaped_sources[i] = escaped_sources[--escaped_source_count];
+        atomic_fetch_sub_explicit(&names_escaped_files, 1, memory_order_relaxed);
         if (!escaped_source_count) {
             free(escaped_sources);
             escaped_sources = nullptr;

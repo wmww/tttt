@@ -1703,6 +1703,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         decl->name.source == my outer_span.source
                     ) {
                         decl->flow_container = flow->container;
+                        names->binder->has_assignment_flow_containers = true;
                     }
                 }
             }

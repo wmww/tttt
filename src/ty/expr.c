@@ -1650,6 +1650,7 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
 // The second case of tsc's assumeUninitialized: a JavaScript assignment declaration (`d.q = v`) read in the control
 // flow container that declares it (tsc's getControlFlowContainer), where it's undefined until assigned
 static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* access) {
+    if (!my binder->has_assignment_flow_containers) return false;
     if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span) || access->private_class) return false;
     Ty const* object = ty_expr_type(me, &access->expr);
     if (object->kind == TY_UNION || (object->flags & (TYF_ANY | TYF_ERROR))) return false;

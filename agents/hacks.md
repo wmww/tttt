@@ -40,8 +40,11 @@ src` finds the code-side markers; every significant one has an entry here.
   string and `"\u{D83D}\u{DE00}"` isn't the emoji. `regex_check_literal()` works in UTF-16 to port tsc's scanner; a
   position between surrogates is the 3rd UTF-8 byte (`utf8_byte_utf16_units()`). A NUL byte ends the file
   (scannerUnexpectedNullCharacter1, scannerStringLiteralWithContainingNullCharacter1).
-- Escaped identifiers (`\u0061`) are named by raw text (`bugs/escaped_identifiers.md`); JSX names compare by value
-  (`jsx_name_value`) but resolve by raw text; `EnumCase.name` of a string member is the raw text. Escaped keywords
+- Escaped identifiers (`\u0061`) resolve by value through `name_cooked()` (span.h): a global registry of cooked names
+  behind a mutex, keyed by where the raw name sits in a file with a `\u`, each lookup a linear scan of that file's
+  cooked names (quadratic for a file with thousands). Symbol tables cook at every lookup (a `memchr` for normal
+  names). Comparisons against literals (`span_equals(name, "constructor")`) stay raw (`bugs/escaped_identifiers.md`).
+  `EnumCase.name` of a string member is the raw text. Escaped keywords
   (`hop_escaped_keyword()`) report TS1260 wherever the probe matches, even speculatively (not seen over-reporting).
 - Two notions of "reserved": `parse_identifier()` refuses only `is_reserved_identifier()` (plus `var` in JS) because it
   also parses identifier names and keyword types; `parse_binding_identifier()` and enum names refuse all of
@@ -119,9 +122,18 @@ src` finds the code-side markers; every significant one has an entry here.
   their own (`Symbol.gather_module`) so the type prints `typeof ns`; could go once messages name modules like tsc.
 - Module augmentations (`merge_augmentations`, `retarget_decl`): never merged into shared-lib symbols; an alias inside
   one meeting an existing name isn't merged; names added through an `export *` module reach only that module.
-  `export =`: named imports see only the namespace side, `export = a.b` is a variable, `import("./a")` has no
+  `export =`: named imports see only the namespace side, `import("./a")` has no
   synthetic `{ default }`; `namespace_import_type` asks `ty_type_of_symbol()` about the alias to spot namespace
   imports (identifiers only; the synthetic `default` prints as `default` in symbols, tsc the module name).
+- `export = a.b` / `export default a.b` is an alias (`resolve_entity_alias()`, falling back to a value symbol of the
+  expression): a class static merged with a namespace interface is an alias whose `value_target` is the static, and
+  `module_export_equals()` returns the alias itself (callers assuming a non-alias beware). tsc makes them one symbol
+  with both declarations; tttt keeps statics out of the class's exports (exportEqualsProperty2 symbols).
+  `merge_symbol()` still returns early for alias sources (`export default x` of an alias in an augmentation).
+- Node16+ ESM `import * as ns` of CommonJS: `make_gather_target()` copies the module's resolved exports at link time
+  (right only because nothing merges into module exports after `binder_link()`), plus `Symbol.synthetic_default`;
+  in `members.c` the synthetic default's `prop->decl->symbol` is the alias rather than the module, so the symbols
+  baseline prints `d.default`.
 - `globalThis` is a namespace over `Binder.globals`: every global is a property (tsc: `var`s and functions);
   `ty_namespace_type` builds ~2k props on first touch.
 - `arguments` has no symbol (`IdentifierExpr.is_arguments`, `IArguments` by name).
