@@ -13708,7 +13708,7 @@ const baselines = {
     'fixingTypeParametersRepeatedly3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'flatArrayNoExcessiveStackDepth': {
         errors: false,

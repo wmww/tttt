@@ -1108,9 +1108,6 @@ static i32 first_unfit_argument(
             break;
         }
         bool fits = ty_is_related(me, source, target, relation);
-        if (!fits && relation == TY_RELATION_SUBTYPE && arg->context_sensitive) {
-            fits = ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
-        }
         if (!fits) {
             *arg_type = source;
             *param_type = target;
