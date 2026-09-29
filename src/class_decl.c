@@ -186,6 +186,10 @@ void class_decl_drop(ClassDecl* me) {
 static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, ErrorCtx* errs) {
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     scope->no_super = why;
+    if (why == NO_SUPER_COMPUTED_NAME) {
+        ClassDecl const* class_decl = scope_enclosing_class(names);
+        scope->computed_name_of = class_decl ? &class_decl->generic : nullptr;
+    }
     uint8_t initializer_context = names->flow->initializer_context;
     names->flow->initializer_context = INITIALIZER_NONE;
     expr_lookup_names(expr, scope, errs);

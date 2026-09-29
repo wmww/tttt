@@ -40936,13 +40936,13 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames32_ES5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames32_ES6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames33_ES5': {
@@ -40966,13 +40966,13 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames35_ES5': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames35_ES6': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames36_ES5': {

@@ -408,6 +408,9 @@ typedef struct Scope {
     bool in_field;
     // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
     bool member_decorator;
+    // A computed member name of a class or interface: the type parameters of that class or interface, which it can't
+    // reference (TS2467, tsc's resolveNameHelper at a ComputedPropertyName)
+    struct Generic const* computed_name_of;
     // A parameter decorator's scope: the function whose parameter it decorates, what tsc's getContainingFunction finds
     // for the decorator (TS1356 suggests making that one async)
     struct FunctionImpl const* decorated_function;

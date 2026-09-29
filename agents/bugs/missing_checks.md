@@ -49,8 +49,7 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   none). TS1176 (`implements` on an interface: interfaceThatInheritsFromItself, parser recovery first).
 - **Decorators**: TS2449 for a class used in the decorators of its own methods' parameters (tsc counts them; tttt's
   check only knows class and member decorators).
-- **Classes**: TS2467 (computed name referencing the containing declaration's type parameter: interface members have
-  no computed-name scope marker). TS2383 (overload export agreement); TS2386 across merged
+- **Classes**: TS2383 (overload export agreement); TS2386 across merged
   interface declarations (interface.c checks per body); TS2687 skips statics and method/accessor pairs. TS4127 (`override` on a
   dynamic name: overrideLateBindableIndexSignature1). TS2506 across files through namespace-qualified bases
   (classExtendsItselfIndirectly2). Abstract members satisfied by an interface merged into the class: tsc looks there

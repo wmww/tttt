@@ -1,4 +1,5 @@
 #include "interface_member.h"
+#include "interface_decl.h"
 #include "type.h"
 #include "expr.h"
 #include "scope.h"
@@ -58,10 +59,16 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
             for_each (i, vec_type, &my key.index.more_types) type_lookup_names(i, names, errs);
             type_flow_restore(saved_flow);
         }   break;
-        case INTERFACE_KEY_EXPR:
+        case INTERFACE_KEY_EXPR: {
+            // (An interface's type parameters are out of reach of its members' names)
+            Scope* key_names = names;
+            if (names->this_ref.kind == THIS_INTERFACE && names->this_ref.interface) {
+                key_names = scope_new(names, SCOPE_BLOCK);
+                key_names->computed_name_of = &names->this_ref.interface->generic;
+            }
             // (A mapped type's member elsewhere, `[K in T]`: resolved silently, TS7061 said it all)
-            expr_lookup_names(my key.expr.ref, names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
-            break;
+            expr_lookup_names(my key.expr.ref, key_names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
+        }   break;
 
         case INTERFACE_KEY_MAPPED:
             type_lookup_names(&my key.mapped.in_type, names, errs);
