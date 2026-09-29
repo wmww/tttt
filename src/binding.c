@@ -489,7 +489,9 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2566, "A rest element cannot have a property name.");
                 } else if (i->target.rest && i->target.default_value) {
                     binding_report_rest_initializer(&i->target, errs);
-                } else if (i->target.rest && parent && !ty_is_valid_spread_type(current_checker, parent)) {
+                } else if (i->target.rest && !ty_object_rest_source_valid(current_checker,
+                    ty_binding_type(current_checker, me, (LowerCtx){ .generic = true }))
+                ) {
                     // (tsc's getTypeForBindingElement: isValidSpreadType of the parent)
                     error_ctx_error_d(errs, i->target.content_span, 2700, "Rest types may only be created from object types.");
                 }

@@ -27711,7 +27711,7 @@ const baselines = {
         types: true,
     },
     'restUnion3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67653,7 +67653,7 @@ const baselines = {
     'unknownType1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unknownType2': {
         errors: true,

@@ -2226,6 +2226,11 @@ static bool pattern_has_generic_key(Checker* me, TyList pattern) {
     return false;
 }
 
+// Whether `...rest` of an object pattern can be taken of `source` (else TS2700): not unknown, never or a primitive
+bool ty_object_rest_source_valid(Checker* me, Ty const* source) {
+    return (source->flags & TYF_ANY) || (!(source->flags & TYF_UNKNOWN) && ty_is_valid_spread_type(me, source));
+}
+
 // tsc's getRestType: `...rest` of an object pattern, without the properties the pattern names, private and protected
 // members and class methods, and with nothing readonly
 static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern) {
@@ -2608,7 +2613,9 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (!ret) ret = ty_is_array(me, object) && object->reference.target != ty_readonly_array_target(me) ? object :
             ty_array(me, ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr), false);
     } else if (binding->rest) {
-        ret = object_rest_type(me, object, pattern_keys(me, parent));
+        // (What can't be spread, reported by binding_typecheck(), is the error type: tsc's getBindingElementTypeFromParentType)
+        ret = ty_object_rest_source_valid(me, object) ? object_rest_type(me, object, pattern_keys(me, parent)) :
+            ty_intrinsic(me, TY_ERROR);
     } else if (in_array) {
         Value index = value_number(binding->parent_index);
         // (Read like an expression: noUncheckedIndexedAccess's undefined, tsc's AccessFlags.ExpressionPosition)

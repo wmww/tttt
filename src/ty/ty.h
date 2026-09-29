@@ -1747,6 +1747,7 @@ void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_typ
 void ty_report_unfit_argument(Checker* me, Ty const* source, Ty const* target, Span span, Expr const* expr, ErrorCtx* errs); // TS2345
 void ty_report_unfit_this(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2684
 bool ty_is_valid_spread_type(Checker* me, Ty const* type); // tsc's isValidSpreadType
+bool ty_object_rest_source_valid(Checker* me, Ty const* source);
 void ty_check_spread_type(Checker* me, Ty const* type, Span span, ErrorCtx* errs); // `...x` in a literal: TS2698
 typedef struct TyWrittenProp {
     Atom const* name;
