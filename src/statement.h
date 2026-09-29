@@ -79,6 +79,9 @@ typedef struct TypeDecl {
     // A typedef whose comment is before a parenthesized expression statement: tsc attaches the comment to the statement
     // and to the parenthesized expression, declaring it twice, and doesn't reuse references to it when printing
     bool jsdoc_twice;
+    // Not a declaration: a JSDoc type that only gets resolved and checked (tsc checks every tag of a comment), like the
+    // constraint of a `@template {C}` without a type parameter. No name, no symbol
+    bool jsdoc_check_only;
 } TypeDecl;
 
 void type_decl_drop(TypeDecl* me);

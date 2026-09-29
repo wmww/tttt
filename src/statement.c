@@ -227,6 +227,7 @@ void type_decl_drop(TypeDecl* me) {
 }
 
 void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
+    if (my jsdoc_check_only) return;
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
@@ -1468,6 +1469,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_DECL_TYPE: {
+            if (my decl.type.jsdoc_check_only) {
+                type_lookup_names(&my decl.type.type, names, errs);
+                break;
+            }
             Scope* self_scope = scope_new_self(names, my decl.type.symbol, my decl.props.declared);
             unused_register(self_scope, UNUSED_TYPE_ALIAS, &my decl.type, span_null);
             my decl.type.outer_generics = names->generics;

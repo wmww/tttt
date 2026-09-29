@@ -4207,10 +4207,26 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
         comments->data[c].claimed = true;
         if (!bind) continue;
         csview text = csview_from_range(range.start, range.end);
-        if (!csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import")) continue;
+        if (!csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
+            !csview_contains(text, "@template")
+        ) {
+            continue;
+        }
         VecJsDocTag tags = {0};
         parse_jsdoc_comment(parent, range, &tags);
         for_each (i, vec_jsdoc_tag, &tags) {
+            if (i->kind == JSDOC_TAG_TEMPLATE && !span_valid(i->name) && i->has_type) {
+                // A constraint without a type parameter (`@template {T}`) is still resolved (tsc's checkJSDocTemplateTag)
+                Span span = jsdoc_tag_decl_span(i);
+                TypeNode type = jsdoc_take_type(i, nullptr);
+                type.from_jsdoc = false;
+                vec_statement_push(out, (Statement){
+                    .tag = STATEMENT_DECL_TYPE,
+                    .decl.type = { .full_span = span, .type = type, .jsdoc = true, .jsdoc_check_only = true },
+                    .span = span,
+                });
+                continue;
+            }
             if (i->kind == JSDOC_TAG_IMPORT && toplevel) {
                 jsdoc_import_statement(parent, i, range.end - 2, out);
                 continue;
