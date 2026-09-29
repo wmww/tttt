@@ -1470,6 +1470,19 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     flow->chain_continues = false;
     flow->assignment_target = FLOW_TARGET_NONE;
 
+    // `undefined` is a name: a declaration of it other than a global one (`var undefined` in a module, an import)
+    // hides tsc's undefinedSymbol
+    if (is_written_undefined(me)) {
+        Symbol const* declared = scope_resolve(names, my inner_span.sv, SYMBOL_VALUE);
+        Symbol const* global = names->binder ? symbol_table_get(&names->binder->globals, my inner_span.sv) : nullptr;
+        if (declared && declared != global) {
+            Expr old = *me;
+            *me = expr_identifier((IdentifierExpr){ .name = old.inner_span });
+            my outer_span = old.outer_span;
+            my lazy_type = old.lazy_type;
+        }
+    }
+
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
             if (my missing_decorators) {

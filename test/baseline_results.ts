@@ -26522,8 +26522,8 @@ const baselines = {
     },
     'reExportUndefined2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'reachabilityCheckWithEmptyDefault': {
         errors: true,
@@ -31937,8 +31937,8 @@ const baselines = {
     },
     'undefinedTypeAssignment1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'undefinedTypeAssignment2': {
         errors: true,
