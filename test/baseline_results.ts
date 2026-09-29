@@ -2781,7 +2781,7 @@ const baselines = {
         types: true,
     },
     'callOnClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -14931,7 +14931,7 @@ const baselines = {
         types: true,
     },
     'genericConstructorFunction1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32316,7 +32316,7 @@ const baselines = {
         types: true,
     },
     'untypedFunctionCallsWithTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47291,7 +47291,7 @@ const baselines = {
         types: true,
     },
     'superCallParameterContextualTyping2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47371,7 +47371,7 @@ const baselines = {
         types: true,
     },
     'forgottenNew': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47436,7 +47436,7 @@ const baselines = {
         types: true,
     },
     'typeArgumentInferenceWithConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64331,7 +64331,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithConstructSignatureAppearsToBeFunctionType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65126,7 +65126,7 @@ const baselines = {
         types: true,
     },
     'arrayTypeOfFunctionTypes2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

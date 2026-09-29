@@ -1260,7 +1260,8 @@ static Span invocation_error_span(CallInfo const* info) {
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
         return callee->property->prop.inner_span;
     }
-    return info->call->callable.outer_span;
+    // (type arguments belong to tsc's call node, not its expression)
+    return callee->outer_span;
 }
 
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
@@ -2113,7 +2114,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             cstr_drop(&rendered);
         } else if (other_count && !info->tagged_template && !info->decorator) { // (tsc's resolveCallExpression only)
             cstr rendered = ty_to_cstr(me, callee);
-            error_ctx_error_d(errs, call->callable.outer_span, 2348,
+            error_ctx_error_d(errs, call_span, 2348,
                 "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
             cstr_drop(&rendered);
         } else {
