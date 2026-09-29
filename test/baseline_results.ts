@@ -39211,7 +39211,7 @@ const baselines = {
         types: true,
     },
     'globalThisReadonlyProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

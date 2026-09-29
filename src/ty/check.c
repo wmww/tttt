@@ -3195,7 +3195,13 @@ void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access
 }
 
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
-    // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access())
+    // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access()). Its own
+    // `globalThis` is readonly (tsc's globalThisSymbol has CheckFlags.Readonly)
+    if (is_global_this(object) && access->assignment_target && access->form == PROPERTY_EXPR_DOT &&
+        span_equals(access->prop.inner_span, "globalThis")
+    ) {
+        error_ctx_error_d(errs, access->prop.outer_span, 2540, "Cannot assign to 'globalThis' because it is a read-only property.");
+    }
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
     Atom const* name = access_name(me, access);
     MemberRefs refs = {0};
