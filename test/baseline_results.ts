@@ -7646,9 +7646,9 @@ const baselines = {
         types: false,
     },
     'declarationEmitBindingPatternsFunctionExpr': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'declarationEmitBindingPatternsUnused': {
         errors: false,
@@ -25251,7 +25251,7 @@ const baselines = {
         types: true,
     },
     'paramterDestrcuturingDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27291,9 +27291,9 @@ const baselines = {
         types: true,
     },
     'renamingDestructuredPropertyInFunctionType': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'renamingDestructuredPropertyInFunctionType2': {
         errors: true,

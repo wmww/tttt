@@ -7351,6 +7351,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             }
         } else if (parse_function_args(&p, true, false, true, false, &func)) {
             if (is_type) signature_arrow_return_type(&p, &func);
+            if (!span_valid(func.full_span)) func.full_span = span_from(a); // (What function_impl_typecheck_signature() checks)
             check_modifiers(&p, &modifiers, (ModifiedNode){
                 .kind = MODIFIED_METHOD_SIGNATURE,
                 .parent = is_type ? MODIFIED_IN_TYPE : MODIFIED_IN_CLASS,
@@ -8588,7 +8589,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_success(&p);
     }
 
-    if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>') {
+    if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>' && !ctx.entity_name) {
         Parser sub_p = parser(&p);
         sub_p.pos = span_start_ptr(left_and_ret->outer_span);
 

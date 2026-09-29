@@ -456,19 +456,66 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
     return false;
 }
 
+static bool type_node_queries(TypeNode const* node, Symbol const* symbol);
+
+// Whether a `typeof x` in the signature's types names the symbol (tsc's isReferenced, which only a type query can set
+// in a signature without a body; tttt tracks references only for noUnusedLocals)
+static bool signature_queries(FunctionImpl const* function, Symbol const* symbol) {
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->initializer.binding.has_explicit_type && type_node_queries(&i->initializer.binding.explicit_type, symbol)) return true;
+    }
+    if (function->predicate && function->predicate->has_type && type_node_queries(&function->predicate->type, symbol)) return true;
+    return type_node_queries(&function->ret, symbol);
+}
+
+static bool type_node_queries(TypeNode const* node, Symbol const* symbol) {
+    switch (node->tag) {
+        case TYPE_TYPEOF: {
+            Expr const* e = node->typeof_->expr;
+            while (true) {
+                if (e->tag == EXPR_PROPERTY) e = &e->property->expr;
+                else if (e->tag == EXPR_GENERIC_PARAMS) e = &e->generic_params->expr;
+                else break;
+            }
+            return e->tag == EXPR_IDENTIFIER && e->identifier.symbol == symbol;
+        }
+        case TYPE_UNION: case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) if (type_node_queries(i, symbol)) return true;
+            return false;
+        case TYPE_ARRAY: return type_node_queries(node->array.element, symbol);
+        case TYPE_TUPLE:
+            for_each (i, vec_tuple_element, &node->tuple.elements) if (type_node_queries(&i->type, symbol)) return true;
+            return false;
+        case TYPE_IDENTIFIER:
+            for_each (i, vec_spanned_type, &node->identifier->generic_params) if (type_node_queries(&i->type, symbol)) return true;
+            return false;
+        case TYPE_INDEXED: return type_node_queries(&node->indexed->interface, symbol) || type_node_queries(&node->indexed->index, symbol);
+        case TYPE_KEYOF: return type_node_queries(&node->keyof->interface, symbol);
+        case TYPE_TERNARY:
+            return type_node_queries(&node->ternary->maybe_sub, symbol) || type_node_queries(&node->ternary->maybe_super, symbol) ||
+                type_node_queries(&node->ternary->if_true, symbol) || type_node_queries(&node->ternary->if_false, symbol);
+        case TYPE_CALLABLE: return signature_queries(node->callable->function, symbol);
+        case TYPE_INTERFACE:
+            for_each (i, vec_interface_member, &node->interface.members) if (type_node_queries(&i->type, symbol)) return true;
+            return false;
+        case TYPE_JSDOC: return type_node_queries(&node->jsdoc->type, symbol);
+        default: return false;
+    }
+}
+
 // `type F = ({ a: string }) => void` renames `a` to `string` (tsc's checkPotentialUncheckedRenamedBindingElementsInTypes):
 // a renaming nothing uses in a signature without a body is an error, even without noUnusedLocals
-static void binding_check_unused_renamings(Binding const* me, FunctionArg const* arg, ErrorCtx* errs) {
+static void binding_check_unused_renamings(FunctionImpl const* function, Binding const* me, FunctionArg const* arg, ErrorCtx* errs) {
     if (my tag == BINDING_ARRAY) {
-        for_each (i, vec_binding, &my array) binding_check_unused_renamings(i, arg, errs);
+        for_each (i, vec_binding, &my array) binding_check_unused_renamings(function, i, arg, errs);
     } else if (my tag == BINDING_OBJECT) {
         for_each (i, vec_object_binding_item, &my object) {
             Binding const* target = &i->target;
             if (target->tag != BINDING_IDENTIFIER || target->rest || span_eq(i->source_span, target->content_span)) {
-                binding_check_unused_renamings(target, arg, errs);
+                binding_check_unused_renamings(function, target, arg, errs);
                 continue;
             }
-            if (target->symbol && target->symbol->referenced) continue;
+            if (target->symbol && (target->symbol->referenced || signature_queries(function, target->symbol))) continue;
             Error* e = error_ctx_error_d(errs, target->content_span, 2842, "'", target->content_span,
                 "' is an unused renaming of '", i->source_span, "'. Did you intend to use it as a type annotation?");
             if (e && !arg->initializer.binding.has_explicit_type) {
@@ -482,7 +529,7 @@ static void binding_check_unused_renamings(Binding const* me, FunctionArg const*
 
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     if (!my has_body && my full_span.source && !my full_span.source->is_declaration) {
-        for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(&i->initializer.binding, i, errs);
+        for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
     }
     generic_typecheck(&my generic, errs);
     bool grammar_error = function_impl_check_grammar_parameters(me, errs);
