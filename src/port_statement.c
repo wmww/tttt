@@ -86,6 +86,8 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         (scope->container && scope->container->is_module);
     my in_namespace = !top && scope->kind == SCOPE_NAMESPACE;
     my in_ambient_namespace = my in_namespace && scope->ambient;
+    my main.in_namespace = my in_namespace;
+    for_each (i, vec_port_item, &my items) i->in_namespace = my in_namespace;
     my in_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module &&
         scope->parent && scope->parent->kind != SCOPE_MODULE;
     bool is_import_alias = my main.tag == PORT_IMPORT_ALIAS && csview_equals(my keyword_span.sv, "import");

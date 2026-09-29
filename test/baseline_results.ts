@@ -16586,7 +16586,7 @@ const baselines = {
         types: true,
     },
     'importInsideModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

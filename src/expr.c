@@ -356,14 +356,23 @@ static void note_arguments_reference(Scope const* names) {
 // TS1361/TS1362: a value that was imported or exported as a type only (tsc's
 // checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol). Fine in `typeof x` types and ambient contexts
 // A value use of `x` after an `import x = A.B` that resolved to nothing: tsc checks `A.B` as an expression then
-// (markAliasSymbolAsReferenced), which says `A` isn't found as a value either. Once per import, in its own file
+// (markAliasSymbolAsReferenced), which says `A` isn't found as a value either. Once per import, in its own file. Of an
+// import in a namespace (which resolves nothing itself): its module's TS2307
 static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope const* names) {
     Symbol const* symbol = my symbol;
     if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item || !my target->is_placeholder) return;
     PortItem* item = symbol->alias->item;
     Scope const* scope = symbol->alias->scope;
-    if (item->tag != PORT_IMPORT_ALIAS || item->value_use_checked || !vec_span_size(&item->alias_path)) return;
-    if (!scope || scope->file != names->file) return;
+    if (item->value_use_checked || !scope || scope->file != names->file) return;
+    // (An import of a module in a namespace, TS1147: its statement didn't resolve the module, this use does)
+    if (item->in_namespace && item->module_ref) {
+        item->value_use_checked = true;
+        if (!item->module_ref->file && !binder_module_of_ref(names->binder, item->module_ref)) {
+            module_ref_report_unresolved(item->module_ref, scope->errs);
+        }
+        return;
+    }
+    if (item->tag != PORT_IMPORT_ALIAS || !vec_span_size(&item->alias_path)) return;
     item->value_use_checked = true;
     Span first = *vec_span_front(&item->alias_path);
     if (!first.sv.size || scope_get_value(scope, first.sv, nullptr)) return;
