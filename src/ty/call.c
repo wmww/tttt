@@ -2279,12 +2279,6 @@ static Ty const* require_type(Checker* me, CallExpr const* call) {
     if (!expr_symbol_is_commonjs_require(call->callable.identifier.target)) return nullptr;
     ModuleRef const* ref = call->callable.identifier.module_ref;
     if (!ref || !ref->module || ref->module->is_shorthand_module) return ty_intrinsic(me, TY_ANY);
-    // An `export =` alias (`module.exports = f`) is the type of what it names, without the module's other exports
-    // (tsc's resolveExternalModuleTypeByLiteral: resolveExternalModuleSymbol with dontResolveAlias keeps the alias,
-    // which getCommonJsExportEquals doesn't merge)
-    Symbol* assigned = ref->module->is_module && ref->module->exports ?
-        symbol_table_get(ref->module->exports, c_sv("export=")) : nullptr;
-    if (assigned && (assigned->flags & SYMBOL_ALIAS)) return ty_type_of_symbol(me, assigned);
     return ty_type_of_symbol(me, module_export_equals(ref->module));
 }
 

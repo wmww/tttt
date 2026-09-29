@@ -901,13 +901,15 @@ static Ty* make_namespace(Checker* me, Symbol const* symbol) {
     return ret;
 }
 
+static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone, bool in_file);
+
 Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Symbol* module = file && file->scope ? file->scope->container : nullptr;
     if (!module) return ty_intrinsic(me, TY_ANY);
     Symbol* assigned = module_export_equals(module);
     Ty const* exports;
     if (assigned != module) {
-        exports = ty_type_of_symbol(me, assigned);
+        exports = assigned->merged_export_equals_of ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
     } else if (symbol_table_get(module->exports, c_sv("export="))) {
         // `module.exports = window.nonprop`: an alias that resolves to nothing (tsc's unknownSymbol)
         exports = ty_intrinsic(me, TY_ERROR);
@@ -1356,7 +1358,6 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module) {
     return with_synthetic_default(me, type, structured);
 }
 
-static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone);
 
 // The type of a symbol as a value. Give it the symbol a name found or the one that has the value meaning (`target`
 // of an identifier), aliases are seen through. Everything about a placeholder is any
@@ -1380,7 +1381,7 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
-    if (symbol && symbol->merged_export_equals_of) return merged_export_equals_type(me, symbol);
+    if (symbol && symbol->merged_export_equals_of) return merged_export_equals_type(me, symbol, false);
     symbol = canonical(me, symbol);
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`. A shorthand ambient module is any
@@ -1453,9 +1454,19 @@ u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) 
 // What a module's `export =` assigns merged with its other exports (module_export_equals()): an object type gets them
 // as properties (tsc's getTypeOfFuncClassEnumModule of the merged symbol, or getInitializerTypeFromAssignmentDeclaration
 // of `module.exports =`), anything else is what is assigned
-static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone) {
+// `in_file`: as the module's own `module.exports` (tsc's getTypeOfFuncClassEnumModule of the file: the exports are
+// always merged in, getWidenedTypeForAssignmentDeclaration), else as an importer sees it (the type of
+// getCommonJsExportEquals' clone, where a variable keeps its own type: `module.exports = f; module.exports.x = 1` of a
+// `const f`)
+static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone, bool in_file) {
     Ty const* original = ty_type_of_symbol(me, clone->merged_export_equals_of);
     if (!(original->flags & TYF_OBJECT)) return original;
+    Symbol const* original_symbol = clone->merged_export_equals_of;
+    for (u32 i = 0; !in_file && i < original_symbol->decl_count; i++) {
+        if (!(original_symbol->decls[i].flags & SYMBOL_VALUE)) continue;
+        if (original_symbol->decls[i].kind == SYMBOL_DECL_VARIABLE) return original;
+        break;
+    }
     // A class or interface instance becomes an anonymous type with its members and the exports (tsc keeps the type's
     // symbol only if nothing was added)
     bool instance = original->kind == TY_REFERENCE || (original->kind == TY_DECLARED &&
