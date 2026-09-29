@@ -1119,7 +1119,11 @@ static FunctionImpl const* overloadable(ClassItem const* item) {
 // whose type is a literal or unique symbol, which is late bound)
 static Atom const* bindable_computed_name(ClassItem const* item) {
     Expr const* key = item->method.computed_key;
-    if (key->tag != EXPR_LITERAL && !expr_is_entity_name(key)) return nullptr;
+    if (expr_is_perenthisized(key)) return nullptr;
+    bool signed_number = key->tag == EXPR_UNARY_OP &&
+        (key->unary_op->op == UNARY_OP_MINUS || key->unary_op->op == UNARY_OP_PLUS) &&
+        key->unary_op->expr.tag == EXPR_LITERAL && !expr_is_perenthisized(&key->unary_op->expr);
+    if (key->tag != EXPR_LITERAL && !signed_number && !expr_is_entity_name(key)) return nullptr;
     return ty_member_name(current_checker, &item->method.name_string, key);
 }
 
