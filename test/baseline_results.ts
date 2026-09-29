@@ -7913,7 +7913,7 @@ const baselines = {
     'declarationEmitDestructuring2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitDestructuring3': {
         errors: true,
@@ -23498,7 +23498,7 @@ const baselines = {
     'noImplicitAnyDestructuringVarDeclaration2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitAnyForIn': {
         errors: true,
@@ -23823,7 +23823,7 @@ const baselines = {
     'noUnusedLocals_writeOnly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noUnusedLocals_writeOnlyProperty': {
         errors: true,
@@ -28023,7 +28023,7 @@ const baselines = {
     'shadowingViaLocalValueOrBindingElement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'shebang': {
         errors: true,
@@ -28448,7 +28448,7 @@ const baselines = {
     'sourceMapValidationDestructuringForObjectBindingPatternDefaultValues2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPattern': {
         errors: true,
@@ -28483,12 +28483,12 @@ const baselines = {
     'sourceMapValidationDestructuringForOfObjectBindingPatternDefaultValues': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfObjectBindingPatternDefaultValues2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringParameterNestedObjectBindingPattern': {
         errors: true,
@@ -28593,7 +28593,7 @@ const baselines = {
     'sourceMapValidationDestructuringVariableStatementDefaultValues': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementNestedObjectBindingPattern': {
         errors: true,
@@ -28618,12 +28618,12 @@ const baselines = {
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementObjectBindingPattern4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDo': {
         errors: true,
@@ -33098,7 +33098,7 @@ const baselines = {
     'useBeforeDeclaration_destructuring': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useBeforeDeclaration_jsx': {
         errors: true,
@@ -41613,12 +41613,12 @@ const baselines = {
     'destructuringObjectBindingPatternAndAssignment1ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'destructuringObjectBindingPatternAndAssignment1ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'destructuringObjectBindingPatternAndAssignment3': {
         errors: true,
@@ -41668,7 +41668,7 @@ const baselines = {
     'destructuringObjectBindingPatternAndAssignment9SiblingInitializer': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration10(strict=false)': {
         errors: true,
@@ -47453,7 +47453,7 @@ const baselines = {
     'arrowFunctionExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedFunctionExpressionsAndReturnAnnotations': {
         errors: true,
@@ -63923,7 +63923,7 @@ const baselines = {
     'literalTypesAndTypeAssertions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literalTypesWidenInParameterPosition': {
         errors: true,

@@ -2770,6 +2770,11 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     }
     LiteralBuilder builder = {0}; // What was written since the last spread (tsc's propertiesTable)
     SpreadAcc spread = {0};
+    // The implied type of an object binding pattern (`const { a = 1 } = { a: 2 }`): a property is optional where the
+    // pattern's is (tsc's checkObjectLiteral, contextualTypeHasPattern)
+    Ty const* pattern_context = ctx.contextual && (ctx.contextual->flags & TYF_BINDING_PATTERN) &&
+        (ctx.contextual->flags & TYF_OBJECT) && !ty_is_tuple(ctx.contextual) && !pattern_type_has_rest(me, ctx.contextual) &&
+        !intern_get(&my links, (u64[]){ KEY_PATTERN_COMPUTED, ctx.contextual->id }, 2) ? ctx.contextual : nullptr;
     // Accessor pairs share a property: the declarations of both halves
     Span* accessor_spans = nullptr;
 
@@ -2917,6 +2922,10 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
         if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
         if (ctx.is_const) flags |= PROP_READONLY;
+        if (pattern_context) {
+            Prop const* implied = ty_get_prop(me, pattern_context, name);
+            if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL;
+        }
         // A destructuring target's member with a default is optional (tsc's checkObjectLiteral inDestructuringPattern)
         if (expr->assignment_pattern && ((i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) ||
             (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL))

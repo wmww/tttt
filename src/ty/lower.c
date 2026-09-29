@@ -2262,6 +2262,15 @@ Ty const* ty_pattern_clone(Checker* me, Ty const* ty) {
     return ret;
 }
 
+Ty const* ty_pattern_unclone(Checker* me, Ty const* ty) {
+    Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
+    u32 id = ret->id;
+    *ret = *ty;
+    ret->id = id;
+    ret->flags &= ~(u32)TYF_BINDING_PATTERN;
+    return ret;
+}
+
 static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
 
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern) {

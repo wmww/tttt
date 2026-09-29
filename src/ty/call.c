@@ -849,6 +849,9 @@ static TyMapper const* infer_type_arguments(
                 for (u32 i = 0; i < return_mapper->len; i++) {
                     Ty const* target = return_mapper->targets[i];
                     targets[i] = target == ty_intrinsic(me, TY_ANY) ? return_mapper->sources[i] : target;
+                    // (An inference is widened, which makes a new object type that is no pattern's: an object literal
+                    // argument it contextually types isn't one of a pattern, tsc's contextualTypeHasPattern)
+                    if (targets[i]->flags & TYF_BINDING_PATTERN) targets[i] = ty_pattern_unclone(me, targets[i]);
                     any_left |= targets[i] != return_mapper->sources[i];
                 }
                 return_mapper = !any_left ? nullptr : ty_mapper_new(me, (TyList){ .data = return_mapper->sources, .len = return_mapper->len },
