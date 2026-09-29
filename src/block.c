@@ -1,4 +1,5 @@
 #include "block.h"
+#include "unicode_identifiers.h"
 #include "statement.h"
 #include "port_statement.h"
 #include "scope.h"
@@ -114,6 +115,18 @@ Span block_span(Block const* me) {
     return span_make(first.source, span_start_ptr(first), span_end_ptr(last));
 }
 
+// The length of the non-ASCII identifier character at c (UTF-8), 0 if it's something else (a unicode space: U+0085)
+static int unicode_identifier_part_size(char const* c, char const* limit) {
+    unsigned char b = (unsigned char)*c;
+    int size = b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : b >= 0xC0 ? 2 : 1;
+    if (size == 1 || limit - c < size) return 1; // (A stray continuation byte: part of whatever it continues)
+    u32 code = size == 2 ? (u32)(b & 0x1F) << 6 | ((unsigned char)c[1] & 0x3F) :
+        size == 3 ? (u32)(b & 0x0F) << 12 | (u32)((unsigned char)c[1] & 0x3F) << 6 | ((unsigned char)c[2] & 0x3F) :
+        (u32)(b & 0x07) << 18 | (u32)((unsigned char)c[1] & 0x3F) << 12 | (u32)((unsigned char)c[2] & 0x3F) << 6 |
+            ((unsigned char)c[3] & 0x3F);
+    return unicode_is_identifier_part(code, true) ? size : 0;
+}
+
 Span block_first_token(Span at) {
     if (!span_valid(at) || !at.sv.size) return span_null;
     char const* start = at.sv.buf;
@@ -121,7 +134,12 @@ Span block_first_token(Span at) {
     char const* end = start + 1;
     unsigned char c = (unsigned char)*start;
     if (isalnum(c) || c == '_' || c == '$' || c >= 0x80) {
-        while (end < limit && (isalnum((unsigned char)*end) || *end == '_' || *end == '$' || (unsigned char)*end >= 0x80)) end++;
+        while (end < limit) {
+            unsigned char d = (unsigned char)*end;
+            if (isalnum(d) || d == '_' || d == '$') end++;
+            else if (d >= 0x80 && unicode_identifier_part_size(end, limit)) end += unicode_identifier_part_size(end, limit);
+            else break;
+        }
     } else if (c == '"' || c == '\'' || c == '`') {
         while (end < limit && *end != (char)c) end += *end == '\\' ? 2 : 1;
         if (end < limit) end++;
