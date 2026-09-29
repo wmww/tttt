@@ -340,7 +340,7 @@ static bool names_type_param(Ty const* const* list, u32 len, Atom const* name) {
 }
 
 // tsc's getUniqueTypeParameters: the type parameters of `sig`, those whose name is taken by one propagated already (or
-// an earlier one of the list) replaced by a copy named `T_1`, `T_2`... whose constraint refers to the renamed ones
+// an earlier one of the list) replaced by a copy named `T1`, `T2`... whose constraint refers to the renamed ones
 static TyList unique_type_params(Checker* me, Inference* inf, TyList params) {
     Ty const** ret = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     Ty const** all = malloc(sizeof(Ty const*) * (inf->inferred_type_param_count + params.len + 1));
@@ -354,9 +354,12 @@ static TyList unique_type_params(Checker* me, Inference* inf, TyList params) {
         Ty const* param = params.data[i];
         Atom const* name = param->param.name;
         if (names_type_param(all, all_len, name)) {
+            // (tsc's getUniqueTypeParameterName: the name without its trailing digits, numbered from 1: T1, T2)
+            csview base = atom_sv(name);
+            while (base.size > 1 && base.buf[base.size - 1] >= '0' && base.buf[base.size - 1] <= '9') base.size--;
             Atom const* fresh_name = name;
             for (u32 n = 1; names_type_param(all, all_len, fresh_name); n++) {
-                cstr text = cstr_d(atom_sv(name), "_", n);
+                cstr text = cstr_d(base, n);
                 fresh_name = checker_atom(me, cstr_sv(&text));
                 cstr_drop(&text);
             }
