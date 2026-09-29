@@ -830,6 +830,7 @@ struct Checker {
     // The function whose return type is being inferred from its return statements (function.c), and whether a return
     // of a bare call to it was left out (tsc's checkAndAggregateReturnExpressionTypes, hasReturnOfTypeNever)
     FunctionImpl const* return_inference_of;
+    struct EnumCase const* enum_evaluating; // The enum member whose initializer is being evaluated (ty_resolve_enum())
     bool return_inference_skipped;
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null

@@ -181,7 +181,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 }
             }
-            expr_typecheck(my key.expr.ref, errs);
+            expr_typecheck_type_only_site(my key.expr.ref, errs);
             break;
 
         case INTERFACE_KEY_MAPPED:

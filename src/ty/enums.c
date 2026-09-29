@@ -37,6 +37,13 @@ static i32 to_int32(double number) {
 // resolved further up the stack, isn't)
 static EnumValue member_value(Checker* me, Symbol const* decl) {
     if (!decl || !(decl->flags & SYMBOL_ENUM_MEMBER)) return enum_value_unknown;
+    // A member declared later in the file (TS2651) evaluates to 0 (tsc's evaluateEnumMember)
+    EnumCase const* at = my enum_evaluating;
+    if (at && decl != at->symbol && decl->name_span.source == at->name.source &&
+        span_start_ptr(decl->name_span) > span_start_ptr(at->name)
+    ) {
+        return enum_value_number(0);
+    }
     Ty const* type = ty_declared_type_of(me, decl);
     if (type->kind != TY_LITERAL || !type->literal.enum_decl) return enum_value_unknown;
     // (A string member was either written as one or reported, TS18055: counted as written. HACK)
@@ -283,7 +290,10 @@ Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
                 bool can_increment = previous.known && !previous.is_string;
                 value = can_increment ? enum_value_number(previous.number + 1) : enum_value_unknown;
             } else {
+                EnumCase const* outer = my enum_evaluating;
+                my enum_evaluating = i;
                 value = evaluate(me, &i->value, 0);
+                my enum_evaluating = outer;
             }
             Symbol const* member = i->symbol;
             // (A member without a bindable name is none of the enum's literal types: its type is the enum's, below.

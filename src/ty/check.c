@@ -1783,6 +1783,12 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT && object->declared.symbol &&
         (object->declared.symbol->flags & SYMBOL_CONST_ENUM)
     ) {
+        // (tsc's checkElementAccess: isStringLiteralLike, a string literal or a template without substitutions)
+        Expr const* index = &access->prop;
+        if (index->tag != EXPR_LITERAL || index->literal.tag != VALUE_STRING) {
+            error_ctx_error_d(errs, index->inner_span, 2476, "A const enum member can only be accessed using a string literal.");
+            return;
+        }
         Ty const* key = ty_regular(me, ty_access_key_type(me, access));
         if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
             !ty_access(me, object, key)

@@ -634,7 +634,7 @@ void typeof_type_lookup_names(TypeofType* me, Scope* names, ErrorCtx* errs) {
 }
 
 void typeof_type_typecheck(TypeofType const* me, ErrorCtx* errs) {
-    expr_typecheck(my expr, errs);
+    expr_typecheck_type_only_site(my expr, errs);
 }
 
 // Ternary

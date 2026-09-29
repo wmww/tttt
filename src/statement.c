@@ -2294,7 +2294,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 ty_check_assignable(current_checker, type, declared, my expr.outer_span, errs);
                 break;
             }
-            expr_typecheck(&my expr, errs);
+            expr_typecheck_export_assignment(&my expr, errs);
             break;
 
         case STATEMENT_RETURN_EXPR:

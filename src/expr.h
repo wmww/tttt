@@ -410,6 +410,10 @@ Expr const* expr_effective_check_node(Expr const* me);
 // Where an error about an expression goes (tsc's getErrorSpanForNode): a function or class expression's name, a
 // `satisfies` keyword, the first line of an arrow function...
 Span expr_error_span(Expr const* me);
+// expr_typecheck() of an expression in a type (a type query, a type member's computed name): const enums are fine
+void expr_typecheck_type_only_site(Expr const* me, ErrorCtx* errs);
+// expr_typecheck() of an `export =`/`export default` expression, which may be a const enum
+void expr_typecheck_export_assignment(Expr const* me, ErrorCtx* errs);
 // expr_error_span() of what is in the parentheses (tsc's skipParentheses, then getErrorSpanForNode)
 Span expr_error_span_skip_parens(Expr const* me);
 // tsc's checkTruthinessOfType, for a condition that has been typechecked

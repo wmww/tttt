@@ -3695,10 +3695,50 @@ static void commonjs_typedef_conflicts(BinaryOpExpr const* assignment, Ty const*
     }
 }
 
+// The object of the property access being checked: where a const enum object may be used (see check_const_enum_access)
+static Expr const* const_enum_object_ok;
+// Inside a type (a type query, a computed name of a type member): no const enum check at all (tsc's
+// isValidTypeOnlyAliasUseSite, and a type query may name one)
+static u32 type_only_site_depth;
+
+// tsc's checkConstEnumAccess: a const enum object only as the object of a property or element access (TS2475), and
+// with isolatedModules an ambient one not at all (TS2748)
+static void check_const_enum_access(Expr const* me, Ty const* type, ErrorCtx* errs) {
+    if (type->kind != TY_DECLARED || type->declared.kind != TY_DECLARED_ENUM_OBJECT || !type->declared.symbol ||
+        !(type->declared.symbol->flags & SYMBOL_CONST_ENUM)
+    ) {
+        return;
+    }
+    if (type_only_site_depth) return;
+    if (me != const_enum_object_ok) {
+        error_ctx_error_d(errs, expr_error_span(me), 2475, "'const' enums can only be used in property or index access "
+            "expressions or the right hand side of an import declaration or export assignment or type query.");
+    }
+    if (compiler_options()->isolated_modules && type->declared.symbol->is_ambient) {
+        error_ctx_error_d(errs, expr_error_span(me), 2748, "Cannot access ambient const enums when 'isolatedModules' is enabled.");
+    }
+}
+
+void expr_typecheck_type_only_site(Expr const* me, ErrorCtx* errs) {
+    type_only_site_depth++;
+    expr_typecheck(me, errs);
+    type_only_site_depth--;
+}
+
+void expr_typecheck_export_assignment(Expr const* me, ErrorCtx* errs) {
+    Expr const* outer_ok = const_enum_object_ok;
+    const_enum_object_ok = me;
+    expr_typecheck(me, errs);
+    const_enum_object_ok = outer_ok;
+}
+
 void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     // The expression's own type first: evaluating it is what gives the expressions inside it their contextual types
     // (whoever knows this expression's contextual type has done the same before getting here)
-    expr_get_type((Expr*)me);
+    Ty const* own_type = expr_get_type((Expr*)me);
+    if ((my tag == EXPR_IDENTIFIER || my tag == EXPR_PROPERTY) && (own_type->flags & TYF_OBJECT)) {
+        check_const_enum_access(me, own_type, errs);
+    }
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
         case EXPR_LITERAL:
@@ -3767,7 +3807,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_PROPERTY: {
             if (ty_is_import_meta(me)) import_meta_typecheck(me, errs);
+            Expr const* outer_ok = const_enum_object_ok;
+            const_enum_object_ok = &my property->expr;
             expr_typecheck(&my property->expr, errs);
+            const_enum_object_ok = outer_ok;
             expr_typecheck(&my property->prop, errs);
             // (`a?.b` of `a?.b.c` without the undefined of a chain that ended)
             Ty const* expr_type = ty_optional_expression_type(current_checker, expr_get_type(&my property->expr),

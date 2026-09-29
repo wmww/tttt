@@ -5741,7 +5741,7 @@ const baselines = {
         types: true,
     },
     'constEnumErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -13838,7 +13838,7 @@ const baselines = {
     'forwardRefInEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forwardRefInTypeDeclaration(strict=false)': {
         errors: true,
@@ -18861,7 +18861,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesAmbientConstEnum': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37721,7 +37721,7 @@ const baselines = {
         types: true,
     },
     'constEnumPropertyAccess2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
