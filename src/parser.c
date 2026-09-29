@@ -5686,7 +5686,7 @@ static bool parse_function_args_inner(
                     vec_expr_drop(&decorators);
                     goto drop_and_fail;
                 } else if (tok_is_word(tok_peek(&p)) && *p.pos != '#' &&
-                    is_reserved_word((csview){ p.pos, tok_peek(&p).end - p.pos })
+                    is_reserved_word((csview){ p.pos, tok_peek(&p).end - p.pos }) && tok_is_start_of_parameter(tok_peek(&p))
                 ) {
                     // tsc's isStartOfParameter takes a reserved word that is a modifier or starts a type (`default`,
                     // `null`): parseNameOfParameter reports it (TS1359), the name is missing, and a modifier word
