@@ -61,14 +61,8 @@ void lazy_type_set(LazyType* me, Ty const* result, Ty const* context) {
     LazyMemo* state = lazy_type_state(me);
     state->evaluated = result;
     state->context = context;
-    state->speculative = false;
     state->evaluation_started = true;
     state->done = true;
-}
-
-void lazy_type_set_speculative(LazyType* me, Ty const* result, Ty const* context) {
-    lazy_type_set(me, result, context);
-    lazy_type_state(me)->speculative = true;
 }
 
 // TTTT_DEBUG_CYCLE=1: when a declaration's evaluation reaches itself again (the TS7022 kind of cycle), print the

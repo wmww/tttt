@@ -47,7 +47,7 @@ enum {
     KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
     KEY_MERGED_EXPORT_EQUALS_INSTANCE, // Symbol -> Ty, see merged_export_equals_type()
     KEY_DEFERRED_OUTER, // TypeNode of a deferred reference -> TyConditionalOuter
-    KEY_CALL_RESOLUTION, // CallExpr -> the contextual type of its last resolution, if that would report nothing
+    KEY_CALL_RESOLUTION, // CallExpr or tagged template Expr -> CallResolution (call.c): what its one resolution returned and reported
     KEY_DEFERRED_REFERENCE, // (TYPE_ARRAY/TYPE_TUPLE/TYPE_IDENTIFIER node, the pairs of the mapper it mentions) -> Ty
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
@@ -90,7 +90,6 @@ enum {
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
-    KEY_ARG_FIXES,      // (argument Expr, Signature) -> ArgFixes (call.c): the type parameters checking it fixed
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id

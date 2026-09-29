@@ -8,8 +8,6 @@ typedef struct LazyMemo {
     bool is_self_referential;
     bool done;
     unsigned char hits; // Expressions: re-entrant evaluations so far
-    // Expressions: computed while an outer call inferred its type arguments, see check_with() in ty/expr.c
-    bool speculative;
     struct Ty const* evaluated;
     // Expressions: the contextual type `evaluated` was computed with, see ty_check_expr()
     struct Ty const* context;
@@ -69,8 +67,6 @@ void lazy_type_drop(LazyType* me);
 // Stores a result computed by someone who knows more than lazy_type_evaluate() would (the contextual type of an
 // expression). Replaces the memo if there is one
 void lazy_type_set(LazyType* me, struct Ty const* result, struct Ty const* context);
-// lazy_type_set(), marked LazyMemo.speculative
-void lazy_type_set_speculative(LazyType* me, struct Ty const* result, struct Ty const* context);
 
 // Makes a LazyType that evaluates whatever contains it, according to tag
 static inline LazyType lazy_type_init(int tag) {

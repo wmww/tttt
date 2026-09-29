@@ -13698,7 +13698,7 @@ const baselines = {
     'fixingTypeParametersRepeatedly1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fixingTypeParametersRepeatedly2': {
         errors: true,
@@ -47273,7 +47273,7 @@ const baselines = {
     'parenthesizedContexualTyping1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parenthesizedContexualTyping2': {
         errors: true,

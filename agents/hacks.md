@@ -226,14 +226,10 @@ src` finds the code-side markers; every significant one has an entry here.
   several, against a parameter type without type variables. Doing it for every candidate (generic ones against the
   skip-round instantiation) broke typeInferenceWithExcessProperties & co. and vue (47 -> 443): checking the literal
   with another contextual type leaves memos of its members behind. Real fix: side-effect-free speculative checks
-  (plan 38 stage 3's resolve-once).
-- Repeated resolution stand-ins (plan 38 stage 3 would resolve once): tttt resolves a call several times (error pass,
-  outer rounds, overloads). `KEY_ARG_FIXES`/`ArgFixes` replay what each argument fixed and to what;
-  `LazyMemo.speculative` (`lazy_type_set_speculative()`) keeps an outer round's call from replacing the memo made
-  under the instantiated context (xstate's `DoNotInfer` leak). `KEY_CALL_RESOLUTION` (`ty_call_typecheck`) skips
-  re-resolving when the last resolution would report nothing, set by hand via `mark_would_report` at every error site
-  of `resolve_call`/`resolve_with_signatures` (new diagnostics there must set it). `KEY_CONTEXT_RETURN` is rewritten
-  per check (`set_contextual_return()`); `ExprCtx.sig_contextual` only where `may_want_signature()`.
+  (not resolve-once, which only covers calls: plan 38 "Stage 3").
+- `KEY_CONTEXT_RETURN` is rewritten per check (`set_contextual_return()`); `ExprCtx.sig_contextual` only where
+  `may_want_signature()`. A call re-entered while in flight is resolved again (`call_return_type()`, not remembered)
+  where tsc returns resolvingSignature (any): doing tsc's costs 10 tests (plan 38 "Stage 3" not done 1).
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`): a failed
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
@@ -423,11 +419,10 @@ src` finds the code-side markers; every significant one has an entry here.
   eager questions find mustn't mark what is being resolved around it (it made arktype's mapped `sequence` TS2615).
   Real fix: a lazy reduced view.
 - `resolve_call` (call.c HACK): every resolution of a call starts a new region of the resolution stack; tsc's only
-  the first (a nested one gets `resolvingSignature` and sees the whole stack). Doing it tsc's way marks zod's recursive
-  getter schemas circular (TS7023) because tttt re-resolves a call inside itself, and (retried in stage 2, with the
-  chosen signature's return type already resolved outside the barrier like tsc) `s = foo(this)` in
-  implicitAnyFromCircularInference and `res3`; returning any from a nested resolution of the same call instead lost 12
-  tests. Costs `res1`'s TS7022 and circularReferenceInReturnType2's `A`/`fields`. Goes with plan 38 stage 3.
+  the first (a nested one gets `resolvingSignature` and sees the whole stack). Since resolve-once (plan 38 stage 3) the
+  only other resolutions are in-flight re-entries; skipping the barrier for those is -1 (implicitAnyFromCircularInference's
+  `s = foo(this)`), and returning any for them -10 +1. Costs `res1`'s TS7022 and circularReferenceInReturnType2's
+  `A`/`fields`.
 - `reduce_type_variable_intersection` (checker.c HACKs): type parameters only, not indexed accesses (valibot's
   `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint); constraints with a
   deferred type aren't reduced (cost valibot 5%, `primitive_constraint_of`). Real fix: cheaper conditional base

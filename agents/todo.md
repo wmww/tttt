@@ -27,9 +27,10 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 7. Done 2026-09-29: suite checker bugs 7 (four Opus sub-agents on disjoint test lists: related info/parser spans,
    header printing, elaboration chains, checker underlines, then single-code tests): suite 12058 -> 12316, 0 lost,
    errtextdiff bucket 236 -> 45, xstate 18 -> 14, drizzle instructions -14%, others +-0.8%. Leftovers in triage.md.
-8. **Planning: plan 38 stage 3** (resolve once: a call's resolution cached per node, the replay record and
-   `LazyMemo.speculative` deleted). Prototype and measure suite, xstate, and the instructions (repeated resolution is
-   also a perf cost). May conclude "not worth it"; then say so in plan 38 and stop.
+8. Done 2026-09-29: plan 38 stage 3 planned *and landed* (the prototype was the implementation): a call resolves once,
+   its errors come from that resolution, it resolves with the raw contextual type; replay record, `speculative` and
+   `would_report` deleted. Suite 12316 -> 12318, 0 lost, xstate 14 -> 12, zod-root identical, instructions -0.1..-9.4%
+   (tsc -2.2%, valibot -9.4%). Leftovers in plan 38 "Stage 3" (resolvingSignature, effects signature, JSX).
 9. **Planning: plan 41** (project references; stub in `plans/41_project_references.md`), including pinning
    TypeScript's own `src/tsconfig.json` (references) as the corpus that validates it.
 10. **Triage.**

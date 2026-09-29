@@ -2,7 +2,7 @@
 Brief by the insights of 2026-09-28; turned into this plan by the planning session of the same day (todo entry 2 of
 the sixth window), which prototyped the port in worktrees. That session died before writing up; the next session
 recovered its worktrees, fixed the prototype's last losses and **landed stage 1** (todo entries 2 and 3 in one
-session). What is left is stage 2 below. `38_prototypes/stage1.patch` is the landed prototype before cleanup,
+session). Stages 2 and 3 landed too. `38_prototypes/stage1.patch` is the landed prototype before cleanup,
 `stage1_base.patch` the one before the loss analysis, `wt38b_on_base.diff` a sub-agent's unmerged experiment (stage 2).
 
 ## Why
@@ -120,22 +120,46 @@ symbols differ for an unrelated reason):
 5. Generic function arguments fix what their contextual signature's parameters mention
    (`fix_for_generic_function()`, tsc's instantiateSignatureInContextOf); `fixed_by_*` deleted.
 
-## Stage 3 (not planned yet): resolve once
-What is left of stage 1's stand-ins is the replay record (`KEY_ARG_FIXES`) and `LazyMemo.speculative`, both there
-because tttt resolves a call several times (error pass, every outer inference round, overload rounds) where tsc
-resolves it once (links.resolvedSignature) and caches it even when first resolved under an outer inference. Removing
-them means caching a call's resolution per node and making the error pass, outer rounds and overload rounds reuse
-it: it touches every nested-call path (`generic_call`/`nested_generic` arguments, `ty_call_typecheck`'s
-KEY_CALL_RESOLUTION, the types baseline printing the last check), so it needs its own planning session (prototype
-first, measure what the suite and xstate lose). Not urgent: both stand-ins are exact on everything measured.
-Circularity also wants it (plan 39 "Stage 3" item 1): a nested resolution of a call already being resolved should
-return any at once like tsc's `resolvingSignature`, and then the call barrier can be tsc's (first resolution only),
-which reports `res1` in circularReferenceInReturnType and `A` in circularReferenceInReturnType2 (the `resolve_call` HACK).
+## Stage 3 (landed, todo entry 8 of the seventh window): resolve once
+Planned and landed in one session: the prototype was the implementation. Suite 12316 -> 12318 (fixingTypeParametersRepeatedly1,
+parenthesizedContexualTyping1; 0 lost), xstate 14 -> 12 (emit.test 49/52), other corpora unchanged, zod-root
+byte-identical, instructions -0.1% (type-fest) .. -9.4% (valibot), tsc -2.2%, xstate -5.3%.
+- `call_return_type()` (call.c) keeps a `CallResolution` per call or tagged template node (`KEY_CALL_RESOLUTION`):
+  the first resolution's return type and the errors it reported (into its own ErrorCtx, registered in
+  `Checker.call_errors`), wherever it happened (an outer call's inference round, one of its overloads, control flow).
+  Every later request returns it, and the typecheck walk (`call_typecheck()`) merges its errors instead of resolving
+  again. Only a call never remembered (`class A extends B`'s stand-in, one first typed in flow-uncached mode) is
+  resolved by the walk. Errors cost nothing for calls that fit: they are only built on failure paths.
+- Deleted: the replay record (`KEY_ARG_FIXES`/`ArgFixes`), `LazyMemo.speculative`, `would_report`/`mark_would_report`
+  at every error site. Without the replay a second round of the same resolution (subtype then assignable) no longer
+  fixes what the first fixed, like tsc (a function's contextual signature is assigned once): that is the two gains.
+- **The contextual type a call resolves with is the raw one** (`ExprCtx.raw_contextual`, tsc's getContextualType in
+  resolveCall), not the one `check_with()` instantiated with the outer return mapper: the outer mappers are applied by
+  `infer_type_arguments()` itself. With "last resolution wins" this never showed; with "first wins" it made xstate's
+  `or([not('truthy')])` in createMachine's implementations infer createMachine's raw `TContext` into `not`
+  (`38_prototypes/xstate_nested_call_raw_contextual.ts`). The generic-function-mode branch of `check_with()` re-enters
+  with the raw type too.
+- How the first try went: caching alone changed nothing in the suite (525 cache hits under another contextual type),
+  but re-resolving for errors with the first resolution's contextual type outside its inference gave xstate raw type
+  parameters in messages: errors must come from the first resolution itself.
 
-xstate's 19 left (none is known to be an inference-flow bug; plan 19 "xstate" has them by cause): spawnChild.test.ts:107
+Not done (each tried, measured, left):
+1. **tsc's resolvingSignature**: a call re-entered while in flight still resolves again (without being remembered).
+   Returning any instead: -10 +1 (witness passes; classVarianceResolveCircularity1/2, implicitAnyFromCircularInference,
+   simpleRecursionWithBaseCase1's TS7023, controlFlowIterationErrors(Async), typeArgumentInference*...): tttt re-enters
+   calls where tsc doesn't (eager return types, relation-time member resolution). With it, plan 39's first-resolution-only
+   barrier becomes possible; alone (barrier skipped for in-flight re-resolutions) it is -1 (implicitAnyFromCircularInference).
+2. `ty_call_effects()` (flow.c's getEffectsSignature) still resolves the call on its own, without contextual type, in
+   uncached mode; tsc takes getResolvedSignature. Would need the chosen signature in `CallResolution`; untried.
+3. JSX elements (`ty_resolve_jsx_element`) aren't remembered per node: resolved per request as before. Untried.
+4. The call's memo in `check_with()` is still keyed by contextual type although a call's type no longer depends on it
+   (perf only, untried).
+5. hacks.md `first_unfit_skipped_literal` named resolve-once as its real fix; it isn't: that is about a literal
+   argument's member memos under another contextual type (side-effect-free speculative checks), not calls.
+
+xstate's 12 left (none is known to be an inference-flow bug; plan 19 "xstate" has them by cause): spawnChild.test.ts:107
 TS7031 (`spawnChild(child, { id: ({ context }) => ... })` nested in `entry: [...]`, the nested-generic-call path),
-emit.test.ts 49/52 (TS2353, `emit()` under a plain createMachine; not reproduced standalone), meta.test 270/434
-(elaboration), setup.types 2787-2951 (setup().extend()), types 870/1662/2634, spawn.ts:132.
+setup.types 2787-2951 (setup().extend(), 8), types 870/1662/2634.
 
 ## Validation
 Any stage: xstate and webpack lower with no new diagnostic (compare `file:line code` sets against the previous commit;

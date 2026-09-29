@@ -792,6 +792,9 @@ struct Checker {
     InternTable types;  // literals, unions, intersections, references, deferred, instantiated anonymous, tuple targets
     InternTable intersection_props; // (intersection id, property name) -> FoundProp, see find_prop()
     InternTable links;  // Symbol -> SymbolLinks, AST node -> Ty, Generic -> type parameter list...
+    // The errors of calls' resolutions (call.c), kept until the checker is dropped
+    struct ErrorCtx** call_errors;
+    u32 call_errors_len, call_errors_cap;
     Ty const* array_target;
     Ty const* auto_array; // ty_auto_array(), made with array_target
     Ty const* readonly_array_target;
@@ -1824,7 +1827,7 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
 
 // call.c
 // `contextual`: the contextual type of the call expression (return type inference), may be null
-Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual);
+Ty const* ty_call_return_type(Checker* me, Ty const* callee, CallExpr const* call, Span call_span, Ty const* contextual);
 void ty_call_typecheck(Checker* me, Ty const* callee, CallExpr const* call, Ty const* contextual, Span call_span, ErrorCtx* errs);
 // A tagged template `` tag`a${x}` ``, the EXPR_TEMPLATE: a call of the tag with a TemplateStringsArray and the substitutions
 Ty const* ty_tagged_template_return_type(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual);

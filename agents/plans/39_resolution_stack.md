@@ -51,8 +51,9 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
 ## Stage 3 (leftovers, not scheduled)
 1. **Nested call resolution** (res1 in circularReferenceInReturnType, `A`/`fields` in circularReferenceInReturnType2):
    tsc finds these cycles through a nested resolution of the same call, which has no barrier and returns
-   `resolvingSignature` (any) at once. tsc's first-resolution-only barrier alone (tried: track calls in flight) made
-   `s = foo(this)` and `res3` circular; any from a nested resolution lost 12 tests. Needs plan 38 stage 3.
+   `resolvingSignature` (any) at once. Plan 38 stage 3 (resolve once) landed, so the only nested resolutions left are
+   in-flight re-entries: skipping the barrier for them is -1 (`s = foo(this)`), any for them -10 +1 (plan 38 "Stage 3"
+   not done 1). Next step: find why tttt re-enters those calls where tsc doesn't.
 2. **Constraint lowering under the push** (TS2313 in recursiveMappedTypes, incorrectRecursiveMappedTypeConstraint,
    circularBaseTypes' `K`/`Y`): tsc's getResolvedBaseConstraint lowers the declared constraint while `(K,
    ImmediateBaseConstraint)` is pushed, and getTypeFromMappedTypeNode resolves the key constraint eagerly. Moving

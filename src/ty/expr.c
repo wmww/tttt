@@ -40,6 +40,9 @@ typedef struct ExprCtx {
     // CheckMode.SkipContextSensitive: the first inference pass sees the rest of an object literal argument)
     bool skip_sensitive;
     GenericFunctionMode* generic_mode; // See GenericFunctionMode: the members of literal arguments
+    // While a call infers: `contextual` before its top-level instantiation (what a nested call resolves with: tsc's
+    // resolveCall takes getContextualType(), and instantiates it with the outer mappers itself)
+    Ty const* raw_contextual;
 } ExprCtx;
 
 static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
@@ -259,12 +262,14 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         ctx.sig_contextual);
     if (inferring) {
         Ty const* raw_sig = ctx.sig_absent ? nullptr : ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
+        ctx.raw_contextual = ctx.contextual;
         ctx.contextual = ty_instantiate_contextual_type(me, ctx.contextual);
         Ty const* sig_view = !raw_sig ? nullptr :
             may_want_signature(expr) ? ty_instantiate_contextual_type_for(me, raw_sig, true) : ctx.contextual;
         ctx.sig_contextual = sig_view != ctx.contextual ? sig_view : nullptr;
     } else {
         ctx.sig_contextual = nullptr;
+        ctx.raw_contextual = ctx.contextual;
     }
     ctx.is_const = in_const_context(me, expr, ctx);
     if (ctx.skip_sensitive) {
@@ -283,7 +288,10 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
             mode->skipped = true;
             return ty_intrinsic(me, TY_SILENT_NEVER);
         }
-        return ty_generic_function_in_context(me, check_with(me, expr, ctx), ctx.contextual, mode);
+        // (Checked again from the top: with the contextual type before instantiation, which a call resolves with)
+        Ty const* instantiated = ctx.contextual;
+        ctx.contextual = ctx.raw_contextual;
+        return ty_generic_function_in_context(me, check_with(me, expr, ctx), instantiated, mode);
     }
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
@@ -298,14 +306,6 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     if (my flow_uncached) return ret;
     // (What such a reference is while type arguments are inferred isn't what it is once they are)
     if (my inferential_depth && identifier_uses_context(me, expr)) return ret;
-    // A call typed while an outer call infers, against a contextual type that mentions the type parameters being inferred,
-    // saw the inferences so far (see OuterInference), which a later look at the memo (the error pass resolves the call
-    // again with its contextual type) doesn't: it doesn't replace what was typed against the instantiated contextual type
-    if (expr->tag == EXPR_CALL && my outer_inference && ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-        if (memo && memo->done && !memo->speculative) return ret;
-        lazy_type_set_speculative(lazy, ret, ctx.contextual);
-        return ret;
-    }
     lazy_type_set(lazy, ret, ctx.contextual);
     return ret;
 }
@@ -3703,7 +3703,7 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
     free(args);
 }
 
-static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
+static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, ExprCtx ctx) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr; // call.c applies the type arguments
     // An immediately invoked function returns into the call's contextual type (tsc's getContextualReturnType), which
@@ -3723,7 +3723,7 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     // An incomplete `never` of control flow calls to nothing (tsc's silentNeverSignature)
     if (callee_type == ty_intrinsic(me, TY_SILENT_NEVER)) return callee_type;
     if (!call->uses_new && !call->is_extends) callee_type = ty_check_non_null_callee(me, callee_type, span_null, nullptr);
-    Ty const* ret = ty_call_return_type(me, callee_type, call, ctx.contextual);
+    Ty const* ret = ty_call_return_type(me, callee_type, call, call_span, ctx.raw_contextual);
     if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !call->uses_new) {
         return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error
     }
@@ -4098,7 +4098,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             return union_of_two(me, yes, no);
         }
 
-        case EXPR_CALL: return check_call(me, expr->call, ctx);
+        case EXPR_CALL: return check_call(me, expr->call, expr->inner_span, ctx);
 
         case EXPR_FUNCTION: {
             if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
@@ -4138,7 +4138,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (!expr->template_->tag) return check_template(me, expr, ctx);
             Expr const* tag = expr->template_->tag;
             if (tag->tag == EXPR_GENERIC_PARAMS) tag = &tag->generic_params->expr; // call.c applies the type arguments
-            return ty_tagged_template_return_type(me, ty_expr_type(me, tag), expr, ctx.contextual);
+            return ty_tagged_template_return_type(me, ty_expr_type(me, tag), expr, ctx.raw_contextual);
         }
 
         case EXPR_SPREAD: {

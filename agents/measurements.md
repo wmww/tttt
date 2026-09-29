@@ -10,6 +10,13 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Plan 38 stage 3: resolve once (2026-09-29, todo entry 8)
+Suite 12316 -> 12318, 0 lost. Corpora: xstate 14 -> 12 (emit.test 49/52), others unchanged (webpack 6, drizzle 6,
+zod-root byte-identical, rest 0). Instructions (`./instrcount.sh`) 5062bc88 -> end: tsc 4.621 -> 4.520 (-2.2%),
+type-fest 3.180 -> 3.176, valibot 5.419 -> 4.911 (-9.4%), react 1.552 -> 1.528, nest 1.150 -> 1.147, webpack 3.722 ->
+3.714, zod 4.441 -> 4.292 (-3.4%), xstate 2.799 -> 2.652 (-5.3%), drizzle 13.461 -> 12.929 (-4.0%), vue 8.007 -> 7.689
+G (-4.0%).
+
 ## Suite checker bugs 7 (2026-09-29, todo entry 7)
 Suite 12058 -> 12316 (errors 12750 -> 13078, symbols 13005 -> 13020, types 12775 -> 12819), 0 lost; ~190 fixes by
 four Opus sub-agents. `./errtextdiff.py` bucket (right codes at the right positions, other text) 236 -> 45. Corpora:

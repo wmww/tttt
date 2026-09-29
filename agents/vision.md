@@ -30,9 +30,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types, mixins, decorators, the missing
   type, union origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos, parallel
   checking and loading. ~94k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent or approximated tsc mechanisms**: resolve-once (a call is resolved several times, a replay record stands in:
-  plan 38 stage 3), one circularity stack (plan 39), declaration-emit diagnostics (plan 40), project references (plan
-  41), lazy reverse mapped types, permissive instantiation, intersection reduction by constraint. (The five plan-sized hacks of the
+- **Absent or approximated tsc mechanisms**: resolvingSignature (a call re-entered while in flight is resolved again;
+  resolve-once itself landed, plan 38 stage 3), the rest of the circularity stack (plan 39 stage 3), declaration-emit
+  diagnostics (plan 40), project references (plan 41), lazy reverse mapped types, permissive instantiation, intersection reduction by constraint. (The five plan-sized hacks of the
   sixth window's list were all ported 2026-09-29; none needed a plan.)
   Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
 
