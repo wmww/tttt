@@ -6786,7 +6786,7 @@ const baselines = {
         types: true,
     },
     'continueTarget1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18086,7 +18086,7 @@ const baselines = {
         types: true,
     },
     'interfaceDeclaration4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48021,7 +48021,7 @@ const baselines = {
         types: true,
     },
     'typeAssertions': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -58571,7 +58571,7 @@ const baselines = {
         types: true,
     },
     'parser_continueTarget1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58666,7 +58666,7 @@ const baselines = {
         types: true,
     },
     'parserDoStatement2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59471,7 +59471,7 @@ const baselines = {
         types: true,
     },
     'parserSbp_7.9_A9_T3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62891,17 +62891,17 @@ const baselines = {
         types: true,
     },
     'invalidDoWhileBreakStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'invalidForBreakStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'invalidForInBreakStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62911,7 +62911,7 @@ const baselines = {
         types: true,
     },
     'invalidWhileBreakStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62941,17 +62941,17 @@ const baselines = {
         types: true,
     },
     'invalidDoWhileContinueStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'invalidForContinueStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'invalidForInContinueStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -62961,7 +62961,7 @@ const baselines = {
         types: true,
     },
     'invalidWhileContinueStatements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

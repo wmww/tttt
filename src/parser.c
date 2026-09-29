@@ -4952,7 +4952,6 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     if (!parse_interface(&p, &interface)) {
         interface = (Interface){0};
         expected_token_error(&p, "{");
-        hop_token(&p);
     }
 
     *ret = (InterfaceDecl) {
@@ -10525,6 +10524,38 @@ static bool statement_takes_semicolon(Statement const* me) {
     }
 }
 
+// tsc's parseSemicolon() at the end of a statement that takes one: a `;` is part of it (also after a newline or a brace,
+// `x = {}\n;`, which is no empty statement), else it has to end at a newline, `}` or the end of the file. Statements that
+// don't take one (blocks, declarations, compound statements whose bodies took theirs) leave what follows to the next
+static void parse_statement_semicolon(Parser* parent, Statement* statement) {
+    if (!statement_takes_semicolon(statement)) return;
+    Parser p = parser(parent);
+    hop_whitespace(&p);
+    if (*p.pos == ';') {
+        p.pos++;
+        statement->span = span_make(p.shared->source, span_start_ptr(statement->span), p.pos);
+        parse_success(&p);
+        return;
+    }
+    // (a do-while's `;` is optional: tsc's parseOptional)
+    if (p.whitespace == WHITESPACE_NEWLINE || !*p.pos || *p.pos == '}' || statement->tag == STATEMENT_FOR_LOOP) {
+        parse_fail(&p);
+        return;
+    }
+    if (statement->tag == STATEMENT_EXPR && statement->expr.tag == EXPR_IDENTIFIER &&
+        !expr_is_perenthisized(&statement->expr)
+    ) {
+        report_missing_semicolon_after_identifier(&p, statement->expr.inner_span);
+    } else {
+        expected_token_error(&p, ";");
+    }
+    // (the error stays, the position doesn't move)
+    p.pos = parent->pos;
+    p.whitespace = parent->whitespace;
+    p.whitespace_end = parent->whitespace_end;
+    parse_success(&p);
+}
+
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
 // What a statement parsed outside of a statement list (an `if` arm) left behind
 static void jsdoc_drop_enum(Parser* p) {
@@ -10619,32 +10650,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span), true, toplevel, ret);
                 jsdoc_from = p.pos;
             }
-            bool ended_on_brace = p.pos > source_file_start(p.shared->source) && *(p.pos - 1) == '}';
-            hop_whitespace(&p);
-            if (*p.pos == ';' && statement_takes_semicolon(&statement)) {
-                // tsc's parseSemicolon(): also after a newline or a brace (`x = {}\n;`), which is no empty statement
-                p.pos++;
-                Statement* pushed = vec_statement_at_mut(ret, statement_index);
-                pushed->span = span_make(p.shared->source, span_start_ptr(pushed->span), p.pos);
-            } else if (p.whitespace == WHITESPACE_NEWLINE ||
-                statement.tag == STATEMENT_NOOP ||
-                !*p.pos ||
-                (ended_on_brace && !statement_takes_semicolon(&statement)) ||
-                *p.pos == '}'
-            ) {
-            } else if (hop_char(&p, ';')) {
-                Statement* pushed = vec_statement_at_mut(ret, statement_index);
-                pushed->span = span_make(p.shared->source, span_start_ptr(pushed->span), p.pos);
-            } else if (*p.pos) {
-                if (statement.tag == STATEMENT_EXPR &&
-                    statement.expr.tag == EXPR_IDENTIFIER &&
-                    !expr_is_perenthisized(&statement.expr)
-                ) {
-                    report_missing_semicolon_after_identifier(&p, statement.expr.inner_span);
-                } else {
-                    expected_token_error(&p, ";");
-                }
-            }
+            parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
         } else if (*p.pos == '\\') {
             parse_error(&p, span_from_pos(&p), 1127, "Invalid character.");
             p.pos++;
@@ -11592,6 +11598,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
 static inline bool expect_statement(Parser* parent, bool toplevel, Statement* ret) {
     if (parse_statement(parent, toplevel, ret)) {
+        parse_statement_semicolon(parent, ret);
         return true;
     } else {
         expected_expression_error(parent);
