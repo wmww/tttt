@@ -8831,7 +8831,7 @@ const baselines = {
         types: true,
     },
     'declarationFileNoCrashOnExtraExportModifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

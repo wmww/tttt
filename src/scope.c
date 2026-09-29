@@ -1125,14 +1125,42 @@ Span symbol_decl_error_span(SymbolDecl const* decl) {
     return span_valid(decl->name) ? decl->name : first_token(decl->full);
 }
 
+static u32 excluded_flags(u32 flags);
+
+// tsc's getCommonJsExportEquals: the module's other exports merge into what `export =` assigns, a conflict with a
+// name that has (an alias to something of) excluded meanings is TS2300 at both (mergeSymbol resolves the target side)
+static void check_export_equals_merge(Symbol const* module, Symbol* export_equals, ErrorCtx* errs) {
+    Symbol const* target = export_equals->flags & SYMBOL_ALIAS ? symbol_resolve_alias(export_equals) : export_equals;
+    if (!target || target == module || target->is_placeholder || target->is_module || !target->exports) return;
+    SymbolTable const* exports = module->exports;
+    for (u32 i = 0; i < exports->count; i++) {
+        Symbol const* source = exports->entries[i].symbol;
+        if (csview_equals(exports->entries[i].name, "export=")) continue;
+        Symbol* existing = symbol_table_get(target->exports, exports->entries[i].name);
+        if (!existing || existing == source) continue;
+        Symbol const* resolved = existing->flags & SYMBOL_ALIAS ? symbol_resolve_alias(existing) : existing;
+        if (!resolved || resolved->is_placeholder || !(resolved->flags & excluded_flags(source->flags))) continue;
+        // (A merge of the checker: each side points at the other's declarations, tsc's addDuplicateDeclarationError)
+        for (u32 d = 0; d < existing->decl_count; d++) {
+            Error* error = report_conflict(errs, existing->decls[d].name, 2300);
+            for (u32 o = 0; o < source->decl_count; o++) add_duplicate_related(error, existing->decls[d].name, source->decls[o].name);
+        }
+        for (u32 d = 0; d < source->decl_count; d++) {
+            Error* error = report_conflict(errs, source->decls[d].name, 2300);
+            for (u32 o = 0; o < existing->decl_count; o++) add_duplicate_related(error, source->decls[d].name, existing->decls[o].name);
+        }
+    }
+}
+
 static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
     if (!container || !container->exports) return;
     SymbolTable const* exports = container->exports;
-    Symbol const* export_equals = symbol_table_get(exports, c_sv("export="));
+    Symbol* export_equals = symbol_table_get(exports, c_sv("export="));
     if (export_equals && exports->count > 1 && export_equals->decl_count) {
         // (tsc's checkExternalModuleExports)
         error_ctx_error_d(errs, export_equals->decls[0].full, 2309,
             "An export assignment cannot be used in a module with other exported elements.");
+        if (container->is_module) check_export_equals_merge(container, export_equals, errs);
     }
     for (u32 i = 0; i < exports->count; i++) {
         Symbol const* symbol = exports->entries[i].symbol;
