@@ -195,6 +195,7 @@ static void nested_expando_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Expr const* entity = &left->property->expr;
     if (entity->tag != EXPR_PROPERTY || expr_is_perenthisized(entity) || !expr_is_entity_name(entity)) return;
     if (expr_prototype_object((Expr*)entity) || expr_commonjs_target(left, nullptr) != COMMONJS_TARGET_NONE) return;
+    if (span_equals(expr_static_property_name(left), "prototype")) return; // (AssignmentDeclarationKind.Prototype)
     Expr const* next_to_last = entity;
     while (next_to_last->property->expr.tag == EXPR_PROPERTY) next_to_last = &next_to_last->property->expr;
     Expr const* root = &next_to_last->property->expr;
