@@ -1905,6 +1905,10 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             // The target contextually types what is assigned to it (tsc's getContextualTypeForBinaryOperand)
             left = ty_expr_type(me, &binary->left);
             Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
+            // (An any target is a context too, which a `yield` records as what its generator is sent)
+            if (!assigned_context && binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) {
+                assigned_context = left;
+            }
             if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
                 (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS
             ) {
@@ -3412,6 +3416,11 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
 static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx) {
     FunctionImpl const* generator = yield->generator;
     Expr const* operand = &yield->expr;
+    // What the generator is sent (tsc's checkAndAggregateYieldOperandTypes: getContextualType of each yield)
+    if (ctx.contextual && yield->op == UNARY_OP_YIELD) {
+        u64 key[2] = { KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield };
+        if (!intern_get(&my links, key, 2)) *intern_slot(me, &my links, key, 2) = ctx.contextual;
+    }
     if (!generator) {
         if (operand->tag != EXPR_IMPLICIT_ANY && !yield->outside_generator) ty_expr_type(me, operand);
         return any_type(me);

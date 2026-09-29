@@ -67,6 +67,7 @@ enum {
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
     KEY_CONTEXT_IIFE_RETURN, // FunctionImpl -> the contextual type of the call that invokes it immediately
     KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
+    KEY_YIELD_CONTEXT,  // UnaryOpExpr of a `yield` -> the contextual type it was checked with (its generator's TNext)
     KEY_LITERAL_CONTEXT, // Object literal Expr -> the contextual type it is being checked with (for `this` in methods)
     KEY_PATTERN_COMPUTED, // Implied type of an object binding pattern with a computed name -> non-null
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of

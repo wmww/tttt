@@ -59,9 +59,18 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
     bool async = function->is_async;
     TyIterationTypes const* context = ty_generator_context(me, function);
     TyBuf yields = {0};
+    TyBuf nexts = {0};
     for (u32 i = 0; i < function->yield_count; i++) {
         UnaryOpExpr const* yield = function->yields[i]->unary_op;
         ty_expr_type(me, function->yields[i]); // Checks the operand with the contextual type it gets from there
+        if (yield->op == UNARY_OP_YIELD) {
+            Ty const* sent = intern_get(&my links, (u64[]){ KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield }, 2);
+            if (sent) ty_buf_push(&nexts, sent);
+        } else if (yield->expr.tag != EXPR_IMPLICIT_ANY) {
+            TyIterationTypes const* delegate = ty_iteration_types_of_iterable(me, ty_expr_type(me, &yield->expr),
+                async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR);
+            if (delegate && delegate->next_type) ty_buf_push(&nexts, delegate->next_type);
+        }
         Ty const* type;
         if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
             type = ty_intrinsic(me, TY_UNDEFINED_WIDENING); // A bare `yield`
@@ -98,7 +107,10 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
     }
     if (yield_type) yield_type = ty_widened_return_type(me, yield_type, context ? context->yield_type : nullptr);
     if (return_type) return_type = ty_widened_return_type(me, return_type, context ? context->return_type : nullptr);
-    Ty const* next_type = context ? context->next_type : ty_intrinsic(me, TY_UNKNOWN_);
+    // (tsc: the intersection of what the yields are expected to produce, widened, else the context's)
+    Ty const* next_type = nexts.len ? ty_widened_for_declaration(me, ty_intersection(me, nexts.data, nexts.len, nullptr, (TyList){0}), false) :
+        context ? context->next_type : ty_intrinsic(me, TY_UNKNOWN_);
+    ty_buf_drop(&nexts);
     return ty_generator_type(me, async, yield_type ? yield_type : ty_intrinsic(me, TY_NEVER),
         return_type ? return_type : fallback, next_type);
 }
