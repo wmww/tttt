@@ -491,7 +491,7 @@ static bool sorted_contains(TyBuf const* buf, u32 len, Ty const* t) {
 }
 
 Ty const* ty_string_literal(Checker* me, csview sv) {
-    Value value = { .tag = VALUE_STRING, .string = cstr_from_sv(sv) };
+    Value value = { .tag = VALUE_STRING, .string = cstr_from_sv(name_cooked(sv)) }; // (maybe an identifier's name)
     Ty const* ret = ty_literal(me, &value);
     value_drop(&value);
     return ret;

@@ -227,6 +227,8 @@ csview name_cooked_slow(csview sv) {
             u32 code;
             int escape = name_escape(c, end, &code);
             if (!escape) {
+                // (`\\u0061` is no escape, if a string's raw text ever gets here)
+                if (*c == '\\' && c + 1 < end) cooked[size++] = *c++;
                 cooked[size++] = *c++;
                 continue;
             }

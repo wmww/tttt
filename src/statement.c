@@ -1239,7 +1239,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
     switch (my tag) {
         case STATEMENT_LABELED: {
             for (FlowActiveLabel* i = flow->active_labels; i; i = i->next) {
-                if (!csview_equals_sv(i->name.sv, my labeled.name.sv)) continue;
+                if (!name_equals(i->name.sv, my labeled.name.sv)) continue;
                 error_ctx_grammar_error_d(errs, my labeled.name, 1114, "Duplicate label '", my labeled.name.sv, "'.");
                 break;
             }
@@ -1455,7 +1455,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (span_valid(my jump_label)) {
                 target = nullptr;
                 for (FlowActiveLabel* i = flow->active_labels; i; i = i->next) {
-                    if (!csview_equals_sv(i->name.sv, my jump_label.sv)) continue;
+                    if (!name_equals(i->name.sv, my jump_label.sv)) continue;
                     i->referenced = true;
                     target = is_break ? i->break_target : i->continue_target;
                     break;
@@ -1693,7 +1693,7 @@ static void statement_check_jump(Statement const* me, BlockTypecheckCtx ctx, Err
     bool labeled = span_valid(my jump_label);
     if (labeled) {
         for (TypecheckLabel const* i = ctx.labels; i; i = i->outer) {
-            if (!csview_equals_sv(i->name.sv, my jump_label.sv)) continue;
+            if (!name_equals(i->name.sv, my jump_label.sv)) continue;
             if (!is_break && !i->is_iteration) {
                 error_ctx_grammar_error_d(errs, my span, 1115,
                     "A 'continue' statement can only jump to a label of an enclosing iteration statement.");

@@ -1232,7 +1232,7 @@ __attribute__((always_inline)) static inline bool hop_start_if_ends_on_word_brea
     return true;
 }
 
-static cstr jsx_name_value(csview name);
+static cstr identifier_name_value(csview name);
 
 // A keyword spelled with unicode escapes (`\u0076ar`): tsc's scanner makes it the keyword's token, and its parser's
 // nextToken() reports TS1260 where it is consumed as one. Probes that don't match a word with a `\` come here
@@ -1243,7 +1243,7 @@ static bool hop_escaped_keyword(Parser* parent, const char* keyword) {
         parent->pos = start;
         return false;
     }
-    cstr cooked = jsx_name_value(word.sv);
+    cstr cooked = identifier_name_value(word.sv);
     bool equal = strcmp(cstr_str(&cooked), keyword) == 0;
     cstr_drop(&cooked);
     if (!equal) {
@@ -3566,12 +3566,12 @@ static bool parse_jsdoc_bare_type(Parser* parent, const char** pos, const char* 
 }
 
 static int identifier_escape_size(const char* c);
-static cstr jsx_name_value(csview name);
+static cstr identifier_name_value(csview name);
 
 // A JSDoc name is a parameter's name, `\u0061` for `a` (tsc's scanner decodes escapes in identifiers)
 static bool jsdoc_name_is(csview jsdoc_name, csview name) {
     if (!memchr(jsdoc_name.buf, '\\', (size_t)jsdoc_name.size)) return csview_equals_sv(jsdoc_name, name);
-    cstr decoded = jsx_name_value(jsdoc_name);
+    cstr decoded = identifier_name_value(jsdoc_name);
     bool ret = csview_equals_sv(cstr_sv(&decoded), name);
     cstr_drop(&decoded);
     return ret;
@@ -7687,7 +7687,7 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
         p.whitespace_end = at_dot.whitespace_end;
     }
 
-    *ret = expr_literal(prop, value_string(cstr_from_span(prop)));
+    *ret = expr_literal(prop, value_string(identifier_name_value(prop.sv)));
     *optional_chain_ret = optional_chain;
     return parse_success(&p);
 }
@@ -9082,7 +9082,7 @@ static Span jsx_span_from_token(Parser* p) {
 }
 
 // tsc's parseJsxElementName: an identifier, `this`, a namespaced name `a:b`, or property accesses on the first two
-static cstr jsx_name_value(csview name);
+static cstr identifier_name_value(csview name);
 
 static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* broken) {
     Anchor a = anchor(p);
@@ -9128,14 +9128,16 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
         parse_success(&dot);
         *ret = expr_property(span_from(a), c_new(PropertyExpr, {
             .expr = *ret,
-            .prop = expr_literal(prop, value_string(jsx_name_value(prop.sv))),
+            .prop = expr_literal(prop, value_string(identifier_name_value(prop.sv))),
             .form = PROPERTY_EXPR_DOT,
         }));
     }
 }
 
 // A JSX name with its unicode escapes decoded
-static cstr jsx_name_value(csview name) {
+// An identifier's value, its unicode escapes decoded (tsc's escapedText)
+static cstr identifier_name_value(csview name) {
+    if (name.size <= 0 || !memchr(name.buf, '\\', (size_t)name.size)) return cstr_from_sv(name);
     cstr ret = cstr_null;
     for (isize i = 0; i < name.size;) {
         int escape = identifier_escape_size(name.buf + i);
@@ -9164,7 +9166,7 @@ static bool jsx_tag_names_equal(Expr const* a, Expr const* b) {
             csview x = a->identifier.name.sv, y = b->identifier.name.sv;
             if (!csview_contains(x, "\\") && !csview_contains(y, "\\")) return csview_equals_sv(x, y);
             // (by the names' values: `<\u0061></a>` is fine)
-            cstr cx = jsx_name_value(x), cy = jsx_name_value(y);
+            cstr cx = identifier_name_value(x), cy = identifier_name_value(y);
             bool ret = cstr_eq(&cx, &cy);
             cstr_drop(&cx);
             cstr_drop(&cy);
@@ -10686,7 +10688,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                         Span key_name = binding.content_span;
                         binding_drop(&binding);
                         vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
-                            .source = value_string(cstr_from_span(key_name)),
+                            .source = value_string(identifier_name_value(key_name.sv)),
                             .source_span = key_name,
                             .target = target,
                         });
@@ -10700,7 +10702,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 });
                 goto object_item_done;
             } else if (parse_identifier_or_keyword(&p, &name)) {
-                key = value_string(cstr_from_span(name));
+                key = value_string(identifier_name_value(name.sv));
                 shorthand_allowed = !is_reserved_word(name.sv);
             } else if (*p.pos == '[') {
                 p.pos++;
