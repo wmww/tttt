@@ -1622,13 +1622,18 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
             for (u32 j = 0; j < params.len; j++) if (j != i) constraint_pass_resolve(me, pass, j);
         }
         Ty const* instantiated = ty_instantiate(me, constraint, pass->mapper);
-        bool fits = pass->inferred[i] && (pass->inf->within_relation ? ty_is_related_within(me, pass->results[i], instantiated) :
-            ty_is_related(me, pass->results[i], instantiated, TY_RELATION_ASSIGNABLE));
+        // The constraint's `this` is the inference (tsc's getTypeWithThisArgument in getInferredType): a builder
+        // `T extends QueryBuilder` fits with the methods it returns from `this`-typed ones
+        Ty const* result = pass->results[i];
+        bool fits = pass->inferred[i] && (pass->inf->within_relation ?
+            ty_is_related_within(me, result, ty_with_this_arg(me, instantiated, result)) :
+            ty_is_related(me, result, ty_with_this_arg(me, instantiated, result), TY_RELATION_ASSIGNABLE));
         if (!fits) {
             // (The inference of the other variance if that fits: co `[Ref<string>]` when contra `[string]` doesn't)
             Ty const* fallback = pass->fallbacks[i];
-            bool fallback_fits = fallback && (pass->inf->within_relation ? ty_is_related_within(me, fallback, instantiated) :
-                ty_is_related(me, fallback, instantiated, TY_RELATION_ASSIGNABLE));
+            bool fallback_fits = fallback && (pass->inf->within_relation ?
+                ty_is_related_within(me, fallback, ty_with_this_arg(me, instantiated, fallback)) :
+                ty_is_related(me, fallback, ty_with_this_arg(me, instantiated, fallback), TY_RELATION_ASSIGNABLE));
             pass->results[i] = fallback_fits ? fallback : instantiated;
             pass->mapper = ty_mapper_new(me, params, (TyList){ .data = pass->results, .len = params.len });
         }
