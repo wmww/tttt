@@ -24,7 +24,9 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   `*.test-d.ts`, most of it `prop_type` resolving instantiated property types (inherent) and nested relations.
   `instantiate_inner` 12.6% self.
 - **react** (1.56 G): react-hook-form's Path/FieldPathValue chains (hacks.md "Relations", relating whole chains as
-  tsc does); `lower_node` of big literal unions.
+  tsc does); `lower_node` of big literal unions. Relating a nested indexed-access source (`T[a][b]...[k]`) steps one
+  index constraint per relation and recomputes each variant ~12 times (Maybe results inside aren't cached), about 4%
+  of the react corpus; tsc computes the constraint of the whole chain in one getConstraintOfType.
 - **tsc corpus** (4.6 G): flow is the biggest block: `type_at_flow_node` ~4% self, `narrowed_type` misses (type
   predicates like `isIdentifier(node)` over the `Node` union: 70k instructions each, cached per (type, candidate)),
   `narrow_by_equality`; then `check_related`/`is_simple_related` setup.

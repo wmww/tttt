@@ -127,6 +127,13 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax.
 - TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1,
   circularlyReferentialInterfaceAccessNoCrash. limitDeepInstantiations: `Foo<"true", {}>` never reaches the limit.
+  In circularTypeArgumentsLocalAndOuterNoCrash1 (`type X = NumArray<X extends {} ? number : number>`, NumArray local
+  to `f<_T, _S>`) tttt does find the cycle in `ty_reference_args()`, but outside the typecheck phase (the types walk),
+  where `ty_error_at` drops the error. tsc gets there during the alias's check: resolving the argument's conditional
+  relates X to `{}`, which resolves X's members and so its type arguments while they're in flight. tttt's relation to
+  `{}` never looks at a deferred reference's arguments, and the TS2344 check of the alias body doesn't reach them
+  either. Also: the circular branch errors all arguments, outer ones included (`f<any, any>.NumArray<any>`); tsc
+  keeps the outer type parameters and errors only the local ones (`NumArray<any>`).
 - Spurious TS2589: recursiveConditionalTypes (the `unbox(b1)` calls), recursiveTypeReferences1.
 - type-fest's `test-d/opaque.ts` (~90% of type-fest's check time) runs into TS2589 at line 68 (`Tagged`/`UnwrapTagged`
   over `TagContainer`) plus four TS7022 tsc doesn't report: a correctness bug with a perf symptom.

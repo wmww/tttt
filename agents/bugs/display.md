@@ -27,6 +27,11 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   looked at in tttt.
 
 ## Structure
+- A union containing an intersection with a nullish member prints without parentheses: `T | undefined & {}` where
+  tsc prints `T | (undefined & {})` (without strictNullChecks, where it isn't reduced).
+- Union order of literal keys follows type ids: the rest of a generic `this` is `Omit<this, "getter" | "setter" |
+  "method" | "publicProp">` in tttt, `"publicProp" | ...` first in tsc (the pattern's key literal is older there);
+  destructuringUnspreadableIntoRest fails on this alone.
 - **Deferred tuple access**: `p[1]` with `p: [string, ...T]` prints `T[number]`, tsc keeps `[string, ...T][1]`
   (variadic_tuple_iterate.ts). tttt resolves the element access through the variadic part eagerly.
 - **union_signatures_with_intersection.ts**: union member order and `(A | B) & C` vs `(A & C) | (B & C)` of signature
@@ -54,6 +59,9 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - reactDefaultPropsInferenceSuccess: the TS6500 related info prints `keyof Props` where tsc prints `"when" | "error"`.
 
 ## Names and specifiers
+- enumAssignmentCompat6 (passes errors): in f.ts, a function-local `enum DiagnosticCategory` shadows the file's exported
+  one; tsc prints the exported one as `import("f").DiagnosticCategory` in the types baseline (not accessible by name
+  there), tttt as `DiagnosticCategory`.
 - **`import("…")` specifiers**: resolved (2026-09-29). The +6 underline is a file that an import reached before the
   harness's root list did (tsc then names it by its absolute `/.src/` path, which the harness strips from the text but
   not the underline): `SourceFile.loaded_by_import`. The reuse gaps of a renamed `import("m").A` shift with it.
@@ -90,7 +98,11 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   (partial_check_overload.ts).
 - Mapped properties over an intersection: tsc lists the declarations from every intersection member that has the
   property, tttt the first (mapped_over_intersection_readonly.ts); intersection_with_type_param.ts is the reverse
-  (tttt misses a repeated Decl).
+  (tttt misses a repeated Decl). vue's DefineProps is one: a property of `Readonly<LooseRequired<T>> & {...}` lists
+  its declaration once, tsc twice (the modifiers type of LooseRequired is `T & Required<T>`, both members have it).
+  Also there: `this` of a ThisType marker prints no Symbol line (probes in plan19/vue/).
+- `Pick<T, "a">` with T generic: the mapped property expanded from the key's lower bound has no declaration
+  (`p.a : Symbol(a)`, tsc `Symbol(a, Decl(...))` from T's constraint).
 - Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests.
 - **Spread doesn't keep the property's identity**: tsc's getSpreadSymbol returns the same symbol when readonly-ness
   doesn't change, so `{ ...x }.a` with `x: N.A` shows `Symbol(N.A.a)` and reuse carets in the types baseline; tttt
