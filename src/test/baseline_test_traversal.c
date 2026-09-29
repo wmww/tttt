@@ -1356,6 +1356,37 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     });
 }
 
+// The declarations of the symbol tsc's binder makes for an object literal member (bindPropertyOrMethodOrAccessor into
+// the literal's members): a later member of the same name joins it unless the symbol has a meaning it excludes
+// (a property excludes nothing, a method other values, an accessor other values but its other half). *first: the
+// symbol's first member (whose value types it)
+static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprItem const* item, ObjectExprItem const** first) {
+    VecSpan ret = vec_span_init();
+    *first = item;
+    if (item->tag == OBJECT_ITEM_SPREAD || item->computed_key) return ret;
+    enum { PROP = 1, METHOD = 2, GET = 4, SET = 8 };
+    u32 flags = 0; // The table's symbol of the name
+    for_each (other, vec_object_expr_item, object) {
+        if (other->tag == OBJECT_ITEM_SPREAD || other->computed_key || !cstr_eq(&other->name_string, &item->name_string)) continue;
+        u32 kind = other->tag == OBJECT_ITEM_METHOD ? METHOD : other->tag == OBJECT_ITEM_GETTER ? GET :
+            other->tag == OBJECT_ITEM_SETTER ? SET : PROP;
+        u32 excludes = kind == PROP ? 0 : kind == METHOD ? (PROP | GET | SET) : kind == GET ? (PROP | METHOD | GET) : (PROP | METHOD | SET);
+        if (flags && (flags & excludes)) {
+            // A symbol of its own, outside the table
+            if (other == item) {
+                vec_span_clear(&ret);
+                vec_span_push(&ret, other->span);
+                return ret;
+            }
+            continue;
+        }
+        if (!flags) *first = other;
+        flags |= kind;
+        vec_span_push(&ret, other->span);
+    }
+    return ret;
+}
+
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (my keyword == KEYWORD_IDENTIFIER_THIS) {
         this_compile_test_info(me, ctx);
@@ -1811,6 +1842,27 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_OBJECT:
             for_each (i, vec_object_expr_item, &my object) {
+                ObjectExprItem const* first = nullptr;
+                VecSpan merged = object_member_symbol_decls(&my object, i, &first);
+                if (i->tag != OBJECT_ITEM_SPREAD && vec_span_size(&merged) > 1 &&
+                    (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) &&
+                    (first->tag == OBJECT_ITEM_PROPERTY || first->tag == OBJECT_ITEM_SHORTHAND)
+                ) {
+                    // A name declared by several properties is one symbol, typed by the first of them
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = merged,
+                        .span = i->name_span,
+                        .name_is_value = i->name_is_value,
+                    });
+                    baseline_test_case_add_type(ctx, i->name_span, ty_object_literal_member_type(current_checker, me, first));
+                    if (i->tag == OBJECT_ITEM_SHORTHAND) {
+                        if (i->shorthand_default) expr_compile_test_info(i->shorthand_default, ctx);
+                    } else {
+                        expr_compile_test_info(&i->value, ctx);
+                    }
+                    continue;
+                }
+                vec_span_drop(&merged);
                 if (i->tag != OBJECT_ITEM_SPREAD) {
                     VecSpan declarations = {0};
                     if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) && !i->computed_key) {
