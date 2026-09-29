@@ -1279,7 +1279,8 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     Ty const* in_constructor_type = constructor_declared ? flow_type_in_constructor(me, symbol) : nullptr;
     if (in_constructor_type) {
         if (types != stack) free(types);
-        return in_constructor_type;
+        // (Widened like any assignment declaration's type: tsc's getWidenedTypeForAssignmentDeclaration)
+        return ty_widened_objects(me, ty_widened_literal(me, in_constructor_type));
     }
     bool in_constructor = false, in_method = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {

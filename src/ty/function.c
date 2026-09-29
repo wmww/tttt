@@ -201,6 +201,14 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
                 for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited_returned(me, returned.data[i]);
                 contextual = contextual ? promised_context(me, contextual) : nullptr;
             }
+            // (Not a JavaScript "callable constructor" that returns `new F()` somewhere: tsc's
+            // checkAndAggregateReturnExpressionTypes)
+            Symbol const* js_class = returns_nothing_somewhere ? ty_js_constructor_class(function) : nullptr;
+            for (u32 i = 0; js_class && i < returned.len; i++) {
+                Ty const* t = returned.data[i];
+                if (t->kind == TY_REFERENCE) t = t->reference.target;
+                if (t->kind == TY_DECLARED && t->declared.symbol == js_class) returns_nothing_somewhere = false;
+            }
             if (compiler_options()->strict_null_checks && returns_nothing_somewhere) {
                 ty_buf_push(&returned, ty_intrinsic(me, TY_UNDEFINED));
             }

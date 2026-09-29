@@ -206,7 +206,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         // Signatures and function types (the libs are full of them) have nothing that flows
         if (my has_body) flow.current = flow_new_start(&flow, me, kind == FUNCTION_IS_EXPRESSION);
     }
-    if (is_iife || (my is_constructor && my has_body)) flow.return_target = flow_new_branch_label(&flow);
+    // (A JavaScript function may be a constructor function: `this.x = v` has its type at the end of it too)
+    bool js_constructor_candidate = names->file && names->file->is_js && !span_valid(my arrow_span) && !my is_method &&
+        !my accessor && !span_valid(my member_name);
+    if (is_iife || ((my is_constructor || js_constructor_candidate) && my has_body)) flow.return_target = flow_new_branch_label(&flow);
 
     unused_register(names, UNUSED_FUNCTION, me, span_null);
     // Handle generics (includes adding names)
@@ -302,7 +305,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     if (flow.return_target) {
         flow_add_antecedent(&flow, flow.return_target, flow.current);
         flow.current = flow_finish_label(flow.return_target);
-        if (my is_constructor) my return_flow = flow.current;
+        if (my is_constructor || js_constructor_candidate) my return_flow = flow.current;
     }
     flow_builder_finish(&flow, c_sv("function"), span_valid(my name) ? my name : my full_span);
     if (is_iife && !outer->dead) {
