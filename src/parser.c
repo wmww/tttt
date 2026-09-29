@@ -9911,8 +9911,14 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         }
         hop_whitespace(&p);
     }
-    if (!hop_char(&p, '=') || *p.pos == '=' || *p.pos == '>') {
-        return parse_fail(&p);
+    if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
+        p.pos++;
+    } else {
+        // tsc's tokenAfterImportedIdentifierDefinitelyProducesImportDeclaration: only a `,` or `from` makes it an import
+        // declaration, anything else is an import-equals missing its '=' (`import abstract class D {}`)
+        Tok t = tok_peek(&p);
+        if (tok_is(t, ",") || tok_is(t, "from") || tok_is(t, "=")) return parse_fail(&p);
+        expected_token_error(&p, "=");
     }
     hop_whitespace(&p);
 
@@ -9956,8 +9962,13 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
         statement->main.alias_path = vec_span_init();
         while (true) {
             Span part;
-            if (!parse_identifier(&p, &part)) {
+            // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
+            bool first = vec_span_is_empty(&statement->main.alias_path);
+            if (first ? (!parse_identifier(&p, &part) || (is_reserved_word(part.sv) && (p.pos = span_start_ptr(part), true)))
+                : !parse_identifier_or_keyword(&p, &part)
+            ) {
                 parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                vec_span_push(&statement->main.alias_path, span_from_pos(&p)); // (a missing name)
                 break;
             }
             vec_span_push(&statement->main.alias_path, part);

@@ -1972,6 +1972,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     ErrorCtx* errs = my alias->scope->errs;
     if (vec_span_is_empty(&item->alias_path)) return nullptr;
     Span first = *vec_span_front(&item->alias_path);
+    if (!first.sv.size) return nullptr; // (A missing name: tsc's resolveEntityName says nothing)
     Symbol* target;
     if (vec_span_size(&item->alias_path) == 1) {
         // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace)
@@ -2005,6 +2006,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
     target = resolve_if_pure_alias(target);
     for (isize i = 1; target && i < vec_span_size(&item->alias_path); i++) {
         Span name = *vec_span_at(&item->alias_path, i);
+        if (!name.sv.size) return nullptr; // (A missing name)
         bool last = i == vec_span_size(&item->alias_path) - 1;
         Symbol const* container = symbol_for_meaning(target, SYMBOL_NAMESPACE);
         if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes

@@ -393,7 +393,7 @@ const baselines = {
     'aliasErrors': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasInaccessibleModule': {
         errors: true,
@@ -8777,8 +8777,8 @@ const baselines = {
     },
     'declarationEmitUnknownImport2': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'declarationEmitUnnessesaryTypeReferenceNotAdded': {
         errors: true,
@@ -11257,8 +11257,8 @@ const baselines = {
     },
     'errorForUsingPropertyOfTypeAsType01': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'errorForUsingPropertyOfTypeAsType02': {
         errors: true,
@@ -34711,9 +34711,9 @@ const baselines = {
         types: true,
     },
     'classAbstractManyKeywords': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classAbstractMergedDeclaration': {
         errors: true,
