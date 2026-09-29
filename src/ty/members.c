@@ -282,6 +282,8 @@ static void builder_add_interface_member(
                 prop->decl->name_span = i->key.span;
                 prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
                 if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr.ref, key, false);
+                // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
+                if (key && (key->flags & TYF_NUMBER_LITERAL)) prop->decl->name_type = ty_regular(me, key);
                 prop_add_decl_spans(me, prop, i->declarations.data, (u32)vec_span_size(&i->declarations));
                 builder_push(builder, props, prop);
             }   break;
