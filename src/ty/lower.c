@@ -969,8 +969,33 @@ static bool decl_contributes_value(Symbol const* symbol, u32 index) {
             once = SYMBOL_VARIABLE; // `var a; var a;`, a parameter and a `var`: the first one gives the type. TODO: TS2403
             break;
         case SYMBOL_DECL_FUNCTION:
-            // The implementation of overloads isn't a signature
-            if (((FunctionImpl const*)decl->node)->has_body) once = SYMBOL_FUNCTION;
+            // The implementation of overloads isn't a signature: an implementation right after another declaration
+            // of the function (tsc's getSignaturesOfSymbol: same parent and kind, nothing but trivia between). Others,
+            // like duplicate implementations in two files, are signatures of their own
+            if (((FunctionImpl const*)decl->node)->has_body && index > 0) {
+                SymbolDecl const* previous = &symbol->decls[index - 1];
+                if (previous->kind != SYMBOL_DECL_FUNCTION || previous->full.source != decl->full.source ||
+                    !span_valid(previous->full) || !span_valid(decl->full)
+                ) {
+                    return true;
+                }
+                char const* between = span_end_ptr(previous->full);
+                char const* start = span_start_ptr(decl->full);
+                if (between > start) return true;
+                while (between < start) {
+                    if (*between == ' ' || *between == '\t' || *between == '\r' || *between == '\n' || *between == ';') {
+                        between++;
+                    } else if (between[0] == '/' && between[1] == '/') {
+                        while (between < start && *between != '\n') between++;
+                    } else if (between[0] == '/' && between[1] == '*') {
+                        char const* close = strstr(between + 2, "*/");
+                        between = close ? close + 2 : start;
+                    } else {
+                        return true;
+                    }
+                }
+                return false;
+            }
             break;
         case SYMBOL_DECL_ENUM: once = SYMBOL_ENUM; break; // One object for every declaration of the enum
         case SYMBOL_DECL_NAMESPACE: once = SYMBOL_VALUE_MODULE; break; // And one for every block of a namespace
