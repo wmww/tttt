@@ -691,6 +691,10 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
             target_str, "' when possible."));
         c_drop(cstr, &source_str, &target_str);
     }
+    // (tsc's reportErrorResults: about the global Object type as a source, unless the target is a primitive)
+    if (!wrapper_case && source == global_type(me, GLOBAL_OBJECT)) {
+        report_line(st, 2696, cstr_from("The 'Object' type is assignable to very few other types. Did you mean to use the 'any' type instead?"));
+    }
     // A readonly array or tuple where a mutable one is wanted says so instead of the head (tsc's reportErrorResults
     // with tryElaborateArrayLikeErrors)
     if ((source->flags & TYF_OBJECT) && (target->flags & TYF_OBJECT) && is_mutable_array_or_tuple(me, target)) {

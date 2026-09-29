@@ -34,10 +34,6 @@ properties, suggestions, type-only imports), and the harness dropping the commen
   packageJsonImportsExportsOptionCompat x5), requireOfAnEmptyFile1. Diff them directly.
 - `chain:deeper: Type _ is not assignable to type _.` (7): tttt elaborates one level further than tsc somewhere
   other than type parameter constraints; `chain:missing: Property _ is missing` (6).
-- TS2696 "The 'Object' type is assignable to very few other types": tsc reports it as the *head* in some places
-  (assigningFromObjectToAnythingElse, intTypeCheck line 99) and not at all in others (a type parameter target,
-  typeParametersShouldNotBeEqual); tried below the head in `report_relation_error()` and reverted (+3 -1). Work out
-  where tsc's head replacement comes from first.
 - Unions with non-callable members: "Not all constituents of type 'X' are callable" (`resolve_call()` TODO).
 - Related info still missing: TS2793 (overload implementation), TS6203, TS2771, TS2738, TS2728 on computed
   symbol-named members (`[Symbol.iterator]` declared here, TS2411).

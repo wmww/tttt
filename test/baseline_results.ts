@@ -1536,7 +1536,7 @@ const baselines = {
         types: true,
     },
     'assigningFromObjectToAnythingElse': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18011,7 +18011,7 @@ const baselines = {
         types: false,
     },
     'intTypeCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31436,7 +31436,7 @@ const baselines = {
         types: true,
     },
     'typeParametersShouldNotBeEqual3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56171,7 +56171,7 @@ const baselines = {
         types: true,
     },
     'parserAutomaticSemicolonInsertion1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64326,7 +64326,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithCallSignatureHidingMembersOfFunctionAssignmentCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64346,7 +64346,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithConstructSignatureHidingMembersOfFunctionAssignmentCompat': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
