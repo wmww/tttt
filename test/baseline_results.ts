@@ -65553,7 +65553,7 @@ const baselines = {
     'declarationFiles': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fluentClasses': {
         errors: true,
@@ -65591,9 +65591,9 @@ const baselines = {
         types: true,
     },
     'thisTypeErrors2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisTypeInAccessors': {
         errors: true,

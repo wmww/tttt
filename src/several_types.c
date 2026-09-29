@@ -328,6 +328,20 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, true);
             my this_kind = this_ref.kind;
+            // Not in a constructor's parameters or return type, only its body (tsc's getThisType:
+            // isNodeDescendantOf(node, container.body)): an error like in a static member (TS2526, the error type)
+            if (my this_kind == THIS_CLASS_INSTANCE) {
+                bool in_signature = false;
+                for (Scope const* s = names; s; s = s->parent) {
+                    in_signature |= s->parameters || s->return_type;
+                    if (s->kind == SCOPE_FUNCTION) {
+                        if (in_signature && s->function && s->function->is_constructor && s->function->constructed_class) {
+                            my this_kind = THIS_CLASS_STATIC;
+                        }
+                        break;
+                    }
+                }
+            }
             my target = this_ref.symbol;
             if (this_ref.interface) this_ref.interface->contains_this = true;
             if (names->file && names->file->is_js && this_ref.kind != THIS_CLASS_INSTANCE && this_ref.kind != THIS_INTERFACE) {
