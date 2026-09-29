@@ -5266,7 +5266,7 @@ const baselines = {
         types: true,
     },
     'complexRecursiveCollections': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31236,7 +31236,7 @@ const baselines = {
         types: true,
     },
     'typeParameterArgumentEquivalence3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31301,17 +31301,17 @@ const baselines = {
         types: true,
     },
     'typeParameterDiamond2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeParameterDiamond3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'typeParameterDiamond4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32286,7 +32286,7 @@ const baselines = {
         types: true,
     },
     'unresolvableSelfReferencingAwaitedUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64501,7 +64501,7 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveConstraintOfIndexAccessType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64861,7 +64861,7 @@ const baselines = {
         types: true,
     },
     'invalidBooleanAssignments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65681,7 +65681,7 @@ const baselines = {
         types: true,
     },
     'typeRelationships': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66521,7 +66521,7 @@ const baselines = {
         types: true,
     },
     'unionTypesAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

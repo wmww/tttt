@@ -311,6 +311,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
 
 ## Relations (`ty/relate.c`)
+- `base_constraint()` of an indexed access builds the access of the constraints even where it isn't valid (`T[P]` with
+  `T extends object`, `P extends keyof T`), where tsc's getBaseConstraintOfType has none (getIndexedAccessTypeOrUndefined).
+  Making it null changed xstate (a spurious TS2344 on `NonNullable<TStateValue[K]>`), so only
+  `report_relation_error_now()` checks validity first for the "could be instantiated" line. Port properly with
+  getConstraintOfIndexedAccess's own rules.
 - Distributive constraint of a conditional source (`structured_related`'s TY_CONDITIONAL case): tsc takes the check
   type's immediate constraint (getConstraintOfType: `(any[] & T)[K]` -> `(any[] & T)[keyof T]`), tttt's
   `distributive_constraint()` its base constraint. The relation tries the base one first, then the immediate one

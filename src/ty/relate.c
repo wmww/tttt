@@ -761,6 +761,8 @@ bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const*
     return false;
 }
 
+static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index);
+
 // `top`: the error's head, which callers replace with their own words (tsc's headMessage)
 static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
     flush_incompatible(st);
@@ -768,11 +770,23 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
     Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
     cstr source_str, target_str;
     display_pair(me, generalized, widen, target, &source_str, &target_str);
-    if (target->kind == TY_TYPE_PARAM && !target->param.state->is_this && !target->param.state->is_check_marker) {
+    // (An indexed access into a type parameter counts as one: tsc's reportRelationError looks at its object's flags)
+    Ty const* param_target = target->kind == TY_INDEXED && source->kind != TY_INDEXED ? target->indexed.object : target;
+    if (param_target->kind == TY_TYPE_PARAM && !param_target->param.state->is_check_marker) {
         // What a type parameter target could be (tsc's reportRelationError), below the head reported next
         Ty const* constraint = target;
-        for (u32 depth = 0; constraint && constraint->kind == TY_TYPE_PARAM && depth < 16; depth++) {
-            constraint = ty_param_constraint(me, constraint);
+        if (target->kind == TY_INDEXED) {
+            // (HACK: base_constraint() makes an access that isn't valid anyway, where tsc's getBaseConstraintOfType has
+            // none: `T[P]` with `T extends object`. Relations depend on it, so only the report asks first)
+            Ty const* object = base_constraint(me, target->indexed.object, 0);
+            Ty const* index = base_constraint(me, target->indexed.index, 0);
+            bool valid = ty_simplified(me, target, false) != target ||
+                indexed_or_null(me, object ? object : target->indexed.object, index ? index : target->indexed.index);
+            constraint = valid ? base_constraint(me, target, 0) : nullptr;
+        } else {
+            for (u32 depth = 0; constraint && constraint->kind == TY_TYPE_PARAM && depth < 16; depth++) {
+                constraint = ty_param_constraint(me, constraint);
+            }
         }
         bool generalized_fits = constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
         bool original_fits = constraint && !generalized_fits && ty_is_related(me, source, constraint, TY_RELATION_ASSIGNABLE);
@@ -785,6 +799,17 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
             ));
             c_drop(cstr, &shown, &constraint_str);
         } else {
+            // (Nothing said below matters then: tsc drops the elaboration so far)
+            isize_t kept = 0;
+            for (isize_t i = 0; i < vec_ty_report_line_size(&st->lines); i++) {
+                TyReportLine* line = vec_ty_report_line_at_mut(&st->lines, i);
+                if (line->related) {
+                    *vec_ty_report_line_at_mut(&st->lines, kept++) = *line;
+                } else {
+                    cstr_drop(&line->message);
+                }
+            }
+            st->lines.size = kept;
             report_line(st, 5082, cstr_d(
                 "'", target_str, "' could be instantiated with an arbitrary type which could be unrelated to '", source_str, "'."
             ));
