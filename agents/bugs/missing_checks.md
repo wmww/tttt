@@ -137,6 +137,13 @@ Spurious diagnostics in JS tests whose causes were investigated but not fixed:
 - **Chained expando initializers** `var G = m.G = {}` (typeFromPropertyAssignment18): tsc types G as `typeof m.G` and
   merges the exports of the variable and of the member (getTypeOfFuncClassEnumModule -> getSymbolOfExpando ->
   mergeJSSymbols), so `G.q` (declared on m.G) and `m.G.p` (declared on G) resolve.
+  The hosts share one symbol in tsc (the initializer's), so an approach is one exports table for both, and the
+  variable's type being the member's (`typeof m.GLOBSTAR`).
+- **Entity-name CommonJS exports aren't aliases**: tsc's exportAssignmentIsAlias makes `exports.blah =
+  exports.someProp` an alias (SymbolFlags.Alias), whose resolution under a `module.exports = function` reaches itself
+  through the function's expando exports: TS2303 "Circular definition of import alias 'blah'" at `exports.blah`
+  (pushTypeGetTypeOfAlias). tttt binds a property of type any; only lower.c's JSDoc value references follow such an
+  assignment to what it names. Making these real SYMBOL_ALIAS symbols would give that and the alias semantics.
 - **CommonJS exports inside functions**: tsc binds `exports.x = v` / `module.exports = v` from any container
   (bindExportsPropertyAssignment has no container check); `add_nested_commonjs_exports()` only walks top-level
   statement lists, so an IIFE's exports are missing. Needs a declare-step walk into function
