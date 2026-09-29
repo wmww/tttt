@@ -3343,6 +3343,18 @@ Ty const* ty_widened_nullable(Checker* me, Ty const* ty) {
 }
 
 Ty const* ty_widened_objects(Checker* me, Ty const* ty) {
+    // An intersection member by member (`{ a: "x" } & T` of a spread of a generic: tsc's getWidenedTypeWithContext)
+    if (ty->kind == TY_INTERSECTION) {
+        TyList types = ty->composite.types;
+        u32 i = 0;
+        while (i < types.len && !(types.data[i]->flags & TYF_FRESH_OBJECT)) i++;
+        if (i == types.len) return ty;
+        TyBuf parts = {0};
+        for (u32 j = 0; j < types.len; j++) ty_buf_push(&parts, ty_widened_objects(me, types.data[j]));
+        Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+        return ret;
+    }
     if (!(ty->flags & TYF_FRESH_OBJECT)) return ty;
     u64 key[2] = { KEY_WIDENED_OBJECTS, (u64)(uintptr_t)ty };
     void const* known = intern_get(&my links, key, 2);

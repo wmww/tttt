@@ -2095,8 +2095,41 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
     return ret;
 }
 
+// The rest of a generic object (or of a pattern with a generic computed name): `Omit<T, names>`, the names being those
+// the pattern takes and those of the properties a rest leaves out anyway (private, protected, class methods). T itself
+// if that's no names (tsc's getRestType)
+static Ty const* generic_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
+    TyBuf keys = {0};
+    for_each (item, vec_object_binding_item, &pattern->object) {
+        if (item->target.rest) continue;
+        ty_buf_push(&keys, item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source));
+    }
+    Ty const* apparent = ty_apparent_type(me, source);
+    if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+        Members const* members = ty_members(me, apparent);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            if (!ty_is_spreadable_prop(me, members->props[i])) ty_buf_push(&keys, ty_prop_name_literal(me, members->props[i]->name));
+        }
+    }
+    Ty const* omitted = keys.len ? ty_union(me, keys.data, keys.len, nullptr, (TyList){0}) : nullptr;
+    ty_buf_drop(&keys);
+    if (!omitted || (omitted->flags & TYF_NEVER)) return source;
+    Symbol const* omit = program_get_global(my program, c_sv("Omit"), SYMBOL_TYPE);
+    if (omit) omit = binder_redirect(my binder, omit);
+    if (!omit || !(omit->flags & SYMBOL_TYPE_ALIAS) || ty_alias_type_params(me, omit).len != 2) return ty_intrinsic(me, TY_ERROR);
+    Ty const* args[2] = { source, omitted };
+    return ty_alias_instance(me, omit, (TyList){ .data = args, .len = 2 });
+}
+
+static bool pattern_has_generic_key(Checker* me, Binding const* pattern) {
+    for_each (item, vec_object_binding_item, &pattern->object) {
+        if (item->computed_key && !item->target.rest && ty_is_generic_index(ty_expr_type(me, item->computed_key))) return true;
+    }
+    return false;
+}
+
 // tsc's getRestType: `...rest` of an object pattern, without the properties the pattern names, private and protected
-// members and class methods, and with nothing readonly. TODO: a generic object is Omit<T, names> in tsc; it stays T
+// members and class methods, and with nothing readonly
 static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* pattern) {
     if (source->kind == TY_UNION) {
         Ty const* stack[16];
@@ -2111,6 +2144,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
         return ret;
     }
     if (source->flags & TYF_NEVER) return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC);
+    if (ty_is_generic_object(me, source) || pattern_has_generic_key(me, pattern)) return generic_rest_type(me, source, pattern);
     Ty const* apparent = ty_apparent_type(me, source);
     if (apparent->kind == TY_INTERSECTION && !ty_is_generic_index(source)) return intersection_rest_type(me, apparent, pattern);
     if (!(apparent->flags & TYF_OBJECT) || ty_is_generic_index(source)) return source;

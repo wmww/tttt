@@ -9677,7 +9677,7 @@ const baselines = {
     },
     'destructuringUnspreadableIntoRest': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'destructuringWithConstraint': {
@@ -15138,7 +15138,7 @@ const baselines = {
     'genericIsNeverEmptyObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericLambaArgWithoutTypeArguments': {
         errors: true,
@@ -63898,7 +63898,7 @@ const baselines = {
     'literalTypeWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literalTypes1': {
         errors: true,
@@ -64133,7 +64133,7 @@ const baselines = {
     'mappedTypeConstraints': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mappedTypeConstraints2': {
         errors: false,
@@ -65068,7 +65068,7 @@ const baselines = {
     'objectRestNegative': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectRestParameter': {
         errors: true,
