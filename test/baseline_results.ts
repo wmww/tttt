@@ -17378,7 +17378,7 @@ const baselines = {
     'inferenceUnionOfObjectsMappedContextualType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferentialTypingObjectLiteralMethod1': {
         errors: true,
@@ -20876,9 +20876,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeIndexedAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeIndexedAccessConstraint': {
         errors: true,

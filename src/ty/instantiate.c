@@ -785,13 +785,14 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             );
 
         case TY_INDEXED: {
+            Ty const* index = ty_instantiate(me, ty->indexed.index, mapper);
             Ty const* ret = ty_indexed_instantiated(
-                me,
-                ty_instantiate(me, ty->indexed.object, mapper),
-                ty_instantiate(me, ty->indexed.index, mapper),
-                ty->indexed.include_undefined
+                me, ty_instantiate(me, ty->indexed.object, mapper), index, ty->indexed.include_undefined
             );
-            return ret->kind == TY_INDEXED ? instantiate_alias(me, ty, ret, mapper) : ret;
+            // (A union of what the members of a union index give goes by the alias too: tsc's
+            // getIndexedAccessTypeOrUndefined passes it to getUnionType)
+            bool distributed = index->kind == TY_UNION && ret->kind == TY_UNION;
+            return ret->kind == TY_INDEXED || distributed ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
 
         case TY_SUBSTITUTION: {
