@@ -186,7 +186,7 @@ const baselines = {
         types: true,
     },
     'ParameterList5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18176,7 +18176,7 @@ const baselines = {
         types: true,
     },
     'interfaceMemberValidation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50536,7 +50536,7 @@ const baselines = {
         types: true,
     },
     'derivedInterfaceIncompatibleWithBaseIndexer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -57961,7 +57961,7 @@ const baselines = {
         types: true,
     },
     'parserParameterList5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

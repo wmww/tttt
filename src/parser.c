@@ -5896,9 +5896,10 @@ static bool parse_function_args_inner(
             parse_ret_type = false;
         }
     }
-    hop_whitespace(&p);
 
+    // (No trivia is hopped after the last token: the node ends there)
     if (parse_ret_type) {
+        hop_whitespace(&p);
         Anchor ret_a = anchor(&p);
         if (parse_type_predicate(&p, ret)) {
             ret->ret_span = span_from(ret_a);
@@ -5906,7 +5907,6 @@ static bool parse_function_args_inner(
         } else if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
             ret->ret_span = span_from(ret_a);
             ret->ret_explicit = true;
-            hop_whitespace(&p);
         } else if (unambiguous_function_type ||
             (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' : commit_on_paren))
         ) {

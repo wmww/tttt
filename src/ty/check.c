@@ -2211,7 +2211,6 @@ static bool check_accessibility(
     return true;
 }
 
-static Span with_member_separator(Span span);
 
 static Generic const* class_or_interface_generic(SymbolDecl const* decl) {
     switch (decl->kind) {
@@ -2319,7 +2318,7 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
             Span at = vec_span_size(&entries[j].member->declarations) ? *vec_span_front(&entries[j].member->declarations) : entries[j].member->key.span;
             // (A lib's declarations aren't checked)
             if (!at.source || at.source->is_stdlib) continue;
-            error_ctx_error_d(errs, with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
+            error_ctx_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
         }
         cstr_drop(&key_str);
     }
@@ -2804,21 +2803,11 @@ static bool base_has_both(Checker* me, Ty const* const* bases, u32 base_count, A
     return false;
 }
 
-// A type member's node ends after its `;` or `,`
-static Span with_member_separator(Span span) {
-    if (!span_valid(span)) return span;
-    char const* end = span_end_ptr(span);
-    char const* c = end;
-    while (*c == ' ' || *c == '\t') c++;
-    if (*c == ';' || *c == ',') end = c + 1;
-    return span_make(span.source, span_start_ptr(span), end);
-}
-
 // Where tsc reports a property: the name of a property or method declaration, a whole method signature
 static Span prop_error_span(Prop const* prop) {
     while (prop->target) prop = prop->target;
-    if ((prop->flags & PROP_METHOD) && !prop->decl->function && !prop->decl->overloads && prop->decl->decl_span_count) {
-        return with_member_separator(prop->decl->decl_spans[0]);
+    if ((prop->flags & PROP_METHOD) && !prop->decl->function && prop->decl->decl_span_count) {
+        return span_with_member_separator(prop->decl->decl_spans[0]);
     }
     return prop->decl->name_span;
 }
@@ -2844,7 +2833,7 @@ void ty_check_index_constraints(
             IndexInfo const* info = &members->index[i];
             if (!index_applies(me, key, info->key)) continue;
             Span at = local_prop ? prop_error_span(prop) :
-                is_local_span(owner, info->decl_span) ? with_member_separator(info->decl_span) :
+                is_local_span(owner, info->decl_span) ? span_with_member_separator(info->decl_span) :
                 interface && !base_has_both(me, bases, base_count, prop->name, nullptr, info->key) ? name : (Span){0};
             if (!span_valid(at)) continue;
             if (!prop_ty) prop_ty = prop_type(me, prop);
@@ -2894,8 +2883,8 @@ void ty_check_index_constraints(
         for (u32 i = 0; i < members->index_count; i++) {
             IndexInfo const* info = &members->index[i];
             if (i == c || !index_applies(me, check_info->key, info->key)) continue;
-            Span at = local_check ? with_member_separator(check_info->decl_span) :
-                is_local_span(owner, info->decl_span) ? with_member_separator(info->decl_span) :
+            Span at = local_check ? span_with_member_separator(check_info->decl_span) :
+                is_local_span(owner, info->decl_span) ? span_with_member_separator(info->decl_span) :
                 interface && !base_has_both(me, bases, base_count, nullptr, check_info->key, info->key) ? name : (Span){0};
             if (!span_valid(at) || ty_is_related(me, check_info->value, info->value, TY_RELATION_ASSIGNABLE)) continue;
             cstr check_key = ty_to_cstr(me, check_info->key);
