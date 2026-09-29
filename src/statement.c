@@ -2094,8 +2094,10 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         break;
                     }
                     if (my for_each_loop->keyword == FOR_EACH_LOOP_IN) {
-                        // tsc's checkForInStatement: one message whatever the variable's type
-                        if (!ty_is_related(checker, lazy_type_get(&my for_each_loop->var_type),
+                        // tsc's checkForInStatement: one message whatever the variable's type. The keys are those
+                        // of the object's type, whatever the variable's declared one (getIndexTypeOrString)
+                        Ty const* keys = ty_for_in_index_type_or_string(checker, ty_expr_type(checker, &my for_each_loop->iterable));
+                        if (!ty_is_related(checker, keys,
                                 expr_get_type(&my for_each_loop->variable.expr), TY_RELATION_ASSIGNABLE)
                         ) {
                             error_ctx_error_d(errs, my for_each_loop->variable.expr.outer_span, 2405,

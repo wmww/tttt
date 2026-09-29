@@ -1548,6 +1548,8 @@ static inline void ty_flow_restore(Checker* me, FlowIsolation saved) {
 
 // iterate.c: the iteration protocol (tsc's IterationUse and getIterationTypesOfIterable)
 Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable); // `k` of `for (k in x)`
+// What a `for (k in x)` assigns an existing k (tsc's getIndexTypeOrString): Extract<keyof X, string>, or string if never
+Ty const* ty_for_in_index_type_or_string(Checker* me, Ty const* iterable);
 typedef enum IterationUse {
     ITERATION_ALLOWS_SYNC = 1 << 0,
     ITERATION_ALLOWS_ASYNC = 1 << 1,

@@ -668,13 +668,25 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // The variable of `for (k in x)` (tsc's getTypeForVariableLikeDeclaration): `Extract<keyof X, string>` when X is
 // generic, string otherwise
-Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable) {
+// tsc's getExtractStringType: Extract<keys, string> (string without the global alias)
+static Ty const* extract_string_type(Checker* me, Ty const* keys) {
     Ty const* string = ty_intrinsic(me, TY_STRING);
-    Ty const* keys = ty_keyof(me, ty_non_nullable(me, iterable));
-    if ((keys->kind != TY_TYPE_PARAM && keys->kind != TY_KEYOF) || !(keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return string;
     Symbol const* extract = program_get_global(my program, c_sv("Extract"), SYMBOL_TYPE);
     if (extract) extract = binder_redirect(my binder, extract);
     if (!extract || !(extract->flags & SYMBOL_TYPE_ALIAS) || ty_alias_type_params(me, extract).len != 2) return string;
     Ty const* args[2] = { keys, string };
     return ty_alias_instance(me, extract, (TyList){ .data = args, .len = 2 });
+}
+
+Ty const* ty_for_in_key_type(Checker* me, Ty const* iterable) {
+    Ty const* keys = ty_keyof(me, ty_non_nullable(me, iterable));
+    if ((keys->kind != TY_TYPE_PARAM && keys->kind != TY_KEYOF) || !(keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        return ty_intrinsic(me, TY_STRING);
+    }
+    return extract_string_type(me, keys);
+}
+
+Ty const* ty_for_in_index_type_or_string(Checker* me, Ty const* iterable) {
+    Ty const* keys = extract_string_type(me, ty_keyof(me, ty_non_nullable(me, iterable)));
+    return keys->flags & TYF_NEVER ? ty_intrinsic(me, TY_STRING) : keys;
 }
