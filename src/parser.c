@@ -9911,8 +9911,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
 
         if (p.shared->source->is_js) {
-            // A declaration's own JSDoc (`var /** @type {T} */ x`: tsc's VariableDeclaration is a JSDoc host)
-            if (!initializer.binding.has_explicit_type) {
+            // A declaration's own JSDoc (`var /** @type {T} */ x`: tsc's VariableDeclaration is a JSDoc host). Not a
+            // `for` loop's: a for...of variable has the element type whatever it says (getTypeForVariableLikeDeclaration)
+            if (!initializer.binding.has_explicit_type && !in_for) {
                 VecJsDocTag tags = {0};
                 if (jsdoc_before(&p, declaration_start, &tags)) jsdoc_apply_type_to_binding(&tags, &initializer.binding);
                 vec_jsdoc_tag_drop(&tags);
