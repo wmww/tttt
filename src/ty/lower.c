@@ -1342,6 +1342,17 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
 // constructor function's) the union of the constructor's assignments. TODO: a JSDoc type on one of them is the type
 static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     if (is_js_container(symbol, symbol->decls[0].node, span_null)) return ty_namespace_type(me, symbol);
+    // A JavaScript function or class expression assigned first is the type, whatever the later assignments are (tsc's
+    // getWidenedTypeForAssignmentDeclaration: an expando initializer of the value declaration is a container of its own)
+    SourceFile const* first_file = symbol->decls[0].full.source;
+    if (first_file && first_file->is_js && symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+        !symbol->decls[0].jsdoc_type && symbol->decls[0].assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY
+    ) {
+        Expr* init = expando_initializer((Expr*)symbol->decls[0].node, span_null, true);
+        if (init && (init->tag == EXPR_FUNCTION || init->tag == EXPR_CLASS_DECL)) {
+            return ty_widened_literal(me, ty_expr_type(me, init));
+        }
+    }
     // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration)
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol->decls[i].jsdoc_type) return ty_of_node(symbol->decls[i].jsdoc_type);
