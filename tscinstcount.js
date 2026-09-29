@@ -27,8 +27,9 @@ function patch(re, replacement) {
 patch(/(\n\s*)instantiationCount\+\+;/,
     '$1instantiationCount++; if (currentNode) { const m = globalThis.__icByNode; if ((m.get(currentNode) || 0) < instantiationCount) m.set(currentNode, instantiationCount); }');
 if (process.env.VARIANCES) {
+    patch(/function getVariancesWorker\(([^)]*)\) \{/, 'function getVariancesWorker($1) { let __ic0 = 0, __tc0 = 0;');
     patch(/(\n\s*)variance = \(isTypeAssignableTo\(typeWithSub, typeWithSuper\)/,
-        '$1const __ic0 = totalInstantiationCount, __tc0 = typeCount;$1variance = (isTypeAssignableTo(typeWithSub, typeWithSuper)');
+        '$1__ic0 = totalInstantiationCount, __tc0 = typeCount;$1variance = (isTypeAssignableTo(typeWithSub, typeWithSuper)');
     patch(/(\n\s*)variances\.push\(variance\);/,
         '$1globalThis.__variances.push([symbol.escapedName, tp.symbol.escapedName, totalInstantiationCount - __ic0, typeCount - __tc0, variance]);$1variances.push(variance);');
 }

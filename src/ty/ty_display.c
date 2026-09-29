@@ -1192,10 +1192,12 @@ static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotati
 }
 
 // Whether a type may mention one of the type parameters. Conservative: object types that aren't references might
-static bool mentions(Checker* me, Ty const* ty, TyList params) {
+static bool mentions_at(Checker* me, Ty const* ty, TyList params, u32 depth) {
     if (!params.len) return false;
+    // (A deferred reference's arguments can lead back to it: `type RD<T> = ReadonlyArray<RD<T>>`)
+    if (depth > 32) return true;
     for (u32 i = 0; i < ty->alias_args.len; i++) {
-        if (mentions(me, ty->alias_args.data[i], params)) return true;
+        if (mentions_at(me, ty->alias_args.data[i], params, depth + 1)) return true;
     }
     switch ((TyKind)ty->kind) {
         case TY_INTRINSIC:
@@ -1210,31 +1212,33 @@ static bool mentions(Checker* me, Ty const* ty, TyList params) {
         case TY_REFERENCE: {
             TyList args = ty_reference_args(me, ty);
             for (u32 i = 0; i < args.len; i++) {
-                if (mentions(me, args.data[i], params)) return true;
+                if (mentions_at(me, args.data[i], params, depth + 1)) return true;
             }
             return false;
         }
         case TY_UNION:
         case TY_INTERSECTION:
             for (u32 i = 0; i < ty->composite.types.len; i++) {
-                if (mentions(me, ty->composite.types.data[i], params)) return true;
+                if (mentions_at(me, ty->composite.types.data[i], params, depth + 1)) return true;
             }
             return false;
         case TY_KEYOF:
-            return mentions(me, ty->keyof.operand, params);
+            return mentions_at(me, ty->keyof.operand, params, depth + 1);
         case TY_ANONYMOUS:
             // (What the lowering found it can mention, when it knows)
             if (ty->anonymous.free_params_unknown) return true;
             for (u32 i = 0; i < ty->anonymous.free_params.len; i++) {
-                if (mentions(me, ty->anonymous.free_params.data[i], params)) return true;
+                if (mentions_at(me, ty->anonymous.free_params.data[i], params, depth + 1)) return true;
             }
             return false;
         case TY_INDEXED:
-            return mentions(me, ty->indexed.object, params) || mentions(me, ty->indexed.index, params);
+            return mentions_at(me, ty->indexed.object, params, depth + 1) || mentions_at(me, ty->indexed.index, params, depth + 1);
         default:
             return true;
     }
 }
+
+static bool mentions(Checker* me, Ty const* ty, TyList params) { return mentions_at(me, ty, params, 0); }
 
 // Whether a statement has a `return` in it (not counting nested functions)
 static bool block_has_return(Block const* block);
