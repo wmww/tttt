@@ -1619,7 +1619,8 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
     TyList params = sig->type_params;
     if (!params.len) return nullptr;
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
-    for (u32 i = 0; i < params.len; i++) results[i] = i < info->type_args.len ? info->type_args.data[i] : params.data[i];
+    // (A default that mentions a later type parameter gets the error type for it: tsc's fillMissingTypeArguments)
+    for (u32 i = 0; i < params.len; i++) results[i] = i < info->type_args.len ? info->type_args.data[i] : ty_intrinsic(me, TY_ERROR);
     TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     for (u32 i = info->type_args.len; i < params.len; i++) {
         // (tsc's getTypeArgumentsFromNodes: the default, else the constraint, else unknown)
