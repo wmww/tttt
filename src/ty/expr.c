@@ -1867,10 +1867,18 @@ static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
 // symbol has exports)
 static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     Expr const* left = &binary->left;
-    if (left->tag != EXPR_PROPERTY || !left->property->declares) return false;
+    if (left->tag != EXPR_PROPERTY) return false;
     SourceFile const* file = left->outer_span.source;
     if (!file || !file->is_js) return false;
     Symbol const* symbol = left->property->declares;
+    // (A CommonJS export: `module.exports.A = {}; module.exports.A.B = 1`)
+    Span name = span_null;
+    if (!symbol && file->scope && file->scope->container && file->scope->container->exports &&
+        binary_commonjs_declaration(binary, &name) == COMMONJS_TARGET_EXPORTS_PROPERTY
+    ) {
+        symbol = symbol_table_get(file->scope->container->exports, name.sv);
+    }
+    if (!symbol) return false;
     if (!symbol->exports || !symbol->exports->count) return false;
     Expr const* value = &binary->right;
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
@@ -1890,10 +1898,14 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_EQUAL:
             if (is_commonjs_declaration(binary)) {
                 // `exports.x = v` declares x: it is what v is (no context but a JSDoc type, tsc's
-                // getContextualTypeForAssignmentDeclaration), and so is the assignment (checkBinaryLikeExpression
-                // gives an assignment declaration the type of its target)
+                // getContextualTypeForAssignmentDeclaration). `module.exports = v` has the type of its target
+                // (checkBinaryLikeExpression: isAssignmentDeclaration), `exports.x = v` v's, unless v is a container
                 right = ty_check_expr(me, &binary->right, nullptr);
-                return ty_expr_type(me, &binary->left);
+                if (is_js_container_declaration(binary) || expr_is_module_exports(&binary->left)) {
+                    return ty_expr_type(me, &binary->left);
+                }
+                ty_expr_type(me, &binary->left);
+                return right;
             }
             if (is_js_container_declaration(binary)) {
                 // JavaScript `ns.a = {}` whose target has expandos is the container's type (tsc's
