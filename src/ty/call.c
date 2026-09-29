@@ -1853,6 +1853,13 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
             mark_would_report(info);
             error_ctx_error_d(errs, call_span, 2347, "Untyped function calls may not accept type arguments.");
         }
+        // The arguments have the contextual type any (tsc's getContextualTypeForArgumentAtIndex of anySignature, and of
+        // unknownSignature's too), which makes `this` in the methods of an object literal any
+        if (call) {
+            for_each (i, vec_expr, &call->args) {
+                if (i->tag == EXPR_OBJECT) ty_check_expr(me, i, any);
+            }
+        }
         return callee->flags & TYF_ERROR ? ty_intrinsic(me, TY_ERROR) : any; // (resolveErrorCall: an unresolved name's any too)
     }
 
