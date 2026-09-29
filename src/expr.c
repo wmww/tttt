@@ -3226,9 +3226,12 @@ static bool binary_op_typecheck(
                     left = left_base;
                     right = right_base;
                 }
+                cstr left_str, right_str;
+                ty_display_pair_cstr(current_checker, left, right, &left_str, &right_str);
                 Error* e = error_ctx_error_d(errs, expr->outer_span, 2367,
-                    "This comparison appears to be unintentional because the types '", left,
-                    "' and '", right, "' have no overlap.");
+                    "This comparison appears to be unintentional because the types '", left_str,
+                    "' and '", right_str, "' have no overlap.");
+                c_drop(cstr, &left_str, &right_str);
                 if (with_await) error_add_related_d(e, expr->outer_span, 2773, "Did you forget to use 'await'?");
             }
             break;

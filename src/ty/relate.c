@@ -610,6 +610,10 @@ static bool report_widens(Checker* me, Ty const* target) {
     return !(target->flags & TYF_NEVER) && !could_have_singletons(me, target);
 }
 
+void ty_display_pair_cstr(Checker* me, Ty const* a, Ty const* b, cstr* a_out, cstr* b_out) {
+    display_pair(me, a, false, b, a_out, b_out);
+}
+
 void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* source_out, cstr* target_out) {
     source = ty_regular(me, source); // Messages see normalised types, like the relation
     bool widen = report_widens(me, target);

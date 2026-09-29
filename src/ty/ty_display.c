@@ -134,6 +134,23 @@ static bool is_nested_expando_function(Ty const* ty) {
     return expando && !is_non_local_function(symbol);
 }
 
+// `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode)
+static void out_module_import(TyDisplay d, Symbol const* module) {
+    cstr module_name = module_name_for_error(module, nullptr, false);
+    csview name = cstr_sv(&module_name);
+    out_lit(d, "import(");
+    if (name.size >= 2 && name.buf[0] == '\'') {
+        // (a string literal the printer makes: double quotes)
+        out_lit(d, "\"");
+        out(d, csview_slice(name, 1, name.size - 1));
+        out_lit(d, "\"");
+    } else {
+        out(d, name);
+    }
+    out_lit(d, ")");
+    cstr_drop(&module_name);
+}
+
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     csview js_name;
     if (ty_js_assigned_class_name(symbol, &js_name)) {
@@ -147,11 +164,14 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     }
     if (!d.enclosing) {
         bool quoted_parent = parent->name.size && (*parent->name.buf == '"' || *parent->name.buf == '\'');
-        // Modules and ambient modules (`declare module "m"`) are containers too, but not part of a name
-        if (!parent->is_module && !quoted_parent) {
+        // A module or ambient module (`declare module "m"`) at the root is `import("m")` (tsc's getSymbolChain walks
+        // up to it, symbolToTypeNode makes the import type)
+        if (parent->is_module || quoted_parent) {
+            out_module_import(d, parent);
+        } else {
             out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
-            out_lit(d, ".");
         }
+        out_lit(d, ".");
         out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
@@ -173,19 +193,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out_lit(d, "\")");
         start = 1;
     } else if (chain.len && chain.items[0]->is_module) {
-        cstr module_name = module_name_for_error(chain.items[0], nullptr, false);
-        csview name = cstr_sv(&module_name);
-        out_lit(d, "import(");
-        if (name.size >= 2 && name.buf[0] == '\'') {
-            // (a string literal the printer makes: double quotes)
-            out_lit(d, "\"");
-            out(d, csview_slice(name, 1, name.size - 1));
-            out_lit(d, "\"");
-        } else {
-            out(d, name);
-        }
-        out_lit(d, ")");
-        cstr_drop(&module_name);
+        out_module_import(d, chain.items[0]);
         // (tsc's name of a file an import found is its absolute path, `/.src/` included where the harness writes the
         // underline: see SourceFile.loaded_by_import)
         SourceFile const* file = chain.items[0]->module ? chain.items[0]->module->file : nullptr;

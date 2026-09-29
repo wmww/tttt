@@ -11376,7 +11376,7 @@ const baselines = {
         types: true,
     },
     'errorWithSameNameType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -52921,7 +52921,7 @@ const baselines = {
         types: false,
     },
     'inlineJsxFactoryLocalTypeGlobalFallback': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
