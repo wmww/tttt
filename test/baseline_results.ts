@@ -29776,9 +29776,9 @@ const baselines = {
         types: true,
     },
     'switchStatementsWithMultipleDefaults': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'switchStatementsWithMultipleDefaults1': {
         errors: true,
@@ -61146,13 +61146,13 @@ const baselines = {
         types: false,
     },
     'scannerUnicodeEscapeInKeyword1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'scannerUnicodeEscapeInKeyword2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'scannertest1': {

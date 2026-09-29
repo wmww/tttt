@@ -2141,8 +2141,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     }
                 } else {
                     default_count++;
+                    // (tsc's checkSwitchStatement: the second one, a grammar error)
                     if (default_count == 2) {
-                        error_ctx_error_d(
+                        error_ctx_grammar_error_d(
                             errs,
                             i->default_span,
                             1113,

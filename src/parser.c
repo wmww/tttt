@@ -1202,20 +1202,45 @@ static Error* expected_expression_error(Parser* parent) {
     return parse_error(parent, span_from_token_or_eof(parent), 1109, "Expression expected.");
 }
 
+static bool hop_escaped_keyword(Parser* parent, const char* keyword);
+
 // The keyword probe: no child parser (nothing to backtrack), and most probes fail on the first character
 __attribute__((always_inline)) static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
 #ifdef DEBUG_BUILD
     check(!parent->has_panding_child);
 #endif
     const char* pos = parent->pos;
-    if (*pos != *prefix) return false;
+    const char* keyword = prefix;
+    if (*pos != *prefix) return *pos == '\\' && hop_escaped_keyword(parent, keyword);
     while (*prefix) {
-        if (*pos != *prefix) return false;
+        if (*pos != *prefix) return *pos == '\\' && hop_escaped_keyword(parent, keyword);
         prefix++;
         pos++;
     }
     if (identifier_char_size(pos, false)) return false;
     parent->pos = pos;
+    return true;
+}
+
+static cstr jsx_name_value(csview name);
+
+// A keyword spelled with unicode escapes (`\u0076ar`): tsc's scanner makes it the keyword's token, and its parser's
+// nextToken() reports TS1260 where it is consumed as one. Probes that don't match a word with a `\` come here
+static bool hop_escaped_keyword(Parser* parent, const char* keyword) {
+    const char* start = parent->pos;
+    Span word;
+    if (!parse_identifier_or_keyword(parent, &word) || !memchr(word.sv.buf, '\\', (size_t)word.sv.size)) {
+        parent->pos = start;
+        return false;
+    }
+    cstr cooked = jsx_name_value(word.sv);
+    bool equal = strcmp(cstr_str(&cooked), keyword) == 0;
+    cstr_drop(&cooked);
+    if (!equal) {
+        parent->pos = start;
+        return false;
+    }
+    parse_error(parent, word, 1260, "Keywords cannot contain escape characters.");
     return true;
 }
 
@@ -9390,7 +9415,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             call.args = vec_expr_init();
         }
         *ret = expr_call(span_from(a), c_new(CallExpr, call));
-    } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v') && !ctx.left_hand_side &&
+    } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v' || c == '\\') && !ctx.left_hand_side &&
         parse_left_unary_op_expr(&p, ctx, ret)
     ) {
     } else if (c == 'f' && parse_function_keyword_function(&p, false, false, &parsed.function)) {
