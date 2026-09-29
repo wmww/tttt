@@ -74,8 +74,6 @@ bool binding_report_widening_errors_in_type(struct Ty const* ty, ErrorCtx* errs)
 void binding_collect_names(Binding const* me, VecSpan* out);
 /// `initializer`: what the binding is initialized with, if anything (a failed check is elaborated into it)
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs);
-// `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode)
-void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 

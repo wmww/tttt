@@ -346,8 +346,10 @@ static void binding_report_rest_initializer(Binding const* element, ErrorCtx* er
     error_ctx_grammar_error_d(errs, span_make(value.source, at - 1, at), 1186, "A rest element cannot have an initializer.");
 }
 
+static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, ErrorCtx* errs);
+
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
-    binding_typecheck_at(me, initializer, span_null, errs);
+    binding_typecheck_at(me, initializer, span_null, true, errs);
 }
 
 // A JavaScript `/** @type {T} */ const x = {}` whose members are expandos (`x.a = 1`) isn't checked against T (tsc's
@@ -358,7 +360,9 @@ static bool is_js_expando_object_initializer(Binding const* me, Expr const* init
     return my content_span.source && my content_span.source->is_js;
 }
 
-void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, ErrorCtx* errs) {
+// `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode).
+// `assigned`: whether the root is assigned anything (not a variable or parameter without initializer)
+static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, ErrorCtx* errs) {
     if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
     // A pattern without elements is checked for null and undefined instead: the initializer's type, and the pattern's
     // (tsc's checkVariableLikeDeclaration: checkNonNullNonVoidType, both are one diagnostic if they say the same)
@@ -383,8 +387,9 @@ void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, Error
             error_ctx_drop(&quiet);
         }
     }
-    // (A catch variable's annotation isn't assigned anything: TS1196 is its only check)
-    if (my has_explicit_type && (my parent || my source) && !(strict_empty && initializer) &&
+    // (A catch variable's annotation isn't assigned anything: TS1196 is its only check. Nor is a variable's or
+    // parameter's without initializer: its any isn't assignable to `never`)
+    if (my has_explicit_type && (my parent || (my source && assigned)) && !(strict_empty && initializer) &&
         !is_js_expando_object_initializer(me, initializer)
     ) {
         ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
@@ -729,7 +734,8 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     if (my require_port_count) return;
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
-    binding_typecheck(&my binding, my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value, errs);
+    Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
+    binding_typecheck_at(&my binding, initializer, span_null, initializer, errs);
     report_errors_from_widening(me, errs);
 }
 
@@ -737,7 +743,7 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, 
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
-    binding_typecheck_at(&my binding, initializer, span, errs);
+    binding_typecheck_at(&my binding, initializer, span, initializer, errs);
     report_errors_from_widening(me, errs);
     if (!initializer || my binding.has_explicit_type) return;
     // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it

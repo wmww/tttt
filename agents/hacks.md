@@ -373,8 +373,6 @@ src` finds the code-side markers; every significant one has an entry here.
   approximation between two spellings.
 - Cache keys are plain (source id, target id). `RelationState.overflow` (100 deep) reports TS2589 (HACK; tsc TS2321).
 - `this` types: `Prop.thisless` follows isThisless; a reference with a this-argument relates structurally.
-- `check_assignable` (check.c HACK): source `any` passes even to `never` (not for arguments any more). Letting only the
-  error type through cost 25-30 tests (narrowing/exhaustiveness give any where tsc has never).
 - Alias variance (`in out` annotations): the reporting pass falls back to the interface's own variances on an
   invariant failure only for two references to the same target; other shapes keep the old path. The null-base TS2417
   check takes the first `extends` of the first merged interface, not getBaseTypes.

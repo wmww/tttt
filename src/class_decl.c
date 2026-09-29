@@ -1802,11 +1802,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);
                 if (i->field.has_explicit_type) {
+                    // (The declared type is resolved either way, like tsc's checkVariableLikeDeclaration: which types
+                    // come first is union order. A field without initializer isn't assigned anything)
                     Ty const* declared = ty_of_node(&i->field.explicit_type);
                     if (i->field.is_optional) declared = ty_optional_prop_type(current_checker, declared);
-                    ty_check_assignable_expr(
-                        current_checker, expr_get_type(&i->field.value), declared,
-                        i->field.name_span, i->field.value.tag == EXPR_IMPLICIT_ANY ? nullptr : &i->field.value, errs
+                    if (i->field.value.tag != EXPR_IMPLICIT_ANY) ty_check_assignable_expr(
+                        current_checker, expr_get_type(&i->field.value), declared, i->field.name_span, &i->field.value, errs
                     );
                 }
             }   break;
