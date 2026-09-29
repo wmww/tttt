@@ -2125,6 +2125,12 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
             parse_error(&p, span_from_token(&p), 1110, "Type expected.");
+        } else if (*p.pos == ':' && !generic_empty(ret)) {
+            // (tsc's parseDelimitedList: a token nothing around can use is skipped, `<T: Bound>` of Flow)
+            parse_error(&p, span_from_token(&p), 1139, "Type parameter declaration expected.");
+            p.pos++;
+            hop_whitespace(&p);
+            continue;
         } else {
             break;
         }

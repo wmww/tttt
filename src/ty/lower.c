@@ -442,6 +442,15 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             cstr_append(&name, ".");
         }
         cstr_append_sv(&name, identifier->name.sv);
+        // (Printed as written, type arguments too: tsc reuses the reference's node, `Class<T>`)
+        if (vec_spanned_type_size(&identifier->generic_params)) {
+            cstr_append(&name, "<");
+            for_each (i, vec_spanned_type, &identifier->generic_params) {
+                if (i_index) cstr_append(&name, ", ");
+                cstr_append_sv(&name, i->span.sv);
+            }
+            cstr_append(&name, ">");
+        }
         Ty const* ret = ty_unresolved(me, cstr_sv(&name));
         cstr_drop(&name);
         return ret;
