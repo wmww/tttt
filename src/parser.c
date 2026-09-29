@@ -10864,9 +10864,23 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             if (function) {
                 jsdoc_apply_function(&tags, function);
             } else if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {
-                // `/** @type {T} */ export default e`: e is checked against T (tsc's checkExportAssignment)
+                // `/** @type {T} */ export default e`: e is checked against T and T is the export's type (tsc's
+                // checkExportAssignment, getEffectiveTypeAnnotationNode). `export default (e)` is a cast: the tag is
+                // the parenthesized expression's too (getNextJSDocCommentLocation)
                 JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
-                if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                Expr* e = &statement->expr;
+                if (tag && expr_is_perenthisized(e) && !(e->tag == EXPR_AS_TYPE && e->as_type->is_jsdoc)) {
+                    Expr inner = *e;
+                    inner.outer_span = inner.inner_span;
+                    *e = expr_as_type(e->outer_span, c_new(AsTypeExpr, {
+                        .expr = inner,
+                        .keyword_span = tag->type_span,
+                        .type = jsdoc_take_type(tag, nullptr),
+                        .is_jsdoc = true,
+                    }));
+                } else if (tag) {
+                    statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                }
             }
         }   break;
         default:

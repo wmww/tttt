@@ -557,7 +557,7 @@ static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symb
 void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props);
 void scope_add_port(Scope* me, PortItem* item);
 // `export default <expr>`, export_equals: `export = x`, under the name `export=` like in tsc
-void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool export_equals);
+void scope_export_default_expr(Scope* me, Expr* expr, struct TypeNode const* jsdoc_type, Span statement, bool export_equals);
 // An assignment in a CommonJS file: `exports.x = v`, `module.exports.x = v` and `module.exports = v` declare exports
 // (tsc's bindExportsPropertyAssignment, bindModuleExportsAssignment). Anything else is ignored
 void scope_add_commonjs_export(Scope* me, Expr* assignment);

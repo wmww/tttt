@@ -1045,7 +1045,10 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         }
         case SYMBOL_DECL_BUILTIN: return ty_from_node(me, decl->node, (LowerCtx){0});
         // `export default e` (exportDefaultStripsFreshness)
-        case SYMBOL_DECL_EXPR: return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
+        case SYMBOL_DECL_EXPR:
+            // (A JSDoc `@type` on it is its type: tsc's getEffectiveTypeAnnotationNode of an ExportAssignment)
+            if (decl->jsdoc_type) return ty_of_node(decl->jsdoc_type);
+            return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
         case SYMBOL_DECL_ASSIGNMENT:
             if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
             // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
@@ -1317,6 +1320,20 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol && (symbol->flags & SYMBOL_ALIAS)) {
         Ty const* namespace_import = namespace_import_type(me, symbol);
         if (namespace_import) return namespace_import;
+        // `/** @type {T} */ export default x` along the way: T is the value's type (tsc's getTypeOfAlias: the declared
+        // type of the export assignment)
+        Symbol const* step = symbol;
+        for (int depth = 0; step && (step->flags & SYMBOL_ALIAS) && depth < 32; depth++) {
+            for (u32 i = 0; i < step->decl_count; i++) {
+                if (step->decls[i].kind == SYMBOL_DECL_ALIAS && step->decls[i].jsdoc_type) {
+                    return ty_of_node(step->decls[i].jsdoc_type);
+                }
+            }
+            Symbol const* target = symbol_resolve_alias((Symbol*)step);
+            // (An import's own step is the export it names, which may be an alias itself)
+            PortItem const* item = step->alias ? step->alias->item : nullptr;
+            step = item && item->source_symbol ? item->source_symbol : target;
+        }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (symbol && symbol->merged_export_equals_of) return merged_export_equals_type(me, symbol);

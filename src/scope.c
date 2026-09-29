@@ -1256,7 +1256,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
 }
 
-void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool export_equals) {
+void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
     if (!my container || !my container->is_module) return; // TODO: TS1319 and friends
     symbol_ensure_exports(my container);
     csview export_name = export_equals ? c_sv("export=") : c_sv("default");
@@ -1300,11 +1300,12 @@ void scope_export_default_expr(Scope* me, Expr* expr, Span statement, bool expor
         symbol->alias->name = expr->identifier.name;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = statement,
+            .jsdoc_type = jsdoc_type,
         });
     } else {
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = expr,
-            .name = statement, .full = statement,
+            .name = statement, .full = statement, .jsdoc_type = jsdoc_type,
         });
     }
 }

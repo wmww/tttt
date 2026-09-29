@@ -889,7 +889,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            scope_export_default_expr(scope, &my expr, my span, my export_equals);
+            scope_export_default_expr(scope, &my expr, my expr_jsdoc_type, my span, my export_equals);
             break;
 
         case STATEMENT_IMPORT_EXPORT:
