@@ -13132,9 +13132,15 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     free(shared.module_exports_accesses);
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
+    free(source->parse_error_starts);
+    source->parse_error_starts = nullptr;
+    source->parse_error_count = 0;
     for_each (i, vec_error, &shared.errors) {
         i->grammar |= is_grammar_code(i->ts_code);
-        source->has_parse_errors |= !i->grammar && !is_js_syntax_code(i->ts_code);
+        if (i->grammar || is_js_syntax_code(i->ts_code)) continue;
+        source->has_parse_errors = true;
+        source->parse_error_starts = realloc(source->parse_error_starts, sizeof(char const*) * (source->parse_error_count + 1));
+        source->parse_error_starts[source->parse_error_count++] = span_start_ptr(i->span);
     }
     for_each (i, vec_error, &shared.errors) {
         if (source->has_parse_errors && i->grammar) {

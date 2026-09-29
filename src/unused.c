@@ -57,7 +57,9 @@ static bool is_unused(Symbol const* symbol) {
 }
 
 static void report(Reporter const* r, bool parameter, Span at, unsigned code, cstr message) {
-    if (!(parameter ? r->parameters : r->locals)) {
+    // (Not about a declaration whose parsing reported an error: tsc's checkSourceFileWorker skips a containing node
+    // that containsParseError. The diagnostic's own node stands in for the containing one)
+    if (!(parameter ? r->parameters : r->locals) || source_file_parse_error_within(at)) {
         cstr_drop(&message);
         return;
     }

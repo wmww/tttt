@@ -103,6 +103,19 @@ void source_file_drop(SourceFile* me) {
     free(my module_refs);
     free(my comment_directives);
     free(my unused);
+    free(my parse_error_starts);
+}
+
+// tsc's containsParseError: whether a parse error starts in the node's text or right after it (a missing `,` or `}` is
+// reported at the next token, which its node ends before)
+bool source_file_parse_error_within(Span node) {
+    SourceFile const* file = node.source;
+    if (!file || !file->has_parse_errors || !span_valid(node)) return false;
+    for (u32 i = 0; i < file->parse_error_count; i++) {
+        char const* at = file->parse_error_starts[i];
+        if (at >= span_start_ptr(node) && at <= span_end_ptr(node)) return true;
+    }
+    return false;
 }
 
 void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error) {

@@ -32546,7 +32546,7 @@ const baselines = {
         types: true,
     },
     'unusedLocalsAndParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

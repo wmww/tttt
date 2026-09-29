@@ -94,6 +94,10 @@ typedef struct SourceFile {
     // The parser reported something (tsc's hasParseDiagnostics): grammar errors aren't reported then, see
     // error_ctx_grammar_error_d()
     bool has_parse_errors;
+    // Where those parse errors start (in no order), for tsc's containsParseError of a node (a node whose parsing
+    // reported one): source_file_parse_error_within()
+    char const** parse_error_starts;
+    u32 parse_error_count;
     // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
     bool is_js;
     // A .json file an import resolved to (resolveJsonModule): one expression, which is what the module is (`export =`)
@@ -167,6 +171,7 @@ ModuleKind source_file_emit_module_kind(SourceFile const* me);
 // option decides)
 ModuleKind source_file_implied_format_for_emit(SourceFile const* me);
 void source_file_drop(SourceFile* me);
+bool source_file_parse_error_within(Span node);
 // Takes path
 ModuleRef* source_file_add_module_ref(SourceFile* me, cstr path, Span span);
 // tsc's getJSXRuntimeImport(getJSXImplicitImportBase()): `react/jsx-runtime` (react-jsx), `preact/jsx-dev-runtime`
