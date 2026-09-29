@@ -945,7 +945,13 @@ static TyMapper const* infer_type_arguments(
         }
         // A function argument's return type is computed while the calls it returns still see this one (tsc computes it
         // as it checks the argument)
-        if (arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread) ty_argument_return_type(me, arg->expr->function);
+        // (Only with a contextual signature, like tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod: without
+        // one, it waits for the check against the instantiated parameter, whose context may be the function itself)
+        if (arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread &&
+            ty_function_assigned_contextual_signature(me, arg->expr->function)
+        ) {
+            ty_argument_return_type(me, arg->expr->function);
+        }
         my outer_inference = nullptr;
         Signature const* contextual = nullptr;
         arg->generic_function = !arg->spread && !arg->part_of_spread &&

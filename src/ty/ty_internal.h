@@ -65,6 +65,9 @@ enum {
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
     KEY_CONTEXT_PARAM_PATTERN, // Binding (a parameter's pattern) -> non-null if its contextual type fell back to it
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
+    // FunctionImpl -> non-null: its contextual signature is its own, so its unit return type is the literal of its
+    // context (see set_contextual_return())
+    KEY_CONTEXT_RETURN_SELF,
     KEY_CONTEXT_IIFE_RETURN, // FunctionImpl -> the contextual type of the call that invokes it immediately
     KEY_CONTEXT_THIS,   // FunctionImpl -> the `this` type its contextual signature declares
     KEY_YIELD_CONTEXT,  // UnaryOpExpr of a `yield` -> the contextual type it was checked with (its generator's TNext)

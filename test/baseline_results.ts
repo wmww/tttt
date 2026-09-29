@@ -6683,7 +6683,7 @@ const baselines = {
     'contextuallyTypedParametersWithInitializers1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedParametersWithInitializers2': {
         errors: true,
@@ -24323,7 +24323,7 @@ const baselines = {
     'objectFreeze': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectFreezeLiteralsDontWiden': {
         errors: true,
@@ -27928,7 +27928,7 @@ const baselines = {
     'selfReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'selfReferencesInFunctionParameters': {
         errors: true,
@@ -28243,7 +28243,7 @@ const baselines = {
     'silentNeverPropagation': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'simpleArrowFunctionParameterReferencedInObjectLiteral1': {
         errors: true,
@@ -47248,7 +47248,7 @@ const baselines = {
     'functionExpressionContextualTyping3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatedContextualTyping': {
         errors: true,
@@ -67423,7 +67423,7 @@ const baselines = {
     'intraExpressionInferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intraExpressionInferencesJsx': {
         errors: false,

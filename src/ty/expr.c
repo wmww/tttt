@@ -1085,8 +1085,15 @@ Ty const* ty_contextual_synthetic_rest_type(Checker* me, FunctionImpl const* fun
 // The contextual type of a function's return expressions: its contextual signature's return type, as the last check of
 // the function saw it (tsc goes through the resolved signature of the call it is an argument of), instantiated where it
 // is looked at while the call infers (ty_instantiate_contextual_type())
+// When that signature is the function's own (the call it is an argument of inferred its parameter's type from it:
+// `id(() => "x")`), its unit return type is the literal of its context and stays (tsc's getReturnTypeFromBody,
+// `contextualSignature === getSignatureFromDeclaration(func)`)
 static void set_contextual_return(Checker* me, FunctionImpl const* function, Signature const* sig) {
     if (function->ret_explicit) return;
+    // (Later checks of its return expressions see the return type it has then, like tsc's getContextualReturnType)
+    if (sig->function == function && !sig->target) {
+        *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) = function;
+    }
     Ty const* ret = signature_return_type(me, sig);
     u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
     if (ret && !(ret->flags & (TYF_ANY | TYF_VOID))) *intern_slot(me, &my links, key, 2) = ret;
@@ -1934,6 +1941,16 @@ static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
     return symbol->decls[0].jsdoc_type ? ty_of_node(symbol->decls[0].jsdoc_type) : nullptr;
 }
 
+static bool expando_target_is_annotated(PropertyExpr const* access) {
+    Symbol const* declared = access->declares;
+    if (declared->decl_count && declared->decls[0].jsdoc_type) return true;
+    if (access->expr.tag != EXPR_IDENTIFIER || access->expr.identifier.keyword) return false;
+    Symbol const* parent = access->expr.identifier.target;
+    if (!parent || !(parent->flags & SYMBOL_VARIABLE)) return false;
+    Binding const* binding = symbol_find_node(parent, SYMBOL_DECL_VARIABLE);
+    return binding && !binding->parent && binding->has_explicit_type;
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
@@ -1974,6 +1991,13 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             // (An any target is a context too, which a `yield` records as what its generator is sent)
             if (!assigned_context && binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) {
                 assigned_context = left;
+            }
+            // `a.b = v` or `this.b = v` that declares b (an expando): v's type is what b is, so it gives v no context
+            // unless b is declared with a type, or `a` is (tsc's getContextualTypeForAssignmentDeclaration)
+            if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_PROPERTY && binary->left.property->declares &&
+                !binary->jsdoc_type && !expando_target_is_annotated(binary->left.property)
+            ) {
+                assigned_context = nullptr;
             }
             if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
                 (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS

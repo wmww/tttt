@@ -229,6 +229,10 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
                 // Its null and undefined widen to any below (tsc's reportErrorsFromWidening with WideningKind.FunctionReturn)
                 *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = ret;
             }
+            // (Its context is its own type: see set_contextual_return() in expr.c)
+            if (!contextual && intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2)) {
+                contextual = ret;
+            }
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
         }
     }
