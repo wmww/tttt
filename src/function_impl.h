@@ -127,6 +127,11 @@ typedef struct FunctionImpl {
     // JavaScript): its type mentions no type parameters but its own (tsc's getOuterTypeParameters is empty), so
     // instantiating it is the identity. Set by the resolve walk
     bool no_outer_type_params;
+    // No type parameter list encloses it, nor a class (whose `this` its type could mention), and it isn't JavaScript:
+    // unlike no_outer_type_params also for expressions and object literal methods. Their types mention no type
+    // parameters but those of their own signatures (tsc's getOuterTypeParameters is empty: instantiating one is the
+    // identity). Set by the resolve walk
+    bool no_enclosing_type_params;
     Block body; // Initialized to empty block if has_body is false
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in

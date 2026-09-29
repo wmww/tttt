@@ -30,6 +30,10 @@ typedef struct ExprCtx {
     // While a call infers: the contextual type as a contextual signature sees it (tsc's ContextFlags.Signature, which
     // instantiates every level with the non-fixing mapper), when that differs from `contextual`
     Ty const* sig_contextual;
+    // While a call infers: that view has no contextual type here though `contextual` has one (a property of a literal
+    // whose contextual type is a type parameter with a default: `{}` under the non-fixing mapper, its constraint as
+    // `contextual`). A function here has no contextual signature
+    bool sig_absent;
     bool is_const; // inside `as const`
     bool template_context; // The index of an element access (a template literal there is a template type)
     // Context-sensitive functions are ty_any_function_type(), whatever contains one isn't remembered (tsc's
@@ -254,9 +258,10 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     bool inferring = my outer_inference && ((ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ||
         ctx.sig_contextual);
     if (inferring) {
-        Ty const* raw_sig = ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
+        Ty const* raw_sig = ctx.sig_absent ? nullptr : ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
         ctx.contextual = ty_instantiate_contextual_type(me, ctx.contextual);
-        Ty const* sig_view = may_want_signature(expr) ? ty_instantiate_contextual_type_for(me, raw_sig, true) : ctx.contextual;
+        Ty const* sig_view = !raw_sig ? nullptr :
+            may_want_signature(expr) ? ty_instantiate_contextual_type_for(me, raw_sig, true) : ctx.contextual;
         ctx.sig_contextual = sig_view != ctx.contextual ? sig_view : nullptr;
     } else {
         ctx.sig_contextual = nullptr;
@@ -2845,7 +2850,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             literal_builder_drop(&builder);
             // (Its contextual type is the literal's as given: tsc's getContextualType of a SpreadAssignment)
             Ty const* spread_type = check_with(me, &i->value, (ExprCtx){
-                .contextual = written_context, .sig_contextual = written_sig_context, .skip_sensitive = ctx.skip_sensitive,
+                .contextual = written_context, .sig_contextual = written_sig_context, .sig_absent = ctx.sig_absent,
+                .skip_sensitive = ctx.skip_sensitive,
             });
             // (A spread of no object is TS2698 and makes the literal errorType, tsc's checkObjectLiteral)
             if (!ty_is_valid_spread_type(me, spread_type)) spread.any = true;
@@ -2879,7 +2885,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (key && ctx.sig_contextual) member_sig_context = contextual_prop_type(me, ctx.sig_contextual, key);
         }
         ExprCtx member_ctx = {
-            .contextual = member_context, .sig_contextual = member_sig_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+            .contextual = member_context, .sig_contextual = member_sig_context,
+            .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !member_sig_context),
+            .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         Ty const* type = nullptr;
@@ -3133,7 +3141,9 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
         Ty const* element_context = contextual_array_element_type(me, ctx.contextual, expr, (u32)i_index);
         Ty const* element_sig_context = ctx.sig_contextual ? contextual_array_element_type(me, ctx.sig_contextual, expr, (u32)i_index) : nullptr;
         ExprCtx element_ctx = {
-            .contextual = element_context, .sig_contextual = element_sig_context, .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+            .contextual = element_context, .sig_contextual = element_sig_context,
+            .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !element_sig_context),
+            .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
             .generic_mode = ctx.generic_mode,
         };
         if (i->tag == EXPR_SPREAD) {
@@ -4027,7 +4037,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_CALL: return check_call(me, expr->call, ctx);
 
         case EXPR_FUNCTION: {
-            if (ctx.contextual || ctx.sig_contextual) {
+            if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
                 u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
                 bool assigned = intern_get(&my links, done_key, 2) != nullptr;

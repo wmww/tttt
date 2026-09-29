@@ -5503,7 +5503,7 @@ const baselines = {
     'conditionalTypeBasedContextualTypeReturnTypeWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeClassMembers': {
         errors: true,

@@ -68,6 +68,10 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
         // What a type is known to mention without looking inside it (which would lower lazy parts: a conditional
         // type's branches can be the alias being declared)
         if (ty->kind == TY_ANONYMOUS) {
+            // A function's type mentions no type parameter from outside when none encloses it (not asking for its
+            // return type, which may not be inferred yet: an object literal method's `this` can be what fixes the call
+            // inferring it)
+            if (ty->anonymous.function && ty->anonymous.function->no_enclosing_type_params) return false;
             Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
             TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
             if (target->kind == TY_ANONYMOUS && target->anonymous.node && !target->anonymous.free_params_unknown &&
