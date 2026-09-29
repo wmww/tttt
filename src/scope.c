@@ -3001,6 +3001,14 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             // An enum and a namespace merged share their exports: an enum sees only the members, a namespace all but
             // them (tsc's resolveNameHelper looks up SymbolFlags.EnumMember, SymbolFlags.ModuleMember)
             u32 visible = scope->kind == SCOPE_ENUM ? SYMBOL_ENUM_MEMBER : ~(u32)SYMBOL_ENUM_MEMBER;
+            // A CommonJS module's exports aren't names in it, except its typedefs (tsc's resolveNameHelper)
+            if (found && scope->kind == SCOPE_MODULE && scope->file && scope->file->is_commonjs) {
+                bool is_typedef = false;
+                for (u32 i = 0; i < found->decl_count && !is_typedef; i++) {
+                    is_typedef = found->decls[i].kind == SYMBOL_DECL_TYPE_ALIAS && ((TypeDecl const*)found->decls[i].node)->jsdoc;
+                }
+                if (!is_typedef) found = nullptr;
+            }
             // `export { a }` must not find itself
             if (found && !is_export_specifier_alias(found) && symbol_has_meaning(found, meaning & visible)) return found;
         }
