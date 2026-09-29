@@ -459,6 +459,10 @@ typedef struct PropDecl {
     // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
     // `target`. See prop_write_type()
     TypeNode const* write_node;
+    // An object literal's accessor pair: the setter (`function` is the getter), whose parameter's annotation is the
+    // write type. See prop_write_type()
+    FunctionImpl const* setter;
+    Span setter_param; // A type member accessor pair's setter parameter name (to print a divergent pair)
     // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
     Span name_span;
     Span const* decl_spans;
@@ -1421,6 +1425,7 @@ typedef struct ObjectLiteralProp {
     u32 flags; // PropFlags
     Ty const* type; // Null for an accessor (PROP_GETTER/PROP_SETTER): `accessor` has it
     FunctionImpl const* accessor;
+    FunctionImpl const* setter; // See PropDecl.setter
     Span name_span;
     Span const* decl_spans;
     u32 decl_span_count;

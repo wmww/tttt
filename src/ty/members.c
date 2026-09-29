@@ -258,7 +258,10 @@ static void builder_add_interface_member(
                 prop->name = name;
                 prop->parent = i->origin_interface ? i->origin_interface : parent;
                 prop->decl->node = &i->type;
-                if (i->has_write_type) prop->decl->write_node = &i->write_type;
+                if (i->has_write_type) {
+                    prop->decl->write_node = &i->write_type;
+                    prop->decl->setter_param = i->setter_param;
+                }
                 prop->decl->ctx = ctx;
                 prop->decl->ctx.method = is_method;
                 prop->thisless = i->type.tag == TYPE_CALLABLE ?
@@ -2526,6 +2529,11 @@ static Span prop_annotation_circularity_span(Prop const* prop) {
     return span_null;
 }
 
+// An object literal setter whose parameter has a type annotation (JSDoc too): the write type of its property
+static bool setter_is_annotated(FunctionImpl const* setter) {
+    return vec_function_arg_size(&setter->args) && vec_function_arg_at(&setter->args, 0)->initializer.binding.has_explicit_type;
+}
+
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
     switch (prop->type_state) {
@@ -2539,7 +2547,13 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     u32 limit_hits = my instantiation_limit_hits;
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
-        type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
+        // (An unannotated getter has the type of its setter's annotation: tsc's getTypeOfAccessors)
+        FunctionImpl const* setter = prop->decl->setter;
+        if (setter && !prop->decl->function->ret_explicit && setter_is_annotated(setter)) {
+            type = ty_object_literal_accessor_type(me, setter, false);
+        } else {
+            type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
+        }
     } else if (prop->target) {
         MappedInfo const* template_of = prop->target->decl->template_of;
         type = template_of && template_of->template_from ? ty_mapped_template_instantiated(me, template_of, prop->mapper) :
@@ -2598,6 +2612,8 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     Ty const* type = nullptr;
     if (prop->decl->write_node) {
         type = ty_from_node(me, prop->decl->write_node, prop->decl->ctx);
+    } else if (prop->decl->setter && setter_is_annotated(prop->decl->setter)) {
+        type = ty_object_literal_accessor_type(me, prop->decl->setter, false);
     } else if (prop->target) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
@@ -3014,6 +3030,7 @@ Ty const* ty_object_literal_of(
             prop->type = props[i].type;
             prop->type_state = props[i].type ? LAZY_STATE_DONE : LAZY_STATE_NOT_STARTED;
             prop->decl->function = props[i].accessor;
+            prop->decl->setter = props[i].setter;
             prop->decl->name_span = props[i].name_span;
             prop->decl->name_is_value = props[i].name_is_value;
             prop->decl->literal_own = props[i].own;
@@ -3153,6 +3170,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .flags = prop->flags,
             .type = type,
             .accessor = prop->decl->function,
+            .setter = prop->decl->setter,
             .name_span = prop->decl->name_span,
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
@@ -3309,6 +3327,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .flags = prop->flags,
                 .type = widened,
                 .accessor = prop->decl->function,
+                .setter = prop->decl->setter,
                 .name_span = prop->decl->name_span,
                 .decl_spans = prop->decl->decl_spans,
                 .decl_span_count = prop->decl->decl_span_count,
@@ -3380,6 +3399,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .flags = prop->flags,
             .type = prop->decl->function ? nullptr : ty_regular_object_literal(me, prop_type(me, prop)),
             .accessor = prop->decl->function,
+            .setter = prop->decl->setter,
             .name_span = prop->decl->name_span,
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,

@@ -2872,10 +2872,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             existing->name_form = ty_prop_name_form_merge(existing->name_form,
                 ty_prop_name_form(i->name_span.sv, i->computed_key, key_type, true));
             if (i->tag == OBJECT_ITEM_GETTER) {
+                existing->setter = existing->accessor;
                 existing->accessor = i->value.function;
                 existing->flags = (existing->flags & ~(u32)PROP_SETTER) | PROP_GETTER;
-            } else if (!ctx.is_const) {
-                existing->flags &= ~(u32)PROP_READONLY; // Not getter-only after all
+            } else {
+                existing->setter = i->value.function;
+                if (!ctx.is_const) existing->flags &= ~(u32)PROP_READONLY; // Not getter-only after all
             }
             continue;
         }

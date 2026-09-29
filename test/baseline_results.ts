@@ -7393,7 +7393,7 @@ const baselines = {
     'declFileObjectLiteralWithAccessors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declFileObjectLiteralWithOnlyGetter': {
         errors: true,
@@ -8418,12 +8418,12 @@ const baselines = {
     'declarationEmitObjectLiteralAccessors1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitObjectLiteralAccessorsJs1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitOfFuncspace': {
         errors: true,
@@ -9888,7 +9888,7 @@ const baselines = {
     'divergentAccessors1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes1': {
         errors: true,
@@ -9918,7 +9918,7 @@ const baselines = {
     'divergentAccessorsTypes6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'divergentAccessorsTypes7': {
         errors: true,
@@ -15548,7 +15548,7 @@ const baselines = {
     'getSetEnumerable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'getsetReturnTypes': {
         errors: true,
@@ -15588,7 +15588,7 @@ const baselines = {
     'gettersAndSetters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'gettersAndSettersAccessibility': {
         errors: true,
@@ -15603,7 +15603,7 @@ const baselines = {
     'gettersAndSettersTypesAgree': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'giant': {
         errors: true,
@@ -15778,7 +15778,7 @@ const baselines = {
     'illegalSuperCallsInConstructor': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'implementArrayInterface': {
         errors: true,
@@ -18798,7 +18798,7 @@ const baselines = {
     'isolatedDeclarationErrorsObjects': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsReturnTypes': {
         errors: false,
@@ -45398,7 +45398,7 @@ const baselines = {
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS4': {
         errors: true,
@@ -47663,7 +47663,7 @@ const baselines = {
     'objectLiteralGettersAndSetters': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectLiteralNormalization': {
         errors: true,
@@ -48298,7 +48298,7 @@ const baselines = {
     'typeGuardsObjectMethods': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardsOnClassProperty': {
         errors: true,

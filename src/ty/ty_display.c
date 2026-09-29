@@ -1703,6 +1703,42 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             }
             continue;
         }
+        // An accessor pair whose setter takes another type than the getter gives prints as the pair (tsc's
+        // addPropertyToElementList)
+        Prop const* declared = prop;
+        while (declared->target) declared = declared->target;
+        if (((declared->decl->setter && vec_function_arg_size(&declared->decl->setter->args)) || declared->decl->write_node) &&
+            !(declared->flags & PROP_OPTIONAL)
+        ) {
+            Ty const* write = prop_write_type(me, prop);
+            if (write && write != type && type != ty_intrinsic(me, TY_ERROR) && write != ty_intrinsic(me, TY_ERROR)) {
+                out_lit(d, "get ");
+                display_member_name(me, d, prop);
+                out_lit(d, "(): ");
+                // (The annotations as written where they still say it: tsc's signatureToSignatureDeclarationHelper)
+                FunctionImpl const* getter = declared->decl->setter ? declared->decl->function : nullptr;
+                TypeNode const* read_node = getter ? (getter->ret_explicit ? &getter->ret : nullptr) : declared->decl->node;
+                display_annotated(me, d, prop == declared ? read_node : nullptr, type, false);
+                out_lit(d, "; set ");
+                display_member_name(me, d, prop);
+                out_lit(d, "(");
+                // (The parameter's name is its declaration's, reused)
+                if (declared->decl->setter) {
+                    cstr param = cstr_null;
+                    append_binding_pattern(&param, &vec_function_arg_at(&declared->decl->setter->args, 0)->initializer.binding);
+                    out(reused_if(d, true), cstr_sv(&param));
+                    cstr_drop(&param);
+                } else {
+                    out(reused_if(d, true), declared->decl->setter_param.sv);
+                }
+                out_lit(d, ": ");
+                TypeNode const* write_node = declared->decl->setter ?
+                    &vec_function_arg_at(&declared->decl->setter->args, 0)->initializer.binding.explicit_type : declared->decl->write_node;
+                display_annotated(me, d, prop == declared ? write_node : nullptr, write, false);
+                out_lit(d, "); ");
+                continue;
+            }
+        }
         if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
         display_member_name(me, d, prop);
         if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
@@ -1724,8 +1760,14 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             FunctionImpl const* accessor = origin->decl->function;
             Binding const* param = vec_function_arg_size(&accessor->args) ?
                 &vec_function_arg_at(&accessor->args, 0)->initializer.binding : nullptr;
-            if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) annotation = &accessor->ret;
-            else if (!(origin->flags & PROP_GETTER) && param && param->has_explicit_type) annotation = &param->explicit_type;
+            if (origin->decl->setter && !accessor->ret_explicit && vec_function_arg_size(&origin->decl->setter->args)) {
+                param = &vec_function_arg_at(&origin->decl->setter->args, 0)->initializer.binding;
+                if (param->has_explicit_type) annotation = &param->explicit_type;
+            } else if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) {
+                annotation = &accessor->ret;
+            } else if (!(origin->flags & PROP_GETTER) && param && param->has_explicit_type) {
+                annotation = &param->explicit_type;
+            }
         }
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
