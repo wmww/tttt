@@ -2536,9 +2536,10 @@ static bool union_has_member(Ty const* u, Ty const* t) {
     return false;
 }
 
-static Ternary some_related(Checker* me, RelationState* st, TyList sources, Ty const* target) {
+// (Explained by the last member, `report`: tsc's someTypeRelatedToType)
+static Ternary some_related(Checker* me, RelationState* st, TyList sources, Ty const* target, bool report) {
     for (u32 i = 0; i < sources.len; i++) {
-        Ternary related = is_related_to_side(me, st, sources.data[i], target, false, 2);
+        Ternary related = is_related_to_side(me, st, sources.data[i], target, report && i == sources.len - 1, 2);
         if (related) return related;
     }
     return TERNARY_FALSE;
@@ -3861,7 +3862,8 @@ static Ternary structured_related_members(
         }
         if (comparable) {
             if (union_has_member(source, target)) return TERNARY_TRUE; // (tsc's someTypeRelatedToType)
-            return some_related(me, st, source->composite.types, target);
+            return some_related(me, st, source->composite.types, target,
+                report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
         }
         // (Not about the members of `boolean` or an enum, primitives: tsc's unionOrIntersectionRelatedTo)
         return each_related(me, st, source->composite.types, target, report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
@@ -3926,7 +3928,7 @@ static Ternary structured_related_members(
     if (source->kind == TY_INTERSECTION) {
         bool saved_source = st->intersection_source;
         st->intersection_source = true;
-        Ternary related = some_related(me, st, source->composite.types, target);
+        Ternary related = some_related(me, st, source->composite.types, target, false);
         st->intersection_source = saved_source;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node

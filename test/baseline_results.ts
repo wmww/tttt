@@ -29741,7 +29741,7 @@ const baselines = {
         types: true,
     },
     'switchCaseCircularRefeference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64011,7 +64011,7 @@ const baselines = {
         types: true,
     },
     'stringLiteralsWithSwitchStatements03': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
