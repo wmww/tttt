@@ -722,6 +722,9 @@ typedef enum TyIntrinsic {
     // tsc's missingType: the undefined an optional property or tuple element adds under exactOptionalPropertyTypes
     // (and only then: ty_undefined_or_missing()), which the property's declared-type view takes out again
     TY_MISSING,
+    // tsc's optionalType: the undefined of an optional chain that ended (`a?.b` in `a?.b.c`), which only the rest of the
+    // chain sees: it takes that out again and adds a plain undefined at the chain's end (ty_optional_expression_type())
+    TY_OPTIONAL,
     TY_NULL,
     TY_STRING,
     TY_NUMBER,
@@ -1049,6 +1052,12 @@ bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 cou
 bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target);
 bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_optional_prop_type(Checker* me, Ty const* ty); // tsc's getOptionalType(type, isProperty=true)
+Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty); // tsc's removeOptionalTypeMarker: without TY_OPTIONAL
+// tsc's getOptionalExpressionType: `object`, the type of an expression, as the access, call or `!` it is the object
+// (callee, operand) of sees it: after a `?.` (`is_root`) without null and undefined, else without TY_OPTIONAL (which
+// only the rest of an optional chain sees, so no need to ask whether the expression is one). `optional` (may be null):
+// whether that took something out, so that what the access or call evaluates to may be undefined
+Ty const* ty_optional_expression_type(Checker* me, Ty const* object, bool is_root, bool* optional);
 Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch);
 static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional, bool which) {
     return ty_cond_branch_type(me, &conditional->conditional.branches[which]);

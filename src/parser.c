@@ -8470,11 +8470,20 @@ static bool parse_literal(Parser* parent, Value* ret) {
     return parse_type_compat_literal(parent, ret);
 }
 
-// A `!` that an access or call follows continues the chain of its operand (see UnaryOpExpr.continues_chain)
+// An access or call continues the chain its object may be part of: a `!` is then part of it (see
+// UnaryOpExpr.continues_chain), and the access or call under it isn't the chain's end (PropertyExpr.continues_chain)
 static void mark_chain_continues(Expr* object) {
-    while (object->tag == EXPR_UNARY_OP && object->unary_op->op == UNARY_OP_RIGHT_BANG && !expr_is_perenthisized(object)) {
-        object->unary_op->continues_chain = true;
-        object = &object->unary_op->expr;
+    while (!expr_is_perenthisized(object)) {
+        if (object->tag == EXPR_UNARY_OP && object->unary_op->op == UNARY_OP_RIGHT_BANG) {
+            object->unary_op->continues_chain = true;
+            object = &object->unary_op->expr;
+        } else if (object->tag == EXPR_GENERIC_PARAMS) {
+            object = &object->generic_params->expr; // (`a?.b<T>()`: the type arguments are the call's)
+        } else {
+            if (object->tag == EXPR_PROPERTY) object->property->continues_chain = true;
+            if (object->tag == EXPR_CALL && !object->call->uses_new) object->call->continues_chain = true;
+            return;
+        }
     }
 }
 

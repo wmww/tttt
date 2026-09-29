@@ -181,8 +181,6 @@ src` finds the code-side markers; every significant one has an entry here.
   tsc's pseudo references: one extra query per read.
 - Not ported (ty/flow.c TODOs): `x.constructor === C`, `[Symbol.hasInstance]`, `"a" in x` intersecting
   `Record<"a", unknown>`, `unknown` narrowed by switch, generic construct signature erasure, literal regular types.
-- `chain_object_type()` (HACK): every `undefined` of an object continuing an optional chain is taken for tsc's marker,
-  so `a?.b.c` with optional `b` has no TS18048. Wants an `optional` intrinsic printing as `undefined`.
 - `narrowable_type`: constraint positions marked by the resolve walk (`constraint_position`); element access for
   literal indices only. A pattern with a rest element is never a contextual type (`pattern_type_has_rest`, expr.c
   HACK; tsc checks the initializer twice, CheckMode.RestBindingElement).

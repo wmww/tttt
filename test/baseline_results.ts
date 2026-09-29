@@ -47876,7 +47876,7 @@ const baselines = {
         types: true,
     },
     'privateIdentifierChain.1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

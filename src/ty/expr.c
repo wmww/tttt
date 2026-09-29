@@ -442,6 +442,15 @@ static Ty const* optional_type(Checker* me, Ty const* ty) {
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
 
+// What an access or call of an optional chain that may have ended evaluates to (tsc's propagateOptionalTypeMarker): at
+// the chain's end the undefined of `optional_type()`, before it the marker the rest of the chain takes out again
+static Ty const* propagate_optional(Checker* me, Ty const* ty, bool continues_chain, bool optional) {
+    if (!optional) return ty;
+    if (!continues_chain) return optional_type(me, ty);
+    Ty const* parts[2] = { ty, ty_intrinsic(me, TY_OPTIONAL) };
+    return ty_union(me, parts, 2, nullptr, (TyList){0});
+}
+
 // tsc's getWidenedLiteralLikeTypeForContextualType without the context: fresh literals and unique symbols widen, and what
 // is left is regular (a mutable location holds regular literals)
 static Ty const* widen_literals(Checker* me, Ty const* ty) {
@@ -2175,13 +2184,10 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
             Ty const* type = ty_expr_type(me, operand);
             if (!compiler_options()->strict_null_checks) return type;
             // Part of an optional chain (`a?.b!.c`): the chain may still have ended, tsc's checkNonNullChain keeps its
-            // undefined (see chain_object_type()'s HACK: every undefined is taken for that)
-            if (unary->continues_chain && expr_is_optional_chain(operand) && !expr_is_perenthisized(operand) &&
-                includes_undefined(type)
-            ) {
-                return optional_type(me, ty_non_nullish_part(me, type));
-            }
-            return ty_non_nullish_part(me, type);
+            // marker
+            bool optional = false;
+            type = ty_optional_expression_type(me, type, false, &optional);
+            return propagate_optional(me, ty_non_nullish_part(me, type), unary->continues_chain, optional);
         }
     }
     impossible;
@@ -3479,23 +3485,23 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
     return ty_apply_type_arguments_mapper(me, ty, mapper);
 }
 
-// The type of the object of `object?.x` / `object.x` (or the callee of a call) as the access sees it. `optional`: the
-// access is part of an optional chain that may have ended before it, so what it evaluates to may be undefined.
-// HACK: tsc tells the undefined of a chain that ended from an undefined the object really has (a marker type); here
-// every undefined of an object that continues a chain is taken for the former, so `a?.b.c` with an optional b passes
-static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is_root, bool* optional) {
-    Ty const* object = ty_expr_type(me, object_expr);
+Ty const* ty_optional_expression_type(Checker* me, Ty const* object, bool is_root, bool* optional) {
+    bool dummy = false;
+    if (!optional) optional = &dummy;
     if (!compiler_options()->strict_null_checks) return is_root ? ty_non_nullable(me, object) : object;
     if (is_root) {
         *optional = ty_can_be_nullish(me, object) && !(object->flags & (TYF_ANY | TYF_UNKNOWN));
-        // (tsc's getOptionalExpressionType: getNonNullableType, which takes void too)
+        // (tsc's getNonNullableType, which takes void too)
         return ty_non_nullish_part(me, object);
     }
-    if (expr_is_optional_chain(object_expr) && !expr_is_perenthisized(object_expr) && includes_undefined(object)) {
-        *optional = true;
-        return ty_non_nullable(me, object);
-    }
-    return object;
+    // (Only the rest of an optional chain sees the marker, see TY_OPTIONAL: no need to ask whether object_expr is one)
+    Ty const* ret = ty_remove_optional_marker(me, object);
+    *optional = ret != object;
+    return ret;
+}
+
+static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is_root, bool* optional) {
+    return ty_optional_expression_type(me, ty_expr_type(me, object_expr), is_root, optional);
 }
 
 // `Symbol()` or `Symbol.for()` with the global `Symbol` (tsc's isSymbolOrSymbolForCall)
@@ -3679,7 +3685,7 @@ static Ty const* check_call(Checker* me, CallExpr const* call, ExprCtx ctx) {
     if (call->unique_symbol.key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {
         ret = ty_unique_symbol(me, &call->unique_symbol);
     }
-    return optional ? optional_type(me, ret) : ret;
+    return propagate_optional(me, ret, call->continues_chain, optional);
 }
 
 // What a `yield` evaluates to: what the generator is sent (its TNext), for `yield*` what the delegate returns (tsc's
@@ -4005,7 +4011,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 ret = ty_remove_missing(me, ret, true); // (tsc's getFlowTypeOfAccessExpression)
             }
             ret = access_flow_type(me, expr, ret, ctx.contextual);
-            return optional ? optional_type(me, ret) : ret;
+            return propagate_optional(me, ret, expr->property->continues_chain, optional);
         }
 
         case EXPR_GENERIC_PARAMS: {

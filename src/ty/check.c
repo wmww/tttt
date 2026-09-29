@@ -1288,7 +1288,8 @@ static cstr entity_name_text(Span span) {
     cstr ret = cstr_null;
     for (isize i = 0; i < span.sv.size; i++) {
         char c = span.sv.buf[i];
-        if (c != ' ' && c != '\t' && c != '\n' && c != '\r') cstr_append_n(&ret, &span.sv.buf[i], 1);
+        // (`a?.b` is `a.b`: tsc's entityNameToString)
+        if (c != ' ' && c != '\t' && c != '\n' && c != '\r' && c != '?') cstr_append_n(&ret, &span.sv.buf[i], 1);
     }
     return ret;
 }
@@ -2042,8 +2043,7 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     }
     Atom const* name = access_name(me, access);
     if (!name) return;
-    Ty const* object = ty_expr_type(me, &access->expr);
-    if (access->optional_chain || expr_is_optional_chain(&access->expr)) object = ty_non_nullable(me, object);
+    Ty const* object = ty_optional_expression_type(me, ty_expr_type(me, &access->expr), access->optional_chain, nullptr);
     MemberRefs refs = {0};
     int readonly = member_refs(me, object, name, &refs, 0);
     if (readonly < 0 || !refs.len) return; // (No property: an index signature, or already an error)

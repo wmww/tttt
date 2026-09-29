@@ -510,6 +510,9 @@ typedef struct PropertyExpr {
         PROPERTY_EXPR_BRACKET,
     } form;
     bool optional_chain;
+    // An access, call or chain-continuing `!` has it as its object (unparenthesized): if it's part of an optional chain,
+    // not the chain's end (tsc's !isOutermostOptionalChain). Set by the parser
+    bool continues_chain;
     bool constraint_position; // Like IdentifierExpr.constraint_position
     // Part of the entity name of a `typeof a.b` type (tsc's QualifiedName): also sees a namespace's type-only exports
     bool qualified_name;
@@ -581,6 +584,7 @@ typedef struct CallExpr {
     bool uses_new;
     bool is_extends;
     bool optional_chain; // `f?.()`
+    bool continues_chain; // Like PropertyExpr.continues_chain
     ClassDecl const* enclosing_class; // `new C()` of a private or protected constructor: see PropertyExpr
     Expr callable;
     // PERF: types of each argument should be cached

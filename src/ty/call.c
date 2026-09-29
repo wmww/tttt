@@ -1823,8 +1823,7 @@ static Ty const* this_argument(Checker* me, CallExpr const* call, Span call_span
     }
     PropertyExpr const* property = callee->property;
     *span_out = property->expr.outer_span;
-    Ty const* receiver = ty_expr_type(me, &property->expr);
-    return property->optional_chain ? ty_non_nullable(me, receiver) : receiver;
+    return ty_optional_expression_type(me, ty_expr_type(me, &property->expr), property->optional_chain, nullptr);
 }
 
 // tsc's getSignaturesOfType arrayFallbackSignatures: a method of a union of arrays and tuples whose members have no
@@ -1839,8 +1838,8 @@ static Ty const* array_fallback_callee(Checker* me, CallExpr const* call) {
     if (property->form != PROPERTY_EXPR_DOT || name->tag != EXPR_LITERAL || name->literal.tag != VALUE_STRING) {
         return nullptr;
     }
-    Ty const* receiver = ty_expr_type(me, &property->expr);
-    if (property->optional_chain) receiver = ty_non_nullable(me, receiver);
+    Ty const* receiver = ty_optional_expression_type(me, ty_expr_type(me, &property->expr),
+        property->optional_chain, nullptr);
     Ty const* apparent = ty_apparent_type(me, receiver);
     if (apparent->kind != TY_UNION) return nullptr;
     TyList members = apparent->composite.types;

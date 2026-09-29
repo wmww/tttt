@@ -262,6 +262,7 @@ Checker* checker_new(Program* program) {
         my intrinsics[TY_UNDEFINED_WIDENING] = widening;
     }
     my intrinsics[TY_MISSING] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
+    my intrinsics[TY_OPTIONAL] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
     my intrinsics[TY_NULL] = make_intrinsic(me, "null", TYF_NULL);
     my intrinsics[TY_NULL_WIDENING] = my intrinsics[TY_NULL];
     if (!compiler_options()->strict_null_checks) {
@@ -2485,6 +2486,25 @@ Ty const* ty_undefined_or_missing(Checker* me) {
 bool ty_contains_missing(Checker* me, Ty const* ty) {
     Ty const* missing = my intrinsics[TY_MISSING];
     return ty == missing || (ty->kind == TY_UNION && ty->composite.types.data[0] == missing);
+}
+
+Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty) {
+    Ty const* marker = my intrinsics[TY_OPTIONAL];
+    if (ty == marker) return my intrinsics[TY_NEVER];
+    if (ty->kind != TY_UNION) return ty;
+    TyList members = ty->composite.types;
+    // (Members sort by id, and the marker's is among the lowest)
+    for (u32 i = 0; i < members.len && members.data[i]->id <= marker->id; i++) {
+        if (members.data[i] != marker) continue;
+        Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!kept, "out of memory");
+        u32 len = 0;
+        for (u32 j = 0; j < members.len; j++) if (j != i) kept[len++] = members.data[j];
+        Ty const* ret = ty_union_filtered(me, ty, kept, len);
+        free(kept);
+        return ret;
+    }
+    return ty;
 }
 
 Ty const* ty_remove_missing(Checker* me, Ty const* ty, bool optional) {

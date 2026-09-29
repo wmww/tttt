@@ -3572,12 +3572,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             if (ty_is_import_meta(me)) import_meta_typecheck(me, errs);
             expr_typecheck(&my property->expr, errs);
             expr_typecheck(&my property->prop, errs);
-            Ty const* expr_type = expr_get_type(&my property->expr);
-            // HACK: the rest of a chain (`a?.b.c`) only runs when `a?.b` did, but its type can't tell the `undefined`
-            // of the short circuit from one that `b` has itself (tsc: the optionalType marker)
-            if (my property->optional_chain || expr_is_optional_chain(&my property->expr)) {
-                expr_type = ty_non_nullable(current_checker, expr_type);
-            }
+            // (`a?.b` of `a?.b.c` without the undefined of a chain that ended)
+            Ty const* expr_type = ty_optional_expression_type(current_checker, expr_get_type(&my property->expr),
+                my property->optional_chain, nullptr);
             bool error_if_not_found = my property->form == PROPERTY_EXPR_DOT;
             if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
                 span_valid(my property->prop.inner_span) && my property->prop.inner_span.sv.buf[0] == '#'
@@ -3680,14 +3677,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
             Ty const* contextual = memo && memo->done ? memo->context : nullptr;
             Ty const* callee_type = ty_expr_type(checker, callee);
-            // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended, see
-            // chain_object_type()
-            // (`f?.()` takes tsc's getNonNullableType, which removes void too, like ty/expr.c's chain_object_type())
-            if (my call->optional_chain && compiler_options()->strict_null_checks) {
-                callee_type = ty_non_nullish_part(checker, callee_type);
-            } else if (my call->optional_chain || (expr_is_optional_chain(callee) && !expr_is_perenthisized(callee))) {
-                callee_type = ty_non_nullable(checker, callee_type);
-            }
+            // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended
+            callee_type = ty_optional_expression_type(checker, callee_type, my call->optional_chain, nullptr);
             if (!my call->uses_new && !my call->is_extends) {
                 callee_type = ty_check_non_null_callee(checker, callee_type, callee->outer_span, errs);
             }
