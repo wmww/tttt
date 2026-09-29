@@ -897,6 +897,13 @@ BaselineTestCase run_baseline_test_case(
 
     set_compiler_options(program_options(program));
     ret.pretty = program_options(program)->pretty;
+    // What the checkers report while the walk below asks for types isn't a diagnostic of the program: tsc's harness
+    // takes the errors baseline before its type walk, and the CLI never walks. Counting them would hide checks that
+    // only happen when something prints a type (a generator's inferred return type, say)
+    ErrorCtx walk_errs = error_ctx_scratch(errs);
+    walk_errs.parent = errs;
+    errs->frozen = true;
+    for (u32 c = 0; c < program_checker_count(program); c++) program_checker_at(program, c)->errs = &walk_errs;
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
@@ -907,6 +914,12 @@ BaselineTestCase run_baseline_test_case(
     }
     checker_make_current(program_get_checker(program));
     clear_compiler_options();
+    for (u32 c = 0; c < program_checker_count(program); c++) program_checker_at(program, c)->errs = errs;
+    errs->frozen = false;
+    if (noisy && !error_ctx_empty(&walk_errs)) {
+        log_warn("the type walk reported ", vec_error_size(&walk_errs.errors), " diagnostics the checking didn't (dropped)");
+    }
+    error_ctx_drop(&walk_errs);
 
     process_errors(&ret);
 

@@ -1039,6 +1039,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     block_typecheck(&my body, ctx, errs);
     current_checker->return_context = outer_context;
     function_impl_check_end(me, errs);
+    // A generator declaration or class method without a return annotation: its return type, which is where a missing
+    // global Generator/IterableIterator is reported (tsc's checkFunctionOrMethodDeclaration asks for it for that)
+    if (my is_generator && !my is_expression && my has_body && !my ret_explicit) ty_function_return_type(current_checker, me);
     if (my is_generator) function_check_widened_return(me, errs);
     function_check_circular_return(me, errs);
 }
