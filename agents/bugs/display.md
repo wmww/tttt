@@ -59,23 +59,20 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - reactDefaultPropsInferenceSuccess: the TS6500 related info prints `keyof Props` where tsc prints `"when" | "error"`.
 
 ## Names and specifiers
-- **`import("…")` specifiers**: tsc prints some specifiers as absolute paths the harness then strips (`/.src/a` -> `a`),
-  so the text matches but the `^^^` underline is 6 longer (e.g. `exports` inside its own CommonJS file,
-  intersectionsAndEmptyObjects). **45 tests fail on this alone** (`displaydiff.py`'s `underlines/order only`, the
-  single biggest one-kind bucket; ambient modules are never affected). Probes (2026-09-27, `./tscbaseline.sh`): `a.ts`
-  exports class C, `e.ts` returns `new A.C()`, `b.ts` has `export const v = E.mk()`. `v : import("a").C` gets the
-  +6 underline iff b.ts (the file the type is printed in) contains an `import X = require(...)`, even an unrelated
-  one; `import * as`, `export =` and dynamic `import()` don't trigger it. commonJSImportClassTypeReference (JS
-  `require`) fits, intersectionsAndEmptyObjects (only `import('./ex')`, esModuleInterop) doesn't: find the real
-  condition in the checker (getSpecifierForModuleSymbol falls back to the full fileName without a resolver host, so
-  the question is where the non-prefixed specifier comes from). A tried implementation: `SourceFile.hidden_path_prefix`
-  (6 for a test file named relatively) with the underline growing after the specifier in ty_display.c's
-  out_symbol_name/out_declared_name, unconditionally: -190 tests, so the condition is essential. moduleSpecifiers' getModuleSpecifiers falling back to the file name. Separately, tsc
-  prefers a package entry/`index` that re-exports the symbol and non-relative paths:
+- **`import("…")` specifiers**: resolved (2026-09-29). The +6 underline is a file that an import reached before the
+  harness's root list did (tsc then names it by its absolute `/.src/` path, which the harness strips from the text but
+  not the underline): `SourceFile.loaded_by_import`. The reuse gaps of a renamed `import("m").A` shift with it.
+  Still: tsc prefers a package entry/`index` that re-exports the symbol and non-relative paths:
   declarationEmitForGlobalishSpecifierSymlink2, symbolLinkDeclarationEmitModuleNames(RootDir),
   bundledDtsLateExportRenaming, declarationEmitTopLevelNodeFromCrossFile2, declarationsForInferredTypeFromOtherFile.
-- `export default class {}` prints `typeof default` from other files where tsc names the importing alias (`import {
-  default as b }` -> `typeof b`; importHelpersWithImportOrExportDefault, 10 configurations): getNameOfSymbolAsWritten.
+- **`import * as ns` of a CommonJS file from an ES module file (node16+)** is a clone of the module in tsc
+  (resolveESModuleSymbol, cloneTypeAsModuleType): its type is `typeof ns` by that alias, and the symbol chain doesn't
+  name the module through it (nodeModules1: `typeof m26` via `import m26 = require`, not the earlier `import * as
+  m4`). tttt's namespace import is the module itself. Tried making the chain skip such imports
+  (symbol_chain.c candidate_list): the import lines then print `typeof import("index")`, since the type itself must
+  be a per-alias clone. ~24 node16 tests (nodeModules1, nodeModulesAllowJs1, *PackageExports*, *PatternExports*: those
+  also print `typeof cjsi.cjs.mjs` where tsc's DFS goes through the `cjs` export whose exports table is a distinct
+  object, then `mjs`).
 
 - JS corpus leftovers (probes in `test/probes/plan19/webpack/`): a `require("m").X` alias that resolves to nothing
   prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
@@ -88,6 +85,11 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   underline has gaps (reused nodes), tttt's doesn't.
 
 ## Symbols baseline
+- An augmentation of an `export =` module (`declare module "./file1" {}`): tsc's symbol at its name prints
+  `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals3-6.
+- A module's own exports reached through an alias of the module (`import * as self from "./self"`) are named
+  `self.x` at their declarations (baseline_test_case_module_alias_text): only function/variable declarations
+  (add_declaration) and type aliases ask; classes, interfaces, enums, namespaces don't yet.
 - `infer X extends C<...>`: references inside an `infer` type parameter's constraint are missing
   (partial_check_overload.ts).
 - Mapped properties over an intersection: tsc lists the declarations from every intersection member that has the

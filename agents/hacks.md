@@ -939,6 +939,16 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `string_to_double()` (string_helpers.c) is only used by value.c and accumulates decimals digit by digit (not
   correctly rounded for long mantissas); the parser uses strtod on the separator-free digits.
 
+- `callee_compile_test_info` (types baseline): a call's callee `f<T>` is an instantiation expression (a line of
+  its own) only when `?.` follows it (`f<T>?.()`), which it tells by looking at the source text after the callee.
+- `is_nested_expando_function` (ty_display.c): a function with expando members prints `typeof f` only when
+  non-local; observed from the baselines (expandoFunctionNullishProperty vs expandoFunctionNestedAssigments), the
+  tsc mechanism behind it isn't pinned down.
+- `baseline_test_case_module_alias_text`: only chains that end at the export itself (tsc doesn't name an `export { f
+  as g }` re-export through the self-import alias in nodeNextPackageSelfName*, unexplained).
+- `ty_pattern_unclone` (call.c's pattern return mapper): a new, uninterned copy of the pattern type per call, for
+  tsc's widening of an inference made from a binding pattern (which makes a new object type that is no pattern's).
+
 ## Test harness: `/// <reference lib>` added to the lib list up front (`load_test_source`)
 The harness's libs are a cached program keyed by the lib list, which a test's file can't add to, so
 `load_test_source` scans the test text for `<reference lib="x"` and appends x to the list. Not with
