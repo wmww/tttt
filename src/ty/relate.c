@@ -1553,6 +1553,26 @@ static int constructor_access(Signature const* sig) {
     return function && function->constructed_class && function->is_constructor ? function->constructor_access : -1;
 }
 
+// A signature declared by a class's `constructor` (tsc's declaration.kind === SyntaxKind.Constructor)
+static bool declared_constructor(Signature const* sig) {
+    while (sig && !sig->function && sig->target) sig = sig->target;
+    return sig && sig->function && sig->function->constructed_class && sig->function->is_constructor;
+}
+
+// Whether two object types have an ObjectFlags bit in common (tsc's `sourceObjectFlags & targetObjectFlags`), as far as
+// the kind of object goes: anonymous types (a class's static side too), classes and interfaces, references
+static int object_flags_kind(Ty const* ty) {
+    if (ty->kind != TY_DECLARED) return ty->kind;
+    switch (ty->declared.kind) {
+        case TY_DECLARED_CLASS_STATIC: case TY_DECLARED_ENUM_OBJECT: case TY_DECLARED_NAMESPACE: return TY_ANONYMOUS;
+        default: return -1 - (int)ty->declared.kind;
+    }
+}
+
+static bool share_object_flags(Ty const* source, Ty const* target) {
+    return object_flags_kind(source) == object_flags_kind(target);
+}
+
 // tsc's signaturesRelatedTo
 static Ternary signatures_related(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool construct, bool report
@@ -1604,6 +1624,17 @@ static Ternary signatures_related(
             erase ? ty_erased_signature(me, target_sigs[0]) : target_sigs[0], CALLBACK_NONE, report,
             signature_return_code(source_sigs[0], target_sigs[0], construct)
         );
+        // A class's constructor says which signatures it was about (tsc's signaturesRelatedTo)
+        if (!result && report && construct && (declared_constructor(source_sigs[0]) || declared_constructor(target_sigs[0])) &&
+            share_object_flags(source, target)
+        ) {
+            cstr source_str = cstr_null, target_str = cstr_null;
+            ty_display_signature_arrow(me, (TyDisplay){ .target = &source_str }, source_sigs[0]);
+            ty_display_signature_arrow(me, (TyDisplay){ .target = &target_str }, target_sigs[0]);
+            report_line(st, 2322, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'."));
+            report_line(st, 2419, cstr_lit("Types of construct signatures are incompatible."));
+            c_drop(cstr, &source_str, &target_str);
+        }
     } else {
         // Every target signature needs a source signature, type parameters erased. Only the first failure explains
         for (u32 i = 0; i < target_count; i++) {

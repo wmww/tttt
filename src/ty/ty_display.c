@@ -1378,6 +1378,11 @@ void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig) {
     display_signature(me, d, sig, ": ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
 }
 
+// tsc's signatureToString with WriteArrowStyleSignature: `new (x: number) => C`
+void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig) {
+    display_signature(me, d, sig, " => ", (sig->flags & SIGNATURE_CONSTRUCT) != 0);
+}
+
 // tsc's signatureToString without a kind: a construct signature prints like a call signature
 void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig) {
     display_signature(me, d, sig, ": ", false);

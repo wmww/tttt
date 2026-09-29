@@ -1883,6 +1883,7 @@ typedef struct TyDisplay {
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig);
+void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
 // The property name of `Symbol.<name>` (a unique symbol), null if the lib has no such symbol
