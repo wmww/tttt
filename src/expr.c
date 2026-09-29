@@ -353,6 +353,17 @@ static void note_arguments_reference(Scope const* names) {
     }
 }
 
+// A span extended back over the `type` keyword in front of it, if there is one (`type a` of an import specifier)
+static Span span_from_type_keyword(Span name) {
+    char const* start = span_start_ptr(name);
+    char const* file_start = name.source ? cstr_str(&name.source->contents) : start;
+    while (start > file_start && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
+    if (start - file_start < 4 || memcmp(start - 4, "type", 4)) return name;
+    char const* before = start - 4;
+    if (before > file_start && (isalnum((unsigned char)before[-1]) || before[-1] == '_' || before[-1] == '$')) return name;
+    return span_make(name.source, before, span_end_ptr(name));
+}
+
 // TS1361/TS1362: a value that was imported or exported as a type only (tsc's
 // checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol). Fine in `typeof x` types and ambient contexts
 // A value use of `x` after an `import x = A.B` that resolved to nothing: tsc checks `A.B` as an expression then
@@ -396,17 +407,13 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
         ) {
             at = item->full_span;
         } else if (item->tag == PORT_IMPORT_DEFAULT && item->type_only) {
-            // (from its `type`)
-            char const* start = span_start_ptr(item->decl_name);
-            char const* file_start = item->decl_name.source ? cstr_str(&item->decl_name.source->contents) : start;
-            while (start > file_start && (start[-1] == ' ' || start[-1] == '\t')) start--;
-            if (start - file_start >= 4 && !memcmp(start - 4, "type", 4)) {
-                at = span_make(item->decl_name.source, start - 4, span_end_ptr(item->decl_name));
+            at = span_from_type_keyword(item->decl_name); // (from its `type`)
+        } else if (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) {
+            if (span_valid(item->source_name) && span_start_ptr(item->source_name) < span_start_ptr(item->decl_name)) {
+                at = item->source_name;
             }
-        } else if ((item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) &&
-            span_valid(item->source_name) && span_start_ptr(item->source_name) < span_start_ptr(item->decl_name)
-        ) {
-            at = item->source_name;
+            // (A specifier's own `type` is part of it: `type a`)
+            if (item->type_modifier) at = span_from_type_keyword(at);
         }
         error_add_related_d(error, at, exported ? 1377 : 1376, "'", my name, "' was ",
             exported ? "exported" : "imported", " here.");

@@ -578,6 +578,8 @@ src` finds the code-side markers; every significant one has an entry here.
   `--keep-going` unvalidated.
 
 ## Display and baselines (`ty_display.c`, `symbol_chain.c`, `baseline_test_case.c`)
+- `span_from_type_keyword` (`expr.c`): TS1376/TS1377's related span of a type-only default import or specifier is
+  found by scanning the source text back from the name for `type`; PortItem has no span of the whole specifier.
 - `symbol_chain.c` (getSymbolChain) sees only scopes the traversal tracks (`BaselineTestCase.enclosing`), so
   function-local shadowing isn't qualified; `try_locals_with_exports()` merges by position; no alternative containing
   modules, firstVariableMatch or accessibility cache. `append_qualified_name` always fully qualifies in messages.
