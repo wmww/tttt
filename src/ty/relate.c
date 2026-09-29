@@ -163,9 +163,9 @@ static u64 relation_key(Ty const* source, Ty const* target) {
 
 // Globals
 
-static Ty const* global_type(Checker* me, GlobalType which) {
+[[gnu::noinline, gnu::cold]] static Ty const* resolve_global_type(Checker* me, GlobalType which) {
     static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp", "CallableFunction", "NewableFunction" };
-    if (!my global_types_resolved[which]) {
+    {
         my global_types_resolved[which] = true;
         if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION || which == GLOBAL_UNKNOWN_EMPTY_OBJECT) {
             Ty* empty = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (which == GLOBAL_ANY_FUNCTION ? TYF_NON_INFERRABLE : 0));
@@ -184,6 +184,11 @@ static Ty const* global_type(Checker* me, GlobalType which) {
         }
     }
     return my global_types[which];
+}
+
+// (Split so the check inlines: apparent_type() asks on every relation)
+static inline Ty const* global_type(Checker* me, GlobalType which) {
+    return my global_types_resolved[which] ? my global_types[which] : resolve_global_type(me, which);
 }
 
 // tsc's initializeTypeChecker creates these before checking anything, in this order: their type ids come first, which
@@ -345,8 +350,8 @@ static bool enums_related(Checker* me, Symbol const* source, Symbol const* targe
 }
 
 static inline bool same_literal_value(Ty const* s, Ty const* t);
-static void report_line(RelationState* st, unsigned ts_code, cstr message);
-static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen);
+[[gnu::cold]] static void report_line(RelationState* st, unsigned ts_code, cstr message);
+[[gnu::cold]] static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen);
 
 // An enum member's value as a message shows it, `"a"` or `1`: the plain literal of the same value
 static cstr enum_value_display(Checker* me, Ty const* member) {
@@ -551,7 +556,7 @@ static bool is_structured(Ty const* ty) {
 
 static void flush_incompatible(RelationState* st);
 
-static void report_line(RelationState* st, unsigned ts_code, cstr message) {
+[[gnu::cold]] static void report_line(RelationState* st, unsigned ts_code, cstr message) {
     flush_incompatible(st);
     // `boolean` is a union, whose member `false` reads as 'boolean' again once widened for display
     TyReportLine const* last = nullptr;
@@ -565,12 +570,12 @@ static void report_line(RelationState* st, unsigned ts_code, cstr message) {
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message });
 }
 
-static void report_line_at(RelationState* st, unsigned ts_code, cstr message, Span span) {
+[[gnu::cold]] static void report_line_at(RelationState* st, unsigned ts_code, cstr message, Span span) {
     flush_incompatible(st);
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .span = span });
 }
 
-static void report_related(RelationState* st, unsigned ts_code, cstr message, Span span) {
+[[gnu::cold]] static void report_related(RelationState* st, unsigned ts_code, cstr message, Span span) {
     if (!span_valid(span)) {
         cstr_drop(&message);
         return;
@@ -582,13 +587,13 @@ static void report_truncate(RelationState* st, isize_t len) {
     while (vec_ty_report_line_size(&st->lines) > len) vec_ty_report_line_pop(&st->lines); // drops the line
 }
 
-static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
+[[gnu::cold]] static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
     cstr ret = cstr_null;
     ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen }, ty);
     return ret;
 }
 
-static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
+[[gnu::cold]] static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
     cstr ret = cstr_null;
     ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .fully_qualified = true, .typeof_unique_symbols = true }, ty);
     return ret;
@@ -667,7 +672,7 @@ static bool is_literal_type(Ty const* ty) {
 
 // A source and target as messages show them side by side: told apart by their full names if they'd print the same
 // (tsc's getTypeNamesForErrorDisplay)
-static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
+[[gnu::cold]] static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
     // A widened literal source is shown by tsc's getTypeNameForErrorDisplay (reportRelationError's generalizedSource):
     // fully qualified, a unique symbol as `typeof sym`
     *source_out = widen && is_literal_type(source) ? display_fully_qualified(me, source, widen) :
@@ -732,7 +737,7 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
 
 // tsc's reportIncompatibleError: `message` is what the step says on its own (for a signature's return types, always
 // in the words of the ones with parameters)
-static void report_incompatible(RelationState* st, unsigned ts_code, cstr message) {
+[[gnu::cold]] static void report_incompatible(RelationState* st, unsigned ts_code, cstr message) {
     st->override_next_head++;
     st->skipped_source = st->skipped_target = nullptr;
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .incompatible = true });
@@ -2083,7 +2088,7 @@ static SourceProp* source_props(Checker* me, Ty const* source, Members const* so
 
 // `source_is_primitive`: `source` is a primitive's apparent type, which a string `any` index signature doesn't take as is
 // tsc's indexInfoRelatedTo: both keys when the source's signature is another key's
-static void report_index_incompatible(Checker* me, RelationState* st, IndexInfo const* source_info, IndexInfo const* target_info) {
+[[gnu::noinline, gnu::cold]] static void report_index_incompatible(Checker* me, RelationState* st, IndexInfo const* source_info, IndexInfo const* target_info) {
     cstr key_str = display_for_report(me, source_info->key, false);
     if (source_info->key == target_info->key) {
         report_line(st, 2634, cstr_d("'", key_str, "' index signatures are incompatible."));
@@ -2093,6 +2098,29 @@ static void report_index_incompatible(Checker* me, RelationState* st, IndexInfo 
         cstr_drop(&target_key_str);
     }
     cstr_drop(&key_str);
+}
+
+// The index signatures of a source with an inferable index that apply to a target's key (tsc's
+// membersRelatedToIndexInfo). Rare, and out of line: relate.c is at GCC's inline-unit-growth limit, where any code
+// added to a hot function costs some other inlining (props_related_impl's find_prop, +0.4% instructions on vue)
+[[gnu::noinline, gnu::cold]] static Ternary source_indexes_related(
+    Checker* me, RelationState* st, Members const* source_members, IndexInfo const* target_info, bool report
+) {
+    Ternary result = TERNARY_TRUE;
+    for (u32 j = 0; j < source_members->index_count; j++) {
+        IndexInfo const* info = &source_members->index[j];
+        bool applies = info->key == target_info->key ||
+            (target_info->key == ty_intrinsic(me, TY_STRING) && (info->key->flags & TYF_NUMBER)) ||
+            ty_is_related(me, info->key, target_info->key, TY_RELATION_ASSIGNABLE);
+        if (!applies) continue;
+        Ternary related = is_related_to(me, st, info->value, target_info->value, report);
+        if (!related) {
+            if (report) report_index_incompatible(me, st, info, target_info);
+            return TERNARY_FALSE;
+        }
+        result &= related;
+    }
+    return result;
 }
 
 static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* mapped);
@@ -2193,17 +2221,9 @@ static Ternary index_signatures_related(
             free(props);
             // And the source's own index signatures that apply to the key (tsc's membersRelatedToIndexInfo:
             // `{ [x: number]: X }` against a string index signature)
-            for (u32 j = 0; j < source_members->index_count; j++) {
-                IndexInfo const* info = &source_members->index[j];
-                bool applies = info->key == target_info->key ||
-                    (target_info->key == ty_intrinsic(me, TY_STRING) && (info->key->flags & TYF_NUMBER)) ||
-                    ty_is_related(me, info->key, target_info->key, TY_RELATION_ASSIGNABLE);
-                if (!applies) continue;
-                Ternary related = is_related_to(me, st, info->value, target_info->value, report);
-                if (!related) {
-                    if (report) report_index_incompatible(me, st, info, target_info);
-                    return TERNARY_FALSE;
-                }
+            if (source_members->index_count) {
+                Ternary related = source_indexes_related(me, st, source_members, target_info, report);
+                if (!related) return TERNARY_FALSE;
                 result &= related;
             }
         } else {

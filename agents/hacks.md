@@ -311,6 +311,12 @@ src` finds the code-side markers; every significant one has an entry here.
 - `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
 
 ## Relations (`ty/relate.c`)
+- relate.c sits at GCC's `inline-unit-growth` limit: code added anywhere in it can cost a hot inlining elsewhere
+  (`find_prop` into `props_related_impl`, `global_type` into `apparent_type`: +0.4% instructions on vue from a
+  never-executed loop). The reporting helpers (`report_line`, `display_for_report`...) are `[[gnu::cold]]` so the
+  message building in `if (report)` branches is predicted unlikely and doesn't eat the budget; rare relation paths
+  go out of line as `[[gnu::noinline, gnu::cold]]` (`source_indexes_related()`). Check `-fopt-info-inline-missed`
+  for "inline-unit-growth limit reached" when an innocent change shows up in `./instrcount.sh`.
 - `base_constraint()` of an indexed access builds the access of the constraints even where it isn't valid (`T[P]` with
   `T extends object`, `P extends keyof T`), where tsc's getBaseConstraintOfType has none (getIndexedAccessTypeOrUndefined).
   Making it null changed xstate (a spurious TS2344 on `NonNullable<TStateValue[K]>`), so only
