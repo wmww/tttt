@@ -14538,7 +14538,7 @@ const baselines = {
     'functionsMissingReturnStatementsAndExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionsMissingReturnStatementsAndExpressionsStrictNullChecks': {
         errors: true,
@@ -29618,7 +29618,7 @@ const baselines = {
     'superErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superHasMethodsFromMergedInterface': {
         errors: true,
@@ -29638,7 +29638,7 @@ const baselines = {
     'superInLambdas': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superInObjectLiterals_ES5': {
         errors: true,
@@ -34658,7 +34658,7 @@ const baselines = {
     'classAbstractCrashedOnce': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classAbstractDeclarations.d': {
         errors: true,
@@ -45383,7 +45383,7 @@ const baselines = {
     'compoundExponentiationAssignmentLHSIsValue': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitCompoundExponentiationAssignmentWithIndexingOnLHS1': {
         errors: true,
@@ -58153,7 +58153,7 @@ const baselines = {
     'parser509667': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser509668': {
         errors: true,

@@ -7070,6 +7070,7 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
         return parse_fail(&p); // `a ? .5 : b`, `01.0`: a number; `@dec ...rest`: a spread
     }
     const char* after_dot = p.pos;
+    Parser at_dot = p; // (a missing name ends the expression at the dot: the whitespace after it is the next token's)
     hop_whitespace(&p);
 
     // Committed after the dot (tsc's parseRightSideOfDot): a missing name is TS1003 and an empty name. `a.` followed
@@ -7079,6 +7080,9 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
     if (t.newline_before && tok_is_word(t) && tok_is_word(tok_next(&p, t)) && !tok_next(&p, t).newline_before) {
         prop = span_make(p.shared->source, after_dot, after_dot);
         parse_error(&p, prop, 1003, "Identifier expected.");
+        p.pos = at_dot.pos;
+        p.whitespace = at_dot.whitespace;
+        p.whitespace_end = at_dot.whitespace_end;
     } else if (*p.pos == '#' && p.pos[1] != '!') {
         // Private name, the `#` is part of the member's name
         Anchor name_anchor = anchor(&p);
@@ -7086,16 +7090,13 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
         prop = span_from(name_anchor);
     } else if (!parse_identifier_or_keyword(&p, &prop)) {
         parse_error(&p, span_from_token_or_eof(&p), 1003, "Identifier expected.");
-        // (At the end of the file the missing name is right after the dot, tsc's reportAtCurrentPosition)
-        prop = span_from_pos(&p);
-        if (!*p.pos) {
-            // (At the end of the file the missing name is right after the dot, tsc's reportAtCurrentPosition, and so
-            // is the end of the property access)
-            p.pos = after_dot;
-            p.whitespace = WHITESPACE_NONE;
-            p.whitespace_end = nullptr;
-            prop = span_from_pos(&p);
-        }
+        // (printed where the next token is, like tsc's missing node that starts at the dot's end, before trivia; at
+        // the end of the file that is right after the dot, tsc's reportAtCurrentPosition)
+        prop = *p.pos ? span_from_pos(&p) : span_make(p.shared->source, after_dot, after_dot);
+        // (a missing name ends the expression at the dot)
+        p.pos = at_dot.pos;
+        p.whitespace = at_dot.whitespace;
+        p.whitespace_end = at_dot.whitespace_end;
     }
 
     *ret = expr_literal(prop, value_string(cstr_from_span(prop)));
@@ -8995,9 +8996,19 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         Parser next_p = parser(&p);
         hop_whitespace(&next_p);
         char next = *next_p.pos;
-        parse_fail(&next_p);
         if (next != '(' && next != '.' && next != '[' && next != '<') {
-            parse_error(&p, span_from_token(&p), 1034, "'super' must be followed by an argument list or member access.");
+            // A property access with a missing name (tsc's parseExpectedToken(DotToken) then a missing identifier)
+            parse_error(&next_p, span_from_token(&next_p), 1034, "'super' must be followed by an argument list or member access.");
+            parse_success(&next_p);
+            p.pos = span_end_ptr(ret->identifier.name);
+            Span missing = span_make(p.shared->source, p.pos, p.pos);
+            *ret = expr_property(span_from(a), c_new(PropertyExpr, {
+                .expr = *ret,
+                .prop = expr_literal(missing, value_string(cstr_null)),
+                .form = PROPERTY_EXPR_DOT,
+            }));
+        } else {
+            parse_fail(&next_p);
         }
     } else if (c == 'i' && parse_import_keyword_expr(&p, &ret->identifier)) {
         *ret = expr_identifier(ret->identifier);
