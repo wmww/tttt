@@ -623,10 +623,15 @@ static void report_conflicts(ErrorCtx* errs, Symbol const* existing, Span name, 
         code = 2451;
     }
     related |= !same_file;
+    // (tsc's mergeSymbol: a plain JavaScript file's side of a conflict across files isn't reported, the binder's
+    // conflicts inside one file are)
     for (u32 i = 0; i < existing->decl_count; i++) {
-        Error* error = report_conflict(errs, existing->decls[i].name, code);
-        if (related) add_duplicate_related(error, existing->decls[i].name, name);
+        Span at = existing->decls[i].name;
+        if (!same_file && at.source && at.source->plain_js) continue;
+        Error* error = report_conflict(errs, at, code);
+        if (related) add_duplicate_related(error, at, name);
     }
+    if (!same_file && name.source && name.source->plain_js) return;
     Error* error = report_conflict(errs, name, code);
     for (u32 i = 0; related && i < existing->decl_count; i++) {
         add_duplicate_related(error, name, existing->decls[i].name);
