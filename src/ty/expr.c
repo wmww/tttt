@@ -3206,6 +3206,11 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
                     (ExprCtx){ .contextual = member_context, .skip_sensitive = ctx.skip_sensitive });
                 break;
         }
+        {
+            // (What ty_jsx_attribute_type() shows when a spread of any hides the property)
+            u64 key[2] = { KEY_JSX_ATTRIBUTE, (u64)(uintptr_t)i };
+            *intern_slot(me, &my links, key, 2) = type;
+        }
         Span* decl_span = arena_new(&my arena, Span);
         *decl_span = i->span;
         literal_builder_add(&builder, (ObjectLiteralProp){
@@ -3269,6 +3274,9 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, JsxAttribut
     Prop const* prop = type->flags & TYF_OBJECT ? ty_get_prop(me, type, checker_atom(me, attribute->name.sv)) : nullptr;
     // (Unless a later spread replaced it)
     if (prop && prop->decl->decl_span_count == 1 && span_eq(prop->decl->decl_spans[0], attribute->span)) return prop_type(me, prop);
+    u64 key[2] = { KEY_JSX_ATTRIBUTE, (u64)(uintptr_t)attribute };
+    Ty const* checked = intern_get(&my links, key, 2);
+    if (checked) return checked;
     return widen_literals(me, ty_expr_type(me, &attribute->value));
 }
 

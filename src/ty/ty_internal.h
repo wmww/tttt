@@ -76,6 +76,7 @@ enum {
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
     KEY_DECL_GROUP,     // FunctionImpl of an interface member or merged function -> TyDeclGroup
     KEY_DECL_GROUP_OF,  // Symbol, declaration (block) -> TyDeclGroup
+    KEY_JSX_ATTRIBUTE,  // JsxAttribute -> the type its element's attributes checked it as (last check)
     KEY_FUNCTION,       // FunctionImpl -> Ty, see ty_function_type()
     KEY_ITERATION_TYPES, // (type id, which) -> TyIterationTypes, see iterate.c
     KEY_UNIQUE_SYMBOL_NAME, // Escaped property name atom (`__@sym@12`) -> the unique symbol type it stands for

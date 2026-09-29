@@ -19953,7 +19953,7 @@ const baselines = {
     'jsxExcessPropsAndAssignability': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFactoryAndJsxFragmentFactory': {
         errors: true,
@@ -26628,7 +26628,7 @@ const baselines = {
     'reactReadonlyHOCAssignabilityReal': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactReduxLikeDeferredInferenceAllowsAssignment': {
         errors: false,
@@ -53673,12 +53673,12 @@ const baselines = {
     'tsxSpreadAttributesResolution11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSpreadAttributesResolution12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxSpreadAttributesResolution13': {
         errors: true,
