@@ -3696,12 +3696,14 @@ static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
         );
         if (!merged) {
             symbol->name = name.sv;
-            symbol->name_span = name;
+            symbol->name_span = written_member_name(left, name);
         }
         left->property->declares = symbol;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = value, .name = left->outer_span,
             .full = left->outer_span, .jsdoc_type = e->binary_op->jsdoc_type,
+            // (Not in a constructor: possibly undefined, tsc's getWidenedTypeForAssignmentDeclaration definedInMethod)
+            .assignment = ASSIGNMENT_DECL_THIS_IN_METHOD,
         });
     }
 }

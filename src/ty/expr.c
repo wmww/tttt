@@ -3525,7 +3525,12 @@ static bool is_string_index_only(Checker* me, Ty const* ty) {
 // isThisPropertyAccessInConstructor with isConstructorDeclaredProperty): x, whose type is being inferred from them.
 // Null otherwise
 static Symbol const* constructor_declared_member(PropertyExpr const* access) {
-    if (access->form != PROPERTY_EXPR_DOT) return nullptr;
+    // `this.x`, `this["x"]`
+    csview name = access->prop.inner_span.sv;
+    if (access->form != PROPERTY_EXPR_DOT) {
+        if (access->prop.tag != EXPR_LITERAL || access->prop.literal.tag != VALUE_STRING || name.size < 2) return nullptr;
+        name = csview_slice(name, 1, name.size - 1);
+    }
     Expr const* object = &access->expr;
     IdentifierExpr const* this = expr_this_or_alias(object);
     if (!this) return nullptr;
@@ -3539,14 +3544,14 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
         class_symbol = ty_js_constructor_class(this->this_function);
     }
     if (!class_symbol || !class_symbol->members) return nullptr;
-    Symbol const* member = symbol_table_get(class_symbol->members, access->prop.inner_span.sv);
+    Symbol const* member = symbol_table_get(class_symbol->members, name);
     if (!member) return nullptr;
     if (!ty_is_constructor_declared(member)) return nullptr;
     // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
     if (this->this_kind == THIS_ANY && ty_js_constructor_class(this->this_function) != class_symbol) return nullptr;
     // Not when the class body declares it
     ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
-    return !class_decl || !class_decl_find_member(class_decl, access->prop.inner_span.sv, false) ? member : nullptr;
+    return !class_decl || !class_decl_find_member(class_decl, name, false) ? member : nullptr;
 }
 
 // An assignment to it: any
