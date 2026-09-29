@@ -170,6 +170,10 @@ src` finds the code-side markers; every significant one has an entry here.
   resolve walk stops reporting checker errors.
 - `is_for_in_numeric_variable` (`ty/expr.c`): "the index is the for-in variable" by position, not checked to be inside
   the loop body.
+- `add_pattern_declarations` (`scope.c`): tsc's unidirectional merge of a pattern ambient module into a name's
+  augmentation (`Binder.pattern_augmentations`) only copies the flags and declarations of an export both declare (and
+  inherits the rest through the exports table's parent), not a nested namespace's exports. Real fix: a
+  merge_symbol that can clone its target.
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - Array mutation nodes (`flow_array_mutation`) only where `may_evolve`; `x.push` only as a callee (tsc: `f(x.push)`

@@ -1740,6 +1740,14 @@ static Symbol* binder_find_module(Binder const* me, ModuleRef const* ref) {
             }
         }
     }
+    if (best) {
+        Symbol* augmented = symbol_table_get_own(&me->pattern_augmentations, path, symbol_name_hash(path));
+        if (augmented) {
+            // (The pattern is known once some import asks: its exports are the parent of the name's own)
+            if (!augmented->exports->parent) augmented->exports->parent = best->exports;
+            return augmented;
+        }
+    }
     return best;
 }
 
@@ -2710,6 +2718,19 @@ void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {
         my augmentations = realloc(my augmentations, sizeof(NamespaceDecl*) * my augmentation_cap);
     }
     my augmentations[my augmentation_count++] = decl;
+    // Its name may turn out to be matched by a pattern only: then imports of it get the module this makes, whatever
+    // file declares the pattern or the augmentation first (tsc's mergeModuleAugmentation runs before any import)
+    csview path = cstr_sv(&decl->module_ref->path);
+    u64 hash = symbol_name_hash(path);
+    if (decl->module_ref->file || memchr(path.buf, '*', (size_t)path.size) || symbol_table_get_own(&my pattern_augmentations, path, hash)) {
+        return;
+    }
+    Symbol* module = binder_new_symbol(me, decl->name.sv, SYMBOL_VALUE_MODULE);
+    module->is_module = true;
+    module->module = arena_new(&my arena, SymbolModule);
+    module->name_span = decl->name;
+    symbol_ensure_exports(module);
+    symbol_table_insert(&my pattern_augmentations, &my arena, path, hash, module);
 }
 
 // tsc's getExcludedSymbolFlags()
@@ -2843,6 +2864,25 @@ static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
     return ret;
 }
 
+// The pattern ambient module a module of pattern_augmentations augments, else null
+static Symbol* augmented_pattern(Binder const* me, Symbol const* module) {
+    if (!my pattern_augmentations.count || !module->exports || !module->exports->parent) return nullptr;
+    for (Binder const* binder = me; binder; binder = binder->parent) {
+        for (u32 i = 0; i < binder->pattern_module_count; i++) {
+            if (binder->pattern_modules[i]->exports == module->exports->parent) return binder->pattern_modules[i];
+        }
+    }
+    return nullptr;
+}
+
+// tsc's unidirectional mergeSymbol of a pattern's export into what an augmentation of a name it matches declares:
+// the declarations (and meanings) of both, the pattern's own symbol untouched
+static void add_pattern_declarations(Symbol* target, Symbol const* pattern_symbol) {
+    if (!pattern_symbol || target->flags & excluded_flags(pattern_symbol->flags)) return;
+    target->flags |= pattern_symbol->flags;
+    for (u32 i = 0; i < pattern_symbol->decl_count; i++) symbol_add_decl(target, pattern_symbol->decls[i]);
+}
+
 static void merge_augmentations(Binder* me) {
     // tsc's resolveExternalModule for an augmentation: a name that leads to JavaScript (no declarations) and no
     // ambient module can't be augmented
@@ -2897,10 +2937,13 @@ static void merge_augmentations(Binder* me) {
                 panic_if(!late_entries[i], "out of memory");
                 for (u32 j = 0; j < count; j++) late_entries[i][j] = augmentation_entry_needs_resolving(module, entries[j].name);
             }
+            Symbol const* pattern = augmented_pattern(me, module);
             for (u32 j = 0; j < count; j++) {
                 bool late = export_equals || !late_entries[i] || late_entries[i][j];
                 if (late != (pass == 1)) continue;
+                bool shadows = pattern && !symbol_table_get_own(module->exports, entries[j].name, entries[j].hash);
                 merge_into_exports(me, module, entries[j].name, entries[j].symbol, errs);
+                if (shadows) add_pattern_declarations(entries[j].symbol, symbol_table_get(pattern->exports, entries[j].name));
             }
             free(entries);
         }
@@ -2922,6 +2965,8 @@ static void merge_augmentations(Binder* me) {
         symbol_add_decl(module, (SymbolDecl){
             .kind = SYMBOL_DECL_NAMESPACE, .node = decl, .name = decl->name, .full = decl->full_span,
         });
+        // (The name's first augmentation is what tsc clones, the pattern merges into it, then the others)
+        if (module->decl_count == 1) add_pattern_declarations(module, augmented_pattern(me, module));
     }
 }
 

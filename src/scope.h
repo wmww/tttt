@@ -474,6 +474,10 @@ typedef struct Binder {
     Symbol** pattern_modules; // malloc'd
     u32 pattern_module_count;
     u32 pattern_module_cap;
+    // Augmentations of a name only a pattern matches (`declare module "a.foo"` in a module against `"*.foo"`), by
+    // name: a module of its own whose exports' parent is the pattern's (tsc's patternAmbientModuleAugmentations, the
+    // unidirectional merge), which binder_find_module() gives that name instead of the pattern
+    SymbolTable pattern_augmentations;
     Symbol** symbols; // malloc'd, all of them: aliases get resolved eagerly
     u32 symbol_count;
     u32 symbol_cap;
