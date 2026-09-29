@@ -11281,7 +11281,7 @@ const baselines = {
         types: true,
     },
     'errorInfoForRelatedIndexTypesNoConstraintElaboration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20896,7 +20896,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeInferenceFromApparentType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64061,7 +64061,7 @@ const baselines = {
         types: false,
     },
     'templateLiteralTypes5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

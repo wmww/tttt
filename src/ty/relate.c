@@ -4231,18 +4231,35 @@ static Ternary structured_related_members(
         }   break;
 
         case TY_INDEXED: {
+            // S[K] to T[J] by S to T and K to J first. Reporting, the shorter explanation of that and of the one through
+            // the constraint below is kept, this one if they're as long (tsc's originalErrorInfo, countMessageChainBreadth)
+            isize_t start = vec_ty_report_line_size(&st->lines);
+            VecTyReportLine original = {0};
+            bool have_original = false;
             if (source->kind == TY_INDEXED) {
-                Ternary related = is_related_to(me, st, source->indexed.object, target->indexed.object, false);
-                if (related) related &= is_related_to(me, st, source->indexed.index, target->indexed.index, false);
+                Ternary related = is_related_to(me, st, source->indexed.object, target->indexed.object, report);
+                if (related) related &= is_related_to(me, st, source->indexed.index, target->indexed.index, report);
                 if (related) return related;
+                if (report && !is_subtype_relation(st->relation)) {
+                    have_original = true;
+                    while (vec_ty_report_line_size(&st->lines) > start) vec_ty_report_line_push(&original, vec_ty_report_line_pull(&st->lines));
+                }
             }
             // (tsc: only for assignability and comparability, not the subtype relations)
-            if (is_subtype_relation(st->relation)) break;
-            Ty const* constraint = write_constraint_of_indexed(me, target);
+            Ty const* constraint = is_subtype_relation(st->relation) ? nullptr : write_constraint_of_indexed(me, target);
             if (constraint) {
                 Ternary related = is_related_to(me, st, source, constraint, report);
-                if (related) return related;
+                if (related) {
+                    vec_ty_report_line_drop(&original);
+                    return related;
+                }
+                isize_t added = vec_ty_report_line_size(&st->lines) - start;
+                if (have_original && added && vec_ty_report_line_size(&original) <= added) report_truncate(st, start);
+                else if (added) have_original = false;
             }
+            // (Back in their order: `original` holds them outermost first)
+            while (have_original && vec_ty_report_line_size(&original)) vec_ty_report_line_push(&st->lines, vec_ty_report_line_pull(&original));
+            vec_ty_report_line_drop(&original);
         }   break;
 
         case TY_CONDITIONAL: {
