@@ -343,7 +343,8 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         }
     }
     // (Not an enum object indexed by its own members: `E[E.A]`)
-    bool own_enum = (index->flags & TYF_ENUM_LITERAL) && object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT;
+    bool own_enum = (index->flags & TYF_ENUM_LITERAL) && object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT &&
+        index->literal.enum_decl == object->declared.symbol;
     return value && include_undefined && !own_enum ? with_missing(me, value) : value;
 }
 

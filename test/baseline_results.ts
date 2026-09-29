@@ -23788,7 +23788,7 @@ const baselines = {
     'noUncheckedIndexAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noUncheckedIndexedAccessCompoundAssignments': {
         errors: true,
