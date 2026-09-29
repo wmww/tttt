@@ -2266,7 +2266,13 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
         module = ty_dynamic_import_module_type(me, ref->module);
     }
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
-    if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2712
+    if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2711
+    // The ES5 lib has the type, not the constructor (tsc's createPromiseReturnType: getGlobalPromiseConstructorSymbol)
+    if (!program_get_global(my program, c_sv("Promise"), SYMBOL_VALUE)) {
+        ty_error_at(me, span_null, 2468, cstr_lit("Cannot find global value 'Promise'."));
+        ty_error_at_current_node(me, 2712, cstr_lit("A dynamic import call in ES5 requires the 'Promise' constructor.  "
+            "Make sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option."));
+    }
     Ty const* promise = ty_declared_type_of(me, promise_symbol);
     if (promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return ty_intrinsic(me, TY_ANY);
     return ty_reference(me, promise, (TyList){ .data = &module, .len = 1 });
