@@ -41118,12 +41118,12 @@ const baselines = {
     'computedPropertyNames49_ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames49_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames4_ES5': {
         errors: true,
@@ -41138,12 +41138,12 @@ const baselines = {
     'computedPropertyNames50_ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames50_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames51_ES5': {
         errors: true,
