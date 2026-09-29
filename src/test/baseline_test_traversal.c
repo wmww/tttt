@@ -989,7 +989,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = *i,
                     .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });
-                if (decl->flags & SYMBOL_TYPE && !(decl->flags & SYMBOL_NAMESPACE) && !decl->is_placeholder) {
+                if (decl->flags & SYMBOL_TYPE && !decl->is_placeholder) {
                     TypeNode t = type_identifier(c_new(IdentifierType, {
                         .name = decl->name_span,
                         .target = decl,

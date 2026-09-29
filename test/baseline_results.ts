@@ -698,7 +698,7 @@ const baselines = {
     'ambientExternalModuleWithInternalImportDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientExternalModuleWithRelativeExternalImportDeclaration': {
         errors: false,
@@ -13053,12 +13053,12 @@ const baselines = {
     'exportImportAndClodule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportImportCanSubstituteConstEnumForValue': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportImportMultipleFiles': {
         errors: true,
@@ -13508,7 +13508,7 @@ const baselines = {
     'externalModuleReferenceDoubleUnderscore1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'externalModuleReferenceOfImportDeclarationWithExportModifier': {
         errors: true,
@@ -16143,7 +16143,7 @@ const baselines = {
     'importDeclarationNotCheckedAsValueWhenTargetNonValue': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclarationUsedAsTypeQuery': {
         errors: true,
@@ -16758,7 +16758,7 @@ const baselines = {
     'importedEnumMemberMergedWithExportedAliasIsError': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importedModuleAddToGlobal': {
         errors: false,
@@ -18283,32 +18283,32 @@ const baselines = {
     'internalAliasEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalAliasEnumInsideLocalModuleWithExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalAliasEnumInsideLocalModuleWithoutExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalAliasEnumInsideLocalModuleWithoutExportAccessError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalAliasEnumInsideTopLevelModuleWithExport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'internalAliasEnumInsideTopLevelModuleWithoutExport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'internalAliasFunction': {
         errors: true,
@@ -18468,12 +18468,12 @@ const baselines = {
     'internalImportInstantiatedModuleMergedWithClassNotReferencingInstance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalImportInstantiatedModuleMergedWithClassNotReferencingInstanceNoConflict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalImportInstantiatedModuleNotReferencingInstance': {
         errors: true,
@@ -18483,12 +18483,12 @@ const baselines = {
     'internalImportUnInstantiatedModuleMergedWithClassNotReferencingInstance': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalImportUnInstantiatedModuleMergedWithClassNotReferencingInstanceNoConflict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'internalImportUnInstantiatedModuleNotReferencingInstanceNoConflict': {
         errors: true,
@@ -20763,7 +20763,7 @@ const baselines = {
     'localImportNameVsGlobalName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'localRequireFunction': {
         errors: true,
@@ -25968,12 +25968,12 @@ const baselines = {
     'privacyLocalInternalReferenceImportWithExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyLocalInternalReferenceImportWithoutExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyTopLevelAmbientExternalModuleImportWithExport': {
         errors: true,
@@ -25988,12 +25988,12 @@ const baselines = {
     'privacyTopLevelInternalReferenceImportWithExport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'privacyTopLevelInternalReferenceImportWithoutExport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'privacyTypeParameterOfFunction': {
         errors: true,
@@ -27533,7 +27533,7 @@ const baselines = {
     'reservedNameOnModuleImportWithInterface': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reservedWords': {
         errors: true,
@@ -50993,17 +50993,17 @@ const baselines = {
     'exportImportAlias': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAliasIdentifiers': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'invalidImportAliasIdentifiers': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'shadowedInternalModule': {
         errors: true,
