@@ -53006,7 +53006,7 @@ const baselines = {
         types: true,
     },
     'jsxUnclosedParserRecovery': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -53391,7 +53391,7 @@ const baselines = {
         types: true,
     },
     'tsxErrorRecovery1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

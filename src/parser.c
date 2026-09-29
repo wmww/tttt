@@ -1324,6 +1324,14 @@ static bool hop_token(Parser* parent) {
             }
             break;
 
+        case '<':
+            // (tsc's scanner in a JSX file: `</` is one token, LessThanSlashToken, unless a comment starts)
+            if (parent->pos[1] == '/' && parent->pos[2] != '*' && parent->shared->source && parent->shared->source->is_jsx) {
+                parent->pos += 2;
+                return true;
+            }
+            break;
+
         default: break;
     }
 
