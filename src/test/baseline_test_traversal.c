@@ -88,9 +88,14 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     Symbol const* member = symbol && symbol->members ? symbol_table_get(symbol->members, name.sv) : nullptr;
     if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
-    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-        .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-    };
+    // (A class's `prototype` is its instance type, where the access finds the member)
+    if (symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
+        add_symbol_override(ctx, left->inner_span, member);
+    } else {
+        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+            .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+        };
+    }
     add_symbol_override(ctx, left->property->expr.inner_span, member);
     add_symbol_override(ctx, left->property->prop.outer_span, member);
 }
