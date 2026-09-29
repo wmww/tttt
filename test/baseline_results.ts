@@ -247,7 +247,7 @@ const baselines = {
     },
     'abstractPropertyInConstructor': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'abstractPropertyNegative': {
@@ -10282,7 +10282,7 @@ const baselines = {
     },
     'duplicateIdentifierDifferentSpelling': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateIdentifierEnum': {
@@ -10397,7 +10397,7 @@ const baselines = {
     },
     'duplicateObjectLiteralProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateObjectLiteralProperty_computedName1': {
@@ -40507,7 +40507,7 @@ const baselines = {
     },
     'binaryIntegerLiteralError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'invalidBinaryIntegerLiteralAndOctalIntegerLiteral': {
@@ -40527,7 +40527,7 @@ const baselines = {
     },
     'octalIntegerLiteralError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classWithSemicolonClassElementES61': {
@@ -47657,7 +47657,7 @@ const baselines = {
     },
     'objectLiteralErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectLiteralGettersAndSetters': {

@@ -2067,10 +2067,12 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     (first->tag == OBJECT_ITEM_PROPERTY || first->tag == OBJECT_ITEM_SHORTHAND)
                 ) {
                     // A name declared by several properties is one symbol, typed by the first of them
+                    // (named like its first declaration: `{ a: 1, \u0061: 2 }` is `a` at both)
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = merged,
                         .span = i->name_span,
-                        .name_is_value = i->name_is_value,
+                        .name = first->name_span,
+                        .name_is_value = first->name_is_value,
                     });
                     baseline_test_case_add_type(ctx, i->name_span, ty_object_literal_member_type(current_checker, me, first));
                     if (i->tag == OBJECT_ITEM_SHORTHAND) {
