@@ -81,6 +81,7 @@ enum {
     KEY_CHECKED_ONCE,   // AST node -> non-null once ty_first_check() saw it
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
     KEY_FUNCTION_CONTEXT, // Function expression's FunctionImpl -> the contextual type it was last checked with
+    KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_ARG_FIXES,      // (argument Expr, Signature) -> ArgFixes (call.c): the type parameters checking it fixed

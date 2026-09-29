@@ -1374,6 +1374,7 @@ JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, struct JsxElement const* element, csview name);
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
 bool ty_is_js_literal_type(Checker* me, Ty const* type);
+int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const* value);
 // A JavaScript constructor function assigned to a variable or property: the name tsc's class symbol (the function
 // expression's) has. False for other symbols
 bool ty_js_assigned_class_name(Symbol const* symbol, csview* name);

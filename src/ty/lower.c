@@ -1032,6 +1032,15 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     Ty const* annotated = annotated_expando_type(me, symbol);
     if (annotated) return annotated;
     Ty const* type = ty_expr_type(me, decl->node);
+    // `[]` is any[] in JavaScript, which noImplicitAny reports (tsc's getInitializerTypeFromAssignmentDeclaration:
+    // isEmptyArrayLiteralType, see ty_js_assignment_implicit_any())
+    SourceFile const* file = decl->full.source;
+    TyList args = file && file->is_js && ty_is_array(me, type) ? ty_reference_args(me, type) : (TyList){0};
+    Ty const* element = args.len == 1 ? args.data[0] : nullptr;
+    if (element && element == ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_IMPLICIT_NEVER : TY_UNDEFINED_WIDENING)) {
+        *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
+        return ty_array(me, ty_intrinsic(me, TY_ANY), false);
+    }
     // (A direct export keeps its literal type, tsc's isDirectExport; a global declared by `this.x = v` doesn't)
     return !symbol->parent || !symbol->parent->is_module ? ty_widened_literal(me, type) : ty_regular(me, type);
 }
@@ -1316,8 +1325,21 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     // Nothing but null and undefined is any in JavaScript
     SourceFile const* file = symbol->decls[0].full.source;
-    if (file && file->is_js && ty_non_nullable(me, ret)->flags & TYF_NEVER) return ty_intrinsic(me, TY_ANY);
+    if (file && file->is_js && ty_non_nullable(me, ret)->flags & TYF_NEVER) {
+        *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = symbol;
+        return ty_intrinsic(me, TY_ANY);
+    }
     return ret;
+}
+
+// Whether the type of a JavaScript assignment declaration's member became any implicitly (tsc's reportImplicitAny in
+// getWidenedTypeForAssignmentDeclaration): 1 if `value` (an assignment of `[]`) made it any[], 2 if only null or
+// undefined are assigned (any), else 0. Evaluates the member's type
+int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const* value) {
+    ty_type_of_symbol(me, member);
+    if (intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)value }, 2)) return 1;
+    if (intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)member }, 2)) return 2;
+    return 0;
 }
 
 Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module) {

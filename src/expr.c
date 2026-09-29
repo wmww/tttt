@@ -3271,12 +3271,39 @@ static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs
     }
 }
 
+// A JavaScript assignment declaration whose member's type is any because of what it assigns: TS7008 on `this.x = []`
+// (any[]) or on the first declaration of a member only null or undefined are assigned (tsc's reportImplicitAny in
+// getWidenedTypeForAssignmentDeclaration and getInitializerTypeFromAssignmentDeclaration)
+static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
+    BinaryOpExpr const* op = my binary_op;
+    if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || !op->left.property->declares) return;
+    SourceFile const* file = my inner_span.source;
+    if (!file || !file->is_js || !compiler_options()->no_implicit_any) return;
+    Symbol const* member = op->left.property->declares;
+    SymbolDecl const* first = nullptr;
+    SymbolDecl const* own = nullptr;
+    for (u32 i = 0; i < member->decl_count; i++) {
+        SymbolDecl const* decl = &member->decls[i];
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
+        if (!first) first = decl;
+        if (span_eq(decl->full, op->left.outer_span)) own = decl;
+    }
+    if (!own || !own->node) return;
+    int kind = ty_js_assignment_implicit_any(current_checker, member, own->node);
+    if (kind == 1) {
+        error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any[]' type.");
+    } else if (kind == 2 && own == first) {
+        error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any' type.");
+    }
+}
+
 // The binary case of expr_typecheck(). A chain (`a + b + c + ...`) is walked down its left spine with a loop, not a
 // recursion per operand: generated code has chains long enough to overflow the stack (tsc checks them iteratively too)
 static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     bool root = logical_operand != me;
     logical_operand = nullptr;
     if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) type_typecheck(my binary_op->jsdoc_type, errs);
+    js_assignment_implicit_any_check(me, errs);
     if (my binary_op->defaulted_expando) {
         expr_typecheck(&my binary_op->right, errs);
         return;
