@@ -1627,6 +1627,7 @@ typedef enum ParsingContext {
     PARSING_HERITAGE_CLAUSES,
     PARSING_HERITAGE_CLAUSE_ELEMENT,
     PARSING_ARRAY_BINDING_ELEMENTS,
+    PARSING_IMPORT_OR_EXPORT_SPECIFIERS,
     PARSING_CONTEXT_COUNT,
 } ParsingContext;
 
@@ -1704,6 +1705,10 @@ static bool list_is_element(Parser* p, ParsingContext ctx, Tok t) {
             // (tsc's isBindingIdentifierOrPrivateIdentifierOrPattern)
             return tok_is(t, ",") || tok_is(t, "...") || tok_is(t, "{") || tok_is(t, "[") ||
                 (*t.start == '#' && tok_is_word(t)) || (tok_is_identifier(t) && !is_reserved_word((csview){ t.start, t.end - t.start }));
+        case PARSING_IMPORT_OR_EXPORT_SPECIFIERS:
+            // (`{ a, from "m"`: the list stops before the `from`)
+            if (tok_is(t, "from") && tok_is_string(tok_next(p, t))) return false;
+            return tok_is_string(t) || tok_is_word(t);
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1739,6 +1744,8 @@ static bool list_is_terminator(ParsingContext ctx, Tok t) {
             return tok_is(t, "{") || tok_is(t, "extends") || tok_is(t, "implements");
         case PARSING_ARRAY_BINDING_ELEMENTS:
             return tok_is(t, "]");
+        case PARSING_IMPORT_OR_EXPORT_SPECIFIERS:
+            return tok_is(t, "}");
         case PARSING_CONTEXT_COUNT: break;
     }
     impossible;
@@ -1804,6 +1811,13 @@ static void list_report_error(Parser* p, ParsingContext ctx, Tok t) {
             break;
         case PARSING_ARRAY_BINDING_ELEMENTS:
             parse_error(p, span, 1181, "Array element destructuring pattern expected.");
+            break;
+        case PARSING_IMPORT_OR_EXPORT_SPECIFIERS:
+            if (tok_is(t, "from")) {
+                parse_error(p, span, 1005, "'}' expected.");
+            } else {
+                parse_error(p, span, 1003, "Identifier expected.");
+            }
             break;
         case PARSING_CONTEXT_COUNT: impossible;
     }
@@ -9598,7 +9612,15 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
     }
     hop_whitespace(&p);
 
-    while (*p.pos && *p.pos != '}') {
+    // tsc's parseDelimitedList(ImportOrExportSpecifiers)
+    u32 saved_context = list_enter(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS);
+    while (true) {
+        Tok t = tok_peek(&p);
+        if (!list_is_element(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS, t)) {
+            if (list_is_terminator(PARSING_IMPORT_OR_EXPORT_SPECIFIERS, t)) break;
+            if (list_abort_or_skip(&p, PARSING_IMPORT_OR_EXPORT_SPECIFIERS)) break;
+            continue;
+        }
         PortItem item = {
             .type_only = ret->main.type_only,
         };
@@ -9666,9 +9688,14 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
         }
         hop_whitespace(&p);
 
-        ignore( *p.pos == '}' || expect_char(&p, ',') );
-        hop_whitespace(&p);
+        if (hop_char(&p, ',')) {
+            hop_whitespace(&p);
+            continue;
+        }
+        if (list_is_terminator(PARSING_IMPORT_OR_EXPORT_SPECIFIERS, tok_peek(&p))) break;
+        expect_char(&p, ',');
     }
+    list_leave(&p, saved_context);
     expect_char(&p, '}');
 
     return parse_success(&p);

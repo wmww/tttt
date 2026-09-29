@@ -2371,7 +2371,7 @@ const baselines = {
         types: true,
     },
     'bigintArbirtraryIdentifier': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -31866,14 +31866,14 @@ const baselines = {
         types: true,
     },
     'unclosedExportClause01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unclosedExportClause02': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'undeclaredBase': {
         errors: true,
