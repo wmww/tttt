@@ -21,6 +21,9 @@ typedef struct GenericItem {
     // A JSDoc `@overload` in its host's comment: the host's `@template` of that name (symbol_ref, set when the host's
     // names are resolved), which it doesn't declare again (tsc: the same TypeParameterDeclaration)
     bool jsdoc_shared;
+    // A JSDoc `@template`'s whole tag, which the type parameters of the tag share (tsc's JSDocTemplateTag, where
+    // unused.c reports them when none of them is used)
+    Span jsdoc_tag;
 } GenericItem;
 
 void generic_item_drop(GenericItem* me);

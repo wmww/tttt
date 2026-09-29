@@ -231,6 +231,29 @@ static void report_type_parameters(Reporter const* r, Generic const* generic, Sy
         if (type_parameter_is_unused(i, owner, i_index)) unused_count++;
     }
     if (!unused_count) return;
+    if (span_valid(vec_generic_item_front(&generic->items)->jsdoc_tag)) {
+        // JSDoc: each `@template` tag is a list of its own, reported whole when none of its type parameters is used
+        for_each (i, vec_generic_item, &generic->items) {
+            if (!type_parameter_is_unused(i, owner, i_index)) continue;
+            u32 in_tag = 0, unused_in_tag = 0;
+            for_each (j, vec_generic_item, &generic->items) {
+                if (!span_eq(j->jsdoc_tag, i->jsdoc_tag)) continue;
+                in_tag++;
+                if (type_parameter_is_unused(j, owner, j_index)) unused_in_tag++;
+            }
+            if (unused_in_tag < in_tag) {
+                report_never_read(r, true, i->full_span, i->name);
+                continue;
+            }
+            // (Once per tag: at its first type parameter)
+            bool first = true;
+            for (GenericItem const* j = generic->items.data; j < i && first; j++) first = !span_eq(j->jsdoc_tag, i->jsdoc_tag);
+            if (!first) continue;
+            if (in_tag == 1) report_never_read(r, true, i->jsdoc_tag, i->name);
+            else report(r, true, i->jsdoc_tag, 6205, cstr_from("All type parameters are unused."));
+        }
+        return;
+    }
     if (unused_count == (u32)vec_generic_item_size(&generic->items)) {
         Span range = type_parameters_range(generic);
         if (unused_count == 1) {
