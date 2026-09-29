@@ -6481,6 +6481,9 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         }
         // (tsc's getJSSyntacticDiagnosticsForFile: a method declaration's `?`)
         if (span_valid(question)) js_syntax_error(&p, question, 8009, "The '?' modifier can only be used in TypeScript files.");
+        // (tsc's parseFunctionBlockOrSemicolon: a method without body takes the `;`, which the grammar check of the
+        // missing body is at)
+        if (!func.has_body && !func.body_missing && *p.pos == ';') p.pos++;
         func.full_span = span_from(a);
         item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
     } else if (must_be_method && (flags.is_generator || item.tag != OBJECT_ITEM_PROPERTY)) {
