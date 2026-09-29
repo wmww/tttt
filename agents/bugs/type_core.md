@@ -50,9 +50,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - inferConditionalConstraintMappedMember (types): `{ [K in keyof T]: X } extends { [_ in keyof T]: infer U } ? U : never`
   has constraint X in tsc (K4 variant with template `1` gives number), tttt unknown; why tsc infers there despite the
   generic mapped check type is unclear. Kept out of TS2344 by the deferred-conditional HACK.
-- usingDeclarationsWithIteratorObject: `Iterator.from(i)` in lib.esnext.iterator's `declare global` resolves
-  `Iterator<T, unknown, undefined>` to the module-local class (with map, filter...); tsc accepts a global Iterator
-  there (spurious TS2345/TS2351). Check how names inside a lib module's `declare global` resolve.
 - **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
   (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
   variables (see hacks.md) nor type parameters with a deferred declared constraint. Related: conflicting discriminants and privates are reduced at construction
