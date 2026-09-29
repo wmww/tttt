@@ -4496,7 +4496,12 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
         if (dot) {
             left = span_make(i->name.source, name.buf, dot);
         } else {
-            bool found = i->name_first;
+            // (An object tag with children is name-first to tsc: parseNestedTypeLiteral sets isNameFirst)
+            JsDocTag const* next = i + 1 < tags->data + tags->size ? i + 1 : nullptr;
+            bool has_children = object && next && next->kind == JSDOC_TAG_PARAM && span_valid(next->name) &&
+                next->name.sv.size > name.size && next->name.sv.buf[name.size] == '.' &&
+                csview_equals_sv(csview_from_n(next->name.sv.buf, name.size), name);
+            bool found = i->name_first || has_children;
             for_each (a, vec_function_arg, &function->args) {
                 Binding const* binding = &a->initializer.binding;
                 found |= binding->tag == BINDING_IDENTIFIER && jsdoc_name_is(name, binding->content_span.sv);
