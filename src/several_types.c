@@ -272,6 +272,10 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
             if (this_ref.interface) this_ref.interface->contains_this = true;
+            if (names->file && names->file->is_js && this_ref.kind != THIS_CLASS_INSTANCE && this_ref.kind != THIS_INTERFACE) {
+                ThisRef value = scope_get_this(names, false);
+                if (value.kind == THIS_ANY) my this_function = value.function;
+            }
         }
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);
@@ -450,7 +454,9 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     for_each (i, vec_spanned_type, &my generic_params) {
         type_typecheck(&i->type, errs);
     }
-    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE) {
+    if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE &&
+        !(my this_function && ty_js_this_class(my this_function))
+    ) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
     identifier_type_check_arity(me, errs);

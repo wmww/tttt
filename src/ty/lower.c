@@ -399,6 +399,11 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             return ty_object_literal(me, nullptr, 0, &info, 1, OBJECT_SYNTHETIC);
         }
     }
+    // (A JavaScript constructor function's `this` type)
+    if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && identifier->this_function) {
+        Ty const* js_this = ty_js_this_type(me, identifier->this_function);
+        if (js_this) return js_this;
+    }
     Symbol const* decl = canonical(me, identifier->target);
     if (span_valid(identifier->import_span)) {
         // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)

@@ -17,6 +17,9 @@ typedef struct IdentifierType {
     // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
     Symbol const* target;
     ThisKind this_kind;
+    // A JavaScript `this` type outside a class: the function whose `this` it is, a constructor function or a method of
+    // its prototype makes it the class's `this` (tsc's getThisType: isJSConstructor, getClassNameFromPrototypeMethod)
+    struct FunctionImpl const* this_function;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
     VecSpannedType generic_params;
     // `import("./a").A.B<T>`: names are looked up in the module's exports instead of the scope. `name` is null for a
