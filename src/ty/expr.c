@@ -1346,7 +1346,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
         if (decl) return ty_type_of_symbol(me, decl);
         return identifier->this_function ? ty_function_type(me, identifier->this_function) : ty_intrinsic(me, TY_ERROR);
     }
-    if (!decl && identifier->is_arguments) {
+    if (!decl && identifier->is_arguments && !identifier->invalid_initializer_reference) {
         Symbol const* arguments = program_get_global(my program, c_sv("IArguments"), SYMBOL_TYPE);
         return arguments ? ty_declared_type_of(me, arguments) : ty_empty_object_type(me); // (tsc's getGlobalType fallback)
     }

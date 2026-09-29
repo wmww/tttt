@@ -60,7 +60,7 @@ typedef struct IdentifierExpr {
     bool constraint_position : 1;
     bool is_arguments : 1; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
     // A name an instance field can't use because its constructor declares it (TS2301): no target (any), but `symbol`
-    // is still what it finds
+    // is still what it finds. Also `arguments` in a field or static block (TS2815, the error type)
     bool invalid_initializer_reference : 1;
     // The namespace an extended interface's name starts with (`M` of `extends M.I`, TS2689): no target, but the
     // symbols baseline shows `symbol` (tsc's getSymbolAtLocation of a property access's object)

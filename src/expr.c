@@ -317,6 +317,16 @@ static bool scope_has_arguments(Scope const* scope) {
     return false;
 }
 
+// In a class field (its initializer, computed name or decorators) or static block, not in a function or arrow function
+// in it (tsc's isInPropertyInitializerOrClassStaticBlock)
+static bool in_initializer_or_static_block(Scope const* scope) {
+    for (; scope; scope = scope->parent) {
+        if (scope->kind == SCOPE_FUNCTION) return false;
+        if (scope->in_field || scope->kind == SCOPE_STATIC_BLOCK) return true;
+    }
+    return false;
+}
+
 // A reference to `arguments` directly in the body of a JavaScript function (not its parameters, nor an arrow function in
 // it) gives its signature a rest parameter (tsc's containsArgumentsReference, maybeAddJsSyntheticRestParameter)
 static void note_arguments_reference(Scope const* names) {
@@ -554,6 +564,11 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_umd_global_use(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
     } else if (span_equals(my name, "arguments") && scope_has_arguments(names)) {
+        if (in_initializer_or_static_block(names)) {
+            // (tsc's checkIdentifier: the error type)
+            error_ctx_error_d(errs, my name, 2815, "'arguments' cannot be referenced in property initializers.");
+            my invalid_initializer_reference = true;
+        }
         // No symbol: ty_identifier_reference_type() makes it IArguments
         my is_arguments = true;
         note_arguments_reference(names);

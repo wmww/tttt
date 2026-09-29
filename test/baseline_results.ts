@@ -1096,9 +1096,9 @@ const baselines = {
         types: false,
     },
     'argumentsUsedInClassFieldInitializerOrStaticInitializationBlock': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsUsedInObjectLiteralProperty': {
         errors: true,
@@ -35383,7 +35383,7 @@ const baselines = {
     'classStaticBlock6': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock7': {
         errors: true,
