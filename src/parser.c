@@ -12869,6 +12869,7 @@ static bool parsed_file_is_module(SourceFile const* source, ParserShared const* 
 static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, const char*** await_statements, u32* await_count);
 
 void parse_file(SourceFile* source, ErrorCtx* errs) {
+    names_register_source(source);
     const char** await_statements = nullptr;
     u32 await_count = 0;
     if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {

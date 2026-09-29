@@ -27,6 +27,22 @@ static inline Span sv_make_span(csview sv) {
     };
 }
 
+// An identifier's name with its unicode escapes decoded (`\u0061` is `a`, tsc's escapedText): what names are keyed and
+// compared by (symbol tables, checker_atom()). Messages that quote the source (and symbol names as printed) keep the
+// raw text. Only a view of the text of a file that has escapes (names_register_source()) is cooked, so a string that
+// is already a value (a string literal's) never is; costs a memchr() on names without a `\`
+csview name_cooked_slow(csview sv);
+static inline csview name_cooked(csview sv) {
+    if (sv.size <= 0 || !memchr(sv.buf, '\\', (size_t)sv.size)) return sv;
+    return name_cooked_slow(sv);
+}
+static inline bool name_equals(csview a, csview b) {
+    return csview_equals_sv(name_cooked(a), name_cooked(b));
+}
+// Called by the parser for every file, and when a file is dropped
+void names_register_source(SourceFile* file);
+void names_unregister_source(SourceFile* file);
+
 static inline bool span_valid(Span me) { return me.sv.buf; }
 // The same stretch of the same file
 static inline bool span_eq(Span a, Span b) { return a.sv.buf == b.sv.buf && a.sv.size == b.sv.size; }

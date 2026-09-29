@@ -67,6 +67,7 @@ unsigned source_file_line_index(SourceFile const* me, const char* pos) {
 }
 
 void source_file_drop(SourceFile* me) {
+    names_unregister_source(me);
     cstr_drop(&my canonical_path);
     cstr_drop(&my contents);
     free(my line_starts);

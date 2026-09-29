@@ -155,6 +155,7 @@ void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
 }
 
 Atom const* checker_atom(Checker* me, csview sv) {
+    sv = name_cooked(sv); // (an identifier's name: by its value)
     // Atoms are keyed by content, so they get their own probing rather than the word keys
     InternTable* table = &my atoms;
     if ((table->len + 1) * 4 > table->cap * 3) {

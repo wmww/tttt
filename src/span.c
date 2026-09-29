@@ -1,6 +1,7 @@
 #include "span.h"
 #include "math_helpers.h"
 #include "source_file.h"
+#include <pthread.h>
 
 unsigned span_line_index(Span me) {
     if (!span_valid(me) || !me.source) {
@@ -114,4 +115,142 @@ bool span_is_written(Span me) {
     SourceFile const* file = me.source;
     char const* start = file ? source_file_start(file) : nullptr;
     return start && me.sv.buf >= start && me.sv.buf < start + cstr_size(&file->contents);
+}
+
+// Escaped names. The files whose text has a `\u` (few), each with the names cooked so far. A cooked name is malloc'd
+// once and kept until the file is dropped, so views of it are as stable as views of the file's text
+typedef struct CookedName {
+    const char* raw;
+    isize raw_size;
+    char* cooked;
+    isize cooked_size;
+} CookedName;
+
+typedef struct EscapedSource {
+    SourceFile const* file;
+    const char* start;
+    const char* end;
+    CookedName* names;
+    u32 count;
+    u32 cap;
+} EscapedSource;
+
+static pthread_mutex_t escaped_lock = PTHREAD_MUTEX_INITIALIZER;
+static EscapedSource* escaped_sources;
+static u32 escaped_source_count;
+static u32 escaped_source_cap;
+
+void names_register_source(SourceFile* file) {
+    const char* start = source_file_start(file);
+    isize size = cstr_size(&file->contents);
+    if (file->escaped_names) return;
+    const char* end = start + size;
+    const char* c = start;
+    while ((c = memchr(c, '\\', (size_t)(end - c))) && c + 1 < end && c[1] != 'u') c++;
+    if (!c || c + 1 >= end) return;
+    file->escaped_names = true;
+    pthread_mutex_lock(&escaped_lock);
+    if (escaped_source_count == escaped_source_cap) {
+        escaped_source_cap = escaped_source_cap ? escaped_source_cap * 2 : 8;
+        escaped_sources = realloc(escaped_sources, sizeof(EscapedSource) * escaped_source_cap);
+    }
+    escaped_sources[escaped_source_count++] = (EscapedSource){ .file = file, .start = start, .end = end };
+    pthread_mutex_unlock(&escaped_lock);
+}
+
+void names_unregister_source(SourceFile* file) {
+    if (!file->escaped_names) return;
+    pthread_mutex_lock(&escaped_lock);
+    for (u32 i = 0; i < escaped_source_count; i++) {
+        EscapedSource* source = &escaped_sources[i];
+        if (source->file != file) continue;
+        for (u32 j = 0; j < source->count; j++) free(source->names[j].cooked);
+        free(source->names);
+        escaped_sources[i] = escaped_sources[--escaped_source_count];
+        if (!escaped_source_count) {
+            free(escaped_sources);
+            escaped_sources = nullptr;
+            escaped_source_cap = 0;
+        }
+        break;
+    }
+    pthread_mutex_unlock(&escaped_lock);
+    file->escaped_names = false;
+}
+
+static int name_hex_value(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+// `\uXXXX` or `\u{X...}` at c (before end): its length and value, 0 if there is none
+static int name_escape(const char* c, const char* end, u32* code) {
+    if (end - c < 3 || c[0] != '\\' || c[1] != 'u') return 0;
+    *code = 0;
+    if (c[2] == '{') {
+        const char* d = c + 3;
+        for (; d < end && name_hex_value(*d) >= 0; d++) {
+            *code = *code * 16 + (u32)name_hex_value(*d);
+            if (*code > 0x10FFFF) return 0;
+        }
+        return d > c + 3 && d < end && *d == '}' ? (int)(d + 1 - c) : 0;
+    }
+    if (end - c < 6) return 0;
+    for (int i = 2; i < 6; i++) {
+        if (name_hex_value(c[i]) < 0) return 0;
+        *code = *code * 16 + (u32)name_hex_value(c[i]);
+    }
+    return 6;
+}
+
+csview name_cooked_slow(csview sv) {
+    csview ret = sv;
+    pthread_mutex_lock(&escaped_lock);
+    for (u32 i = 0; i < escaped_source_count; i++) {
+        EscapedSource* source = &escaped_sources[i];
+        if (sv.buf < source->start || sv.buf + sv.size > source->end) continue;
+        for (u32 j = 0; j < source->count; j++) {
+            CookedName const* name = &source->names[j];
+            if (name->raw == sv.buf && name->raw_size == sv.size) {
+                ret = (csview){ name->cooked, name->cooked_size };
+                goto done;
+            }
+        }
+        // A quoted name (a string literal's text) isn't an identifier's
+        if (*sv.buf == '"' || *sv.buf == '\'' || *sv.buf == '`') goto done;
+        char* cooked = malloc((size_t)sv.size + 1);
+        isize size = 0;
+        const char* end = sv.buf + sv.size;
+        for (const char* c = sv.buf; c < end;) {
+            u32 code;
+            int escape = name_escape(c, end, &code);
+            if (!escape) {
+                cooked[size++] = *c++;
+                continue;
+            }
+            // (A surrogate pair of escapes is one character, a lone surrogate has no UTF-8: U+FFFD)
+            u32 low;
+            if (code >= 0xD800 && code <= 0xDBFF && name_escape(c + escape, end, &low) == 6 && low >= 0xDC00 && low <= 0xDFFF) {
+                code = 0x10000 + ((code - 0xD800) << 10) + (low - 0xDC00);
+                escape += 6;
+            } else if (code >= 0xD800 && code <= 0xDFFF) {
+                code = 0xFFFD;
+            }
+            size += cutf8_encode(cooked + size, code);
+            c += escape;
+        }
+        cooked[size] = '\0';
+        if (source->count == source->cap) {
+            source->cap = source->cap ? source->cap * 2 : 16;
+            source->names = realloc(source->names, sizeof(CookedName) * source->cap);
+        }
+        source->names[source->count++] = (CookedName){ sv.buf, sv.size, cooked, size };
+        ret = (csview){ cooked, size };
+        break;
+    }
+done:
+    pthread_mutex_unlock(&escaped_lock);
+    return ret;
 }

@@ -13411,9 +13411,9 @@ const baselines = {
         types: true,
     },
     'extendedUnicodeEscapeSequenceIdentifiers': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'extendedUnicodePlaneIdentifiers': {
         errors: true,
@@ -53911,9 +53911,9 @@ const baselines = {
         types: true,
     },
     'unicodeEscapesInJsxtags': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'allowImportingTsExtensions(moduleresolution=bundler)': {
         errors: true,
@@ -59461,9 +59461,9 @@ const baselines = {
         types: true,
     },
     'parserS7.6_A4.2_T1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserS7.9_A5.7_T1': {
         errors: true,
@@ -59481,9 +59481,9 @@ const baselines = {
         types: true,
     },
     'parserUnicode1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserUnicode2': {
         errors: true,
@@ -61116,9 +61116,9 @@ const baselines = {
         types: true,
     },
     'scannerS7.6_A4.2_T1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'scannerS7.8.3_A6.1_T1': {
         errors: true,

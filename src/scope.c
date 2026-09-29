@@ -19,7 +19,9 @@
 
 #define SYMBOL_TABLE_SCAN_MAX 8
 
+// Tables are keyed by cooked names (name_cooked(): `\u0061` is `a`), the entries hold them cooked
 u64 symbol_name_hash(csview name) {
+    name = name_cooked(name);
     u64 h = 0xcbf29ce484222325ull;
     for (isize i = 0; i < name.size; i++) {
         h ^= (unsigned char)name.buf[i];
@@ -33,6 +35,7 @@ static inline bool entry_matches(SymbolEntry const* entry, csview name, u64 hash
 }
 
 static Symbol* symbol_table_get_own(SymbolTable const* me, csview name, u64 hash) {
+    name = name_cooked(name);
     if (!my index) {
         for (u32 i = 0; i < my count; i++) {
             if (entry_matches(&my entries[i], name, hash)) return my entries[i].symbol;
@@ -64,6 +67,7 @@ static void symbol_table_index_insert(SymbolTable* me, u32 entry_index) {
 
 // The name must not be in the table itself yet (it may be in a table it overlays)
 static void symbol_table_insert(SymbolTable* me, Arena* arena, csview name, u64 hash, Symbol* symbol) {
+    name = name_cooked(name);
     if (my count == my cap) {
         u32 cap = my cap ? my cap * 2 : 4;
         SymbolEntry* entries = arena_new_n(arena, SymbolEntry, cap);
@@ -1782,6 +1786,7 @@ static void extend_export_stars(ExportStarsCtx* ctx, Symbol* module, bool nested
 
 // The position of the name among the table's own entries, -1 if it isn't there
 static i32 symbol_table_own_index(SymbolTable const* me, csview name, u64 hash) {
+    name = name_cooked(name);
     if (!my index) {
         for (u32 i = 0; i < my count; i++) {
             if (entry_matches(&my entries[i], name, hash)) return (i32)i;

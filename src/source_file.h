@@ -153,6 +153,7 @@ typedef struct SourceFile {
     struct UnusedCandidate* unused; // Owned
     u32 unused_count;
     u32 unused_cap;
+    bool escaped_names; // names_register_source() registered it
 } SourceFile;
 
 SourceFile source_file_make(cstr canonical_path, cstr contents);
