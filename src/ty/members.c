@@ -484,10 +484,34 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
         return;
     }
     Members const* members = ty_members(me, base);
+    // A base's props have distinct names, so each is looked for among the props there were before it: by a hash of
+    // their names when both are big (DOM interfaces extend chains of interfaces of hundreds of members each)
+    u32 own = builder->props_count;
+    u32 hash_cap = 0;
+    u32* slots = nullptr; // Index + 1 into builder->props, 0 for empty
+    if (own > 16 && members->prop_count > 16) {
+        hash_cap = 64;
+        while (hash_cap < own * 2) hash_cap *= 2;
+        slots = calloc(hash_cap, sizeof(u32));
+        panic_if(!slots, "out of memory");
+        for (u32 j = 0; j < own; j++) {
+            u32 h = (u32)(((uintptr_t)builder->props[j]->name >> 3) * 0x9E3779B1u) & (hash_cap - 1);
+            while (slots[h] && builder->props[slots[h] - 1]->name != builder->props[j]->name) h = (h + 1) & (hash_cap - 1);
+            if (!slots[h]) slots[h] = j + 1;
+        }
+    }
     for (u32 i = 0; i < members->prop_count; i++) {
         // A static `#x` stays the base's (tsc's isStaticPrivateIdentifierProperty in addInheritedMembers)
         if ((members->props[i]->flags & PROP_STATIC) && ty_private_name_class(me, members->props[i]->name)) continue;
-        Prop* derived = builder_find_prop(builder, members->props[i]->name);
+        Atom const* name = members->props[i]->name;
+        Prop* derived = nullptr;
+        if (slots) {
+            u32 h = (u32)(((uintptr_t)name >> 3) * 0x9E3779B1u) & (hash_cap - 1);
+            while (slots[h] && builder->props[slots[h] - 1]->name != name) h = (h + 1) & (hash_cap - 1);
+            if (slots[h]) derived = builder->props[slots[h] - 1];
+        } else {
+            for (u32 j = 0; j < own && !derived; j++) if (builder->props[j]->name == name) derived = builder->props[j];
+        }
         if (!derived) {
             builder_push(builder, props, members->props[i]);
         } else if (derived->decl->symbol && derived->decl->symbol->decl_count && derived->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
@@ -499,6 +523,7 @@ static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const
             }
         }
     }
+    free(slots);
     // Signatures of the bases come after the type's own (they're overloads of each other). An index signature is
     // inherited unless the derived type declares its own
     for (u32 i = 0; i < members->call_count; i++) builder_push(builder, call, members->call[i]);
