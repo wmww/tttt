@@ -29138,7 +29138,7 @@ const baselines = {
     'staticPrototypeProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticPrototypePropertyOnClass': {
         errors: true,
@@ -37628,7 +37628,7 @@ const baselines = {
     'staticPropertyNameConflictsInAmbientContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictPropertyInitialization': {
         errors: true,

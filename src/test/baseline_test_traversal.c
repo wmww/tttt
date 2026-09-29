@@ -1207,8 +1207,10 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
             }, my field.computed_key);
             Ty const* type = optional_member_type(class_item_get_type(me), my field.is_optional);
-            // (Joined into a symbol something else made first: that symbol's type)
-            if (first != me && ctx->class_symbol) {
+            // (Joined into a symbol something else made first: that symbol's type. A static `prototype` property joins
+            // the class's own prototype symbol, which the binder makes first: the instance type)
+            bool prototype = my field.is_static && !my field.computed_key && cstr_equals(&my field.name_string, "prototype");
+            if ((first != me || prototype) && ctx->class_symbol) {
                 Checker* checker = current_checker;
                 Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
