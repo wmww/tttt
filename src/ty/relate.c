@@ -1401,6 +1401,13 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
     return rest;
 }
 
+// A parameter's name as tsc's getParameterNameAtPosition gives it: its symbol's, which is `__<index>` for a binding pattern
+[[gnu::cold]] static cstr message_param_name(Signature const* sig, u32 index) {
+    FunctionArg const* decl = sig->params[index].decl;
+    if (decl && decl->initializer.binding.tag != BINDING_IDENTIFIER) return cstr_d("__", index);
+    return cstr_from_sv(atom_sv(sig->params[index].name));
+}
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
@@ -1476,10 +1483,9 @@ static Ternary compare_signatures(
             if (report) {
                 u32 source_index = i < source->param_count ? i : source->param_count - 1;
                 u32 target_index = i < target->param_count ? i : target->param_count - 1;
-                report_line(st, 2328, cstr_d(
-                    "Types of parameters '", atom_sv(source->params[source_index].name), "' and '",
-                    atom_sv(target->params[target_index].name), "' are incompatible."
-                ));
+                cstr source_name = message_param_name(source, source_index), target_name = message_param_name(target, target_index);
+                report_line(st, 2328, cstr_d("Types of parameters '", source_name, "' and '", target_name, "' are incompatible."));
+                c_drop(cstr, &source_name, &target_name);
             }
             return TERNARY_FALSE;
         }
