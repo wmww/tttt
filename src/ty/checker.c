@@ -1813,7 +1813,9 @@ Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg) {
     if (ty->kind == TY_DECLARED && ty->declared.this_param) {
         return ty_reference_with_this(me, ty, ty->declared.type_params, this_arg);
     }
-    if (ty->kind == TY_REFERENCE && !ty->reference.deferred && ty->reference.target->declared.this_param) {
+    // (A deferred reference, the body of an alias `type B<N> = Builder<{ name: N }>`, too: tsc's
+    // getTypeWithThisArgument takes any reference's type arguments)
+    if (ty->kind == TY_REFERENCE && ty->reference.target->declared.this_param) {
         if (ty->reference.this_arg == this_arg) return ty;
         return ty_reference_with_this(me, ty->reference.target, ty_reference_args(me, ty), this_arg);
     }

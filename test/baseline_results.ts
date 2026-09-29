@@ -31651,7 +31651,7 @@ const baselines = {
         types: true,
     },
     'typeVariableConstraintedToAliasNotAssignableToUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
