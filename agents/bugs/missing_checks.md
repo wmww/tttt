@@ -119,8 +119,17 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   doesn't there), a few TS2550 missing; ES2015 and ES2023(target=esnext) fail types only.
 - **Regular expression patterns** (TS1487 116 in 4 tests, TS1508, TS1535, TS1530, TS1517, TS1518, TS1507...): tsc's
   scanRegularExpressionWorker, ~1000 lines; only the flags are checked (`regex_check_flags`). Plan 27 stage 3.
-- **Errors inside lib files** (objectTypeHidingMembersOfExtendedObject, duplicateNumericIndexers: global interface
-  augmentations checked through the lib's first declaration) are dropped by `error_ctx_error_s` with a log_error.
+- **Errors inside lib files** under `// @skipDefaultLibCheck: false` (4 tests: duplicateNumericIndexers,
+  objectTypeWithStringIndexerHidingObjectIndexer, objectTypeHidingMembersOfExtendedObject,
+  variableDeclarationInStrictMode1): tttt never checks lib files and `error_ctx_error_s` drops what lands in one
+  (binder TS2300 for a global `eval` redeclared, TS2374/TS2411 from checking the lib's `interface Object`/`Number`
+  declaration merged with the test's). tsc's CLI default checks lib files (the harness sets skipDefaultLibCheck), so
+  this is the harness-vs-CLI gap and a perf question: checking only lib declarations whose symbol merges with a
+  user declaration (gated on the option) would be the cheap port. Catch (triage 2026-09-29): with the lib checked
+  first, tsc also reports TS2411 in *user* interfaces it otherwise accepts (`interface Foo { a: number; [x: string]:
+  Object }` next to an augmented `Object`, probe in the commit message's triage), an order artifact of relating to
+  `Object` while it is being checked; objectTypeHidingMembersOfExtendedObject's user-file error is that. So the
+  check order (lib declarations before the user's) would have to be tsc's too. Low value (4 tests), routed here.
 
 - TS2507 "Type 'X' is not a constructor function type" for an `extends` expression is missing (only `new` reports
   it), and so is its related info for a type parameter (TS2735 "Did you mean for 'T' to be constrained to type
