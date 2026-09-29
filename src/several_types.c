@@ -418,7 +418,8 @@ bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile co
     u32 count = (u32)vec_generic_item_size(&params->items);
     // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
     // are any)
-    bool js_implicit_any = source && source->is_js && !compiler_options()->no_implicit_any;
+    // (Not for a type alias: tsc's getTypeFromTypeAliasReference has no such leniency)
+    bool js_implicit_any = source && source->is_js && !compiler_options()->no_implicit_any && !(symbol->flags & SYMBOL_TYPE_ALIAS);
     return (arg_count >= min && arg_count <= count) || js_implicit_any;
 }
 
