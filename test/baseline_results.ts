@@ -798,7 +798,7 @@ const baselines = {
     'amdDeclarationEmitNoExtraDeclare': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'amdDependencyComment1': {
         errors: true,
@@ -7643,7 +7643,7 @@ const baselines = {
     'declarationEmitBindingPatterns': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitBindingPatternsFunctionExpr': {
         errors: true,
@@ -33318,7 +33318,7 @@ const baselines = {
     'visibilityOfCrossModuleTypeUsage': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'visibilityOfTypeParameters': {
         errors: true,
@@ -34418,7 +34418,7 @@ const baselines = {
     'asyncWithVarShadowing_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitBinaryExpression1_es6': {
         errors: true,
@@ -38113,17 +38113,17 @@ const baselines = {
     'typesVersionsDeclarationEmit.multiFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typesVersionsDeclarationEmit.multiFileBackReferenceToSelf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typesVersionsDeclarationEmit.multiFileBackReferenceToUnmapped': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     '1.0lib-noErrors': {
         errors: true,
@@ -41973,17 +41973,17 @@ const baselines = {
     'emptyVariableDeclarationBindingPatterns01_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyVariableDeclarationBindingPatterns01_ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyVariableDeclarationBindingPatterns01_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyVariableDeclarationBindingPatterns02_ES5': {
         errors: true,
@@ -49088,7 +49088,7 @@ const baselines = {
     'exportTypeMergedWithExportStarAsNamespace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'globalAugmentationModuleResolution': {
         errors: true,
@@ -51708,7 +51708,7 @@ const baselines = {
     'jsDeclarationsReferenceToClassInstanceCrossFile': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsRestArgsWithThisTypeInJSDocFunction': {
         errors: true,
@@ -54668,7 +54668,7 @@ const baselines = {
     'legacyNodeModulesExportsSpecifierGenerationConditions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModules1(module=node16)': {
         errors: true,
@@ -54803,17 +54803,17 @@ const baselines = {
     'nodeModulesExportsBlocksSpecifierResolution(module=node16)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=node18)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=nodenext)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsBlocksTypesVersions(module=node16)': {
         errors: true,
@@ -54843,62 +54843,62 @@ const baselines = {
     'nodeModulesExportsSourceTs(module=node16)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSourceTs(module=node18)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSourceTs(module=nodenext)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationConditions(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationConditions(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationConditions(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationDirectory(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationDirectory(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationDirectory(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationPattern(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationPattern(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesExportsSpecifierGenerationPattern(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesForbidenSyntax(module=node16)': {
         errors: true,

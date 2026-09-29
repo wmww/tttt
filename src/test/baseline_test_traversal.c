@@ -429,6 +429,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             break;
     }
     if (my default_value) {
+        if (my parent) ctx->any_keeps_underline = true; // (A binding element's initializer: its parent is one too)
         expr_compile_test_info(my default_value, ctx);
     }
 }

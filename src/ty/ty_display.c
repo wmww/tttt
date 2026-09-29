@@ -633,6 +633,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
     if (mapped || !name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
         isize_t start = cstr_size(d.target);
+        isize_t underline_start = d.underline ? cstr_size(d.underline) : 0;
         // tsc names what it refers to anew (serializeTypeName) and keeps the type arguments, unless it's a local that
         // no name reaches (then the reference prints its type)
         Symbol const* target = identifier->target;
@@ -647,10 +648,12 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         char const* text = cstr_str(d.target) + start;
         if (!mapped && d.underline && strncmp(text, "import(\"", 8) == 0) {
             char const* close = strstr(text, "\").");
-            char* underline = (char*)cstr_str(d.underline) + (cstr_size(d.underline) - (cstr_size(d.target) - start));
+            char* underline = (char*)cstr_str(d.underline) + underline_start;
+            // (the underline of an absolute specifier is longer than its text, see out_symbol_name())
+            isize_t extra = (cstr_size(d.underline) - underline_start) - (cstr_size(d.target) - start);
             if (close) {
                 memset(underline, ' ', strlen("import("));
-                memset(underline + (close + 1 - text), ' ', 2);
+                memset(underline + (close + 1 - text) + extra, ' ', 2);
             }
         }
         return;
