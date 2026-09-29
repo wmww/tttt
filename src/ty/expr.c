@@ -1830,6 +1830,24 @@ static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
     return binary_commonjs_declaration(binary, nullptr) != COMMONJS_TARGET_NONE;
 }
 
+// JavaScript `a.b = {}` (or `F.prototype = {...}`) declaring a member that has expandos of its own (tsc's
+// isAssignmentDeclaration in checkBinaryLikeExpression: getAssignedExpandoInitializer is an object literal and the
+// symbol has exports)
+static bool is_js_container_declaration(BinaryOpExpr const* binary) {
+    Expr const* left = &binary->left;
+    if (left->tag != EXPR_PROPERTY || !left->property->declares) return false;
+    SourceFile const* file = left->outer_span.source;
+    if (!file || !file->is_js) return false;
+    Symbol const* symbol = left->property->declares;
+    if (!symbol->exports || !symbol->exports->count) return false;
+    Expr const* value = &binary->right;
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    if (value->tag != EXPR_OBJECT) return false;
+    return !vec_object_expr_item_size(&value->object) || span_equals(expr_static_property_name(left), "prototype");
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
@@ -1841,6 +1859,12 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
                 // getContextualTypeForAssignmentDeclaration), and so is the assignment (checkBinaryLikeExpression
                 // gives an assignment declaration the type of its target)
                 right = ty_check_expr(me, &binary->right, nullptr);
+                return ty_expr_type(me, &binary->left);
+            }
+            if (is_js_container_declaration(binary)) {
+                // JavaScript `ns.a = {}` whose target has expandos is the container's type (tsc's
+                // checkBinaryLikeExpression: isAssignmentDeclaration returns the left type)
+                ty_check_expr(me, &binary->right, nullptr);
                 return ty_expr_type(me, &binary->left);
             }
             // fallthrough
