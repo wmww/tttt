@@ -77,7 +77,11 @@ static Error* report_unassignable(
 
     // Why not, outermost line first
     VecTyReportLine lines = {0};
-    ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+    if (ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines)) {
+        vec_ty_report_line_drop(&lines);
+        c_drop(cstr, &source_str, &target_str);
+        return nullptr;
+    }
     span = relocated_span(&lines, span);
 
     isize_t first_nested = 0;

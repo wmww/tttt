@@ -57,6 +57,10 @@ typedef struct RelationState {
     // Reporting, the source as given when a union of fresh literals: its members are related in its order, not the
     // regular union's (tsc relates the fresh union: `1 | ""` fails on `1` first even though `""` has the lower id)
     Ty const* fresh_union;
+    // The pair whose alias variances failed on an invariant argument while reporting: related again without them (tsc's
+    // relateVariances falls through to the rest of structuredTypeRelatedTo)
+    Ty const* alias_fallback_source;
+    Ty const* alias_fallback_target;
     VecTyReportLine lines; // innermost first while being collected
     u32 override_next_head; // A more specific message stands in for the next "Type S is not assignable to type T"
     // Relating to the members of an intersection target (tsc's IntersectionState.Target): no excess property checks,
@@ -3705,7 +3709,8 @@ static Ternary structured_related_members(
     // fails with an unreliable variance, structurally
     if (((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias && source->alias_args.len &&
         source->alias == target->alias && source->alias_args.len == target->alias_args.len &&
-        !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances
+        !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
+        !(st->alias_fallback_source == source && st->alias_fallback_target == target)
     ) {
         Variances const* variances = get_alias_variances(me, source->alias);
         if (!variances) return TERNARY_MAYBE;
@@ -3727,6 +3732,20 @@ static Ternary structured_related_members(
             bool invariant = false;
             for (u32 i = 0; i < variances->len; i++) {
                 invariant |= (variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_INVARIANT;
+            }
+            // Two instantiations of one generic class or interface decide by their own variances (tsc's relateVariances
+            // leaves the relation to the rest of structuredTypeRelatedTo, whose reference case returns what it finds)
+            bool same_reference = source->kind == TY_REFERENCE && target->kind == TY_REFERENCE &&
+                source->reference.target == target->reference.target && !is_tuple(source);
+            if (!related && invariant && same_reference) {
+                report_truncate(st, saved);
+                Ty const* saved_source = st->alias_fallback_source, *saved_target = st->alias_fallback_target;
+                st->alias_fallback_source = source;
+                st->alias_fallback_target = target;
+                related = structured_related_impl(me, st, source, target, true, true);
+                st->alias_fallback_source = saved_source;
+                st->alias_fallback_target = saved_target;
+                return related;
             }
             if (!related && invariant) {
                 // Explained by the members, as for references below
@@ -5003,6 +5022,7 @@ static bool check_related(
     st->checker = me;
     st->outer = my relating;
     st->fresh_union = report_into ? fresh_union : nullptr;
+    st->alias_fallback_source = st->alias_fallback_target = nullptr;
     if (source == target) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && !is_structured(source) && !is_structured(target)) {
@@ -5077,8 +5097,8 @@ bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation r
     return check_related(me, source, target, relation, nullptr);
 }
 
-void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out) {
-    check_related(me, source, target, relation, out);
+bool ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out) {
+    return check_related(me, source, target, relation, out);
 }
 
 // Union signatures (tsc's getUnionSignatures): what a union of callables can be called with

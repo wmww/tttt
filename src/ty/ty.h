@@ -1287,7 +1287,9 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name);
 bool ty_is_related(Checker* me, Ty const* source, Ty const* target, TyRelation relation);
 // Why source isn't related to target, outermost line first. The first line is the natural head of the error: TS2322
 // "Type 'S' is not assignable to type 'T'." unless something more specific replaces it (TS2741 and friends)
-void ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out);
+// The explaining (reporting) pass of a relation, which can find it holds after all: tsc's checkTypeRelatedTo then
+// reports nothing (an invariant alias argument falls back to the structure). Returns whether it related
+bool ty_explain_unrelated(Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* out);
 // The member of a union target a failed relation is most likely about (tsc's getBestMatchingType), null if none
 Ty const* ty_best_matching_type(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_widened_literal(Checker* me, Ty const* ty);
