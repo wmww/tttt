@@ -93,6 +93,12 @@ typedef struct ParserShared {
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
+    // The type member being parsed can't be a mapped type's `[K in T]` (tsc's isStartOfMappedType looks only at a type
+    // literal's first member): it's a property named by an `in` expression
+    bool no_mapped_member;
+    // tsc's DisallowConditionalTypes context: parsing a conditional type's extends type or an `infer X extends C`
+    // constraint, where a type operator's operands can't be conditional types (a primary type's insides can)
+    bool disallow_conditional;
     ModifiedParent statement_parent;
     bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
     // The end of the file's last token (tsc's full start of the end-of-file token): where a missing expression at the
@@ -342,7 +348,7 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op);
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
-static bool parse_interface(Parser* parent, Interface* ret);
+static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret);
 
 // The first push reserves room for 4, and these elements are big (a parameter is ~570 bytes): lists of one or two were
 // most of the AST's memory. A finished list gives back what it doesn't use
@@ -2249,7 +2255,10 @@ static bool parse_ternary_type(Parser* parent, TypeNode* left_and_ret) {
     }
     hop_whitespace(&p);
 
+    bool outer_disallow = p.shared->disallow_conditional;
+    p.shared->disallow_conditional = true;
     parse_type(&p, TYPE_PRECEDENCE_TERNARY, &maybe_super);
+    p.shared->disallow_conditional = outer_disallow;
     hop_whitespace(&p);
 
     expect_char(&p, '?');
@@ -2630,7 +2639,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
     }
 
     // (tsc's parseType: not after a line break, where `extends` starts the next member: `a?: T\n extends?: U`)
-    if (TYPE_PRECEDENCE_TERNARY >= min_precedence && p.whitespace != WHITESPACE_NEWLINE) {
+    if (TYPE_PRECEDENCE_TERNARY >= min_precedence && p.whitespace != WHITESPACE_NEWLINE && !p.shared->disallow_conditional) {
         if (parse_ternary_type(&p, left_and_ret)) {
             return parse_success(&p);
         }
@@ -2728,14 +2737,31 @@ static bool parse_inferred_type(Parser* parent, InferredType* ret) {
     Span full_span = span_from(a);
     hop_whitespace(&p);
 
-    TypeNode extends;
-    if (hop_start_if_ends_on_word_break(&p, "extends")) {
-        hop_whitespace(&p);
-        if (expect_type(&p, TYPE_PRECEDENCE_NULL, &extends)) {
+    // tsc's tryParseConstraintOfInferType: `infer U extends C ?` where a conditional type may be is the check type of
+    // one (`infer U` extends C), not a constraint
+    TypeNode extends = type_any;
+    Parser constraint = parser(&p);
+    if (hop_start_if_ends_on_word_break(&constraint, "extends")) {
+        hop_whitespace(&constraint);
+        bool outer_disallow = p.shared->disallow_conditional;
+        p.shared->disallow_conditional = true;
+        TypeNode written;
+        bool typed = expect_type(&constraint, TYPE_PRECEDENCE_NULL, &written);
+        p.shared->disallow_conditional = outer_disallow;
+        Parser next = parser(&constraint);
+        hop_whitespace(&next);
+        bool question = *next.pos == '?' && next.pos[1] != '?' && next.pos[1] != '.';
+        parse_fail(&next);
+        if (outer_disallow || !question) {
+            if (typed) extends = written;
+            full_span = span_make(p.shared->source, a.start, constraint.pos);
+            parse_success(&constraint);
+        } else {
+            if (typed) type_drop(&written);
+            parse_fail(&constraint);
         }
-        full_span = span_from(a);
     } else {
-        extends = type_any;
+        parse_fail(&constraint);
     }
 
     *ret = (InferredType){
@@ -2919,7 +2945,16 @@ __attribute__((always_inline)) static inline bool hop_type_keyword(Parser* p, ch
     return true;
 }
 
+static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, TypeNode* ret);
+
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
+    bool disallow_conditional = parent->shared->disallow_conditional;
+    bool parsed = parse_type_inner(parent, min_precedence, ret);
+    parent->shared->disallow_conditional = disallow_conditional;
+    return parsed;
+}
+
+static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -2945,6 +2980,11 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     // Every branch below needs a particular first character: test it before trying the branch
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
+    // (What a primary type contains may be a conditional type again: tsc's parseTypeOperatorOrHigher)
+    bool disallow_conditional = p.shared->disallow_conditional;
+    bool type_operator = (c == 'k' && starts_with_followed_by_word_break(&p, "keyof")) ||
+        (c == 'i' && starts_with_followed_by_word_break(&p, "infer"));
+    if (!type_operator) p.shared->disallow_conditional = false;
     if ((c == '*' || c == '?' || c == '!' || c == 'f') && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_type_keyword(&p, "any")) {
         *ret = type_any;
@@ -3045,7 +3085,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
         hop_whitespace(&p);
         expect_char(&p, ')');
         parenthesized = true;
-    } else if (c == '{' && parse_interface(&p, &ret->interface)) {
+    } else if (c == '{' && parse_interface(&p, false, &ret->interface)) {
         ret->tag = TYPE_INTERFACE;
     } else if (*p.pos == '|' || *p.pos == '&') {
         *ret = *p.pos == '|' ? type_never : type_any;
@@ -3053,6 +3093,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     } else {
         return parse_fail(&p);
     }
+    p.shared->disallow_conditional = disallow_conditional; // (parse_type() restores it after an early return)
 
     ret->parsed = true;
     // (Some branches above only write part of `ret`, over what a failed attempt may have left)
@@ -4629,7 +4670,8 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
     }
 }
 
-static bool parse_interface(Parser* parent, Interface* ret) {
+// `is_declaration`: an interface's body, else a type literal
+static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -4640,6 +4682,13 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
     VecInterfaceMember members = {0};
     const char* prev_s = nullptr;
+    // For TS7061: where the first two members are reported (tsc's getErrorSpanForNode), whether the first is a mapped
+    // member and whether one is a mapped member where there can be none (a property named by an `in` expression)
+    Span member_error_spans[2] = {0};
+    bool member_whole[2] = {0};
+    u32 member_count = 0;
+    bool first_mapped = false, misplaced_mapped = false;
+    bool outer_no_mapped_member = p.shared->no_mapped_member;
 
     u32 saved_context = list_enter(&p, PARSING_TYPE_MEMBERS);
     while (*p.pos && *p.pos != '}' && p.pos != prev_s) {
@@ -4647,7 +4696,27 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         ClassItem item;
-        if (parse_list_member(&p, PARSING_TYPE_MEMBERS, true, true, &item)) {
+        char const* member_start = p.pos;
+        p.shared->no_mapped_member = is_declaration || member_count;
+        bool parsed_member = parse_list_member(&p, PARSING_TYPE_MEMBERS, true, true, &item);
+        p.shared->no_mapped_member = outer_no_mapped_member;
+        if (parsed_member) {
+            // A property or accessor is reported at its name, anything else in full (up to its `;`, below)
+            Span error_span = span_null;
+            if (item.tag == CLASS_ITEM_FIELD) error_span = item.field.name_span;
+            else if (item.tag == CLASS_ITEM_METHOD && item.method.accessor) error_span = item.method.name_span;
+            else if (item.tag == CLASS_ITEM_INTERFACE_MEMBER && item.interface_memeber.key.tag == INTERFACE_KEY_MAPPED) {
+                error_span = item.interface_memeber.key.span;
+                first_mapped = true;
+            } else if (item.tag == CLASS_ITEM_INTERFACE_MEMBER && interface_member_is_misplaced_mapped(&item.interface_memeber)) {
+                error_span = item.interface_memeber.key.span;
+                misplaced_mapped = true;
+            }
+            if (member_count < 2) {
+                member_whole[member_count] = !span_valid(error_span);
+                member_error_spans[member_count] = span_valid(error_span) ? error_span : span_make(p.shared->source, member_start, p.pos);
+            }
+            member_count++;
             switch (item.tag) {
                 case CLASS_ITEM_METHOD: {
                     if (item.method.accessor) {
@@ -4760,11 +4829,18 @@ static bool parse_interface(Parser* parent, Interface* ret) {
         hop_whitespace(&p);
 
         // Typescript accepts EITHER , ; or newlines in interfaces. You can MIX them!
-        if (!hop_char(&p, ',') &&
+        bool separated = hop_char(&p, ',');
+        if (!separated &&
             *p.pos != '}' &&
             p.whitespace != WHITESPACE_NEWLINE
         ) {
-            expect_char(&p, ';');
+            separated = expect_char(&p, ';');
+        } else if (!separated) {
+            separated = hop_char(&p, ';');
+        }
+        // (A member reported in full ends after its separator)
+        if (separated && member_count && member_count <= 2 && member_whole[member_count - 1]) {
+            member_error_spans[member_count - 1] = span_make(p.shared->source, member_start, p.pos);
         }
         hop_whitespace(&p);
     }
@@ -4772,6 +4848,14 @@ static bool parse_interface(Parser* parent, Interface* ret) {
 
     expect_char(&p, '}');
     shrink_list(vec_interface_member, &members);
+
+    // tsc's checkGrammarMappedType / checkGrammarProperty: a type literal is a mapped type only if it starts like one,
+    // and then may have no other members; anywhere else `[K in T]` is a property named by an `in` expression
+    if (first_mapped && member_count > 1) {
+        parse_error(&p, member_error_spans[1], 7061, "A mapped type may not declare properties or methods.");
+    } else if (misplaced_mapped) {
+        parse_error(&p, member_error_spans[0], 7061, "A mapped type may not declare properties or methods.");
+    }
 
     *ret = (Interface) {
         .members = members,
@@ -5057,7 +5141,7 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
     parse_heritage_clauses(&p, &heritage);
     hop_whitespace(&p);
     Interface interface;
-    if (!parse_interface(&p, &interface)) {
+    if (!parse_interface(&p, true, &interface)) {
         interface = (Interface){0};
         expected_token_error(&p, "{");
     }
@@ -5716,6 +5800,29 @@ static bool parse_function_header(Parser* parent, FunctionFlags flags, FunctionI
 
 static bool parse_non_arrow_function_inner(Parser* parent, bool committed, FunctionImpl* ret);
 
+// An accessor in a type: a signature, with a body if one follows (tsc's parseFunctionBlockOrSemicolon with
+// SignatureFlags.Type: no `{` means the member simply ends)
+static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
+    FunctionCtx saved = function_ctx_enter(parent, flags);
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    if (!parse_function_args(&p, false, false, true, true, ret)) {
+        function_ctx_leave(parent, saved);
+        return parse_fail(&p);
+    }
+    Parser body = parser(&p);
+    hop_whitespace(&body);
+    if (*body.pos == '{' && parse_block(&body, false, &ret->body)) {
+        ret->has_body = true;
+        parse_success(&body);
+    } else {
+        parse_fail(&body);
+    }
+    ret->full_span = span_from(a);
+    function_ctx_leave(parent, saved);
+    return parse_success(&p);
+}
+
 static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     FunctionCtx saved = function_ctx_enter(parent, flags);
     bool success = parse_non_arrow_function_inner(parent, flags.committed, ret);
@@ -6240,10 +6347,14 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     ret->key.span = span_from(a);
     hop_whitespace(&p);
 
-    expect_char(&p, ':');
-    hop_whitespace(&p);
-
-    expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+    // (tsc's parseMappedType: the type is optional, its template is then the error type)
+    if (hop_char(&p, ':')) {
+        hop_whitespace(&p);
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
+    } else {
+        ret->type = type_any;
+        ret->type.parsed = false;
+    }
 
     return parse_success(&p);
 }
@@ -6636,8 +6747,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     }
     hop_whitespace(&p);
 
+    // (An accessor in a type may have a body: tsc's parseAccessorDeclaration, TS1183 from checkGrammarAccessor)
     bool (*parse_function_fn)(Parser* parent, FunctionFlags flags, FunctionImpl* ret) =
-        is_type ? parse_function_header : parse_non_arrow_function;
+        is_type ? (is_getter || is_setter ? parse_type_accessor : parse_function_header) : parse_non_arrow_function;
 
     // A static block is no yield context (tsc's parseClassStaticBlockBody)
     bool outer_static_block = p.shared->in_static_block, outer_generator = p.shared->in_generator;
@@ -6708,6 +6820,13 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 is_type ? MODIFIED_METHOD_SIGNATURE :
                 MODIFIED_METHOD;
             check_modifiers(&p, &modifiers, modified);
+            if (is_type && func.has_body) {
+                // (The body: from the `{` after the parameters and the return type to the end)
+                char const* at = span_valid(func.ret_span) && span_end_ptr(func.ret_span) > span_end_ptr(func.args_span) ?
+                    span_end_ptr(func.ret_span) : span_end_ptr(func.args_span);
+                while (at < p.pos && *at != '{') at++;
+                parse_error(&p, span_make(p.shared->source, at, p.pos), 1183, "An implementation cannot be declared in ambient contexts.");
+            }
             if (is_type && modified.kind == MODIFIED_METHOD_SIGNATURE) {
                 js_syntax_function(&p, &func, false);
             } else if (!is_type && !is_getter && !is_setter && !func.has_body && reports_js_syntax(&p)) {
@@ -6810,8 +6929,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                             if (is_type) {
                                 expect_char(&p, ';');
                             } else {
+                                // (tsc's parseSemicolonAfterPropertyName: after an initializer, a missing `;`)
                                 if (!hop_char(&p, ';')) {
-                                    parse_error(&p, span_from_token(&p), 1442, "Expected '=' for property initializer.");
+                                    if (initialized) parse_error(&p, span_from_token(&p), 1005, "';' expected.");
+                                    else parse_error(&p, span_from_token(&p), 1442, "Expected '=' for property initializer.");
                                 }
                             }
                         } else if (span_equals(name_span, "function")) {
@@ -6840,7 +6961,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 ACCESS_MODIFIER_PUBLIC);
     } else {
         FunctionImpl func;
-        if (parse_mapped_interface_member(&p, &ret->interface_memeber) ||
+        if ((!p.shared->no_mapped_member && !is_getter && !is_setter && parse_mapped_interface_member(&p, &ret->interface_memeber)) ||
             parse_index_signature(&p, &ret->interface_memeber) ||
             parse_expr_interface_member(&p, is_type, function_flags, &ret->interface_memeber)
         ) {
@@ -11917,7 +12038,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019, 8020,
+        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019, 8020, 1183, 7061,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

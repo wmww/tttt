@@ -14,6 +14,7 @@
 #include "ty/ty.h"
 #include "unused.h"
 #include "source_file.h"
+#include "compiler_options.h"
 
 const TypeNode type_any = { .tag = TYPE_ANY };
 const TypeNode type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
@@ -425,6 +426,13 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())
             interface_typecheck(&my interface, errs);
+            // tsc's checkMappedType: a mapped type without a type (reportImplicitAny)
+            if (vec_interface_member_size(&my interface.members) &&
+                vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED &&
+                !vec_interface_member_at(&my interface.members, 0)->type.parsed && compiler_options()->no_implicit_any
+            ) {
+                error_ctx_error_d(errs, my interface.span, 7039, "Mapped object type implicitly has an 'any' template type.");
+            }
             {
                 VecInterfaceMember const* list = &my interface.members;
                 ty_check_object_type_duplicate_members(current_checker, &list, 1, errs);

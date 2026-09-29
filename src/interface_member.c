@@ -36,6 +36,12 @@ void interface_member_drop(InterfaceMember* me) {
     if (my has_write_type) type_drop(&my write_type);
 }
 
+bool interface_member_is_misplaced_mapped(InterfaceMember const* me) {
+    if (my key.tag != INTERFACE_KEY_EXPR || my is_method || my computed_accessor) return false; // (A property only)
+    Expr const* key = my key.expr.ref;
+    return key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key);
+}
+
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs) {
     // `readonly k: unique symbol`. The owner is set by the interface declaration, if there is one
     if (my type.tag == TYPE_UNIQUE_SYMBOL && my readonly && my key.tag == INTERFACE_KEY_NAME) {
@@ -51,7 +57,10 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
             for_each (i, vec_type, &my key.index.more_types) type_lookup_names(i, names, errs);
             type_flow_restore(saved_flow);
         }   break;
-        case INTERFACE_KEY_EXPR: expr_lookup_names(my key.expr.ref, names, errs); break;
+        case INTERFACE_KEY_EXPR:
+            // (A mapped type's member elsewhere, `[K in T]`: resolved silently, TS7061 said it all)
+            expr_lookup_names(my key.expr.ref, names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
+            break;
 
         case INTERFACE_KEY_MAPPED:
             type_lookup_names(&my key.mapped.in_type, names, errs);
@@ -138,8 +147,10 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
         }   break;
 
         case INTERFACE_KEY_EXPR:
-            ty_check_computed_name(current_checker, my key.expr.ref, my key.span, true, errs);
-            if (expr_is_non_bindable_dynamic_name(my key.expr.ref)) {
+            if (interface_member_is_misplaced_mapped(me)) break;
+            // (An accessor's `[k in T]` is no mapped type's member but a name, and no TS1169: tsc's checkAccessorDeclaration)
+            ty_check_computed_name(current_checker, my key.expr.ref, my key.span, !my computed_accessor, errs);
+            if (!my computed_accessor && expr_is_non_bindable_dynamic_name(my key.expr.ref)) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&

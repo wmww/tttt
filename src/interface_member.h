@@ -104,6 +104,8 @@ static inline InterfaceMember interface_member_make(
 }
 
 void interface_member_drop(InterfaceMember* me);
+// `[K in T]` as a type member where tsc parses no mapped type (a property named by an `in` expression): TS7061
+bool interface_member_is_misplaced_mapped(InterfaceMember const* me);
 void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* errs);
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs);
 

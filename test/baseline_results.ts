@@ -286,7 +286,7 @@ const baselines = {
         types: true,
     },
     'accessorBodyInTypeContext': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -926,8 +926,8 @@ const baselines = {
         types: true,
     },
     'anyMappedTypesError': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'anyPlusAny1': {
@@ -20916,8 +20916,8 @@ const baselines = {
         types: true,
     },
     'mappedTypeNoTypeNoCrash': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'mappedTypeNotMistakenlyHomomorphic': {
@@ -23726,9 +23726,9 @@ const baselines = {
         types: true,
     },
     'noMappedGetSet': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'noObjectKeysToKeyofT': {
         errors: true,
@@ -59621,7 +59621,7 @@ const baselines = {
         types: false,
     },
     'parserComputedPropertyName27': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59656,7 +59656,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName33': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63531,7 +63531,7 @@ const baselines = {
         types: true,
     },
     'inferTypesWithExtends1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -64171,9 +64171,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeProperties': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mappedTypeRelationships': {
         errors: false,

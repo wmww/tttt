@@ -411,12 +411,26 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 }
 
 // TS1166/TS1168: the key of a property or of a method overload has to be something the class can be typed by
-static void class_computed_key_typecheck(ClassItem* item, ErrorCtx* errs) {
+static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, ErrorCtx* errs) {
     bool field = item->tag == CLASS_ITEM_FIELD;
     Expr* key = field ? item->field.computed_key : item->method.computed_key;
     expr_typecheck(key, errs);
     bool accessor = !field && item->method.accessor;
     ty_check_computed_name(current_checker, key, field ? item->field.name_span : item->method.name_span, !accessor, errs);
+    // tsc's checkGrammarProperty: `[K in T]: X` is a mapped type's member written in a class, reported at the class's
+    // first member (a property, method or constructor: at its name)
+    if (field && key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key) &&
+        vec_class_item_size(&my items)
+    ) {
+        ClassItem const* first = vec_class_item_at(&my items, 0);
+        Span span = first->tag == CLASS_ITEM_FIELD ? first->field.name_span :
+            first->tag == CLASS_ITEM_METHOD ? first->method.name_span :
+            first->tag == CLASS_ITEM_CONSTRUCTOR ? first->constructor.name_span : span_null;
+        if (span_valid(span)) {
+            error_ctx_grammar_error_d(errs, span, 7061, "A mapped type may not declare properties or methods.");
+            return;
+        }
+    }
     if (!field && item->method.func.has_body) return; // Only overload signatures are restricted
     if (!expr_is_non_bindable_dynamic_name(key)) return;
     Span span = field ? item->field.name_span : item->method.name_span;
@@ -1584,7 +1598,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_METHOD:
-                if (i->method.computed_key) class_computed_key_typecheck(i, errs);
+                if (i->method.computed_key) class_computed_key_typecheck(me, i, errs);
                 i->method.func.private_ambient = class_item_private_in_ambient(me, i);
                 if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient) {
                     // tsc's checkGrammarAccessor: at the accessor's last character (its `;` if it has one)
@@ -1603,7 +1617,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_FIELD: {
-                if (i->field.computed_key) class_computed_key_typecheck(i, errs);
+                if (i->field.computed_key) class_computed_key_typecheck(me, i, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
                 // (tsc's checkGrammarTypeOperatorNode)
                 if (i->field.has_explicit_type && i->field.explicit_type.tag == TYPE_UNIQUE_SYMBOL &&
