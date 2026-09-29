@@ -1188,6 +1188,8 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
 // member the base constructor; the callee of `super(...)` is the base constructor
 static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     ClassDecl const* class_decl = identifier->target ? symbol_find_node(identifier->target, SYMBOL_DECL_CLASS) : nullptr;
+    // Where it can't be (TS2335 & co.) it's the error type, in an object literal's method any (checkSuperExpression)
+    if (identifier->super_invalid) return ty_intrinsic(me, TY_ERROR);
     if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY) return any_type(me);
     // `extends null`: `super()` is an error of its own (TS17005), `super.x` reads null (tsc's checkSuperExpression)
     if (class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL) {
@@ -3631,8 +3633,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->property->method_call || expr->property->assignment_target) {
                 object = ty_widened_objects(me, ty_widened_nullable(me, object));
             }
-            // An incomplete `never` of control flow is like any (tsc's silentNeverType)
-            if (object == ty_intrinsic(me, TY_SILENT_NEVER)) return object;
+            // An incomplete `never` of control flow is like any (tsc's silentNeverType), a property of the error type is
+            // the error type (checkPropertyAccessExpressionOrQualifiedName)
+            if (object == ty_intrinsic(me, TY_SILENT_NEVER) || object == ty_intrinsic(me, TY_ERROR)) return object;
             // `never` has no properties (TS2339), `never[k]` is never
             if ((object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);

@@ -156,6 +156,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
         }
     }
     if (!legal) {
+        my super_invalid = true;
         if (in_computed_name) {
             error_ctx_error_d(errs, my name, 2466, "'super' cannot be referenced in a computed property name.");
         } else if (is_call) {
@@ -174,11 +175,13 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     ClassDecl const* class_decl = scope ? scope->this_ref.class_decl : nullptr;
     if (!class_decl) return;
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) {
+        my super_invalid = true;
         error_ctx_error_d(errs, my name, 2335, "'super' can only be referenced in a derived class.");
         return;
     }
     if (!is_call) check_before_super(me, names, 17011, "a property of 'super'", errs);
     if (in_constructor_args) {
+        my super_invalid = true;
         error_ctx_error_d(errs, my name, 2336, "'super' cannot be referenced in constructor arguments.");
         return;
     }

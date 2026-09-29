@@ -70,6 +70,7 @@ typedef struct IdentifierExpr {
     // `super.x` / `super[x]` (the base instance), `super(...)` (the base constructor)
     bool super_member : 1;
     bool super_call : 1;
+    bool super_invalid : 1; // Where `super` can't be (an error was reported): the error type
     bool class_base : 1; // The whole element of a class's `extends` clause (TS2863 rather than TS2693 for `extends number`)
     // `x` of `x.length`, `x.push(...)`, `x[i] = v`...: EvolvingArrayOp, see ty_is_evolving_array_operation_target()
     uint8_t evolving_op : 2;
