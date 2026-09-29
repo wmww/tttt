@@ -8454,6 +8454,14 @@ static bool parse_literal(Parser* parent, Value* ret) {
     return parse_type_compat_literal(parent, ret);
 }
 
+// A `!` that an access or call follows continues the chain of its operand (see UnaryOpExpr.continues_chain)
+static void mark_chain_continues(Expr* object) {
+    while (object->tag == EXPR_UNARY_OP && object->unary_op->op == UNARY_OP_RIGHT_BANG && !expr_is_perenthisized(object)) {
+        object->unary_op->continues_chain = true;
+        object = &object->unary_op->expr;
+    }
+}
+
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
     Anchor a = span_starting_at(&p, left_and_ret->outer_span);
@@ -8527,6 +8535,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
+        mark_chain_continues(left_and_ret);
         *left_and_ret = expr_call(
             span_from(a),
             c_new(CallExpr, {
@@ -8605,6 +8614,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             parse_error(&p, span_make(p.shared->source, open, span_end_ptr(left_and_ret->outer_span)), 1477,
                 "An instantiation expression cannot be followed by a property access.");
         }
+        mark_chain_continues(left_and_ret);
         *left_and_ret = expr_property(
             span_from(a),
             c_new(PropertyExpr, {
@@ -8631,6 +8641,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     if (!ctx.entity_name && !(ctx.decorator && !optional_chain) && parse_bracket_prop(&p, &parsed.expr_a)) {
+        mark_chain_continues(left_and_ret);
         *left_and_ret = expr_property(
             span_from(a),
             c_new(PropertyExpr, {

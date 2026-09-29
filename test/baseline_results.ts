@@ -47688,7 +47688,7 @@ const baselines = {
     'callChain': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'callChainInference': {
         errors: true,
@@ -47788,7 +47788,7 @@ const baselines = {
     'elementAccessChain': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'optionalChainingInArrow': {
         errors: true,
@@ -47893,7 +47893,7 @@ const baselines = {
     'propertyAccessChain': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateChain': {
         errors: false,

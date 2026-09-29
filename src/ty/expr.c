@@ -2104,7 +2104,15 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
         case UNARY_OP_RIGHT_BANG: {
             // (tsc's getNonNullableType: without strictNullChecks nothing is nullable, `null!` is null)
             Ty const* type = ty_expr_type(me, operand);
-            return compiler_options()->strict_null_checks ? ty_non_nullish_part(me, type) : type;
+            if (!compiler_options()->strict_null_checks) return type;
+            // Part of an optional chain (`a?.b!.c`): the chain may still have ended, tsc's checkNonNullChain keeps its
+            // undefined (see chain_object_type()'s HACK: every undefined is taken for that)
+            if (unary->continues_chain && expr_is_optional_chain(operand) && !expr_is_perenthisized(operand) &&
+                includes_undefined(type)
+            ) {
+                return optional_type(me, ty_non_nullish_part(me, type));
+            }
+            return ty_non_nullish_part(me, type);
         }
     }
     impossible;
