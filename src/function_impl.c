@@ -753,6 +753,10 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         type = ty_unwrapped_return_type(checker, me);
         if (!type && my is_async && !my is_generator) type = ty_intrinsic(checker, TY_ANY);
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
+    } else if (my accessor == 1 && my setter_type) {
+        // A getter's is its setter's parameter annotation (tsc's getReturnTypeFromAnnotation: getAnnotatedAccessorType)
+        type = ty_from_node(checker, my setter_type, (LowerCtx){ .generic = true });
+        if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
     } else if ((my jsdoc_signature_type || my jsdoc_host_type) && !my is_async && !my is_generator) {
         // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation), reported at
         // that signature's return type node if it's written (getJSDocReturnType)

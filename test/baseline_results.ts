@@ -15556,7 +15556,7 @@ const baselines = {
         types: true,
     },
     'getterControlFlowStrictNull': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
