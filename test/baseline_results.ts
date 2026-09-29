@@ -59036,7 +59036,7 @@ const baselines = {
         types: true,
     },
     'parserSuperExpression2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

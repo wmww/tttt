@@ -1805,9 +1805,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             flow->false_target = false_target;
             flow->chain_continues = chain_continues;
             expr_lookup_names(&my generic_params->expr, names, errs);
+            // (`super<T>` is TS2754, its type arguments never checked: tsc says nothing about what they name)
+            bool super_args = my generic_params->expr.tag == EXPR_IDENTIFIER &&
+                my generic_params->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
+            ErrorCtx quiet = errs ? error_ctx_scratch(errs) : (ErrorCtx){0};
             for_each (i, vec_spanned_type, &my generic_params->params) {
-                type_lookup_names(&i->type, names, errs);
+                type_lookup_names(&i->type, names, super_args && errs ? &quiet : errs);
             }
+            error_ctx_drop(&quiet);
             break;
 
         case EXPR_AS_TYPE:
