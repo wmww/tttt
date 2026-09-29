@@ -3059,6 +3059,17 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* operand = ty_expr_type(me, i->spread);
             if (as_tuple) {
                 flags[count] = TUPLE_ELEMENT_REST;
+                if (expr->assignment_pattern && !ty_is_array(me, operand) && !ty_is_tuple(operand) && !(operand->flags & TYF_ANY)) {
+                    // A rest target of a destructuring assignment: its number index signature, else what it iterates,
+                    // else unknown (tsc's checkArrayLiteral with inDestructuringPattern)
+                    Ty const* apparent = ty_apparent_type(me, operand);
+                    IndexInfo const* index = (apparent->flags & TYF_OBJECT) ?
+                        ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_NUMBER)) : nullptr;
+                    TyIterationTypes const* iterated = index ? nullptr : ty_iteration_types_of_iterable(me, operand, ITERATION_DESTRUCTURING);
+                    Ty const* element = index ? index->value : iterated ? iterated->yield_type : ty_intrinsic(me, TY_UNKNOWN_);
+                    elements[count++] = ty_array(me, element, false);
+                    continue;
+                }
                 elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) ?
                     operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
             } else {

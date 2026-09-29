@@ -32588,7 +32588,7 @@ const baselines = {
     'unusedLocalsInMethod4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedLocalsInRecursiveReturn': {
         errors: true,
@@ -42158,17 +42158,17 @@ const baselines = {
     'nonIterableRestElement1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonIterableRestElement2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonIterableRestElement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectBindingPatternKeywordIdentifiers01': {
         errors: true,
@@ -42238,7 +42238,7 @@ const baselines = {
     'restElementWithAssignmentPattern2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithAssignmentPattern3': {
         errors: true,
@@ -42248,7 +42248,7 @@ const baselines = {
     'restElementWithAssignmentPattern4': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithAssignmentPattern5': {
         errors: true,
