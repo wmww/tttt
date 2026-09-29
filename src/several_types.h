@@ -53,6 +53,13 @@ typedef enum JsDocIntrinsic {
 
 void identifier_type_drop(IdentifierType* me);
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs);
+// While a type parameter's default is looked up: the type parameters it may not reference, from `from` on (TS2744,
+// tsc's checkTypeParametersNotReferenced). Set by generic_lookup_names()
+typedef struct TypeParamDefaultScope {
+    struct Generic const* generic;
+    isize from;
+} TypeParamDefaultScope;
+extern _Thread_local TypeParamDefaultScope identifier_type_default_scope;
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 // tsc's getTypeFromClassOrInterfaceReference arity check of a reference to `symbol` with arg_count type arguments
 // (TS2314/TS2707, TS2315 for a type that isn't generic). Whether it reported

@@ -33,7 +33,10 @@ void generic_add_names(Generic const* me, Scope* scope) {
 void generic_lookup_names(Generic const* me, Scope* names, ErrorCtx* errs) {
     for_each (i, vec_generic_item, &my items) {
         type_lookup_names(&i->extends, names, errs);
+        TypeParamDefaultScope saved = identifier_type_default_scope;
+        identifier_type_default_scope = (TypeParamDefaultScope){ me, i_index };
         type_lookup_names(&i->fallback, names, errs);
+        identifier_type_default_scope = saved;
     }
 }
 

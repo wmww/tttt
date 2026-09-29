@@ -208,6 +208,8 @@ static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
     return nullptr;
 }
 
+_Thread_local TypeParamDefaultScope identifier_type_default_scope;
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
@@ -288,7 +290,15 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
         }
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
         if (!my target) scope_report_not_found(names, my name, SYMBOL_TYPE, false, errs);
-        if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) check_static_type_parameter_reference(me, names, errs);
+        if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) {
+            check_static_type_parameter_reference(me, names, errs);
+            TypeParamDefaultScope in_default = identifier_type_default_scope;
+            for (isize i = in_default.generic ? in_default.from : 0; in_default.generic && i < in_default.generic->items.size; i++) {
+                if (in_default.generic->items.data[i].symbol_ref != my target) continue;
+                error_ctx_error_d(errs, identifier_type_span(me), 2744,
+                    "Type parameter defaults can only reference previously declared type parameters.");
+            }
+        }
     }
 
     // (A value in JSDoc is its type: tsc's getTypeFromJSDocValueReference)
