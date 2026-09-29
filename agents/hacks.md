@@ -180,6 +180,17 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   attempts that backtrack (a spurious reparse only costs time).
 - TS2574 (`type_typecheck()`, TYPE_TUPLE): a variadic element whose type is generic is only checked if it's a type
   parameter; tttt's relation can't see that a mapped type over `T[K]` is array-like by its constraint.
+- Missing nodes and trivia (`token_full_start()`, `unhop_trivia()`): tsc's missing node sits at the next token's full
+  start. `ParserShared.last_trivia_start/end` remember only the last stretch `hop_whitespace_slow()` skipped, so a
+  full start after two hops (newline-less then full) is only the second one's. `expect_expr()` moves the parser back
+  there so the enclosing node ends at the previous token; the missing expression's own span stays at the token start
+  (where tsc's baselines print it). Missing *names* are at the full start (where tsc's getErrorSpanForNode reports on
+  them), and the symbols baseline then skips ASCII whitespace forward to print a missing type reference's
+  `Symbol(unknown)` (`type_compile_test_info()`; a comment in between would put it elsewhere). `Expr.missing` tells a
+  missing expression from an absent one; `expect_expr()` leaves it false at a `@` (tsc's MissingDeclaration is no
+  expression, though tttt doesn't parse the decorators there).
+- `TYPE_PREDICATE` (a misplaced `this is T`/`asserts x`/JSDoc `{x is T}`): only its type's names are resolved (for the
+  symbols baseline); the `this`/parameter name isn't, like tsc's checkTypePredicate without a parent.
 - `CallExpr` argument types recomputed per use; `Value.object` refcount churn; `IdentifierType` could be split into a
   small common case; `CallableType`/`FunctionImpl` are two allocations (PERF comments).
 
