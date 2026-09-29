@@ -11693,7 +11693,7 @@ const baselines = {
     'es5ExportEquals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5ExportEqualsDts': {
         errors: true,
@@ -11893,7 +11893,7 @@ const baselines = {
     'es6ExportEquals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ExportEqualsInterop': {
         errors: false,

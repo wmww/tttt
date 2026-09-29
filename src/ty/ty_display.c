@@ -106,6 +106,18 @@ static bool is_non_local_function(Symbol const* symbol) {
     return false;
 }
 
+// The function a module's `export =` assigns while the module has other exports (then tsc's getCommonJsExportEquals
+// clones it into a ValueModule), else null
+static Symbol const* export_equals_clone_of(Symbol const* function) {
+    if (!function || !(function->flags & SYMBOL_FUNCTION) || !function->decl_count) return nullptr;
+    Symbol* module = function->parent && function->parent->is_module ? function->parent : nullptr;
+    Scope const* block = function->decls[0].block;
+    if (!module && block && block->kind == SCOPE_MODULE) module = block->container;
+    if (!module || !module->is_module || !module->exports || !symbol_table_get(module->exports, c_sv("export="))) return nullptr;
+    Symbol const* assigned = module_export_equals(module);
+    return assigned && assigned->merged_export_equals_of == function ? function : nullptr;
+}
+
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
     csview js_name;
     if (ty_js_assigned_class_name(symbol, &js_name)) {
@@ -2196,6 +2208,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // A function a CommonJS module exports with the module's other exports merged in (tsc's
             // getCommonJsExportEquals clone, a ValueModule too)
             Symbol const* exported = ty->anonymous.merged_value ? ty->anonymous.merged_value->merged_export_equals_of : nullptr;
+            // (the function's own type too: tsc's clone is its merged symbol, recordMergedSymbol)
+            if (!exported && ty->anonymous.function && !ty->anonymous.target) exported = export_equals_clone_of(ty->anonymous.function->symbol);
             if (exported && (exported->flags & SYMBOL_FUNCTION) && span_valid(exported->name_span)) {
                 out_lit(d, "typeof ");
                 out(d, exported->name_span.sv);
