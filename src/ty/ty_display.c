@@ -675,13 +675,17 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
     out_lit(d, "(");
     for_each (i, vec_function_arg, &function->args) {
         if (i_index) out_lit(d, ", ");
-        if (i->rest) out_lit(d, "...");
         Binding const* binding = &i->initializer.binding;
+        // (tsc's printer makes a JSDoc `...T` parameter `...args`, of which the name counts as reused)
+        bool jsdoc_rest = function->jsdoc_type && i->rest && !span_is_written(binding->content_span);
+        if (i->rest) out(jsdoc_rest ? reused_if(d, false) : d, c_sv("..."));
         if (binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) {
             cstr pattern = cstr_init();
             append_binding_pattern(&pattern, binding);
             out(d, cstr_sv(&pattern));
             cstr_drop(&pattern);
+        } else if (jsdoc_rest) {
+            out(d, c_sv("args"));
         } else {
             out(d, binding->content_span.sv);
         }
