@@ -771,6 +771,8 @@ typedef struct CurrentNode {
 struct Checker {
     Program* program;
     struct Binder const* binder;
+    // The initializer of the enum member being checked: an overshift there is an error, elsewhere a suggestion (TS6807)
+    struct Expr const* enum_member_initializer;
     // Where its diagnostics go (ty_error_at()): its own while it checks its files (program_typecheck() merges them into
     // the program's), the program's otherwise. Only reported in the typecheck phase
     struct ErrorCtx* errs;
@@ -1299,6 +1301,7 @@ typedef struct EnumCase EnumCase;
 // TS2565/TS2651 for the enum members an initializer of `member` refers to (tsc's evaluateEnumMember)
 void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, Expr const* expr, ErrorCtx* errs);
 bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out); // enums.c, tsc's evaluate() of a constant string
+bool ty_evaluate_number(Checker* me, Expr const* expr, double* out); // enums.c, tsc's evaluate() of a constant number
 Ty const* ty_enum_of_member(Checker* me, Ty const* member); // The enum type an enum literal belongs to
 bool ty_is_enum_union(Ty const* ty);
 

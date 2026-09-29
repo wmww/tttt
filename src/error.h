@@ -24,6 +24,7 @@ typedef struct Error {
     bool detached; // Related information without a location (tsc's createDetachedDiagnostic)
     // A grammar error the parser reports (tsc's checker's): not one parse error per position, see parse_file()
     bool grammar;
+    bool suggestion; // tsc's DiagnosticCategory.Suggestion (only with CompilerOptions.capture_suggestions)
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
     // (the index of the file being checked), which is the one a single checker reports
@@ -32,8 +33,8 @@ typedef struct Error {
     VecError sub_errors;
 } Error;
 
-// tsc's DiagnosticCategory of a code as the baselines print it: "error", "message" (TS1450) or "suggestion"
-char const* error_category_name(unsigned ts_code);
+// tsc's DiagnosticCategory of a diagnostic as the baselines print it: "error", "message" (TS1450) or "suggestion"
+char const* error_category_name(Error const* error);
 
 void error_drop(Error* me);
 Error error_clone(Error me);

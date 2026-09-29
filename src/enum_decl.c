@@ -93,7 +93,9 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         if (!i->name_is_value && i->name.sv.size && i->name.sv.buf[0] == '#') { // tsc's checkEnumMember
             error_ctx_error_d(errs, i->name, 18024, "An enum member cannot be named with a private identifier.");
         }
+        current_checker->enum_member_initializer = &i->value;
         expr_typecheck(&i->value, errs);
+        current_checker->enum_member_initializer = nullptr;
         // (tsc's computeEnumMemberValue)
         if (i->computed_name) {
             error_ctx_error_d(errs, i->full_name, 1164, "Computed property names are not allowed in enums.");

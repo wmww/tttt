@@ -319,6 +319,10 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
         my no_types_and_symbols = tag_equals(value, "true");
         return;
     }
+    if (tag_equals(key, "capturesuggestions")) {
+        program_options(my program)->capture_suggestions = tag_equals(value, "true");
+        return;
+    }
     if (tag_equals(key, "noimplicitreferences")) {
         my no_implicit_references = tag_equals(value, "true");
         return;
@@ -594,7 +598,7 @@ static void format_error_tree(
 ) {
     // Add the prefix for toplevel errors, this "global" string will appear at the top of the output file
     if (indent_level == 0 && !span_valid(error->span)) {
-        cstr_append_d(global_target, DEFAULT_DISPLAY, error_category_name(error->ts_code), " TS", error->ts_code, ": ");
+        cstr_append_d(global_target, DEFAULT_DISPLAY, error_category_name(error), " TS", error->ts_code, ": ");
     } else if (indent_level == 0) {
         unsigned line = span_line_index(error->span);
         unsigned col = span_col_index(error->span);
@@ -602,7 +606,7 @@ static void format_error_tree(
 
         cstr_append_d(
             global_target, DEFAULT_DISPLAY,
-            filename, "(", line + 1, ",", col + 1, "): ", error_category_name(error->ts_code), " TS", error->ts_code, ": "
+            filename, "(", line + 1, ",", col + 1, "): ", error_category_name(error), " TS", error->ts_code, ": "
         );
     }
 
@@ -620,7 +624,7 @@ static void format_error_tree(
         // Handle toplevel errors and non-related errors (sub-errors that don't have a valid span)
         cstr_append_d(
             file_target, DEFAULT_DISPLAY,
-            "\r\n!!! ", error_category_name(toplevel->ts_code), " TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level),
+            "\r\n!!! ", error_category_name(toplevel), " TS", toplevel->ts_code, ": ", repeated_d("  ", indent_level),
             error->message
         );
     } else {

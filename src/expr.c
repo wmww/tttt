@@ -1,4 +1,5 @@
 #include "expr.h"
+#include <math.h>
 #include "source_file.h"
 #include "stc/types.h"
 #include "port_statement.h"
@@ -2976,6 +2977,23 @@ static Ty const* base_type_for_comparison(Checker* checker, Ty const* ty) {
     return ty;
 }
 
+// A shift by a constant of 32 or more (tsc's checkBinaryLikeExpressionWorker): the same as by the remainder. A suggestion,
+// an error in an enum member's initializer (whose value is computed)
+static void check_overshift(Checker* checker, Expr const* expr, ErrorCtx* errs) {
+    bool in_enum = checker->enum_member_initializer == expr;
+    if (!in_enum && !compiler_options()->capture_suggestions) return;
+    double amount;
+    if (!ty_evaluate_number(checker, &expr->binary_op->right, &amount) || !(fabs(amount) >= 32)) return;
+    Value remainder = { .tag = VALUE_NUMBER, .number = fmod(amount, 32) };
+    if (remainder.number == 0) remainder.number = 0; // (JavaScript prints -0 as 0)
+    cstr amount_str = cstr_null;
+    cstr_append_value_js(&amount_str, &remainder);
+    Error* e = error_ctx_error_d(errs, expr->inner_span, 6807, "This operation can be simplified. This shift is identical to `",
+        expr->binary_op->left.outer_span, " ", binary_op_get_zv(expr->binary_op->op).str, " ", amount_str, "`.");
+    if (e && !in_enum) e->suggestion = true;
+    cstr_drop(&amount_str);
+}
+
 // The operands of `<` & co.: both numeric, or both not and comparable
 static bool comparison_operands_fit(Ty const* left, Ty const* right) {
     Checker* checker = current_checker;
@@ -3164,6 +3182,11 @@ static bool binary_op_typecheck(
                     error_add_related_d(e, expr->binary_op->right.outer_span, 2773, "Did you forget to use 'await'?");
                 }
                 operands_ok = false;
+            }
+            if (operands_ok && (op == BINARY_OP_LESS_LESS || op == BINARY_OP_GREATER_GREATER ||
+                op == BINARY_OP_GREATER_GREATER_GREATER)
+            ) {
+                check_overshift(checker, expr, errs);
             }
             // Mixing bigint with anything else
             u32 bigint_like = TYF_BIGINT | TYF_BIGINT_LITERAL;

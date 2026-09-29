@@ -233,6 +233,14 @@ void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, E
 }
 
 // The value of a template literal expression whose parts are all constants (tsc's evaluate()), false if it has none
+bool ty_evaluate_number(Checker* me, Expr const* expr, double* out) {
+    EnumValue value = evaluate(me, expr, 0);
+    bool ret = value.known && !value.is_string;
+    if (ret) *out = value.number;
+    cstr_drop(&value.string);
+    return ret;
+}
+
 bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out) {
     EnumValue value = evaluate(me, expr, 0);
     if (!value.known || !value.is_string) {

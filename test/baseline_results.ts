@@ -25136,7 +25136,7 @@ const baselines = {
         types: true,
     },
     'overshifts': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

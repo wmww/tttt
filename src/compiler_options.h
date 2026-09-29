@@ -159,6 +159,7 @@ typedef struct CompilerOptions {
     ScriptTarget target;
     ModuleKind module;
     ModuleResolutionKind module_resolution;
+    bool capture_suggestions; // The test harness's `@captureSuggestions`: suggestion diagnostics are reported too
     JsxKind jsx;
     ModuleDetectionKind module_detection;
     cstr lib; // Comma separated, lowercase, as written ("es2015,dom"). Empty: the default library of the target
