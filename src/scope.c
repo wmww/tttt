@@ -2824,8 +2824,15 @@ static void merge_augmentations(Binder* me) {
             if (export_equals) {
                 if (pass == 0) continue;
                 Symbol* assigned = module_export_equals(module);
-                // TODO: TS2671 when it isn't a namespace
-                if (!assigned || assigned->is_placeholder || !(assigned->flags & SYMBOL_NAMESPACE)) continue;
+                if (!assigned || assigned->is_placeholder) continue;
+                if (!(assigned->flags & SYMBOL_NAMESPACE)) {
+                    // (tsc's mergeModuleAugmentation, once per augmentation symbol: at its first declaration)
+                    if (!augmentation->decl_count || augmentation->decls[0].node == decl) {
+                        error_ctx_error_d(errs, decl->module_ref->span, 2671, "Cannot augment module '",
+                            decl->module_ref->path, "' because it resolves to a non-module entity.");
+                    }
+                    continue;
+                }
                 if (assigned->binder != me) continue; // TODO: a namespace of the shared lib program
                 module = assigned;
                 symbol_ensure_exports(module);

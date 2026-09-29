@@ -1981,12 +1981,12 @@ const baselines = {
         types: true,
     },
     'augmentExportEquals1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'augmentExportEquals1_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -1996,7 +1996,7 @@ const baselines = {
         types: false,
     },
     'augmentExportEquals2_1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
