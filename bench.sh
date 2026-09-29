@@ -89,12 +89,18 @@ thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite
 NEST=nestjs-boilerplate
 echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > thirdparty/corpora/$REACT/tsconfig.tsgo.json
+# drizzle and vue import through baseUrl too (`type-tests/utils.ts`, `packages/...`): tsgo gets `"*": ["./*"]` instead.
+# tsgo 7 still reports its own TS2769/TS2578 on both (16 drizzle, 8 vue: TS 7 differences), so its times may not be of
+# a full check
+echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"~/*": ["./src/*"], "*": ["./*"]}}}' > thirdparty/corpora/drizzle/drizzle-orm/tsconfig.tsgo.json
+echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"@vue/compat": ["./packages/vue-compat/src"], "@vue/*": ["./packages/*/src"], "vue": ["./packages/vue/src"], "*": ["./*"]}}}' > thirdparty/corpora/vue/tsconfig.tsgo.json
 for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json; do
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
     TSC_EXTRA=""
     if test $CORPUS = $REACT; then TSGO_ARGS="-p $DIR/tsconfig.tsgo.json"; fi
     if test $CORPUS = webpack || test ${CORPUS%.json} != $CORPUS; then TSGO_ARGS="-p $DIR"; fi
+    case $CORPUS in drizzle/*|vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
     if test $CORPUS = $NEST; then TSC_EXTRA="--incremental false"; TSGO_ARGS="$TSGO_ARGS --incremental false --strict false"; fi
     echo
     echo "corpus $CORPUS: $(node thirdparty/tsc/lib/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"

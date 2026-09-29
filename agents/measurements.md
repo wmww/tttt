@@ -10,6 +10,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## New corpora (2026-09-29, seventh window's corpus session, 64969dde)
+drizzle (1567 files incl. deps and libs, 577 of its own, 93k lines) and vue (759 files, 511 of its own, 192k lines),
+both 0 under tsc 5.8. At pinning (after the OOM fix): drizzle **693**, vue **107**. Instructions (`perf stat -e
+instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q --keep-going`): **drizzle 264.8 G**, vue 9.64 G. Walls
+under load (four agents running, not bench.sh): drizzle tttt ~10 s / 3.8 GB (checkers 4.1-8.4 s, 4.2M types),
+tsc 5.8 12.7 s (measured quiet), tsgo 7.2 s / 1.9 GB; vue tttt 0.7 s / 680 MB, tsc 11.6 s, tsgo 5.2 s / 865 MB (tsgo
+through bench.sh's tsconfig.tsgo.json, with 16 / 8 TS 7 errors of its own). drizzle is the first corpus where tttt is
+slower than tsgo (perf_leads.md).
+
 ## Triage (2026-09-29, todo entry 10, 82c3cac9)
 Suite **12040 / 13540** (errors 12730, symbols 13003, types 12768; 0 lost), JS 898 / 1049, `./failstats.py` errors
 component fails in 810 tests, checker log_error output empty. Corpora unchanged (webpack 6, xstate 19, the rest 0).

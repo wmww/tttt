@@ -1,13 +1,14 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-28 (sixth window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
-zod 0, zod-root = tsc's own 55, **webpack 18** (was 107; checkJs), **xstate** (new, see below). The history of R1-R21 (identity relation,
-homomorphic mapped modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and
-of the zod and type-fest items is in git (this file before the corpus sessions) and in the commits.
+**Status 2026-09-29 (seventh window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
+zod 0, zod-root = tsc's own 55, webpack 6, xstate 19, and two new corpora: **vue** (107 at pinning) and **drizzle** (693
+at pinning, after an OOM fix), see their sections. The history of R1-R21 (identity relation, homomorphic mapped
+modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and of the zod and
+type-fest items is in git (this file before the corpus sessions) and in the commits.
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
-nest, webpack, zod, xstate (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
+nest, webpack, zod, xstate, drizzle, vue (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
 tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce each to a probe in
 `test/probes/plan19/<corpus>/`, fix the tsc rule behind it. Record the counts in the commit message and
 `measurements.md`; the suite and the other corpora are the regression checks.
@@ -70,6 +71,22 @@ reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
   3951/4152/4181 (DoNotInfer leak?), actions 4224/4272 (GetConcreteByKey), emit 49/52 (TS2353), spawn.ts:132
   (deferred conditional rest parameter).
 - Determinism: 5 diagnostics only at `--checkers 1` (triage).
+
+### drizzle (693 at pinning)
+Pinned 2026-09-29 (seventh window, todo entry 1): drizzle-orm at 15454dbe, the package's src and type-tests through
+`corpora-locks/drizzle.overlay/drizzle-orm/tsconfig.corpus.json` (upstream's type-tests tsconfig minus src/prisma,
+which needs a generated @prisma/client); devDependencies at pnpm-lock.yaml's versions (npm's own resolution of the
+ranges gave tsc 40 errors). noUncheckedIndexedAccess, noPropertyAccessFromIndexSignature, paths `~/*`. tsc 5.8: 0 in
+12.7 s. tttt first ran out of memory (27 GB after 7 minutes): isDeeplyNestedType didn't look through intersections, so
+methods returning `this & {...}` grew intersections without bound (probe `drizzle/this_intersection_nesting.ts`).
+Then 693 in 115 files: type-tests 265 (TS2344 213 = `Expect<Equal<>>` mismatches, TS2589 67), src 428 (TS2345, TS2339,
+TS7053, TS2322, TS2352, TS18048, TS2862...). The heaviest corpus by far: 265 G instructions (perf_leads.md).
+
+### vue (107 at pinning)
+Pinned 2026-09-29 (same session): vue core at b5f85183 (the last commit before TypeScript 6), every package's src and
+__tests__ plus packages-private/dts-test, through `corpora-locks/vue.overlay/tsconfig.corpus.json` (the root tsconfig
+without composite/isolatedDeclarations/noUnusedLocals; dts-test's built.test-d.ts needs a build, excluded). tsc 5.8: 0
+in 11.6 s. Pinning found a parser bug (`return` + line break + `let x`) and a crash (an alias with 17 type arguments).
 
 ### zod-root (tsc 55, tttt 55: the same set)
 `./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is

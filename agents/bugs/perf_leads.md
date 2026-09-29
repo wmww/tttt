@@ -8,6 +8,15 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 (to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
 `/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
 
+## drizzle (pinned 2026-09-29): the heaviest corpus by far
+**265 G instructions** at `--checkers 1` (tsc's corpus: 5.2 G, zod 4.6 G), 4.2M types over 4 checkers (checker 1:
+1.5M types, 1.1 GB arena), 3.8 GB peak RSS, ~10 s wall where tsc 5.8 takes 12.7 s and tsgo ~6-7 s. tttt is
+*slower than tsgo* here, and it still reports 693 wrong diagnostics (some are TS2589: runaway instantiation, whose
+cost may drop as they're fixed). Start with `./arenasites.sh -p thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json`
+and a per-file breakdown (which test files dominate). Known structural difference: tttt measures a base class's
+variances for the derived-to-base check (PgColumnBuilder -> ColumnBuilder<..., TTypeConfig & {dialect}>) where tsc
+relates identical members structurally and measures nothing.
+
 ## Memory (the weak side now: every corpus is faster than single-threaded tsgo, several use more memory)
 - **Arena by call site**: `./arenasites.sh -p <corpus>` (a `-DTTTT_ARENA_SITES` build in /tmp). zod after the
   `Prop`/`PropDecl` split (09-28, 431 -> 298 MB): instantiated `Prop`s (80 bytes, `instantiate_members`) 86 MB, types
