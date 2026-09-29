@@ -10423,7 +10423,7 @@ const baselines = {
     'duplicateOverloadInTypeAugmentation1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicatePackage': {
         errors: false,
@@ -29403,7 +29403,7 @@ const baselines = {
     'styledComponentsInstantiaionLimitNotReached': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'subSubClassCanAccessProtectedConstructor': {
         errors: true,

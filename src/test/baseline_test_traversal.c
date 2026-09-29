@@ -507,10 +507,16 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             if (my key.name_is_member_function && ctx->member_owner) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
-                if (prop && prop->decl->decl_span_count > 1 && (prop->flags & PROP_METHOD)) merged = prop;
+                if (prop && (prop->flags & PROP_METHOD)) {
+                    // (Also with the declarations of an interface of another program, the lib's: `interface Array<T>`)
+                    Ty const* type = prop_type(checker, prop);
+                    if (prop->decl->decl_span_count > 1 || ((type->flags & TYF_OBJECT) && ty_members(checker, type)->call_count > 1)) {
+                        merged = prop;
+                    }
+                }
             }
             VecSpan declarations = vec_span_init();
-            if (merged) {
+            if (merged && merged->decl->decl_span_count) {
                 for (u32 i = 0; i < merged->decl->decl_span_count; i++) vec_span_push(&declarations, merged->decl->decl_spans[i]);
             } else {
                 declarations = vec_span_clone(my declarations);
