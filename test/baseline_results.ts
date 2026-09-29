@@ -3953,7 +3953,7 @@ const baselines = {
     'classReferencedInContextualParameterWithinItsOwnBaseExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classSideInheritance1': {
         errors: true,
@@ -6703,7 +6703,7 @@ const baselines = {
     'contextuallyTypedParametersWithQuestionToken': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedSymbolNamedProperties': {
         errors: true,
@@ -10038,7 +10038,7 @@ const baselines = {
     'doYouNeedToChangeYourTargetLibraryES2023(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doesNotNarrowUnionOfConstructorsWithInstanceof': {
         errors: true,

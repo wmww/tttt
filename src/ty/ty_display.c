@@ -1506,7 +1506,15 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ) {
             param_d.syntactic_function = initializer->function;
         }
-        display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, param->type, param->optional);
+        // An optional parameter's type has undefined under strictNullChecks (tsc's getOptionalType in
+        // serializeTypeForDeclaration), which a reused annotation doesn't say
+        Ty const* shown = param->type;
+        if (param->optional && !param->rest && param->decl && param->decl->explicit_optional &&
+            compiler_options()->strict_null_checks && ty_without_undefined(me, shown) == shown
+        ) {
+            shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+        }
+        display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
