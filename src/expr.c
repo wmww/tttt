@@ -1929,6 +1929,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 ) {
                     names->function->first_super_call = me;
                 }
+            } else if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
+                // `new super()` isn't a super call: super is the base instance like in `super.x` (tsc's
+                // checkSuperExpression, isCallExpression)
+                callee->identifier.super_member = true;
             }
             expr_lookup_names(&my call->callable, names, errs);
             for_each (i, vec_expr, &my call->args) {

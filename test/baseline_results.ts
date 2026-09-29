@@ -29651,7 +29651,7 @@ const baselines = {
         types: true,
     },
     'superNewCall1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
