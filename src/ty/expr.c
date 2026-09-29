@@ -52,6 +52,13 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     if ((object->flags & TYF_NULLABLE) && (ty_non_nullable(me, object)->flags & (TYF_NULLABLE | TYF_NEVER))) {
         return ty_intrinsic(me, TY_ERROR);
     }
+    // A primitive's members are its apparent type's (`true.e` is reported against Boolean: the error type)
+    if (!(object->flags & (TYF_OBJECT | TYF_ANY | TYF_UNKNOWN | TYF_NEVER | TYF_NULLABLE | TYF_TYPE_PARAM)) &&
+        (object->kind == TY_LITERAL || (object->kind == TY_INTRINSIC &&
+            (object->flags & (TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL | TYF_BOOLEAN))))
+    ) {
+        object = ty_apparent_type(me, object);
+    }
     bool global_this = object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE &&
         object->declared.namespace_symbol && object->declared.namespace_symbol->is_global_this;
     if (!(object->flags & TYF_OBJECT) || (object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) {
