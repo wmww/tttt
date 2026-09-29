@@ -2005,7 +2005,8 @@ bool ty_prop_is_key(Checker* me, Prop const* prop) {
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) return unique;
-    if (!ty_private_name_class(me, name)) return ty_string_literal(me, atom_sv(name));
+    // (A private name's atom isn't the plain one of its text, also one no class declares, see ty_access_key_type())
+    if (!name->len || name->str[0] != '#' || name == checker_atom(me, atom_sv(name))) return ty_string_literal(me, atom_sv(name));
     // A string literal of the private atom (keyed like literal_type(): the atom is none of its)
     u64 key[4] = { KEY_LITERAL, VALUE_STRING, (u64)(uintptr_t)name, 0 };
     void const** slot = intern_slot(me, &my types, key, 4);

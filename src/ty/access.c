@@ -85,6 +85,14 @@ bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* ind
 
 // tsc's findApplicableIndexInfo over a list of index infos
 static IndexInfo const* find_applicable_index_info(Checker* me, IndexInfo const* infos, u32 count, Ty const* index) {
+    // A private name is no key of an index signature (tsc's checkPropertyAccessExpressionOrQualifiedName: not for a
+    // PrivateIdentifier); a string literal "#x" is
+    if (index->kind == TY_LITERAL && (index->flags & TYF_STRING_LITERAL) && index->literal.string &&
+        index->literal.string->len && index->literal.string->str[0] == '#' &&
+        index->literal.string != checker_atom(me, atom_sv(index->literal.string))
+    ) {
+        return nullptr;
+    }
     // The specific ones first. Several of them apply as one, whose value is the intersection of theirs
     IndexInfo const* found = nullptr;
     TyBuf values = {0};

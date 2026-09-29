@@ -4238,6 +4238,14 @@ Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
     if (access->private_class && access->private_class->symbol) {
         return ty_prop_name_literal(me, ty_private_name(me, access->private_class->symbol, access->prop.inner_span.sv));
     }
+    // (A `#x` no class around declares names nothing, not even what an index signature has)
+    Span name = access->prop.inner_span;
+    // (A lone `#` is TS1127's, and the members named so are too)
+    if (access->form == PROPERTY_EXPR_DOT && access->prop.tag == EXPR_LITERAL && span_valid(name) && name.sv.size > 1 &&
+        name.sv.buf[0] == '#'
+    ) {
+        return ty_prop_name_literal(me, ty_private_name(me, nullptr, name.sv));
+    }
     if (access->form == PROPERTY_EXPR_BRACKET && is_for_in_numeric_variable(me, &access->prop)) return ty_intrinsic(me, TY_NUMBER);
     return ty_element_index_type(me, &access->prop);
 }

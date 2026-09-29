@@ -25181,7 +25181,7 @@ const baselines = {
         types: true,
     },
     'parameterPropertyInConstructor3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36251,7 +36251,7 @@ const baselines = {
         types: true,
     },
     'privateNameAndIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
