@@ -760,6 +760,11 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
 void expr_drop(Expr* me) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
+            if (my missing_decorators) {
+                vec_expr_drop(my missing_decorators);
+                free(my missing_decorators);
+                my missing_decorators = nullptr;
+            }
             break;
 
         case EXPR_LITERAL:
@@ -1465,6 +1470,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
+            if (my missing_decorators) {
+                for_each (i, vec_expr, my missing_decorators) expr_lookup_names(i, names, nullptr);
+            }
+            break;
         case EXPR_LITERAL: break;
 
         case EXPR_IDENTIFIER:

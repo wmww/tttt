@@ -396,6 +396,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static void parse_computed_key_comma(Parser* p, Expr* key);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
+static void unhop_trivia(Parser* me);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_template_type(Parser* parent, TypeNode* ret);
 static bool parse_type_predicate(Parser* parent, FunctionImpl* ret);
@@ -3170,7 +3171,12 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     bool type_operator = (c == 'k' && starts_with_followed_by_word_break(&p, "keyof")) ||
         (c == 'i' && starts_with_followed_by_word_break(&p, "infer"));
     if (!type_operator) p.shared->disallow_conditional = false;
-    if ((c == '*' || c == '?' || c == '!' || c == 'f') && parse_jsdoc_prefix_type(&p, ret)) {
+    bool readonly_operator_operand = false;
+    if (span_valid(readonly_span) && c == 'r' && starts_with_followed_by_word_break(&p, "readonly")) {
+        // `readonly readonly T[]`: the operand is a type operator, no array literal (tsc's parseTypeOperator)
+        expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
+        readonly_operator_operand = true;
+    } else if ((c == '*' || c == '?' || c == '!' || c == 'f') && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_type_keyword(&p, "any")) {
         *ret = type_any;
     } else if (hop_type_keyword(&p, "unknown")) {
@@ -3287,7 +3293,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     ret->from_jsdoc = false;
     ret->synthesized = false;
 
-    if (span_valid(readonly_span)) {
+    if (span_valid(readonly_span) && !readonly_operator_operand) {
         // `readonly` applies to the whole postfix chain: `readonly T[][]` is a readonly array of `T[]`
         while (parse_type_right_side(&p, TYPE_PRECEDENCE_OPERATOR, left_start, ret)) {}
         if (ret->tag == TYPE_ARRAY) {
@@ -8537,7 +8543,10 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     Parser generic_p = parser(&p);
     // Never in JavaScript files, to avoid the ambiguity with `<` and `>` (tsc's parseTypeArgumentsInExpression)
-    if (c == '<' && !p.shared->source->is_js && parse_generic_params(&generic_p, true, &parsed.generic_params)) {
+    // (A `typeof` type's type arguments are on its line: tsc's parseTypeQuery)
+    if (c == '<' && !p.shared->source->is_js && !(ctx.entity_name && hit_newline) &&
+        parse_generic_params(&generic_p, true, &parsed.generic_params)
+    ) {
         bool success = false;
         // (A decorator's type arguments are an expression's: `@g<T> class C {}` is `@g` and `<T> class C {}`)
         if (ctx.reject_operators && !ctx.decorator) {
@@ -8580,7 +8589,10 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         parse_fail(&generic_p);
     }
 
-    if (!ctx.reject_operators && !hit_newline) {
+    // (A left-hand side expression, a decorator or heritage element, still takes a non-null `!`: tsc's
+    // parseMemberExpressionRest)
+    bool non_null_only = ctx.reject_operators && !ctx.entity_name && *p.pos == '!' && p.pos[1] != '=';
+    if ((!ctx.reject_operators || non_null_only) && !hit_newline) {
         if (parse_right_unary_op(&p, &parsed.unary) &&
             // A postfix `++`/`--` takes a left-hand side expression (tsc's parseUpdateExpression): not in the operand
             // of a prefix one, `--a--`, and not after an operator expression, `--a --`
@@ -9427,6 +9439,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl)) {
         parsed.class_decl.is_expression = true;
         *ret = expr_class_decl(span_from(a), c_new(ClassDecl, parsed.class_decl));
+    } else if (c == '@') {
+        // Decorators on anything but a class expression (tsc's parseDecoratedExpression): a missing declaration after
+        // them, "Expression expected" where it would be
+        VecExpr decorators;
+        parse_decorators(&p, &decorators);
+        unhop_trivia(&p);
+        parse_error(&p, span_from_pos(&p), 1109, "Expression expected.");
+        *ret = expr_implicit_any(span_from_pos(&p));
+        ret->missing_decorators = c_new(VecExpr, decorators); // (Not `missing`: no expression to the baselines)
+        return parse_success(&p); // (Its span is where it's missing)
     } else if (c == 'n' && parse_new_target(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "new")) {
         hop_whitespace(&p);
@@ -11306,7 +11328,10 @@ static void report_missing_semicolon_after_identifier(Parser* p, Span name) {
 // statement (`interface I {};` is two statements)
 static bool statement_takes_semicolon(Statement const* me) {
     switch (my tag) {
-        case STATEMENT_EXPR: case STATEMENT_EXPORT_DEFAULT_EXPR: case STATEMENT_RETURN_EXPR: case STATEMENT_THROW_EXPR:
+        case STATEMENT_EXPR:
+            // (Not decorators on no declaration: tsc's MissingDeclaration)
+            return !(my expr.tag == EXPR_IMPLICIT_ANY && my expr.missing_decorators);
+        case STATEMENT_EXPORT_DEFAULT_EXPR: case STATEMENT_RETURN_EXPR: case STATEMENT_THROW_EXPR:
         case STATEMENT_BREAK: case STATEMENT_CONTINUE: case STATEMENT_IMPORT_EXPORT: case STATEMENT_DECL_VARIABLE:
         case STATEMENT_DECL_TYPE:
             return true;
@@ -12424,6 +12449,17 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     } else if (c == 't' && parse_throw(&p, &ret->expr)) {
         ret->tag = STATEMENT_THROW_EXPR;
         ret->expr_jsdoc_type = nullptr;
+    } else if (c == '@') {
+        // Decorators on no declaration (tsc's parseDeclarationWorker: a MissingDeclaration, an expression statement of
+        // the missing expression that keeps them here)
+        VecExpr decorators;
+        parse_decorators(&p, &decorators);
+        unhop_trivia(&p);
+        parse_error(&p, span_from_pos(&p), 1146, "Declaration expected.");
+        ret->tag = STATEMENT_EXPR;
+        ret->expr_jsdoc_type = nullptr;
+        ret->expr = expr_implicit_any(span_from_pos(&p));
+        ret->expr.missing_decorators = c_new(VecExpr, decorators);
     } else if (parse_expr(&p, expr_ctx_null, &ret->expr)) {
         ret->tag = STATEMENT_EXPR;
         ret->expr_jsdoc_type = nullptr;

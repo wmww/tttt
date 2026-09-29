@@ -160,6 +160,9 @@ typedef struct Expr {
         PrivateNameExpr* private_name;
         JsxElement* jsx;
         VecJsxAttribute jsx_attributes;
+        // A missing EXPR_IMPLICIT_ANY after decorators (tsc's MissingDeclaration, `@dec () => {}`): the decorators
+        // (owned, may be null), only resolved (silently) for the baselines
+        VecExpr* missing_decorators;
     };
     LazyType lazy_type;
 } Expr;

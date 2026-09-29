@@ -447,7 +447,7 @@ void initialized_binding_compile_test_info(
     BaselineTestCase* ctx
 ) {
     binding_compile_test_info(&my binding, ctx);
-    if (my value.tag != EXPR_IMPLICIT_ANY || my value.missing) {
+    if (my value.tag != EXPR_IMPLICIT_ANY || my value.missing || my value.missing_decorators) {
         Expr const* literal = ctx->variable_literal;
         Span literal_name = ctx->variable_literal_name;
         if (my value.tag == EXPR_OBJECT && my binding.tag == BINDING_IDENTIFIER) {
@@ -2092,6 +2092,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 }
 
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    if (my tag == EXPR_IMPLICIT_ANY && my missing_decorators) { // (tsc's MissingDeclaration: no expression of its own)
+        for_each (i, vec_expr, my missing_decorators) expr_compile_test_info(i, ctx);
+        return;
+    }
     if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
         // `null` itself has no line, `(null)` does
         const char* start = span_start_ptr(my inner_span);

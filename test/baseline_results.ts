@@ -23251,8 +23251,8 @@ const baselines = {
         types: true,
     },
     'newLineInTypeofInstantiation': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'newMap': {
@@ -38501,7 +38501,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnArrowFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38511,7 +38511,7 @@ const baselines = {
         types: false,
     },
     'decoratorOnEnum2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38521,7 +38521,7 @@ const baselines = {
         types: false,
     },
     'decoratorOnFunctionExpression': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -46576,22 +46576,22 @@ const baselines = {
         types: true,
     },
     'esDecorators-decoratorExpression.2(experimentaldecorators=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-decoratorExpression.2(experimentaldecorators=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-decoratorExpression.3(experimentaldecorators=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'esDecorators-decoratorExpression.3(experimentaldecorators=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65758,7 +65758,7 @@ const baselines = {
     'readonlyArraysAndTuples': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'readonlyArraysAndTuples2': {
         errors: true,
