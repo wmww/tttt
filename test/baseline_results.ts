@@ -16313,52 +16313,52 @@ const baselines = {
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=false,module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=amd)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=commonjs)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=es2020)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefault(esmoduleinterop=true,module=system)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpersWithImportOrExportDefaultNoTslib.1(esmoduleinterop=false,module=amd)': {
         errors: true,
@@ -20298,7 +20298,7 @@ const baselines = {
     'jsxViaImport.2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxViaImport': {
         errors: true,
@@ -23213,7 +23213,7 @@ const baselines = {
     'newAbstractInstance2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'newArrays': {
         errors: true,
