@@ -91,9 +91,22 @@ lost notNull), a base class's defaults instantiated with the arguments before th
 types for arguments of a union-of-tuples rest parameter, and object literal types instantiated by mappers their
 members don't mention staying themselves: every generic query-builder step had made equal copies of the tables'
 columns literals and everything built on them, 5M instantiations for one `.rightJoin()` (tsc: 37k at most per node),
-so TS2589 x59 and 257 G -> 15 G instructions. Left in type-tests (48 at that point): `Expect<Equal<>>` mismatches
-(TS2344 x31: `Omit<any, any>` for select results, `.$dynamic()` query builders inferred as their constraint, pg/with.ts
-subquery selections) and TS2345 on set operators / `.where()` of dynamic builders.
+so TS2589 x59 and 257 G -> 15 G instructions. Then an inferred type argument checked against its constraint with
+itself as `this`, and an instantiable type's apparent type with itself as its class constraint's `this`
+(`qb.leftJoin(a).leftJoin(b)` on `T extends PgSelect`). Left in type-tests (24):
+- mysql/singlestore select.ts + set-operators.ts (TS2345 + the TS2344 after it, 16): `$dynamic()` builders aren't
+  assignable to `MySqlSelect` even with `this` = the builder, because tttt measures every type parameter of
+  `MySqlSelectBase` (and SingleStore's) invariant, where tsc gets covariant for most (`VARIANCES=1 ./tscinstcount.js`;
+  `TTTT_DUMP_VARIANCES=1`). pg/gel's builders measure fine; the mysql ones have a `TPreparedQueryHKT` parameter and
+  `MySqlSelectPrepare<this>` = `PreparedQueryKind<..., true>` (`Equal<TAssume, true> extends true ? Assume<(TKind &
+  { config })['type'], MySqlPreparedQuery<TConfig>> : ...`). The failing leaves in `TTTT_DEBUG_RELATE_NESTED` during
+  the measurement are `{ execute: sub-T["_"]["result"]; iterator: sub-T["_"]["result"][number] } ->
+  MySqlPreparedQueryConfig` and `sub-T["_"]["preparedQueryHKT"]["type"]` (constraint unknown) against
+  `MySqlPreparedQuery<...>`: start there. Probe project: a p.ts with `declare function withFriends<T extends
+  MySqlSelect>(qb: T): T; withFriends<typeof qb>(qb)` over `db.select().from(users).$dynamic()`.
+- mysql/generated-columns.ts 102/122 (TS2345): `drizzle(pool, { schema: { users }, mode })` with an `any` client.
+- pg/with.ts 215-230 (6): `WithSubqueryWithSelection` of a `$with(...).as(select ... innerJoin)` selection, the mapped
+  `{ [K in ... as ...] }` over the joins tuple.
 
 `src/` went 428 -> 14 the same day (probes `test/probes/plan19/drizzle/`, one commit each, with the type-tests agent's
 fixes merged in between): keyof/Partial skipping private members, a type assertion in a mutable location keeping

@@ -27,3 +27,10 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
 - Symbols: a property of `Readonly<LooseRequired<T>> & {...}` (vue's DefineProps) lists its declaration once where tsc
   lists it twice (the intersection modifiers type `T & Required<T>` of LooseRequired); `this` of a ThisType marker
   prints no Symbol line (probes in `plan19/vue/`).
+- (drizzle type-tests session) The union-of-tuples rest argument probe `plan19/drizzle/rest_tuple_union_context.ts`
+  failed only through the CLI (`tttt file.ts`, `./run.sh`), never in the test harness, before its fix: the harness
+  types a call argument with its contextual type some other way. Find out why the harness and the CLI differ there
+  (the harness may hide more CLI-only bugs).
+- Each checker (`--checkers 4`) measures variances and builds relation caches on its own, and a TS2589 count is charged
+  to whichever node first needs them; tsc pays once. Harmless since drizzle's runaways are fixed, but a TS2589 near
+  the 5M limit could depend on the checker count.
