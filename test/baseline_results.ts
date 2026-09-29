@@ -782,8 +782,8 @@ const baselines = {
     },
     'ambiguousGenericAssertion1': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'ambiguousOverload': {
         errors: true,

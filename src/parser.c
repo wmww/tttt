@@ -5766,6 +5766,9 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
 
 // committed: arrow_function_tristate() said TRUE, so this parses as an arrow function with errors rather than failing
 static bool parse_arrow_function(Parser* parent, ExprCtx ctx, FunctionFlags flags, bool committed, FunctionImpl* ret) {
+    // Only an assignment expression is an arrow function (tsc's parseAssignmentExpressionOrHigher): not the operand of
+    // a binary or unary operator, `b > (x: T) => x` is `b > (x` missing its `)`
+    if (ctx.min_precedence >= ternary_precedence) return false;
     FunctionCtx saved = function_ctx_enter(parent, flags);
     bool success = parse_arrow_function_inner(parent, ctx, committed, ret);
     function_ctx_leave(parent, saved);
@@ -7760,6 +7763,8 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     // The operand of a prefix `++`/`--` is a left-hand side expression, no unary one (tsc's parseUpdateExpression):
     // `++-x`, `++await x` are missing it
     if (op == UNARY_OP_LEFT_PLUS_PLUS || op == UNARY_OP_LEFT_MINUS_MINUS) ctx.min_precedence++;
+    // (A yield's operand is an assignment expression, arrow functions included: tsc's parseYieldExpression)
+    if (op == UNARY_OP_YIELD || op == UNARY_OP_YIELD_STAR) ctx.min_precedence = ternary_precedence - 1;
     bool bare_yield = false;
     if (op == UNARY_OP_YIELD) {
         // tsc's parseYieldExpression(): an operand if one starts on the same line (isStartOfExpression)
@@ -9365,7 +9370,8 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         bool must_be_unary = ctx.min_precedence >= unary_op_get_precedence(UNARY_OP_LEFT_BANG);
         parse_jsx_element(&p, true, nullptr, must_be_unary, nullptr, ret);
         inner_span_set = true;
-    } else if (!p.shared->source->is_jsx && hop_char(&p, '<')) {
+    } else if (!p.shared->source->is_jsx && p.pos[1] != '<' && hop_char(&p, '<')) {
+        // (`<<` is a shift operator token to tsc's scanner, never the start of a type assertion)
         hop_whitespace(&p);
 
         TypeNode t;
