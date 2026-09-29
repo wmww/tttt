@@ -62,7 +62,11 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. Y's cycle also goes through the eager intersection
    reduction (tsc: getReducedType in getBaseTypes), which runs under a barrier in tttt.
 3. **Accessors / object literal methods** (old item 5): TS7023 tsc reports while printing a type whose return type is
-   in flight (thisInObjectLiterals and friends). Untouched.
+   in flight (thisInObjectLiterals and friends). Untouched. The mechanism: checking a return expression prints a type
+   in an error message (or relates structurally in an assertion) that needs the function's own return type, which is
+   in flight; tttt's inference and relations don't build messages there, so they never re-enter. Tests:
+   thisInObjectLiterals, accessorInferredReturnTypeErrorInReturnStatement,
+   checkingObjectWithThisInNamePositionNoCrash, trivialSubtypeReductionNoStructuralCheck.
 4. thisConditionalOnMethodReturnOfGenericInstance (spurious TS2417) is unchanged by the signature push; not
    investigated further.
 5. `ty_node_reaches_alias_in_flight`/`members_judgeable` stay: they keep the eager intersection reduction from caching

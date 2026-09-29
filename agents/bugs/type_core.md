@@ -39,6 +39,16 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   types) and as `k3(y => () => ...)` being `boolean` where tsc fixes T without candidates (`unknown`): a plan-sized
   port of leaf-wise contextual instantiation, together with plan 37's "fixing without candidates".
 - Reverse mapped types refuse generic intersection sources (`T & {...}`), which tsc accepts (tttt's are eager).
+- Laziness artifacts of tsc's inference (triage 2026-09-29, both need lazy return/member types to reproduce):
+  genericCallWithGenericSignatureArguments3's `(n: Object) => 1` keeps its literal because tsc resolves the inner
+  arrow's return type only after U's first candidate is that arrow's own function type: its contextual signature is
+  then its own (`contextualSignature === getSignatureFromDeclaration(func)` in getReturnTypeFromBody, contextual type
+  = the return type itself). mappedTypeInferenceErrors infers `C = { bar: unknown; baz: unknown }` where tttt has
+  `bar: number`: tsc's reverse mapped member types resolve lazily, while the method body's `this.bar` is being checked.
+- Return-type inference with Pick: hacks.md `infer_from_objects()` (twiceNestedKeyofIndexInference's K2 becomes
+  `never` in `return_inference_mapper()` once K gets the keys; how tsc's returnMapper avoids that is unknown).
+  indexedAccessRelation still differs in its elaboration (tsc: `Type 'Foo' is not assignable to type 'S["a"] & T'`,
+  the constraint of T) and in the union order of `keyof S | "a"`.
 
 ## Relations, instantiation, reduction
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
@@ -141,7 +151,8 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   getCandidateDiscriminantPropertyAccess on binding elements) isn't implemented: 20 spurious TS2339 (its TS7022s are
   plan 39).
 - The JSX attribute types (`KEY_JSX_ATTRIBUTE`) and an IIFE parameter's contextual type depend on check order (the
-  last check wins).
+  last check wins). (An IIFE's parameters are pushed from `ty_quick_expr_type()` too now: before, a variable
+  referenced above its IIFE initializer typed the function without them.)
 - Destructuring assignment targets are checked as a whole, not property by property (for-of47/48: tsc's
   checkDestructuringAssignment reports at the default). The `{ a = dflt }` default of a shorthand assignment pattern is
   resolved but not checked (`ObjectExprItem.shorthand_default`).

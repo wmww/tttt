@@ -154,6 +154,12 @@ Not done (each tried, measured, left):
 3. JSX elements (`ty_resolve_jsx_element`) aren't remembered per node: resolved per request as before. Untried.
 4. (Done in a follow-up commit: a call's memo in `check_with()` is no longer keyed by contextual type,
    `kind_uses_context()`; nothing changed, -0.0..0.2% instructions.)
+6. **SkipGenericFunctions for generic functions nested in literal arguments** (`Arg.nested_generic`) isn't done: leaving
+   them out of the first round lost zod's `pick([z.object, ...])` and xstate inferences, because tttt marks literals
+   nested_generic where tsc has no contextual signature to skip for (`infer_type_arguments()`). tsc skips a generic
+   function only where isContextSensitive-style checks find a contextual signature (checkFunctionExpressionOrObject
+   LiteralMethod under CheckMode.SkipGenericFunctions returns anyFunctionType); a port has to mark from the contextual
+   type, not the syntax. (Triage 2026-09-29, routed here unstarted.)
 5. hacks.md `first_unfit_skipped_literal` named resolve-once as its real fix; it isn't: that is about a literal
    argument's member memos under another contextual type (side-effect-free speculative checks), not calls.
 
