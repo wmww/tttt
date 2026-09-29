@@ -38506,7 +38506,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnEnum': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38516,7 +38516,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnFunctionDeclaration': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -38541,22 +38541,22 @@ const baselines = {
         types: true,
     },
     'decoratorOnInterface': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnInternalModule': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnTypeAlias': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'decoratorOnVar': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
