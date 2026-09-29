@@ -306,6 +306,8 @@ static bool source_declares_ambient_module(SourceFile const* source, csview name
     return false;
 }
 
+static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr);
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     ModuleResolver* resolver = program_resolver(me);
@@ -342,6 +344,15 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         resolved_module_drop(&resolved);
         return;
     }
+    bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source(me, cstr_sv(&resolved.path));
+    program_load_resolved(me, source, ref, &resolved);
+    if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
+    resolved_module_drop(&resolved);
+}
+
+// (resolved stays the caller's)
+static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr) {
+    ResolvedModule const resolved = *resolved_ptr;
     switch (resolved.kind) {
         case RESOLVED_TS:
         case RESOLVED_DTS:
@@ -399,7 +410,6 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
             }
             break;
     }
-    resolved_module_drop(&resolved);
 }
 
 // `/// <reference path="a.ts" />`: the file itself, relative to the one with the directive

@@ -139,6 +139,13 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         }
         out_lit(d, ")");
         cstr_drop(&module_name);
+        // (tsc's name of a file an import found is its absolute path, `/.src/` included where the harness writes the
+        // underline: see SourceFile.loaded_by_import)
+        SourceFile const* file = chain.items[0]->module ? chain.items[0]->module->file : nullptr;
+        csview path = file ? source_file_display_path(file) : c_sv("");
+        if (d.underline && file && file->loaded_by_import && path.size && path.buf[0] != '/') {
+            cstr_append(d.underline, d.reused ? "      " : "^^^^^^");
+        }
         start = 1;
     }
     cstr text = cstr_init();

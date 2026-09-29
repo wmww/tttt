@@ -76,6 +76,10 @@ typedef struct SourceFile {
     Block ast;
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
+    // First loaded because an import (not a module augmentation, not a root or `/// <reference path>`) resolved to it:
+    // tsc names such a file by its absolute path, which the harness writes before it strips its `/.src/` (it shows in
+    // the types baseline's underlines of `typeof import("m")`)
+    bool loaded_by_import;
     u32 program_order; // Its index in the program's files (tsc's host.getSourceFiles()), set once loaded
     bool is_module;
     // The first statement that makes this file a module (tsc's externalModuleIndicator, as getErrorSpanForNode spans it:
