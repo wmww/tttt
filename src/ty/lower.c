@@ -2214,7 +2214,12 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
     if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
         Members const* members = ty_members(me, apparent);
         for (u32 i = 0; i < members->prop_count; i++) {
-            if (!ty_is_spreadable_prop(me, members->props[i])) ty_buf_push(&keys, ty_prop_name_literal(me, members->props[i]->name));
+            Prop const* prop = members->props[i];
+            if (ty_is_spreadable_prop(me, prop)) continue;
+            // (A private or protected member, or a `#x`, has no key to omit: keyof lacks it already. tsc's
+            // getLiteralTypeFromProperty gives never)
+            if ((prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) || ty_private_name_class(me, prop->name)) continue;
+            ty_buf_push(&keys, ty_prop_name_literal(me, prop->name));
         }
     }
     Ty const* omitted = keys.len ? ty_union(me, keys.data, keys.len, nullptr, (TyList){0}) : nullptr;

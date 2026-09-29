@@ -1517,9 +1517,15 @@ static void check_access(
     // An object literal of a JavaScript file is open-ended (tsc's isJSLiteralType)
     if (ty_is_js_literal_type(me, object)) return;
     if (object->flags & TYF_OBJECT) {
+        // HACK: a generic mapped type whose members expand_mapped() couldn't find yet (the key type's lower bound or
+        // the modifiers type's apparent properties: a union constraint, `Pick<T, K>`) isn't checked. tsc reports what
+        // its resolveMappedTypeMembers doesn't find; the expanded ones (`Omit<this, K>`, `Mutable<T>`) are checked
         Members const* members = ty_members(me, object);
-        // HACK: a mapped type over something generic (`Pick<T, K>`) only knows its members through its constraint
-        if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
+        if (members->mapped && !members->prop_count && !members->index_count &&
+            (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+        ) {
+            return;
+        }
         if (ty_has_unresolved_base(me, object)) return;
     }
     if (object->flags & TYF_NULLABLE) {

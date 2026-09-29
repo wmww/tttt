@@ -2020,7 +2020,7 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
     }
 }
 
-static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members);
+static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members, TyList parts);
 
 // `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
 // constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
@@ -2028,11 +2028,14 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
 static Members const* expand_generic_homomorphic(Checker* me, Members const* members) {
     MappedInfo const* mapped = members->mapped;
     if (!mapped->keyof_constraint || mapped->name_type || !mapped->modifiers_type) return members;
-    if (mapped->modifiers_type->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members);
-    Ty const* apparent = ty_apparent_type(me, mapped->modifiers_type);
-    if (apparent == mapped->modifiers_type || !(apparent->flags & TYF_OBJECT) || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-        return members;
+    if (mapped->modifiers_type->kind == TY_INTERSECTION) {
+        return expand_generic_intersection_homomorphic(me, members, mapped->modifiers_type->composite.types);
     }
+    Ty const* apparent = ty_apparent_type(me, mapped->modifiers_type);
+    if (apparent == mapped->modifiers_type || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return members;
+    // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
+    if (apparent->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
+    if (!(apparent->flags & TYF_OBJECT)) return members;
     Members const* source = ty_members(me, apparent);
     if (source->mapped || (!source->prop_count && !source->index_count)) return members;
     Prop* template = prop_new(me);
@@ -2093,9 +2096,8 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
 // The same over a generic intersection (`flatten<A<T> & B<T>>`): a property per property some part is known to have (a
 // generic mapped part has those of the lower bound of its keys), optional if it is in every part that has it (tsc's
 // resolveMappedTypeMembers over getPropertiesOfType of the intersection). No index signatures
-static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members) {
+static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members, TyList parts) {
     MappedInfo const* mapped = members->mapped;
-    TyList parts = mapped->modifiers_type->composite.types;
     Prop* template = nullptr;
     MembersBuilder builder = { .mapped = mapped };
     for (u32 p = 0; p < parts.len; p++) {
