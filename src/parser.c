@@ -4832,7 +4832,7 @@ static inline bool expect_type(Parser* parent, TypePrecedence min_precedence, Ty
     if (parse_type(parent, min_precedence, ret)) {
         return true;
     } else {
-        parse_error(parent, span_from_token(parent), 1110, "Type expected.");
+        parse_error(parent, span_from_token_or_eof(parent), 1110, "Type expected.");
         *ret = (TypeNode){
             .tag = TYPE_ANY,
             .any.unkown_symbol_span = span_from_pos(parent),
@@ -5062,13 +5062,11 @@ static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
     }
     hop_whitespace(&p);
 
+    // (tsc's parseTypeAliasDeclaration: parseExpected('='), then a type whatever)
     TypeNode type;
-    if (expect_char(&p, '=')) {
-        hop_whitespace(&p);
-        expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
-    } else {
-        type = type_any;
-    }
+    expect_char(&p, '=');
+    hop_whitespace(&p);
+    expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
 
     *ret = (TypeDecl) {
         .name = name,

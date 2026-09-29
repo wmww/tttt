@@ -5141,7 +5141,7 @@ const baselines = {
         types: true,
     },
     'commonJsExportTypeDeclarationError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
