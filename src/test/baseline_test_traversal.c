@@ -1284,13 +1284,14 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         SymbolDecl const* assignment = variable ? nullptr : symbol_find_decl(js_class, SYMBOL_DECL_ASSIGNMENT);
         Expr const* assigned = assignment ? assignment->node : nullptr;
         csview class_name;
-        bool assigned_class = assigned && assigned->tag == EXPR_FUNCTION && ty_js_assigned_class_name(js_class, &class_name);
+        bool named = ty_js_assigned_class_name(js_class, &class_name);
+        bool assigned_class = named && assigned && assigned->tag == EXPR_FUNCTION;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = init ? vec_span_single(init->outer_span) :
                 assigned_class ? vec_span_single(assigned->function->full_span) :
                 own ? vec_span_single(my this_function->full_span) : declaration_get_spans(js_class),
             .span = my name,
-            .text = assigned_class ? cstr_from_sv(class_name) : symbol_text(ctx, js_class),
+            .text = named ? cstr_from_sv(class_name) : symbol_text(ctx, js_class),
         });
         return;
     }

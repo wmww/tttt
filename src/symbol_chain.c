@@ -570,10 +570,9 @@ void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* c
     symbol_chain_append_entity(out, enclosing, chain, false);
 }
 
-// A member only `this.x = v` declares, of a JavaScript constructor function assigned to a property (`ns.F = function
-// () { this.x = v }`): tsc declares it on the function expression's own symbol, which has no parent
+// A member only `this.x = v` declares, of a JavaScript constructor function assigned to a variable or property (`ns.F =
+// function G() { this.x = v }`): tsc declares it on the function expression's own symbol (G), which has no parent
 static bool is_js_this_member_of_assigned_class(Symbol const* container, Symbol const* member, csview* name) {
-    if (!symbol_find_decl(container, SYMBOL_DECL_ASSIGNMENT) || symbol_find_decl(container, SYMBOL_DECL_VARIABLE)) return false;
     if (!member->decl_count || !ty_js_assigned_class_name(container, name)) return false;
     for (u32 i = 0; i < member->decl_count; i++) {
         if (member->decls[i].kind != SYMBOL_DECL_ASSIGNMENT) return false;
