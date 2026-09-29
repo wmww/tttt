@@ -4132,9 +4132,14 @@ static Ternary structured_related_members(
                     related = is_related_to_side(me, st, constraint, target, false, 2);
                     if (related) return related;
                 }
-                // (Only with a base constraint, like tsc's hasNonCircularBaseConstraint gate)
+                // (Only with a base constraint, like tsc's hasNonCircularBaseConstraint gate.) Not while measuring
+                // variances, where relating it walked react-hook-form's Path types through marker instantiations
+                // (+12% instructions on bulletproof-react): the measurement is unreliable instead, so type arguments
+                // it would fail are compared structurally
                 Ty const* immediate = constraint ? distributive_constraint_as(me, source, 0, true) : nullptr;
-                if (immediate && immediate != constraint) {
+                if (immediate && immediate != constraint && my variance_depth) {
+                    report_variance(me, source, VARIANCE_UNRELIABLE);
+                } else if (immediate && immediate != constraint) {
                     related = is_related_to_side(me, st, immediate, target, false, 2);
                     if (related) return related;
                 }

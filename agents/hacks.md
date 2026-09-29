@@ -320,7 +320,8 @@ src` finds the code-side markers; every significant one has an entry here.
   `distributive_constraint()` its base constraint. The relation tries the base one first, then the immediate one
   (`distributive_constraint_as(.., true)`, cached per conditional) only when a base one exists (a stand-in for tsc's
   hasNonCircularBaseConstraint: without that gate react-hook-form's Path types in bulletproof-react hit TS2589), and
-  reports through the immediate one like tsc. `base_constraint()` and the other users keep the base version: the
+  reports through the immediate one like tsc. Not while measuring variances (it walked react-hook-form's Path types
+  through marker instantiations, +12% instructions on bulletproof-react): the measurement is reported unreliable instead. `base_constraint()` and the other users keep the base version: the
   immediate one there stops at unions of conditional types (flow's constraint substitution showed them). Real fix:
   tsc's constraint functions (getConstraintOfType vs getBaseConstraintOfType) as two separate, cached functions.
 - `structured_related_members` TY_CONDITIONAL source (HACK): the first try of the true/false branches pushes the
