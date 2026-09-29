@@ -7379,7 +7379,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                         } else if (span_equals(name_span, "let") || span_equals(name_span, "var")) {
                             if (vec_spanned_modifier_size(&modifiers.spanned)) {
                                 // If we have modifiers
-                                parse_error(&p, name_span, 1440, "Variable declaration not allowed at this  location.");
+                                parse_error(&p, name_span, 1440, "Variable declaration not allowed at this location.");
                             } else {
                                 modifier_list_drop(&modifiers);
                                 return parse_fail(&p);
