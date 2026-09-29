@@ -2300,7 +2300,13 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
             break;
         }
 
-        ignore( *p.pos == '>' || expect_char(&p, ',') );
+        // (tsc's isListTerminator for type parameters: tokens other than `>` end the list for better recovery, the
+        // `>` is what's missing then)
+        Tok next = tok_peek(&p);
+        if (*p.pos == '>' || *p.pos == '(' || *p.pos == '{' || tok_is(next, "extends") || tok_is(next, "implements")) {
+            break;
+        }
+        expect_char(&p, ',');
         hop_whitespace(&p);
     }
 

@@ -1471,7 +1471,7 @@ const baselines = {
         types: true,
     },
     'assertInWrapSomeTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24461,7 +24461,7 @@ const baselines = {
         types: true,
     },
     'objectLiteralMemberWithoutBlock1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
