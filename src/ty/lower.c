@@ -1149,7 +1149,21 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
             if (csview_equals(symbol->name, "export=")) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
             if (annotated_expando_type(me, symbol)) return annotated_expando_type(me, symbol);
-            return ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
+            {
+                Ty const* type = ty_widened_objects(me, assignment_declaration_type(me, symbol, decl));
+                // Nothing but null and undefined is any in JavaScript (tsc's getWidenedTypeForAssignmentDeclaration),
+                // except `= undefined`, an alias of undefined to tsc (isAliasableExpression)
+                Expr const* value = decl->node;
+                SourceFile const* file = decl->full.source;
+                bool undefined_alias = value->tag == EXPR_LITERAL && value->literal.tag == VALUE_UNDEFINED;
+                if (file && file->is_js && !undefined_alias && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY &&
+                    ty_non_nullable(me, type)->flags & TYF_NEVER
+                ) {
+                    *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = symbol;
+                    return ty_intrinsic(me, TY_ANY);
+                }
+                return type;
+            }
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
         case SYMBOL_DECL_CLASS: {
