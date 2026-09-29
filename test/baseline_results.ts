@@ -6191,7 +6191,7 @@ const baselines = {
         types: true,
     },
     'contextualTupleTypeParameterReadonly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15256,7 +15256,7 @@ const baselines = {
         types: true,
     },
     'genericRestTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20413,7 +20413,7 @@ const baselines = {
     'largeTupleTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lastPropertyInLiteralWins': {
         errors: true,

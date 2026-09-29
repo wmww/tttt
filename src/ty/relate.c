@@ -1408,6 +1408,15 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
     return cstr_from_sv(atom_sv(sig->params[index].name));
 }
 
+// The parameters from `i` on as one type (tsc's getRestTypeAtPosition: a rest parameter there as it is, else the tuple
+// of them), any if that's an array of any (getRestOrAnyTypeAtPosition)
+static Ty const* rest_or_any_type_at(Checker* me, Signature const* sig, u32 i) {
+    Ty const* rest = sig->param_count && sig->params[sig->param_count - 1].rest && i + 1 == sig->param_count ?
+        sig->params[i].type : ty_signature_params_tuple(me, sig, i, nullptr);
+    Ty const* element = ty_is_array(me, rest) ? ty_reference_args(me, rest).data[0] : nullptr;
+    return element && (element->flags & TYF_ANY) ? ty_intrinsic(me, TY_ANY) : rest;
+}
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
@@ -1458,11 +1467,20 @@ static Ternary compare_signatures(
     }
     u32 source_count = ty_signature_param_count(source);
     u32 count = source_count > target_count ? source_count : target_count;
+    // With a rest parameter that isn't an array on either side, the positions both have, the last of them relating
+    // what's left of each as a whole (tsc's compareSignaturesRelated: restIndex, getRestOrAnyTypeAtPosition)
+    // (Only for a rest that isn't a tuple either: tsc's getEffectiveRestType of a tuple is its rest element's array.
+    // HACK: a variadic tuple (`[a, ...T]`) should count too, it still relates position by position here)
+    Ty const* whole_rest = non_array_rest_type(me, source);
+    if (!whole_rest || ty_tuple_shape(whole_rest)) whole_rest = non_array_rest_type(me, target);
+    if (whole_rest && ty_tuple_shape(whole_rest)) whole_rest = nullptr;
+    if (whole_rest) count = source_count < target_count ? source_count : target_count;
     for (u32 i = 0; i < count; i++) {
         // (A position past a rest `[]` has no type: tsc's tryGetTypeAtPosition)
         if (past_empty_rest(source, i) || past_empty_rest(target, i)) break;
-        Ty const* source_type = param_type_at(me, source, i);
-        Ty const* target_type = param_type_at(me, target, i);
+        bool rest_index = whole_rest && i + 1 == count;
+        Ty const* source_type = rest_index ? rest_or_any_type_at(me, source, i) : param_type_at(me, source, i);
+        Ty const* target_type = rest_index ? rest_or_any_type_at(me, target, i) : param_type_at(me, target, i);
         if (!source_type || !target_type) break;
         if (source_type == target_type) continue;
         // Two callbacks: their parameters are output positions, so only the signatures are compared, the other way

@@ -1176,7 +1176,8 @@ static void assign_contextual_signature_as(
         Ty const* type = signature_type_at(me, sig, at, i->rest);
         if (!type) continue;
         // (A rest parameter's contextual type is array-like already when it's the rest parameter's, a union of tuples too)
-        if (i->rest && !ty_is_array(me, type) && !ty_tuple_shape(type) && !(type->flags & TYF_TYPE_PARAM) &&
+        // (Nor a generic one, a conditional type that makes a tuple: tsc's getRestTypeAtPosition takes it as it is)
+        if (i->rest && !ty_is_array(me, type) && !ty_tuple_shape(type) && !(type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) &&
             !(type->kind == TY_UNION && !(type->flags & TYF_ANY) && ty_extends_array(me, type))
         ) {
             type = ty_array(me, type, false);
