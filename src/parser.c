@@ -3950,11 +3950,22 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     }
     // `@this {T}`: the function's `this` parameter (tsc's getJSDocThisTag in getSignatureFromDeclaration and
     // getTypeForThisExpressionFromJSDoc). Not of an arrow function, which has no `this` of its own
-    JsDocTag* this_tag = jsdoc_find_typed(tags, JSDOC_TAG_THIS);
+    // An arrow function gets one in its signature too, though its `this` stays the outer one (checkJSDocThisTag's
+    // TS2730). An untyped `@this` is `this: any`
+    JsDocTag* this_tag = nullptr;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind == JSDOC_TAG_THIS && !i->nested && !i->earlier) {
+            this_tag = i;
+            break;
+        }
+    }
+    if (this_tag && span_valid(function->arrow_span)) {
+        jsdoc_error(p, this_tag->tag_name, 2730, "An arrow function cannot have a 'this' parameter.");
+    }
     FunctionArg const* first = vec_function_arg_size(&function->args) ? function->args.data : nullptr;
     bool has_this = first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
         span_equals(first->initializer.binding.content_span, "this");
-    if (this_tag && !has_this && !span_valid(function->arrow_span) && !function->is_constructor) {
+    if (this_tag && !has_this && !function->is_constructor) {
         // (No declaration span: tsc's this-parameter symbol of a JSDoc tag has no declaration, `Symbol(this)`)
         FunctionArg arg = {
             .initializer.value = expr_implicit_any(this_tag->tag_name),
@@ -3965,7 +3976,12 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             .content_span = this_tag->tag_name,
             .has_explicit_type = true,
         };
-        arg.initializer.binding.explicit_type = jsdoc_take_type(this_tag, &arg.initializer.binding.explicit_type_span);
+        if (this_tag->has_type) {
+            arg.initializer.binding.explicit_type = jsdoc_take_type(this_tag, &arg.initializer.binding.explicit_type_span);
+        } else {
+            arg.initializer.binding.explicit_type = jsdoc_synthesized(type_any);
+            arg.initializer.binding.explicit_type.from_jsdoc = true;
+        }
         vec_function_arg_insert_n(&function->args, 0, &arg, 1);
     }
     jsdoc_apply_type_signature(tags, function);

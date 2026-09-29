@@ -237,7 +237,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             .is_function_arg = true,
             .full = i->span,
         });
-        if (i->initializer.binding.tag == BINDING_IDENTIFIER &&
+        // (An arrow function's `this` stays the outer one, whatever parameter it declares: tsc's getThisContainer)
+        if (i->initializer.binding.tag == BINDING_IDENTIFIER && !span_valid(my arrow_span) &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
             function_scope->this_ref = (ThisRef){
