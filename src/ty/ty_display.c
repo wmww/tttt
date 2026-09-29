@@ -261,7 +261,7 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
         symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
     // (An anonymous `export default class {}` is named by what imports it: `import A from "./a"` is `typeof A`)
     if (symbol && !symbol->is_module && (span_valid(symbol->name_span) ||
-        (exported_class && exported_class->is_expression && exported_class->commonjs_module && d.enclosing) ||
+        (exported_class && exported_class->is_expression && (exported_class->commonjs_module || exported_class->export_assigned) && d.enclosing) ||
         (symbol->is_default_export && d.enclosing))
     ) {
         out_symbol_name(me, d, symbol, meaning);

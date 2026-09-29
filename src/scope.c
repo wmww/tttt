@@ -1370,6 +1370,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
                 class_decl_add_names(class_decl, class_decl->name_scope, DECL_EXPORTED_NO, false);
             }
             symbol->alias->class_expr = class_decl;
+            class_decl->export_assigned = true;
         }
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = statement, .full = statement,

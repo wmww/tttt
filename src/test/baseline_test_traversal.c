@@ -662,7 +662,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 break;
             }
             if (my identifier->keyword == KEYWORD_IDENTIFIER_THIS) break; // A `this` type isn't an identifier to tsc
-            if (my identifier->target && !span_valid(my identifier->target->name_span)) {
+            // (An alias of an anonymous class, `import C = require()` of `export = class {}`, is shown)
+            if (my identifier->target && !span_valid(my identifier->target->name_span) &&
+                !(my identifier->symbol && my identifier->symbol != my identifier->target &&
+                    my identifier->symbol->flags & SYMBOL_ALIAS && span_valid(my identifier->symbol->name_span))
+            ) {
                 break;
             }
             bool heritage = ctx->heritage_type;

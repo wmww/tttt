@@ -152,6 +152,8 @@ typedef struct ClassDecl {
     // The module whose export it is then (tsc's getContainersOfSymbol for a class expression assigned to
     // `module.exports` or `exports.C`): names of the class go through the module
     Symbol const* commonjs_module;
+    // `export = class {}`: an alias of the class names it from where it's imported (`typeof Chunk`)
+    bool export_assigned;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);
