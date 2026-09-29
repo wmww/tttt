@@ -101,7 +101,10 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             Symbol const* member = members ? symbol_get_export(members, name.sv) : nullptr;
             Symbol const* value = symbol_for_meaning(member, last ? SYMBOL_VALUE : SYMBOL_VALUE | SYMBOL_NAMESPACE);
             if (!value) {
-                if (i == 0 || !(current->flags & SYMBOL_VALUE)) {
+                // (After `module.exports = v` the names are v's properties, tsc's getTypeFromImportTypeNode:
+                // symbolFromVariable; the checker reports a missing one)
+                bool export_equals_value = i == 0 && container != module && (current->flags & SYMBOL_VALUE);
+                if (!export_equals_value && (i == 0 || !(current->flags & SYMBOL_VALUE))) {
                     cstr container_name = symbol_fully_qualified_name(current);
                     error_ctx_error_d(errs, name, 2694,
                         "Namespace '", container_name, "' has no exported member '", name, "'.");
@@ -124,7 +127,20 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         // getCommonJsExportEquals)
         bool qualified = vec_span_size(&my namespaces);
         Symbol const* own = symbol_get_export(module, (qualified ? *my namespaces.data : my name).sv);
-        if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) container = module;
+        if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
+            container = module;
+        } else if (my jsdoc && !qualified && !own && (container->flags & SYMBOL_VALUE)) {
+            // In JavaScript a name that isn't an export is a property of the value (tsc's getTypeFromImportTypeNode:
+            // symbolFromVariable), whose type the name means; the checker reports a missing one
+            Symbol const* members = symbol_for_meaning(container, SYMBOL_NAMESPACE);
+            Symbol const* member = members ? symbol_get_export(members, my name.sv) : nullptr;
+            if (!symbol_for_meaning(member, SYMBOL_TYPE)) {
+                my import_prop_start = 0;
+                my target = (Symbol*)container;
+                my symbol = container;
+                return;
+            }
+        }
     }
     for_each (i, vec_span, &my namespaces) {
         Symbol const* found;

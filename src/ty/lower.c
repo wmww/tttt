@@ -408,14 +408,28 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     if (span_valid(identifier->import_span)) {
         // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)
         if (!decl || decl->is_placeholder) return ty_intrinsic(me, TY_ANY);
-        if (identifier->import_typeof) {
+        if (identifier->import_typeof || identifier->import_prop_start >= 0) {
             Ty const* ret = ty_type_of_symbol(me, decl);
             isize count = vec_span_size(&identifier->namespaces) + 1;
             for (isize i = identifier->import_prop_start; i >= 0 && i < count; i++) {
                 Span name = i == count - 1 ? identifier->name : *vec_span_at(&identifier->namespaces, i);
                 Prop const* prop = ty_get_prop(me, ret, checker_atom(me, name.sv));
+                if (!prop && i == 0) {
+                    // A property of what `module.exports =` assigns, like the names before it (tsc's
+                    // getTypeFromImportTypeNode reports it as a missing export)
+                    cstr container_name = symbol_fully_qualified_name(decl);
+                    ty_error_at(me, name, 2694, cstr_d("Namespace '", container_name, "' has no exported member '", name.sv, "'."));
+                    cstr_drop(&container_name);
+                    return ty_intrinsic(me, TY_ERROR);
+                }
                 if (!prop) return ty_intrinsic(me, TY_ANY); // TODO: TS2339
                 ret = prop_type(me, prop);
+            }
+            // (A JSDoc `import("./m").C` of a class value means its instance, tsc's getTypeFromJSDocValueReference)
+            if (!identifier->import_typeof && ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_CLASS_STATIC &&
+                ret->declared.symbol
+            ) {
+                return ty_class_instance_type(me, ret->declared.symbol);
             }
             return ret;
         }
