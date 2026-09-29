@@ -1275,6 +1275,10 @@ static void program_validate_options(Program* me) {
             );
         }
     }
+    if (o->allow_importing_ts_extensions && !(o->no_emit || o->emit_declaration_only || o->rewrite_relative_import_extensions)) {
+        option_error_d(me, "allowImportingTsExtensions", nullptr, false, 5096,
+            "Option 'allowImportingTsExtensions' can only be used when either 'noEmit' or 'emitDeclarationOnly' is set.");
+    }
     bool modern_resolution = o->module_resolution >= MODULE_RESOLUTION_NODE16;
     static const char* const needs_modern[] = { "resolvePackageJsonExports", "resolvePackageJsonImports", "customConditions" };
     bool const given[] = {
