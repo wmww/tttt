@@ -3856,6 +3856,9 @@ void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
 
 void scope_add_this_declaration(Scope* me, Expr* access, TypeNode const* jsdoc_type) {
     if (!my file || !my file->is_js) return;
+    // (An element access `/** @type {T} */ this["x"];` declares x, but the tag isn't its: tsc's
+    // getNextJSDocCommentLocation only goes from a property access to its statement)
+    if (access->tag == EXPR_PROPERTY && access->property->form == PROPERTY_EXPR_BRACKET) jsdoc_type = nullptr;
     // (The access is the declaration's node: its type is the JSDoc type)
     add_this_property(me, access, access, jsdoc_type, 0);
 }

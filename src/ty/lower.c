@@ -1066,6 +1066,10 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     if (decl->assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY) return define_property_type(me, decl->node);
     Ty const* annotated = annotated_expando_type(me, symbol);
     if (annotated) return annotated;
+    // A declaration that assigns nothing (`/** @type {T} */ this["x"];` whose tag isn't its): never, so any in the end
+    // (tsc's getWidenedTypeForAssignmentDeclaration pushes neverType for it)
+    Expr const* node = decl->node;
+    if (node && node->tag == EXPR_PROPERTY && span_eq(node->outer_span, decl->full)) return ty_intrinsic(me, TY_NEVER);
     Ty const* type = ty_expr_type(me, decl->node);
     // `[]` is any[] in JavaScript, which noImplicitAny reports (tsc's getInitializerTypeFromAssignmentDeclaration:
     // isEmptyArrayLiteralType, see ty_js_assignment_implicit_any())
@@ -1271,6 +1275,9 @@ bool ty_is_constructor_declared(Symbol const* symbol) {
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->jsdoc_type) return false;
+        // (`/** @type {T} */ this["x"];` declares without assigning)
+        Expr const* node = decl->node;
+        if (node && node->tag == EXPR_PROPERTY && span_eq(node->outer_span, decl->full)) return false;
         if (decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD) {
             return false;
         }

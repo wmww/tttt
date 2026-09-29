@@ -2060,7 +2060,12 @@ static bool check_accessibility(
             }
         }
         if (!(prop->flags & PROP_STATIC) && (prop->flags & PROP_FIELD)) {
-            error_ctx_error_d(errs, span, 2855, "Class field '", atom_sv(prop->name),
+            // (Named as written: `this['x']` is `'x'`)
+            Prop const* root = prop;
+            while (root->target) root = root->target;
+            Symbol const* symbol = root->decl ? root->decl->symbol : nullptr;
+            csview written = symbol && span_valid(symbol->name_span) ? symbol->name_span.sv : atom_sv(prop->name);
+            error_ctx_error_d(errs, span, 2855, "Class field '", written,
                 "' defined by the parent class is not accessible in the child class via super.");
             return false;
         }

@@ -738,6 +738,15 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             if (modifiers & JSDOC_MODIFIER_PRIVATE) prop->flags |= PROP_PRIVATE;
             else if (modifiers & JSDOC_MODIFIER_PROTECTED) prop->flags |= PROP_PROTECTED;
             if (modifiers & JSDOC_MODIFIER_READONLY) prop->flags |= PROP_READONLY;
+            // `this.x = v` declares an instance property: a class field to `super.x` (tsc's isClassInstanceProperty of an
+            // expando property declaration)
+            for (u32 d = 0; d < member->decl_count; d++) {
+                if (member->decls[d].kind == SYMBOL_DECL_ASSIGNMENT && (member->decls[d].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR ||
+                    member->decls[d].assignment == ASSIGNMENT_DECL_THIS_IN_METHOD)
+                ) {
+                    prop->flags |= PROP_FIELD;
+                }
+            }
             // `F.prototype.m = function () {}` (or an arrow function) is a method (tsc's
             // bindPotentiallyNewExpandoMemberToNamespace: SymbolFlags.Method for a function-like initializer)
             Expr const* value = member->decl_count ? member->decls[0].node : nullptr;
