@@ -308,6 +308,15 @@ static bool source_declares_ambient_module(SourceFile const* source, csview name
 
 static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr);
 
+// tsc's tryExtractTSExtension: the name ends in .d.ts, .d.mts, .d.cts, .ts, .tsx, .mts or .cts
+static bool name_has_ts_extension(csview name) {
+    static const char* const extensions[] = { ".ts", ".tsx", ".mts", ".cts" };
+    for (u32 i = 0; i < c_arraylen(extensions); i++) {
+        if (csview_ends_with(name, extensions[i])) return true;
+    }
+    return false;
+}
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     ModuleResolver* resolver = program_resolver(me);
@@ -364,7 +373,9 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
             } else {
                 ref->file = program_add_source_idempotent(me, cstr_sv(&resolved.path));
-                ref->used_ts_extension = resolved.used_ts_extension;
+                // (Only an extension the name itself has counts, not one a package.json or an export map wrote:
+                // tsc's candidateIsFromPackageJsonField, tryExtractTSExtension of the name)
+                ref->used_ts_extension = resolved.used_ts_extension && name_has_ts_extension(cstr_sv(&ref->path));
                 // The same version of a package installed twice is one package (tsc's packageIdToSourceFile): the
                 // second copy stays in the program, but imports mean the first
                 if (cstr_size(&resolved.package_id) && ref->file) {
