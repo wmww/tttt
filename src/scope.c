@@ -783,8 +783,11 @@ static Symbol* declare_symbol(
     bool* merged
 ) {
     Binder* binder = scope->binder;
-    u64 hash = symbol_name_hash(name);
     *merged = false;
+    // A class declaration without a name (`class {}` outside `export default`) is a symbol of its own: tsc's
+    // getDeclarationName is undefined for it, where a missing identifier's name ("") merges
+    if (!name.buf && !default_export && includes & SYMBOL_CLASS) return binder_new_symbol(binder, name, includes);
+    u64 hash = symbol_name_hash(name);
     Symbol* existing = symbol_table_get_own(table, name, hash);
     // `class number {}` (TS2414): the keyword wins, the declaration is a symbol of its own
     Symbol const* builtin = existing ? existing : table->parent ? symbol_table_lookup(table->parent, name, hash) : nullptr;

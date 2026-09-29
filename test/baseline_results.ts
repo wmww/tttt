@@ -27546,8 +27546,8 @@ const baselines = {
         types: true,
     },
     'reservedWords3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'resolutionCandidateFromPackageJsonField1': {
