@@ -31473,7 +31473,7 @@ const baselines = {
     'typePredicateTopLevelTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicateWithThisParameter': {
         errors: true,

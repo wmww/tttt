@@ -1605,13 +1605,16 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
 // `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
 TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
     TyList params = sig->type_params;
-    Ty const* return_type = signature_return_type(me, sig);
+    // (Of a type predicate, its type: tsc's isTypeParameterAtTopLevelInReturnType)
+    TyPredicate const* predicate = signature_predicate(me, sig);
+    Ty const* return_type = predicate ? predicate->type : signature_return_type(me, sig);
     Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
     bool* inferred = calloc(params.len ? params.len : 1, sizeof(bool));
     for (u32 i = 0; i < params.len; i++) {
         // tsc: literals widen unless the type parameter is at the top level of the return type and hasn't been fixed
         // (or the constraint is primitive, see inference_call_result())
-        bool keep_literals = !fixing && !inf->params[i].fixed && is_param_at_top_level(me, return_type, params.data[i]);
+        bool keep_literals = !fixing && !inf->params[i].fixed && return_type &&
+            is_param_at_top_level(me, return_type, params.data[i]);
         results[i] = inference_call_result(me, inf, i, keep_literals);
         inferred[i] = results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
