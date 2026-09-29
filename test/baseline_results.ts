@@ -2346,7 +2346,7 @@ const baselines = {
         types: true,
     },
     'betterErrorForAccidentalCall': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1264,6 +1264,28 @@ static Span invocation_error_span(CallInfo const* info) {
     return callee->outer_span;
 }
 
+// Whether a line break comes after `span`, before anything but whitespace and comments (tsc's skipTrivia with
+// stopAfterLineBreak, then isLineBreak of the character before)
+static bool line_break_follows(Span span) {
+    char const* c = span_end_ptr(span);
+    char const* end = span.source ? cstr_str(&span.source->contents) + cstr_size(&span.source->contents) : nullptr;
+    while (c && c < end) {
+        if (*c == '\n' || *c == '\r') return true;
+        if (*c == ' ' || *c == '\t' || *c == '\v' || *c == '\f') {
+            c++;
+        } else if (c + 1 < end && c[0] == '/' && c[1] == '/') {
+            while (c < end && *c != '\n' && *c != '\r') c++;
+        } else if (c + 1 < end && c[0] == '/' && c[1] == '*') {
+            c += 2;
+            while (c + 1 < end && !(c[0] == '*' && c[1] == '/')) c++;
+            c += 2;
+        } else {
+            return false;
+        }
+    }
+    return false;
+}
+
 // tsc's invocationErrorDetails: "Did you forget to use 'await'?" at the callee when what it awaits to has signatures
 static void suggest_await_for_invocation(Checker* me, Error* error, Ty const* apparent, bool construct, CallInfo const* info) {
     if (!error) return;
@@ -2148,6 +2170,12 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
             cstr_drop(&rendered);
             suggest_await_for_invocation(me, e, apparent, false, info);
+            // `f()` then `(x)` on the next line: one call (tsc's resolveCallExpression)
+            if (e && !info->tagged_template && !info->decorator && !info->jsx && vec_expr_size(&info->call->args) == 1 &&
+                line_break_follows(info->call->callable.outer_span)
+            ) {
+                error_add_related_d(e, info->call->callable.outer_span, 2734, "Are you missing a semicolon?");
+            }
         }
         return ret;
     }
