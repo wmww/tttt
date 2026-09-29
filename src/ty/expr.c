@@ -1842,7 +1842,20 @@ static void check_left_spine(Checker* me, BinaryOpExpr const* binary, ExprCtx ct
 
 // `exports.x = v`, `module.exports = v` in a CommonJS file: an assignment that declares
 static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
-    return binary_commonjs_declaration(binary, nullptr) != COMMONJS_TARGET_NONE;
+    if (binary_commonjs_declaration(binary, nullptr) != COMMONJS_TARGET_NONE) return true;
+    // `module.exports = v` of any JavaScript file, an ES module's too (tsc's getAssignmentDeclarationKind is syntactic:
+    // AssignmentDeclarationKind.ModuleExports), unless v is `void 0`
+    SourceFile const* file = binary->left.outer_span.source;
+    if (!file || !file->is_js || binary->op != BINARY_OP_EQUAL || expr_is_perenthisized(&binary->left) ||
+        !expr_is_module_exports(&binary->left)
+    ) {
+        return false;
+    }
+    Expr const* value = &binary->right;
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    return !(value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_VOID && value->unary_op->expr.tag == EXPR_LITERAL);
 }
 
 // JavaScript `a.b = {}` (or `F.prototype = {...}`) declaring a member that has expandos of its own (tsc's
