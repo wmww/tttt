@@ -413,13 +413,21 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
 }
 
 // `/// <reference path="a.ts" />`: the file itself, relative to the one with the directive
+// tsc's hasExtension: the file name (not the directories) has a dot
+static bool path_has_extension(csview path) {
+    return memchr(basename_of(path).buf, '.', (size_t)basename_of(path).size) != nullptr;
+}
+
+// (tsc's getSourceFileFromReferenceWorker: a name with an extension is that file, one without gets the first group of
+// supported extensions)
 static SourceFile* program_load_reference_path(Program* me, Span path_span, csview path) {
     check(span_valid(path_span));
     csview dir = dirname_of(cstr_sv(&path_span.source->canonical_path));
     cstr full = path.size && path.buf[0] == '/' ? cstr_from_sv(path) : cstr_d(dir, "/", path);
     SourceFile* ret = nullptr;
     static const char* const extensions[] = { "", ".ts", ".tsx", ".d.ts" };
-    for (isize i = 0; i < (isize)c_arraylen(extensions) && !ret; i++) {
+    bool extension = path_has_extension(path);
+    for (isize i = extension ? 0 : 1; i < (extension ? 1 : (isize)c_arraylen(extensions)) && !ret; i++) {
         cstr candidate = cstr_d(full, extensions[i]);
         if (fs_is_reg_file(my fs, cstr_sv(&candidate))) ret = program_add_source_idempotent(me, cstr_sv(&candidate));
         cstr_drop(&candidate);
@@ -465,6 +473,8 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                         cstr dir = absolute_path_of(cstr_sv(&cwd), dirname_of(cstr_sv(&source->canonical_path)));
                         cstr absolute = absolute_path_of(cstr_sv(&dir), cstr_sv(&statement->source_directive->path));
                         cstr_take(&statement->source_directive->not_found, program_path_for_message(me, cstr_sv(&absolute)));
+                        statement->source_directive->not_found_extensionless =
+                            !path_has_extension(cstr_sv(&statement->source_directive->path));
                         cstr_drop(&absolute);
                         cstr_drop(&dir);
                         cstr_drop(&cwd);
@@ -921,6 +931,32 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     static const char* const scripts[] = { ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json" };
     bool script = false;
     for (isize i = 0; i < c_countof(scripts) && !script; i++) script = csview_ends_with(path, scripts[i]);
+    if (!path_has_extension(path)) {
+        // The first group of supported extensions completes it (getSourceFileFromReferenceWorker)
+        static const char* const completions[] = { ".ts", ".tsx", ".d.ts" };
+        for (isize i = 0; i < c_countof(completions); i++) {
+            cstr candidate = cstr_d(path, completions[i]);
+            if (fs_is_reg_file(my fs, cstr_sv(&candidate))) {
+                set_compiler_options(&my options);
+                SourceFile* found = program_add_source_idempotent(me, cstr_sv(&candidate));
+                clear_compiler_options();
+                cstr_drop(&candidate);
+                return ok(found);
+            }
+            cstr_drop(&candidate);
+        }
+        cstr shown = program_path_for_message(me, path);
+        Error* error = error_ctx_global_error_d(my errs, 6231, "Could not resolve the path '", shown,
+            "' with the extensions: ", my options.allow_js ?
+                "'.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'." :
+                "'.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.");
+        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+        error_sub_error_d(
+            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Root file specified for compilation"
+        );
+        cstr_drop(&shown);
+        return ok(nullptr);
+    }
     if (!script) {
         if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");
         cstr shown = program_path_for_message(me, path);
@@ -1749,6 +1785,16 @@ void program_resolve_names(Program* me) {
         SourceFile* source = *i;
         for (u32 j = 0; j < source->module_ref_count; j++) {
             ModuleRef* ref = source->module_refs[j];
+            if (ref->failure == MODULE_REF_JSX_NOT_SET && !ref->file) {
+                // A .tsx file that is part of the program anyway (a root) is still what the name means (tsc's
+                // resolveExternalModule: TS6142, and the file)
+                csview shown = cstr_sv(&ref->resolved_path);
+                cstr absolute = shown.size && shown.buf[0] == '/' ? cstr_from_sv(shown) : cstr_d(program_cwd(me), "/", shown);
+                ref->file = program_find_source(me, cstr_sv(&absolute));
+                ref->used_ts_extension = ref->file && csview_ends_with(cstr_sv(&ref->path), ".tsx");
+                cstr_drop(&absolute);
+                continue;
+            }
             if (ref->failure != MODULE_REF_IS_JS || !cstr_size(&ref->package_name)) continue;
             csview name = cstr_sv(&ref->package_name);
             cstr types = cstr_lit("@types/");

@@ -1494,6 +1494,12 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 if (my source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_TYPES) {
                     error_ctx_error_d(errs, span, 2688,
                         "Cannot find type definition file for '", my source_directive->not_found, "'.");
+                } else if (my source_directive->not_found_extensionless) {
+                    // (tsc's getSourceFileFromReferenceWorker lists every supported extension)
+                    error_ctx_error_d(errs, span, 6231, "Could not resolve the path '", my source_directive->not_found,
+                        "' with the extensions: ", compiler_options()->allow_js ?
+                            "'.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'." :
+                            "'.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.");
                 } else {
                     error_ctx_error_d(errs, span, 6053,
                         "File '", my source_directive->not_found, "' not found.");

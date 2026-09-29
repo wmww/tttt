@@ -237,13 +237,14 @@ static csview declaration_extension(csview path) {
 
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
+    if (my failure == MODULE_REF_JSX_NOT_SET) {
+        error_ctx_error_d(errs, my span, 6142,
+            "Module '", my path, "' was resolved to '", my resolved_path, "', but '--jsx' is not set.");
+    }
     // A declaration file named with its extension (tsc's resolveExternalModule: resolvedUsingTsExtension and
     // isDeclarationFileName), outside a type-only import; the suggestion is getSuggestedImportSource's
     csview dts = declaration_extension(cstr_sv(&my path));
-    if (dts.size && !type_only && my file && my file->is_declaration &&
-        csview_ends_with(cstr_sv(&my file->canonical_path), cstr_str(&my path) + (cstr_size(&my path) > 2 &&
-            cstr_str(&my path)[0] == '.' && cstr_str(&my path)[1] == '/' ? 2 : 0))
-    ) {
+    if (dts.size && !type_only && my file && my used_ts_extension) {
         csview stem = csview_slice(cstr_sv(&my path), 0, cstr_size(&my path) - dts.size);
         bool esm = (options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT) ||
             (my span.source && my span.source->is_esm);
@@ -294,7 +295,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
             }
         }
     }
-    if (my used_ts_extension && !allowed && my file && !my file->is_declaration) {
+    if (my used_ts_extension && !allowed && my file && !dts.size) {
         isize dot = cstr_size(&my path);
         while (dot > 0 && cstr_str(&my path)[dot - 1] != '.') dot--;
         error_ctx_error_d(errs, my span, 5097,

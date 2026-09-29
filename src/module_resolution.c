@@ -318,6 +318,10 @@ static csview script_extension_of(csview path) {
     return c_sv("");
 }
 
+static bool declaration_extension_of(csview extension) {
+    return csview_equals(extension, ".d.ts") || csview_equals(extension, ".d.mts") || csview_equals(extension, ".d.cts");
+}
+
 static bool extension_is_ts_source(csview extension) {
     return csview_equals(extension, ".ts") || csview_equals(extension, ".tsx") || csview_equals(extension, ".mts") ||
         csview_equals(extension, ".cts");
@@ -347,7 +351,10 @@ static bool load_file_no_implicit_extensions(State* me, csview candidate, int ex
     }
     csview stem = csview_slice(candidate, 0, candidate.size - extension.size);
     if (!try_adding_extensions(me, stem, extensions, extension, out)) return false;
-    out->used_ts_extension = extension_is_ts_source(extension);
+    // (tsc's tryAddingExtensions: resolvedUsingTsExtension, a TypeScript or declaration extension written and a
+    // TypeScript file or declaration found: "./a.d.ts" may be a.ts)
+    out->used_ts_extension = (extension_is_ts_source(extension) || declaration_extension_of(extension)) &&
+        (out->kind == RESOLVED_TS || out->kind == RESOLVED_DTS);
     return true;
 }
 

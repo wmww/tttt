@@ -848,6 +848,8 @@ BaselineTestCase run_baseline_test_case(
         if (!is_root || csview_ends_with(cstr_sv(&i->path), ".json")) continue;
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
+        // (A root without extension may stand for another file, `e` for e.ts: that one is shown as itself)
+        if (source && !csview_equals_sv(basename_of(cstr_sv(&source->canonical_path)), basename_of(cstr_sv(&i->path)))) source = nullptr;
         i->source = source;
     }
     // `@libFiles` are roots after the test's own files (harnessIO.ts compileFiles). Like the default lib, a `lib.*.d.ts`
