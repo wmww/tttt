@@ -399,7 +399,9 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
         Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
         MappedInfo const* mapped = root->anonymous.node && root->anonymous.node->tag == TYPE_INTERFACE ? ty_members(me, root)->mapped : nullptr;
         if (mapped) {
-            Ty const* constraint = ty->anonymous.mapper ? ty_instantiate(me, mapped->constraint, ty->anonymous.mapper) : mapped->constraint;
+            // (Of a homomorphic one, `[K in keyof T]`, the type variable T: tsc's getHomomorphicTypeVariable)
+            Ty const* constraint = mapped->constraint->kind == TY_KEYOF ? mapped->constraint->keyof.operand : mapped->constraint;
+            if (ty->anonymous.mapper) constraint = ty_instantiate(me, constraint, ty->anonymous.mapper);
             if (ty_instantiate(me, constraint, mapper) == ty_intrinsic(me, TY_WILDCARD)) return ty_intrinsic(me, TY_WILDCARD);
         }
     }
