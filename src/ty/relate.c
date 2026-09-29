@@ -3786,7 +3786,9 @@ static Ternary structured_related_members(
     switch ((TyKind)target->kind) {
         case TY_TYPE_PARAM: {
             // `{ [P in Q]: X }` is related to T if keyof T is related to Q and X to T[P] (`Mutable<T>` to T)
-            MappedInfo const* mapped = source->kind == TY_ANONYMOUS ? ty_members(me, source)->mapped : nullptr;
+            // (Any mapped type, tsc's ObjectFlags.Mapped: one whose keys are known too, `{ [P in keyof (T & Record<any,
+            // any>)]: ... }` with keys any)
+            MappedInfo const* mapped = mapped_info_of(me, source, nullptr);
             if (mapped && !mapped->name_type && mapped->optional <= 0 &&
                 is_related_to(me, st, ty_keyof(me, target), mapped->constraint, false)
             ) {
