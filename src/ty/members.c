@@ -320,6 +320,11 @@ static void builder_add_interface_member(
                     ty_type_param(me, i->key.mapped.symbol_ref) :
                     ty_synthetic_type_param(me, i->key.mapped.type_name.sv);
                 mapped->constraint = ty_from_node(me, &i->key.mapped.in_type, mapped_ctx);
+                // `[P in any]` is over tsc's keyofConstraintType (getConstraintFromTypeParameter)
+                if (mapped->constraint == ty_intrinsic(me, TY_ANY)) {
+                    Ty const* parts[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+                    mapped->constraint = ty_union(me, parts, 3, nullptr, (TyList){0});
+                }
                 if (i->key.mapped.has_as_type) {
                     mapped->name_type = ty_from_node(me, &i->key.mapped.as_type, mapped_ctx);
                 }
@@ -2117,6 +2122,13 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             }
         }
         keys = member_keys;
+    } else if (mapped->keyof_constraint && keyed && (keyed->flags & TYF_ANY)) {
+        // `[K in keyof any]` goes by any, whose one key is string (tsc's
+        // forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType)
+        member_keys = arena_new(&my arena, Ty const*);
+        member_keys[0] = ty_intrinsic(me, TY_STRING);
+        keys = member_keys;
+        key_count = 1;
     }
     if (mapped->name_type) {
         // A mapped type whose `as` clause is generic in more than its key is generic (tsc's isGenericMappedType):

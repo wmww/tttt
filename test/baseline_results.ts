@@ -64183,7 +64183,7 @@ const baselines = {
     'mappedTypeWithAny': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypes1': {
         errors: true,
