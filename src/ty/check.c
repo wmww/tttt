@@ -268,8 +268,10 @@ static bool elaborate_element(
     Span decl = declared ? ty_prop_decl_span(declared) : (Span){0};
     if (!span_valid(decl)) decl = type_decl_span(me, target);
     if (in_lib(decl)) return true;
-    cstr name = item->name && !(item->name_type->flags & TYF_UNIQUE_ES_SYMBOL) ?
-        cstr_from_sv(atom_sv(item->name)) : ty_to_cstr(me, item->name_type);
+    // (A unique symbol name is typeToString's default, `unique symbol`)
+    cstr name = cstr_null;
+    if (item->name && !(item->name_type->flags & TYF_UNIQUE_ES_SYMBOL)) name = cstr_from_sv(atom_sv(item->name));
+    else ty_display(me, (TyDisplay){ .target = &name, .unique_symbols = true }, item->name_type);
     cstr target_str = ty_to_cstr(me, target);
     error_add_related_d(error, decl, 6500, "The expected type comes from property '", name,
         "' which is declared here on type '", target_str, "'");
