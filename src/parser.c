@@ -4416,6 +4416,25 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                 continue;
             }
             if (i->kind != JSDOC_TAG_TYPEDEF && i->kind != JSDOC_TAG_CALLBACK) continue;
+            Span tag_span = jsdoc_tag_decl_span(i); // (Before a borrowed name: the tag's own)
+            if (!span_valid(i->name) && i->kind == JSDOC_TAG_TYPEDEF) {
+                // A typedef without a name is named by the variable it's the comment of (tsc's parseTypedefTag:
+                // getJSDocTypeAliasName of the host's first declaration)
+                for (isize k = out->size; k-- > 0;) {
+                    Statement const* host = &out->data[k];
+                    const char* host_start = span_valid(host->span) ? span_start_ptr(host->span) : nullptr;
+                    if (!host_start || host_start < range.end) continue;
+                    const char* between = range.end;
+                    while (between < host_start && is_js_ascii_space(*between)) between++;
+                    if (between == host_start && host->tag == STATEMENT_DECL_VARIABLE &&
+                        vec_initialized_binding_size(&host->decl.variable.initializers) &&
+                        host->decl.variable.initializers.data[0].binding.tag == BINDING_IDENTIFIER
+                    ) {
+                        i->name = host->decl.variable.initializers.data[0].binding.content_span;
+                    }
+                    break;
+                }
+            }
             if (!span_valid(i->name) || memchr(i->name.sv.buf, '.', (size_t)i->name.sv.size)) continue;
             isize children = 0;
             while (i + 1 + children < tags.data + tags.size && i[1 + children].nested) children++;
@@ -4435,7 +4454,7 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                     type = jsdoc_take_type(type_child, nullptr);
                     type.from_jsdoc = false;
                 } else if (has_properties && jsdoc_is_object_type(i, &array)) {
-                    type = jsdoc_type_literal(i + 1, children, (csview){0}, jsdoc_tag_decl_span(i));
+                    type = jsdoc_type_literal(i + 1, children, (csview){0}, tag_span);
                     if (array) type = type_array(c_new(TypeNode, type), false), type.parsed = true;
                 } else if (i->has_type) {
                     type = jsdoc_take_type(i, nullptr);
@@ -4450,7 +4469,7 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                 }
             }
             jsdoc_check_template_modifiers(parent, &tags, true, false);
-            Span span = jsdoc_tag_decl_span(i);
+            Span span = tag_span;
             const char* after = range.end;
             while (is_js_ascii_space(*after)) after++;
             vec_statement_push(out, (Statement){
