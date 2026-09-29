@@ -1294,7 +1294,6 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
             if (symbol->decls[i].assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
             constructor_only = !(ty_widened_for_declaration(me, ty_expr_type(me, symbol->decls[i].node), true)->flags & TYF_NULLABLE);
         }
-        constructor_only |= constructor_declared;
     }
     u32 count = 0;
     for (u32 i = 0; i < symbol->decl_count; i++) {
