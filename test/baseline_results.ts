@@ -5961,7 +5961,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15656,7 +15656,7 @@ const baselines = {
         types: true,
     },
     'heterogeneousArrayAndOverloads': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24891,7 +24891,7 @@ const baselines = {
         types: true,
     },
     'overloadErrorMatchesImplementationElaboaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24976,7 +24976,7 @@ const baselines = {
         types: true,
     },
     'overloadOnConstNoAnyImplementation2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24991,7 +24991,7 @@ const baselines = {
         types: true,
     },
     'overloadOnConstNoStringImplementation2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

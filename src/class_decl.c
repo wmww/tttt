@@ -394,6 +394,24 @@ static void bind_member_symbols(ClassDecl* me) {
     }
 }
 
+// Each overload signature of a method or constructor: its implementation, see FunctionImpl.overload_implementation
+static void link_overload_implementations(ClassDecl* me) {
+    for_each (i, vec_class_item, &my items) {
+        bool is_constructor = i->tag == CLASS_ITEM_CONSTRUCTOR;
+        if (is_constructor ? i->constructor.func.has_body :
+            i->tag != CLASS_ITEM_METHOD || i->method.func.has_body || !i->symbol_first) continue;
+        for_each (j, vec_class_item, &my items) {
+            if (is_constructor ? j->tag == CLASS_ITEM_CONSTRUCTOR && j->constructor.func.has_body :
+                j->tag == CLASS_ITEM_METHOD && j->method.func.has_body && j->symbol_first == i->symbol_first
+            ) {
+                FunctionImpl* overload = is_constructor ? &i->constructor.func : &i->method.func;
+                overload->overload_implementation = is_constructor ? &j->constructor.func : &j->method.func;
+                break;
+            }
+        }
+    }
+}
+
 u32 class_item_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap) {
     u32 len = 0;
     if (!my symbol_first) return 0;
@@ -445,6 +463,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     }
 
     bind_member_symbols(me);
+    if (!my is_ambient) link_overload_implementations(me);
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_FIELD && i->field.is_static && i->field.is_readonly && !i->field.computed_key) {
             unique_symbol_decl_mark(

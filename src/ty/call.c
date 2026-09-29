@@ -1409,16 +1409,17 @@ static Resolution resolve_with_signatures(
 );
 
 // The call fits none of the overloads of a function, but would the implementation? (tsc's
-// addImplementationSuccessElaboration.) Only function declarations: methods and constructors TODO
+// addImplementationSuccessElaboration.) Function declarations, class methods and constructors
 static void add_implementation_success(Checker* me, Candidate const* candidate, Args* args, CallInfo const* info,
     Span call_span, Error* error
 ) {
     Signature const* failed = candidate->sig;
     while (failed->target) failed = failed->target;
-    Symbol const* symbol = failed->function ? failed->function->symbol : nullptr;
-    if (!error || !symbol || symbol->decl_count < 2) return;
-    FunctionImpl const* impl = nullptr;
-    for (u32 i = 0; i < symbol->decl_count && !impl; i++) {
+    if (!error || !failed->function) return;
+    Symbol const* symbol = failed->function->symbol;
+    FunctionImpl const* impl = failed->function->overload_implementation;
+    if (!impl && (!symbol || symbol->decl_count < 2)) return;
+    for (u32 i = 0; symbol && i < symbol->decl_count && !impl; i++) {
         if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;
         FunctionImpl const* function = symbol->decls[i].node;
         if (function->has_body) impl = function;
@@ -1433,7 +1434,8 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     check_args(me, &shape, args, false);
     free(shape.types);
     if (!fits) return;
-    error_add_related_s(error, impl->name, 2793, cstr_lit(
+    Span at = span_valid(impl->name) ? impl->name : span_valid(impl->member_name) ? impl->member_name : impl->full_span;
+    error_add_related_s(error, at, 2793, cstr_lit(
         "The call would have succeeded against this implementation, but implementation signatures of overloads are not "
         "externally visible."));
 }
