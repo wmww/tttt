@@ -1733,7 +1733,7 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
     isize count = vec_statement_size(statements);
     for (isize i = 0; i < count; i++) {
         FunctionImpl const* overload = function_declaration(vec_statement_at(statements, i));
-        if (!overload || overload->has_body || overload->body_missing || !span_valid(overload->name)) continue;
+        if (!overload || overload->has_body || overload->body_missing || !span_valid(overload->name) || !overload->name.sv.size) continue;
         // A declaration file is ambient
         SourceFile const* file = overload->name.source;
         if (file->is_declaration) return;

@@ -42701,14 +42701,14 @@ const baselines = {
         types: true,
     },
     'MemberFunctionDeclaration4_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'MemberFunctionDeclaration5_es6': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'MemberFunctionDeclaration6_es6': {
         errors: true,

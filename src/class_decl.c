@@ -1083,6 +1083,8 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         if (!func || func->has_body || func->body_missing) continue;
         bool is_constructor = item->tag == CLASS_ITEM_CONSTRUCTOR;
         if (!is_constructor && item->method.computed_key) continue;
+        // (A missing name: tsc's reportImplementationExpectedError says nothing)
+        if (!is_constructor && span_valid(item->method.name_span) && !item->method.name_span.sv.size) continue;
         ClassItem const* next = i + 1 < count ? vec_class_item_at(&my items, i + 1) : nullptr;
         if (next && !overloadable(next)) next = nullptr;
         if (next && same_member(item, next)) {

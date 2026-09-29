@@ -547,6 +547,10 @@ static csview written_name(Scope const* enclosing, Symbol const* symbol, bool fi
 }
 
 void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member) {
+    if (!name.size) {
+        cstr_append_lit(out, "[(Missing)]"); // A member whose name is missing (tsc's "__missing")
+        return;
+    }
     if (can_use_property_access(name)) {
         cstr_append_lit(out, ".");
         cstr_append_sv(out, name);
