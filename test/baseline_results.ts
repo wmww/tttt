@@ -45783,7 +45783,7 @@ const baselines = {
     'esDecorators-classDeclaration-exportModifier': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-classDecorator.1': {
         errors: true,
@@ -56676,8 +56676,8 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ClassElement3': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parserErrorRecovery_Expression1': {
@@ -57096,7 +57096,7 @@ const baselines = {
         types: true,
     },
     'parserUnaryExpression5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -57771,7 +57771,7 @@ const baselines = {
         types: true,
     },
     'parserMissingToken1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

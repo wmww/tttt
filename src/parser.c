@@ -8302,7 +8302,9 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
     Parser p = parser(parent);
 
     Span name;
-    if (!parse_identifier(&p, &name)) {
+    // (A reserved word is no identifier: where no other expression starts with it, the expression is missing, tsc's
+    // parsePrimaryExpression)
+    if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
         return parse_fail(&p);
     }
     *ret = (IdentifierExpr){ .name = name };
