@@ -698,7 +698,7 @@ static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) 
     ) {
         return true;
     }
-    if (contextual->kind == TY_INTERSECTION) return ty_get_prop(me, contextual, checker_atom(me, c_sv("0"))) != nullptr;
+    if ((contextual->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_get_prop(me, contextual, checker_atom(me, c_sv("0")))) return true;
     if (contextual->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, contextual);
         return constraint && constraint != contextual && context_is_tuple_like(me, constraint, depth + 1);

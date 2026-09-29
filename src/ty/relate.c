@@ -2273,6 +2273,15 @@ static bool is_rest_array(Checker* me, Ty const* rest) {
 
 // A class or interface whose length is number literals (one extending a tuple): an array is no match for it, the
 // tuple itself is compared with it member by member
+static bool is_numeric_prop_name(Atom const* name);
+static bool has_numeric_props(Checker* me, Ty const* ty) {
+    Members const* members = ty_members(me, ty);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (is_numeric_prop_name(members->props[i]->name)) return true;
+    }
+    return false;
+}
+
 static bool has_literal_length(Checker* me, Ty const* ty) {
     Ty const* length = ty_prop_type_of(me, ty, checker_atom(me, c_sv("length")));
     return length && !(length->flags & TYF_NUMBER) && !(length->flags & TYF_ANY) && (length->flags & TYF_NUMBER_LITERAL ||
@@ -4583,7 +4592,10 @@ static Ternary structured_related_members(
     }
     // (As the array it extends against generic interfaces and classes, where variances help; structurally, with its
     // element properties, against anything else: `{ 0: number }`, `Pick<[string, ...string[]], ...>`)
-    if (source_is_tuple && (target->kind == TY_REFERENCE || (target->kind == TY_DECLARED && !has_literal_length(me, target)))) {
+    // (Not against an interface that declares element properties, `interface tup { 0: X; 1: Y }`)
+    if (source_is_tuple && (target->kind == TY_REFERENCE ||
+        (target->kind == TY_DECLARED && !has_literal_length(me, target) && !has_numeric_props(me, target)))
+    ) {
         source = tuple_as_array(me, source);
     }
 

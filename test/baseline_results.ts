@@ -2328,7 +2328,7 @@ const baselines = {
     'bestChoiceType': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'bestCommonTypeReturnStatement': {
         errors: true,
@@ -46706,9 +46706,9 @@ const baselines = {
         types: true,
     },
     'arrayLiterals3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asOpEmitParens': {
         errors: true,
