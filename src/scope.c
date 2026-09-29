@@ -1490,9 +1490,12 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             left->property->commonjs_export_alias = true;
             declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY, top_level);
         }   break;
-        case COMMONJS_TARGET_EXPORTS_PROPERTY:
-            declare_commonjs_export(me, name.sv, name, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
-            break;
+        case COMMONJS_TARGET_EXPORTS_PROPERTY: {
+            // (`exports["b"] = v` is named `"b"` where it's shown, like tsc's symbol of a string literal name)
+            Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
+                op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
+            declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
+        }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
             // `module.exports = exports` declares nothing (tsc's bindModuleExportsAssignment), at the top level: in a

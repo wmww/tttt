@@ -69,7 +69,8 @@ static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
         case COMMONJS_TARGET_EXPORTS_PROPERTY: {
             Symbol const* symbol = module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
             add_symbol_override(ctx, left->inner_span, symbol);
-            add_symbol_override(ctx, left->property->expr.inner_span, symbol);
+            // (`exports["x"]`: an element access isn't a special property assignment name, its object is itself)
+            if (left->property->form != PROPERTY_EXPR_BRACKET) add_symbol_override(ctx, left->property->expr.inner_span, symbol);
             add_symbol_override(ctx, left->property->prop.outer_span, symbol);
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
