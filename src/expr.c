@@ -3292,8 +3292,8 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     int kind = ty_js_assignment_implicit_any(current_checker, member, own->node);
     if (kind == 1) {
         error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any[]' type.");
-    } else if (kind == 2 && own == first) {
-        error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any' type.");
+    } else if ((kind == 2 || kind == 3) && own == first) {
+        error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
     }
 }
 

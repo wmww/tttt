@@ -1268,6 +1268,12 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
         return nullptr;
     }
     Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol->constructor_assigned, symbol->declaring_constructor->return_flow);
+    // Nothing but `[]` (tsc's autoArrayType, which never evolves here): any[], reported (getFlowTypeInConstructor)
+    SourceFile const* file = symbol->constructor_assigned->inner_span.source;
+    if (file && file->is_js && ret == ty_auto_array(me)) {
+        *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)3;
+        return ty_array(me, ty_intrinsic(me, TY_ANY), false);
+    }
     TyList parts = ret->kind == TY_UNION ? ret->composite.types : (TyList){ .data = &ret, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {
         if (!(parts.data[i]->flags & TYF_NULLABLE)) return ret;
@@ -1328,7 +1334,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     // Nothing but null and undefined is any in JavaScript
     SourceFile const* file = symbol->decls[0].full.source;
     if (file && file->is_js && ty_non_nullable(me, ret)->flags & TYF_NEVER) {
-        *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = symbol;
+        *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
         return ty_intrinsic(me, TY_ANY);
     }
     return ret;
@@ -1336,12 +1342,11 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
 
 // Whether the type of a JavaScript assignment declaration's member became any implicitly (tsc's reportImplicitAny in
 // getWidenedTypeForAssignmentDeclaration): 1 if `value` (an assignment of `[]`) made it any[], 2 if only null or
-// undefined are assigned (any), else 0. Evaluates the member's type
+// undefined are assigned (any), 3 if the constructor only assigns `[]` (any[]), else 0. Evaluates the member's type
 int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const* value) {
     ty_type_of_symbol(me, member);
     if (intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)value }, 2)) return 1;
-    if (intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)member }, 2)) return 2;
-    return 0;
+    return (int)(uintptr_t)intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)member }, 2);
 }
 
 Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module) {
