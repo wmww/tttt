@@ -38522,8 +38522,8 @@ const baselines = {
     },
     'decoratorOnFunctionExpression': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'decoratorOnFunctionParameter': {
         errors: true,

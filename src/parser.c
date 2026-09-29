@@ -11439,9 +11439,6 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     const char* jsdoc_from = list_start;
 
     u32 saved_context = list_enter(&p, ctx);
-    // (tsc's reparseTopLevelAwait parses the statements one by one, outside its list: nothing inside aborts at a token
-    // that could start a statement)
-    if (ctx == PARSING_SOURCE_ELEMENTS && p.shared->top_level_await) p.shared->parsing_context = saved_context;
     ModifiedParent outer_parent = p.shared->statement_parent;
     p.shared->statement_parent = !toplevel ? MODIFIED_IN_OTHER :
         ctx == PARSING_SOURCE_ELEMENTS ? MODIFIED_IN_SOURCE_FILE :
@@ -11469,6 +11466,9 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 }
                 sh->in_async = sh->await_statement_cursor < sh->await_statement_count &&
                     sh->await_statements[2 * sh->await_statement_cursor] <= p.pos;
+                // (tsc's reparseTopLevelAwait parses those one by one, outside the statement list: nothing inside
+                // aborts at a token that could start a statement)
+                sh->parsing_context = sh->in_async ? saved_context : saved_context | (1u << ctx);
             } else {
                 p.shared->saw_top_level_await = false;
             }
