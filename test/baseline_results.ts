@@ -27863,7 +27863,7 @@ const baselines = {
     'satisfiesEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scopeCheckClassProperty': {
         errors: true,
