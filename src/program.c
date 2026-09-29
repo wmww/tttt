@@ -317,15 +317,28 @@ static bool name_has_ts_extension(csview name) {
     return false;
 }
 
+// The conditions `exports` are read with: by syntax, else the format of the importing file. Under bundler an import in
+// a file that is emitted as CommonJS (.cts, .cjs) uses `require` too (tsc's getModeForUsageLocation:
+// importSyntaxAffectsModuleResolution, getEmitSyntaxForUsageLocation)
+static ResolutionMode program_module_ref_mode(Program const* me, SourceFile const* source, ModuleRef const* ref) {
+    ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
+        ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+    csview name = cstr_sv(&source->canonical_path);
+    if (my options.module_resolution == MODULE_RESOLUTION_BUNDLER && my options.resolve_package_json_exports &&
+        mode == RESOLUTION_MODE_COMMONJS && (csview_ends_with(name, ".cts") || csview_ends_with(name, ".cjs"))
+    ) {
+        mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
+    }
+    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM | RESOLUTION_MODE_EXPLICIT;
+    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX | RESOLUTION_MODE_EXPLICIT;
+    return mode;
+}
+
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
     ModuleResolver* resolver = program_resolver(me);
     csview containing = cstr_sv(&source->canonical_path);
-    // The conditions `exports` are read with: by syntax, else the format of the importing file
-    ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
-        ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
-    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM | RESOLUTION_MODE_EXPLICIT;
-    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX | RESOLUTION_MODE_EXPLICIT;
+    ResolutionMode mode = program_module_ref_mode(me, source, ref);
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
         cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
@@ -761,10 +774,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile cons
     for (u32 i = 0; i < file->module_ref_count; i++) {
         ModuleRef const* ref = file->module_refs[i];
         if (ref->is_declaration || ref->ambient_only) continue;
-        ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
-            ref->syntax == MODULE_REF_DYNAMIC || file->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
-        if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) mode = RESOLUTION_MODE_ESM | RESOLUTION_MODE_EXPLICIT;
-        if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_REQUIRE_SYNTAX | RESOLUTION_MODE_EXPLICIT;
+        ResolutionMode mode = program_module_ref_mode(me, file, ref);
         ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
         bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
             (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
