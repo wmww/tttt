@@ -1282,7 +1282,16 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         // Which member it is that lacks it
         for (u32 i = 0; i < object->composite.types.len; i++) {
             Ty const* member = object->composite.types.data[i];
-            if ((member->flags & TYF_NULLABLE) || ty_access(me, member, index)) continue;
+            if (member->flags & TYF_NULLABLE) continue;
+            // (By its properties and index signatures, tsc's getPropertyOfType: not what an access of an object
+            // literal would read, undefined)
+            if (atom) {
+                Ty const* apparent_member = ty_apparent_type(me, member);
+                if (ty_find_prop(me, apparent_member, atom).found) continue;
+                if ((apparent_member->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_applicable_index_info(me, apparent_member, index)) continue;
+            } else if (ty_access(me, member, index)) {
+                continue;
+            }
             cstr member_str = ty_to_cstr(me, member);
             cstr message = cstr_null;
             cstr_append_d(&message, DEFAULT_DISPLAY, "Property '", name, "' does not exist on type '", member_str, "'.");
@@ -1292,6 +1301,12 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         }
     }
     c_drop(cstr, &name, &object_str);
+}
+
+// TS2339 about `object` as it was before widening, the member lacking the property named (tsc's reportNonexistentProperty
+// with the unwidened left type)
+void ty_report_no_property(Checker* me, Ty const* object, Ty const* key, Span span, ErrorCtx* errs) {
+    report_no_property(me, object, key, 2339, span, false, errs);
 }
 
 static bool is_global_this(Ty const* ty) {

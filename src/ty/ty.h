@@ -1678,6 +1678,7 @@ Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty co
 
 // check.c: what the statement/expression walk checks, with tsc's errors
 void ty_check_assignable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2322 & co
+void ty_report_no_property(Checker* me, Ty const* object, Ty const* key, Span span, ErrorCtx* errs);
 void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs); // TS2678 & co
 void ty_check_type_predicate(Checker* me, Ty const* predicate, Ty const* param, Span span, ErrorCtx* errs); // TS2677
 // The same for a source that is `expr`'s type: a literal or arrow function is reported at what inside it doesn't fit

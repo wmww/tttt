@@ -47921,7 +47921,7 @@ const baselines = {
         types: true,
     },
     'propertyAccessWidening': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

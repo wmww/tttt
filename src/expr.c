@@ -3870,10 +3870,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             );
             if (unwidened != expr_type && error_if_not_found && error_ctx_find(&found, my property->prop.outer_span, 2339)) {
                 error_ctx_clear(&found);
-                cstr shown = ty_to_cstr(current_checker, unwidened);
-                error_ctx_error_d(errs, my property->prop.outer_span, 2339, "Property '", my property->prop.outer_span,
-                    "' does not exist on type '", shown, "'.");
-                cstr_drop(&shown);
+                ty_report_no_property(current_checker, unwidened, ty_access_key_type(current_checker, my property),
+                    my property->prop.outer_span, errs);
             }
             error_ctx_merge(errs, &found);
             error_ctx_drop(&found);
