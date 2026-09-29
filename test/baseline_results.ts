@@ -1086,14 +1086,14 @@ const baselines = {
         types: true,
     },
     'argumentsSpreadRestIterables(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'argumentsSpreadRestIterables(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsUsedInClassFieldInitializerOrStaticInitializationBlock': {
         errors: true,

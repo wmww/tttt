@@ -3596,11 +3596,10 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
         if (param_memo && param_memo->evaluation_started) continue;
         Ty const* type = nullptr;
-        // (What a spread of something else than an array-like type gives a parameter isn't done, nor a spread's
-        // element to a parameter that isn't a rest)
+        // (What a spread element gives a parameter that isn't a rest isn't done)
         bool unknown = false;
         for (u32 a = at; a < arg_count && (i->rest || a == at); a++) {
-            unknown |= args[a].expr && args[a].spread && (!i->rest || !ty_extends_array(me, args[a].type));
+            unknown |= args[a].expr && args[a].spread && !i->rest;
         }
         if (unknown) continue;
         if (i->rest) {
@@ -3609,8 +3608,13 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
                 // Both the parameter and the last argument are a rest: its array (tsc's getMutableArrayOrTupleType,
                 // which keeps a type variable constrained to a mutable array)
                 type = args[arg_count - 1].type;
-                if (ty_is_tuple(type) && ty_tuple_shape(type)->readonly) {
+                if (type->flags & TYF_ANY) {
+                    // (tsc's getMutableArrayOrTupleType keeps any)
+                } else if (ty_is_tuple(type) && ty_tuple_shape(type)->readonly) {
                     unknown = true; // (TODO: the mutable copy)
+                } else if (!ty_extends_array(me, type) && type->kind != TY_TYPE_PARAM) {
+                    // An iterable: the array of what it iterates
+                    type = ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, type, span_null, nullptr), false);
                 } else if (!ty_is_tuple(type) && !ty_is_array(me, type) && type->kind != TY_TYPE_PARAM) {
                     unknown = true;
                 }
@@ -3625,7 +3629,11 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
                         if (!names) names = calloc(arity, sizeof(Atom const*));
                         names[a] = arg->tuple_name;
                     }
-                    if (arg->spread) {
+                    if (arg->spread && arg->expr && !ty_extends_array(me, arg->type)) {
+                        // An iterable: a rest element of what it iterates
+                        elements[a] = ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, arg->type, span_null, nullptr), false);
+                        flags[a] = TUPLE_ELEMENT_REST;
+                    } else if (arg->spread) {
                         // (a variadic element when it's a type variable)
                         elements[a] = arg->type;
                         flags[a] = TUPLE_ELEMENT_REST;
