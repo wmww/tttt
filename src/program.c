@@ -354,6 +354,9 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         return;
     }
     bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source(me, cstr_sv(&resolved.path));
+    if (cstr_size(&resolved.alternate_result)) {
+        cstr_take(&ref->alternate_result, program_path_for_message(me, cstr_sv(&resolved.alternate_result)));
+    }
     program_load_resolved(me, source, ref, &resolved);
     if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
     resolved_module_drop(&resolved);

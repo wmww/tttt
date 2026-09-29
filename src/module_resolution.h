@@ -45,6 +45,9 @@ typedef struct ResolvedModule {
     // and a version, else empty. The program takes a second file with the same id for the first (duplicate packages)
     cstr package_id;
     cstr package_name; // tsc's packageId.name: the package.json's name, with package_id
+    // tsc's alternateResult (absolute path): the declaration file a resolution without `exports` (node16/nodenext/
+    // bundler) or with moduleResolution bundler (node10) would find, when this one found none
+    cstr alternate_result;
     // tsc's TS2209/TS2210 (found or not): an exports/imports entry of a package.json (absolute path) pointed into the
     // outDir without a rootDir that says which input directory the outputs mirror
     cstr ambiguous_root_entry; // "." for the main export

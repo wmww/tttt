@@ -1,4 +1,5 @@
 #include "source_file.h"
+#include "module_resolution.h"
 #include "error.h"
 #include "string_helpers.h"
 #include "compiler_options.h"
@@ -76,6 +77,7 @@ void source_file_drop(SourceFile* me) {
         cstr_drop(&my module_refs[i]->path);
         cstr_drop(&my module_refs[i]->resolved_path);
         cstr_drop(&my module_refs[i]->package_name);
+        cstr_drop(&my module_refs[i]->alternate_result);
         free(my module_refs[i]);
     }
     free(my module_refs);
@@ -147,6 +149,52 @@ cstr source_file_jsx_runtime_import(SourceFile const* me) {
     return cstr_d(base, options->jsx == JSX_REACT_JSXDEV ? "/jsx-dev-runtime" : "/jsx-runtime");
 }
 
+// tsc's mangleScopedPackageName: `@scope/name` is `scope__name` in DefinitelyTyped
+static cstr mangle_scoped_package_name(csview name) {
+    isize slash = name.size && name.buf[0] == '@' ? csview_find_sv(name, c_sv("/")) : c_NPOS;
+    if (slash == c_NPOS) return cstr_from_sv(name);
+    return cstr_d(csview_slice(name, 1, slash), "__", csview_slice(name, slash + 1, name.size));
+}
+
+// tsc's createModuleNotFoundChain: why no declarations were found, one line under the error. The declarations another
+// resolution would find (alternateResult), else what the program has of the package (ModuleRef.package_hint)
+static void module_ref_add_not_found_chain(ModuleRef const* me, Error* error, csview package_name) {
+    cstr mangled = mangle_scoped_package_name(package_name);
+    if (cstr_size(&my alternate_result)) {
+        if (compiler_options()->module_resolution == MODULE_RESOLUTION_NODE10) {
+            error_sub_error_d(error, span_null, 6278, "There are types at '", my alternate_result, "', but this result "
+                "could not be resolved under your current 'moduleResolution' setting. Consider updating to 'node16', "
+                "'nodenext', or 'bundler'.");
+        } else {
+            bool types = csview_find_sv(cstr_sv(&my alternate_result), c_sv("node_modules/@types/")) != c_NPOS;
+            cstr library = types ? cstr_d("@types/", mangled) : cstr_from_sv(package_name);
+            error_sub_error_d(error, span_null, 6277, "There are types at '", my alternate_result, "', but this "
+                "result could not be resolved when respecting package.json \"exports\". The '", library,
+                "' library may need to update its package.json or typings.");
+            cstr_drop(&library);
+        }
+        cstr_drop(&mangled);
+        return;
+    }
+    switch (my package_hint) {
+        case MODULE_REF_HINT_NONE: break;
+        case MODULE_REF_HINT_TYPES_EXIST:
+            error_sub_error_d(error, span_null, 7040, "If the '", package_name, "' package actually exposes this module, "
+                "consider sending a pull request to amend 'https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/",
+                mangled, "'");
+            break;
+        case MODULE_REF_HINT_BUNDLES_TYPES:
+            error_sub_error_d(error, span_null, 7058, "If the '", package_name, "' package actually exposes this module, "
+                "try adding a new declaration (.d.ts) file containing `declare module '", my path, "';`");
+            break;
+        case MODULE_REF_HINT_INSTALL_TYPES:
+            error_sub_error_d(error, span_null, 7035, "Try `npm i --save-dev @types/", mangled, "` if it exists or add a "
+                "new declaration (.d.ts) file containing `declare module '", my path, "';`");
+            break;
+    }
+    cstr_drop(&mangled);
+}
+
 void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     switch (my failure) {
@@ -158,34 +206,8 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
                 Error* error = error_ctx_error_d(errs, my span, 7016,
                     "Could not find a declaration file for module '", my path, "'. '", my resolved_path,
                     "' implicitly has an 'any' type.");
-                // (tsc's mangleScopedPackageName: `@scope/name` is `scope__name` in DefinitelyTyped)
-                csview name = cstr_sv(&my package_name);
-                cstr mangled = cstr_from_sv(name);
-                if (name.size && name.buf[0] == '@') {
-                    isize slash = csview_find_sv(name, c_sv("/"));
-                    if (slash != c_NPOS) {
-                        cstr_take(&mangled, cstr_d(csview_slice(name, 1, slash), "__", csview_slice(name, slash + 1, name.size)));
-                    }
-                }
-                cstr hint = cstr_null;
-                switch (my package_hint) {
-                    case MODULE_REF_HINT_NONE: break;
-                    case MODULE_REF_HINT_TYPES_EXIST:
-                        hint = cstr_d("If the '", name, "' package actually exposes this module, consider sending a pull request "
-                            "to amend 'https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/", mangled, "'");
-                        break;
-                    case MODULE_REF_HINT_BUNDLES_TYPES:
-                        hint = cstr_d("If the '", name, "' package actually exposes this module, try adding a new declaration "
-                            "(.d.ts) file containing `declare module '", my path, "';`");
-                        break;
-                    case MODULE_REF_HINT_INSTALL_TYPES:
-                        hint = cstr_d("Try `npm i --save-dev @types/", mangled, "` if it exists or add a new declaration (.d.ts) "
-                            "file containing `declare module '", my path, "';`");
-                        break;
-                }
-                if (error && cstr_size(&hint)) error_sub_error_s(error, span_null, 7016, hint);
-                else cstr_drop(&hint);
-                cstr_drop(&mangled);
+                // (tsc's errorOnImplicitAnyModule: for a bare name into a package)
+                if (error && cstr_size(&my package_name)) module_ref_add_not_found_chain(me, error, cstr_sv(&my package_name));
             }
             return;
         case MODULE_REF_ARBITRARY_EXTENSION:
@@ -221,8 +243,9 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
             "Cannot find module '", my path, "'. Did you mean to set the 'moduleResolution' option to 'nodenext', "
             "or to add aliases to the 'paths' option?");
     } else {
-        error_ctx_error_d(errs, my span, 2307,
+        Error* error = error_ctx_error_d(errs, my span, 2307,
             "Cannot find module '", my path, "' or its corresponding type declarations.");
+        if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
     }
 }
 

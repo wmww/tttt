@@ -79,6 +79,7 @@ typedef struct State {
     isize condition_count;
     csview containing_dir;
     bool json_without_option;
+    bool resolved_package_directory; // tsc's state.resolvedPackageDirectory: a package.json at a package's root
     // tsc's TS2209/TS2210: an exports/imports target was mapped back to an input file with the project root guessed
     cstr ambiguous_root_entry;
     cstr ambiguous_root_package_json;
@@ -90,6 +91,7 @@ void resolved_module_drop(ResolvedModule* me) {
     cstr_drop(&my suggested_extension);
     cstr_drop(&my package_id);
     cstr_drop(&my package_name);
+    cstr_drop(&my alternate_result);
     cstr_drop(&my ambiguous_root_entry);
     cstr_drop(&my ambiguous_root_package_json);
     *me = (ResolvedModule){0};
@@ -101,6 +103,7 @@ static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
     ret.suggested_extension = cstr_clone(my suggested_extension);
     ret.package_id = cstr_clone(my package_id);
     ret.package_name = cstr_clone(my package_name);
+    ret.alternate_result = cstr_clone(my alternate_result);
     ret.ambiguous_root_entry = cstr_clone(my ambiguous_root_entry);
     ret.ambiguous_root_package_json = cstr_clone(my ambiguous_root_package_json);
     return ret;
@@ -1144,6 +1147,7 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
     PackageJson const* root_package = rest.size ? package_json_of(me, cstr_sv(&package_dir)) : package;
     bool exports_rule = my use_exports && root_package && json_get(&root_package->json, "exports") &&
         json_get(&root_package->json, "exports")->tag != JSON_NULL;
+    if (root_package && !(rest.size && package && !exports_rule)) my resolved_package_directory = true;
 
     if (rest.size && package && !exports_rule) {
         // A nested package.json: `node_modules/foo/bar/package.json`
@@ -1414,6 +1418,45 @@ static ResolvedModule resolve_uncached(ModuleResolver* me, csview specifier, csv
         }
     } else {
         result = node_try_resolve(&state, specifier, EXT_TS | EXT_DTS | secondary, &found, &external);
+    }
+
+    // tsc's alternateResult: a bare name that reached a package's directory but found no declarations
+    bool wanted_types_got_js = result == SEARCH_FOUND && (found.kind == RESOLVED_JS || found.kind == RESOLVED_JSON);
+    if (state.resolved_package_directory && state.kind != MODULE_RESOLUTION_CLASSIC && !module_name_is_relative(specifier)) {
+        bool import_condition = false;
+        for (isize i = 0; i < state.condition_count; i++) import_condition |= !strcmp(state.conditions[i], "import");
+        State retry = {0};
+        bool again = false;
+        if (result == SEARCH_FOUND && external && wanted_types_got_js && state.use_exports && import_condition) {
+            // Without `exports` (NodeResolutionFeatures.Exports off)
+            retry = state_make(me, (ResolutionMode)(mode & ~RESOLUTION_MODE_EXPLICIT));
+            retry.use_exports = false;
+            again = true;
+        } else if ((result != SEARCH_FOUND || wanted_types_got_js) && state.kind == MODULE_RESOLUTION_NODE10) {
+            // As moduleResolution bundler would (its default features and conditions)
+            retry = (State){ .resolver = me, .kind = MODULE_RESOLUTION_BUNDLER };
+            retry.use_exports = retry.use_imports = retry.use_self_name = true;
+            add_condition(&retry, "import");
+            add_condition(&retry, "types");
+            for (isize i = 0; i < my options->custom_conditions.count; i++) {
+                add_condition(&retry, cstr_str(&my options->custom_conditions.items[i]));
+            }
+            again = true;
+        }
+        if (again) {
+            retry.containing_dir = containing_dir;
+            Found alternate = {0};
+            bool alternate_external = false;
+            if (node_try_resolve(&retry, specifier, EXT_TS | EXT_DTS, &alternate, &alternate_external) == SEARCH_FOUND &&
+                alternate_external
+            ) {
+                ret.alternate_result = alternate.path;
+                alternate.path = cstr_null;
+            }
+            cstr_drop(&alternate.path);
+            cstr_drop(&retry.ambiguous_root_entry);
+            cstr_drop(&retry.ambiguous_root_package_json);
+        }
     }
 
     if (result == SEARCH_FOUND) {

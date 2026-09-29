@@ -49,6 +49,8 @@ typedef struct ModuleRef {
         MODULE_REF_HINT_BUNDLES_TYPES, // The package has declaration files: `declare module`
     } package_hint;
     cstr package_name;
+    // tsc's alternateResult, as messages name it: the declarations another resolution would find (TS2307, TS7016)
+    cstr alternate_result;
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
     Symbol* module; // Memo of binder_module_of_ref()
     bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: that it can't be found was said (once per file, like tsc)
