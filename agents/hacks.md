@@ -382,6 +382,10 @@ src` finds the code-side markers; every significant one has an entry here.
   parts (`simplified_parts`, `ty_actual_type_variable`).
 
 ## Type core (`src/ty/`)
+- `instantiate_inner()` TY_INDEXED: an indexed access distributed over a union index keeps its alias (tsc's
+  getIndexedAccessTypeOrUndefined), except when the result is a union of unit types (`ConditionalKeys<B, C>` of
+  type-fest): the aliased identity made every mapped type over the keys (Pick, ConditionalPick) resolve again, +2.2%
+  instructions. tsc prints those key unions by the alias.
 - `UnaryOpExpr.no_type_params_in_scope` approximates getResolvedSignature's instantiation for `yield` (TS7057): only a
   bare type parameter counts as a call's, a contextual `T[]` is taken as is.
 - Union origins (`Ty.composite.origin`): not instantiated, dropped by union-mapping helpers (plan 37 B stage 2).
