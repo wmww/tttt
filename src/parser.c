@@ -8622,8 +8622,9 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             hop_whitespace(&next_expr_p);
             ExprCtx next_expr_ctx = ctx;
             next_expr_ctx.min_precedence = imax(ctx.min_precedence, binary_op_get_precedence(BINARY_OP_GREATER));
+            // (tsc's canFollowTypeArgumentsInExpression: a `(` or a template, even on the next line, takes them)
             if (next_expr_p.whitespace != WHITESPACE_NEWLINE &&
-                *next_expr_p.pos != '(' &&
+                *next_expr_p.pos != '(' && *next_expr_p.pos != '`' &&
                 parse_expr(&next_expr_p, next_expr_ctx, &expr)
             ) {
                 expr_drop(&expr);
@@ -9564,14 +9565,18 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         hop_whitespace(&args_p);
         Anchor args_a = anchor(&args_p);
         VecSpannedType args;
+        const char* super_end = span_end_ptr(ret->identifier.name);
         if (*args_p.pos == '<' && parse_generic_params(&args_p, true, &args)) {
             vec_spanned_type_drop(&args);
             Span args_span = span_from(args_a);
+            const char* args_end = args_p.pos;
             hop_whitespace(&args_p);
             bool is_call = *args_p.pos == '(';
+            bool is_template = *args_p.pos == '`';
             parse_fail(&args_p);
-            // (The call parses the type arguments again: the baselines walk them)
-            if (is_call) parse_error(&p, args_span, 2754, "'super' may not use type arguments.");
+            // (The call parses the type arguments again: the baselines walk them. Before a template tsc drops them)
+            if (is_call || is_template) parse_error(&p, args_span, 2754, "'super' may not use type arguments.");
+            if (is_template) p.pos = super_end = args_end;
         } else {
             parse_fail(&args_p);
         }
@@ -9582,7 +9587,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             // A property access with a missing name (tsc's parseExpectedToken(DotToken) then a missing identifier)
             parse_error(&next_p, span_from_token(&next_p), 1034, "'super' must be followed by an argument list or member access.");
             parse_success(&next_p);
-            p.pos = span_end_ptr(ret->identifier.name);
+            p.pos = super_end;
             Span missing = span_make(p.shared->source, p.pos, p.pos);
             *ret = expr_property(span_from(a), c_new(PropertyExpr, {
                 .expr = *ret,

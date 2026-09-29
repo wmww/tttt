@@ -15316,9 +15316,9 @@ const baselines = {
         types: true,
     },
     'genericTemplateOverloadResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericTupleWithSimplifiableElements': {
         errors: true,
@@ -43416,14 +43416,14 @@ const baselines = {
         types: true,
     },
     'taggedTemplatesWithTypeArguments1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'taggedTemplatesWithTypeArguments2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringBinaryOperations': {
         errors: true,
