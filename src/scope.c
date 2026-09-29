@@ -1985,7 +1985,8 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             Symbol const* other = scope_resolve(my alias->scope, first.sv, SYMBOL_VALUE | SYMBOL_TYPE);
             if (other == me) other = nullptr;
             if (!other) {
-                error_ctx_error_d(errs, first, 2304, "Cannot find name '", first, "'.");
+                // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace meaning)
+                error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
             } else if (symbol_resolved_flags(other) & SYMBOL_TYPE) {
                 error_ctx_error_d(errs, first, 2702, "'", first, "' only refers to a type, but is being used as a namespace here.");
             } else {

@@ -391,7 +391,7 @@ const baselines = {
         types: true,
     },
     'aliasErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9001,7 +9001,7 @@ const baselines = {
         types: true,
     },
     'declareModifierOnImport1': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -19711,7 +19711,7 @@ const baselines = {
         types: true,
     },
     'jsdocInTypeScript': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27166,7 +27166,7 @@ const baselines = {
         types: true,
     },
     'reexportedMissingAlias': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32206,7 +32206,7 @@ const baselines = {
         types: true,
     },
     'unknownSymbols2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -10204,10 +10204,16 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             Span part;
             // (tsc's parseEntityName: the first name isn't a reserved word, the others are identifier names)
             bool first = vec_span_is_empty(&statement->main.alias_path);
-            if (first ? (!parse_identifier(&p, &part) || (is_reserved_word(part.sv) && (p.pos = span_start_ptr(part), true)))
+            bool reserved = false;
+            if (first ? (!parse_identifier(&p, &part) || ((reserved = is_reserved_word(part.sv)) && (p.pos = span_start_ptr(part), true)))
                 : !parse_identifier_or_keyword(&p, &part)
             ) {
-                parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                if (reserved) {
+                    // A missing name, the word is left for what follows
+                    parse_error(&p, part, 1359, "Identifier expected. '", part, "' is a reserved word that cannot be used here.");
+                } else {
+                    parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+                }
                 vec_span_push(&statement->main.alias_path, span_from_pos(&p)); // (a missing name)
                 break;
             }
