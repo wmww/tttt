@@ -879,7 +879,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
 static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     if (!options->no_implicit_any || options->strict_null_checks || my ret_explicit || !my has_body) return;
-    if (my is_generator || my is_constructor || my accessor || my jsdoc_typed) return;
+    if (my is_constructor || my accessor || my jsdoc_typed) return;
     Checker* checker = current_checker;
     Ty const* unwidened = ty_function_return_before_widening(checker, me);
     if (!unwidened) return;
@@ -887,7 +887,14 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
     if (binding_report_widening_errors_in_type(unwidened, errs)) return;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty_widened_objects(checker, unwidened)));
     Span name = span_valid(my name) ? my name : my member_name;
-    if (span_valid(name)) {
+    if (my is_generator && span_valid(name)) {
+        // (Of a generator: its yield type, tsc's WideningKind.GeneratorYield)
+        error_ctx_error_d(errs, name, 7055, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
+            "' yield type.");
+    } else if (my is_generator) {
+        error_ctx_error_d(errs, function_error_span(me), 7025, "Generator implicitly has yield type '", type,
+            "'. Consider supplying a return type annotation.");
+    } else if (span_valid(name)) {
         error_ctx_error_d(errs, name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
             "' return type.");
     } else {
@@ -1005,7 +1012,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         Span body = at && at < end ? block_first_token(span_make(my full_span.source, at, end)) : span_null;
         if (span_valid(body)) error_ctx_error_d(errs, body, 1183, "An implementation cannot be declared in ambient contexts.");
     }
-    function_check_widened_return(me, errs);
+    // (A generator's return type is only asked for after its body is checked: tsc's checkFunctionOrMethodDeclaration)
+    if (!my is_generator) function_check_widened_return(me, errs);
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
     // getReturnTypeFromAnnotation)
     Ty const* tagged_return = !my ret_explicit && !my is_generator &&
@@ -1031,5 +1039,6 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     block_typecheck(&my body, ctx, errs);
     current_checker->return_context = outer_context;
     function_impl_check_end(me, errs);
+    if (my is_generator) function_check_widened_return(me, errs);
     function_check_circular_return(me, errs);
 }
