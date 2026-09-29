@@ -9307,8 +9307,8 @@ const baselines = {
     },
     'defaultKeywordWithoutExport2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'defaultNamedExportWithType1': {
         errors: true,
