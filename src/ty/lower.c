@@ -1463,16 +1463,49 @@ int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const*
     return (int)(uintptr_t)intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)member }, 2);
 }
 
-Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module) {
+// tsc's canHaveSyntheticDefault for `import()` from `importer` (whose usage mode is ESM under node16-nodenext and
+// preserve, else the importer's module format's)
+static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile const* importer) {
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* target = module->module ? module->module->file : nullptr;
+    bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
+    bool esm_usage = node || options->module == MODULE_KIND_PRESERVE ||
+        (importer && importer->has_format ? importer->is_esm : options->module >= MODULE_KIND_ES2015);
+    // The target's format for emit (tsc's getImpliedNodeFormatForEmit): outside node16-nodenext only what its
+    // extension or package.json `type` says
+    csview path = target ? cstr_sv(&target->canonical_path) : c_sv("");
+    bool explicit_format = target && target->has_format && (node || target->package_has_type ||
+        csview_ends_with(path, ".mts") || csview_ends_with(path, ".mjs") || csview_ends_with(path, ".cts") ||
+        csview_ends_with(path, ".cjs"));
+    if (explicit_format && esm_usage) {
+        // In Node.js, a CommonJS module always has a synthetic default when imported into an ES module, and two ES
+        // modules have none, whatever the module setting
+        if (!target->is_esm && node) return true;
+        if (target->is_esm) return false;
+    }
+    if (!options->allow_synthetic_default_imports) return false;
+    if (!target || target->is_declaration) {
+        // (Not with a default export of its own, or an `__esModule` marker)
+        return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
+    }
+    // A TypeScript file only with `export =`; a JavaScript file without ES module syntax or an `__esModule` marker
+    if (!target->is_js) return module_export_equals(module) != module;
+    return !span_valid(target->module_indicator) && !symbol_get_export(module, c_sv("__esModule"));
+}
+
+// What `import("m")` resolves to (tsc's checkImportCallExpression): the module (or what its `export =` assigns),
+// with a synthetic `default` where it can have one (getTypeWithSyntheticDefaultImportType), or nothing but a default
+// for a JSON module imported into an ES module under node16-nodenext (getTypeWithSyntheticDefaultOnly)
+Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, SourceFile const* importer) {
     Symbol* assigned = module_export_equals(module);
     Ty const* type = ty_type_of_symbol(me, assigned);
-    // tsc's getTypeWithSyntheticDefaultImportType: an `export =` module gets a synthetic `default` (not one that says
-    // it's an ES module)
-    if (assigned == module || assigned->is_placeholder || (type->flags & TYF_ERROR) ||
-        !compiler_options()->allow_synthetic_default_imports || symbol_get_export(module, c_sv("__esModule"))
-    ) {
-        return type;
-    }
+    if (assigned->is_placeholder || (type->flags & TYF_ERROR)) return type;
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* target = module->module ? module->module->file : nullptr;
+    bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
+    if (node && target && target->is_json) return with_synthetic_default(me, type, false);
+    if (!dynamic_import_has_synthetic_default(module, importer)) return type;
+    // (tsc's isValidSpreadType: an object spreads, anything else is only the default)
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
     return with_synthetic_default(me, type, structured);
 }

@@ -1235,7 +1235,7 @@ Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
 // What `import("m")` promises: the module's value, with a synthetic `default` for an `export =` module
-Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module);
+Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, struct SourceFile const* importer);
 // The class a JavaScript function is the constructor of (tsc's isJSConstructor: `this.x = v` or `F.prototype.x = v`
 // declared members of it), else null
 Symbol const* ty_js_constructor_class(FunctionImpl const* function);

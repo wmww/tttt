@@ -2269,7 +2269,7 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
     ModuleRef const* ref = call->callable.identifier.module_ref;
     Ty const* module = ty_intrinsic(me, TY_ANY);
     if (ref && ref->module && !ref->module->is_shorthand_module) {
-        module = ty_dynamic_import_module_type(me, ref->module);
+        module = ty_dynamic_import_module_type(me, ref->module, ref->span.source);
     }
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     if (!promise_symbol) return ty_intrinsic(me, TY_ANY); // TODO: TS2711

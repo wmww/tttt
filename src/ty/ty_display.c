@@ -1731,7 +1731,14 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         Ty const* type = prop_type(me, prop);
-        Members const* type_members = (prop->flags & PROP_METHOD) ? ty_members(me, type) : nullptr;
+        // (A property that is a function of a namespace, as a spread copies it: tsc prints a property whose symbol is a
+        // Function or Method as methods)
+        Prop const* declared = prop;
+        while (declared->target) declared = declared->target;
+        bool function_symbol = declared->decl->symbol && (declared->decl->symbol->flags & SYMBOL_FUNCTION) &&
+            declared->decl->symbol->parent &&
+            !(prop->flags & PROP_READONLY) && (type->flags & TYF_OBJECT);
+        Members const* type_members = (prop->flags & PROP_METHOD) || function_symbol ? ty_members(me, type) : nullptr;
         if (type_members && type_members->call_count && !type_members->prop_count) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
@@ -1746,8 +1753,6 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         // An accessor pair whose setter takes another type than the getter gives prints as the pair (tsc's
         // addPropertyToElementList)
-        Prop const* declared = prop;
-        while (declared->target) declared = declared->target;
         if (((declared->decl->setter && vec_function_arg_size(&declared->decl->setter->args)) || declared->decl->write_node) &&
             !(declared->flags & PROP_OPTIONAL)
         ) {

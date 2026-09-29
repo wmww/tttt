@@ -10553,7 +10553,7 @@ const baselines = {
     'dynamicImportsDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dynamicModuleTypecheckError': {
         errors: true,
@@ -25306,9 +25306,9 @@ const baselines = {
         types: true,
     },
     'parseAssertEntriesError': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseBigInt': {
         errors: true,
@@ -25356,9 +25356,9 @@ const baselines = {
         types: true,
     },
     'parseImportAttributesError': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseInvalidNames': {
         errors: true,
@@ -54638,17 +54638,17 @@ const baselines = {
     'nodeModulesAllowJsSynchronousCallErrors(module=node16)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=node18)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=nodenext)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesAllowJsTopLevelAwait(module=node16)': {
         errors: true,
@@ -54933,17 +54933,17 @@ const baselines = {
     'nodeModulesImportAssertions(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssertions(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssertions(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAssignments(module=node16)': {
         errors: true,
@@ -54963,17 +54963,17 @@ const baselines = {
     'nodeModulesImportAttributes(module=node16)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributes(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributes(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributesModeDeclarationEmit1(module=node16)': {
         errors: true,
@@ -55328,17 +55328,17 @@ const baselines = {
     'nodeModulesSynchronousCallErrors(module=node16)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesSynchronousCallErrors(module=node18)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesSynchronousCallErrors(module=nodenext)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesTopLevelAwait(module=node16)': {
         errors: true,
