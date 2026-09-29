@@ -85,6 +85,9 @@ typedef struct BaselineTestCase {
     // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
     bool any_keeps_underline;
+    // The name of a value exported by `export = x` / `export default x`: not an expression to tsc's type writer, it
+    // shows the symbol's type, without narrowing (getTypeOfNode, isInRightSideOfImportOrExportAssignment)
+    struct Expr const* export_name;
     // Set right before walking a heritage clause's type (`implements A`, an interface's `extends A`): tsc has no
     // symbols line for names there that don't resolve (not so in a type reference). The type consumes it
     bool heritage_type;

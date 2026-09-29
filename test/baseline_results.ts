@@ -48948,7 +48948,7 @@ const baselines = {
     'exportAssignTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentAndDeclaration': {
         errors: true,

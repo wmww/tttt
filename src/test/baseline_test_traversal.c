@@ -2207,6 +2207,8 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         // `/** @satisfies {T} */ const x = v`: v isn't parenthesized, the satisfies expression isn't tsc's
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
         // The `import` of `import("m")` and `import.meta` isn't an expression of its own
+    } else if (me == ctx->export_name && my identifier.target && (my identifier.target->flags & SYMBOL_VARIABLE)) {
+        baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, ty_type_of_symbol(current_checker, my identifier.target));
     } else {
         // tsc prints an expression's regular type (getRegularTypeOfExpression)
         baseline_test_case_add_type_recursive(ctx, my outer_span, my inner_span, ty_regular(current_checker, expr_get_type(me)));
@@ -2297,7 +2299,9 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                 csview_equals(my expr.inner_span.sv, "undefined")
             ) {
                 ctx->any_keeps_underline = my tag == STATEMENT_EXPORT_DEFAULT_EXPR; // Of an export assignment
+                ctx->export_name = my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_IDENTIFIER ? &my expr : nullptr;
                 expr_compile_test_info(&my expr, ctx);
+                ctx->export_name = nullptr;
             }
             break;
 
