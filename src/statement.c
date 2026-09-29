@@ -402,6 +402,11 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             (my is_global || my is_ambient_module) ? "An ambient module declaration is only allowed at the top level in a file." :
             "A namespace declaration is only allowed at the top level of a namespace or module.");
     }
+    // tsc's bindModuleDeclaration: an ambient module or augmentation is visible anyway (on the first token, `export`)
+    if ((my is_global || my is_ambient_module) && props.exported && errs) {
+        error_ctx_error_d(errs, block_first_token(my full_span), 2668, "'export' modifier cannot be applied to ambient modules "
+            "and module augmentations since they are always visible.");
+    }
     if (my is_global && !props.declared && !scope->ambient) {
         error_ctx_error_d(errs, my name, 2670,
             "Augmentations for the global scope should have 'declare' modifier unless they appear in already ambient context.");

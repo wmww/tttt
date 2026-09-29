@@ -33606,7 +33606,7 @@ const baselines = {
         types: true,
     },
     'ambientExternalModuleInsideNonAmbient': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
