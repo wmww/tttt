@@ -370,11 +370,12 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
                 }
                 // Allow multiple typechecking errors for the same span
                 return i - 1;
-            } else if (error->phase == ERROR_PHASE_PARSE && error_is_js_syntax(error) !=
-                error_is_js_syntax(vec_error_at(&my errors, i - 1))
+            } else if (error->phase == ERROR_PHASE_PARSE && vec_error_at(&my errors, i - 1)->ts_code != error->ts_code &&
+                (error_is_js_syntax(error) != error_is_js_syntax(vec_error_at(&my errors, i - 1)) ||
+                    error->grammar || vec_error_at(&my errors, i - 1)->grammar)
             ) {
-                // A JavaScript file's TypeScript-only syntax error (tsc's getJSSyntacticDiagnosticsForFile) is a
-                // diagnostic of its own next to a parse or grammar error there: by code
+                // A JavaScript file's TypeScript-only syntax error (tsc's getJSSyntacticDiagnosticsForFile) or a
+                // grammar error (the checker's) is a diagnostic of its own next to another there: by code
                 Error const* other = vec_error_at(&my errors, i - 1);
                 return other->ts_code < error->ts_code ? i : i - 1;
             } else {

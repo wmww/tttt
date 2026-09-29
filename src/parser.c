@@ -491,6 +491,7 @@ static inline Error* add_error_to_parser(Parser* me, Error error) {
 
 static bool last_error_starts_at(Parser* me, Span span);
 static int invalid_char_size(const char* c);
+static bool is_grammar_code(unsigned code);
 
 // tsc's parseErrorAtPosition: an error that starts where the previous one does is dropped (the first error at a
 // position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
@@ -512,7 +513,8 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
         return parse_error_inner(me, span_make(my shared->source, at, at + 2), 18026,
             cstr_lit("'#!' can only be used at the start of a file."), false);
     }
-    if (last_error_starts_at(me, span)) {
+    // (A grammar error is the checker's to tsc: no position is taken by another)
+    if (!is_grammar_code(ts_code) && last_error_starts_at(me, span)) {
         cstr_drop(&message);
         return nullptr;
     } else if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
@@ -8056,7 +8058,7 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
 static bool last_error_starts_at(Parser* me, Span span) {
     for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
         Error const* last = vec_error_at(&my shared->errors, i);
-        if (is_js_syntax_code(last->ts_code)) continue;
+        if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code)) continue;
         return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
     }
     return false;
@@ -11588,6 +11590,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         if (source->has_parse_errors && is_grammar_code(i->ts_code)) {
             error_drop(i);
         } else {
+            i->grammar = is_grammar_code(i->ts_code);
             error_ctx_append_error(errs, *i);
         }
         *i = (Error){0};

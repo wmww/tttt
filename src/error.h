@@ -22,6 +22,8 @@ typedef struct Error {
     unsigned ts_code;
     ErrorPhase phase;
     bool detached; // Related information without a location (tsc's createDetachedDiagnostic)
+    // A grammar error the parser reports (tsc's checker's): not one parse error per position, see parse_file()
+    bool grammar;
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
     // (the index of the file being checked), which is the one a single checker reports
