@@ -6441,7 +6441,7 @@ const baselines = {
         types: true,
     },
     'contextualTyping33': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57081,7 +57081,7 @@ const baselines = {
         types: true,
     },
     'parserUnaryExpression2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -2829,7 +2829,7 @@ static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
     Ty const* numeric[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
     Ty const* number_or_bigint = ty_union(checker, numeric, 2, nullptr, (TyList){});
     if (type && !ty_is_related(checker, type, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-        error_ctx_error_d(errs, operand->outer_span, 2356,
+        error_ctx_error_d(errs, expr_error_span(operand), 2356,
             "An arithmetic operand must be of type 'any', 'number', 'bigint' or an enum type.");
         return;
     }
@@ -2840,10 +2840,10 @@ static void increment_typecheck(Expr const* operand, ErrorCtx* errs) {
     if (((reference->tag != EXPR_IDENTIFIER || reference->identifier.keyword) && reference->tag != EXPR_PROPERTY) ||
         ty_is_import_meta(reference)
     ) {
-        error_ctx_error_d(errs, operand->outer_span, 2357,
+        error_ctx_error_d(errs, expr_error_span(operand), 2357,
             "The operand of an increment or decrement operator must be a variable or a property access.");
     } else if (expr_is_optional_chain(reference)) {
-        error_ctx_error_d(errs, operand->outer_span, 2777,
+        error_ctx_error_d(errs, expr_error_span(operand), 2777,
             "The operand of an increment or decrement operator may not be an optional property access.");
     }
 }
@@ -3118,7 +3118,7 @@ static bool binary_op_typecheck(
             Ty const* number_or_bigint = ty_union(checker, numeric_types, 2, nullptr, (TyList){});
             // (tsc's checkArithmeticOperandType with isAwaitValid: an operand that would fit once awaited)
             if (!ty_is_related(checker, left, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-                Error* e = error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2362,
+                Error* e = error_ctx_error_d(errs, expr_error_span(&expr->binary_op->left), 2362,
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
                 Ty const* awaited = e ? ty_awaited_of_promise(checker, left) : nullptr;
                 if (awaited && ty_is_related(checker, awaited, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
@@ -3127,7 +3127,7 @@ static bool binary_op_typecheck(
                 operands_ok = false;
             }
             if (!ty_is_related(checker, right, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-                Error* e = error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2363,
+                Error* e = error_ctx_error_d(errs, expr_error_span(&expr->binary_op->right), 2363,
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
                 Ty const* awaited = e ? ty_awaited_of_promise(checker, right) : nullptr;
                 if (awaited && ty_is_related(checker, awaited, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
@@ -3247,7 +3247,7 @@ static bool binary_op_typecheck(
             bool all_primitive = !(left->flags & (TYF_ANY | TYF_NEVER));
             for (u32 i = 0; i < parts.len && all_primitive; i++) all_primitive = assignable_to_kind(parts.data[i], primitive, false);
             if (all_primitive) {
-                error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2358, "The left-hand side of an 'instanceof' "
+                error_ctx_error_d(errs, expr_error_span(&expr->binary_op->left), 2358, "The left-hand side of an 'instanceof' "
                     "expression must be of type 'any', an object type or a type parameter.");
             }
             // (tsc's resolveInstanceofExpression) the right side something callable or constructable
@@ -3255,7 +3255,7 @@ static bool binary_op_typecheck(
             if (instanceof_target_ok(checker, right)) break;
             Ty const* function_type = ty_global_function_type(checker);
             if (!function_type || ty_is_related(checker, right, function_type, TY_RELATION_ASSIGNABLE)) break;
-            error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2359, "The right-hand side of an 'instanceof' "
+            error_ctx_error_d(errs, expr_error_span(&expr->binary_op->right), 2359, "The right-hand side of an 'instanceof' "
                 "expression must be either of type 'any', a class, function, or other type assignable to the 'Function' "
                 "interface type, or an object type with a 'Symbol.hasInstance' method.");
         }   break;

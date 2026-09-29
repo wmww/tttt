@@ -329,7 +329,7 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
         Expr const* check_node = expr_effective_check_node(i);
         Value index = value_number((double)i_index);
         ElaborationItem item = {
-            .error_span = check_node->inner_span, .inner = check_node, .name_type = ty_literal(me, &index), .name = name,
+            .error_span = expr_error_span(check_node), .inner = check_node, .name_type = ty_literal(me, &index), .name = name,
         };
         reported |= elaborate_element(me, &item, source, target, errs);
     }
