@@ -949,7 +949,9 @@ bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern) {
 
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
     u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)parameter };
-    return intern_get(&my links, key, 2);
+    Ty const* ret = intern_get(&my links, key, 2);
+    if (!ret && parameter->this_of) ret = ty_contextual_this_type(me, parameter->this_of);
+    return ret;
 }
 
 // tsc's ThisType<T> marker in a contextual type (getThisTypeFromContextualType): T, null if there's none

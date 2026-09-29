@@ -252,6 +252,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (i->initializer.binding.tag == BINDING_IDENTIFIER && !span_valid(my arrow_span) &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
+            if (!i->initializer.binding.has_explicit_type && !i->jsdoc_this) i->initializer.this_of = me;
             function_scope->this_ref = (ThisRef){
                 .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol, .type_boundary = this_is_any,
                 // (A JavaScript `@this {T}`: `this.x = v` still declares x, see scope_add_this_property())

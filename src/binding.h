@@ -99,6 +99,9 @@ typedef struct InitializedBinding {
     struct FunctionImpl const* getter;
     // The parameter of a JavaScript function whose JSDoc `@type` types it (FunctionImpl.jsdoc_signature_type)
     struct FunctionImpl const* jsdoc_typed_by;
+    // An unannotated `this` parameter: its function, whose contextual `this` type it has (tsc's
+    // getTypeForVariableLikeDeclaration: getContextualThisParameterType)
+    struct FunctionImpl const* this_of;
     // JavaScript: `const x = require("m")`, `const { a, b: c } = require("m")`, `const a = require("m").a` declare
     // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
     struct PortItem* require_ports;
