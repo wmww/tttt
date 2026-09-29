@@ -902,10 +902,12 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         InferParam const* keyof_param = constraint->kind == TY_KEYOF ? inference_param(inf, constraint->keyof.operand) : nullptr;
         bool keyof_blocked = constraint->kind == TY_KEYOF && (!keyof_param || keyof_param->fixed);
         if (template && !keyof_blocked && template->kind == TY_INDEXED &&
-            template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param
+            template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
+            ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))
         ) {
             // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate, as the
-            // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType)
+            // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType). Not when T is
+            // inferred and a `readonly` or `?` of the mapped type would be taken off the source's properties
             infer_with_priority(me, inf, source, mapped->modifiers_type, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
         } else if (!mapped->name_type) {
             infer_to_mapped(me, inf, source, mapped, mapped->constraint);

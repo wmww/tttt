@@ -66113,7 +66113,7 @@ const baselines = {
     'typeParameterConstModifiersReverseMappedTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterConstModifiersWithIntersection': {
         errors: true,
