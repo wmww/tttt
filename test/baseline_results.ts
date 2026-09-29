@@ -18671,12 +18671,12 @@ const baselines = {
         types: true,
     },
     'invalidUnicodeEscapeSequance': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'invalidUnicodeEscapeSequance2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18686,7 +18686,7 @@ const baselines = {
         types: true,
     },
     'invalidUnicodeEscapeSequance4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32011,7 +32011,7 @@ const baselines = {
         types: true,
     },
     'unicodeEscapesInNames02(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56836,12 +56836,12 @@ const baselines = {
         types: true,
     },
     'TypeArgumentList1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserX_TypeArgumentList1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58386,7 +58386,7 @@ const baselines = {
         types: true,
     },
     'parserSkippedTokens13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58406,12 +58406,12 @@ const baselines = {
         types: true,
     },
     'parserSkippedTokens17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserSkippedTokens18': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

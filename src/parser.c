@@ -545,6 +545,8 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
     int invalid = span.source && !in_literal ? invalid_char_size(span_start_ptr(span)) : 0;
     if (invalid && ts_code != 1127) {
         cstr_drop(&message);
+        // (tsc's scanner reports a `\\` that starts no identifier without a length)
+        if (*span_start_ptr(span) == '\\') invalid = 0;
         return parse_error_inner(me, span_make(my shared->source, span_start_ptr(span), span_start_ptr(span) + invalid),
             1127, cstr_lit("Invalid character."), false);
     }
