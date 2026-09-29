@@ -26161,7 +26161,7 @@ const baselines = {
         types: true,
     },
     'promiseTry': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

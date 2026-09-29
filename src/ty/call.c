@@ -815,6 +815,27 @@ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper
     return param_type && return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
 }
 
+// A variadic rest parameter takes the remaining arguments as a tuple (tsc's getSpreadArgumentType at the end of
+// inferTypeArguments)
+static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* shape, Args* args) {
+    if (!shape->rest_variadic) return;
+    u32 from = shape->count < args->len ? shape->count : args->len;
+    // (Under `...args: T` with a `const T`, each argument is in a const context: its contextual type is `T[i]`)
+    bool is_const = ty_is_const_type_variable(me, shape->rest_variadic, 0);
+    for (u32 i = from; i < args->len; i++) {
+        if (args->data[i].type) continue;
+        Ty const* contextual = nullptr;
+        if (is_const && args->spread_index < 0) {
+            Value index = value_number((double)(i - from));
+            contextual = ty_indexed(me, shape->rest_variadic, ty_literal(me, &index));
+        }
+        args->data[i].type = ty_check_expr_in_const(me, args->data[i].expr, contextual, is_const);
+    }
+    if (args->len > shape->count || args->spread_index < 0) {
+        infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)), shape->rest_variadic, INFER_PRIORITY_NORMAL);
+    }
+}
+
 // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
 static TyMapper const* infer_type_arguments(
     Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic,
@@ -985,6 +1006,17 @@ static TyMapper const* infer_type_arguments(
         }
         infer_from_arg(me, &inf, &shape, args, i);
     }
+    // The remaining arguments are inferred from before the second pass too (tsc's inferTypeArguments does it at the end
+    // of each pass), unless one of them is context sensitive itself: `evaluate(([t]) => ..., total)`
+    bool rest_inferred = false;
+    if (shape.rest_variadic && any_sensitive) {
+        bool rest_sensitive = false;
+        for (u32 i = shape.count; i < args->len; i++) rest_sensitive |= args->data[i].context_sensitive || args->data[i].generic_call;
+        if (!rest_sensitive) {
+            infer_rest_variadic(me, &inf, &shape, args);
+            rest_inferred = true;
+        }
+    }
     // Second pass: each context-sensitive argument sees what is known by then, which is thereby decided. So does each
     // generic function argument, instantiated in the context of its parameter's signature (tsc's
     // instantiateSignatureInContextOf with the fixing mapper) and inferred from like that
@@ -1072,24 +1104,7 @@ static TyMapper const* infer_type_arguments(
         }
         infer_from_arg(me, &inf, &shape, args, i);
     }
-    // A variadic rest parameter takes the remaining arguments as a tuple
-    if (shape.rest_variadic) {
-        u32 from = shape.count < args->len ? shape.count : args->len;
-        // (Under `...args: T` with a `const T`, each argument is in a const context: its contextual type is `T[i]`)
-        bool is_const = ty_is_const_type_variable(me, shape.rest_variadic, 0);
-        for (u32 i = from; i < args->len; i++) {
-            if (args->data[i].type) continue;
-            Ty const* contextual = nullptr;
-            if (is_const && args->spread_index < 0) {
-                Value index = value_number((double)(i - from));
-                contextual = ty_indexed(me, shape.rest_variadic, ty_literal(me, &index));
-            }
-            args->data[i].type = ty_check_expr_in_const(me, args->data[i].expr, contextual, is_const);
-        }
-        if (args->len > shape.count || args->spread_index < 0) {
-            infer_types(me, &inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape.rest_variadic)), shape.rest_variadic, INFER_PRIORITY_NORMAL);
-        }
-    }
+    if (!rest_inferred) infer_rest_variadic(me, &inf, &shape, args);
     free(shape.types);
     free(self.sites);
 
