@@ -1288,7 +1288,9 @@ void scope_add_port(Scope* me, PortItem* item) {
         if (!item->type_only) check_require_exports_collision(me, item->decl_name);
     }
     bool exported = port_item_declares_export(item);
-    if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM)) {
+    // (`declare global { export { a as b } }` declares globals, TS2666 aside)
+    bool global_export = item->tag == PORT_EXPORT_SPECIFIC && my kind == SCOPE_GLOBAL_AUGMENTATION;
+    if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM) && !global_export) {
         return; // TODO: TS1194 export declarations are not permitted in a namespace... and nowhere else either
     }
     // (An alias is exported only by `export`: an ambient export context doesn't export imports, tsc's

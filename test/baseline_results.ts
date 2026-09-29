@@ -27771,7 +27771,7 @@ const baselines = {
         types: true,
     },
     'reuseTypeAnnotationImportTypeInGlobalThisTypeArgument': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
