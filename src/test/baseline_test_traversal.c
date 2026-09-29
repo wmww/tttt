@@ -991,7 +991,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 Symbol const* decl = symbol_for_meaning(symbol, SYMBOL_ANY_MEANING);
                 if (!decl) decl = symbol;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = symbol_declaration_spans(decl),
+                    .declarations = symbol_declaration_spans(decl->is_placeholder ? decl : shown_declaration(symbol, decl)),
                     .span = *i,
                     .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });

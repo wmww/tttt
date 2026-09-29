@@ -262,7 +262,7 @@ const baselines = {
     },
     'acceptableAlias1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'accessInstanceMemberFromStaticMethod01': {
@@ -402,7 +402,7 @@ const baselines = {
     },
     'aliasInaccessibleModule2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'aliasInstantiationExpressionGenericIntersectionNoCrash1': {
@@ -7347,7 +7347,7 @@ const baselines = {
     },
     'declFileImportChainInExportAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declFileImportModuleWithExportAssignment': {
@@ -8022,7 +8022,7 @@ const baselines = {
     },
     'declarationEmitEnumReferenceViaImportEquals': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=false)': {
@@ -8367,7 +8367,7 @@ const baselines = {
     },
     'declarationEmitNameConflicts': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitNameConflicts2': {
@@ -12102,7 +12102,7 @@ const baselines = {
     },
     'es6ImportNamedImportInIndirectExportAssignment': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'es6ImportNamedImportMergeErrors': {
@@ -12832,7 +12832,7 @@ const baselines = {
     },
     'exportDefaultProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportDefaultProperty2': {
@@ -16727,7 +16727,7 @@ const baselines = {
     },
     'import_reference-exported-alias': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'import_reference-to-type-alias': {
@@ -20177,7 +20177,7 @@ const baselines = {
     },
     'jsxNamespaceGlobalReexport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxNamespaceGlobalReexportMissingAliasTarget': {
@@ -20187,7 +20187,7 @@ const baselines = {
     },
     'jsxNamespaceImplicitImportJSXNamespace': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=preserve)': {
@@ -49752,7 +49752,7 @@ const baselines = {
     },
     'importEquals3': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importEqualsDeclaration': {
@@ -50867,7 +50867,7 @@ const baselines = {
     },
     'importStatementsInterfaces': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nameCollision': {
@@ -51082,7 +51082,7 @@ const baselines = {
     },
     'reExportAliasMakesInstantiated': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'assertionsAndNonReturningFunctions': {
@@ -53537,7 +53537,7 @@ const baselines = {
     },
     'tsxPreserveEmit1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'tsxPreserveEmit2': {
