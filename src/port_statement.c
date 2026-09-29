@@ -249,6 +249,25 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             }
         }
     }
+    // tsc's checkImportEqualsDeclaration: `import type A = N.B`
+    if (alias->tag == PORT_IMPORT_ALIAS && alias->type_only) {
+        error_ctx_grammar_error_d(errs, span_with_semicolon(span), 1392, "An import alias cannot use 'import type'");
+    }
+    // tsc's checkGrammarImportClause: `import type A, { B }` (the clause, from `type` to the bindings' end)
+    if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && vec_port_item_size(&my items) &&
+        span_valid(my keyword_span)
+    ) {
+        const char* start = span_end_ptr(my keyword_span);
+        while (*start == ' ' || *start == '\t') start++;
+        PortItem const* last = vec_port_item_back(&my items);
+        const char* end = span_end_ptr(last->full_span);
+        if (last->tag != PORT_IMPORT_GATHER) {
+            while (*end && *end != '}') end++;
+            if (*end) end++;
+        }
+        error_ctx_grammar_error_d(errs, span_make(my keyword_span.source, start, end), 1363,
+            "A type-only import can specify a default import or named bindings, but not both.");
+    }
     // `import { x }` of a property of what `export =` names: tsc's getExternalModuleMember finds none if the value
     // has no such property (the binder leaves that to the checker, see resolve_alias_target())
     for_each (i, vec_port_item, &my items) {
