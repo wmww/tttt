@@ -819,6 +819,17 @@ static Ty const* union_with_origin(
 }
 
 Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
+    // Two-member unions are mostly `T | undefined` and `T | U` of the same few types over and over (flow, optional
+    // properties, element accesses), where T is often a big union: union_with_origin() would flatten, sort and hash it
+    // every time
+    if (len == 2 && !alias && types[0] != types[1]) {
+        u64 key[3] = { KEY_UNION_PAIR, types[0]->id, types[1]->id };
+        Ty const* cached = intern_get(&my links, key, 3);
+        if (cached) return cached;
+        Ty const* ret = union_with_origin(me, types, len, alias, alias_args, nullptr);
+        *intern_slot(me, &my links, key, 3) = ret;
+        return ret;
+    }
     return union_with_origin(me, types, len, alias, alias_args, nullptr);
 }
 

@@ -24,6 +24,17 @@ ModuleKind source_file_emit_module_kind(SourceFile const* me) {
     return implied != MODULE_KIND_NONE ? implied : compiler_options()->module;
 }
 
+// Whether some line break of the text isn't \n or \r\n: a lone \r, U+2028 or U+2029
+static bool has_other_line_breaks(const char* start, const char* end) {
+    for (const char* pos = start; (pos = memchr(pos, '\r', (size_t)(end - pos))); pos++) {
+        if (pos + 1 == end || pos[1] != '\n') return true;
+    }
+    for (const char* pos = start; (pos = memchr(pos, 0xE2, (size_t)(end - pos))); pos++) {
+        if (end - pos >= 3 && (unsigned char)pos[1] == 0x80 && ((unsigned char)pos[2] & 0xFE) == 0xA8) return true;
+    }
+    return false;
+}
+
 SourceFile source_file_make(cstr canonical_path, cstr contents) {
     check(cstr_size(&canonical_path));
     const char* start = cstr_str(&contents);
@@ -32,13 +43,21 @@ SourceFile source_file_make(cstr canonical_path, cstr contents) {
     u32* line_starts = malloc(sizeof(u32) * cap);
     u32 line_count = 0;
     line_starts[line_count++] = 0;
-    // tsc's computeLineStarts: \r\n, \r, \n, U+2028 and U+2029 end a line
+    // tsc's computeLineStarts: \r\n, \r, \n, U+2028 and U+2029 end a line. Most files have only \n and \r\n: memchr
+    // (SIMD) finds those, and checking for the others with memchr is much cheaper than looking at every byte
+    bool only_lf = !has_other_line_breaks(start, end);
     for (const char* pos = start; pos < end; ) {
-        unsigned char c = (unsigned char)*pos;
-        if (c == '\n') pos++;
-        else if (c == '\r') pos += pos + 1 < end && pos[1] == '\n' ? 2 : 1;
-        else if (c == 0xE2 && pos + 2 < end && (unsigned char)pos[1] == 0x80 && ((unsigned char)pos[2] & 0xFE) == 0xA8) pos += 3;
-        else { pos++; continue; }
+        if (only_lf) {
+            pos = memchr(pos, '\n', (size_t)(end - pos));
+            if (!pos) break;
+            pos++;
+        } else {
+            unsigned char c = (unsigned char)*pos;
+            if (c == '\n') pos++;
+            else if (c == '\r') pos += pos + 1 < end && pos[1] == '\n' ? 2 : 1;
+            else if (c == 0xE2 && pos + 2 < end && (unsigned char)pos[1] == 0x80 && ((unsigned char)pos[2] & 0xFE) == 0xA8) pos += 3;
+            else { pos++; continue; }
+        }
         if (line_count == cap) {
             cap *= 2;
             line_starts = realloc(line_starts, sizeof(u32) * cap);
