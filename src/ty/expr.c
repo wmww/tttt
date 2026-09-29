@@ -3571,7 +3571,8 @@ static bool tuple_past_the_end(Checker* me, Ty const* object, Ty const* key) {
     if (!(key->flags & TYF_NUMBER_LITERAL)) return false;
     TyList types = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
     for (u32 i = 0; i < types.len; i++) {
-        if (!ty_is_tuple(ty_apparent_type(me, types.data[i]))) return false;
+        Ty const* apparent = ty_apparent_type(me, types.data[i]);
+        if (!ty_is_tuple(apparent) && !ty_tuple_shape(apparent)) return false; // (`[]` is its own target)
     }
     return true;
 }

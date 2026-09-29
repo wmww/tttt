@@ -65713,12 +65713,12 @@ const baselines = {
     'emptyTuplesTypeAssertion01': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyTuplesTypeAssertion02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexerWithTuple': {
         errors: false,
