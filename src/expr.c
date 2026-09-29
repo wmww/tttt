@@ -3528,7 +3528,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             ) {
                 ty_check_import_call_options(checker, vec_expr_at(&my call->args, 1), errs);
             }
-            ty_call_typecheck(checker, callee_type, my call, contextual, my outer_span, errs);
+            ty_call_typecheck(checker, callee_type, my call, contextual, my inner_span, errs);
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
                 import_call_check_grammar(me, errs);
             }
