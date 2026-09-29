@@ -748,6 +748,8 @@ static TyMapper const* fix_for_generic_function(Checker* me, Signature const* si
     return inference_mapper(me, sig, inf, true);
 }
 
+static bool returns_single_signature(Checker* me, Signature const* sig);
+
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode) {
     Signature const* wanted = nullptr;
     Signature const* generic = generic_function_argument(me, type, contextual, &wanted);
@@ -756,7 +758,15 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
         mode->skipped = true;
         return ty_any_function_type(me);
     }
-    // HACK: not tsc's higher-order branch (a call returning a function would get the member's type parameters)
+    // Higher order: if the call returns a function and not everything is inferred yet, the member's type parameters
+    // can become the result's (`pipe4([list, box])` is `<T>(a: T) => { value: T[] }`, tsc's
+    // instantiateTypeWithSingleGenericCallSignature)
+    if (returns_single_signature(me, mode->sig)) {
+        bool all_inferred = true;
+        for (u32 j = 0; j < mode->inf->len; j++) all_inferred &= mode->inf->params[j].co_len || mode->inf->params[j].contra_len;
+        Signature const* propagated = all_inferred ? nullptr : inference_propagate_generic(me, mode->inf, generic, wanted);
+        if (propagated) return ty_signature_type(me, propagated);
+    }
     TyMapper const* so_far = fix_for_generic_function(me, mode->sig, mode->inf, wanted);
     return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far));
 }
