@@ -9441,15 +9441,16 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
 }
 
 // tsc's isVariableDeclarationInitializedToBareOrAccessedRequire: in a JavaScript file `const x = require("m")`,
-// `const { a, b: c } = require("m")` and `const a = require("m").a` declare aliases, like imports
+// `const { a, b: c } = require("m")` and `const a = require("m").a` (`.x.a`) declare aliases, like imports
 static void note_require_declaration(InitializedBinding* initializer) {
     if (initializer->binding.has_explicit_type) return;
     Expr* value = &initializer->value;
     Span accessed = span_null;
-    if (value->tag == EXPR_PROPERTY && !expr_is_perenthisized(value) && value->property->form == PROPERTY_EXPR_DOT &&
+    // (`require("m").a.b` too: the alias is of b, looked up in the module, tsc's getCommonJSPropertyAccess)
+    while (value->tag == EXPR_PROPERTY && !expr_is_perenthisized(value) && value->property->form == PROPERTY_EXPR_DOT &&
         !value->property->optional_chain
     ) {
-        accessed = value->property->prop.inner_span;
+        if (!span_valid(accessed)) accessed = value->property->prop.inner_span;
         value = &value->property->expr;
     }
     if (!expr_is_require_call(value) || expr_is_perenthisized(value)) return;
