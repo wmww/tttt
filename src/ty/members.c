@@ -1486,6 +1486,97 @@ static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 d
     return false;
 }
 
+// Whether a class or interface declares members of its own (tsc's getMembersOfSymbol(symbol).size: the instance side,
+// the constructor included)
+static bool declares_members(Symbol const* decl) {
+    if (decl->members && decl->members->count) return true;
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (node->kind == SYMBOL_DECL_INTERFACE) {
+            InterfaceDecl const* interface_decl = node->node;
+            if (vec_interface_member_size(&interface_decl->type.interface.members)) return true;
+        } else if (node->kind == SYMBOL_DECL_CLASS) {
+            ClassDecl const* class_decl = node->node;
+            for_each (i, vec_class_item, &class_decl->items) {
+                switch (i->tag) {
+                    case CLASS_ITEM_CONSTRUCTOR: return true;
+                    case CLASS_ITEM_METHOD: if (!i->method.is_static) return true; break;
+                    case CLASS_ITEM_FIELD: if (!i->field.is_static) return true; break;
+                    case CLASS_ITEM_INTERFACE_MEMBER: if (!i->interface_member_static) return true; break;
+                    case CLASS_ITEM_STATIC_BLOCK: break;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// Whether tsc makes the declared type of a class or interface a TypeReference (ObjectFlags.Reference): a class, a
+// generic one, or an interface that isn't thisless (mentions `this`, or extends something other than an interface or
+// an interface that has a `this` type: tsc's isThislessInterface)
+static bool is_tsc_reference(Checker* me, Ty const* declared, u32 depth) {
+    if (declared->declared.kind == TY_DECLARED_CLASS_INSTANCE || declared->declared.type_params.len) return true;
+    if (declared->declared.this_param) return true;
+    Symbol const* symbol = declared->declared.symbol;
+    if (!symbol || depth > 16) return false;
+    for (SymbolDecl const* node = symbol->decls; node < symbol->decls + symbol->decl_count; node++) {
+        if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = node->node;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            if (extends->type.tag != TYPE_IDENTIFIER || extends->type.identifier->import_ref) continue;
+            Symbol const* base = extends->type.identifier->target;
+            if (!base || base == symbol || !(base->flags & SYMBOL_INTERFACE)) continue;
+            Ty const* base_declared = ty_declared_type_of(me, base);
+            if (base_declared->kind == TY_DECLARED && is_tsc_reference(me, base_declared, depth + 1)) return true;
+        }
+    }
+    return false;
+}
+
+Ty const* ty_single_base_for_non_augmenting_subtype(Checker* me, Ty const* ty) {
+    Ty const* declared = ty->kind == TY_REFERENCE && !ty->reference.deferred ? ty->reference.target : ty;
+    if (declared->kind != TY_DECLARED || declared->declared.merged_value) return nullptr;
+    if (declared->declared.kind != TY_DECLARED_INTERFACE && declared->declared.kind != TY_DECLARED_CLASS_INSTANCE) return nullptr;
+    if (!is_tsc_reference(me, declared, 0)) return nullptr;
+    Symbol const* decl = declared->declared.symbol;
+    if (!decl || declares_members(decl)) return nullptr;
+    LowerCtx ctx = { .generic = declared->declared.type_params.len > 0 || declared->declared.this_param };
+    Ty const* base = nullptr;
+    u32 count = 0;
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (node->kind == SYMBOL_DECL_CLASS) {
+            ClassDecl const* class_decl = node->node;
+            // (Only a base named by a plain (dotted) name: another expression may lead back to the class)
+            Expr const* extends = &class_decl->extends;
+            if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+            if (extends->tag == EXPR_IMPLICIT_ANY) continue;
+            if (extends->tag != EXPR_IDENTIFIER && extends->tag != EXPR_PROPERTY) return nullptr;
+            Ty const* instance = nullptr;
+            Symbol const* base_decl = nullptr;
+            if (class_base(me, class_decl, ctx, &instance, &base_decl) && instance != declared) {
+                base = instance;
+                count++;
+            }
+        } else if (node->kind == SYMBOL_DECL_INTERFACE) {
+            InterfaceDecl const* interface_decl = node->node;
+            for_each (extends, vec_spanned_type, &interface_decl->extends) {
+                Ty const* type = ty_from_node(me, &extends->type, ctx);
+                if (type == declared || !(type->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+                base = type;
+                count++;
+            }
+        }
+    }
+    if (count != 1) return nullptr;
+    if (ty->kind == TY_REFERENCE && declared->declared.type_params.len) {
+        TyList args = ty_reference_args(me, ty);
+        TyList params = declared->declared.type_params;
+        if (args.len >= params.len) {
+            base = ty_instantiate(me, base, ty_mapper_new(me, params, (TyList){ .data = args.data, .len = params.len }));
+        }
+    }
+    return base;
+}
+
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
     if (target->kind == TY_REFERENCE) target = target->reference.target;
     return has_base_type(me, source, target, 0);

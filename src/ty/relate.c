@@ -594,13 +594,20 @@ static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
     return ret;
 }
 
-// A source and target as messages show them side by side: told apart by their full names if they'd print the same
-// (tsc's getTypeNamesForErrorDisplay)
 // A deferred reference as tsc's getNormalizedType makes it for the relation: a plain reference, without the alias
-// name of the alias whose body it is (what structural messages below the head print)
+// name of the alias whose body it is; a class or interface that adds nothing to its single base, that base (what
+// structural messages below the head print)
 static Ty const* normalized_reference(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_REFERENCE || !ty->reference.deferred || !ty->alias) return ty;
-    return ty_reference(me, ty->reference.target, ty_reference_args(me, ty));
+    for (u32 depth = 0; depth < 16; depth++) {
+        if (ty->kind == TY_REFERENCE && ty->reference.deferred && ty->alias) {
+            ty = ty_reference(me, ty->reference.target, ty_reference_args(me, ty));
+            continue;
+        }
+        Ty const* base = ty_single_base_for_non_augmenting_subtype(me, ty);
+        if (!base) break;
+        ty = base;
+    }
+    return ty;
 }
 
 // The apparent type of an intersection as tsc's getApparentTypeOfIntersectionType makes it: each member's apparent
@@ -631,6 +638,8 @@ static bool is_literal_type(Ty const* ty) {
     return (ty->flags & unit) != 0;
 }
 
+// A source and target as messages show them side by side: told apart by their full names if they'd print the same
+// (tsc's getTypeNamesForErrorDisplay)
 static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
     // A widened literal source is shown by tsc's getTypeNameForErrorDisplay (reportRelationError's generalizedSource):
     // fully qualified, a unique symbol as `typeof sym`

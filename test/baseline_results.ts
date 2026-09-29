@@ -52826,7 +52826,7 @@ const baselines = {
         types: true,
     },
     'checkJsxChildrenProperty5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
