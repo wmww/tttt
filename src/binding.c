@@ -799,11 +799,20 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
     if (my require_port_count) return;
+    // tsc's checkSourceElement of the VariableDeclaration: what goes wrong deep inside is reported at its name, and
+    // checkVariableLikeDeclaration asks for the variable's type first, which takes a call's return type without
+    // checking the call (getQuickTypeOfExpression): an instantiation limit it runs into is the declaration's (TS2589)
+    Checker* checker = current_checker;
+    CurrentNode saved = ty_enter_node(checker, my binding.content_span);
+    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && my value.tag == EXPR_CALL) {
+        ty_type_of_symbol(checker, my binding.symbol);
+    }
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
     binding_typecheck_at(&my binding, initializer, span_null, initializer, errs);
     report_errors_from_widening(me, span_null, errs);
+    ty_leave_node(checker, saved);
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
