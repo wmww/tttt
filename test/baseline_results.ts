@@ -38531,12 +38531,12 @@ const baselines = {
         types: true,
     },
     'decoratorOnImportEquals1': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'decoratorOnImportEquals2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },
@@ -43596,12 +43596,12 @@ const baselines = {
         types: true,
     },
     'templateStringInModuleName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInModuleNameES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58726,9 +58726,9 @@ const baselines = {
         types: true,
     },
     'parserES5ForOfStatement2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserES5ForOfStatement20': {
         errors: true,
@@ -58736,9 +58736,9 @@ const baselines = {
         types: true,
     },
     'parserES5ForOfStatement21': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserES5ForOfStatement3': {
         errors: true,
@@ -59786,9 +59786,9 @@ const baselines = {
         types: true,
     },
     'parserForOfStatement2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserForOfStatement20': {
         errors: true,
@@ -59796,9 +59796,9 @@ const baselines = {
         types: true,
     },
     'parserForOfStatement21': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserForOfStatement22': {
         errors: true,

@@ -39,6 +39,12 @@ void variable_statement_resolve_names(VariableStatement* me, Scope* names, Error
 
 // The grammar of `using` declarations: tsc's checkGrammarVariableDeclarationList(), checkAwaitGrammar() and the using
 // part of checkGrammarVariableDeclaration()
+// tsc's checkForOfStatement checks the iterable through the variable declarations: `for (var of x)` (TS1123) has none
+static bool for_of_checks_iterable(ForEachLoopStatement const* loop) {
+    return loop->keyword != FOR_EACH_LOOP_OF || loop->variable.tag != FOR_EACH_LOOP_STATEMENT ||
+        !vec_initialized_binding_is_empty(&loop->variable.statement.initializers);
+}
+
 static void variable_statement_check_using(VariableStatement* me, bool for_in, ErrorCtx* errs) {
     bool is_await = my keyword == VAR_INIT_AWAIT_USING;
     if (!is_await && my keyword != VAR_INIT_USING) return;
@@ -1343,7 +1349,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (is_declaration && vec_initialized_binding_size(&loop->variable.statement.initializers)) {
                 flow->initializing = vec_initialized_binding_front(&loop->variable.statement.initializers);
             }
-            expr_lookup_names(&loop->iterable, loop_scope, errs);
+            expr_lookup_names(&loop->iterable, loop_scope, for_of_checks_iterable(loop) ? errs : nullptr);
             flow->initializing = outer_initializing;
             flow_add_antecedent(flow, pre_loop, flow->current);
             flow_set_current(flow, pre_loop);
@@ -2041,6 +2047,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     break;
 
                 case FOR_EACH_LOOP_OF:
+                    if (!for_of_checks_iterable(my for_each_loop)) break;
                     ty_iterated_type(checker, my for_each_loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
                         iterable_type, my for_each_loop->iterable.outer_span, errs);
                     break;
@@ -2101,7 +2108,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     break;
             }
             // (After the variables, like tsc: whether it's assigned walks the loop, whose variables it then types)
-            expr_typecheck(&my for_each_loop->iterable, errs);
+            expr_typecheck(&my for_each_loop->iterable, for_of_checks_iterable(my for_each_loop) ? errs : nullptr);
 
             ctx.break_allowed = true;
             ctx.continue_allowed = true;

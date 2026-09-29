@@ -10495,9 +10495,9 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
     InitializedBinding initializer = {0};
     ret->initializers = vec_initialized_binding_init();
 
-    // `for (await using of x)`: `of` is the loop's (tsc's canFollowContextualOfKeyword)
+    // `for (var of x)`, `for (await using of x)`: `of` is the loop's (tsc's canFollowContextualOfKeyword)
     bool empty_for_of = false;
-    if (in_for && ret->keyword == VAR_INIT_AWAIT_USING && starts_with_followed_by_word_break(&p, "of")) {
+    if (in_for && starts_with_followed_by_word_break(&p, "of")) {
         Parser ahead = parser(&p);
         hop_start(&ahead, "of");
         hop_whitespace(&ahead);
@@ -10523,7 +10523,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
-                if (ret->keyword == VAR_INIT_LET) {
+                if (ret->keyword == VAR_INIT_LET && !empty_for_of) {
                     // let can also be a variable name, fail so we then attempt to parse it as such
                     list_leave(&p, saved_context);
                     variable_statement_drop(ret);
@@ -11094,6 +11094,11 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
         !expr_is_perenthisized(&statement->expr)
     ) {
         report_missing_semicolon_after_identifier(&p, statement->expr.inner_span);
+    } else if (statement->tag == STATEMENT_EXPR && statement->expr.tag == EXPR_TEMPLATE && statement->expr.template_->tag &&
+        !expr_is_perenthisized(&statement->expr)
+    ) {
+        // (tsc's parseErrorForMissingSemicolonAfter: `module \`M\` {` is a tagged template)
+        parse_error(&p, statement->expr.template_->template_span, 1443, "Module declaration names may only use ' or \" quoted strings.");
     } else {
         expected_token_error(&p, ";");
     }
@@ -11797,7 +11802,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .namespace = ret->decl.namespace,
             },
         };
-    } else if (!vec_spanned_modifier_is_empty(&modifiers.spanned) && vec_expr_is_empty(&decorators) &&
+    } else if ((!vec_spanned_modifier_is_empty(&modifiers.spanned) || !vec_expr_is_empty(&decorators)) &&
         (*p.pos == 'i' || *p.pos == 'e') &&
         parse_import_export_statement(&p, ret)
     ) {
@@ -11827,7 +11832,20 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             }
         }
         p.shared->in_ambient = outer_ambient;
-        // (Decorators would be TS1206, but the statement has nowhere to keep them for the baselines' walk yet)
+        // (tsc's checkGrammarModifiers: decorators first, at their first token)
+        if (!vec_expr_is_empty(&decorators)) {
+            parse_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
+                "Decorators are not valid here.");
+            if (ret->tag == STATEMENT_IMPORT_EXPORT) {
+                ret->import_export->decorators = decorators;
+                decorators = (VecExpr){0};
+            }
+        }
+        if (vec_spanned_modifier_is_empty(&modifiers.spanned)) {
+            modifier_list_drop(&modifiers);
+            vec_expr_drop(&decorators);
+            return parse_success(&p);
+        }
         Span first = vec_spanned_modifier_front(&modifiers.spanned)->span;
         if (!check_modifiers(&p, &modifiers, modified)) {
             if (code == 1120) parse_error(&p, first, 1120, "An export assignment cannot have modifiers.");

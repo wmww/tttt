@@ -19,6 +19,7 @@ void port_statement_drop(PortStatement* me) {
     vec_port_item_drop(&my items);
     cstr_drop(&my target_path);
     import_attributes_free(my attributes);
+    vec_expr_drop(&my decorators);
 }
 
 void import_attributes_free(ImportAttributes* me) {
@@ -111,6 +112,7 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
+    for_each (i, vec_expr, &my decorators) expr_lookup_names(i, scope, nullptr);
     if (my wrong_context) return;
     // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
     // (In a namespace it is TS1147/TS1194 instead, and nothing is resolved: tsc's checkExternalImportOrExportDeclaration)

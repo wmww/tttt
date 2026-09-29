@@ -2253,6 +2253,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_CONTINUE: break;
 
         case STATEMENT_IMPORT_EXPORT:
+            for_each (i, vec_expr, &my import_export->decorators) expr_compile_test_info(i, ctx);
             port_statement_compile_test_info(my import_export, ctx);
             break;
 

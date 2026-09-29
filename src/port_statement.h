@@ -111,6 +111,7 @@ typedef struct PortStatement {
     bool in_namespace;
     bool in_ambient_namespace;
     bool wrong_context; // In a block or function (TS1232/TS1233): not declared, nothing resolved
+    VecExpr decorators; // `@dec import x = y`: TS1206, only resolved (silently) for the baselines
 } PortStatement;
 
 void port_statement_drop(PortStatement* me);
