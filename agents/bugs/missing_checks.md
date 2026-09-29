@@ -127,7 +127,7 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   this is the harness-vs-CLI gap and a perf question: checking only lib declarations whose symbol merges with a
   user declaration (gated on the option) would be the cheap port. Catch (triage 2026-09-29): with the lib checked
   first, tsc also reports TS2411 in *user* interfaces it otherwise accepts (`interface Foo { a: number; [x: string]:
-  Object }` next to an augmented `Object`, probe in the commit message's triage), an order artifact of relating to
+  Object }` next to `interface Object { data: A; [x: string]: Object }`), an order artifact of relating to
   `Object` while it is being checked; objectTypeHidingMembersOfExtendedObject's user-file error is that. So the
   check order (lib declarations before the user's) would have to be tsc's too. Low value (4 tests), routed here.
 
