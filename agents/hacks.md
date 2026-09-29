@@ -34,6 +34,13 @@ src` finds the code-side markers; every significant one has an entry here.
   merge keeps the earliest file's. Only TS2343/TS2807 (`ty_check_emit_helpers`) are tagged; a new "said once" checker
   memo must be tagged too.
 - `ModuleResolver` caches are per `Program`, unsynchronised; resolutions aren't cached (tsc: per directory+name+mode).
+- Per-checker caches assumed pure in the type ids: `ty_union` of two types (KEY_UNION_PAIR), `ty_intersection`
+  without an alias (KEY_INTERSECTION_OF), flow's `assignment_reduced_type` (KEY_ASSIGNMENT_REDUCED). tsc caches the
+  same, but a result computed while something it reads is still in flight (constraints in
+  `remove_constrained_type_variables`, members for empty-object checks) is pinned. First suspects of an order-dependent
+  union or narrowing bug: disable these.
+- Each checker measures variances and builds relation caches on its own, and a TS2589 count is charged to whichever
+  node first needs them (tsc pays once): a TS2589 near the 5M limit could depend on `--checkers`.
 
 ## Parser
 - Strings are UTF-8: a lone surrogate escape becomes U+FFFD (`append_code_point()`), so all lone surrogates are one
