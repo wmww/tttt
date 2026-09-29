@@ -10131,25 +10131,26 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         Anchor path_a = anchor(&p);
         bool parsed = (*p.pos == '"' || *p.pos == '\'') && parse_literal(&p, &path_expr.literal);
         if (parsed) path_expr = expr_literal(span_from(path_a), path_expr.literal);
-        if (parsed || expect_expr(&p, expr_ctx_null, &path_expr)) {
-            if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
-                statement.target_path = cstr_move(&path_expr.literal.string);
-                statement.target_path_span = path_expr.inner_span;
-            } else {
-                // (tsc's checker reports it, checkExternalImportOrExportDeclaration: not after another error there)
-                add_error_to_parser(&p, (Error){
-                    .message = cstr_lit("String literal expected."),
-                    .span = path_expr.inner_span,
-                    .ts_code = 1141,
-                    .phase = ERROR_PHASE_TYPECHECK,
-                });
-            }
-            expr_drop(&path_expr);
-            statement.attributes = parse_import_attributes(&p);
+        bool complete = parsed || expect_expr(&p, expr_ctx_null, &path_expr);
+        // (tsc's parseModuleSpecifier parses an expression: commas included, after a missing one too)
+        if (!parsed) parse_comma_ops_right_side(&p, &path_expr);
+        if (path_expr.tag == EXPR_LITERAL && path_expr.literal.tag == VALUE_STRING) {
+            statement.target_path = cstr_move(&path_expr.literal.string);
+            statement.target_path_span = path_expr.inner_span;
+        } else if (path_expr.tag == EXPR_IMPLICIT_ANY) {
+            statement.missing_specifier = path_expr.inner_span;
         } else {
-            if (path_expr.tag == EXPR_IMPLICIT_ANY) statement.missing_specifier = path_expr.inner_span;
-            expr_drop(&path_expr); // (what expect_expr() made of a missing operand's binary expression)
+            // The checker's (tsc's checkExternalImportOrExportDeclaration: any specifier that isn't missing, a
+            // missing operand's binary expression `* }` included)
+            add_error_to_parser(&p, (Error){
+                .message = cstr_lit("String literal expected."),
+                .span = path_expr.inner_span,
+                .ts_code = 1141,
+                .phase = ERROR_PHASE_TYPECHECK,
+            });
         }
+        expr_drop(&path_expr);
+        if (complete) statement.attributes = parse_import_attributes(&p);
     }
 
     auto item_tag = is_export ? (

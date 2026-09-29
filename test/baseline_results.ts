@@ -12121,7 +12121,7 @@ const baselines = {
         types: true,
     },
     'es6ImportNamedImportParsingError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
