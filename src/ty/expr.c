@@ -1095,10 +1095,12 @@ static void set_contextual_return(Checker* me, FunctionImpl const* function, Sig
 }
 
 // `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
-static void assign_contextual_signature(Checker* me, FunctionImpl const* function, Ty const* contextual, InitializedBinding const* evaluating) {
+static void assign_contextual_signature_as(
+    Checker* me, FunctionImpl const* function, Ty const* contextual, Signature const* given, InitializedBinding const* evaluating
+) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
-    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
+    Signature const* sig = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
     if (!sig) return;
     // The type parameters of the generic call this is an argument of are fixed now (a contextual type that left them
     // generic because nothing was inferred for them: `unknown`)
@@ -1152,7 +1154,17 @@ static void assign_contextual_signature(Checker* me, FunctionImpl const* functio
 
 void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, InitializedBinding const* evaluating) {
     if (!function->jsdoc_signature_type) return;
-    assign_contextual_signature(me, function, ty_of_node(function->jsdoc_signature_type), evaluating);
+    // A declaration's parameters take the types at their positions whatever its arity (tsc's getParameterTypeOfTypeTag
+    // through getSignatureOfTypeTag, not a contextual signature)
+    Ty const* type = ty_of_node(function->jsdoc_signature_type);
+    assign_contextual_signature_as(me, function, type, nullptr, evaluating);
+    u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
+    if (intern_get(&my links, done_key, 2) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
+    // (One the arity rules out as a contextual signature: more parameters than it has)
+    Members const* members = ty_members(me, type);
+    if (members->call_count == 1 && !members->construct_count && !members->call[0]->type_params.len) {
+        assign_contextual_signature_as(me, function, type, members->call[0], evaluating);
+    }
 }
 
 // tsc's hasContextSensitiveParameters
@@ -3814,7 +3826,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
                 u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
                 bool assigned = intern_get(&my links, done_key, 2) != nullptr;
-                assign_contextual_signature(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr);
+                assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr);
                 if (assigned) {
                     Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0);
                     if (sig) set_contextual_return(me, expr->function, sig);

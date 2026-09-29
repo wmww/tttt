@@ -80,6 +80,9 @@ typedef struct ParserShared {
     // In the type of a tag tsc's checker doesn't visit (`@returns`, `@throws`: checkSourceElementWorker has no case for
     // them), whose grammar errors (TS1099, TS7014) aren't reported
     bool jsdoc_unchecked;
+    // Applying JSDoc to a function declaration or class method (not a function expression): a `@type` signature is its
+    // signature (tsc's getSignatureOfTypeTag in getSignaturesOfSymbol), not moved into its parameters
+    bool jsdoc_declaration;
     // The last postfix `T?` parsed in JSDoc, from T's start to after the `?`: a tuple element that is exactly this is
     // an optional element (tsc's parseTupleElementType)
     const char* jsdoc_postfix_nullable_start;
@@ -3731,7 +3734,7 @@ static u32 jsdoc_required_param_count(FunctionImpl const* function) {
     return count;
 }
 
-static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function) {
+static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function, bool declaration) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (!tag) return;
     function->jsdoc_signature_span = tag->type_span;
@@ -3753,7 +3756,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         }
         function->jsdoc_signature_mismatch = !rest && count < jsdoc_required_param_count(function);
     }
-    if (!signature || signature->is_constructor) return;
+    if (!signature || signature->is_constructor || declaration) return;
     // `(this: T) => R`: the function's `this` parameter, unless it has one (or is an arrow function), and not a
     // position to match the parameters by
     FunctionArg* signature_this = vec_function_arg_size(&signature->args) ? signature->args.data : nullptr;
@@ -4032,6 +4035,8 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
 }
 
 static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* function) {
+    bool declaration = p->shared->jsdoc_declaration;
+    p->shared->jsdoc_declaration = false;
     jsdoc_find_param_issues(tags, function);
     // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
     // implementation isn't one (tsc's getSignaturesOfSymbol). The comment's `@template`s are the overload's
@@ -4100,7 +4105,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         }
         vec_function_arg_insert_n(&function->args, 0, &arg, 1);
     }
-    jsdoc_apply_type_signature(tags, function);
+    jsdoc_apply_type_signature(tags, function, declaration);
     for_each (i, vec_function_arg, &function->args) {
         Binding* binding = &i->initializer.binding;
         if (binding->has_explicit_type) continue;
@@ -4164,7 +4169,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         type_tag = nullptr;
     }
     // A `@type` that isn't a written signature: its signature is resolved by the checker
-    if (type_tag && type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE && !function->jsdoc_signature_type) {
+    if (type_tag && (declaration || (type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE)) &&
+        !function->jsdoc_signature_type
+    ) {
         function->jsdoc_signature_span = type_tag->type_span;
         function->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
     }
@@ -6343,10 +6350,12 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
             if (return_tag && !item->constructor.func.ret_explicit) {
                 jsdoc_error(p, return_tag->type_span, 1093, "Type annotation cannot appear on a constructor declaration.");
             }
+            p->shared->jsdoc_declaration = true;
             jsdoc_apply_function(p, &tags, &item->constructor.func);
         }   break;
         case CLASS_ITEM_METHOD:
             item->method.func.accessor = (uint8_t)item->method.accessor; // (Set again by the resolve walk)
+            p->shared->jsdoc_declaration = true;
             jsdoc_apply_function(p, &tags, &item->method.func);
             break;
         case CLASS_ITEM_FIELD: {
@@ -11375,6 +11384,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 if (i->kind != JSDOC_TAG_EXTENDS || i->earlier || i->nested || !span_valid(function->name)) continue;
                 jsdoc_error(p, function->name, 8022, "JSDoc '@", i->tag_name.sv, "' is not attached to a class.");
             }
+            p->shared->jsdoc_declaration = true;
             jsdoc_apply_function(p, &tags, statement->decl.function.impl);
         }   break;
         case STATEMENT_DECL_CLASS:
