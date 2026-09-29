@@ -2546,6 +2546,18 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (!ret && binding->default_value && object->kind == TY_ANONYMOUS && object->anonymous.object_literal) {
             ret = ty_intrinsic(me, TY_UNDEFINED);
         }
+        // `{ 3: d }` of a tuple too short: undefined (tsc's getPropertyTypeForIndexType for a numeric name, TS2493)
+        if (!ret && !item->computed_key) {
+            bool is_number = false;
+            Atom const* key_name = ty_property_name_of_key(me, ty_literal(me, &item->source), &is_number);
+            csview name = key_name ? atom_sv(key_name) : c_sv("");
+            bool digits = name.size > 0 && name.size < 10 && (name.size == 1 || name.buf[0] != '0');
+            for (isize_t k = 0; digits && k < name.size; k++) digits = name.buf[k] >= '0' && name.buf[k] <= '9';
+            TupleShape const* shape = digits ? ty_tuple_shape(object) : nullptr;
+            bool has_rest = false;
+            for (u32 k = 0; shape && k < shape->arity; k++) has_rest |= (shape->flags[k] & TUPLE_ELEMENT_REST) != 0;
+            if (shape && !has_rest) ret = ty_intrinsic(me, TY_UNDEFINED);
+        }
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
         // A property the object lacks (TS2339, binding_typecheck()) is the error type (tsc's getIndexedAccessType
         // reporting it): a later `var` of the same name doesn't have to agree with it
