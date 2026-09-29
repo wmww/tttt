@@ -1602,6 +1602,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             case CLASS_ITEM_FIELD: {
                 if (i->field.computed_key) class_computed_key_typecheck(i, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
+                // (tsc's checkGrammarTypeOperatorNode)
+                if (i->field.has_explicit_type && i->field.explicit_type.tag == TYPE_UNIQUE_SYMBOL &&
+                    (!i->field.is_static || !i->field.is_readonly)
+                ) {
+                    error_ctx_grammar_error_d(errs, i->field.name_span, 1331,
+                        "A property of a class whose type is a 'unique symbol' type must be both 'static' and 'readonly'.");
+                }
                 if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
                     // The initializer has the annotation as its contextual type (like a variable's)
                     Ty const* contextual = ty_from_node(current_checker, &i->field.explicit_type, (LowerCtx){ .generic = true });
