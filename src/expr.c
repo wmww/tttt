@@ -2961,16 +2961,22 @@ static bool comparison_operands_fit(Ty const* left, Ty const* right) {
 // fit either, the operands fitting when both are of `kind`
 static void report_operator_error(Ty const* left, Ty const* right, Expr const* expr, u32 kind, ErrorCtx* errs) {
     Checker* checker = current_checker;
+    // (Operands that would fit once awaited: "Did you forget to use 'await'?", and shown as they are)
+    Ty const* awaited_left = ty_awaited_no_alias(checker, left);
+    Ty const* awaited_right = ty_awaited_no_alias(checker, right);
+    bool with_await = (awaited_left != left || awaited_right != right) &&
+        assignable_to_kind(awaited_left, kind, false) && assignable_to_kind(awaited_right, kind, false);
     Ty const* left_base = ty_base_type_of_literal(checker, left);
     Ty const* right_base = ty_base_type_of_literal(checker, right);
     bool related = assignable_to_kind(left_base, kind, false) && assignable_to_kind(right_base, kind, false);
-    if (!related) {
+    if (!related && !with_await) {
         left = left_base;
         right = right_base;
     }
     BinaryOp written = expr->binary_op->op;
-    error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(written).str, "' cannot be applied to types '",
-        left, "' and '", right, "'.");
+    Error* e = error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(written).str,
+        "' cannot be applied to types '", left, "' and '", right, "'.");
+    if (with_await) error_add_related_d(e, expr->inner_span, 2773, "Did you forget to use 'await'?");
 }
 
 // The right side of `instanceof`: callable, constructable or with a [Symbol.hasInstance] (of every union member, some
@@ -3110,14 +3116,23 @@ static bool binary_op_typecheck(
             }
             Ty const* numeric_types[] = { ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT) };
             Ty const* number_or_bigint = ty_union(checker, numeric_types, 2, nullptr, (TyList){});
+            // (tsc's checkArithmeticOperandType with isAwaitValid: an operand that would fit once awaited)
             if (!ty_is_related(checker, left, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-                error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2362,
+                Error* e = error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2362,
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
+                Ty const* awaited = e ? ty_awaited_of_promise(checker, left) : nullptr;
+                if (awaited && ty_is_related(checker, awaited, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
+                    error_add_related_d(e, expr->binary_op->left.outer_span, 2773, "Did you forget to use 'await'?");
+                }
                 operands_ok = false;
             }
             if (!ty_is_related(checker, right, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-                error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2363,
+                Error* e = error_ctx_error_d(errs, expr->binary_op->right.outer_span, 2363,
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
+                Ty const* awaited = e ? ty_awaited_of_promise(checker, right) : nullptr;
+                if (awaited && ty_is_related(checker, awaited, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
+                    error_add_related_d(e, expr->binary_op->right.outer_span, 2773, "Did you forget to use 'await'?");
+                }
                 operands_ok = false;
             }
             // Mixing bigint with anything else
@@ -3150,15 +3165,20 @@ static bool binary_op_typecheck(
             right = base_type_for_comparison(checker, right);
             if ((left->flags | right->flags) & TYF_ANY) break;
             if (comparison_operands_fit(left, right)) break;
-            // (tsc's getBaseTypesIfUnrelated)
+            // (tsc's reportOperatorError: whether it would work with `await`, else getBaseTypesIfUnrelated)
+            Ty const* awaited_left = ty_awaited_no_alias(checker, left);
+            Ty const* awaited_right = ty_awaited_no_alias(checker, right);
+            bool with_await = (awaited_left != left || awaited_right != right) &&
+                comparison_operands_fit(awaited_left, awaited_right);
             Ty const* left_base = ty_base_type_of_literal(checker, left);
             Ty const* right_base = ty_base_type_of_literal(checker, right);
-            if (!comparison_operands_fit(left_base, right_base)) {
+            if (!with_await && !comparison_operands_fit(left_base, right_base)) {
                 left = left_base;
                 right = right_base;
             }
-            error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(op).str,
+            Error* e = error_ctx_error_d(errs, expr->inner_span, 2365, "Operator '", binary_op_get_zv(op).str,
                 "' cannot be applied to types '", left, "' and '", right, "'.");
+            if (with_await) error_add_related_d(e, expr->inner_span, 2773, "Did you forget to use 'await'?");
         }   break;
 
         case BINARY_OP_EQUAL:
@@ -3193,16 +3213,23 @@ static bool binary_op_typecheck(
         }
             // (Anything may be compared with null and undefined: tsc's isTypeEqualityComparableTo())
             if (!((left->flags | right->flags) & TYF_NULLABLE) && !ty_is_comparable_either_way(current_checker, left, right)) {
-                // Shown as their base types if those don't overlap either (`n == b` for a b narrowed to `false`)
+                // Would they overlap once awaited? Else they're shown as their base types if those don't overlap either
+                // (`n == b` for a b narrowed to `false`)
+                Ty const* awaited_left = ty_awaited_no_alias(current_checker, left);
+                Ty const* awaited_right = ty_awaited_no_alias(current_checker, right);
+                bool with_await = (awaited_left != left || awaited_right != right) &&
+                    (((awaited_left->flags | awaited_right->flags) & TYF_NULLABLE) ||
+                        ty_is_comparable_either_way(current_checker, awaited_left, awaited_right));
                 Ty const* left_base = ty_base_type_of_literal(current_checker, left);
                 Ty const* right_base = ty_base_type_of_literal(current_checker, right);
-                if (!ty_is_comparable_either_way(current_checker, left_base, right_base)) {
+                if (!with_await && !ty_is_comparable_either_way(current_checker, left_base, right_base)) {
                     left = left_base;
                     right = right_base;
                 }
-                error_ctx_error_d(errs, expr->outer_span, 2367,
+                Error* e = error_ctx_error_d(errs, expr->outer_span, 2367,
                     "This comparison appears to be unintentional because the types '", left,
                     "' and '", right, "' have no overlap.");
+                if (with_await) error_add_related_d(e, expr->outer_span, 2773, "Did you forget to use 'await'?");
             }
             break;
 

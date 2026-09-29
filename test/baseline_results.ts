@@ -36593,7 +36593,7 @@ const baselines = {
     'privateNameMethodAsync': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameMethodCallExpression': {
         errors: true,
@@ -36793,7 +36793,7 @@ const baselines = {
     'privateNameStaticMethodAsync': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameStaticMethodCallExpression': {
         errors: true,
@@ -46981,7 +46981,7 @@ const baselines = {
         types: true,
     },
     'comparisonOperatorWithNumberOperand': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63496,7 +63496,7 @@ const baselines = {
         types: true,
     },
     'types.asyncGenerators.es2018.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63651,7 +63651,7 @@ const baselines = {
         types: true,
     },
     'types.forAwait.es2018.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

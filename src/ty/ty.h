@@ -1808,6 +1808,7 @@ Ty const* ty_awaited(Checker* me, Ty const* ty);
 Ty const* ty_promise_like_of(Checker* me, Ty const* ty);
 u32 ty_call_signature_count(Checker* me, Ty const* ty); // call.c
 bool ty_is_promise(Checker* me, Ty const* ty); // A thenable (tsc's getAwaitedTypeOfPromise), call.c
+Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty); // What a thenable awaits to, else null (call.c)
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c
 Ty const* ty_promise_of(Checker* me, struct FunctionImpl const* function, Ty const* type); // Promise<type>, for an async function (function.c)

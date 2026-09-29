@@ -487,15 +487,36 @@ static bool is_es2015_iterable_name(Ty const* ty) {
     return false;
 }
 
+// tsc's errorAndMaybeSuggestAwait: "Did you forget to use 'await'?" at the error's own location
+static void suggest_await(Error* error, Span span, bool maybe_missing_await) {
+    if (maybe_missing_await) error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
+}
+
+// tsc's reportTypeNotIterableError: TS2488/TS2504, suggesting `await` for a promise, and for an async iterable in a
+// `for...of` (the `for await` it probably meant)
+static void report_not_iterable(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
+    bool async = (use & ITERATION_ALLOWS_ASYNC) != 0;
+    Error* e = error_ctx_error_d(errs, span, async ? 2504 : 2488, "Type '", input, async ?
+        "' must have a '[Symbol.asyncIterator]()' method that returns an async iterator." :
+        "' must have a '[Symbol.iterator]()' method that returns an iterator.");
+    if (!e) return;
+    bool suggest = ty_awaited_of_promise(me, input) != nullptr;
+    Ty const* async_iterable = iteration_state(me)->globals[IG_ASYNC_ITERABLE];
+    if (!suggest && !async && (use & ITERATION_FOR_OF_FLAG) && async_iterable) {
+        Ty const* any = ty_intrinsic(me, TY_ANY);
+        Ty const* args[3] = { any, any, any };
+        u32 count = async_iterable->declared.type_params.len < 3 ? async_iterable->declared.type_params.len : 3;
+        Ty const* target = ty_reference(me, async_iterable, (TyList){ .data = args, .len = count });
+        suggest = ty_is_related(me, input, target, TY_RELATION_ASSIGNABLE);
+    }
+    suggest_await(e, span, suggest);
+}
+
 Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
     if (input->flags & TYF_ANY) return input;
     bool async = (use & ITERATION_ALLOWS_ASYNC) != 0;
     if (input == ty_intrinsic(me, TY_NEVER)) {
-        if (errs) {
-            error_ctx_error_d(errs, span, async ? 2504 : 2488, "Type '", input, async ?
-                "' must have a '[Symbol.asyncIterator]()' method that returns an async iterator." :
-                "' must have a '[Symbol.iterator]()' method that returns an iterator.");
-        }
+        if (errs) report_not_iterable(me, use, input, span, errs);
         return ty_intrinsic(me, TY_ANY);
     }
     ScriptTarget target = compiler_options()->target;
@@ -503,11 +524,7 @@ Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, Err
     bool downlevel = !uplevel && compiler_options()->downlevel_iteration;
     if (uplevel || downlevel || async) {
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
-        if (!types && uplevel && errs) {
-            error_ctx_error_d(errs, span, async ? 2504 : 2488, "Type '", input, async ?
-                "' must have a '[Symbol.asyncIterator]()' method that returns an async iterator." :
-                "' must have a '[Symbol.iterator]()' method that returns an iterator.");
-        }
+        if (!types && uplevel && errs) report_not_iterable(me, use, input, span, errs);
         if (types) return types->yield_type;
         if (uplevel) return ty_intrinsic(me, TY_ANY);
     }
@@ -532,18 +549,23 @@ Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, Err
     if (!ty_extends_array(me, array)) {
         if (errs) {
             bool allows_strings = (use & ITERATION_ALLOWS_STRING) && !has_string;
+            // (tsc's getIterationDiagnosticDetails: whether `await` may be what's missing)
+            bool maybe_missing_await = true;
+            Error* e;
             if (downlevel) {
-                error_ctx_error_d(errs, span, allows_strings ? 2549 : 2548, "Type '", array, allows_strings ?
+                e = error_ctx_error_d(errs, span, allows_strings ? 2549 : 2548, "Type '", array, allows_strings ?
                     "' is not an array type or a string type or does not have a '[Symbol.iterator]()' method that returns an iterator." :
                     "' is not an array type or does not have a '[Symbol.iterator]()' method that returns an iterator.");
             } else if (ty_iteration_types_of_iterable(me, input, use) || is_es2015_iterable_name(input)) {
-                error_ctx_error_d(errs, span, 2802, "Type '", array,
+                maybe_missing_await = !ty_iteration_types_of_iterable(me, input, use);
+                e = error_ctx_error_d(errs, span, 2802, "Type '", array,
                     "' can only be iterated through when using the '--downlevelIteration' flag or with a '--target' of 'es2015' or higher.");
             } else if (allows_strings) {
-                error_ctx_error_d(errs, span, 2495, "Type '", array, "' is not an array type or a string type.");
+                e = error_ctx_error_d(errs, span, 2495, "Type '", array, "' is not an array type or a string type.");
             } else {
-                error_ctx_error_d(errs, span, 2461, "Type '", array, "' is not an array type.");
+                e = error_ctx_error_d(errs, span, 2461, "Type '", array, "' is not an array type.");
             }
+            suggest_await(e, span, e && maybe_missing_await && ty_awaited_of_promise(me, array));
         }
         return has_string ? ty_intrinsic(me, TY_STRING) : ty_intrinsic(me, TY_ANY);
     }

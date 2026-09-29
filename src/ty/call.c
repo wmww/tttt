@@ -2668,6 +2668,11 @@ u32 ty_call_signature_count(Checker* me, Ty const* ty) {
 // tsc's !!getAwaitedTypeOfPromise(ty): a thenable
 bool ty_is_promise(Checker* me, Ty const* ty) { return promised_type_of(me, ty) != nullptr; }
 
+Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty) {
+    Ty const* promised = promised_type_of(me, ty);
+    return promised ? ty_awaited(me, promised) : nullptr;
+}
+
 // The type `await` gives for a value of the given type. `wrap`: a generic one that could be a promise is `Awaited<T>`
 // (tsc's getAwaitedType; without it getAwaitedTypeNoAlias)
 // A cycle is TS1062 at the current node (tsc reports it at the error node its callers pass, the `await` expression)
@@ -2680,8 +2685,13 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         if (awaited_in_progress(stack, ty)) return awaited_cycle(me);
         AwaitedFrame frame = { ty, stack };
         Ty const** parts = malloc(sizeof(Ty const*) * ty->composite.types.len);
-        for (u32 i = 0; i < ty->composite.types.len; i++) parts[i] = awaited_type_in(me, ty->composite.types.data[i], wrap, &frame);
-        Ty const* ret = ty_union(me, parts, ty->composite.types.len, nullptr, (TyList){0});
+        bool changed = false;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            parts[i] = awaited_type_in(me, ty->composite.types.data[i], wrap, &frame);
+            changed |= parts[i] != ty->composite.types.data[i];
+        }
+        // (tsc's mapType: the union itself when no member changed)
+        Ty const* ret = changed ? ty_union(me, parts, ty->composite.types.len, nullptr, (TyList){0}) : ty;
         free(parts);
         return ret;
     }
