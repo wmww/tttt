@@ -5237,7 +5237,8 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
     list_leave(p, saved_clauses);
 }
 
-static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
+// modified: modifiers came first (they commit to a declaration)
+static bool parse_interface_decl(Parser* parent, bool modified, InterfaceDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -5245,6 +5246,11 @@ static bool parse_interface_decl(Parser* parent, InterfaceDecl* ret) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
+    // tsc's isStartOfDeclaration: `interface` followed by a name on the same line, else `interface` is an expression
+    // (`interface { }`: TS1438 from parseErrorForMissingSemicolonAfter, `interface & {}` an expression)
+    if (!modified && (p.whitespace == WHITESPACE_NEWLINE || !tok_is_identifier(tok_peek(&p)))) {
+        return parse_fail(&p);
+    }
 
     Span name;
     if (!parse_identifier(&p, &name)) {
@@ -11872,7 +11878,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .type = parsed.type_decl,
             },
         };
-    } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
+    } else if (parse_interface_decl(&p, vec_spanned_modifier_size(&modifiers.spanned) > 0, &parsed.interface_decl)) {
         modified.kind = MODIFIED_INTERFACE;
         parsed.interface_decl.full_span = span_from(a);
         *ret = (Statement){

@@ -781,7 +781,7 @@ const baselines = {
         types: true,
     },
     'ambiguousGenericAssertion1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18191,9 +18191,9 @@ const baselines = {
         types: true,
     },
     'interfaceNaming1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceOnly': {
         errors: true,
@@ -41622,8 +41622,8 @@ const baselines = {
     },
     'destructuringObjectBindingPatternAndAssignment3': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'destructuringObjectBindingPatternAndAssignment4': {
         errors: true,
@@ -50507,28 +50507,28 @@ const baselines = {
     },
     'asiPreventsParsingAsInterface01': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asiPreventsParsingAsInterface02': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asiPreventsParsingAsInterface03': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asiPreventsParsingAsInterface04': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'asiPreventsParsingAsInterface05': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'derivedInterfaceDoesNotHideBaseSignatures': {
         errors: true,
@@ -50656,9 +50656,9 @@ const baselines = {
         types: true,
     },
     'interfacesWithPredefinedTypesAsNames': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'implementingAnInterfaceExtendingClassWithPrivates': {
         errors: true,
