@@ -274,7 +274,7 @@ static bool elaborate_element(
     // (A unique symbol name is typeToString's default, `unique symbol`)
     cstr name = cstr_null;
     if (item->name && !(item->name_type->flags & TYF_UNIQUE_ES_SYMBOL)) name = cstr_from_sv(atom_sv(item->name));
-    else ty_display(me, (TyDisplay){ .target = &name, .unique_symbols = true }, item->name_type);
+    else name = ty_to_cstr(me, item->name_type);
     cstr target_str = ty_to_cstr(me, target);
     error_add_related_d(error, decl, 6500, "The expected type comes from property '", name,
         "' which is declared here on type '", target_str, "'");
