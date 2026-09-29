@@ -536,6 +536,10 @@ static void display_type_inner(Display d, TypeNode const* me) {
         case TYPE_SYMBOL: display_colored(d, color_type, "symbol"); break;
         case TYPE_UNIQUE_SYMBOL: display_colored(d, color_type, "unique symbol"); break;
         case TYPE_JSDOC: display_type(d, &my jsdoc->type); break;
+        case TYPE_PREDICATE:
+            if (my predicate->asserts) display_colored(d, color_type, "void");
+            else display_colored(d, color_type, "boolean");
+            break;
         case TYPE_BIGINT: display_colored(d, color_type, "bigint"); break;
 
         case TYPE_VALUE:

@@ -134,6 +134,11 @@ void type_drop(TypeNode* me) {
             type_drop(&my jsdoc->type);
             free(my jsdoc);
             break;
+
+        case TYPE_PREDICATE:
+            if (my predicate->has_type) type_drop(&my predicate->type);
+            free(my predicate);
+            break;
     }
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
@@ -243,6 +248,7 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
             break;
 
         case TYPE_JSDOC: type_add_inferred_names_at(&my jsdoc->type, scope, position, reference, arg_index); break;
+        case TYPE_PREDICATE: break;
 
     }
 }
@@ -377,6 +383,8 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case TYPE_JSDOC: type_lookup_names(&my jsdoc->type, names, errs); break;
+        // (The names of the type, for the symbols baseline: tsc checks nothing else in a misplaced predicate)
+        case TYPE_PREDICATE: if (my predicate->has_type) type_lookup_names(&my predicate->type, names, errs); break;
     }
 }
 
@@ -480,6 +488,12 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_JSDOC:
             jsdoc_type_typecheck(me, errs);
             type_typecheck(&my jsdoc->type, errs);
+            break;
+
+        case TYPE_PREDICATE:
+            // (tsc's checkTypePredicate without getTypePredicateParent: nothing else is checked)
+            error_ctx_error_d(errs, my predicate->span, 1228,
+                "A type predicate is only allowed in return type position for functions and methods.");
             break;
     }
 }

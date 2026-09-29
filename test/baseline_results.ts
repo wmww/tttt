@@ -48141,14 +48141,14 @@ const baselines = {
         types: true,
     },
     'typeGuardOfFormThisMember': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeGuardOfFormThisMemberErrors': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeGuardOfFormTypeOfBoolean': {
         errors: true,
@@ -48331,9 +48331,9 @@ const baselines = {
         types: true,
     },
     'typePredicateOnVariableDeclaration01': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typePredicateOnVariableDeclaration02': {
         errors: true,

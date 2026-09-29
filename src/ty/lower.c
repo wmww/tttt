@@ -797,6 +797,7 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
             break;
 
         case TYPE_JSDOC: collect_free_params(me, &node->jsdoc->type, out); break;
+        case TYPE_PREDICATE: break;
 
         case TYPE_TYPEOF:
             // Not syntax: the type of an expression, which could be about any type parameter in scope
@@ -1690,6 +1691,7 @@ static bool node_reaches_alias_in_flight_through(Checker* me, TypeNode const* no
         }
         case TYPE_ARRAY: return node_reaches_alias_in_flight_through(me, node->array.element, budget);
         case TYPE_JSDOC: return node_reaches_alias_in_flight_through(me, &node->jsdoc->type, budget);
+        case TYPE_PREDICATE: return false;
         case TYPE_TUPLE:
             for_each (i, vec_tuple_element, &node->tuple.elements) {
                 if (node_reaches_alias_in_flight_through(me, &i->type, budget)) return true;
@@ -1721,6 +1723,7 @@ static bool may_resolve_type_alias(Checker* me, TypeNode const* node) {
         case TYPE_TYPEOF: return true;
         case TYPE_KEYOF: return may_resolve_type_alias(me, &node->keyof->interface);
         case TYPE_JSDOC: return may_resolve_type_alias(me, &node->jsdoc->type);
+        case TYPE_PREDICATE: return false;
         case TYPE_UNION:
         case TYPE_INTERSECTION:
             for_each (i, vec_type, &node->composite) {
@@ -2505,6 +2508,7 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
             break;
         case TYPE_ARRAY: collect_declared_infers(me, node->array.element, out); break;
         case TYPE_JSDOC: collect_declared_infers(me, &node->jsdoc->type, out); break;
+        case TYPE_PREDICATE: break;
         case TYPE_TUPLE:
             for_each (i, vec_tuple_element, &node->tuple.elements) collect_declared_infers(me, &i->type, out);
             break;
@@ -2751,6 +2755,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             return ty_anonymous_from_node(me, node, outer_ctx, alias, alias_args);
 
         case TYPE_JSDOC: return lower(me, &node->jsdoc->type, outer_ctx, alias, alias_args);
+        case TYPE_PREDICATE: return ty_intrinsic(me, node->predicate->asserts ? TY_VOID : TY_BOOLEAN);
 
         case TYPE_ARRAY:
             // tsc's isDeferredTypeReferenceNode

@@ -377,6 +377,7 @@ static void parse_computed_key_comma(Parser* p, Expr* key);
 static bool parse_decorators(Parser* parent, VecExpr* ret);
 static bool parse_type_compat_literal(Parser* parent, Value* ret);
 static bool parse_template_type(Parser* parent, TypeNode* ret);
+static bool parse_type_predicate(Parser* parent, FunctionImpl* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
@@ -2947,6 +2948,33 @@ __attribute__((always_inline)) static inline bool hop_type_keyword(Parser* p, ch
 
 static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, TypeNode* ret);
 
+// `this is T` and `asserts x (is T)` in any type position (tsc's parseNonArrayType; `x is T` is only a return type's):
+// a TYPE_PREDICATE, which the checker reports where a return type's predicate (FunctionImpl.predicate) isn't
+static bool parse_misplaced_type_predicate(Parser* parent, TypeNode* ret) {
+    Tok t = tok_peek(parent);
+    Tok next = tok_next(parent, t);
+    if (next.newline_before) return false;
+    if (!(tok_is(t, "this") && tok_is(next, "is")) && !(tok_is(t, "asserts") && tok_is_word(next) && *next.start != '#')) {
+        return false;
+    }
+    Parser p = parser(parent);
+    Anchor a = anchor(&p);
+    FunctionImpl f = {0};
+    if (!parse_type_predicate(&p, &f)) {
+        function_impl_drop(&f);
+        return parse_fail(&p);
+    }
+    TypePredicateNode* predicate = f.predicate;
+    f.predicate = nullptr;
+    function_impl_drop(&f);
+    predicate->span = span_from(a);
+    while (predicate->span.sv.size && is_js_ascii_space(predicate->span.sv.buf[predicate->span.sv.size - 1])) {
+        predicate->span.sv.size--;
+    }
+    *ret = (TypeNode){ .tag = TYPE_PREDICATE, .predicate = predicate };
+    return parse_success(&p);
+}
+
 static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* ret) {
     bool disallow_conditional = parent->shared->disallow_conditional;
     bool parsed = parse_type_inner(parent, min_precedence, ret);
@@ -3004,6 +3032,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_symbol;
     } else if (hop_type_keyword(&p, "bigint")) {
         *ret = type_bigint;
+    } else if ((c == 't' || c == 'a') && parse_misplaced_type_predicate(&p, ret)) {
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
         *ret = type_identifier(c_new(IdentifierType, {
             .name = span_from(a),
@@ -5289,6 +5318,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
 // `x is T`, `this is T`, `asserts x`, `asserts x is T` as a return type (`FunctionImpl.predicate`)
 static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     Parser p = parser(parent);
+    Anchor a_start = anchor(&p);
 
     Span name;
     if (!parse_identifier_or_keyword(&p, &name)) {
@@ -5319,6 +5349,10 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
     }
 
     ret->ret = asserts ? type_void : type_boolean;
+    predicate.span = span_from(a_start);
+    while (predicate.span.sv.size && is_js_ascii_space(predicate.span.sv.buf[predicate.span.sv.size - 1])) {
+        predicate.span.sv.size--;
+    }
     ret->predicate = c_new(TypePredicateNode, predicate);
     return parse_success(&p);
 }

@@ -813,6 +813,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_JSDOC: type_compile_test_info(&my jsdoc->type, ctx); break;
+        case TYPE_PREDICATE: if (my predicate->has_type) type_compile_test_info(&my predicate->type, ctx); break;
     }
 }
 

@@ -548,6 +548,12 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
 
     // (tsc's checkTypePredicate; TODO: TS1230 for a name bound by a parameter's binding pattern)
     TypePredicateNode const* predicate = my predicate;
+    if (predicate && !predicate->jsdoc && (my accessor || my is_constructor)) {
+        // (tsc's getTypePredicateParent: not accessors, constructor types or construct signatures)
+        error_ctx_error_d(errs, predicate->span, 1228,
+            "A type predicate is only allowed in return type position for functions and methods.");
+        return;
+    }
     if (predicate && predicate->has_type && !predicate->jsdoc) type_typecheck(&my predicate->type, errs);
     if (predicate && !predicate->is_this && !predicate->jsdoc && span_valid(predicate->name)) {
         if (predicate->param_index >= 0) {

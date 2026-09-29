@@ -989,6 +989,10 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             out_lit(d, "unique symbol");
             break;
         case TYPE_JSDOC: display_node(me, d, &node->jsdoc->type); break;
+        case TYPE_PREDICATE:
+            if (node->predicate->asserts) out_lit(d, "void");
+            else out_lit(d, "boolean");
+            break;
         case TYPE_ANY: out_lit(d, "any"); break;
         case TYPE_UNKNOWN: out_lit(d, "unknown"); break;
         case TYPE_NEVER: out_lit(d, "never"); break;

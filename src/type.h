@@ -112,6 +112,9 @@ typedef struct TypeNode {
         // A JSDoc-only form written outside JSDoc (tsc's JSDocNullableType/JSDocNonNullableType: `?T`, `T?`, `!T`, `T!`),
         // which the checker reports (TS17019/TS17020); everything else goes by `jsdoc->type`, what it means in JSDoc
         TYPE_JSDOC,
+        // A type predicate outside a return type position (`x: this is T`, `asserts x` anywhere: tsc's
+        // parseNonArrayType parses them there). It means boolean (void for `asserts`), and the checker reports TS1228
+        TYPE_PREDICATE,
     } tag;
     bool parsed : 1;
     bool parenthesized : 1; // Written in parentheses (the types baseline reprints annotations as written)
@@ -153,6 +156,7 @@ typedef struct TypeNode {
         UniqueSymbolDecl unique_symbol;
         TemplateType* template_;
         struct JsdocType* jsdoc;
+        struct TypePredicateNode* predicate;
     };
 } TypeNode;
 
