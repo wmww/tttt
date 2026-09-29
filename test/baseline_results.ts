@@ -49981,7 +49981,7 @@ const baselines = {
         types: true,
     },
     'verbatimModuleSyntaxAmbientConstEnum': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

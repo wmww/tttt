@@ -3030,6 +3030,26 @@ void binder_resolve_remaining_aliases(Binder* me) {
     }
 }
 
+// tsc's checkAliasSymbol under verbatimModuleSyntax: an import or export (not type-only, not ambient) of an ambient
+// const enum, which only the file that declares it could inline (TS2748; a use of it is then fine, see
+// check_const_enum_access())
+static void check_alias_ambient_const_enum(Symbol const* alias, Symbol const* target) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->verbatim_module_syntax || !(target->flags & SYMBOL_CONST_ENUM) || !target->is_ambient) return;
+    PortItem const* item = alias->alias->item;
+    Scope const* scope = alias->alias->scope;
+    if (item->type_only || item->type_modifier || item->jsdoc || scope->ambient || (scope->file && scope->file->is_declaration)) return;
+    Span at = item->decl_name;
+    if (item->tag == PORT_IMPORT_ALIAS) {
+        at = span_with_semicolon(item->full_span);
+    } else if (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) {
+        if (span_valid(item->source_name)) at = span_between(item->source_name, item->decl_name);
+    } else if (item->tag != PORT_IMPORT_DEFAULT) {
+        return;
+    }
+    error_ctx_error_d(scope->errs, at, 2748, "Cannot access ambient const enums when 'verbatimModuleSyntax' is enabled.");
+}
+
 void binder_link(Binder* me) {
     merge_augmentations(me);
     // Resolving makes placeholder symbols: by index
@@ -3044,6 +3064,7 @@ void binder_link(Binder* me) {
         if (!symbol->alias->item || !target || target->is_placeholder) continue;
         // (A UMD global, `export as namespace foo`, isn't one tsc's checkAliasSymbol checks)
         if (symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE) continue;
+        check_alias_ambient_const_enum(symbol, target);
         // In tsc an exported declaration also has a local symbol, which an import of the same name conflicts with
         u32 local_flags = symbol->flags;
         Symbol const* container = symbol->alias->scope->container;
