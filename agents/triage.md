@@ -11,3 +11,5 @@ messages; TS2395/TS2307/TS2748/TS1376 leftovers; `@augments` as the base; TS7031
 `bugs/*.md`, plan 38 (nested_generic) and plan 39 (TS7023 re-entrance). The drizzle "CLI-only" probe was not
 reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
 
+- (triage 2026-09-29, group A) `test/probes/triage/pick_key_inference.ts`: tsc's TS2353 excess-property error on an
+  object literal against `Pick<S, keyof S>` is missing (predates the Pick K inference fix).
