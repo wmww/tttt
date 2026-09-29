@@ -24073,7 +24073,7 @@ const baselines = {
     'nonNullableTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonNullableWithNullableGenericIndexedAccessArg': {
         errors: true,
@@ -47533,7 +47533,7 @@ const baselines = {
     'nullishCoalescingOperator2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator3': {
         errors: true,
@@ -47648,7 +47648,7 @@ const baselines = {
     'nullishCoalescingOperator_es2020': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator_not_strict': {
         errors: true,
@@ -64453,7 +64453,7 @@ const baselines = {
     'neverType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'neverTypeErrors1': {
         errors: true,
