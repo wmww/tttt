@@ -103,3 +103,32 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   IteratorObject's members), so `Iterator.from(i)` with a plain `Iterator<string>` is TS2345. In tsc the augmentation's
   own `var Iterator` makes the name resolve (getMergedSymbol of the augmentation's exports) to the merged global symbol,
   interface included, before the file's locals. (await)usingDeclarationsWithIteratorObject.
+- (error text D session) TS7023 that tsc gets from re-entrance: checking a return expression prints a type in an error
+  message (or relates structurally in an assertion) that needs the function's own return type, which is in flight
+  (thisInObjectLiterals, accessorInferredReturnTypeErrorInReturnStatement, checkingObjectWithThisInNamePositionNoCrash,
+  trivialSubtypeReductionNoStructuralCheck). tttt's inference doesn't produce error messages, so it never re-enters.
+- `// @skipDefaultLibCheck: false` tests expect lib-file diagnostics (`lib.es5.d.ts(--,--)`: TS2374, TS2411, TS2300
+  from merges with the test's declarations): duplicateNumericIndexers, objectTypeWithStringIndexerHidingObjectIndexer,
+  objectTypeHidingMembersOfExtendedObject, variableDeclarationInStrictMode1. tttt never checks lib files and drops their
+  errors (`error_ctx_error_s`); tsc's CLI default does check them (skipLibCheck/skipDefaultLibCheck off), which is a
+  perf question too.
+- The harness's TS-1 "Pre-emit (n) and post-emit (m) diagnostic counts do not match" (5 tests:
+  multiLinePropertyAccessAndArrowFunctionIndent1, parseErrorIncorrectReturnToken,
+  parserStatementIsNotAMemberVariableDeclaration1, templateInsideCallback, unicodeEscapesInNames02): emit checks
+  expressions the checker skipped (a top-level `return`'s operand after TS1108). Emulating needs to know what emit
+  resolves.
+- TS7031 from widening misses elements with a default (`var [a5 = undefined] = []`) and parameter patterns
+  (`function f([a1] = [undefined])`: tttt widens the parameter root first, tsc's getTypeForBindingElementParent
+  doesn't): noImplicitAnyDestructuringVarDeclaration/ParameterDeclaration.
+- Destructuring accessibility (`ty_check_destructured_member`) only knows private members; protected ones need the
+  classes around the pattern. Abstract properties read by destructuring `this` in a constructor (TS2715,
+  abstractPropertyInConstructor lines 78-79) likewise.
+- `({ n: number } & { s: string }) & undefined` isn't reduced to never (restUnion3 wants TS2700 from it).
+- `x instanceof Object` on a generic `x: T` narrows to something still possibly primitive: spurious TS2638 in
+  inKeywordAndUnknown (tsc: `T & Object`).
+- `super.m<T>()` in a class whose base is an unresolved import: the member is any, not the error type, so TS2347
+  (unusedInvalidTypeArguments).
+- TS1376/TS1377 related info of a type-only specifier should span from the specifier's `type` (importSpecifiers1,
+  exportSpecifiers).
+- `x instanceof ...`/`typeof`: `verbatimModuleSyntax`'s TS2748 for an ambient const enum used directly (not through an
+  import) isn't reported (only isolatedModules); the import half is checkAliasSymbol's (verbatimModuleSyntaxAmbientConstEnum).
