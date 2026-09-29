@@ -2077,8 +2077,23 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     // per such key, but the mapped type stays generic (tsc's resolveMappedTypeMembers, which adds members for the
     // lower bound of the key type)
     bool generic = false;
+    Ty const* keyed = mapped->modifiers_type;
     if (ty_is_generic_index(constraint)) {
-        if (mapped->keyof_constraint) return expand_generic_homomorphic(me, members);
+        if (mapped->keyof_constraint && !mapped->name_type) return expand_generic_homomorphic(me, members);
+        if (mapped->keyof_constraint) {
+            // With an `as` clause, the names of the keys of the constraint of T (`[K in keyof T as `slot-${K & string}`]`
+            // with `T extends { foo: X }` has slot-foo, tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType
+            // over the type parameter's properties)
+            if (!keyed || keyed->kind == TY_INTERSECTION) return members;
+            Ty const* apparent = ty_apparent_type(me, keyed);
+            if (apparent == keyed || !(apparent->flags & TYF_OBJECT) || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+                return members;
+            }
+            keyed = apparent;
+            generic = true;
+        }
+    }
+    if (ty_is_generic_index(constraint) && !generic) {
         Ty const* lower = lower_bound_of_key_type(me, constraint, 0);
         // (A union's literal members are keys even when its other members stay generic: `"x" | (T extends U ? "y" :
         // never)` has x, tsc's forEachType over the lower bound)
@@ -2090,7 +2105,6 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
     Ty const** member_keys = nullptr;
-    Ty const* keyed = mapped->modifiers_type;
     bool keyed_intersection = keyed && keyed->kind == TY_INTERSECTION && !(keyed->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
     if (mapped->keyof_constraint && keyed && ((keyed->flags & TYF_OBJECT) || keyed_intersection)) {
         // `[K in keyof T]` goes by the members of T (tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType):
@@ -2127,7 +2141,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         keys = member_keys;
         key_count = 1;
     }
-    if (mapped->name_type) {
+    if (mapped->name_type && !generic) {
         // A mapped type whose `as` clause is generic in more than its key is generic (tsc's isGenericMappedType):
         // `{ [K in keyof M as `${K}${Suffix}`]: ... }`
         Ty const* names = mapped_key_name(me, mapped, constraint);
