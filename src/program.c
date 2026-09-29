@@ -658,6 +658,8 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     // tsc's skipTypeChecking: declaration files aren't checked with skipLibCheck
     if (source_file->is_declaration && my options.skip_lib_check) source_file->unchecked = true;
     if (my options.no_check) source_file->unchecked = true; // (tsc's skipTypeChecking: no semantic diagnostics at all)
+    source_file->plain_js = source_file->is_js && !check_directive && !my options.is_set[COMPILER_OPTION_check_js] &&
+        !my options.no_check;
 
     if (is_stdlib) {
         source_file->is_stdlib = true;
@@ -1784,11 +1786,11 @@ Checker* program_checker_at(Program const* me, u32 index) {
 // are only complete in the checker that walked the file: one that didn't would type an expression without the
 // contextual type its parent gives it (see "Expressions" in documentation.md)
 Checker* program_checker_of(Program const* me, SourceFile const* file) {
-    if (my checker_count <= 1 || file->is_stdlib || file->unchecked) return my checker;
+    if (my checker_count <= 1 || file->is_stdlib || !source_file_is_checked(file)) return my checker;
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile const* source = *i;
-        if (source->is_stdlib || source->unchecked) continue;
+        if (source->is_stdlib || !source_file_is_checked(source)) continue;
         if (source == file) return my checkers[index % my checker_count];
         index++;
     }
@@ -1830,7 +1832,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
+        if (source->is_stdlib || !source_file_is_checked(source) || index++ % count != c) continue;
         checker->file_order = index - 1;
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
@@ -1839,8 +1841,8 @@ static void check_share(Program* me, u32 c, u32 count) {
     index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_stdlib || source->unchecked || index++ % count != c) continue;
-        if (!source->is_declaration) unused_report(source, checker->errs);
+        if (source->is_stdlib || !source_file_is_checked(source) || index++ % count != c) continue;
+        if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
     }
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);

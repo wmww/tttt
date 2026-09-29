@@ -578,12 +578,34 @@ Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code) {
     return me && my parent ? error_ctx_find(my parent, span, ts_code) : nullptr;
 }
 
+// tsc's plainJSErrors: the binder and grammar errors a plain JavaScript file reports (SourceFile.plain_js), sorted
+static bool plain_js_reports(unsigned code) {
+    static const unsigned codes[] = {
+        1005, 1009, 1013, 1014, 1029, 1030, 1031, 1042, 1044, 1048, 1049, 1053, 1054, 1089, 1090, 1091, 1097, 1100,
+        1101, 1102, 1104, 1105, 1106, 1107, 1111, 1113, 1114, 1115, 1116, 1123, 1155, 1156, 1162, 1171, 1172, 1174,
+        1182, 1184, 1186, 1188, 1189, 1190, 1191, 1193, 1197, 1200, 1210, 1211, 1214, 1215, 1248, 1255, 1258, 1262,
+        1308, 1312, 1325, 1341, 1344, 1358, 1359, 1368, 1450, 1451, 1473, 1474, 2451, 2462, 2480, 2492, 2501, 2528,
+        2566, 2633, 2752, 2753, 2803, 2839, 2852, 5076, 17000, 17001, 17012, 18006, 18007, 18012, 18013, 18016, 18036,
+        18038, 18041,
+    };
+    u32 lo = 0, hi = c_arraylen(codes);
+    while (lo < hi) {
+        u32 mid = (lo + hi) / 2;
+        if (codes[mid] == code) return true;
+        if (codes[mid] < code) lo = mid + 1;
+        else hi = mid;
+    }
+    return false;
+}
+
 void error_ctx_remove_unchecked(ErrorCtx* me) {
     intptr_t kept = 0;
     for (intptr_t i = 0; i < vec_error_size(&my errors); i++) {
         Error* error = vec_error_at_mut(&my errors, i);
         SourceFile const* source = error->span.source;
-        if (source && source->unchecked && error->phase >= ERROR_PHASE_RESOLVE_NAMES) {
+        if (source && source->unchecked && error->phase >= ERROR_PHASE_RESOLVE_NAMES &&
+            !(source->plain_js && plain_js_reports(error->ts_code))
+        ) {
             error_drop(error);
         } else {
             if (kept != i) my errors.data[kept] = *error;

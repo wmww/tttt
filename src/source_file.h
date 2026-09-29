@@ -104,6 +104,9 @@ typedef struct SourceFile {
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;
+    // Unchecked, but checked anyway for a few errors (tsc's isPlainJsFile: JavaScript without a `@ts-check`/`@ts-nocheck`
+    // and with checkJs not set at all): only the ones on tsc's plainJSErrors list are reported
+    bool plain_js;
     // With node16/node18/nodenext modules or resolution, or in node_modules: whether the file is an ES module, the
     // package.json that has a say in that (as messages name it, empty if there is none) and whether it says
     // (src/module_resolution.h)
@@ -152,6 +155,11 @@ cstr source_file_jsx_runtime_import(SourceFile const* me);
 void source_file_add_comment_directive(SourceFile* me, const char* start, const char* end, bool expect_error);
 // The directive that the comment ending on `line` is, if any. Two on one line: the last one, like tsc's map by line
 CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line);
+
+// Whether the checker walks the file: a checked one, or a plain JavaScript one for the errors that are reported there
+static inline bool source_file_is_checked(SourceFile const* me) {
+    return !my unchecked || my plain_js;
+}
 
 // How messages name the file: the way the test wrote it under the harness, else the canonical path
 static inline csview source_file_display_path(SourceFile const* me) {
