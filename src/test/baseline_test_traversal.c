@@ -107,6 +107,16 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Expr const* object = span_valid(name) ? &left->property->expr : nullptr;
     if (!object || object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS) return;
     IdentifierExpr const* this = &object->identifier;
+    // (A global `this.x = v` in an arrow function declares x in the arrow function, not on globalThis)
+    if (this->this_kind == THIS_GLOBAL && this->this_through_arrow && left->property->declares) {
+        add_symbol_override(ctx, left->property->prop.outer_span, left->property->declares);
+        if (ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
+            ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+            };
+        }
+        return;
+    }
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = this->target->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;

@@ -3531,17 +3531,23 @@ void scope_add_nested_expando(Scope* me, BinaryOpExpr* op) {
 }
 
 // Whether a JavaScript scope's `this` is the global one: the top level of a script, blocks included (tsc's
-// getThisContainer is the source file)
-static bool this_is_global_script(Scope const* me) {
+// getThisContainer is the source file, through arrow functions)
+// `arrow` is the innermost arrow function on the way, if any
+static bool this_is_global_script(Scope* me, Scope** arrow) {
+    *arrow = nullptr;
     if (!my file || !my file->is_js) return false;
-    Scope const* scope = me;
-    while (scope && scope->kind == SCOPE_BLOCK && !scope->function) scope = scope->parent;
+    Scope* scope = me;
+    while (scope && ((scope->kind == SCOPE_BLOCK && !scope->function) || (scope->function && span_valid(scope->function->arrow_span)))) {
+        if (scope->kind == SCOPE_FUNCTION && !*arrow) *arrow = scope;
+        scope = scope->parent;
+    }
     return scope && scope->kind == SCOPE_SCRIPT;
 }
 
 // `this.x = v` at the top level of a JavaScript script declares a global variable x (tsc's bindThisPropertyAssignment
-// for a SourceFile container: declareSymbolAndAddToSymbolTable as a FunctionScopedVariable)
-static void add_global_this_chain(Scope* me, Expr* e) {
+// for a SourceFile container: declareSymbolAndAddToSymbolTable as a FunctionScopedVariable). In an arrow function that
+// adds it to the arrow function's locals (tsc's container), where `this.x` doesn't find it
+static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
     for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e); e = &e->binary_op->right) {
         Expr* left = &e->binary_op->left;
         Span name = expr_static_property_name(left);
@@ -3556,7 +3562,8 @@ static void add_global_this_chain(Scope* me, Expr* e) {
         }
         bool merged;
         Symbol* symbol = declare_symbol(
-            me, &my binder->globals, name.sv, name, SYMBOL_FUNCTION_SCOPED_VARIABLE, SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES,
+            me, arrow ? &arrow->locals : &my binder->globals, name.sv, name, SYMBOL_FUNCTION_SCOPED_VARIABLE,
+            SYMBOL_FUNCTION_SCOPED_VARIABLE_EXCLUDES,
             false, &merged
         );
         if (!merged) {
@@ -3573,10 +3580,11 @@ static void add_global_this_chain(Scope* me, Expr* e) {
 
 void scope_add_expandos(Scope* me, Block const* block) {
     bool top_level = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT;
-    bool global_this = this_is_global_script(me);
+    Scope* arrow;
+    bool global_this = this_is_global_script(me, &arrow);
     for_each (i, vec_statement, &block->statements) {
         if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, top_level);
-        if (i->tag == STATEMENT_EXPR && global_this) add_global_this_chain(me, &i->expr);
+        if (i->tag == STATEMENT_EXPR && global_this) add_global_this_chain(me, &i->expr, arrow);
         // `/** @type {T} */ a.b;` at the top level (tsc's bindSpecialPropertyDeclaration)
         if (i->tag == STATEMENT_EXPR && i->expr_jsdoc_type && top_level) {
             add_expando_decl(me, &i->expr, &i->expr, i->expr_jsdoc_type, top_level);
