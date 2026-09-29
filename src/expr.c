@@ -1789,6 +1789,13 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_OBJECT:
             my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
+            // tsc's checkGrammarObjectLiteralExpression in a destructuring: a rest property is no pattern itself
+            for_each (i, vec_object_expr_item, &my object) {
+                if (!my assignment_pattern || i->tag != OBJECT_ITEM_SPREAD) continue;
+                if (i->value.tag != EXPR_OBJECT && i->value.tag != EXPR_ARRAY) continue;
+                error_ctx_grammar_error_d(errs, i->value.outer_span, 2501, "A rest element cannot contain a binding pattern.");
+                break;
+            }
             flow->object_literal_depth++;
             for_each (i, vec_object_expr_item, &my object) {
                 if (i->computed_key) {

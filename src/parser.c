@@ -5688,8 +5688,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     // tsc's parser takes a `?` and a `!` after any member name, its checker reports them (grammar errors, see
     // parse_file())
+    Span question = span_null;
     if (*p.pos == '?' && p.pos[1] != '?' && p.pos[1] != '.') {
-        parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1162, "An object member cannot be declared optional.");
+        question = span_make(p.shared->source, p.pos, p.pos + 1);
+        parse_error(&p, question, 1162, "An object member cannot be declared optional.");
         p.pos++;
         hop_whitespace(&p);
     }
@@ -5708,6 +5710,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
         }
+        // (tsc's getJSSyntacticDiagnosticsForFile: a method declaration's `?`)
+        if (span_valid(question)) js_syntax_error(&p, question, 8009, "The '?' modifier can only be used in TypeScript files.");
         func.full_span = span_from(a);
         item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
     } else if (must_be_method && (flags.is_generator || item.tag != OBJECT_ITEM_PROPERTY)) {
