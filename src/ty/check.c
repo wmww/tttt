@@ -616,6 +616,13 @@ static bool check_assignable(
         span = function_error_span(expr->function);
     }
     Error* error = report_unassignable(me, head, source, target, span, errs);
+    // An argument whose promised type would fit (tsc's maybeAddMissingAwaitInfo)
+    if (error && head.ts_code == HEAD_ARGUMENT.ts_code && !ty_awaited_of_promise(me, target)) {
+        Ty const* awaited = ty_awaited_of_promise(me, source);
+        if (awaited && ty_is_related(me, awaited, target, TY_RELATION_ASSIGNABLE)) {
+            error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
+        }
+    }
     // A namespace import whose value would have fit: likely the wrong kind of import (tsc's checkTypeRelatedTo with
     // links.originatingImport)
     Symbol const* alias = expr && expr->tag == EXPR_IDENTIFIER ? expr->identifier.symbol : nullptr;
@@ -1231,9 +1238,15 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     Ty const* apparent_declared = apparent->kind == TY_REFERENCE ? apparent->reference.target : apparent;
     char const* lib = atom && ts_code == 2339 && !destructured && apparent_declared->kind == TY_DECLARED && apparent_declared->declared.symbol ?
         lib_feature_of_member(apparent_declared->declared.symbol->name, atom_sv(atom)) : nullptr;
+    // A property of what a promise resolves to (tsc's reportNonexistentProperty with getPromisedTypeOfPromise)
+    Ty const* promised = atom && ts_code == 2339 && !destructured && !static_member ? ty_promised_type(me, object) : nullptr;
+    if (promised && !ty_prop_type_of(me, ty_apparent_type(me, promised), atom)) promised = nullptr;
     if (static_member) {
         error = error_ctx_error_d(errs, span, 2576, "Property '", name, "' does not exist on type '", object_str,
             "'. Did you mean to access the static member '", object_str, ".", name, "' instead?");
+    } else if (promised) {
+        error = error_ctx_error_d(errs, span, 2339, "Property '", name, "' does not exist on type '", object_str, "'.");
+        error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
     } else if (lib) {
         error = error_ctx_error_d(errs, span, 2550, "Property '", name, "' does not exist on type '", object_str,
             "'. Do you need to change your target library? Try changing the 'lib' compiler option to '", lib, "' or later.");

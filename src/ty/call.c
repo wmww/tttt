@@ -1264,6 +1264,17 @@ static Span invocation_error_span(CallInfo const* info) {
     return callee->outer_span;
 }
 
+// tsc's invocationErrorDetails: "Did you forget to use 'await'?" at the callee when what it awaits to has signatures
+static void suggest_await_for_invocation(Checker* me, Error* error, Ty const* apparent, bool construct, CallInfo const* info) {
+    if (!error) return;
+    Ty const* awaited = ty_awaited(me, apparent);
+    if (awaited == apparent) return;
+    Members const* members = ty_members(me, ty_apparent_type(me, awaited));
+    if (construct ? members->construct_count : members->call_count) {
+        error_add_related_d(error, info->call->callable.outer_span, 2773, "Did you forget to use 'await'?");
+    }
+}
+
 static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) {
     Ty const* ret = ty_instantiate(me, signature_return_type(me, candidate->sig), candidate->mapper);
     if (candidate->inferred_type_params.len) {
@@ -2124,6 +2135,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             cstr rendered = ty_to_cstr(me, apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
             cstr_drop(&rendered);
+            suggest_await_for_invocation(me, e, apparent, true, info);
         } else if (other_count && !info->tagged_template && !info->decorator) { // (tsc's resolveCallExpression only)
             cstr rendered = ty_to_cstr(me, callee);
             error_ctx_error_d(errs, call_span, 2348,
@@ -2135,6 +2147,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             cstr rendered = ty_to_cstr(me, callee->flags & TYF_UNKNOWN ? ty_empty_object_type(me) : apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
             cstr_drop(&rendered);
+            suggest_await_for_invocation(me, e, apparent, false, info);
         }
         return ret;
     }
@@ -2667,6 +2680,7 @@ u32 ty_call_signature_count(Checker* me, Ty const* ty) {
 
 // tsc's !!getAwaitedTypeOfPromise(ty): a thenable
 bool ty_is_promise(Checker* me, Ty const* ty) { return promised_type_of(me, ty) != nullptr; }
+Ty const* ty_promised_type(Checker* me, Ty const* ty) { return promised_type_of(me, ty); }
 
 Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty) {
     Ty const* promised = promised_type_of(me, ty);
