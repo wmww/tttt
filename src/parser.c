@@ -543,6 +543,15 @@ static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr messag
     return parse_error_inner(me, span, ts_code, message, false);
 }
 
+// A grammar error (tsc's checker's, dropped in a file with parse errors, see is_grammar_code()) whose code is also a
+// parse error's elsewhere (TS1003)
+static void grammar_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
+    my shared->errors_attempted++;
+    add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_PARSE,
+        .grammar = true });
+}
+#define grammar_error(me, span, ts_code, ...) grammar_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
 /// Builds the message from a display sequence
 #define parse_error(me, span, ts_code, ...) parse_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 // An error inside a literal (an escape sequence): whatever character it starts at, it's not a token
@@ -5291,6 +5300,11 @@ static bool parse_function_args_inner(
 
                 ModifierList modifier_list;
                 parse_modifier_list(&p, true, &modifier_list);
+                // The end of the first decorator or modifier (tsc's parseParameterWorker reports it on a `this`)
+                const char* first_modifier_end = vec_expr_size(&decorators) ?
+                    span_end_ptr(vec_expr_at(&decorators, 0)->outer_span) :
+                    vec_spanned_modifier_size(&modifier_list.spanned) ?
+                    span_end_ptr(vec_spanned_modifier_at(&modifier_list.spanned, 0)->span) : nullptr;
                 bool is_readonly_property = modifier_list.includes[MODIFIER_READONLY];
                 bool is_override_property = modifier_list.includes[MODIFIER_OVERRIDE];
                 bool is_parameter_property = is_readonly_property || modifier_list.includes[MODIFIER_PUBLIC] ||
@@ -5313,6 +5327,14 @@ static bool parse_function_args_inner(
                 } else if (hop_start_if_ends_on_word_break(&p, "this")) {
                     initializer.binding.tag = BINDING_IDENTIFIER;
                     initializer.binding.content_span = span_make(p.shared->source, p.pos - 4, p.pos);
+                    if (first_modifier_end) {
+                        // (On the modifier's range, from the end of the token before it: whitespace included)
+                        const char* from = arg_start.start;
+                        const char* file_start = source_file_start(p.shared->source);
+                        while (from > file_start && strchr(" \t\r\n", from[-1])) from--;
+                        parse_error(&p, span_make(p.shared->source, from, first_modifier_end), 1433,
+                            "Neither decorators nor modifiers may be applied to 'this' parameters.");
+                    }
                 } else if (!is_definitely_function) {
                     vec_expr_drop(&decorators);
                     goto drop_and_fail;
@@ -8273,7 +8295,7 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
 static bool last_error_starts_at(Parser* me, Span span) {
     for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
         Error const* last = vec_error_at(&my shared->errors, i);
-        if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code)) continue;
+        if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code) || last->grammar) continue;
         return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
     }
     return false;
@@ -9210,7 +9232,7 @@ static bool parse_module_export_name(Parser* parent, Span* ret) {
     return parsed;
 }
 
-static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
+static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement* ret) {
     Parser p = parser(parent);
     ret->items = vec_port_item_init();
 
@@ -9267,6 +9289,17 @@ static bool parse_import_item_list(Parser* parent, PortStatement* ret) {
                 end = p.pos;
             } else {
                 item.decl_name = item.source_name;
+            }
+            // tsc's parseImportOrExportSpecifier: an import binds an identifier, not a string or a reserved word
+            if (is_import && span_valid(item.decl_name)) {
+                if (*item.decl_name.sv.buf == '"' || *item.decl_name.sv.buf == '\'') {
+                    parse_error(&p, item.decl_name, 1003, "Identifier expected.");
+                    bool renamed = item.source_name.sv.buf != item.decl_name.sv.buf;
+                    item.decl_name = span_make(p.shared->source, item.decl_name.sv.buf, item.decl_name.sv.buf);
+                    if (!renamed) item.source_name = item.decl_name; // (a missing name imports nothing)
+                } else if (is_reserved_word(item.decl_name.sv)) {
+                    parse_error(&p, item.decl_name, 1003, "Identifier expected.");
+                }
             }
 
             item.full_span = span_make(p.shared->source, a.start, end);
@@ -9553,12 +9586,12 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 item.full_span = span_from(gather);
                 statement.items = vec_port_item_init();
                 vec_port_item_push(&statement.items, item);
-            } else if (!parse_import_item_list(&p, &statement)) {
+            } else if (!parse_import_item_list(&p, true, &statement)) {
                 statement.items = vec_port_item_init();
                 expected_token_error(&p, "{");
             }
         }
-    } else if (parse_import_item_list(&p, &statement)) {
+    } else if (parse_import_item_list(&p, !is_export, &statement)) {
         statement.main.tag = PORT_NOOP; // Only the item list is imported, no main import
     } else if (!is_export && !statement.main.type_only && tok_is_word(tok_peek(&p))) {
         // `import` and a reserved word (tsc's isStartOfDeclaration says it's an import declaration): no import
@@ -9613,6 +9646,12 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     ) : PORT_IMPORT_SPECIFIC;
     for_each (i, vec_port_item, &statement.items) {
         if (i->tag != PORT_IMPORT_GATHER) i->tag = item_tag;
+        // tsc's checkModuleExportName: a local export names an identifier, not a string
+        if (item_tag == PORT_EXPORT_SPECIFIC && span_valid(i->source_name) &&
+            (*i->source_name.sv.buf == '"' || *i->source_name.sv.buf == '\'')
+        ) {
+            grammar_error(&p, i->source_name, 1003, "Identifier expected.");
+        }
     }
 
     statement.main.full_span = span_from(a);
@@ -11030,6 +11069,12 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     VecSpan names = vec_span_init();
     Span name;
     if (parse_identifier(&p, &name)) {
+        if (is_reserved_word(name.sv)) {
+            // tsc's nextTokenIsIdentifierOrStringLiteralOnSameLine: `module debugger {}` is an expression statement
+            // `module` (TS2819, report_missing_semicolon_after_identifier())
+            vec_span_drop(&names);
+            return parse_fail(&p);
+        }
         vec_span_push(&names, name);
         while (true) {
             Parser dot = parser(&p);
@@ -11097,11 +11142,6 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     bool has_block = parse_block(&p, true, &contents);
     p.shared->in_namespace_body = outer_in_namespace;
     if (!has_block) {
-        if (is_module_keyword && vec_span_size(&names) == 1 && *p.pos != '.') {
-            // `module` is only a contextual keyword, this is probably an expression such as `module = 5`
-            vec_span_drop(&names);
-            return parse_fail(&p);
-        }
         contents = (Block){0};
         expected_token_error(&p, "{");
     }
@@ -11877,13 +11917,13 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     source->has_jsx = shared.saw_jsx;
     source->has_parse_errors = false;
     for_each (i, vec_error, &shared.errors) {
-        source->has_parse_errors |= !is_grammar_code(i->ts_code) && !is_js_syntax_code(i->ts_code);
+        i->grammar |= is_grammar_code(i->ts_code);
+        source->has_parse_errors |= !i->grammar && !is_js_syntax_code(i->ts_code);
     }
     for_each (i, vec_error, &shared.errors) {
-        if (source->has_parse_errors && is_grammar_code(i->ts_code)) {
+        if (source->has_parse_errors && i->grammar) {
             error_drop(i);
         } else {
-            i->grammar = is_grammar_code(i->ts_code);
             error_ctx_append_error(errs, *i);
         }
         *i = (Error){0};

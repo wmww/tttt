@@ -12086,7 +12086,7 @@ const baselines = {
         types: true,
     },
     'es6ImportNamedImportIdentifiersParsing': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33631,14 +33631,14 @@ const baselines = {
         types: true,
     },
     'ambientModuleDeclarationWithReservedIdentifierInDottedPath': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ambientModuleDeclarationWithReservedIdentifierInDottedPath2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'ambientShorthand': {
         errors: true,
@@ -38526,7 +38526,7 @@ const baselines = {
         types: false,
     },
     'decoratorOnFunctionParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39736,8 +39736,8 @@ const baselines = {
         types: false,
     },
     'arbitraryModuleNamespaceIdentifiers_syntax': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'es2022IntlAPIs': {

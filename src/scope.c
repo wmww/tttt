@@ -2313,6 +2313,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
     switch (item->tag) {
         case PORT_IMPORT_SPECIFIC:
         case PORT_REEXPORT_SPECIFIC: {
+            if (!item->source_name.sv.size) return nullptr; // A missing name (`import { "x" }`, the parser's TS1003)
             if (csview_equals(port_item_name(item->source_name), "default")) {
                 return resolve_default_target(me, item, module, assigned, errs);
             }
@@ -2367,6 +2368,8 @@ static Symbol* resolve_alias_target(Symbol* me) {
             if (!found || found == me) {
                 if (export_names_global_primitive(item->source_name.sv)) {
                     report_non_local_export(errs, item->source_name);
+                } else if (item->source_name.sv.size && (*item->source_name.sv.buf == '"' || *item->source_name.sv.buf == '\'')) {
+                    // `export { "x" }` (tsc's checkExportSpecifier skips it: the parser's TS1003)
                 } else {
                     error_ctx_error_d(errs, item->source_name, 2304, "Cannot find name '", item->source_name, "'.");
                 }
