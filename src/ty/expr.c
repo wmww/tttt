@@ -2911,7 +2911,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (expr->assignment_pattern && ((i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) ||
             (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL))
         ) {
-            flags |= PROP_OPTIONAL;
+            flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;
         }
         literal_builder_add(&builder, (ObjectLiteralProp){
             .name = name,

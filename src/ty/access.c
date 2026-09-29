@@ -227,7 +227,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             Ty const* part = access(me, member, index, depth + 1, flags);
             // A tuple too short to have the element has undefined there when others have it (tsc's
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
-            if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_is_tuple(ty_apparent_type(me, member))) {
+            if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_tuple_shape(ty_apparent_type(me, member))) {
                 part = ty_intrinsic(me, TY_UNDEFINED);
                 padded = true;
             } else if (!part && (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
@@ -269,6 +269,8 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         }
     }
     bool numeric = (index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
+    // (The empty tuple `[]` is its own target: it has no elements either)
+    if ((index->flags & TYF_NUMBER_LITERAL) && !ty_is_tuple(object) && ty_tuple_shape(object)) return nullptr;
     if (ty_is_tuple(object) && (index->flags & TYF_NUMBER_LITERAL)) {
         double n = index->literal.value.number;
         TupleShape const* shape = object->reference.target->declared.tuple;

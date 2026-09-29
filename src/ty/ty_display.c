@@ -1816,7 +1816,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // An optional property's type has undefined under strictNullChecks, unless exactOptionalPropertyTypes (tsc's
         // addOptionality in getTypeOfSymbol); a reused annotation doesn't say it
         Ty const* shown = type;
-        if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks &&
+        if ((prop->flags & PROP_OPTIONAL) && !(prop->flags & PROP_PATTERN_OPTIONAL) && compiler_options()->strict_null_checks &&
             !compiler_options()->exact_optional_property_types && ty_without_undefined(me, type) == type
         ) {
             shown = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});

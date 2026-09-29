@@ -425,6 +425,9 @@ typedef enum PropFlags {
     // against the setter
     PROP_SET_PRIVATE = 1 << 11,
     PROP_SET_PROTECTED = 1 << 12,
+    // Optional because a destructuring pattern's element has a default (`{ x = 1 } = a`): tsc only sets the flag, the
+    // type doesn't get undefined added like a declared `x?: T` (which tttt adds when printing)
+    PROP_PATTERN_OPTIONAL = 1 << 13,
 } PropFlags;
 
 // How a property's name prints (tsc's getPropertyNameNodeForSymbol), from how its declarations wrote it. Without

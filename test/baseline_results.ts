@@ -9578,12 +9578,12 @@ const baselines = {
     'destructuringAssignmentWithDefault': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'destructuringAssignmentWithDefault2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringAssignmentWithExportedName': {
         errors: true,
