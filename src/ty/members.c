@@ -1853,6 +1853,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     MembersBuilder builder = { .mapped = mapped };
     for (u32 i = 0; i < source->prop_count; i++) {
         Prop const* from = source->props[i];
+        if (!ty_prop_is_key(me, from)) continue;
         Ty const* key = ty_prop_key_literal(me, from);
         TyMapper const* mapper = ty_mapper_new(
             me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
@@ -1916,7 +1917,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
         Members const* source = ty_members(me, part);
         for (u32 i = 0; i < source->prop_count; i++) {
             Prop const* from = source->props[i];
-            if (builder_find_prop(&builder, from->name)) continue;
+            if (!ty_prop_is_key(me, from) || builder_find_prop(&builder, from->name)) continue;
             // Optional only if every part that has it has it optional, readonly if any has it readonly
             u32 flags = from->flags & (PROP_OPTIONAL | PROP_READONLY);
             for (u32 q = p + 1; q < parts.len; q++) {
@@ -2125,6 +2126,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             if (!(part->flags & TYF_OBJECT)) continue;
             Members const* source = ty_members(me, part);
             for (u32 i = 0; i < source->prop_count + source->index_count; i++) {
+                if (i < source->prop_count && !ty_prop_is_key(me, source->props[i])) continue;
                 Ty const* key = i < source->prop_count ? ty_prop_key_literal(me, source->props[i]) :
                     source->index[i - source->prop_count].key;
                 bool seen = false;

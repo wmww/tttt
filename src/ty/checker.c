@@ -1945,6 +1945,10 @@ Ty const* ty_prop_key_literal(Checker* me, Prop const* prop) {
     return ty_prop_name_literal(me, prop->name);
 }
 
+bool ty_prop_is_key(Checker* me, Prop const* prop) {
+    return !(prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) && !ty_private_name_class(me, prop->name);
+}
+
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) return unique;
@@ -2029,7 +2033,7 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
     if (members->mapped || members->expanded_from) return ty_keyof(me, operand);
     TyBuf parts = {0};
     for (u32 i = 0; i < members->prop_count; i++) {
-        if (ty_private_name_class(me, members->props[i]->name)) continue;
+        if (!ty_prop_is_key(me, members->props[i])) continue;
         ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
     }
     Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
@@ -2116,7 +2120,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         if (!members->mapped) {
             TyBuf parts = {0};
             for (u32 i = 0; i < members->prop_count; i++) {
-                if (ty_private_name_class(me, members->props[i]->name)) continue; // Not a key (tsc's getLiteralTypeFromProperty)
+                if (!ty_prop_is_key(me, members->props[i])) continue;
                 ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
             }
             // (An enum object's reverse mapping `[x: number]: string` is not a key: tsc's getLiteralTypeFromProperties

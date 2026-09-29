@@ -921,6 +921,9 @@ Ty const* ty_widened_unique_symbol(Checker* me, Ty const* ty); // A unique symbo
 Ty const* ty_unique_symbol_of_name(Checker* me, Atom const* name);
 Ty const* ty_prop_name_literal(Checker* me, Atom const* name);
 Ty const* ty_prop_key_literal(Checker* me, Prop const* prop); // What keyof has for it: 1 for `{ 1: x }`
+// Whether keyof and mapped types see it: not a #private name, not a private or protected member (tsc's
+// getLiteralTypeFromProperty)
+bool ty_prop_is_key(Checker* me, Prop const* prop);
 // `#x` of a class: a name of its own per class (tsc's getSymbolNameForPrivateIdentifier, `__#12@#x`). It's an atom with
 // the text `#x` that isn't the interned one, so members are told apart by pointer like any name, and print as `#x`
 Atom const* ty_private_name(Checker* me, Symbol const* class_symbol, csview text);
