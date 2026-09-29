@@ -58821,7 +58821,7 @@ const baselines = {
         types: true,
     },
     'parserForInStatement8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63021,7 +63021,7 @@ const baselines = {
         types: true,
     },
     'for-inStatementsDestructuring2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63156,7 +63156,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of27': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63166,7 +63166,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of29': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63196,7 +63196,7 @@ const baselines = {
         types: true,
     },
     'ES5For-of35': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

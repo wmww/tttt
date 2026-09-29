@@ -1206,9 +1206,13 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     // A name the parser found missing (`o.` then something else) has said enough (tsc: `right.escapedText &&`)
     if (span_valid(span) && !span.sv.size) return;
     cstr name = index_name(me, index);
-    cstr object_str = ty_to_cstr(me, object);
+    // (A binding element's is about the apparent type: tsc's getIndexedAccessType reports on getReducedApparentType)
+    u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE;
+    cstr object_str = ty_to_cstr(me, destructured && (object->flags & primitive) ? ty_apparent_type(me, object) : object);
     Error* error;
-    Symbol const* class_symbol = ts_code == 2339 ? instance_class(object) : nullptr;
+    // (Nor does it suggest anything: tsc's getPropertyTypeForIndexType only does for element access expressions)
+    Symbol const* class_symbol = ts_code == 2339 && !destructured ? instance_class(object) : nullptr;
     Atom const* atom = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? index->literal.string : nullptr;
     Prop const* suggestion = nullptr;
     // (tsc's typeHasStaticProperty: a declared static member, `#x`s being keyed by their class there)
@@ -1217,7 +1221,7 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     // A member a later lib adds (tsc's getSuggestedLibForNonExistentProperty)
     Ty const* apparent = ty_apparent_type(me, object);
     Ty const* apparent_declared = apparent->kind == TY_REFERENCE ? apparent->reference.target : apparent;
-    char const* lib = atom && ts_code == 2339 && apparent_declared->kind == TY_DECLARED && apparent_declared->declared.symbol ?
+    char const* lib = atom && ts_code == 2339 && !destructured && apparent_declared->kind == TY_DECLARED && apparent_declared->declared.symbol ?
         lib_feature_of_member(apparent_declared->declared.symbol->name, atom_sv(atom)) : nullptr;
     if (static_member) {
         error = error_ctx_error_d(errs, span, 2576, "Property '", name, "' does not exist on type '", object_str,
@@ -1225,7 +1229,7 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     } else if (lib) {
         error = error_ctx_error_d(errs, span, 2550, "Property '", name, "' does not exist on type '", object_str,
             "'. Do you need to change your target library? Try changing the 'lib' compiler option to '", lib, "' or later.");
-    } else if (atom && ts_code == 2339 && !(object->flags & TYF_NEVER) && (suggestion = ty_suggested_property(me, object, atom_sv(atom)))) {
+    } else if (atom && ts_code == 2339 && !destructured && !(object->flags & TYF_NEVER) && (suggestion = ty_suggested_property(me, object, atom_sv(atom)))) {
         error = error_ctx_error_d(errs, span, 2551, "Property '", name, "' does not exist on type '", object_str,
             "'. Did you mean '", atom_sv(suggestion->name), "'?");
         Prop const* declared = suggestion;
