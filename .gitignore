@@ -5,3 +5,4 @@ scratchpad.ts
 vgcore.*
 thirdparty/tsc
 thirdparty/corpora
+__pycache__
