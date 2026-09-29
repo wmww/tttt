@@ -1449,7 +1449,9 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     while (outer_last > inner_last && *outer_last != ')') outer_last--;
 
     bool base_case = false;
-    if (outer_start == inner_start || outer_last == inner_last) {
+    // A `(` without its `)` is a parenthesized expression that ends with its operand (`( y = 1 ; 2 )`)
+    bool unclosed = outer_start != inner_start && outer_last == inner_last;
+    if (outer_start == inner_start) {
         outer_start = inner_start;
         outer_last = inner_last;
         base_case = true;
@@ -1491,7 +1493,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     });
     if (!base_case) {
         outer_span.sv.buf++;
-        outer_span.sv.size -= 2;
+        outer_span.sv.size -= unclosed ? 1 : 2;
         add_type_rendered(me, outer_span, inner_span, rendered, underline_of_type);
     }
 }
