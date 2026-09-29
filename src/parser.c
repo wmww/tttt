@@ -8386,6 +8386,30 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     if (p.pos[0] == '?' && p.pos[1] == '.' && (p.pos[2] == '(' || p.pos[2] == '[')) {
         optional_chain = true;
         p.pos += 2;
+    } else if (p.pos[0] == '?' && p.pos[1] == '.' && p.pos[2] == '<' && !p.shared->source->is_js &&
+        !ctx.entity_name && new_keyword_precedence > ctx.min_precedence
+    ) {
+        // `a?.<T>()`: an optional call with type arguments (tsc's parseCallExpressionRest)
+        Parser q = parser(&p);
+        q.pos += 2;
+        Anchor args_a = anchor(&q);
+        VecSpannedType params;
+        if (parse_generic_params(&q, true, &params)) {
+            hop_whitespace(&q);
+            if (*q.pos == '(') {
+                *left_and_ret = expr_generic_params(span_from(args_a), c_new(GenericParamsExpr, {
+                    .expr = *left_and_ret,
+                    .params = params,
+                }));
+                parse_success(&q);
+                optional_chain = true;
+            } else {
+                vec_spanned_type_drop(&params);
+                parse_fail(&q);
+            }
+        } else {
+            parse_fail(&q);
+        }
     }
 
     if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {

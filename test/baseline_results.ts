@@ -24616,12 +24616,12 @@ const baselines = {
         types: false,
     },
     'optionalChainWithInstantiationExpression2(target=es2019)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'optionalChainWithInstantiationExpression2(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
