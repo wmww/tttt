@@ -5,52 +5,52 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-09-28, insights after the window of plans 36-37)
-- **Suite 10543 / 13540** fully pass (errors 11983, symbols 12594, types 11613); JS tests 560 / 1049. **+328** in the
-  ten sessions since the last insights (10215), all committed, nothing lost. Smaller than the last window's +806 by
-  design: two sessions built parallel checking, one planned plan 37, one was perf. Plan 37 landed A-F as prototyped
-  (+124, exactly the measured numbers), suite checker bugs 5 (four sub-agents) gave +165, triage +27.
-- **Where the 2997 failures are**: types 1927, errors 1557, symbols 946. Errors: 443 missing+spurious, 365 where tttt
-  reports nothing, 286 other text, 243 only missing, 116+80 only spurious; 252 have a spurious parser diagnostic.
-  Spurious TS2304 (414 in 116 tests) is spread thin, much of it downstream of parser recovery.
+## State (2026-09-29, insights after the window of plan 38)
+- **Suite 12040 / 13540** fully pass (errors 12730, symbols 13003, types 12768); JS tests 898 / 1049. **+1497** in the
+  ten sessions since the last insights (10543), the largest window yet, all committed, nothing lost. Almost all of it
+  came from sessions fanning out to four Opus sub-agents by failstats/displaydiff/jsstats/syntaxstats bucket (checker
+  bugs +263, JS +444, parser +198, types component +490, triage +78). Plan 38 stages 1-2 (tsc's inference flow) landed
+  as planned: +13 suite, xstate 394 -> 19 with the corpus sessions.
+- **Where the 1500 failures are**: types 772, errors 810, symbols 537 (mean line match 99.5-99.7%: nearly all are
+  one or two lines off). Errors: 237 same codes and positions but other text (plan 34), 162 only missing, 149 tttt
+  reports nothing, 148 missing+spurious, 102 only spurious; 46 with a spurious TS1xxx. 45 fail on declaration-emit
+  diagnostics (TS2742, TS4xxx, isolatedDeclarations TS9xxx), which tttt doesn't have at all (plan 40).
 - **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod **0**; webpack
-  **9** (from 107; what's left is plan 26 and a PackFileCacheStrategy chain); **xstate 19** (pinned 2026-09-28 as the
-  inference-heavy corpus, 394 at pinning, 61 before plan 38 stage 1, 43 after it); **zod-root** reports exactly tsc's 55.
-- **Perf**: 4 checkers on up to 4 threads by default, output independent of the thread count. tsc corpus 0.53 s
-  (tsgo 1.26), webpack 0.41 (0.67), zod 0.45 (2.92), valibot 0.39 (1.65) on 2 cores x 2 SMT. Variance measurements
-  report unreliability like tsc and the `Prop`/`PropDecl` split cut the arena 20-31%; type counts are at or under
-  tsc's. Serial parts now: load+parse (117 ms of the tsc corpus) and name resolution (91 ms); the check phase is bounded
-  by the heaviest file (one checker 292 ms, the others 90-166).
+  **6**; xstate **19** (plan 19 "xstate"); **zod-root** at tsc's 55. They are out of signal again: new ones next.
+- **Perf**: 4 checkers on up to 4 threads, output independent of the thread count, parallel loading (plan 36 stage 1).
+  Last `./bench.sh` (09-28): tsc corpus 0.48 s (tsgo 1.26), zod 0.45 (2.92). **Instructions crept ~8% since** (tsc
+  corpus 4.82 -> 5.21 G single-threaded) across ~20 sessions of fixes with no profile in between. Serial parts: load
+  (now pooled), name resolution; the check phase is bounded by the heaviest file.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
-  relation, mapper instantiation, two-pass inference with priorities, contextual typing, conditional/mapped/indexed/
-  template/substitution types, deferred references, flow graph + narrowing (evolving arrays), module resolution +
-  tsconfig, iteration protocol, generators, `this` types, mixins, decorators as calls, the missing type, non-widening
-  nullables, union origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos,
-  parallel checking. ~83k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
-- **Absent or approximated tsc mechanisms**: parts of tsc's inference flow (lazy fixing and top-level contextual
-  instantiation landed in plan 38 stage 1; a call is still resolved several times, with a replay record standing in
-  for tsc's resolve-once; no anyFunctionType first pass), lazy reverse mapped types, permissive instantiation,
-  intersection reduction by constraint. Out of scope: declaration emit. Not built: project references (`tsc -b`),
-  parallel loading and name resolution.
+  relation, mapper instantiation, tsc's inference flow (lazy fixing, top-level contextual instantiation, intra-expression
+  sites), contextual typing, conditional/mapped/indexed/template/substitution types, deferred references, flow graph +
+  narrowing, module resolution + tsconfig, iteration protocol, generators, `this` types, mixins, decorators, the missing
+  type, union origins, elaboration, JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos, parallel
+  checking and loading. ~94k lines of C. `documentation.md` describes it, `hacks.md` lists what is approximated.
+- **Absent or approximated tsc mechanisms**: resolve-once (a call is resolved several times, a replay record stands in:
+  plan 38 stage 3), one circularity stack (plan 39), declaration-emit diagnostics (plan 40), project references (plan
+  41), lazy reverse mapped types, permissive instantiation, intersection reduction by constraint, and the plan-sized
+  hacks (instantiation-limit poisoning, `any` to `never`, conditional sharing, `NonNullable`, optional chains' marker).
+  Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
 
-## Course correction (insights of 2026-09-28, end of the fifth window)
-- **Health is very good; no redesign.** Fifth clean window. Plan 37 is the model to repeat: a planning session that
-  prototypes every candidate and measures it made the execution sessions predictable (every port landed at its
-  prototype's number, 0 lost).
-- **Next port: tsc's inference flow (plan 38).** call.c's inference is now the place where approximations are stacked
-  (the fixing gate and four shape probes, "stays itself only where it would be unknown", whole-type contextual
-  instantiation, the skipped first pass, memoized contextual returns). Five type_core.md bullets and webpack's largest
-  cause trace to it, and plan 37 showed the naive gate removal loses tests: the pieces only work as a whole. It is
-  riskier than plan 37 (tttt's per-node memoization vs tsc re-checking arguments), so the planning session may
-  conclude it needs a per-resolution scope first, or stop. Before it, pin an **inference-heavy corpus** so the port has
-  a real-world oracle, not only the suite.
-- **Parallel sub-agent sessions stay the main suite engine** (+165 and +210 in the last two). One per window at least,
-  plus JS, parser and types-component sessions run the same way.
-- **Perf is comfortably ahead** (2-6x tsgo). One perf session per window. Loading is parallel now (plan 36 stage 1);
-  next the instruction creep of the checker bugs sessions, the check phase's load balance (needs a cost model: size
-  alone was mixed), then parallel name resolution, the largest serial part left.
-- hacks.md is 811 lines again; the triage session prunes it.
+## Course correction (insights of 2026-09-29, end of the sixth window)
+- **Health is very good; no redesign.** Sixth clean window, and the biggest. Fan-out sessions (four Opus sub-agents in
+  worktrees, one failstats bucket each, 0 lost enforced at merge) are the engine for the long tail: keep one or two per
+  window. The long tail is now thin (failing tests are 99.5% line-matched), so pass-count growth will slow whatever we do.
+- **The work shifts from "the suite" to "what a real user runs"**: the remaining gaps that matter most are whole
+  features rather than per-test bugs. This window plans three of them: declaration-emit diagnostics (every library
+  with `declaration: true` gets TS2742/TS4xxx from tsc; plan 40), project references (monorepos run `tsc -b`; plan
+  41, with TypeScript's own `src/tsconfig.json` as the corpus), and the circularity stack (plan 39). Plus plan 38
+  stage 3 (resolve once), which may also be a perf win. Each gets a planning session that prototypes and may say no.
+- **New corpora**: every pinned corpus is at 0 or nearly. Pinning xstate took it 394 -> 19 and found real inference
+  bugs; do it again with two corpora of kinds not yet covered (a type-level heavy builder library, a large
+  class/overload-heavy application package).
+- **Perf needs attention before it becomes a trend**: +8% instructions in a window with no perf session on the checker
+  (the window's perf session was the load pool). Profile and claw back before the new features add more. Instruction
+  counts at every session end stay mandatory (the triage session caught and gated +1.9% that way).
+- **Sub-agent sessions add hacks**: hacks.md went 811 -> 985 in this window before the triage halved it. The plan-sized
+  ones get a session of their own (todo entry 5), done as tsc mechanism ports, not more patching.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Every todo window has corpus sessions** (the corpora were once left alone for ~30 sessions), and todo.md has a
@@ -107,14 +107,13 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 ## Where this is going (rough order)
 1. ~~Tooling, type core, first corpus, binder, flow, modules, underlines, corpus to zero, second corpora, plan 19
    R1-R9, suite plans 13-16, 21-24, JSX~~ done.
-2. ~~Deferred references (29), substitution types (30 stages 1-2), fourth corpus (31), JS stage 2, calls resolve once
-   (28)~~ done.
-3. ~~Checkjs corpus (33), JS stage 3, error text tool (34), substitution fallout (30 stage 3), parser perf, permissive
-   grammar (27 stage 2), zod corpus~~ done.
-4. ~~Mixins (32), silent type differences (35 stages 1-2), parallelism planning (36), perf (webpack, zod), JS
-   leftovers, lexical diagnostics (27 stage 3)~~ done.
+2. ~~Deferred references (29), substitution types (30), fourth corpus (31), JS stage 2, calls resolve once (28)~~ done.
+3. ~~Checkjs corpus (33), JS stage 3, error text tool (34), parser perf, permissive grammar (27), zod corpus~~ done.
+4. ~~Mixins (32), silent type differences (35 stages 1-2), parallelism planning (36), perf, lexical diagnostics~~ done.
 5. ~~Parallel checking (36 stages 2-3), tsc mechanism ports (37 A-F), webpack and zod-root~~ done.
-6. **Now**: an inference-heavy corpus, tsc's inference flow (38), parallel loading (36 stage 1), the long tail with
-   sub-agents (suite checker bugs, JS, parser, types component).
-7. Then: plan 37 stage 2 leftovers, parallel name resolution, plan 35/34 queues, project references (real projects
-   use `tsc -b`), a token cache / node arenas in the parser.
+6. ~~xstate corpus, tsc's inference flow (38 stages 1-2), parallel loading (36 stage 1), the long tail with sub-agents
+   (checker bugs, JS, parser, types component)~~ done.
+7. **Now**: two new corpora, a perf claw-back, the plan-sized hacks, and planning for circularity (39), resolve once
+   (38 stage 3), declaration diagnostics (40) and project references (41).
+8. Then: executing 40 and 41, parallel name resolution, the check phase's load balance, the plan 34/35 queues, a
+   token cache / node arenas in the parser, memory (the `Signature` split).

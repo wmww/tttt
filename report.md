@@ -84,3 +84,19 @@ webpack's largest remaining cause. So the window pins an inference-heavy real-wo
 (plan 38) with prototypes. This port is riskier than plan 37: tsc re-checks arguments, and tttt memoizes per node. The
 planning session is allowed to conclude it needs groundwork first. The rest of the window works the long tail with
 parallel sub-agents (suite bugs, JS, parser, type printing), plus parallel file loading.
+
+## 2026-09-29 — insights (after the window of plan 38)
+The biggest window so far: ten sessions, all committed, nothing lost, and the suite went 10543 -> 12040 of 13540
+(89%), with JS tests 560 -> 898. Most of the gain came from sessions that split the failing tests into buckets and gave
+each to a parallel sub-agent. The port of tsc's generic call inference (plan 38) landed as planned. A new
+inference-heavy corpus, xstate, went from 394 false errors to 19. Files now load in parallel.
+
+The remaining 1500 failures are a thin long tail (each failing test matches tsc on 99.5% of its lines). The biggest
+gaps left for real users are whole features. Libraries built with `declaration: true` get diagnostics from tsc that
+tttt doesn't produce, and monorepos use project references (`tsc -b`), which tttt ignores. The next window plans both,
+along with two deeper tsc mechanisms (one circularity stack, resolving each call once). It also pins two new
+real-world corpora, because the current ones have almost nothing left to find.
+
+One concern: tttt has become about 8% slower (by instruction count) over roughly 20 sessions of fixes, with no perf
+session on the checker in between. It is still 2-6x faster than tsgo, but the next window includes a perf session to
+recover this before the new features add more.

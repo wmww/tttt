@@ -14,11 +14,3 @@ generatorImplicitAny). Their perf cost was bisected and gated (tsc corpus +0.6% 
 (checkerdiff: identical at K=1 and 4), derivedClassSuperProperties, `<T extends any>` display, blockScopedBindingUsedBeforeDef,
 asyncFunctionNoReturnType, jsdocCallbackAndType, unionTypeWithIndexAndTuple. Routed: circularity to plan 39 (a
 planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboration" section) and plan 26 "Leftovers".
-
-## For the insights session
-- The hacks.md consolidation named hacks whose fixes are plan-sized rather than triage-sized (each has its entry in
-  hacks.md): instantiation-limit poisoning (signatures/members/variances memoized past
-  `ty_instantiation_limit_reached`), `check_assignable` letting `any` through to `never` (25 tests depend on it:
-  flow typing yields `any` where tsc has `never`), conditional skipTrue (sharing of conditional instantiations; zod
-  perf and `first_unfit_argument`), `ty_non_nullable` -> `ty_non_nullish_part` for ~24 callers with `NonNullable<T>`
-  printing, `chain_object_type` (TS18048 on `a?.b.c` needs an `optional` marker type).
