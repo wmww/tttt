@@ -774,6 +774,22 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - A JS constructor function is its anonymous function type plus a construct signature (`resolve_members()`), with
   `typeof F` special-cased in the printer (`ty_js_constructor_class()`), not a class static type.
 - Other JS gates: `scope_add_port()` has no `export as namespace` alias in JS.
+- tsc's class symbol of a constructor function assigned to a variable or property is the function expression's own
+  symbol; tttt's is the variable's/property's. The difference is patched where it shows: `ty_js_assigned_class_name()`
+  (types printer: `typeof G`, instance `G`, unqualified), `symbol_chain_append_entity()` (this-members print `G.x`,
+  `Symbol.prototype_literal_member` members of a prototype literal print bare), `this_compile_test_info()`. An object
+  literal property's function expression that assigns `this.x` isn't a class at all (tsc: `typeof fun`,
+  objectPropertyAsClass, thisInObjectJs).
+- `g.prototype.m = v` on a variable that isn't a constructor function (`var g = f`) declares m in g's members without
+  making g a class (tsc flags it Class; its type stays its initializer's in both).
+- Unchecked-JS missing properties (`missing_property_type()`): isUncheckedJSSuggestion's "declared in another global
+  file" exception is judged by the declaration file of the object expression's name, not the literal's symbol.
+- TS2738 (`IdentifierExpr.this_shadows_outer`) is decided by the resolve walk from the outer ThisRef kind: an outer
+  function whose `this` only the checker knows (a JS class, a contextual `this`) doesn't count.
+- A JavaScript object literal assigned to an any-typed target has that contextual type (not open-ended) only when the
+  target is a plain identifier (`check_binary`); tsc: any assignment target.
+- `F.prototype = { get x() {} }` members aren't merged into F's members next to `this.x` declarations (tsc's
+  mergeJSSymbols): one symbol with every declaration in tsc (jsDeclarationsFunctionLikeClasses2).
 - TypeScript-only syntax errors in JS (TS8xxx) are reported by the parser at each construct (`js_syntax_error()`), and
   what tsc's walk would skip inside a reported construct is erased afterwards (`js_syntax_skip_since()`, by error
   index): every construct that tsc skips needs its call. Node array spans (type parameters, parameter modifiers) run
