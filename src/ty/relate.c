@@ -2938,6 +2938,14 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
             if (constraint->kind == TY_TYPE_PARAM || (constraint->flags & TYF_DEFERRED)) {
                 return base_constraint(me, constraint, depth + 1);
             }
+            // Of a union or intersection, the base constraints of its members (tsc's getBaseConstraint of the
+            // constraint): `T extends X & (C extends U ? A : B)` is at least `X & (A | B)`
+            if ((constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) &&
+                (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+            ) {
+                Ty const* base = base_constraint(me, constraint, depth + 1);
+                if (base) return base;
+            }
             return constraint;
         }
         case TY_KEYOF: {
@@ -3667,7 +3675,7 @@ static Ternary structured_related_members(
         // (any) to `Emitted<L> & (T extends "*" ? unknown : { type: T })`
         if (!result && source->kind == TY_CONDITIONAL) {
             Ty const* constraint = distributive_constraint(me, source, 0);
-            Ternary related = constraint ? is_related_to(me, st, constraint, target, false) : TERNARY_FALSE;
+            Ternary related = constraint ? is_related_to_side(me, st, constraint, target, false, 2) : TERNARY_FALSE;
             if (related) {
                 report_truncate(st, saved);
                 return related;
@@ -3698,7 +3706,7 @@ static Ternary structured_related_members(
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
         Ty const* constraint = related ? nullptr : intersection_constraint(me, source);
-        if (constraint) related = is_related_to(me, st, constraint, target, false);
+        if (constraint) related = is_related_to_side(me, st, constraint, target, false, 2);
         if (related) {
             // A member being related isn't enough for the target's optional properties, which the intersection as a
             // whole may have with another type: `{ a: null } & { b: string }` to `{ a?: number, b: string }` (tsc's
@@ -4011,10 +4019,10 @@ static Ternary structured_related_members(
             // an `unknown` one, the constraint's failure doesn't explain anything
             bool report_constraint = report && target->kind != TY_TYPE_PARAM && constraint != ty_intrinsic(me, TY_UNKNOWN_);
             Ty const* with_this = ty_with_this_arg(me, constraint, source);
-            if (with_this == constraint) return is_related_to(me, st, constraint, target, report_constraint);
-            Ternary related = is_related_to(me, st, constraint, target, false);
+            if (with_this == constraint) return is_related_to_side(me, st, constraint, target, report_constraint, 2);
+            Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
             if (related) return related;
-            return is_related_to(me, st, with_this, target, report_constraint);
+            return is_related_to_side(me, st, with_this, target, report_constraint, 2);
         }
 
         case TY_KEYOF: {
@@ -4031,17 +4039,17 @@ static Ternary structured_related_members(
             if (!constraint) return is_related_to(me, st, ty_intrinsic(me, TY_UNKNOWN_), target, false);
             // `{ [P in K]: E }[X]` was E with X for P; `{ [P in K]: E }[C]`, with C the constraint of X, may be related
             // where that isn't (tsc's isMappedTypeGenericIndexedAccess branch)
-            if (!mapped_generic_indexed_access(me, source)) return is_related_to(me, st, constraint, target, report);
-            Ternary related = is_related_to(me, st, constraint, target, false);
+            if (!mapped_generic_indexed_access(me, source)) return is_related_to_side(me, st, constraint, target, report, 2);
+            Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
             if (related) return related;
             Ty const* index_constraint = simplified_or_constraint(me, source->indexed.index);
             Ty const* whole = index_constraint && index_constraint != source->indexed.index ?
                 indexed_or_null(me, source->indexed.object, index_constraint) : nullptr;
             if (whole && whole != source) {
-                related = is_related_to(me, st, whole, target, false);
+                related = is_related_to_side(me, st, whole, target, false, 2);
                 if (related) return related;
             }
-            return is_related_to(me, st, constraint, target, report);
+            return is_related_to_side(me, st, constraint, target, report, 2);
         }
 
         case TY_CONDITIONAL: {
@@ -4053,19 +4061,19 @@ static Ternary structured_related_members(
             Ty const* false_branch = ty_conditional_branch(me, source, false);
             if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
             else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
-            Ternary related = is_related_to(me, st, true_branch, target, false);
-            if (related) related &= is_related_to(me, st, false_branch, target, false);
+            Ternary related = is_related_to_side(me, st, true_branch, target, false, 2);
+            if (related) related &= is_related_to_side(me, st, false_branch, target, false, 2);
             if (related) return related;
             // Through the distributive constraint (not to another conditional type, like in tsc)
             if (target->kind != TY_CONDITIONAL) {
                 Ty const* constraint = distributive_constraint(me, source, 0);
                 if (constraint) {
-                    related = is_related_to(me, st, constraint, target, false);
+                    related = is_related_to_side(me, st, constraint, target, false, 2);
                     if (related) return related;
                 }
             }
-            related = is_related_to(me, st, true_branch, target, report);
-            if (related) related &= is_related_to(me, st, false_branch, target, report);
+            related = is_related_to_side(me, st, true_branch, target, report, 2);
+            if (related) related &= is_related_to_side(me, st, false_branch, target, report, 2);
             return related;
         }
 
@@ -4073,7 +4081,7 @@ static Ternary structured_related_members(
             if (!(target->flags & (TYF_OBJECT | TYF_TEMPLATE_LITERAL))) {
                 Ty const* constraint = base_constraint(me, source, 0);
                 if (constraint && constraint != source) {
-                    Ternary related = is_related_to(me, st, constraint, target, report);
+                    Ternary related = is_related_to_side(me, st, constraint, target, report, 2);
                     if (related) return related;
                 }
             }
@@ -4087,7 +4095,7 @@ static Ternary structured_related_members(
             } else {
                 Ty const* constraint = base_constraint(me, source, 0);
                 if (constraint && constraint != source) {
-                    Ternary related = is_related_to(me, st, constraint, target, report);
+                    Ternary related = is_related_to_side(me, st, constraint, target, report, 2);
                     if (related) return related;
                 }
             }
@@ -4107,7 +4115,7 @@ static Ternary structured_related_members(
         // isGenericTupleType(source)): `[S, ...T]` with `T extends readonly X[]` as `[S, ...X[]]`
         if (is_tuple(source) && ty_is_generic_tuple(me, source) && !(is_tuple(target) && ty_is_generic_tuple(me, target))) {
             Ty const* constraint = base_constraint(me, source, 0);
-            if (constraint && constraint != source) return is_related_to(me, st, constraint, target, report);
+            if (constraint && constraint != source) return is_related_to_side(me, st, constraint, target, report, 2);
         }
         return tuples_related(me, st, source, target, report);
     }
@@ -4281,7 +4289,9 @@ static Ternary structured_related_members(
 static Ty const* recursion_identity(Ty const* ty) {
     switch ((TyKind)ty->kind) {
         case TY_REFERENCE: return ty->reference.target;
-        case TY_ANONYMOUS: return ty->anonymous.target;
+        // (An uninstantiated type literal or function type is its own: tsc tracks object types by their symbol, and
+        // `type S = { states?: Record<string, S> }` nests as S. Not object literal expressions)
+        case TY_ANONYMOUS: return ty->anonymous.target ? ty->anonymous.target : ty->anonymous.object_literal ? nullptr : ty;
         case TY_CONDITIONAL: return ty->conditional.root;
         case TY_INDEXED: {
             Ty const* object = ty;
