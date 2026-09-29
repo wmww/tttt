@@ -3166,6 +3166,11 @@ static bool binary_op_typecheck(
             break;
 
         case BINARY_OP_INSTANCEOF: {
+            // tsc's checkExpressionWithTypeArguments: `x instanceof C<T>`, parenthesized or not
+            if (expr->binary_op->right.tag == EXPR_GENERIC_PARAMS) {
+                error_ctx_error_d(errs, expr->binary_op->right.inner_span, 2848,
+                    "The right-hand side of an 'instanceof' expression must not be an instantiation expression.");
+            }
             // tsc's checkInstanceOfExpression: the left side can't be a primitive
             Checker* checker = current_checker;
             u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |

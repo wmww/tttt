@@ -2009,7 +2009,8 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
 
                 case '(':
                 case '<': // `export default <div />`
-                    if (is_member) {
+                    // (tsc's canFollowModifier has no `(` or `<`: `export default async () => {}` is an async arrow)
+                    if (is_member || span_equals(mod.span, "async")) {
                         goto loop_end;
                     }
                     break;
@@ -7045,6 +7046,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     Span name_span;
     cstr name_string;
     bool name_is_value;
+    bool missing_name = false;
     Expr* computed_key = nullptr;
     Anchor name_anchor = anchor(&p);
     if (hop_private_name(&p)) {
@@ -7071,6 +7073,18 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
             name_span = span_from_pos(&p);
             name_string = cstr_init();
+        } else if (!is_type && !is_getter && !is_setter && !vec_spanned_modifier_is_empty(&modifiers.spanned) &&
+            *p.pos != '[' && *p.pos != '(' && *p.pos != '<'
+        ) {
+            // `public {}`: tsc's parseClassElement, a property whose name is missing after the modifiers (TS1146 where
+            // it would be, before the trivia)
+            Parser missing = parser(&p);
+            unhop_trivia(&missing);
+            parse_error(&missing, span_from_pos(&missing), 1146, "Declaration expected.");
+            name_span = span_from_pos(&missing);
+            parse_success(&missing);
+            name_string = cstr_init();
+            missing_name = true;
         }
     }
     hop_whitespace(&p);
@@ -7259,7 +7273,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                         }
                         // fallthrough
                     default:
-                        if (is_definitely_field) {
+                        if (missing_name) {
+                            parse_error(&p, span_from_token(&p), 1005, "';' expected.");
+                        } else if (is_definitely_field) {
                             if (is_type) {
                                 expect_char(&p, ';');
                             } else {

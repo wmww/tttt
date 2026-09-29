@@ -3886,14 +3886,14 @@ const baselines = {
         types: true,
     },
     'classMemberWithMissingIdentifier': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classMemberWithMissingIdentifier2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classMergedWithInterfaceMultipleBasesNoError': {
         errors: true,
@@ -12746,9 +12746,9 @@ const baselines = {
         types: true,
     },
     'exportDefaultAsyncFunction2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportDefaultClassAndValue': {
         errors: true,
@@ -17936,7 +17936,7 @@ const baselines = {
         types: true,
     },
     'instanceofOnInstantiationExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
