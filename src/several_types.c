@@ -232,7 +232,7 @@ static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
     }
     if (!generic) return nullptr;
     for_each (i, vec_generic_item, &generic->items) {
-        if (csview_equals_sv(i->name.sv, name.sv)) return i->owned_symbol ? i->owned_symbol : i->symbol_ref;
+        if (name_equals(i->name.sv, name.sv)) return i->owned_symbol ? i->owned_symbol : i->symbol_ref;
     }
     return nullptr;
 }

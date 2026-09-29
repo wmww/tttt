@@ -285,7 +285,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         for_each (item, vec_generic_item, &my jsdoc_overloads[i].callable->function->generic.items) {
             if (!item->jsdoc_shared) continue;
             for_each (own, vec_generic_item, &my generic.items) {
-                if (csview_equals_sv(own->name.sv, item->name.sv)) item->symbol_ref = own->owned_symbol;
+                if (name_equals(own->name.sv, item->name.sv)) item->symbol_ref = own->owned_symbol;
             }
         }
         type_lookup_names(&my jsdoc_overloads[i], function_scope, errs);
@@ -298,7 +298,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         TypePredicateNode* predicate = my predicate;
         if (predicate->has_type) type_lookup_names(&predicate->type, function_scope, errs);
         for_each (i, vec_function_arg, &my args) {
-            if (predicate->is_this || !csview_equals_sv(i->initializer.binding.content_span.sv, predicate->name.sv)) continue;
+            if (predicate->is_this || !name_equals(i->initializer.binding.content_span.sv, predicate->name.sv)) continue;
             predicate->param_index = (i32)i_index;
             if (i->initializer.binding.tag == BINDING_IDENTIFIER) predicate->symbol = i->initializer.binding.symbol;
         }

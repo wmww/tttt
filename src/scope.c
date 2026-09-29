@@ -502,7 +502,7 @@ Scope* scope_new_generic_merged(
         Symbol* shared = nullptr;
         Symbol const* shared_lib = nullptr;
         for_each (j, vec_generic_item, first ? &first->items : &(VecGenericItem){0}) {
-            if (!j->owned_symbol || !csview_equals_sv(j->name.sv, i->name.sv)) continue;
+            if (!j->owned_symbol || !name_equals(j->name.sv, i->name.sv)) continue;
             // (Not one of the shared lib program: nothing is written to its symbols)
             if (j->owned_symbol->binder == ret->binder) shared = j->owned_symbol;
             else shared_lib = j->owned_symbol;
@@ -3366,7 +3366,7 @@ static Expr const* defaulted_initializer(Expr const* value) {
 // `window.x`, `self.x`, `global.x`, `this.x` for a name x (tsc's isSameEntityName)
 static bool is_global_like_access(Expr const* access, Span name) {
     Span access_name = expr_static_property_name(access);
-    if (!span_valid(access_name) || !csview_equals_sv(access_name.sv, name.sv)) return false;
+    if (!span_valid(access_name) || !name_equals(access_name.sv, name.sv)) return false;
     Expr const* object = &access->property->expr;
     if (object->tag != EXPR_IDENTIFIER || expr_is_perenthisized(object)) return false;
     if (object->identifier.keyword) return object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
@@ -3393,7 +3393,7 @@ Expr* expando_initializer(Expr* init, Span name, bool js) {
     ) {
         // `var ns = ns || {}`, `ns.a = ns.a || {}` (tsc's getDefaultedExpandoInitializer: the same name on the left)
         Expr const* left = &init->binary_op->left;
-        bool same = span_valid(name) ? (left->tag == EXPR_IDENTIFIER && csview_equals_sv(left->identifier.name.sv, name.sv)) ||
+        bool same = span_valid(name) ? (left->tag == EXPR_IDENTIFIER && name_equals(left->identifier.name.sv, name.sv)) ||
             is_global_like_access(left, name) : left->tag == EXPR_PROPERTY || left->tag == EXPR_IDENTIFIER;
         if (!js || !same) return nullptr;
         init = &init->binary_op->right;

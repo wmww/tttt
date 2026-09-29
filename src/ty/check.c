@@ -2179,7 +2179,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         declaration_count++;
         for_each (i, vec_generic_item, &generic->items) {
             bool seen = false;
-            for (u32 t = 0; t < target_count && !seen; t++) seen = csview_equals_sv(target[t]->name.sv, i->name.sv);
+            for (u32 t = 0; t < target_count && !seen; t++) seen = name_equals(target[t]->name.sv, i->name.sv);
             if (!seen && target_count < c_arraylen(target)) target[target_count++] = i;
         }
     }
@@ -2193,7 +2193,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         Generic const* generic = class_or_interface_generic(&symbol->decls[d]);
         for (u32 t = 0; generic && t < target_count; t++) {
             for_each (i, vec_generic_item, &generic->items) {
-                if (!csview_equals_sv(target[t]->name.sv, i->name.sv)) continue;
+                if (!name_equals(target[t]->name.sv, i->name.sv)) continue;
                 if (!defaults[t] && i->fallback_explicit) defaults[t] = &i->fallback;
                 if (!constraints[t] && i->extends_explicit) constraints[t] = &i->extends;
             }
@@ -2218,7 +2218,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = source_params, .len = count }, (TyList){ .data = target_params, .len = count });
         for (u32 i = 0; i < count && identical; i++) {
             GenericItem const* source = vec_generic_item_at(&generic->items, i);
-            if (!csview_equals_sv(source->name.sv, target[i]->name.sv)) {
+            if (!name_equals(source->name.sv, target[i]->name.sv)) {
                 identical = false;
             } else if (source->extends_explicit && constraints[i] && &source->extends != constraints[i]) {
                 Ty const* a = ty_instantiate(me, ty_of_node(&source->extends), mapper);
@@ -3208,7 +3208,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     if (own) {
         bool setter = false, getter = false;
         for_each (i, vec_class_item, &lexical->items) {
-            if (i->tag != CLASS_ITEM_METHOD || !csview_equals_sv(i->method.name_span.sv, name.sv)) continue;
+            if (i->tag != CLASS_ITEM_METHOD || !name_equals(i->method.name_span.sv, name.sv)) continue;
             setter |= i->method.accessor == CLASS_ACCESSOR_SET;
             getter |= i->method.accessor == CLASS_ACCESSOR_GET;
         }

@@ -1110,7 +1110,7 @@ static bool is_compound_like(Expr const* right) {
 static bool is_same_entity_name(Expr const* name, Expr const* init) {
     if (expr_is_perenthisized(name) || expr_is_perenthisized(init)) return false;
     if (name->tag == EXPR_IDENTIFIER && init->tag == EXPR_IDENTIFIER) {
-        return !name->identifier.keyword && !init->identifier.keyword && csview_equals_sv(name->identifier.name.sv, init->identifier.name.sv);
+        return !name->identifier.keyword && !init->identifier.keyword && name_equals(name->identifier.name.sv, init->identifier.name.sv);
     }
     Span init_name = expr_static_property_name(init);
     if (name->tag == EXPR_IDENTIFIER && span_valid(init_name)) {
@@ -1119,10 +1119,10 @@ static bool is_same_entity_name(Expr const* name, Expr const* init) {
             (object->identifier.keyword == KEYWORD_IDENTIFIER_THIS || (!object->identifier.keyword &&
                 (span_equals(object->identifier.name, "window") || span_equals(object->identifier.name, "self") ||
                     span_equals(object->identifier.name, "global"))));
-        return global_like && !name->identifier.keyword && csview_equals_sv(name->identifier.name.sv, init_name.sv);
+        return global_like && !name->identifier.keyword && name_equals(name->identifier.name.sv, init_name.sv);
     }
     Span name_name = expr_static_property_name(name);
-    return span_valid(name_name) && span_valid(init_name) && csview_equals_sv(name_name.sv, init_name.sv) &&
+    return span_valid(name_name) && span_valid(init_name) && name_equals(name_name.sv, init_name.sv) &&
         is_same_entity_name(&name->property->expr, &init->property->expr);
 }
 

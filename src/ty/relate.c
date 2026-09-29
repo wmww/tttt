@@ -310,7 +310,7 @@ static csview unqualified(csview name) {
 // tsc's isEnumTypeRelatedTo: the same enum, or enums of the same name whose members agree (two versions of a library)
 static bool enums_related(Checker* me, Symbol const* source, Symbol const* target) {
     if (source == target) return true;
-    if (!source || !target || !csview_eq(&source->name, &target->name)) return false;
+    if (!source || !target || !name_equals(source->name, target->name)) return false;
     if (!(source->flags & target->flags & SYMBOL_ENUM)) return false;
     Ty const* source_type = ty_declared_type_of(me, source);
     TyList members = source_type->kind == TY_UNION ?
@@ -365,7 +365,7 @@ static bool is_simple_related_enum(Checker* me, RelationState const* st, Ty cons
     }
     if ((sf & TYF_ENUM) && (tf & TYF_ENUM)) {
         if (enums_related(me, s->literal.enum_decl, t->literal.enum_decl) &&
-            csview_eq(&s->literal.enum_member->name, &t->literal.enum_member->name)
+            name_equals(s->literal.enum_member->name, t->literal.enum_member->name)
         ) {
             return true;
         }

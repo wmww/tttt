@@ -1754,13 +1754,13 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
         SourceFile const* file = overload->name.source;
         if (file->is_declaration) return;
         FunctionImpl const* next = i + 1 < count ? function_declaration(vec_statement_at(statements, i + 1)) : nullptr;
-        if (next && csview_equals_sv(next->name.sv, overload->name.sv)) continue; // It goes on
+        if (next && name_equals(next->name.sv, overload->name.sv)) continue; // It goes on
         // Not followed by its implementation. An error if the list declares more of it later (tsc's consecutive
         // declarations), or if nothing declares more of it (the last declaration has no body)
         bool later_here = false;
         for (isize j = i + 1; j < count && !later_here; j++) {
             FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
-            later_here = other && csview_equals_sv(other->name.sv, overload->name.sv);
+            later_here = other && name_equals(other->name.sv, overload->name.sv);
         }
         // (Only a global merges across blocks: tsc checks a namespace's exported functions by the local symbol of
         // each block)

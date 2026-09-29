@@ -10396,9 +10396,9 @@ const baselines = {
         types: true,
     },
     'duplicateObjectLiteralProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateObjectLiteralProperty_computedName1': {
         errors: true,
@@ -31996,24 +31996,24 @@ const baselines = {
         types: true,
     },
     'unicodeEscapesInNames01(target=es2015)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unicodeEscapesInNames01(target=es5)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unicodeEscapesInNames01(target=esnext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unicodeEscapesInNames02(target=es2015)': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'unicodeEscapesInNames02(target=es5)': {
         errors: false,
@@ -61153,7 +61153,7 @@ const baselines = {
     'scannerUnicodeEscapeInKeyword2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannertest1': {
         errors: true,

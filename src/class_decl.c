@@ -58,7 +58,7 @@ Span class_item_private_name(ClassItem const* me) {
 ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name) {
     for_each (i, vec_class_item, &my items) {
         Span item_name = class_item_private_name(i);
-        if (span_valid(item_name) && csview_equals_sv(item_name.sv, name)) return i;
+        if (span_valid(item_name) && name_equals(item_name.sv, name)) return i;
     }
     return nullptr;
 }

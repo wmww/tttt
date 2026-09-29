@@ -4369,7 +4369,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
     if (augments && augments->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
-        !csview_equals_sv(augments->type.identifier->name.sv, extends_name.sv)
+        !name_equals(augments->type.identifier->name.sv, extends_name.sv)
     ) {
         Span name = augments->type.identifier->name;
         jsdoc_error(p, name, 8023, "JSDoc '@", augments->tag_name.sv, " ", name.sv, "' does not match the 'extends ",
@@ -4385,7 +4385,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     if (tag && tag->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
-        csview_equals_sv(tag->type.identifier->name.sv, extends_name.sv)
+        name_equals(tag->type.identifier->name.sv, extends_name.sv)
     ) {
         class_decl->jsdoc_extends = tag->type_span;
     }
@@ -6293,7 +6293,7 @@ static inline bool parse_name_or_value(Parser* parent, Span* span_ret, cstr* nam
     Value value;
     Anchor a = anchor(parent);
     if (parse_identifier_or_keyword(parent, span_ret)) {
-        *name_ret = cstr_from_span(*span_ret);
+        *name_ret = identifier_name_value(span_ret->sv);
         *name_is_value_ret = false;
         return true;
     } else if (*parent->pos != '`' && parse_literal(parent, &value)) { // (a template is no property name)
@@ -6414,7 +6414,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         p.pos++;
         parse_identifier_or_keyword(&p, nullptr);
         item.name_span = span_from(name_anchor);
-        item.name_string = cstr_from_span(item.name_span);
+        item.name_string = identifier_name_value(item.name_span.sv);
     } else {
         const char* name_start = p.pos;
         if (!parse_name_or_value(&p, &item.name_span, &item.name_string, &name_is_value)) {
@@ -7115,7 +7115,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     if (hop_private_name(&p)) {
         // Private name, the `#` is part of the name (in a type too, TS18016 from the checker)
         name_span = span_from(name_anchor);
-        name_string = cstr_from_span(name_span);
+        name_string = identifier_name_value(name_span.sv);
         name_is_value = false;
     } else if (is_type && is_construct_signature_start(p.pos)) {
         // `new (...): T` / `new <T>(...): T` is a construct signature, not a method called `new`
