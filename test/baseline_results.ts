@@ -56796,14 +56796,14 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ParameterList1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ParameterList2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ParameterList4': {
         errors: true,
@@ -56811,9 +56811,9 @@ const baselines = {
         types: true,
     },
     'parserErrorRecovery_ParameterList5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parserErrorRecovery_ParameterList6': {
         errors: true,

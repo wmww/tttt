@@ -5600,7 +5600,8 @@ static bool parse_function_args_inner(
                 } else {
                     hop_whitespace(&p);
                     Span comma = span_make(p.shared->source, p.pos, p.pos + 1);
-                    ignore( *p.pos == ')' || expect_char(&p, ',') );
+                    // (tsc's parseDelimitedList: no ',' expected before what ends the list)
+                    ignore( list_is_terminator(PARSING_PARAMETERS, tok_peek(&p)) || expect_char(&p, ',') );
                     Parser after = parser(&p);
                     hop_whitespace(&after);
                     bool closes = *after.pos == ')';
@@ -5615,11 +5616,8 @@ static bool parse_function_args_inner(
             hop_whitespace(&p);
         }
 
-        if (!expect_char(&p, ')')) {
-            function_impl_drop(ret);
-            *ret = (FunctionImpl){0};
-            return parse_success(&p);
-        }
+        // (A missing `)` is only an error: tsc's parseParameters keeps what it parsed and goes on)
+        expect_char(&p, ')');
     } else if (is_definitely_function) {
         expected_token_error(&p, "(");
         //goto drop_and_fail;
