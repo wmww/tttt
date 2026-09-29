@@ -26086,9 +26086,9 @@ const baselines = {
         types: true,
     },
     'promiseAllOnAny01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseChaining': {
         errors: true,

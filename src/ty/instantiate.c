@@ -176,10 +176,11 @@ static TyList instantiate_alias_args(Checker* me, Ty const* ty, TyMapper const* 
 static bool mapped_variable_is_list(Checker* me, Ty const* variable) {
     Ty const* constraint = ty_param_constraint(me, variable);
     if (!constraint) return false;
-    if (constraint->kind != TY_UNION) return ty_is_array(me, constraint) || ty_is_tuple(constraint);
+    // (The empty tuple `[]` included: its tuple target, `T extends readonly unknown[] | []` in Promise.all)
+    if (constraint->kind != TY_UNION) return ty_is_array(me, constraint) || ty_tuple_shape(constraint);
     for (u32 i = 0; i < constraint->composite.types.len; i++) {
         Ty const* part = constraint->composite.types.data[i];
-        if (!ty_is_array(me, part) && !ty_is_tuple(part)) return false;
+        if (!ty_is_array(me, part) && !ty_tuple_shape(part)) return false;
     }
     return true;
 }
