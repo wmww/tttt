@@ -1364,7 +1364,10 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         Signature const* sig = ty_function_assigned_contextual_signature(checker, my this_function);
         while (sig && sig->target) sig = sig->target;
         FunctionImpl const* function = sig ? sig->function : nullptr;
-        FunctionArg const* first = function && vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
+        // (Only a function expression's: a declaration's signature is its own, getSignatureFromDeclaration, which a
+        // JSDoc `@type` gives no `this` parameter; its `this` is the symbol of its type)
+        FunctionArg const* first = function && my this_function->is_expression && vec_function_arg_size(&function->args) ?
+            vec_function_arg_at(&function->args, 0) : nullptr;
         if (first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(first->initializer.binding.content_span, "this")
         ) {
