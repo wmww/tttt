@@ -398,7 +398,11 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
     if (my has_explicit_type && (my parent || (my source && assigned)) && !(strict_empty && initializer) &&
         !is_js_expando_object_initializer(me, initializer)
     ) {
-        ty_check_assignable_expr(current_checker, ty_binding_assigned_type(current_checker, me),
+        // (A parameter pattern's initializer as it is, not padded with the pattern's defaults: tsc's
+        // checkVariableLikeDeclaration checks checkExpressionCached(initializer))
+        bool padded = !my parent && initializer && my tag != BINDING_IDENTIFIER && binding_is_parameter(me);
+        Ty const* assigned_type = padded ? ty_expr_type(current_checker, initializer) : ty_binding_assigned_type(current_checker, me);
+        ty_check_assignable_expr(current_checker, assigned_type,
             ty_of_node(&my explicit_type), span_valid(span) ? span : my content_span, initializer, errs);
     }
 

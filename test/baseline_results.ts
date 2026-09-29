@@ -24671,7 +24671,7 @@ const baselines = {
         types: true,
     },
     'optionalParameterInDestructuringWithInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
