@@ -554,6 +554,31 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
                 "A namespace declaration cannot be located prior to a class or function with which it is merged.");
         }
     }
+    // tsc's checkModuleAugmentationElement, for an augmentation that applies (global, or merged with its module)
+    bool applies = (my is_global && !my is_invalid_global) ||
+        (my is_augmentation && my module_ref && binder_module_of_ref(current_checker->binder, my module_ref));
+    for_each (i, vec_statement, applies ? &my contents.statements : &(VecStatement){0}) {
+        bool is_export = i->tag == STATEMENT_EXPORT_DEFAULT_EXPR;
+        bool is_import = false;
+        if (i->tag == STATEMENT_IMPORT_EXPORT) {
+            PortStatement const* port = i->import_export;
+            if (csview_equals(port->keyword_span.sv, "export")) {
+                is_export = port->main.tag != PORT_IMPORT_ALIAS && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
+                    !port->is_import_require && port->main.tag != PORT_IMPORT_GATHER;
+                is_import = port->is_import_require;
+            } else {
+                // (`import a = e.x` is fine)
+                is_import = port->main.tag != PORT_IMPORT_ALIAS;
+            }
+        }
+        if (is_export) {
+            error_ctx_grammar_error_d(errs, block_first_token(i->span), 2666,
+                "Exports and export assignments are not permitted in module augmentations.");
+        } else if (is_import) {
+            error_ctx_grammar_error_d(errs, block_first_token(i->span), 2667,
+                "Imports are not permitted in module augmentations. Consider moving them to the enclosing external module.");
+        }
+    }
     block_typecheck(&my contents, (BlockTypecheckCtx){ .ambient = declared }, errs);
 }
 

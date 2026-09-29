@@ -83,7 +83,7 @@ static bool port_statement_is_export_declaration(PortStatement const* me) {
 void port_statement_add_names(PortStatement* me, Scope* scope) {
     // (tsc's checkGrammarModuleElementContext: a file, a namespace body or an ambient module's)
     bool top = scope->kind == SCOPE_MODULE || scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_GLOBAL_AUGMENTATION ||
-        (scope->container && scope->container->is_module);
+        (scope->container && (scope->container->is_module || scope->container->is_augmentation));
     my in_namespace = !top && scope->kind == SCOPE_NAMESPACE;
     my in_ambient_namespace = my in_namespace && scope->ambient;
     my main.in_namespace = my in_namespace;

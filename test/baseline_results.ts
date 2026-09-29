@@ -16031,7 +16031,7 @@ const baselines = {
         types: true,
     },
     'importAliasInModuleAugmentation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21581,9 +21581,9 @@ const baselines = {
         types: true,
     },
     'moduleAugmentationDisallowedExtensions': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleAugmentationDoesInterfaceMergeOfReexport': {
         errors: true,
@@ -21696,9 +21696,9 @@ const baselines = {
         types: false,
     },
     'moduleAugmentationImportsAndExports3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAugmentationImportsAndExports4': {
         errors: true,

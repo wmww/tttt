@@ -115,6 +115,7 @@ typedef struct ParserShared {
     bool disallow_conditional;
     ModifiedParent statement_parent;
     bool in_namespace_body; // The module block is a `namespace N {}`'s, not an ambient module's
+    u32 ambient_module_depth; // Inside `declare module "m" {}` bodies (augmentations too)
     // The end of the file's last token (tsc's full start of the end-of-file token): where a missing expression at the
     // end of the file is reported. The smallest position trivia was skipped from up to the end
     const char* eof_full_start;
@@ -205,6 +206,15 @@ typedef enum TypePrecedence {
 } TypePrecedence;
 
 static bool hop_token(Parser* parent);
+
+// tsc's isExternalModuleNameRelative: `.`/`..` segments first, or a rooted path
+static bool is_relative_module_name(csview path) {
+    if (csview_starts_with(path, "/") || csview_starts_with(path, "\\")) return true;
+    if (path.size >= 3 && path.buf[1] == ':' && (path.buf[2] == '/' || path.buf[2] == '\\')) return true;
+    if (!path.size || path.buf[0] != '.') return false;
+    isize dots = path.size >= 2 && path.buf[1] == '.' ? 2 : 1;
+    return path.size == dots || path.buf[dots] == '/' || path.buf[dots] == '\\';
+}
 
 // Takes path. The file owns it: what a failed parse attempt leaves behind is merely one more file looked for
 static ModuleRef* add_module_ref(Parser* p, cstr path, Span span) {
@@ -10637,6 +10647,11 @@ done:
     if (span_valid(statement.target_path_span)) {
         statement.module_ref = add_module_ref(&p, cstr_clone(statement.target_path), statement.target_path_span);
         if (statement.is_import_require) statement.module_ref->syntax = MODULE_REF_REQUIRE;
+        // A relative name in an ambient module declaration is never resolved to a file (tsc's collectModuleReferences
+        // skips it: only an ambient module can be it)
+        if (p.shared->ambient_module_depth && is_relative_module_name(cstr_sv(&statement.target_path))) {
+            statement.module_ref->ambient_only = true;
+        }
         statement.main.module_ref = statement.module_ref;
         if (statement.main.type_only) {
             statement.module_ref->resolution_override = import_attributes_resolution_mode(statement.attributes, nullptr);
@@ -12143,7 +12158,9 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                 hop_whitespace(&p);
                 bool outer_in_namespace = p.shared->in_namespace_body;
                 p.shared->in_namespace_body = false;
+                p.shared->ambient_module_depth++;
                 bool has_block = parse_block(&p, true, &ret->contents);
+                p.shared->ambient_module_depth--;
                 p.shared->in_namespace_body = outer_in_namespace;
                 if (!has_block) {
                     // `declare module "a";` is a shorthand ambient module
