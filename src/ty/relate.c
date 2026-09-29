@@ -5271,6 +5271,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                     written.buf[0] != '\'' && written.buf[0] != '[' && written.buf[0] != '#' &&
                     !(written.buf[0] >= '0' && written.buf[0] <= '9');
                 Prop const* suggestion = identifier ? ty_suggested_property(me, error_target, atom_sv(prop->name)) : nullptr;
+                // (The whole diagnostic goes to the property wherever the line ends up: tsc's errorNode = name)
                 if (suggestion) {
                     report_line_at(st, 2561, cstr_d(
                         "Object literal may only specify known properties, but '", name, "' does not exist in type '",
@@ -5282,6 +5283,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                         target_str, "'."
                     ), prop->decl->name_span);
                 }
+                vec_ty_report_line_back_mut(&st->lines)->relocates = span_valid(prop->decl->name_span);
                 c_drop(cstr, &name, &target_str);
                 st->override_next_head++; // (tsc's reportParentSkippedError)
             }

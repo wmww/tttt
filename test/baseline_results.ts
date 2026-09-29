@@ -1176,7 +1176,7 @@ const baselines = {
         types: true,
     },
     'arrayCast': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12426,7 +12426,7 @@ const baselines = {
         types: true,
     },
     'excessPropertyCheckWithUnions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47121,7 +47121,7 @@ const baselines = {
         types: true,
     },
     'logicalOrExpressionIsContextuallyTyped': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

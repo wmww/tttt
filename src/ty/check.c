@@ -702,8 +702,9 @@ void ty_check_type_assertion(Checker* me, Ty const* expr_type, Ty const* target,
     if (target == ty_intrinsic(me, TY_ERROR) || (target->flags & TYF_ANY)) return;
     // tsc's checkAssertionDeferred: the operand's regular base type, widened, has to be comparable to the target
     // either way
-    Ty const* source = ty_widened_objects(me, ty_base_type_of_literal(me, expr_type));
-    Ty const* widened = ty_widened_nullable(me, source);
+    // (Checked as the regular type, whose nested object literals are still fresh: excess properties in them count)
+    Ty const* source = ty_regular_object_literal(me, ty_base_type_of_literal(me, expr_type));
+    Ty const* widened = ty_widened_nullable(me, ty_widened_objects(me, source));
     if (ty_is_related(me, target, widened, TY_RELATION_COMPARABLE)) return;
     if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;
     cstr source_str = ty_to_cstr(me, source);
