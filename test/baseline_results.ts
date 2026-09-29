@@ -4021,7 +4021,7 @@ const baselines = {
         types: false,
     },
     'classWithEmptyTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -5996,7 +5996,7 @@ const baselines = {
         types: true,
     },
     'constructorOverloads8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25446,7 +25446,7 @@ const baselines = {
         types: false,
     },
     'parserConstructorDeclaration12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35516,7 +35516,7 @@ const baselines = {
         types: true,
     },
     'classWithTwoConstructorDefinitions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54901,17 +54901,17 @@ const baselines = {
         types: false,
     },
     'nodeModulesForbidenSyntax(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesForbidenSyntax(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesForbidenSyntax(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56396,7 +56396,7 @@ const baselines = {
         types: true,
     },
     'parserConstructorDeclaration11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1655,12 +1655,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     if (constructor_count > 1) {
         for_each (i, vec_class_item, &my items) {
-            if (i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
+            // (tsc's checkFunctionOrConstructorSymbol: on every declaration, overloads too)
+            if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
                 check(span_valid(i->constructor.name_span));
-                check(span_valid(i->constructor.func.full_span));
                 error_ctx_error_d(
                     errs,
-                    span_between(i->constructor.name_span, i->constructor.func.full_span),
+                    i->constructor.name_span, // (tsc's getErrorSpanForNode: the modifiers and the keyword)
                     2392,
                     "Multiple constructor implementations are not allowed."
                 );

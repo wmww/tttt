@@ -1205,6 +1205,12 @@ static Error* expected_expression_error(Parser* parent) {
 
 static bool hop_escaped_keyword(Parser* parent, const char* keyword);
 
+// tsc's fileExtensionIsOneOf(file, [.mts, .cts]): where `<T>x` and `<T>() =>` are reserved (TS7059, TS7060)
+static bool source_is_mts_or_cts(Parser const* p) {
+    csview path = cstr_sv(&p->shared->source->canonical_path);
+    return csview_ends_with(path, ".mts") || csview_ends_with(path, ".cts");
+}
+
 // The keyword probe: no child parser (nothing to backtrack), and most probes fail on the first character
 __attribute__((always_inline)) static inline bool hop_start_if_ends_on_word_break(Parser* parent, const char* prefix) {
 #ifdef DEBUG_BUILD
@@ -2256,10 +2262,15 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
     Parser p = parser(parent);
     *ret = (Generic){0};
 
+    const char* open = p.pos;
     if (!hop_char(&p, '<')) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
+    if (*p.pos == '>' && owner != TYPE_PARAM_OF_TYPE) {
+        // tsc's checkGrammarTypeParameterList (classes and function-likes): over the `<` to the `>`
+        grammar_error(&p, span_make(p.shared->source, open, p.pos + 1), 1098, "Type parameter list cannot be empty.");
+    }
 
     while (*p.pos && *p.pos != '>') {
         GenericItem item;
@@ -6018,6 +6029,16 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         }
     }
     ret->arrow_span = span_from(arrow_a);
+    if (source_is_mts_or_cts(&p) && vec_generic_item_size(&ret->generic.items) == 1) {
+        // tsc's checkGrammarArrowFunction: `<T>() =>` is reserved there, `<T,>` and `<T extends X>` aren't
+        GenericItem const* item = vec_generic_item_at(&ret->generic.items, 0);
+        const char* after = span_end_ptr(item->full_span);
+        while (is_regex_space(*after)) after++;
+        if (!item->extends_explicit && *after != ',') {
+            grammar_error(&p, item->full_span, 7060,
+                "This syntax is reserved in files with the .mts or .cts extension. Add a trailing comma or explicit constraint.");
+        }
+    }
 
     if (newline_after_args) {
         // This will generate an error in the typecheck phase, why it's not a parse error I have no idea.
@@ -7479,12 +7500,18 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
             continue;
         }
         if (item.tag == CLASS_ITEM_CONSTRUCTOR) {
+            const char* after_name = span_end_ptr(item.constructor.name_span);
+            while (is_regex_space(*after_name)) after_name++;
             if (!generic_empty(&item.constructor.func.generic)) {
                 Span generics_span = span_between(
                     item.constructor.func.generic.items.data->full_span,
                     vec_generic_item_back(&item.constructor.func.generic.items)->full_span
                 );
-                parse_error(&p, generics_span, 1092, "Type parameters cannot appear on a constructor declaration.");
+                grammar_error(&p, generics_span, 1092, "Type parameters cannot appear on a constructor declaration.");
+            } else if (*after_name == '<') {
+                // (`constructor<>()`: tsc's checkGrammarConstructorTypeParameters, on the empty list after the `<`)
+                grammar_error(&p, span_make(p.shared->source, after_name + 1, after_name + 1), 1092,
+                    "Type parameters cannot appear on a constructor declaration.");
             }
             if (is_abstract) {
                 item.constructor.func.is_abstract_constructor = true;
@@ -9648,6 +9675,11 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .type = t,
             .angle_bracket_syntax = true,
         }));
+        if (source_is_mts_or_cts(&p)) {
+            // (tsc's checkAssertion)
+            grammar_error(&p, span_from(a), 7059,
+                "This syntax is reserved in files with the .mts or .cts extension. Use an `as` expression instead.");
+        }
     } else {
         return parse_fail(&p);
     }
