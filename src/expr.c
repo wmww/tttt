@@ -439,6 +439,13 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
             my this_function = this_ref.function;
+            if (this_ref.kind == THIS_ANY) {
+                Scope const* container = names;
+                while (container && !container->this_ref.kind) container = container->parent;
+                ThisKind outer = container && container->parent ? scope_get_this(container->parent, false).kind : THIS_NONE;
+                my this_shadows_outer = outer == THIS_CLASS_INSTANCE || outer == THIS_CLASS_STATIC || outer == THIS_PARAMETER ||
+                    outer == THIS_COMMONJS;
+            }
             check_before_super(me, names, 17009, "'this'", errs);
             // tsc's checkThisInStaticClassFieldInitializerInDecoratedClass: up to the this container (through arrows)
             for (Scope const* scope = names; scope && !scope->this_ref.kind; scope = scope->parent) {
@@ -690,7 +697,10 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
         !(my this_function && (ty_js_this_class(my this_function) || ty_contextual_this_type(current_checker, my this_function)))
     ) {
-        error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
+        Error* e = error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
+        if (my this_shadows_outer && my this_function) {
+            error_add_related_d(e, function_error_span(my this_function), 2738, "An outer value of 'this' is shadowed by this container.");
+        }
     }
 }
 

@@ -78,6 +78,9 @@ typedef struct IdentifierExpr {
     // has the non-nullable type of what control flow says)
     bool non_null_operand : 1;
     bool this_through_arrow : 1; // `this` of a script's top level inside an arrow function (TS7041)
+    // `this` of a function (THIS_ANY) inside a class member, a function with a `this` parameter or a CommonJS module:
+    // TS2683 says the function shadows the outer `this` (tsc's checkThisExpression, tryGetThisTypeAt of the container)
+    bool this_shadows_outer : 1;
     // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
     Expr const* extends_entity;
     union {
