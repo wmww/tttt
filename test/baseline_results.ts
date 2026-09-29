@@ -66206,12 +66206,12 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithCallSignatures3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatWithCallSignatures4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66246,12 +66246,12 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithConstructSignatures3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'assignmentCompatWithConstructSignatures4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

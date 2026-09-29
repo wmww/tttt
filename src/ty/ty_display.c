@@ -586,6 +586,7 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     if (symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN) return true; // `object`
     // (A local of a function or block never is: tsc's isDeclarationVisible() is false for it, and `enclosing` only knows
     // file and namespace scopes anyway)
+    if (!d.enclosing) return true; // (A message's type: tsc has no enclosing declaration to check against)
     Symbol const* found = scope_resolve(d.enclosing, first, meaning);
     return found && same_symbol(me, found, symbol);
 }
@@ -1333,8 +1334,15 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         Ty const* constraint = ty_param_constraint(me, params.data[i]);
         if (constraint) {
             out_lit(d, " extends ");
-            if (d.reused) ty_display(me, d, constraint);
-            else display_annotated(me, d, reusable && item && item->extends_explicit ? &item->extends : nullptr, constraint, false);
+            if (d.reused) {
+                ty_display(me, d, constraint);
+            } else if (!d.underline && item && item->extends_explicit && annotation_is(me, &item->extends, constraint, false)) {
+                // (tsc's typeParameterToDeclaration reuses the constraint as written in messages too:
+                // typeToTypeNodeHelperWithPossibleReusableTypeNode)
+                display_node(me, d, &item->extends);
+            } else {
+                display_annotated(me, d, reusable && item && item->extends_explicit ? &item->extends : nullptr, constraint, false);
+            }
         }
         Ty const* fallback = ty_param_default(me, params.data[i]);
         if (fallback) {
