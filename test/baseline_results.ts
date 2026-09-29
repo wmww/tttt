@@ -25083,7 +25083,7 @@ const baselines = {
     'overloadingStaticFunctionsInFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadresolutionWithConstraintCheckingDeferred': {
         errors: true,
@@ -29163,7 +29163,7 @@ const baselines = {
     'staticsInAFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticsInConstructorBodies': {
         errors: true,

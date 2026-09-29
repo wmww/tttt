@@ -7349,14 +7349,13 @@ static bool parse_ternary_expr(Parser* parent, ExprCtx ctx, Expr* ret_yes, Expr*
     }
     hop_whitespace(&p);
 
-    if (!expect_expr(&p, ctx, ret_yes)) {
-        *ret_no = expr_undefined(span_from_pos(&p));
-        return parse_success(&p);
-    }
+    // (tsc's parseConditionalExpressionRest goes on after a missing branch or colon: a missing expression each)
+    expect_expr(&p, ctx, ret_yes);
     hop_whitespace(&p);
 
     if (!expect_char(&p, ':')) {
-        *ret_no = expr_undefined(span_from_pos(&p));
+        *ret_no = expr_implicit_any(span_from_pos(&p));
+        ret_no->missing = true;
         return parse_success(&p);
     }
     hop_whitespace(&p);
