@@ -1281,7 +1281,19 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
     } else if (members) {
         from = malloc(sizeof(ObjectLiteralProp) * (members->prop_count + 1));
         panic_if(!from, "out of memory");
-        for (u32 i = 0; i < members->prop_count; i++) from[from_count++] = (ObjectLiteralProp){ .reuse = members->props[i] };
+        for (u32 i = 0; i < members->prop_count; i++) {
+            Prop const* prop = members->props[i];
+            // (A readonly one is copied without readonly: tsc's getSpreadSymbol with readonly false. An exported const)
+            if (!(prop->flags & PROP_READONLY)) {
+                from[from_count++] = (ObjectLiteralProp){ .reuse = prop };
+                continue;
+            }
+            from[from_count++] = (ObjectLiteralProp){
+                .name = prop->name, .flags = prop->flags & (PROP_OPTIONAL | PROP_METHOD), .type = prop_type(me, prop),
+                .name_span = prop->decl->name_span, .name_form = ty_prop_name_form_of(prop),
+                .decl_spans = prop->decl->decl_spans, .decl_span_count = prop->decl->decl_span_count,
+            };
+        }
     }
     ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, from_count + 1);
     props[0] = (ObjectLiteralProp){ .name = default_name, .type = type };
