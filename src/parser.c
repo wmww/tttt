@@ -16,6 +16,7 @@
 #include "callable_type.h"
 #include "type.h"
 #include "error.h"
+#include "flow.h"
 #include "source_file.h"
 #include "math_helpers.h"
 #include <math.h>
@@ -7346,6 +7347,11 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .optional_chain = parsed.optional_chain,
             })
         );
+        Span prop_name = parsed.expr_a.inner_span;
+        if (prop_name.sv.size && prop_name.sv.buf[0] == '#' && expr_is_optional_chain(left_and_ret)) {
+            // tsc's parsePropertyAccessExpressionRest
+            parse_error(&p, prop_name, 18030, "An optional chain cannot contain private identifiers.");
+        }
         if (p.shared->source->is_js && expr_is_module_exports(left_and_ret)) {
             Span module = left_and_ret->property->expr.inner_span;
             Span* first = &p.shared->module_exports_span;
