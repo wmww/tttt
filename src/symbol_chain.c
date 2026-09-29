@@ -567,9 +567,21 @@ void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member) {
 }
 
 void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* chain) {
+    symbol_chain_append_entity(out, enclosing, chain, false);
+}
+
+void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity) {
     for (u32 i = 0; i < chain->len; i++) {
         Symbol const* symbol = chain->items[i];
         csview name = written_name(enclosing, symbol, i == 0);
+        // (An entity name has no element accesses: a quoted name that is an identifier is written as one, tsc's
+        // symbolToTypeNode of an `o["x"] = v` expando is `typeof o.x`)
+        if (entity && i && name.size >= 2 && is_quote(name.buf[0]) && name.buf[name.size - 1] == name.buf[0]) {
+            csview inner = csview_slice(name, 1, name.size - 1);
+            bool plain = can_use_property_access(inner);
+            for (isize k = 0; plain && k < inner.size; k++) plain = inner.buf[k] != '\\' && inner.buf[k] != '-' && inner.buf[k] != ' ';
+            if (plain) name = inner;
+        }
         if (i == 0) {
             cstr_append_sv(out, name);
         } else {

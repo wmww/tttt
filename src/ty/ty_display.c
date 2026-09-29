@@ -152,7 +152,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     SymbolChain rest = { .len = chain.len - start };
     memcpy(rest.items, chain.items + start, rest.len * sizeof(*rest.items));
     if (start && rest.len) cstr_append_lit(&text, ".");
-    symbol_chain_append(&text, d.enclosing, &rest);
+    symbol_chain_append_entity(&text, d.enclosing, &rest, true);
     out(d, cstr_sv(&text));
     cstr_drop(&text);
 }
