@@ -2016,11 +2016,12 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
         return false;
     }
     // So can a JavaScript constructor function's (tsc's isAssignmentToReadonlyEntity: isJSConstructor)
+    // (Not a function that isn't one: an object literal method's `this` has no class, nor has a type literal's member)
     if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) &&
-        access->expr.identifier.this_kind == THIS_ANY && access->expr.identifier.this_function &&
-        ty_js_constructor_class(access->expr.identifier.this_function) == refs->props[0]->parent
+        access->expr.identifier.this_kind == THIS_ANY && access->expr.identifier.this_function
     ) {
-        return false;
+        Symbol const* constructed = ty_js_constructor_class(access->expr.identifier.this_function);
+        if (constructed && constructed == refs->props[0]->parent) return false;
     }
     return true;
 }
