@@ -3101,7 +3101,7 @@ const baselines = {
         types: true,
     },
     'chainedCallsWithTypeParameterConstrainedToOtherTypeParameter2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66471,7 +66471,7 @@ const baselines = {
         types: true,
     },
     'genericCallWithObjectTypeArgsAndInitializers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66506,7 +66506,7 @@ const baselines = {
         types: true,
     },
     'typeParameterAssignability2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66736,7 +66736,7 @@ const baselines = {
         types: false,
     },
     'subtypesOfTypeParameterWithConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

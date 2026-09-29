@@ -630,13 +630,11 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     // (An `infer X` has no GenericItem: it is named where its symbol is declared)
     Symbol const* infer_symbol = !item && declared->param.state->is_infer ? declared->param.symbol : nullptr;
     if (!item && !(infer_symbol && infer_symbol->decl_count)) return;
+    // (Nor when the source as constrained by the target would have a circular base constraint, tsc's
+    // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
+    // parameter is no such target: instantiating it leaves it, and its own constraint mentions the original)
     Ty const* base = target;
-    for (u32 depth = 0; base && base->kind == TY_TYPE_PARAM && depth < 16; depth++) {
-        if (base == source || base == declared) return;
-        base = ty_param_constraint(me, base);
-    }
-    // (Nor when the source as constrained by it would have a circular base constraint, tsc's hasNonCircularBaseConstraint:
-    // `Extract<T, string>` as a constraint of T is resolved through T's)
+    if (base == source || base == declared) return;
     if (base && base->kind == TY_CONDITIONAL && (base->conditional.check == source || base->conditional.check == declared)) return;
     if (base && base->kind == TY_INDEXED && (base->indexed.object == source || base->indexed.object == declared)) return;
     cstr target_str = display_for_report(me, target, false);
