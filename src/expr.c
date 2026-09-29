@@ -1702,6 +1702,20 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (!my call->uses_new) flow->contextual_depth++;
             mark_indirect_call(&my call->callable);
             if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
+            // JavaScript `Object.defineProperty(F.prototype, "x", { value/get/set: function () {} })`: `this` in the
+            // functions is F's (tsc's getClassNameFromPrototypeMethod)
+            if (names->file && names->file->is_js && expr_is_define_property_call(me, nullptr)) {
+                Expr const* constructor = expr_prototype_object(vec_expr_at_mut(&my call->args, 0));
+                Expr* descriptor = vec_expr_at_mut(&my call->args, 2);
+                if (constructor && descriptor->tag == EXPR_OBJECT && !expr_is_perenthisized(descriptor)) {
+                    for_each (i, vec_object_expr_item, &descriptor->object) {
+                        if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || i->value.tag != EXPR_FUNCTION) continue;
+                        if (!span_equals(i->name_span, "value") && !span_equals(i->name_span, "get") && !span_equals(i->name_span, "set")) continue;
+                        if (span_valid(i->value.function->arrow_span)) continue;
+                        i->value.function->prototype_of = constructor;
+                    }
+                }
+            }
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
                 flow_array_mutation(flow, me); // `x?.push(v)`
