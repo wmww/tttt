@@ -1259,7 +1259,28 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
     if (decl->merged_export_equals_of) {
         for (u32 i = 0; i < decl->exports->count; i++) {
             SymbolEntry const* entry = &decl->exports->entries[i];
-            if (builder_find_prop(builder, checker_atom(me, entry->name))) continue;
+            Prop* existing = builder_find_prop(builder, checker_atom(me, entry->name));
+            if (existing) {
+                // `module.exports = { a: 1 }; module.exports.a = "s"` in one file: `a` is both (tsc's
+                // getInitializerTypeFromAssignmentDeclaration unions the two declarations' types)
+                Symbol const* value = symbol_for_meaning(entry->symbol, SYMBOL_VALUE);
+                SourceFile const* here = existing->decl->name_span.source;
+                bool same_file = value && value->decl_count && here && value->decls[0].full.source == here;
+                if (value && !(entry->symbol->flags & SYMBOL_ALIAS) && !value->is_placeholder && same_file &&
+                    value->decls[0].kind == SYMBOL_DECL_ASSIGNMENT
+                ) {
+                    Prop* copy = arena_new(&my arena, Prop);
+                    prop_copy_into(me, copy, existing);
+                    Ty const* parts[2] = { prop_type(me, existing), ty_type_of_symbol(me, value) };
+                    copy->type = ty_union(me, parts, 2, nullptr, (TyList){0});
+                    copy->type_state = LAZY_STATE_DONE;
+                    VecSpan spans = symbol_declaration_spans(entry->symbol);
+                    prop_add_decl_spans(me, copy, spans.data, (u32)vec_span_size(&spans));
+                    vec_span_drop(&spans);
+                    for (u32 k = 0; k < builder->props_count; k++) if (builder->props[k] == existing) builder->props[k] = copy;
+                }
+                continue;
+            }
             Prop* prop = namespace_export_prop(me, entry);
             if (!prop) continue;
             // (`module.exports.f = f` of a `const f` is an alias, which isn't readonly: tsc's isReadonlySymbol)
