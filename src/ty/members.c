@@ -50,6 +50,9 @@ typedef struct MembersBuilder {
     u32 index_count, index_cap;
     MappedInfo const* mapped;
     TyDeclGroup const* decl_group; // The interface declaration being added (overload order, see reorder_candidates)
+    // Members whose props have the same names in the same order as these will (an instantiation's source): their
+    // props_by_name gives the order without sorting
+    Members const* same_names;
 } MembersBuilder;
 
 #define builder_push(me, field, value) do { \
@@ -78,8 +81,26 @@ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     Members* ret = arena_new(&my arena, Members);
     if (builder->props_count > 8) {
         Prop** sorted = arena_new_n(&my arena, Prop*, builder->props_count);
-        memcpy(sorted, builder->props, sizeof(Prop*) * builder->props_count);
-        qsort(sorted, builder->props_count, sizeof(Prop*), prop_cmp_name);
+        Members const* same = builder->same_names;
+        bool placed = same && same->props_by_name && same->prop_count == builder->props_count;
+        if (placed) {
+            // Each prop goes where its name is in the source's sorted table (unless a name is there twice)
+            for (u32 i = 0; i < builder->props_count && placed; i++) {
+                uintptr_t name = (uintptr_t)builder->props[i]->name;
+                u32 low = 0, high = same->prop_count;
+                while (low < high) {
+                    u32 mid = low + (high - low) / 2;
+                    if ((uintptr_t)same->props_by_name[mid]->name < name) low = mid + 1;
+                    else high = mid;
+                }
+                placed = low < same->prop_count && same->props_by_name[low]->name == builder->props[i]->name && !sorted[low];
+                if (placed) sorted[low] = builder->props[i];
+            }
+        }
+        if (!placed) {
+            memcpy(sorted, builder->props, sizeof(Prop*) * builder->props_count);
+            qsort(sorted, builder->props_count, sizeof(Prop*), prop_cmp_name);
+        }
         ret->props_by_name = sorted;
     }
 #define FINISH(field, count_field, T) \
@@ -1777,6 +1798,7 @@ static Members const* instantiate_members(
     }
     if (source->mapped) builder.mapped = instantiate_mapped_info(me, source->mapped, mapper);
     for (u32 i = 0; i < source->base_count; i++) builder_add_inherited(me, &builder, ty_instantiate(me, source->bases[i], mapper));
+    if (!source->base_count) builder.same_names = source;
     Members* ret = (Members*)builder_finish(me, &builder);
     if (source->expanded_from) ret->expanded_from = instantiate_mapped_info(me, source->expanded_from, mapper);
     return ret;
