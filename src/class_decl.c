@@ -610,6 +610,7 @@ typedef struct MemberInfo {
     bool uninitialized_field; // A property declaration without an initializer
     bool definite; // `x!: T`
     bool identifier_name;
+    bool late_bound; // `[k]: T` named by an entity name: tsc's late-bound (transient) member symbol
     Span name;
     ClassItem const* field; // The property declaration
 } MemberInfo;
@@ -629,6 +630,8 @@ static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, A
             while (after && (*after == ' ' || *after == '\t')) after++;
             ret.definite = after && *after == '!';
             ret.identifier_name = !i->field.computed_key && !i->field.name_is_value;
+            Expr const* key = i->field.computed_key;
+            ret.late_bound = key && (key->tag == EXPR_IDENTIFIER || key->tag == EXPR_PROPERTY);
             ret.name = i->field.name_span;
             ret.field = i;
         } else {
@@ -720,7 +723,7 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
                     error_ctx_error_d(errs, at, 2611, "'", atom_sv(base_prop->name), "' is defined as a property in class '",
                         base, "', but is overridden here in '", type, "' as an accessor.");
                 } else if (options->use_define_for_class_fields && derived_info.uninitialized_field && !base_info.is_abstract &&
-                    !derived_info.is_abstract && !derived_info.is_declare && !my is_ambient
+                    !derived_info.is_abstract && !derived_info.is_declare && !my is_ambient && !derived_info.late_bound
                 ) {
                     // (tsc's isPropertyInitializedInConstructor gets the class type for the property's here, which
                     // only differs when it's assigned undefined)
