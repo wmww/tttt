@@ -465,6 +465,9 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 .is_instantiated = has_value,
                 .is_ambient = props.declared,
             });
+            // (`global x`, recovery's global without a body: a shorthand ambient module, any, tsc's
+            // isShorthandAmbientModuleSymbol)
+            if (invalid_global && my is_shorthand && my symbol) my symbol->is_shorthand_module = true;
             my inner_scope->container = my symbol;
         }
     }

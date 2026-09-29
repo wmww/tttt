@@ -23106,8 +23106,8 @@ const baselines = {
         types: true,
     },
     'nestedGlobalNamespaceInClass': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'nestedHomomorphicMappedTypesWithArrayConstraint1': {

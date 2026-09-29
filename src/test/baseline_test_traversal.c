@@ -1348,7 +1348,11 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         });
         cstr_drop(&file_name);
         // (Only if this declaration is a value: tsc's type writer asks getMeaningFromDeclaration)
-        if ((my symbol->flags & SYMBOL_VALUE) && namespace_decl_declares_value(me)) {
+        if (my is_invalid_global && my is_shorthand) {
+            // (`global x`: a shorthand ambient module to tsc, any)
+            ctx->any_keeps_underline = true;
+            baseline_test_case_add_type_node(ctx, my name, &type_any);
+        } else if ((my symbol->flags & SYMBOL_VALUE) && namespace_decl_declares_value(me)) {
             baseline_test_case_add_symbol_value(ctx, my name, my symbol);
         }
     }

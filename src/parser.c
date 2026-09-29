@@ -12005,7 +12005,12 @@ static bool parse_global_block(Parser* parent, NamespaceDecl* ret) {
     bool has_block = parse_block(&p, true, &ret->contents);
     p.shared->in_namespace_body = outer_in_namespace;
     if (!has_block) {
-        return parse_fail(&p);
+        // tsc's isStartOfDeclaration takes `global` and a name (or `export`) as a declaration too, which is then
+        // missing its block: `global x` (the statement list says ';' expected)
+        Tok t = tok_peek(&p);
+        if (!tok_is_identifier(t) && !tok_is(t, "export")) return parse_fail(&p);
+        ret->contents = (Block){0};
+        ret->is_shorthand = true;
     }
 
     return parse_success(&p);

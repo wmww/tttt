@@ -181,6 +181,15 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `CallExpr` argument types recomputed per use; `Value.object` refcount churn; `IdentifierType` could be split into a
   small common case; `CallableType`/`FunctionImpl` are two allocations (PERF comments).
 
+- Recovery shapes tsc's AST has and tttt's doesn't (all from the recovery session of 2026-09-29): an import's module
+  specifier that isn't a string is parsed (tsc's parseModuleSpecifier expression) and dropped, so the types baseline
+  misses it; `global x` (a global augmentation without a block) is `NamespaceDecl.is_shorthand` on an invalid global,
+  typed any by a special case in `namespace_decl_compile_test_info()` and `is_shorthand_module`; `a<b>?.()` keeps
+  the `EXPR_GENERIC_PARAMS` callee that the types baseline never prints (tsc's ExpressionWithTypeArguments is printed).
+- `expect_expr()` continues a missing operand with binary/assignment operators and `.` (tsc's missing identifier as
+  a primary expression), but not `[`/`(` member/call continuations, and returns true when it built something (callers
+  treat false as nothing to drop).
+
 ## Binder (`scope.c`)
 - Identifiers keep `symbol` (what the name found, maybe an alias) and `target` (aliases resolved, cached at resolve
   time) instead of one pointer plus an accessor.
