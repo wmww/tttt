@@ -38421,7 +38421,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassMethodThisParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65601,7 +65601,7 @@ const baselines = {
         types: false,
     },
     'thisTypeInAccessorsNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
