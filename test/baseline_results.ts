@@ -47181,7 +47181,7 @@ const baselines = {
         types: true,
     },
     'commaOperatorWithoutOperand': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48501,7 +48501,7 @@ const baselines = {
         types: true,
     },
     'deleteOperatorInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

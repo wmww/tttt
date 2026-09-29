@@ -2282,6 +2282,10 @@ Span expr_error_span(Expr const* me) {
     return expr_is_perenthisized(me) ? my outer_span : node_error_span(me);
 }
 
+Span expr_error_span_skip_parens(Expr const* me) {
+    return node_error_span(me);
+}
+
 // expr_error_span() of what is in the parentheses, if any
 static Span node_error_span(Expr const* me) {
     Span span = my inner_span;
@@ -2305,6 +2309,14 @@ static Span node_error_span(Expr const* me) {
         case EXPR_CLASS_DECL:
             if (span_valid(my class_decl->name)) return my class_decl->name;
             break;
+        case EXPR_IMPLICIT_ANY: {
+            // A missing expression is reported at its full start, before the trivia (tsc's getErrorSpanForNode:
+            // nodeIsMissing). Only whitespace is walked back over
+            if (!my missing || !span_valid(span) || !span.source) return span;
+            char const* file_start = cstr_str(&span.source->contents);
+            while (start > file_start && (start[-1] == ' ' || start[-1] == '\t' || start[-1] == '\n' || start[-1] == '\r')) start--;
+            return span_make(span.source, start, start);
+        }
         default:
             return span;
     }

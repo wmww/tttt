@@ -407,6 +407,8 @@ Expr const* expr_effective_check_node(Expr const* me);
 // Where an error about an expression goes (tsc's getErrorSpanForNode): a function or class expression's name, a
 // `satisfies` keyword, the first line of an arrow function...
 Span expr_error_span(Expr const* me);
+// expr_error_span() of what is in the parentheses (tsc's skipParentheses, then getErrorSpanForNode)
+Span expr_error_span_skip_parens(Expr const* me);
 // tsc's checkTruthinessOfType, for a condition that has been typechecked
 void expr_check_truthiness(Expr const* me, ErrorCtx* errs);
 bool expr_check_reference_not_optional(Expr const* target, unsigned code, char const* message, ErrorCtx* errs);

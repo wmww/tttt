@@ -2071,7 +2071,7 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
 
 void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     if (operand->tag != EXPR_PROPERTY) {
-        error_ctx_error_d(errs, operand->inner_span, 2703, "The operand of a 'delete' operator must be a property reference.");
+        error_ctx_error_d(errs, expr_error_span_skip_parens(operand), 2703, "The operand of a 'delete' operator must be a property reference.");
         return;
     }
     PropertyExpr const* access = operand->property;
