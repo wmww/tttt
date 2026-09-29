@@ -2574,7 +2574,11 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     Span name;
     VecSpan namespaces = vec_span_init();
     if (!parse_identifier(&p, &name)) {
-        return parse_fail(&p);
+        // (A type reference takes the reserved words parse_identifier() refuses for expressions: `x: var` is TS2304)
+        if (!starts_with_followed_by_word_break(&p, "var")) return parse_fail(&p);
+        Anchor word = anchor(&p);
+        parse_identifier_or_keyword(&p, nullptr);
+        name = span_from(word);
     }
     const char* end = p.pos;
 
