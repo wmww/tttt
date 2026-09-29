@@ -41546,7 +41546,7 @@ const baselines = {
         types: true,
     },
     'destructuringArrayBindingPatternAndAssignment2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

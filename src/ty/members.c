@@ -2508,7 +2508,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     length_prop->type_state = LAZY_STATE_DONE;
     builder_push(&builder, props, length_prop);
     Ty const* array = ty_tuple_as_array(me, tuple);
-    if (array) builder_add_inherited(me, &builder, array);
+    if (array) builder_add_inherited(me, &builder, tuple->kind == TY_REFERENCE ? ty_with_this_arg(me, array, tuple) : array);
     return builder_finish(me, &builder);
 }
 
