@@ -89,6 +89,13 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   signatures from their constraint, eagerly instantiated. tsc resolves them lazily; a lazy IndexInfo value (or the
   mapped type's members computed only when index infos are asked for) would take that back.
 
+- **Tuples' `this` members, type-fest +0.2%, xstate +0.26%** (`retarget_this_props()`, members.c): a tuple's
+  members re-instantiate the few Array members that mention `this` (sort, reverse, fill, copyWithin, every) with the
+  tuple as this-argument. Only 3-5 props per tuple (2-8k tuples per corpus), but the cost stays when they're given the
+  array's own mapper, so it comes from their being distinct Props downstream (lazy prop types resolved again,
+  pointer-equal shortcuts lost), not from building them. A lookup-time substitution (share the array's props, apply
+  `this` when one of those is read off a tuple) would take it back; tsc pays the full per-reference instantiation.
+
 ## Pathologies
 - **webpack loaded twice: 89 s** (tsc: 11 s on the same program). Run from a worktree whose `thirdparty/corpora` is a
   symlink (`cd /tmp/wt; tttt -p thirdparty/corpora/webpack`), the root files keep the symlinked path and

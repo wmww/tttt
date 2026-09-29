@@ -2467,6 +2467,70 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty);
 
 // A tuple's members (tsc's createTupleTargetType): a property per element before any rest element, a readonly
 // `length` (the possible lengths, or number with a rest element), then what the array of its elements has
+// The declared members of an array type (Array, ReadonlyArray) whose types mention `this`: sort, reverse, fill,
+// copyWithin and every (`this is S[]`). Found once per target, among the members inherited from `array` (the builder's
+// props [first, props_count)), which are instantiations of them
+typedef struct {
+    u32 count;
+    Prop const* props[];
+} ThisProps;
+
+static ThisProps const* array_this_props(Checker* me, MembersBuilder const* builder, u32 first, Ty const* target) {
+    void const* known = intern_get(&my links, (u64[]){ KEY_ARRAY_THIS_PROPS, (u64)(uintptr_t)target }, 2);
+    if (known) return known;
+    Ty const* this_param = target->declared.this_param;
+    Prop const* found[64];
+    u32 count = 0;
+    for (u32 i = first; i < builder->props_count && count < c_arraylen(found); i++) {
+        Prop const* declared = builder->props[i]->target;
+        if (!declared || declared->thisless) continue;
+        if (ty_mentions_any(me, prop_type(me, declared), &this_param, 1)) found[count++] = declared;
+    }
+    ThisProps* ret = arena_alloc(&my arena, sizeof(ThisProps) + sizeof(Prop const*) * (count ? count : 1));
+    ret->count = count;
+    for (u32 i = 0; i < count; i++) ret->props[i] = found[i];
+    // (Looked up again: resolving the types above may have grown the table)
+    *intern_slot(me, &my links, (u64[]){ KEY_ARRAY_THIS_PROPS, (u64)(uintptr_t)target }, 2) = ret;
+    return ret;
+}
+
+// The array's members see the tuple as `this`: `sort(): this` returns the tuple (tsc's resolveTupleTypeMembers takes
+// the base with getTypeWithThisArgument). Only the props that mention `this` are instantiated again, with the tuple as
+// this-argument; the others stay the (shared) array's, props [first, props_count) of the builder
+static void retarget_this_props(Checker* me, MembersBuilder* builder, u32 first, Ty const* array, Ty const* tuple) {
+    if (array->kind != TY_REFERENCE) return;
+    Ty const* target = array->reference.target;
+    if (target->kind != TY_DECLARED || !target->declared.this_param) return;
+    ThisProps const* this_props = array_this_props(me, builder, first, target);
+    if (!this_props->count) return;
+    TyMapper const* mapper = nullptr;
+    for (u32 i = first; i < builder->props_count; i++) {
+        Prop const* from = builder->props[i];
+        bool mentions = false;
+        for (u32 j = 0; j < this_props->count && !mentions; j++) mentions = from->target == this_props->props[j];
+        if (!mentions) continue;
+        if (!mapper) {
+            TyList params = target->declared.type_params;
+            TyList args = ty_reference_args(me, array);
+            if (args.len != params.len) return;
+            Ty const** sources = arena_new_n(&my arena, Ty const*, params.len + 1);
+            Ty const** targets = arena_new_n(&my arena, Ty const*, params.len + 1);
+            for (u32 j = 0; j < params.len; j++) {
+                sources[j] = params.data[j];
+                targets[j] = args.data[j];
+            }
+            sources[params.len] = target->declared.this_param;
+            targets[params.len] = tuple;
+            mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = params.len + 1 },
+                (TyList){ .data = targets, .len = params.len + 1 });
+        }
+        Prop* prop = arena_new(&my arena, Prop);
+        *prop = (Prop){ .name = from->name, .flags = from->flags, .parent = from->parent, .target = from->target,
+            .mapper = mapper, .decl = prop_decl_none() };
+        builder->props[i] = prop;
+    }
+}
+
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     Ty const* target = tuple->kind == TY_REFERENCE ? tuple->reference.target : tuple;
     TupleShape const* shape = target->declared.tuple;
@@ -2512,7 +2576,11 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     length_prop->type_state = LAZY_STATE_DONE;
     builder_push(&builder, props, length_prop);
     Ty const* array = ty_tuple_as_array(me, tuple);
-    if (array) builder_add_inherited(me, &builder, tuple->kind == TY_REFERENCE ? ty_with_this_arg(me, array, tuple) : array);
+    if (array) {
+        u32 first = builder.props_count;
+        builder_add_inherited(me, &builder, array);
+        if (tuple->kind == TY_REFERENCE) retarget_this_props(me, &builder, first, array, tuple);
+    }
     return builder_finish(me, &builder);
 }
 

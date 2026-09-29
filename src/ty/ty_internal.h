@@ -114,6 +114,7 @@ enum {
     KEY_CONTEXT_FREE, // FunctionImpl -> its return-only type (tsc's links.contextFreeType, return_only_type())
     KEY_CIRCULAR_BINDING, // Binding -> non-null if its type references it (TS2502, TS7022, see ty_binding_type())
     KEY_ELEMENT_WIDENED_ANY, // binding element -> its type before widening, when that widens to any
+    KEY_ARRAY_THIS_PROPS, // Array/ReadonlyArray target -> ThisProps, its members that mention `this` (members.c)
     KEY_YIELD_WIDENED_ANY, // generator FunctionImpl -> its yield type before widening, when that widens to any
     KEY_ITERATOR_REPORTED, // iterable Ty (+ async) -> non-null once its iterator's method problems were reported
     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
