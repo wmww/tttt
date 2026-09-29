@@ -4286,18 +4286,43 @@ bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 ma
     return is_deeply_nested_max(ty, stack, depth, max);
 }
 
-static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
-    Ty const* identity = recursion_identity(ty);
-    if (!identity || depth + 1 < max) return false;
+// An intersection has each of its members' identities (tsc's hasMatchingRecursionIdentity)
+static bool has_recursion_identity(Ty const* ty, Ty const* identity) {
+    if (ty->kind != TY_INTERSECTION) return recursion_identity(ty) == identity;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        if (has_recursion_identity(ty->composite.types.data[i], identity)) return true;
+    }
+    return false;
+}
+
+// Whether `identity_of`'s recursion identity is on the stack at least `max` times counting `ty` (the type about to go
+// on it), each newer than the one before
+static bool is_deeply_nested_as(Ty const* identity_of, Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
+    Ty const* identity = recursion_identity(identity_of);
+    if (!identity) return false;
     u32 count = 0;
     u32 last_id = 0;
     for (u32 i = 0; i <= depth; i++) {
         Ty const* other = i < depth ? stack[i] : ty;
-        if (recursion_identity(other) != identity) continue;
+        if (!has_recursion_identity(other, identity)) continue;
         if (other->id >= last_id && ++count >= max) return true;
         last_id = other->id;
     }
     return false;
+}
+
+static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
+    if (depth + 1 < max) return false;
+    // An intersection is as deeply nested as its most deeply nested member: `C<T> & { a: 1 }` whose members return
+    // `this & { a: 1 }` grows a new intersection at each level, with C<T> in each
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* member = ty->composite.types.data[i];
+            if (member->kind != TY_INTERSECTION && is_deeply_nested_as(member, ty, stack, depth, max)) return true;
+        }
+        return false;
+    }
+    return is_deeply_nested_as(ty, ty, stack, depth, max);
 }
 
 // The weak type check of tsc's isRelatedTo, reported. Done once a pair isn't cached (the answer only depends on it)
