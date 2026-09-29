@@ -1371,6 +1371,14 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         if (base && my super_call && class_decl->extends.tag == EXPR_IDENTIFIER) {
             Ty const* constructor = ty_expr_type(current_checker, &class_decl->extends);
             if (constructor->flags & TYF_TYPE_PARAM) base = constructor;
+            // A base constructor declared as an interface's value (`declare var Set: SetConstructor`): that interface
+            // (tsc's getSymbolAtLocation of `super()`, the symbol of the base constructor type)
+            Ty const* declared = constructor->kind == TY_REFERENCE ? constructor->reference.target : constructor;
+            if (declared->kind == TY_DECLARED && declared->declared.symbol && (declared->declared.symbol->flags & SYMBOL_INTERFACE) &&
+                !(declared->declared.symbol->flags & SYMBOL_CLASS)
+            ) {
+                base = declared;
+            }
         }
         if (base && base->kind == TY_REFERENCE) base = base->reference.target;
         Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol :
