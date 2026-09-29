@@ -1262,6 +1262,17 @@ static void append_decl(cstr* target, Span span) {
     bool keep_going = true;
     // A JSDoc tag (`@typedef`, `@property`...) starts at its `@`: tsc's JSDoc nodes have no leading trivia
     if (span_is_jsdoc_tag(span)) keep_going = false;
+    // Inside a JSDoc comment (a member of a type in a tag) a line's leading `*` is trivia too (tsc's JSDoc scanner)
+    bool in_jsdoc = false;
+    if (keep_going && span.source->is_js) {
+        for (const char* c = start; c - 1 > file_start; c--) {
+            if (c[-2] == '*' && c[-1] == '/') break;
+            if (c[-2] == '/' && c[-1] == '*' && *c == '*') {
+                in_jsdoc = true;
+                break;
+            }
+        }
+    }
     // The space before the symbol is included in the span. Why? I have no idea.
     // Here we parse code backwards, which is an extremely silly thing to do
     while (keep_going && start > file_start) {
@@ -1272,6 +1283,18 @@ static void append_decl(cstr* target, Span span) {
             case '\r':
                 start--;
                 break;
+
+
+            case '*':
+                if (in_jsdoc) {
+                    const char* line = start - 1;
+                    while (line > file_start && (line[-1] == ' ' || line[-1] == '\t')) line--;
+                    if (line == file_start || line[-1] == '\n') {
+                        start--;
+                        break;
+                    }
+                }
+                goto other;
 
             case '/':
                 if (start > file_start + 1 && start[-2] == '*') {
@@ -1292,7 +1315,7 @@ static void append_decl(cstr* target, Span span) {
                 }
                 // fallthrough
 
-            default: {
+            default: other: {
                 keep_going = false;
                 // Skip line comments, going backwards: the comment starts at the first `//` of the line (`///x`)
                 const char* line_start = start - 1;
