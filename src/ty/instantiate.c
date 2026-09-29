@@ -769,7 +769,11 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             Ty const* ret = instantiate_conditional(me, ty, mapper, &distributed);
             // Only a deferred one goes by the alias it was declared with (tsc's getConditionalType); a distribution
             // is a plain union unless an alias declaration names it (`type A = Awaited<X | Y>`, lower.c)
-            return !distributed && ret->kind == TY_CONDITIONAL ? instantiate_alias(me, ty, ret, mapper) : ret;
+            // A deferred conditional type of another root (the branch it resolved to, `Assume<X, U>` of
+            // `Equal<A, true> extends true ? Assume<X, U> : X`) keeps its own alias
+            Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
+            bool same_root = ret->kind == TY_CONDITIONAL && (ret->conditional.root ? ret->conditional.root : ret) == root;
+            return !distributed && same_root ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
     }
     impossible;
