@@ -66276,7 +66276,7 @@ const baselines = {
         types: false,
     },
     'assignmentCompatWithEnumIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
