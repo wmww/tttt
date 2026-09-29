@@ -3012,6 +3012,7 @@ typedef struct JsDocTag {
     bool name_first; // `@param name {T}` or no type at all (tsc's isNameFirst)
     bool is_const; // `@template const T`
     bool is_in, is_out; // `@template in T`, `@template out T`
+    Span const_span, in_span, out_span; // Of those modifiers, for the checks that depend on the host (TS1277, TS1274)
     // A `@param`/`@returns` of a `@callback`, a `@property` of a `@typedef`: part of that, not about the host
     bool nested;
     // `@returns {x is T}`, `{asserts x}`: owned, `type` is then the return type the predicate goes with
@@ -3253,32 +3254,71 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
             // `@template {C} T, U`, `@template [T=D]` (tsc's parseTemplateTag): a tag per name, the constraint is the
             // first one's (getEffectiveConstraintOfTypeParameter). Defaults aren't read
             c = jsdoc_skip_space(c, end);
+            const char* ws_start = c;
             if (c < end && *c == '{') {
                 parse_jsdoc_type_expression(parent, &c, end, &tag);
+                ws_start = c;
                 c = jsdoc_skip_space(c, end);
             }
             while (true) {
                 bool bracketed = c < end && *c == '[';
                 if (bracketed) c = jsdoc_skip_space(c + 1, end);
-                // Modifiers (tsc's parseTemplateTagTypeParameter: parseModifiers): `const`, `in`, `out`
+                // Modifiers (tsc's parseTemplateTagTypeParameter: parseModifiers): `const`, `in`, `out`; any other is
+                // TS1273 (checkGrammarModifiers)
                 bool is_const = false, is_in = false, is_out = false;
+                Span const_span = span_null, in_span = span_null, out_span = span_null;
                 while (true) {
                     const char* word = c;
                     while (c < end && (is_identifier_char(*c) || (uint8_t)*c >= 0x80)) c++;
                     csview w = { word, c - word };
-                    bool modifier = csview_equals(w, "const") || csview_equals(w, "in") || csview_equals(w, "out");
-                    if (!modifier || c >= end || (*c != ' ' && *c != '\t')) {
+                    static char const* const others[] = {
+                        "public", "private", "protected", "readonly", "static", "abstract", "declare", "export",
+                        "default", "async", "accessor", "override",
+                    };
+                    bool other = false;
+                    for (u32 k = 0; k < c_arraylen(others) && !other; k++) other = csview_equals(w, others[k]);
+                    bool modifier = other || csview_equals(w, "const") || csview_equals(w, "in") || csview_equals(w, "out");
+                    const char* next = c;
+                    while (next < end && (*next == ' ' || *next == '\t')) next++;
+                    if (!modifier || next == c || next >= end || !(is_identifier_char(*next) || (uint8_t)*next >= 0x80)) {
                         c = word;
                         break;
                     }
-                    is_const |= csview_equals(w, "const");
-                    is_in |= csview_equals(w, "in");
-                    is_out |= csview_equals(w, "out");
+                    Span w_span = span_make(source, word, c);
+                    if (other) {
+                        Parser e = parser(parent);
+                        parse_error(&e, w_span, 1273, "'", w, "' modifier cannot appear on a type parameter");
+                        jsdoc_keep_errors(&e);
+                        parse_fail(&e);
+                    }
+                    if (csview_equals(w, "const")) is_const = true, const_span = w_span;
+                    if (csview_equals(w, "in")) is_in = true, in_span = w_span;
+                    if (csview_equals(w, "out")) is_out = true, out_span = w_span;
                     c = jsdoc_skip_space(c, end);
                 }
                 const char* name_start = c;
                 while (c < end && (is_identifier_char(*c) || (uint8_t)*c >= 0x80)) c++;
-                if (c == name_start) break;
+                if (c == name_start) {
+                    // tsc's parseJSDocIdentifierName with its message, at the JSDoc scanner's token there: after
+                    // whitespace and line breaks (not a line's `*`), unless only whitespace is left
+                    const char* t = bracketed ? c : ws_start;
+                    while (t < end && is_jsdoc_space(*t)) t++;
+                    const char* token = t < end ? t : bracketed ? c : ws_start;
+                    const char* token_end = token;
+                    if (token < end && is_jsdoc_space(*token)) {
+                        if (*token == '\n') token_end++;
+                        else if (token[0] == '\r' && token[1] == '\n') token_end += 2;
+                        else while (token_end < end && (*token_end == ' ' || *token_end == '\t')) token_end++;
+                    } else if (token < end) {
+                        token_end++;
+                    }
+                    Parser e = parser(parent);
+                    parse_error(&e, span_make(source, token, token_end), 1069,
+                        "Unexpected token. A type parameter name was expected without curly braces.");
+                    jsdoc_keep_errors(&e);
+                    parse_fail(&e);
+                    break;
+                }
                 if (span_valid(tag.name)) {
                     vec_jsdoc_tag_push(tags, tag);
                     tag = (JsDocTag){ .kind = JSDOC_TAG_TEMPLATE, .tag_name = tag.tag_name };
@@ -3288,17 +3328,30 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 tag.is_const = is_const;
                 tag.is_in = is_in;
                 tag.is_out = is_out;
+                tag.const_span = const_span;
+                tag.in_span = in_span;
+                tag.out_span = out_span;
                 if (bracketed) {
                     while (c < end && (*c == ' ' || *c == '\t')) c++;
+                    // (tsc: parseExpected(EqualsToken), then a type, which is TS1110 when there's none)
+                    Parser e = parser(parent);
                     if (c < end && *c == '=') {
                         c++;
                         TypeNode type;
+                        const char* before = c;
                         if (parse_jsdoc_bare_type(parent, &c, end, &type)) {
                             if (tag.has_default) type_drop(&tag.default_type);
                             tag.default_type = type;
                             tag.has_default = true;
+                        } else {
+                            while (before < end && (*before == ' ' || *before == '\t')) before++;
+                            parse_error(&e, span_make(source, before, before + (before < end)), 1110, "Type expected.");
                         }
+                    } else {
+                        parse_error(&e, span_make(source, c, c + (c < end)), 1005, "'=' expected.");
                     }
+                    jsdoc_keep_errors(&e);
+                    parse_fail(&e);
                     while (c < end && *c != ']' && *c != '\n') c++;
                     if (c < end && *c == ']') c++;
                 }
@@ -3306,6 +3359,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 while (after < end && (*after == ' ' || *after == '\t')) after++;
                 if (after >= end || *after != ',') break;
                 c = after + 1;
+                ws_start = c;
                 while (c < end && (*c == ' ' || *c == '\t')) c++;
             }
             break;
@@ -3712,11 +3766,29 @@ static Generic jsdoc_template_generic(VecJsDocTag* tags);
 static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* comment);
 static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isize count);
 
-static void jsdoc_apply_template(VecJsDocTag* tags, Generic* generic) {
+// The modifiers of a host's `@template`s that its kind doesn't allow (tsc's checkGrammarModifiers of a type parameter):
+// `in`/`out` are for classes and type aliases, `const` for functions and classes
+static void jsdoc_check_template_modifiers(Parser* p, VecJsDocTag const* tags, bool in_out, bool is_const) {
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind != JSDOC_TAG_TEMPLATE || i->earlier) continue;
+        if (!in_out && span_valid(i->in_span)) {
+            jsdoc_error(p, i->in_span, 1274, "'in' modifier can only appear on a type parameter of a class, interface or type alias");
+        }
+        if (!in_out && span_valid(i->out_span)) {
+            jsdoc_error(p, i->out_span, 1274, "'out' modifier can only appear on a type parameter of a class, interface or type alias");
+        }
+        if (!is_const && span_valid(i->const_span)) {
+            jsdoc_error(p, i->const_span, 1277, "'const' modifier can only appear on a type parameter of a function, method or class");
+        }
+    }
+}
+
+static void jsdoc_apply_template(Parser* p, VecJsDocTag* tags, Generic* generic, bool is_class) {
     if (!generic_empty(generic)) return;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK) return;
     }
+    jsdoc_check_template_modifiers(p, tags, is_class, true);
     generic_drop(generic);
     *generic = jsdoc_template_generic(tags);
 }
@@ -3732,7 +3804,7 @@ static Span jsdoc_entity_name_last(Expr const* expr) {
 }
 
 static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_decl) {
-    jsdoc_apply_template(tags, &class_decl->generic);
+    jsdoc_apply_template(p, tags, &class_decl->generic, true);
     // `@augments A` on `class C extends B` (tsc's checkJSDocAugmentsTag)
     JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
@@ -3808,7 +3880,7 @@ static void jsdoc_find_param_issues(VecJsDocTag const* tags, FunctionImpl* funct
     }
 }
 
-static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
+static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* function) {
     jsdoc_find_param_issues(tags, function);
     // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
     // implementation isn't one (tsc's getSignaturesOfSymbol). The comment's `@template`s are the overload's
@@ -3836,7 +3908,7 @@ static void jsdoc_apply_function(VecJsDocTag* tags, FunctionImpl* function) {
             function->jsdoc_overloads[function->jsdoc_overload_count++] = type;
         }
     }
-    jsdoc_apply_template(tags, &function->generic);
+    jsdoc_apply_template(p, tags, &function->generic, false);
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
         function->jsdoc_class |= i->kind == JSDOC_TAG_CLASS && !i->nested && !i->earlier && !span_valid(function->arrow_span);
@@ -4177,6 +4249,7 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
                     type = type_any;
                 }
             }
+            jsdoc_check_template_modifiers(parent, &tags, true, false);
             Span span = jsdoc_tag_decl_span(i);
             const char* after = range.end;
             while (is_js_ascii_space(*after)) after++;
@@ -4200,7 +4273,7 @@ static void jsdoc_bind_comments(Parser* parent, const char* from, const char* to
 // A function or arrow function expression is a JSDoc host of its own (`f(/** @param {T} x */ (x) => {})`)
 static void jsdoc_apply_function_expression(Parser* p, Expr* function) {
     VecJsDocTag tags = {0};
-    if (jsdoc_before(p, span_start_ptr(function->outer_span), &tags)) jsdoc_apply_function(&tags, function->function);
+    if (jsdoc_before(p, span_start_ptr(function->outer_span), &tags)) jsdoc_apply_function(p, &tags, function->function);
     vec_jsdoc_tag_drop(&tags);
 }
 
@@ -5562,7 +5635,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             bool accessor = item.tag == OBJECT_ITEM_GETTER || item.tag == OBJECT_ITEM_SETTER; // (The function's, see below)
             if (tag && !(function && signature) && !accessor) item.jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             if (function && accessor) function->accessor = item.tag == OBJECT_ITEM_GETTER ? 1 : 2; // (Set again by the resolve walk)
-            if (function) jsdoc_apply_function(&tags, function);
+            if (function) jsdoc_apply_function(&p, &tags, function);
         }
         vec_jsdoc_tag_drop(&tags);
     }
@@ -6040,11 +6113,11 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
             if (return_tag && !item->constructor.func.ret_explicit) {
                 jsdoc_error(p, return_tag->type_span, 1093, "Type annotation cannot appear on a constructor declaration.");
             }
-            jsdoc_apply_function(&tags, &item->constructor.func);
+            jsdoc_apply_function(p, &tags, &item->constructor.func);
         }   break;
         case CLASS_ITEM_METHOD:
             item->method.func.accessor = (uint8_t)item->method.accessor; // (Set again by the resolve walk)
-            jsdoc_apply_function(&tags, &item->method.func);
+            jsdoc_apply_function(p, &tags, &item->method.func);
             break;
         case CLASS_ITEM_FIELD: {
             if (!item->field.has_explicit_type) {
@@ -6055,7 +6128,7 @@ static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item
                 }
             }
             FunctionImpl* function = jsdoc_function_of(&item->field.value);
-            if (function) jsdoc_apply_function(&tags, function);
+            if (function) jsdoc_apply_function(p, &tags, function);
         }   break;
         default: break;
     }
@@ -10932,7 +11005,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 FunctionImpl const* signature = jsdoc_single_signature(&initializer->binding.explicit_type);
                 if (signature && signature->ret_explicit) function->jsdoc_tag_ret = &signature->ret;
             }
-            if (function) jsdoc_apply_function(&tags, function);
+            if (function) jsdoc_apply_function(p, &tags, function);
             if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initializer->value.class_decl);
         }   break;
         case STATEMENT_DECL_FUNCTION: {
@@ -10942,7 +11015,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 if (i->kind != JSDOC_TAG_EXTENDS || i->earlier || i->nested || !span_valid(function->name)) continue;
                 jsdoc_error(p, function->name, 8022, "JSDoc '@", i->tag_name.sv, "' is not attached to a class.");
             }
-            jsdoc_apply_function(&tags, statement->decl.function.impl);
+            jsdoc_apply_function(p, &tags, statement->decl.function.impl);
         }   break;
         case STATEMENT_DECL_CLASS:
             jsdoc_apply_class(p, &tags, statement->decl.class);
@@ -10969,7 +11042,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 }
                 FunctionImpl* function = jsdoc_function_of(assigned);
                 if (function) {
-                    jsdoc_apply_function(&tags, function);
+                    jsdoc_apply_function(p, &tags, function);
                 } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {
                     jsdoc_apply_class(p, &tags, assignment->right.class_decl);
                 } else {
@@ -10992,7 +11065,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
             FunctionImpl* function = jsdoc_function_of(&statement->expr);
             if (function) {
-                jsdoc_apply_function(&tags, function);
+                jsdoc_apply_function(p, &tags, function);
             } else if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {
                 // `/** @type {T} */ export default e`: e is checked against T and T is the export's type (tsc's
                 // checkExportAssignment, getEffectiveTypeAnnotationNode). `export default (e)` is a cast: the tag is
