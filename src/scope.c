@@ -549,14 +549,16 @@ static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
     // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
     Error* existing = error_ctx_find(errs, at, code == 2567 || code == 2451 ? code : 2300);
     if (existing) return existing;
+    // (A missing name is tsc's "__missing", shown as "(Missing)")
+    csview name = at.sv.size ? at.sv : c_sv("(Missing)");
     switch (code) {
         case 2567:
             return error_ctx_error_d(errs, at, 2567,
                 "Enum declarations can only merge with namespace or other enum declarations.");
         case 2451:
-            return error_ctx_error_d(errs, at, 2451, "Cannot redeclare block-scoped variable '", at, "'.");
+            return error_ctx_error_d(errs, at, 2451, "Cannot redeclare block-scoped variable '", name, "'.");
         default:
-            return error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", at, "'.");
+            return error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
     }
 }
 

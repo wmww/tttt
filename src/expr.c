@@ -1979,6 +1979,8 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
         return;
     }
     if (source && (source->flags & TYF_ANY)) source = nullptr;
+    // (A missing operand is tsc's missing identifier: a reference to nothing, not reported)
+    if (target->tag == EXPR_IMPLICIT_ANY && target->missing) return;
     switch (target->tag) {
         case EXPR_LITERAL:
             // `undefined = x`: tsc's undefinedSymbol, which isn't a variable

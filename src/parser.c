@@ -376,6 +376,7 @@ static bool parse_function_args(
 );
 static bool parse_numeric_value(Parser* parent, Value* ret);
 static bool parse_string(Parser* parent, cstr* ret);
+static const char* token_full_start(Parser* me);
 static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts);
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret);
 static void parse_computed_key_comma(Parser* p, Expr* key);
@@ -1406,6 +1407,19 @@ static const char* const all_keywords[] = {
 };
 
 // tsc's isKeyword
+// tsc's parseIdentifier: a reserved word is TS1359 and a missing name, left for what follows to trip over
+static bool expect_non_reserved_identifier(Parser* parent, Span* ret) {
+    Tok t = tok_peek(parent);
+    if (tok_is_word(t) && *t.start != '#' && is_reserved_word((csview){ t.start, t.end - t.start })) {
+        Span word = span_make(parent->shared->source, t.start, t.end);
+        parse_error(parent, word, 1359, "Identifier expected. '", word, "' is a reserved word that cannot be used here.");
+        // (tsc's missing node is at the token's full start, where errors about it go)
+        *ret = span_make(parent->shared->source, token_full_start(parent), token_full_start(parent));
+        return false;
+    }
+    return expect_identifier(parent, ret);
+}
+
 static bool tok_is_keyword(Tok t) {
     return tok_is_word(t) && tok_is_one_of(t, all_keywords);
 }
@@ -5271,7 +5285,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     if (reserved) {
         // tsc's parseIdentifier: TS1359, and a missing name (the word stays for what follows to trip over)
         parse_error(&p, word, 1359, "Identifier expected. '", word, "' is a reserved word that cannot be used here.");
-        name = span_from_pos(&p);
+        name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p)); // (tsc's missing node)
     } else {
         expect_identifier(&p, &name);
     }
@@ -5546,6 +5560,18 @@ static bool parse_function_args_inner(
                 } else if (!is_definitely_function) {
                     vec_expr_drop(&decorators);
                     goto drop_and_fail;
+                } else if (tok_is_word(tok_peek(&p)) && *p.pos != '#' &&
+                    is_reserved_word((csview){ p.pos, tok_peek(&p).end - p.pos })
+                ) {
+                    // tsc's isStartOfParameter takes a reserved word that is a modifier or starts a type (`default`,
+                    // `null`): parseNameOfParameter reports it (TS1359), the name is missing, and a modifier word
+                    // is skipped (a type's is left for the list to trip over)
+                    Tok word = tok_peek(&p);
+                    expect_non_reserved_identifier(&p, &initializer.binding.content_span);
+                    initializer.binding.tag = BINDING_IDENTIFIER;
+                    if (tok_is(word, "default") || tok_is(word, "export") || tok_is(word, "const") || tok_is(word, "in")) {
+                        p.pos = word.end;
+                    }
                 } else if (p.pos == before_param && !tok_is_start_of_parameter(tok_peek(&p))) {
                     // Nothing of a parameter: the list's recovery (tsc's parseDelimitedList). What tsc's
                     // isStartOfParameter takes (a type's start, `function f(\`x\`)`) is a parameter missing its name
@@ -6030,8 +6056,9 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, bool 
     if (!parse_identifier(&p, &name)) {
         name = span_null;
         if (name_required) {
-            parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
-            name = span_from_pos(&p); // (A missing name, which tsc still declares)
+            expect_non_reserved_identifier(&p, &name);
+            // (A missing name, which tsc still declares, at the token's full start)
+            name = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
         }
     }
     hop_whitespace(&p);
@@ -9777,7 +9804,8 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
 
     bool type_only = false;
     Span name;
-    if (!parse_identifier(&p, &name)) {
+    // (tsc's isIdentifier: a reserved word is no name, `import while = x` is an import of a missing specifier)
+    if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -10011,7 +10039,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             }
             hop_whitespace(&p);
 
-            expect_identifier(&p, &statement.main.decl_name);
+            expect_non_reserved_identifier(&p, &statement.main.decl_name);
         }
     } else if (is_export && hop_start_if_ends_on_word_break(&p, "as")) {
         hop_whitespace(&p);
@@ -10301,9 +10329,11 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                 if (!shorthand_allowed) {
                     expected_token_error(&p, ":");
                 }
+                // (Not a shorthand: a missing name at the next token's full start, which tsc still declares)
+                const char* missing = token_full_start(&p);
                 binding = (Binding){
-                    .tag = shorthand_allowed ? BINDING_IDENTIFIER : BINDING_NOOP,
-                    .content_span = name,
+                    .tag = BINDING_IDENTIFIER,
+                    .content_span = shorthand_allowed ? name : span_make(p.shared->source, missing, missing),
                 };
                 if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
                     p.pos++;

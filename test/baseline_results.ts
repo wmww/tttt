@@ -27541,9 +27541,9 @@ const baselines = {
         types: true,
     },
     'reservedWords2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'reservedWords3': {
         errors: false,
@@ -42172,8 +42172,8 @@ const baselines = {
     },
     'objectBindingPatternKeywordIdentifiers01': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'objectBindingPatternKeywordIdentifiers02': {
         errors: true,
@@ -42182,8 +42182,8 @@ const baselines = {
     },
     'objectBindingPatternKeywordIdentifiers03': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'objectBindingPatternKeywordIdentifiers04': {
         errors: true,
