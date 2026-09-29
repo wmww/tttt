@@ -16756,7 +16756,7 @@ const baselines = {
         types: true,
     },
     'importedEnumMemberMergedWithExportedAliasIsError': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

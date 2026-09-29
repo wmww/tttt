@@ -486,6 +486,10 @@ typedef struct Binder {
     NamespaceDecl** augmentations; // malloc'd
     u32 augmentation_count;
     u32 augmentation_cap;
+    // Locals scope_check_export_merges() leaves to binder_link(): their alias declarations' spaces need the target
+    struct PendingExportMerge* pending_export_merges; // malloc'd
+    u32 pending_export_merge_count;
+    u32 pending_export_merge_cap;
     // What `require` is in `require("m")` in a JavaScript file where nothing else is called that (tsc's requireSymbol:
     // any). Made when first needed
     Symbol* require_symbol;

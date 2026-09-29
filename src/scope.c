@@ -128,6 +128,7 @@ void binder_destroy(Binder* me) {
     free(my pattern_modules);
     free(my augmentations);
     free(my pending_not_found);
+    free(my pending_export_merges);
     if (my discarded_errs) {
         error_ctx_drop(my discarded_errs);
         free(my discarded_errs);
@@ -1046,7 +1047,15 @@ static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u3
 
 // tsc's getDeclarationSpaces (without aliases, which would need resolving)
 enum { SPACE_TYPE = 1, SPACE_VALUE = 2, SPACE_NAMESPACE = 4 };
-static u32 declaration_spaces(SymbolDecl const* decl) {
+// What an alias declaration's spaces depend on: tsc's getDeclarationSpaces resolves `import x = a.b`, default and
+// namespace imports (an import specifier is a value)
+static bool declaration_spaces_need_target(SymbolDecl const* decl) {
+    if (decl->kind != SYMBOL_DECL_ALIAS || !decl->node || decl->flags != SYMBOL_ALIAS) return false;
+    PortItem const* item = decl->node;
+    return item->tag == PORT_IMPORT_ALIAS || item->tag == PORT_IMPORT_DEFAULT || item->tag == PORT_IMPORT_GATHER;
+}
+
+static u32 declaration_spaces(Symbol* owner, SymbolDecl const* decl, bool resolve) {
     switch (decl->kind) {
         case SYMBOL_DECL_INTERFACE:
         case SYMBOL_DECL_TYPE_ALIAS:
@@ -1060,6 +1069,14 @@ static u32 declaration_spaces(SymbolDecl const* decl) {
         case SYMBOL_DECL_VARIABLE:
         case SYMBOL_DECL_FUNCTION:
             return SPACE_VALUE;
+        case SYMBOL_DECL_ALIAS: {
+            if (!resolve || !declaration_spaces_need_target(decl)) return 0;
+            Symbol* target = symbol_resolve_alias(owner);
+            if (!target || target->is_placeholder || target == owner) return 0;
+            u32 ret = 0;
+            for (u32 i = 0; i < target->decl_count; i++) ret |= declaration_spaces(target, &target->decls[i], false);
+            return ret;
+        }
         default:
             return 0;
     }
@@ -1070,44 +1087,72 @@ static bool span_within(Span inner, Span outer) {
         span_end_ptr(inner) <= span_end_ptr(outer);
 }
 
-void scope_check_export_merges(Scope* me, Span block) {
-    if (!my container || !my container->exports || !span_valid(block)) return;
-    for (u32 i = 0; i < my locals.count; i++) {
-        Symbol const* local = my locals.entries[i].symbol;
-        Symbol const* exported = symbol_table_get(my container->exports, local->name);
-        if (exported == local) exported = nullptr;
-        if (!exported && !local->export_symbol) continue;
-        // The exported declarations of this block merge with its local ones (tsc: one local symbol), and so do those
-        // of `export default class A` (the local's declarations without flags of their own)
-        u32 exported_spaces = 0, local_spaces = 0, default_spaces = 0;
-        for (u32 d = 0; exported && d < exported->decl_count; d++) {
-            if (span_within(exported->decls[d].full, block)) exported_spaces |= declaration_spaces(&exported->decls[d]);
+typedef struct PendingExportMerge {
+    Scope* scope;
+    Span block;
+    Symbol* local;
+} PendingExportMerge;
+
+// tsc's checkExportsOnMergedDeclarations for one local of a block. Without resolve, a local whose declarations are
+// aliases that need their target waits for binder_link() (resolving during declaration memoises modules as missing)
+static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolve) {
+    Symbol* exported = symbol_table_get(my container->exports, local->name);
+    if (exported == local) exported = nullptr;
+    if (!exported && !local->export_symbol) return;
+    Symbol* symbols[] = { local, exported };
+    if (!resolve) {
+        bool needs_target = false;
+        for (u32 s = 0; s < 2 && !needs_target; s++) {
+            for (u32 d = 0; symbols[s] && d < symbols[s]->decl_count && !needs_target; d++) {
+                needs_target = declaration_spaces_need_target(&symbols[s]->decls[d]);
+            }
         }
-        for (u32 d = 0; d < local->decl_count; d++) {
-            if (local->decls[d].flags) local_spaces |= declaration_spaces(&local->decls[d]);
-            else default_spaces |= declaration_spaces(&local->decls[d]);
+        if (needs_target) {
+            Binder* binder = my binder;
+            if (binder->pending_export_merge_count == binder->pending_export_merge_cap) {
+                binder->pending_export_merge_cap = binder->pending_export_merge_cap ? binder->pending_export_merge_cap * 2 : 4;
+                binder->pending_export_merges = realloc(binder->pending_export_merges,
+                    sizeof(PendingExportMerge) * binder->pending_export_merge_cap);
+                panic_if(!binder->pending_export_merges, "out of memory");
+            }
+            binder->pending_export_merges[binder->pending_export_merge_count++] = (PendingExportMerge){ me, block, local };
+            return;
         }
-        u32 common = exported_spaces & local_spaces;
-        u32 common_default = default_spaces & (exported_spaces | local_spaces);
-        if (!common && !common_default) continue;
-        Symbol const* symbols[] = { local, exported };
-        for (u32 s = 0; s < 2; s++) {
-            for (u32 d = 0; symbols[s] && d < symbols[s]->decl_count; d++) {
-                SymbolDecl const* decl = &symbols[s]->decls[d];
-                if (s == 1 && !span_within(decl->full, block)) continue;
-                if (!span_valid(decl->name)) continue;
-                u32 spaces = declaration_spaces(decl);
-                if (spaces & common_default) {
-                    error_ctx_error_d(my errs, decl->name, 2652, "Merged declaration '", decl->name,
-                        "' cannot include a default export declaration. Consider adding a separate 'export default ",
-                        decl->name, "' declaration instead.");
-                } else if (spaces & common && (s == 1 || decl->flags)) {
-                    error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '",
-                        decl->name, "' must be all exported or all local.");
-                }
+    }
+    // The exported declarations of this block merge with its local ones (tsc: one local symbol), and so do those
+    // of `export default class A` (the local's declarations without flags of their own)
+    u32 exported_spaces = 0, local_spaces = 0, default_spaces = 0;
+    for (u32 d = 0; exported && d < exported->decl_count; d++) {
+        if (span_within(exported->decls[d].full, block)) exported_spaces |= declaration_spaces(exported, &exported->decls[d], resolve);
+    }
+    for (u32 d = 0; d < local->decl_count; d++) {
+        if (local->decls[d].flags) local_spaces |= declaration_spaces(local, &local->decls[d], resolve);
+        else default_spaces |= declaration_spaces(local, &local->decls[d], resolve);
+    }
+    u32 common = exported_spaces & local_spaces;
+    u32 common_default = default_spaces & (exported_spaces | local_spaces);
+    if (!common && !common_default) return;
+    for (u32 s = 0; s < 2; s++) {
+        for (u32 d = 0; symbols[s] && d < symbols[s]->decl_count; d++) {
+            SymbolDecl const* decl = &symbols[s]->decls[d];
+            if (s == 1 && !span_within(decl->full, block)) continue;
+            if (!span_valid(decl->name)) continue;
+            u32 spaces = declaration_spaces(symbols[s], decl, resolve);
+            if (spaces & common_default) {
+                error_ctx_error_d(my errs, decl->name, 2652, "Merged declaration '", decl->name,
+                    "' cannot include a default export declaration. Consider adding a separate 'export default ",
+                    decl->name, "' declaration instead.");
+            } else if (spaces & common && (s == 1 || decl->flags)) {
+                error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '",
+                    decl->name, "' must be all exported or all local.");
             }
         }
     }
+}
+
+void scope_check_export_merges(Scope* me, Span block) {
+    if (!my container || !my container->exports || !span_valid(block)) return;
+    for (u32 i = 0; i < my locals.count; i++) check_export_merge(me, block, my locals.entries[i].symbol, false);
 }
 
 // `export default function () {}`: its first token (tsc's getErrorSpanForNode without a name)
@@ -3029,6 +3074,13 @@ void binder_link(Binder* me) {
                 "Import declaration conflicts with local declaration of '", item->decl_name, "'.");
         }
     }
+    for (u32 i = 0; i < my pending_export_merge_count; i++) {
+        PendingExportMerge const* pending = &my pending_export_merges[i];
+        check_export_merge(pending->scope, pending->block, pending->local, true);
+    }
+    free(my pending_export_merges);
+    my pending_export_merges = nullptr;
+    my pending_export_merge_count = my pending_export_merge_cap = 0;
     // What module_export_equals() makes: now, not by whichever checker asks first
     for (u32 i = 0, count = my symbol_count; i < count; i++) {
         if (my symbols[i]->is_module) module_export_equals(my symbols[i]);
