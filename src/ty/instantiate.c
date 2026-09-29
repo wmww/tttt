@@ -164,6 +164,13 @@ static TyList instantiate_list(Checker* me, TyList list, TyMapper const* mapper,
     return changed ? (TyList){ .data = buf, .len = list.len } : list;
 }
 
+// A type's alias arguments instantiated: in buf (16 entries) when they fit, else in the arena (an alias with more
+// type parameters than that is rare: vue's ComponentOptionsBase has 17)
+static TyList instantiate_alias_args(Checker* me, Ty const* ty, TyMapper const* mapper, Ty const** buf) {
+    if (ty->alias_args.len > 16) buf = arena_new_n(&my arena, Ty const*, ty->alias_args.len);
+    return instantiate_list(me, ty->alias_args, mapper, buf, ty->alias_args.len);
+}
+
 // Whether every constituent of the constraint of a mapped type's type variable is an array or tuple (tsc's everyType
 // isArrayOrTupleType of getConstraintOfTypeParameter)
 static bool mapped_variable_is_list(Checker* me, Ty const* variable) {
@@ -287,9 +294,8 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
             parts[i] = part->flags & mappable ? ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, part)) : part;
         }
         Ty const* alias_buf[16];
-        TyList alias_args = ty->alias_args.len <= c_arraylen(alias_buf) ?
-            instantiate_list(me, ty->alias_args, outer, alias_buf, c_arraylen(alias_buf)) : (TyList){0};
-        Ty const* ret = ty_union(me, parts, len, alias_args.len == ty->alias_args.len ? ty->alias : nullptr, alias_args);
+        TyList alias_args = instantiate_alias_args(me, ty, outer, alias_buf);
+        Ty const* ret = ty_union(me, parts, len, ty->alias, alias_args);
         free(parts);
         return ret;
     }
@@ -489,8 +495,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     if (pairs != stack_buf) free(pairs);
     if (ty->anonymous.realiased && ret != ty) {
         Ty const* alias_buf[16];
-        check(ty->alias_args.len <= c_arraylen(alias_buf));
-        TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+        TyList alias_args = instantiate_alias_args(me, ty, mapper, alias_buf);
         ret = ty_realias(me, ret, ty->alias, alias_args);
     }
     return ret;
@@ -559,8 +564,7 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
 static Ty const* instantiate_alias(Checker* me, Ty const* ty, Ty const* result, TyMapper const* mapper) {
     if (!ty->alias) return result;
     Ty const* alias_buf[16];
-    check(ty->alias_args.len <= c_arraylen(alias_buf));
-    TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+    TyList alias_args = instantiate_alias_args(me, ty, mapper, alias_buf);
     return ty_realias(me, result, ty->alias, alias_args);
 }
 
@@ -674,8 +678,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                 // recursive alias through them, depending on who asked first
                 TyDeferredRef const* deferred = ty->reference.deferred;
                 Ty const* alias_buf[16];
-                check(ty->alias_args.len <= c_arraylen(alias_buf));
-                TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+                TyList alias_args = instantiate_alias_args(me, ty, mapper, alias_buf);
                 return ty_deferred_reference(
                     me, deferred->node, deferred->ctx, ty_compose_mappers(me, deferred->mapper, mapper), ty->alias, alias_args
                 );
@@ -700,8 +703,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             Ty const** buf = types.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * types.len);
             TyList mapped = instantiate_list(me, types, mapper, buf, types.len);
             Ty const* alias_buf[16];
-            check(ty->alias_args.len <= c_arraylen(alias_buf));
-            TyList alias_args = instantiate_list(me, ty->alias_args, mapper, alias_buf, c_arraylen(alias_buf));
+            TyList alias_args = instantiate_alias_args(me, ty, mapper, alias_buf);
             Ty const* ret = ty;
             if (mapped.data != types.data || alias_args.data != ty->alias_args.data) {
                 ret = ty->kind == TY_UNION ?

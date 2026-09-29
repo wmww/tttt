@@ -49,6 +49,22 @@ CORPORA=(
     # has lib es2024 and src + test only). A pnpm workspace: the dependencies are core's devDependencies (without
     # @scion-scxml/test-framework) + vitest and @types/node, from corpora-locks/xstate.package.json
     "xstate https://github.com/statelyai/xstate.git f210b35ceed100615ed3acafa120e29db303cef2 ."
+    # drizzle-orm (Sep 2026, todo entry 1 of the seventh window): the SQL query builder package (pg, mysql, sqlite,
+    # singlestore, gel dialects: column builders, select/join result types through deep conditional and mapped chains)
+    # and its type-tests (Expect<Equal<...>>), checked through drizzle-orm/tsconfig.corpus.json from the overlay
+    # (upstream's type-tests/tsconfig.json minus src/prisma, which needs a generated @prisma/client).
+    # noUncheckedIndexedAccess, exactOptional off, noPropertyAccessFromIndexSignature, paths `~/*`. A pnpm workspace:
+    # the dependencies are drizzle-orm's devDependencies at pnpm-lock.yaml's versions, from
+    # corpora-locks/drizzle.package.json (npm floats the transitive ones)
+    "drizzle https://github.com/drizzle-team/drizzle-orm.git 15454dbe49d827c6081f3d0231e2e7985e517295 drizzle-orm"
+    # vue core v3.5 (Jul 2026, same session): the last commit before its move to TypeScript 6. Every package's src and
+    # __tests__ (compiler, reactivity, runtime-core's component option overloads, runtime-dom's JSX types) plus the
+    # dts-test type tests (defineComponent, props inference, JSX), checked through tsconfig.corpus.json from the
+    # overlay (upstream's root tsconfig: paths to the package sources, not composite, no isolatedDeclarations, no
+    # noUnusedLocals: dts-test has one unused local; dts-test's built.test-d.ts needs a build). A pnpm workspace: the
+    # dependencies are every importer's (packages-private excluded) at pnpm-lock.yaml's versions, from
+    # corpora-locks/vue.package.json
+    "vue https://github.com/vuejs/core.git b5f8518379b77c3b62a7a9d2b52f6c76cda09bd5 ."
 )
 
 mkdir -p corpora

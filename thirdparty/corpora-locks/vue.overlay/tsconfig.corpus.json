@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "incremental": false,
+    "isolatedDeclarations": false,
+    "noUnusedLocals": false,
+    "noEmit": true
+  },
+  "include": [
+    "packages/global.d.ts",
+    "packages/*/src",
+    "packages/*/__tests__",
+    "packages/vue/jsx-runtime",
+    "packages/vue/jsx.d.ts",
+    "packages/runtime-dom/types/jsx.d.ts",
+    "packages-private/dts-test",
+    "scripts/*",
+    "rollup.*.js"
+  ],
+  "exclude": ["packages-private/dts-test/built.test-d.ts"]
+}

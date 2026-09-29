@@ -11980,7 +11980,9 @@ static bool parse_return(Parser* parent, Expr* ret) {
     }
     hop_whitespace(&p);
 
-    if (parse_expr(&p, expr_ctx_null, ret)) {
+    // tsc's parseReturnStatement: no expression where a semicolon could go (`return` then a line break ends it, even
+    // before `let x`)
+    if (!tok_can_parse_semicolon(tok_peek(&p)) && parse_expr(&p, expr_ctx_null, ret)) {
         parse_comma_ops_right_side(&p, ret);
     } else {
         *ret = expr_undefined(span_from(a));
