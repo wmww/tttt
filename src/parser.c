@@ -1203,6 +1203,16 @@ static bool expect_closing(Parser* parent, char close, const char* open) {
     return false;
 }
 
+// tsc's `if (!parseExpected(close))` of a bracket at `open`: the parser's last error, if it's a TS1005 (what was
+// expected may have been reported at that position already), gets "The parser expected to find a '}' to match..."
+static void relate_last_expected_to_open(Parser* parent, const char* open, char open_char, char close) {
+    if (!vec_error_size(&parent->shared->errors)) return;
+    Error* last = vec_error_back_mut(&parent->shared->errors);
+    if (last->ts_code != 1005 || last->span.source != parent->shared->source) return;
+    error_add_related_d(last, span_make(parent->shared->source, open, open + 1), 1007,
+        "The parser expected to find a '", close, "' to match the '", open_char, "' token here.");
+}
+
 // At the end of the file tsc reports at the end of the last token (createIdentifier's reportAtCurrentPosition)
 static Span span_from_token_or_eof(Parser* parent) {
     const char* eof_start = parent->shared->eof_full_start;
@@ -3008,31 +3018,39 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     }
     hop_whitespace(&p);
     if (hop_char(&p, ',')) {
-        // Import attributes: `{ with: { "resolution-mode": "import" } }` (tsc's parseImportType)
+        // Import attributes: `{ with: { "resolution-mode": "import" } }` (tsc's parseImportType, which goes on without
+        // the `{`: its errors are at the same position, dropped)
         hop_whitespace(&p);
-        if (expect_char(&p, '{')) {
-            hop_whitespace(&p);
-            Anchor keyword = anchor(&p);
-            bool is_assert = hop_start_if_ends_on_word_break(&p, "assert");
-            if (!is_assert && !hop_start_if_ends_on_word_break(&p, "with")) expected_token_error(&p, "with");
-            ImportAttributes* attributes = c_new(ImportAttributes, {
-                .keyword = span_from(keyword), .is_assert = is_assert, .elements = vec_import_attribute_init(),
-            });
-            hop_whitespace(&p);
-            expect_char(&p, ':');
-            hop_whitespace(&p);
-            Anchor body = anchor(&p);
-            parse_import_attributes_body(&p, attributes);
-            attributes->span = span_from(body);
-            identifier.import_attributes = attributes;
-            hop_whitespace(&p);
+        const char* open_brace = p.pos;
+        expect_char(&p, '{');
+        hop_whitespace(&p);
+        Anchor keyword = anchor(&p);
+        bool is_assert = hop_start_if_ends_on_word_break(&p, "assert");
+        if (!is_assert && !hop_start_if_ends_on_word_break(&p, "with")) expected_token_error(&p, "with");
+        ImportAttributes* attributes = c_new(ImportAttributes, {
+            .keyword = span_from(keyword), .is_assert = is_assert, .elements = vec_import_attribute_init(),
+        });
+        hop_whitespace(&p);
+        expect_char(&p, ':');
+        hop_whitespace(&p);
+        Anchor body = anchor(&p);
+        parse_import_attributes_body(&p, attributes);
+        attributes->span = span_from(body);
+        identifier.import_attributes = attributes;
+        hop_whitespace(&p);
+        if (!hop_char(&p, '}')) {
             expect_char(&p, '}');
+            relate_last_expected_to_open(&p, open_brace, '{', '}');
         }
         hop_whitespace(&p);
     }
-    expect_char(&p, ')');
-
+    // (Without the `)` the node ends at the last token it has: tsc's finishNode)
     const char* end = p.pos;
+    if (!expect_char(&p, ')')) {
+        while (end > a.start && (end[-1] == ' ' || end[-1] == '\t' || end[-1] == '\n' || end[-1] == '\r')) end--;
+    } else {
+        end = p.pos;
+    }
     hop_whitespace(&p);
     while (hop_char(&p, '.')) {
         hop_whitespace(&p);
@@ -10326,6 +10344,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
 // The `{ type: "json" }` of import attributes, into ret->elements (tsc's parseImportAttributes)
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) {
     Parser* p = parent;
+    const char* open = p->pos;
     if (!expect_char(p, '{')) return;
     hop_whitespace(p);
     while (*p->pos && *p->pos != '}') {
@@ -10350,7 +10369,10 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
         if (*p->pos == '}' || !expect_char(p, ',')) break;
         hop_whitespace(p);
     }
-    expect_char(p, '}');
+    if (!hop_char(p, '}')) {
+        expect_char(p, '}');
+        relate_last_expected_to_open(p, open, '{', '}');
+    }
 }
 
 // `with { type: "json" }` / `assert { ... }` after a module specifier, on the same line

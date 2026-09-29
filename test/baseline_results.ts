@@ -50291,7 +50291,7 @@ const baselines = {
         types: true,
     },
     'importAssertion5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50341,7 +50341,7 @@ const baselines = {
         types: true,
     },
     'importAttributes5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55036,19 +55036,19 @@ const baselines = {
         types: true,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesImportHelpersCollisions(module=node16)': {
         errors: true,
@@ -55201,19 +55201,19 @@ const baselines = {
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesJson(module=node16)': {
         errors: false,
