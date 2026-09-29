@@ -1441,6 +1441,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 static Span signature_decl_span(Signature const* sig) {
     while (sig->target) sig = sig->target;
     if (sig->function && !sig->function->is_type && span_valid(sig->function->name)) return sig->function->name;
+    if (sig->function && span_valid(sig->function->member_name)) return sig->function->member_name; // A method signature
     if (span_valid(sig->name_span)) return sig->name_span;
     return sig->decl_span;
 }

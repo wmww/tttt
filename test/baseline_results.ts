@@ -26141,17 +26141,17 @@ const baselines = {
         types: true,
     },
     'promisePermutations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'promisePermutations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'promisePermutations3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
