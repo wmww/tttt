@@ -11170,6 +11170,15 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
             Statement statement = { .tag = STATEMENT_EXPORT_DEFAULT_EXPR, .expr = value, .export_equals = true };
             statement.span = span_from(a);
             vec_statement_push(&source->ast.statements, statement);
+        } else if (!*p.pos) {
+            // An empty file is `{}` (tsc's getTypeOfVariableOrParameterOrPropertyWorker: emptyObjectType), an empty
+            // span that the baselines don't show
+            Statement statement = {
+                .tag = STATEMENT_EXPORT_DEFAULT_EXPR, .expr = expr_object(span_from(a), vec_object_expr_item_init()),
+                .export_equals = true,
+            };
+            statement.span = span_from(a);
+            vec_statement_push(&source->ast.statements, statement);
         }
     } else {
         parse_source_directives(&p, &source->ast.statements);

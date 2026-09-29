@@ -1068,6 +1068,8 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_EXPR:
             // (A JSDoc `@type` on it is its type: tsc's getEffectiveTypeAnnotationNode of an ExportAssignment)
             if (decl->jsdoc_type) return ty_of_node(decl->jsdoc_type);
+            // A JSON file's value is widened, literals too (getTypeOfVariableOrParameterOrPropertyWorker)
+            if (decl->full.source && decl->full.source->is_json) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
             return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
         case SYMBOL_DECL_ASSIGNMENT:
             if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);

@@ -2012,6 +2012,11 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
             // (A bare `return;` returns an implicit undefined literal, a written `undefined` is an expression)
+            // A JSON file's value is an expression statement to tsc (its empty file's `{}` is nothing)
+            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my span.source && my span.source->is_json) {
+                if (my expr.outer_span.sv.size) expr_compile_test_info(&my expr, ctx);
+                break;
+            }
             // A number or string literal is no expression to tsc's type writer under an export assignment
             // (isInExpressionContext), a template or `-1` is
             if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_LITERAL &&
