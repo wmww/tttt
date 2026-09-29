@@ -31,6 +31,13 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
 }
 
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
+    // A JSDoc `function(...)` without `: R` (tsc's checkJSDocFunctionType, whatever noImplicitAny says)
+    if (my function->jsdoc_type && !my function->jsdoc_callback && !my function->ret_explicit &&
+        !my function->is_constructor
+    ) {
+        error_ctx_error_d(errs, my function->full_span, 7014,
+            "Function type, which lacks return-type annotation, implicitly has an 'any' return type.");
+    }
     function_impl_typecheck_signature(my function, true, errs);
     function_impl_check_implicit_any_parameters(my function, errs);
     for_each (i, vec_function_arg, &my function->args) {

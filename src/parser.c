@@ -2424,7 +2424,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
     } else {
         parse_fail(&colon);
     }
-    function.full_span = span_from(a);
+    function.full_span = span_make(p.shared->source, a.start, p.pos); // (`a` is the caller's, before `function`)
     *ret = function_impl_into_type(function);
     return parse_success(&p);
 }
