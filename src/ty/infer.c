@@ -556,8 +556,12 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
         panic_if(!*out, "out of memory");
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
+            // (Declared where the source's is: tsc's createReverseMappedType copies its declarations, which is where
+            // TS6500 points and what the symbols baseline shows)
             (*out)[i] = (ObjectLiteralProp){
                 .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
+                .name_span = prop->decl->name_span, .decl_spans = prop->decl->decl_spans,
+                .decl_span_count = prop->decl->decl_span_count, .name_is_value = prop->decl->name_is_value,
             };
         }
         return members->prop_count;
@@ -582,6 +586,9 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
             (*out)[count++] = (ObjectLiteralProp){
                 .name = name, .flags = found.flags, .type = found.type,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
+                .name_span = found.prop ? found.prop->decl->name_span : span_null,
+                .decl_spans = found.prop ? found.prop->decl->decl_spans : nullptr,
+                .decl_span_count = found.prop ? found.prop->decl->decl_span_count : 0,
             };
         }
     }

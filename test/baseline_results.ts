@@ -14982,7 +14982,7 @@ const baselines = {
     },
     'genericFunctionInference2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericFunctionSpecializations1': {
@@ -27797,7 +27797,7 @@ const baselines = {
     },
     'reverseMappedPartiallyInferableTypes': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'reverseMappedTupleContext': {
@@ -27811,7 +27811,7 @@ const baselines = {
         types: true,
     },
     'reverseMappedTypeContextualTypeNotCircular': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64117,7 +64117,7 @@ const baselines = {
     },
     'isomorphicMappedTypeInference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeAsClauseRelationships': {
@@ -64157,7 +64157,7 @@ const baselines = {
     },
     'mappedTypeInferenceErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeModifiers': {
