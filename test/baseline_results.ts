@@ -32073,7 +32073,7 @@ const baselines = {
     'unionOfFunctionAndSignatureIsCallable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionPropertyExistence': {
         errors: false,

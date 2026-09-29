@@ -5353,7 +5353,21 @@ Signature* const* ty_union_signatures(Checker* me, TyList members, bool construc
     Signature* const** lists = malloc(sizeof(Signature* const*) * members.len);
     u32* lens = malloc(sizeof(u32) * members.len);
     panic_if(!lists || !lens, "out of memory");
+    Ty const* function_type = construct ? nullptr : ty_global_function_type(me);
     for (u32 i = 0; i < members.len; i++) {
+        // `Function` is called through tsc's unknownSignature: no parameters, returning errorType
+        // (resolveUnionTypeMembers)
+        if (function_type && members.data[i] == function_type) {
+            Signature* unknown = arena_new(&my arena, Signature);
+            *unknown = (Signature){
+                .state = LAZY_STATE_DONE, .ret_state = LAZY_STATE_DONE, .ret = ty_intrinsic(me, TY_ERROR), .predicate_done = true,
+            };
+            Signature** list = arena_new_n(&my arena, Signature*, 1);
+            list[0] = unknown;
+            lists[i] = list;
+            lens[i] = 1;
+            continue;
+        }
         Ty const* member = ty_apparent_type(me, members.data[i]);
         // (An intersection's are its members', see resolve_intersection_members())
         Members const* m = ty_members(me, member);
