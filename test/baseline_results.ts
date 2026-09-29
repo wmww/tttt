@@ -33551,7 +33551,7 @@ const baselines = {
         types: true,
     },
     'noPropertyAccessFromIndexSignature1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

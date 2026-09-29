@@ -1759,6 +1759,8 @@ static inline u32 ty_key_flags(Ty const* index) {
     return flags;
 }
 IndexInfo const* ty_applicable_index_info(Checker* me, Ty const* object, Ty const* index); // Of an apparent type
+// TS4111 (noPropertyAccessFromIndexSignature): `o.k` that only an index signature has (check.c)
+void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs);
 // A number, symbol or pattern index signature applies to the key (tsc's isApplicableIndexType, not for `string` keys)
 bool ty_specific_index_applies(Checker* me, IndexInfo const* info, Ty const* index);
 // Member modifiers at a property access (tsc's checkPropertyAccessibility and the readonly checks of

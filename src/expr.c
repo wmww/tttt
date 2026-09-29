@@ -3710,6 +3710,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             ty_check_generic_element_access(current_checker, my property, expr_type, my inner_span, errs);
             ty_check_generic_index_write(current_checker, my property, expr_type, my inner_span, errs);
             ty_check_member_modifiers(current_checker, my property, expr_type, my inner_span, errs);
+            if (compiler_options()->no_property_access_from_index_signature) {
+                ty_check_index_signature_dot_access(current_checker, my property, expr_type, errs);
+            }
             ty_check_property_used_before_assigned(current_checker, me, errs);
         }   break;
 

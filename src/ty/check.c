@@ -3129,6 +3129,32 @@ static void check_class_used_before_declaration(PropertyExpr const* access, Prop
     error_add_related_d(error, class_decl->name, 2728, "'", used, "' is declared here.");
 }
 
+// Whether tsc's getPropertyOfType finds a property of that name in an apparent type (Object's members too)
+static bool has_real_prop(Checker* me, Ty const* apparent, Atom const* name) {
+    if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_property_of_type(me, apparent, name)) return true;
+    Ty const* global_object = ty_global_object_type(me);
+    return global_object && ty_get_prop(me, global_object, name);
+}
+
+void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
+    if (access->form != PROPERTY_EXPR_DOT || access->qualified_name || access->prop.tag != EXPR_LITERAL) return;
+    Ty const* key = ty_access_key_type(me, access);
+    Atom const* name = ty_literal_name(me, key);
+    if (!name || !name->len || name->str[0] == '#') return;
+    Ty const* apparent = ty_apparent_type(me, ty_non_nullable(me, object));
+    if (apparent->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER | TYF_ERROR)) return;
+    // (A union's property exists if any member has one, its index signatures are those all members have)
+    TyList members = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = ty_apparent_type(me, members.data[i]);
+        if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION)) || has_real_prop(me, member, name)) return;
+        if (!ty_applicable_index_info(me, member, key)) return;
+    }
+    // (tsc's checkPropertyAccessExpressionOrQualifiedName, at the name)
+    error_ctx_error_d(errs, access->prop.outer_span, 4111, "Property '", atom_sv(name),
+        "' comes from an index signature, so it must be accessed with ['", atom_sv(name), "'].");
+}
+
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access())
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
