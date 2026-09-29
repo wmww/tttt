@@ -738,6 +738,14 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             if (modifiers & JSDOC_MODIFIER_PRIVATE) prop->flags |= PROP_PRIVATE;
             else if (modifiers & JSDOC_MODIFIER_PROTECTED) prop->flags |= PROP_PROTECTED;
             if (modifiers & JSDOC_MODIFIER_READONLY) prop->flags |= PROP_READONLY;
+            // `F.prototype.m = function () {}` (or an arrow function) is a method (tsc's
+            // bindPotentiallyNewExpandoMemberToNamespace: SymbolFlags.Method for a function-like initializer)
+            Expr const* value = member->decl_count ? member->decls[0].node : nullptr;
+            if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+                member->decls[0].assignment == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY && value && value->tag == EXPR_FUNCTION
+            ) {
+                prop->flags |= PROP_METHOD;
+            }
             if (member->decl_count && member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY &&
                 expr_define_property_readonly(member->decls[0].node)
             ) {

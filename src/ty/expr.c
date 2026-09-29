@@ -1211,7 +1211,10 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     if (!identifier->super_member) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
-        return ty_expr_type(me, extends);
+        Ty const* base = ty_expr_type(me, extends);
+        // Not a constructor type (TS2507): the error type (tsc's getBaseConstructorTypeOfClass)
+        if (base->kind == TY_ANONYMOUS && !ty_members(me, base)->construct_count) return ty_intrinsic(me, TY_ERROR);
+        return base;
     }
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_expr_type(me, &class_decl->extends);
     Ty const* base = ty_class_base_instance(me, class_decl);
