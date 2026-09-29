@@ -1428,6 +1428,10 @@ typedef enum ObjectLiteralKind {
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
 );
+Ty const* ty_object_literal_of(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
+    void const* expr
+);
 
 // function.c
 Ty const* ty_function_type(Checker* me, FunctionImpl const* function);

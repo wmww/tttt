@@ -2894,9 +2894,22 @@ static void words_push(WordBuf* me, u64 word) {
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind
 ) {
+    return ty_object_literal_of(me, props, count, index, index_count, kind, nullptr);
+}
+
+// `expr`, when not null, is the literal expression the type is of: a type of its own (an empty literal has nothing that
+// tells it apart from another, but tsc makes a type per literal, whose id orders unions)
+Ty const* ty_object_literal_of(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
+    void const* expr
+) {
     WordBuf words = {0};
     words_push(&words, KEY_STRUCTURAL);
     words_push(&words, kind);
+    if (expr) {
+        words_push(&words, 4);
+        words_push(&words, (u64)(uintptr_t)expr);
+    }
     for (u32 i = 0; i < count; i++) {
         if (props[i].reuse) {
             words_push(&words, 2);

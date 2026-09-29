@@ -2380,12 +2380,14 @@ static Ty const* spread_acc_objects(Checker* me, LiteralBuilder const* alts, u32
 }
 
 // What the literal is. `own`: the properties written after the last spread (the whole literal if nothing was spread)
-static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* own, ObjectLiteralKind kind) {
+static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* own, ObjectLiteralKind kind, Expr const* expr) {
     Ty const* ret;
     if (acc->any) {
         ret = any_type(me);
     } else if (!acc->alt_count && !acc->part_count) {
-        ret = ty_object_literal(me, own->props, own->count, own->index, own->index_count, kind);
+        // (`{}`: a type of its own, see ty_object_literal_of())
+        bool empty = !own->count && !own->index_count && expr && expr->tag == EXPR_OBJECT && !vec_object_expr_item_size(&expr->object);
+        ret = ty_object_literal_of(me, own->props, own->count, own->index, own->index_count, kind, empty ? expr : nullptr);
     } else {
         if (own->count || own->index_count) spread_acc_props(me, acc, own);
         if (!acc->part_count) {
@@ -2846,7 +2848,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
     // checkObjectLiteral)
     SourceFile const* file = expr->inner_span.source;
     bool js = file && file->is_js && !ctx.contextual && !expr->jsdoc_enum_literal;
-    Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH | (js ? OBJECT_JS : 0));
+    Ty const* ret = spread_acc_finish(me, &spread, &builder, OBJECT_LITERAL_FRESH | (js ? OBJECT_JS : 0), expr);
     free(builder.props);
     return ret;
 }
@@ -3114,7 +3116,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     // Fresh (excess properties are errors) if tsc made it with createJsxAttributesTypeHelper(): there's an attribute, or
     // nothing was spread into it (children are spread in)
     bool fresh = has_attribute || (!has_spread && !has_children);
-    Ty const* ret = spread_acc_finish(me, &spread, &builder, fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES);
+    Ty const* ret = spread_acc_finish(me, &spread, &builder, fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES, nullptr);
     free(builder.props);
     return ret;
 }
