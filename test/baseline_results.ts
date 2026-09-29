@@ -9436,7 +9436,7 @@ const baselines = {
         types: true,
     },
     'deleteReadonly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65756,7 +65756,7 @@ const baselines = {
         types: true,
     },
     'readonlyArraysAndTuples': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -2080,10 +2080,20 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
         error_ctx_error_d(errs, operand->inner_span, 18011, "The operand of a 'delete' operator cannot be a private identifier.");
     }
     Atom const* name = access_name(me, access);
-    if (!name) return;
     Ty const* object = ty_optional_expression_type(me, ty_expr_type(me, &access->expr), access->optional_chain, nullptr);
     MemberRefs refs = {0};
-    int readonly = member_refs(me, object, name, &refs, 0);
+    int readonly = name ? member_refs(me, object, name, &refs, 0) : -1;
+    if (readonly < 0 && !(object->flags & TYF_ANY)) {
+        // Through a readonly index signature (tsc's getPropertyTypeForIndexType with isDeleteTarget)
+        Ty const* apparent = ty_apparent_type(me, object);
+        IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+            ty_applicable_index_info(me, apparent, ty_regular(me, ty_access_key_type(me, access))) : nullptr;
+        if (info && info->readonly) {
+            cstr object_str = ty_to_cstr(me, access->form == PROPERTY_EXPR_DOT ? apparent : object);
+            error_ctx_error_d(errs, operand->inner_span, 2542, "Index signature in type '", object_str, "' only permits reading.");
+            cstr_drop(&object_str);
+        }
+    }
     if (readonly < 0 || !refs.len) return; // (No property: an index signature, or already an error)
     if (readonly || is_namespace_import(&access->expr)) {
         error_ctx_error_d(errs, operand->inner_span, 2704, "The operand of a 'delete' operator cannot be a read-only property.");
