@@ -9338,7 +9338,7 @@ const baselines = {
     'defaultParameterAddsUndefinedWithStrictNullChecks': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'defaultParameterTrailingComments': {
         errors: true,
@@ -33288,7 +33288,7 @@ const baselines = {
     'verbatim-declarations-parameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'verbatimModuleSyntaxDefaultValue': {
         errors: true,

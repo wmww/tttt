@@ -1170,6 +1170,17 @@ static bool annotation_is(Checker* me, TypeNode const* node, Ty const* ty, bool 
 }
 
 // Prints `ty` by reprinting its declaration's annotation when that's allowed and says the same, else as a type
+// Whether `ty` is what the annotation says with undefined added, the annotation being one that a union can take as it
+// is (no function, constructor or conditional type, which would need new parentheses)
+static bool annotation_plus_undefined(Checker* me, TypeNode const* node, Ty const* ty) {
+    if (!node->parsed || ty->kind != TY_UNION || !compiler_options()->strict_null_checks) return false;
+    if ((node->tag == TYPE_CALLABLE && !node->parenthesized) || (node->tag == TYPE_TERNARY && !node->parenthesized) ||
+        node->tag == TYPE_UNIQUE_SYMBOL || node->tag == TYPE_JSDOC) return false;
+    Ty const* annotated = node_type(me, (TyDisplay){0}, node);
+    if (annotated == ty || ty_without_undefined(me, annotated) != annotated) return false;
+    return ty_without_undefined(me, ty) == annotated;
+}
+
 static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotation, Ty const* ty, bool optional) {
     if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, ty, optional)) {
         display_node(me, d, annotation);
@@ -1572,7 +1583,16 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ) {
             shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
         }
-        display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
+        if (reused && param_d.underline && param_d.enclosing && !param->optional &&
+            annotation_plus_undefined(me, &binding->explicit_type, shown)
+        ) {
+            // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
+            // the annotation in a new union with `undefined` (serializeTypeForDeclaration's addUndefined)
+            display_node(me, param_d, &binding->explicit_type);
+            out(reused_if(param_d, false), c_sv(" | undefined"));
+        } else {
+            display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
+        }
     }
     out_lit(d, ")");
     out(d, csview_from(separator));
