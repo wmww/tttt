@@ -476,6 +476,7 @@ typedef struct PropDecl {
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
+    bool parameter_property; // `constructor(public x: T)`: declared by the parameter, decl_spans[0]
     uint8_t name_form; // PropNameForm: how the name prints
     Ty const* name_type; // An object literal's computed literal name's type, as it was (fresh): what keyof gives
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)

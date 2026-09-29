@@ -1122,6 +1122,7 @@ static void builder_add_class_items(
                     prop->decl->ctx = ctx;
                     prop->flags = access_prop_flags(arg->access);
                     prop->decl->name_span = binding->content_span;
+                    prop->decl->parameter_property = true;
                     prop_add_decl_spans(me, prop, &arg->span, 1);
                     if (binding->has_explicit_type) {
                         prop->decl->node = &binding->explicit_type;
@@ -2740,6 +2741,8 @@ Span ty_prop_decl_span(Prop const* prop) {
     }
     // A JSDoc `@property` is the whole tag (tsc's getErrorSpanForNode of a JSDocPropertyTag)
     if (prop->decl->decl_span_count && span_is_jsdoc_tag(prop->decl->decl_spans[0])) return prop->decl->decl_spans[0];
+    // A parameter property is the whole parameter, its modifiers first
+    if (prop->decl->parameter_property && prop->decl->decl_span_count) return prop->decl->decl_spans[0];
     return prop->decl->name_span;
 }
 

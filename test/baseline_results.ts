@@ -66641,7 +66641,7 @@ const baselines = {
         types: true,
     },
     'narrowingGenericTypeFromInstanceof01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
