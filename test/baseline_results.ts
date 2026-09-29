@@ -60573,7 +60573,7 @@ const baselines = {
     'propertiesOfGenericConstructorFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAssignmentOnImportedSymbol': {
         errors: true,

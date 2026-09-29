@@ -1777,6 +1777,9 @@ typedef struct TyDisplay {
     // Null: the bare name (tsc's lookupSymbolChainWorker without an enclosing declaration: what error messages show),
     // or fully qualified with `fully_qualified` (tsc's UseFullyQualifiedType, when a source and target print the same)
     struct Scope const* enclosing;
+    // The types baseline: where in the file the type is printed (a parameter's name is only visible inside its
+    // function, see index_components_printed())
+    Span at;
     bool fully_qualified;
     // The types baseline's `^^^` line: every character printed gets a `^`, or a space where tsc's declaration
     // emitter would have reused a node from the source (`reused`, see display_signature()). Null: not wanted

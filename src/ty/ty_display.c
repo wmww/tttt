@@ -1711,14 +1711,17 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
         // (A visible declaration, tsc's isEntityNameVisible: not a local of a function body, not a parameter of a
         // function expression or arrow. HACK: a parameter of a function declaration nested in another function
         // counts as visible, and TyDisplay.enclosing, the scope of the statement, doesn't see the parameters of the
-        // function around it: those aren't checked for shadowing)
+        // function around it: those aren't checked for shadowing, only that the type is printed inside the function)
         Symbol const* symbol = leftmost->identifier.symbol;
         if (symbol->is_local && symbol->function && (symbol->flags & SYMBOL_VARIABLE) &&
             (!symbol->is_parameter || symbol->function->is_expression)
         ) {
             return false;
         }
-        if (symbol->is_parameter && symbol->function) continue;
+        if (symbol->is_parameter && symbol->function) {
+            if (span_valid(d.at) && !span_contains_span(symbol->function->full_span, d.at)) return false;
+            continue;
+        }
         Symbol const* found = scope_resolve(d.enclosing, leftmost->identifier.name.sv, SYMBOL_VALUE);
         if (!found || !same_symbol(me, found, leftmost->identifier.symbol)) return false;
     }

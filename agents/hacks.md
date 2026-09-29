@@ -980,5 +980,6 @@ same walk, so tttt is probably missing a cache there (Maybe results of deep rela
 instantiations redone). The port is `is_related_to_side(me, st, ..., 2)` in those cases; redo it with a profile.
 - `index_components_printed()` (ty_display.c): tsc's isEntityNameVisible for `{ [k]: T }` members is approximated: a
   function body's locals and function expressions' parameters aren't visible, any other parameter is (a parameter of a
-  function declaration nested in another function too), and parameters skip the shadowing check since
+  function declaration nested in another function too) where the type is printed inside its function (TyDisplay.at,
+  types baseline only), and parameters skip the shadowing check since
   `TyDisplay.enclosing` doesn't see the enclosing function's parameters.
