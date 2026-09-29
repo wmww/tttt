@@ -3723,7 +3723,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
     if (!function->ret_explicit && signature->ret_explicit && !function->is_constructor) {
         function->ret = signature->ret;
         function->ret.from_jsdoc = true;
-        function->ret_span = tag->type_span;
+        function->ret_span = signature->ret_span; // (tsc's getJSDocReturnType: the signature's return type node)
         function->ret_explicit = true;
         signature->ret_explicit = false;
         signature->ret = (TypeNode){0};
