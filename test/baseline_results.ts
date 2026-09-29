@@ -67656,7 +67656,7 @@ const baselines = {
         types: false,
     },
     'unknownType2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

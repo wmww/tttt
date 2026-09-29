@@ -1793,7 +1793,10 @@ static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, E
     }
     if (assume_true) {
         if (!double_equals && ((type->flags & TYF_UNKNOWN) || some_member_is_empty_object(me, type))) {
-            if ((value_type->kind == TY_INTRINSIC || value_type->kind == TY_LITERAL) || is_empty_anonymous_object(me, value_type)) {
+            // (Primitives: `boolean` and enums, unions of them, too)
+            if (value_type->kind == TY_INTRINSIC || value_type->kind == TY_LITERAL || (value_type->flags & TYF_BOOLEAN) ||
+                ty_is_enum_union(value_type) || is_empty_anonymous_object(me, value_type)
+            ) {
                 return value_type;
             }
             if (value_type->flags & TYF_OBJECT) return ty_intrinsic(me, TY_NON_PRIMITIVE);
@@ -2419,7 +2422,25 @@ static Ty const* narrow_by_switch_on_discriminant(FlowQuery* q, Ty const* type, 
     if (!switch_types.len) return type;
     bool has_default = clause->clause_start == clause->clause_end;
     for (u32 i = clause->clause_start; i < clause->clause_end; i++) has_default |= (switch_types.data[i]->flags & TYF_NEVER) != 0;
-    // TODO: `unknown` narrowed by the cases of a switch without default
+    // `unknown` without a default: the cases' types, an object one as `object` (tsc's narrowTypeBySwitchOnDiscriminant)
+    if ((type->flags & TYF_UNKNOWN) && !has_default) {
+        u32 len = clause->clause_end - clause->clause_start;
+        Ty const** ground = malloc(sizeof(Ty const*) * (len ? len : 1));
+        panic_if(!ground, "out of memory");
+        bool keep = true;
+        for (u32 i = 0; i < len && keep; i++) {
+            Ty const* t = switch_types.data[clause->clause_start + i];
+            bool primitive = (t->kind == TY_INTRINSIC && !(t->flags & (TYF_ANY | TYF_UNKNOWN))) || t->kind == TY_LITERAL ||
+                (t->flags & TYF_BOOLEAN) || ty_is_enum_union(t);
+            if (primitive) ground[i] = t;
+            else if (t->flags & TYF_OBJECT) ground[i] = ty_intrinsic(me, TY_NON_PRIMITIVE);
+            else keep = false;
+        }
+        Ty const* ret = keep ? ty_union(me, ground, len, nullptr, (TyList){0}) : type;
+        free(ground);
+        ty_buf_drop(&switch_types);
+        return ret;
+    }
     Ty const* discriminant = ty_union(me, switch_types.data + clause->clause_start, clause->clause_end - clause->clause_start, nullptr, (TyList){0});
     Ty const* case_type = discriminant->flags & TYF_NEVER ? discriminant :
         replace_primitives_with_literals(me, filter_type(me, type, is_comparable_to, discriminant), discriminant);
