@@ -3014,10 +3014,12 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         case LAZY_STATE_IN_FLIGHT:
             // An inferred return type in progress: asking it says so, it becomes any (see ty_function_return_type())
             if (!sig->target && sig->function && !sig->function->is_type) ty_function_return_type(me, sig->function);
+            ty_resolving_cycle(me, RESOLVING_SIGNATURE_RETURN, sig);
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
     }
     sig->ret_state = LAZY_STATE_IN_FLIGHT;
+    ty_resolving_push(me, RESOLVING_SIGNATURE_RETURN, sig);
     Ty const* ret;
     if (sig->target) {
         ret = ty_instantiate(me, signature_return_type(me, sig->target), sig->mapper);
@@ -3030,6 +3032,17 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         ret = ty_function_return_type(me, sig->function);
     } else {
         ret = ty_intrinsic(me, TY_ANY);
+    }
+    if (ty_resolving_pop(me)) {
+        // tsc's getReturnTypeOfSignature when popTypeResolution fails: any, and TS2577 at an annotation (an inferred
+        // one's TS7023 is ty_function_return_type()'s, an accessor's TS2502 prop_type()'s)
+        ret = ty_intrinsic(me, TY_ANY);
+        FunctionImpl const* function = sig->function;
+        if (!sig->target && function && !function->accessor && (function->is_type || function->ret_explicit) &&
+            span_valid(function->ret_span)
+        ) {
+            ty_error_at(me, function->ret_span, 2577, cstr_from("Return type annotation circularly references itself."));
+        }
     }
     sig->ret = ret;
     sig->ret_state = LAZY_STATE_DONE;

@@ -805,6 +805,7 @@ struct Checker {
     u32 resolving_len;
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
+    u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     bool circular_annotations; // Whether a KEY_CIRCULAR_ANNOTATION was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
     u32 relation_complexity_hits; // How many relations ran out of their budget (TS2859, counted in the above too)
@@ -1512,6 +1513,7 @@ typedef enum ResolvingKind {
     RESOLVING_PROP,
     RESOLVING_ALIAS,
     RESOLVING_ANNOTATION, // The written type of a Binding
+    RESOLVING_SIGNATURE_RETURN,
 } ResolvingKind;
 typedef struct Resolving {
     void const* key;

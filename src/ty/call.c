@@ -1271,6 +1271,16 @@ static Ty const* candidate_return_type(Checker* me, Candidate const* candidate) 
     return ret;
 }
 
+// What the call resolved to gives its return type outside the call's barrier (tsc's checkCallExpression asks
+// getReturnTypeOfSignature after getResolvedSignature is done): a cycle through it is the declarations' around the call
+static Ty const* resolved_return_type(Checker* me, Candidate const* candidate) {
+    u32 start = my resolving_start;
+    my resolving_start = my resolving_call_start;
+    Ty const* ret = candidate_return_type(me, candidate);
+    my resolving_start = start;
+    return ret;
+}
+
 static Span span_of_args(Args const* args, u32 from, u32 to) {
     return span_between(args->data[from].expr->outer_span, args->data[to].expr->outer_span);
 }
@@ -1717,7 +1727,7 @@ static Resolution resolve_with_signatures(
     }
 
     if (ret.chosen.sig) {
-        ret.ret = candidate_return_type(me, &ret.chosen);
+        ret.ret = resolved_return_type(me, &ret.chosen);
     } else {
         mark_would_report(info);
         if (errs) {
@@ -1760,9 +1770,9 @@ static Resolution resolve_with_signatures(
                 check_args(me, &shape, args, false);
                 free(shape.types);
             }
-            ret.ret = candidate_return_type(me, &fallback);
+            ret.ret = resolved_return_type(me, &fallback);
         } else if (count == 1 && !signatures[0]->type_params.len) {
-            ret.ret = signature_return_type(me, signatures[0]);
+            ret.ret = resolved_return_type(me, &(Candidate){ .sig = signatures[0] });
         } else if (info->type_arg_nodes && !type_argument_arity_ok) {
             // tsc's pickLongestCandidateSignature with getTypeArgumentsFromNodes: the first candidate that takes the
             // arguments (else the one with the most parameters), its type arguments cut or filled in
@@ -1943,10 +1953,12 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
 // sees the whole stack. tttt resolves a call again where tsc would stop at resolvingSignature (plan 38 stage 3), and
 // letting those see the whole stack marks zod's recursive getter schemas circular (plan 39)
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
-    u32 start = my resolving_start;
+    u32 start = my resolving_start, call_start = my resolving_call_start;
+    my resolving_call_start = start;
     my resolving_start = my resolving_len;
     Ty const* ret = resolve_call_inner(me, callee, info, call_span, errs);
     my resolving_start = start;
+    my resolving_call_start = call_start;
     return ret;
 }
 

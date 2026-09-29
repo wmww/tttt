@@ -15871,7 +15871,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyFromCircularInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26986,7 +26986,7 @@ const baselines = {
         types: true,
     },
     'recursiveResolveTypeMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65161,7 +65161,7 @@ const baselines = {
         types: true,
     },
     'circularTypeofWithVarOrFunc': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
