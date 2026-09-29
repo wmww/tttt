@@ -594,9 +594,16 @@ static bool is_js_this_member_of_assigned_class(Symbol const* container, Symbol 
 
 void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity) {
     isize start = cstr_size(out);
+    bool restart = false; // The next name starts the text
     for (u32 i = 0; i < chain->len; i++) {
         Symbol const* symbol = chain->items[i];
         csview class_name;
+        if (!entity && i + 1 == chain->len - 1 && chain->items[i + 1]->prototype_literal_member) {
+            // (Of an object literal: no name)
+            cstr_resize(out, start, 0);
+            restart = true;
+            continue;
+        }
         if (!entity && i + 1 < chain->len && is_js_this_member_of_assigned_class(symbol, chain->items[i + 1], &class_name)) {
             cstr_resize(out, start, 0);
             cstr_append_sv(out, class_name);
@@ -611,8 +618,9 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
             for (isize k = 0; plain && k < inner.size; k++) plain = inner.buf[k] != '\\' && inner.buf[k] != '-' && inner.buf[k] != ' ';
             if (plain) name = inner;
         }
-        if (i == 0) {
+        if (i == 0 || restart) {
             cstr_append_sv(out, name);
+            restart = false;
         } else {
             symbol_chain_append_member(out, name, symbol->flags & SYMBOL_ENUM_MEMBER);
         }

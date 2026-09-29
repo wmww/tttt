@@ -3940,9 +3940,12 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             }
             if (!class_symbol) return;
             class_symbol->flags |= SYMBOL_CLASS;
+            Symbol* existing = class_symbol->members ? (Symbol*)symbol_table_get(class_symbol->members, name.sv) : nullptr;
             declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             // (Its type is what `this.x` is at the end of the constructor function: tsc's getFlowTypeInConstructor)
             Symbol* member = (Symbol*)symbol_table_get(class_symbol->members, name.sv);
+            bool literal_method = !constructor && this_function->prototype_of && this_function->this_literal;
+            if (member) member->prototype_literal_member = literal_method && (!existing || existing->prototype_literal_member);
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !member->constructor_assigned && function == this_function) {
                 member->constructor_assigned = left;
                 member->declaring_constructor = function;

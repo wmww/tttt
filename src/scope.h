@@ -235,6 +235,9 @@ typedef struct Symbol {
 
     bool is_module;
     bool is_global_this;
+    // JavaScript `F.prototype = { m() { this.x = v } }`: x belongs to the literal in tsc (its symbol has no namable
+    // parent), and is F's instance member through it. Set while only such assignments declare it
+    bool prototype_literal_member;
     bool is_shorthand_module; // `declare module "m";`: every import from it is any
     bool is_placeholder; // Stands for something that couldn't be resolved: everything looked up in it is any
     // A placeholder for what an alias couldn't resolve to (tsc's unknownSymbol, of the error type), not for an import
