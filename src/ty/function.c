@@ -283,7 +283,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     if (function->constructed_class) return ty_class_instance_type(me, function->constructed_class);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
     if (function->setter_type) return ty_from_node(me, function->setter_type, function_lower_ctx);
-    if (function->jsdoc_signature_type) {
+    if (function->jsdoc_signature_type || function->jsdoc_host_type) {
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
         if (tagged) return tagged;
     }

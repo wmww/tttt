@@ -11160,6 +11160,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             ) {
                 FunctionImpl const* signature = jsdoc_single_signature(&initializer->binding.explicit_type);
                 if (signature && signature->ret_explicit) function->jsdoc_tag_ret = &signature->ret;
+                function->jsdoc_host_type = &initializer->binding.explicit_type;
             }
             if (function) jsdoc_apply_function(p, &tags, function);
             if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initializer->value.class_decl);

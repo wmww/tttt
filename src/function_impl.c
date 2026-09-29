@@ -790,6 +790,10 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         if (span_valid(body)) error_ctx_error_d(errs, body, 1183, "An implementation cannot be declared in ambient contexts.");
     }
     function_check_widened_return(me, errs);
+    // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
+    // getReturnTypeFromAnnotation)
+    Ty const* tagged_return = !my ret_explicit && !my is_async && !my is_generator &&
+        (my jsdoc_signature_type || my jsdoc_host_type) ? ty_jsdoc_tag_return_type(current_checker, me) : nullptr;
     BlockTypecheckCtx ctx = {
         .ambient = my ambient,
         .ambient_reported = true,
@@ -798,7 +802,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret :
             my setter_type ? my setter_type : &type_any,
         .constructed_class = my is_constructor ? my constructed_class : nullptr,
-        .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) : nullptr,
+        .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) :
+            tagged_return,
         .await_returned = my is_async,
         .function = me,
         .in_setter = my accessor == 2,
