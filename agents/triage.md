@@ -130,5 +130,5 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   (unusedInvalidTypeArguments).
 - TS1376/TS1377 related info of a type-only specifier should span from the specifier's `type` (importSpecifiers1,
   exportSpecifiers).
-- `x instanceof ...`/`typeof`: `verbatimModuleSyntax`'s TS2748 for an ambient const enum used directly (not through an
+- `verbatimModuleSyntax`'s TS2748 for an ambient const enum used directly (not through an
   import) isn't reported (only isolatedModules); the import half is checkAliasSymbol's (verbatimModuleSyntaxAmbientConstEnum).
