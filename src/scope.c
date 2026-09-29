@@ -4064,6 +4064,11 @@ void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
             field = (ClassItem*)i;
         }
     }
+    if (!field && !is_static && left->property->form == PROPERTY_EXPR_BRACKET &&
+        (prop->tag == EXPR_IDENTIFIER || prop->tag == EXPR_PROPERTY)
+    ) {
+        vec_expr_cptr_push(&((ClassDecl*)class_decl)->computed_this_assignments, left);
+    }
     if (field && field->tag == CLASS_ITEM_FIELD && !field->field.ts_assigned) {
         field->field.ts_assigned = left;
         field->field.ts_assigned_class = class_decl;

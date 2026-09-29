@@ -4,6 +4,12 @@
 #include "interface_member.h"
 #include "lazy_type.h"
 
+typedef Expr const* ExprCPtr;
+g_declare_vec(ExprCPtr, expr_cptr);
+#define g_key ExprCPtr, expr_cptr
+#define g_declared
+#include <cleat/generic/vec.h>
+
 typedef enum AccessModifier {
     ACCESS_MODIFIER_PUBLIC,
     ACCESS_MODIFIER_PROTECTED,
@@ -154,6 +160,10 @@ typedef struct ClassDecl {
     Symbol const* commonjs_module;
     // `export = class {}`: an alias of the class names it from where it's imported (`typeof Chunk`)
     bool export_assigned;
+    // `this[k] = v` directly in the constructor with a key that isn't a literal (`this[Flags.X]`, `this[key]`): which
+    // field it assigns needs the key's type, so TS2564 (field_initialized_in_constructor()) tries these as the flow
+    // reference of fields no `this.x = v` names. Set by the resolve walk
+    VecExprCPtr computed_this_assignments;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

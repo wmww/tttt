@@ -179,6 +179,7 @@ void class_decl_drop(ClassDecl* me) {
     vec_type_drop(&my unchecked_implements);
     vec_expr_drop(&my invalid_implements);
     vec_class_item_drop(&my items);
+    vec_expr_cptr_drop(&my computed_this_assignments);
 }
 
 // A computed member name or a decorator
@@ -563,10 +564,24 @@ static bool contains_undefined(Ty const* ty) {
 // tsc's isPropertyInitializedInConstructor: `this.x` isn't possibly undefined at the end of the constructor, when it
 // starts out undefined there. The reference is the constructor's first `this.x = v` (field.ts_assigned): without one
 // it's undefined wherever the end can be reached
-static bool field_initialized_in_constructor(Checker* checker, ClassItem const* field, Ty const* type, ClassItem const* constructor) {
+static bool field_initialized_in_constructor(
+    Checker* checker, ClassDecl const* me, ClassItem const* field, Ty const* type, ClassItem const* constructor
+) {
     FlowNode const* end = constructor->constructor.func.return_flow;
     if (!end || flow_is_unreachable(end)) return true;
     Expr const* reference = field->field.ts_assigned;
+    if (!reference && my computed_this_assignments.size) {
+        // `this[Flags.X] = v` (tsc's flow reference is `this.x`, which such an access matches by its key's literal)
+        Atom const* name = item_member_name(checker, me, field);
+        for_each (i, vec_expr_cptr, &my computed_this_assignments) {
+            bool is_number = false;
+            Ty const* key = ty_expr_type(checker, &(*i)->property->prop);
+            if (name && ty_property_name_of_key(checker, key, &is_number) == name) {
+                reference = *i;
+                break;
+            }
+        }
+    }
     if (!reference) return false;
     Ty const* parts[2] = { type, ty_intrinsic(checker, TY_UNDEFINED) };
     Ty const* initial = ty_union(checker, parts, 2, nullptr, (TyList){0});
@@ -711,7 +726,7 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
                     // only differs when it's assigned undefined)
                     ClassItem const* constructor = class_constructor_with_body(me);
                     if (derived_info.definite || !constructor || !derived_info.identifier_name || !options->strict_null_checks ||
-                        !field_initialized_in_constructor(checker, derived_info.field, type, constructor)
+                        !field_initialized_in_constructor(checker, me, derived_info.field, type, constructor)
                     ) {
                         error_ctx_error_d(errs, at, 2612, "Property '", atom_sv(base_prop->name), "' will overwrite the base "
                             "property in '", base, "'. If this is intentional, add an initializer. Otherwise, add a 'declare' "
@@ -1506,7 +1521,7 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
         if (class_item_field_is_definite(i)) continue;
         Ty const* type = class_item_get_type((ClassItem*)i);
         if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || contains_undefined(type)) continue;
-        if (constructor && field_initialized_in_constructor(checker, i, type, constructor)) continue;
+        if (constructor && field_initialized_in_constructor(checker, me, i, type, constructor)) continue;
         error_ctx_error_d(errs, i->field.name_span, 2564, "Property '", i->field.name_span,
             "' has no initializer and is not definitely assigned in the constructor.");
     }
