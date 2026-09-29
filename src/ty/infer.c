@@ -909,6 +909,15 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
             // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType). Not when T is
             // inferred and a `readonly` or `?` of the mapped type would be taken off the source's properties
             infer_with_priority(me, inf, source, mapped->modifiers_type, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
+            // Pick's `{ [P in K]: T[P] }`: the keys go to K first (tsc's inferToMappedType with a type parameter
+            // constraint, whose own `keyof T` constraint is what the line above stands for). HACK: not from a return
+            // type, whose inference would then make the return mapper's K `never` in twiceNestedKeyofIndexInference
+            // (hacks.md)
+            if (!(inf->priority & INFER_PRIORITY_RETURN_TYPE) && constraint->kind == TY_TYPE_PARAM &&
+                inference_param(inf, constraint)
+            ) {
+                infer_with_priority(me, inf, ty_keyof(me, source), constraint, INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT);
+            }
         } else if (!mapped->name_type) {
             infer_to_mapped(me, inf, source, mapped, mapped->constraint);
         }

@@ -750,6 +750,8 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
     }
     // (Generic or not: they're primitives to tsc)
     if (contextual->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return (literal->flags & TYF_STRING_LITERAL) != 0;
+    // `keyof T` has room for string literals, whatever T is (tsc: TypeFlags.Index is no InstantiableNonPrimitive)
+    if (contextual->kind == TY_KEYOF) return (literal->flags & TYF_STRING_LITERAL) != 0;
     if (contextual->kind == TY_TYPE_PARAM || (contextual->flags & TYF_DEFERRED)) {
         // A type parameter or deferred type: what its constraint has room for. `T extends string` keeps "a"
         Ty const* constraint = ty_base_constraint(me, contextual);
@@ -767,7 +769,6 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
         }
         return is_literal_of_contextual_type(me, literal, constraint, depth + 1);
     }
-    if (contextual->kind == TY_KEYOF) return (literal->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) != 0;
     if ((contextual->flags & TYF_ES_SYMBOL_LIKE) && (literal->flags & TYF_UNIQUE_ES_SYMBOL)) return true;
     u32 kinds = TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_BIGINT_LITERAL | TYF_BOOLEAN_LITERAL;
     return contextual->kind == TY_LITERAL && (contextual->flags & literal->flags & kinds) != 0;
