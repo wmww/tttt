@@ -66,7 +66,10 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
         if (yield->op == UNARY_OP_YIELD) {
             Ty const* sent = intern_get(&my links, (u64[]){ KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield }, 2);
             if (sent) ty_buf_push(&nexts, sent);
-        } else if (yield->expr.tag != EXPR_IMPLICIT_ANY) {
+        } else if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
+            // `yield*` missing its operand delegates to the error type, whose iteration types are any
+            ty_buf_push(&nexts, ty_intrinsic(me, TY_ANY));
+        } else {
             TyIterationTypes const* delegate = ty_iteration_types_of_iterable(me, ty_expr_type(me, &yield->expr),
                 async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR);
             if (delegate && delegate->next_type) ty_buf_push(&nexts, delegate->next_type);
