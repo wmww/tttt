@@ -686,7 +686,7 @@ const baselines = {
         types: true,
     },
     'ambientExternalModuleInAnotherExternalModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21746,7 +21746,7 @@ const baselines = {
         types: false,
     },
     'moduleAugmentationInDependency2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -33611,7 +33611,7 @@ const baselines = {
         types: true,
     },
     'ambientExternalModuleInsideNonAmbientExternalModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

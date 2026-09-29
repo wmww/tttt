@@ -2788,7 +2788,7 @@ static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
         ret = binder_module_of_ref(me, ref);
         if (ret && ret->is_module && !ret->module->file && memchr(ret->name.buf, '*', (size_t)ret->name.size)) ret = nullptr;
     }
-    // TODO: TS2664 for an augmentation of a module nobody declares
+    // (Nobody declares it, TS2664: it becomes an ambient module all the same)
     if (!ret) ret = binder_ambient_module(me, cstr_sv(&ref->path), decl->name);
     return ret;
 }
@@ -2799,7 +2799,16 @@ static void merge_augmentations(Binder* me) {
     for (u32 i = 0; i < my augmentation_count; i++) {
         NamespaceDecl* decl = my augmentations[i];
         ModuleRef* ref = decl->module_ref;
-        if (ref->file || ref->failure != MODULE_REF_IS_JS || binder_module_of_ref(me, ref)) continue;
+        if (ref->file || binder_module_of_ref(me, ref)) continue;
+        if (ref->failure != MODULE_REF_IS_JS) {
+            // (tsc's mergeModuleAugmentation: not for one in an ambient context, a declaration file's)
+            Scope const* outer = decl->inner_scope->parent;
+            if (outer && !outer->ambient) {
+                error_ctx_error_d(decl->inner_scope->errs, ref->span, 2664, "Invalid module name in augmentation, module '",
+                    ref->path, "' cannot be found.");
+            }
+            continue;
+        }
         error_ctx_error_d(decl->inner_scope->errs, ref->span, 2665, "Invalid module name in augmentation. Module '",
             ref->path, "' resolves to an untyped module at '", ref->resolved_path, "', which cannot be augmented.");
     }
