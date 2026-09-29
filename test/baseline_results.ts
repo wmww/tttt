@@ -13251,7 +13251,7 @@ const baselines = {
         types: true,
     },
     'exportStarFromEmptyModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

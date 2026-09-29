@@ -235,6 +235,13 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         }
     }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
+    // `export * from "./script"` (tsc's checkExportDeclaration: resolveExternalModuleName; aliases say it themselves)
+    if (my main.tag == PORT_REEXPORT_SPLAT && my module_ref && my module_ref->file && !my jsdoc && !my wrong_context &&
+        !binder_module_of_ref(current_checker->binder, my module_ref)
+    ) {
+        error_ctx_error_d(errs, my module_ref->span, 2306, "File '", source_file_display_path(my module_ref->file),
+            "' is not a module.");
+    }
     // tsc's checkExternalImportOrExportDeclaration
     if (my in_ambient_module && my module_ref && !my jsdoc && module_name_is_relative(cstr_sv(&my target_path))) {
         error_ctx_error_d(errs, span_with_semicolon(span), 2439, "Import or export declaration in an ambient module "
