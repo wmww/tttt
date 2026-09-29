@@ -1226,6 +1226,13 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 error_ctx_grammar_error_d(errs, my labeled.name, 1114, "Duplicate label '", my labeled.name.sv, "'.");
                 break;
             }
+            // tsc's binder (checkStrictModeLabeledStatement): no label on a declaration in strict mode code from ES2015 on
+            Statement const* body = my labeled.body;
+            if (names->strict && compiler_options()->target >= SCRIPT_TARGET_ES2015 &&
+                (statement_declares_name(body->tag) || body->tag == STATEMENT_IMPORT_EXPORT)
+            ) {
+                error_ctx_error_d(errs, my labeled.name, 1344, "'A label is not allowed here.");
+            }
             FlowNode* post = flow_new_branch_label(flow);
             FlowActiveLabel label = { .next = flow->active_labels, .name = my labeled.name, .break_target = post };
             flow->active_labels = &label;
