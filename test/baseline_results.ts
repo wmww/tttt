@@ -5338,12 +5338,12 @@ const baselines = {
     'computedPropertiesInDestructuring1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertiesInDestructuring1_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertiesInDestructuring2': {
         errors: true,
@@ -5358,7 +5358,7 @@ const baselines = {
     'computedPropertiesNarrowed': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertiesTransformedInOtherwiseNonTSClasses': {
         errors: true,
@@ -33108,7 +33108,7 @@ const baselines = {
     'useBeforeDeclaration_propertyAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useBeforeDeclaration_superClass': {
         errors: true,

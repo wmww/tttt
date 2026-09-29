@@ -3063,12 +3063,17 @@ Ty const* ty_object_literal_of(
         words_push(&words, props[i].flags | (u64)props[i].own << 32);
         words_push(&words, (u64)(uintptr_t)props[i].name_span.sv.buf);
         words_push(&words, props[i].type ? props[i].type->id : (u64)(uintptr_t)props[i].accessor);
+        // (How the name prints, and an accessor pair's setter)
+        words_push(&words, props[i].name_form | (props[i].name_type ? (u64)props[i].name_type->id << 8 : 0));
+        if (props[i].setter) words_push(&words, (u64)(uintptr_t)props[i].setter);
     }
     for (u32 i = 0; i < index_count; i++) {
         words_push(&words, 3);
         words_push(&words, index[i].key->id);
         words_push(&words, index[i].value->id);
         words_push(&words, (u64)(uintptr_t)index[i].param_name << 1 | index[i].readonly);
+        // (The computed members it comes from print: `{ [k]: T }` of one literal isn't another's)
+        for (u32 j = 0; j < index[i].component_count; j++) words_push(&words, (u64)(uintptr_t)index[i].components[j].name);
     }
     Ty const* ret = intern_get(&my links, words.data, words.len);
     bool js = kind & OBJECT_JS;
