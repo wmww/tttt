@@ -60646,7 +60646,7 @@ const baselines = {
         types: true,
     },
     'sourceFileMergeWithFunction': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

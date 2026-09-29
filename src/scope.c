@@ -2933,6 +2933,8 @@ void binder_link(Binder* me) {
         if (!(symbol->flags & SYMBOL_ALIAS) || !symbol->alias->scope) continue;
         Symbol* target = symbol_resolve_alias(symbol);
         if (!symbol->alias->item || !target || target->is_placeholder) continue;
+        // (A UMD global, `export as namespace foo`, isn't one tsc's checkAliasSymbol checks)
+        if (symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE) continue;
         // In tsc an exported declaration also has a local symbol, which an import of the same name conflicts with
         u32 local_flags = symbol->flags;
         Symbol const* container = symbol->alias->scope->container;
