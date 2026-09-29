@@ -189,6 +189,7 @@ SourceFile const* program_set_config_file(Program* me, csview path) {
     }
     my config_source = c_new(SourceFile, source_file_make(cstr_from_sv(path), contents));
     my config_source->is_json = true;
+    my config_source->is_config = true;
     my config_source->unchecked = true;
     if (!json_parse(cstr_sv(&my config_source->contents), &my config_json)) my config_json = (JsonValue){0};
     return my config_source;

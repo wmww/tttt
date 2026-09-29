@@ -27556,7 +27556,7 @@ const baselines = {
         types: true,
     },
     'resolutionCandidateFromPackageJsonField2(moduleresolution=bundler)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
