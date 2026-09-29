@@ -35,5 +35,7 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    the `tsc-src` corpus, `-b` perf, corpora to zero with typescript-eslint as the second corpus). Measured: `-p` on
    TypeScript's sub-projects today gives 66 mechanism errors + 11 real checker bugs; `tsc -b src` is clean, 15.6 s.
    Oracle: scenarios mined from tsc's tsbuild/tsc baselines. Execution is for the next insights to schedule.
-10. **Triage.**
+10. Done 2026-09-29: triage (four Opus sub-agents, one per triage.md group, all items fixed or routed; bugs/*.md
+    pruned of ~60 passing tests): suite 12318 -> 12354, 0 lost, corpora unchanged (zod-root 55), instructions
+    +0.1..0.35% (xstate +0.8%: tuple `this` members and per-source reverse mapped types, both tsc's behaviour).
 11. **Insights.**
