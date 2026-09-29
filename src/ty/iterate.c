@@ -492,6 +492,77 @@ static void suggest_await(Error* error, Span span, bool maybe_missing_await) {
     if (maybe_missing_await) error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
 }
 
+// Why the iterator a `[Symbol.iterator]()` returns isn't one, as related information of the not-iterable error (tsc's
+// getIterationTypesOfMethod with an errorOutputContainer): only a missing `next` method makes it none
+static void explain_not_iterator(Checker* me, Ty const* ty, bool async, Span span, Error* error) {
+    if (ty->flags & TYF_ANY) return;
+    if (ty_iteration_types_of_iterator(me, ty, async)) return;
+    if (ty->kind == TY_REFERENCE) {
+        IterationState const* state = iteration_state(me);
+        for (u32 g = 0; g < IG_COUNT; g++) {
+            if (is_reference_to(state, ty, (IterationGlobal)g)) return;
+        }
+    }
+    error_add_related_d(error, span, async ? 2519 : 2489,
+        async ? "An async iterator must have a 'next()' method." : "An iterator must have a 'next()' method.");
+}
+
+// A relation error as one related message, its chain on indented lines (tsc's flattenDiagnosticMessageText)
+static void add_related_relation(Checker* me, Error* error, Ty const* source, Ty const* target, Span span) {
+    VecTyReportLine lines = {0};
+    ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+    cstr message = cstr_null;
+    u32 depth = 0;
+    for_each (line, vec_ty_report_line, &lines) {
+        if (line->related) continue;
+        if (depth) cstr_append_d(&message, DEFAULT_DISPLAY, "\r\n", repeated_d("  ", depth));
+        cstr_append_s(&message, line->message);
+        depth++;
+    }
+    vec_ty_report_line_drop(&lines);
+    if (depth) error_add_related_s(error, span, 2322, message);
+    else cstr_drop(&message);
+}
+
+// Why a type that isn't a union isn't iterable, as related information (tsc's getIterationTypesOfIterableSlow with an
+// errorOutputContainer): a `[Symbol.iterator]` whose signatures all take arguments, or an iterator without `next`
+static void explain_not_iterable_with(Checker* me, Ty const* ty, bool async, Span span, Error* error) {
+    IterationState const* state = iteration_state(me);
+    bool optional;
+    Ty const* method = property_type(me, ty, async ? state->async_iterator_name : state->iterator_name, &optional, nullptr);
+    if (!method || optional || (method->flags & TYF_ANY)) return;
+    SigList sigs = {0};
+    call_signatures(me, method, &sigs);
+    TyBuf iterators = {0};
+    for (u32 i = 0; i < sigs.len; i++) {
+        signature_resolve(me, sigs.data[i]);
+        if (sigs.data[i]->min_args == 0) ty_buf_push(&iterators, signature_return_type(me, sigs.data[i]));
+    }
+    bool any_signature = sigs.len > 0;
+    sig_list_drop(&sigs);
+    if (!iterators.len) {
+        // (tsc's checkTypeAssignableTo against the global generic Iterable itself)
+        Ty const* iterable = state->globals[async ? IG_ASYNC_ITERABLE : IG_ITERABLE];
+        if (any_signature && iterable) add_related_relation(me, error, ty, iterable, span);
+    } else {
+        explain_not_iterator(me, ty_intersection(me, iterators.data, iterators.len, nullptr, (TyList){0}), async, span, error);
+    }
+    ty_buf_drop(&iterators);
+}
+
+static void explain_not_iterable(Checker* me, u32 use, Ty const* input, Span span, Error* error) {
+    TyList members = input->kind == TY_UNION ? input->composite.types : (TyList){ .data = &input, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (iterable_types_of(me, member, use) != &no_iteration_types) continue;
+        // (The first member that isn't: tsc's getIterationTypesOfIterable)
+        if (member->flags & TYF_ANY) return;
+        if (use & ITERATION_ALLOWS_ASYNC) explain_not_iterable_with(me, member, true, span, error);
+        if (use & ITERATION_ALLOWS_SYNC) explain_not_iterable_with(me, member, false, span, error);
+        return;
+    }
+}
+
 // tsc's reportTypeNotIterableError: TS2488/TS2504, suggesting `await` for a promise, and for an async iterable in a
 // `for...of` (the `for await` it probably meant)
 static void report_not_iterable(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
@@ -510,6 +581,7 @@ static void report_not_iterable(Checker* me, u32 use, Ty const* input, Span span
         suggest = ty_is_related(me, input, target, TY_RELATION_ASSIGNABLE);
     }
     suggest_await(e, span, suggest);
+    explain_not_iterable(me, use, input, span, e);
 }
 
 Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
