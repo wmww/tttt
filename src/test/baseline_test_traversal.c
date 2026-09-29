@@ -1420,7 +1420,12 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
 // The opening or closing tag name of an element: a value tag is a reference, an intrinsic one is `any` and names a
 // member of JSX.IntrinsicElements (its property, or its index signature: `__index`)
 static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, BaselineTestCase* ctx) {
-    if (name->tag == EXPR_IMPLICIT_ANY || !span_valid(name->inner_span) || !name->inner_span.sv.size) return;
+    if (name->tag == EXPR_IMPLICIT_ANY || !span_valid(name->inner_span)) return;
+    if (!name->inner_span.sv.size) {
+        // A missing name (`<` at the end of the file, a missing closing tag): an error type
+        baseline_test_case_add_type(ctx, name->inner_span, ty_intrinsic(current_checker, TY_ANY));
+        return;
+    }
     if (!jsx_element_is_intrinsic(element)) {
         expr_compile_test_info(name, ctx);
         return;

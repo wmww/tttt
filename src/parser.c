@@ -7788,9 +7788,12 @@ static bool parse_jsx_braced_expr(Parser* p, bool allow_spread, bool* spread, Ex
 static bool parse_jsx_element(Parser* parent, bool in_expression_context, JsxElement const* enclosing,
     bool must_be_unary, const char* top_invalid_pos, Expr* ret);
 
-// tsc's parseJsxAttributes: until `>` or `/`
-static void parse_jsx_attributes(Parser* p, VecJsxAttribute* ret) {
+// tsc's parseJsxAttributes: until `>` or `/`. Returns where the last of them ends (`end`, the tag's name's end, without)
+static const char* parse_jsx_attributes(Parser* p, const char* end, VecJsxAttribute* ret) {
+    bool first = true;
     while (true) {
+        if (!first) end = p->pos;
+        first = false;
         hop_whitespace(p);
         char c = *p->pos;
         if (!c || c == '>' || c == '/') break;
@@ -7856,6 +7859,7 @@ static void parse_jsx_attributes(Parser* p, VecJsxAttribute* ret) {
         attr.span = span_from(a);
         vec_jsx_attribute_push(ret, attr);
     }
+    return end;
 }
 
 static bool jsx_is_line_break(char c) {
@@ -7863,22 +7867,24 @@ static bool jsx_is_line_break(char c) {
 }
 
 // tsc's parseJsxChildren: until `</` (left for the caller) or the end of the file
-static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment);
+// fragment_start: where a fragment's TS17014 starts (its full start in an expression, whitespace before it included)
+static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment, const char* fragment_start);
 
-static void parse_jsx_children(Parser* p, JsxElement* el, bool is_fragment) {
+static void parse_jsx_children(Parser* p, JsxElement* el, bool is_fragment, const char* fragment_start) {
     p->shared->jsx_children_depth++;
-    parse_jsx_children_inner(p, el, is_fragment);
+    parse_jsx_children_inner(p, el, is_fragment, fragment_start);
     p->shared->jsx_children_depth--;
 }
 
-static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment) {
+static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment, const char* fragment_start) {
     while (true) {
         Anchor a = anchor(p);
         char c = *p->pos;
         if (!c) {
             // At the tag that lacks the closing element rather than at the end of the file
             if (is_fragment) {
-                parse_error(p, el->opening_span, 17014, "JSX fragment has no corresponding closing tag.");
+                parse_error(p, span_make(p->shared->source, fragment_start, span_end_ptr(el->opening_span)), 17014,
+                    "JSX fragment has no corresponding closing tag.");
             } else {
                 parse_error(p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
                     "' has no corresponding closing tag.");
@@ -7945,6 +7951,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     if (!hop_char(&p, '<')) return parse_fail(&p);
+    const char* name_full_start = p.pos;
     hop_whitespace(&p);
 
     JsxElement* el = c_new(JsxElement, {
@@ -7956,6 +7963,14 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     VecJsxAttribute attributes = {0};
     if (!is_fragment) {
         parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
+        const char* name_end = p.pos;
+        if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.identifier.name.sv.size) {
+            // A missing name is where the trivia before it starts (tsc's missing node, its TS17008 is there)
+            el->tag_name = expr_identifier((IdentifierExpr){
+                .name = span_make(p.shared->source, name_full_start, name_full_start),
+            });
+            name_end = name_full_start;
+        }
         hop_whitespace(&p);
         attributes_a = anchor(&p);
         if (!p.shared->source->is_js && *p.pos == '<' && p.pos[1] != '/') {
@@ -7988,14 +8003,20 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 if (hop_char(&p, '>')) break;
                 el->type_args_trailing_comma = span_null;
             }
+            name_end = p.pos;
             hop_whitespace(&p);
             attributes_a = anchor(&p);
         }
-        parse_jsx_attributes(&p, &attributes);
+        const char* attributes_end = parse_jsx_attributes(&p, name_end, &attributes);
         if (!hop_char(&p, '>')) {
-            if (!hop_char(&p, '/')) parse_error(&p, span_from_token(&p), 1005, "'/' expected.");
+            bool slash = hop_char(&p, '/');
+            if (!slash) parse_error(&p, span_from_token(&p), 1005, "'/' expected.");
             hop_whitespace(&p);
-            if (!hop_char(&p, '>')) parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
+            if (!hop_char(&p, '>')) {
+                parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
+                // Nothing of the tag's end: the element ends with its last token (`~< <`)
+                if (!slash) p.pos = attributes_end;
+            }
             el->self_closing = true;
         }
     }
@@ -8008,7 +8029,14 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     el->opening_span = span_from(a);
 
     if (!el->self_closing) {
-        parse_jsx_children(&p, el, is_fragment);
+        // tsc reports at the opening fragment node, whose range starts before the trivia in an expression (a child's
+        // is part of the text before it)
+        const char* fragment_start = a.start;
+        if (in_expression_context) {
+            const char* file_start = cstr_str(&p.shared->source->contents);
+            while (fragment_start > file_start && strchr(" \t\r\n", fragment_start[-1])) fragment_start--;
+        }
+        parse_jsx_children(&p, el, is_fragment, fragment_start);
         JsxChild* last = vec_jsx_child_size(&el->children) ? vec_jsx_child_back_mut(&el->children) : nullptr;
         JsxElement* inner = last && last->expr.tag == EXPR_JSX_ELEMENT ? last->expr.jsx : nullptr;
         if (!is_fragment && inner && !inner->self_closing && span_valid(inner->closing_span) &&
@@ -8025,6 +8053,8 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             Anchor closing_a = anchor(&p);
             if (!hop_start(&p, "</")) {
                 parse_error(&p, span_from_pos(&p), 1005, "'</' expected.");
+                // tsc's parseJsxClosingElement goes on with a missing name
+                if (!is_fragment) el->closing_name = expr_identifier((IdentifierExpr){ .name = span_from_pos(&p) });
             } else if (is_fragment) {
                 hop_whitespace(&p);
                 if (!hop_char(&p, '>')) {
