@@ -172,6 +172,12 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   the JSDoc meaning (checked by `jsdoc_type_typecheck()`), but `*`, `?` and `function(...)` report TS8020 from the
   parser, as a grammar code, without a node of their own. A `function(...)` type's unnamed parameters are `argN` spans
   that don't point into the source; the baseline walk skips them by that pointer test (`type_compile_test_info()`).
+- Top-level await (`parse_file()`): tsc reparses a module's statements that contain an `await` identifier in an await
+  context (reparseTopLevelAwait); tttt parses the whole file again, making the first pass's ranges of such statements
+  await contexts (`ParserShared.await_statements`). Whether the file is a module is guessed by
+  `parsed_file_is_module()`, a copy of program.c's rules (statements, moduleDetection, extensions, react-jsx) made
+  before the program decides; "saw an `await` identifier" is noted by identifier expressions and bindings, also in
+  attempts that backtrack (a spurious reparse only costs time).
 - `CallExpr` argument types recomputed per use; `Value.object` refcount churn; `IdentifierType` could be split into a
   small common case; `CallableType`/`FunctionImpl` are two allocations (PERF comments).
 

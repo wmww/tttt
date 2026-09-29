@@ -61,6 +61,18 @@ typedef struct ParserShared {
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
+    // An `await` outside functions (an identifier, or an operator where it can only be one): a module file is parsed
+    // again with the top level an await context, `top_level_await` (tsc's reparseTopLevelAwait)
+    bool saw_top_level_await;
+    bool top_level_await;
+    // The file's statements with an `await` identifier, [start, end) pairs (malloc'd): the first pass records them,
+    // the second makes them await contexts (tsc reparses just these)
+    const char** await_statements;
+    u32 await_statement_count;
+    u32 await_statement_cursor;
+    // in_async around the function being parsed: its parameters' decorators are in that await context (tsc's
+    // parseParameterWorker, inOuterAwaitContext)
+    bool outer_in_async;
     // Every `module.exports` of a JavaScript file (malloc'd, attempts that backtrack too), and where the first thing
     // that makes it CommonJS starts: SourceFile.module_exports_span is the first of them from there on
     Span* module_exports_accesses;
@@ -132,6 +144,7 @@ static const FunctionFlags function_flags_null = {0};
 
 typedef struct FunctionCtx {
     bool in_async;
+    bool outer_in_async;
     bool in_generator;
     bool in_static_block;
     bool in_parameters;
@@ -146,11 +159,13 @@ void parser_shared_drop(ParserShared* me) {
     }
     vec_error_drop(&my errors);
     vec_error_drop(&my jsdoc_errors);
+    free(my await_statements);
 }
 
 typedef struct ExprCtx {
     bool reject_in_operator;
     bool reject_operators;
+    bool left_hand_side; // tsc's parseLeftHandSideExpressionOrHigher: no unary operators either (a heritage element)
     bool entity_name; // The operand of a `typeof` type: `a.b.c<T>`, no calls and no `[i]` (that is an indexed access type)
     bool decorator; // `@dec [x]`: the `[` starts a computed member name, not an element access (tsc's inDecoratorContext)
     // A conditional's true branch (tsc's allowReturnTypeInArrowFunction false): an arrow function there only has a
@@ -393,6 +408,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret);
 static bool is_reserved_word(csview word);
 static bool is_regex_space(char c);
 static bool parse_binding_identifier(Parser* parent);
+static void note_top_level_await_identifier(Parser* p, csview name);
 static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, u32 code, char const* message);
 static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret);
 static bool parse_binding_element(Parser* parent, Binding* ret);
@@ -1479,6 +1495,14 @@ static bool tok_is_assignment_operator(Tok t) {
     return tok_is_one_of(t, ops);
 }
 
+// tsc's isIdentifier: `yield` in a generator and `await` in an await context are keywords
+static bool tok_is_identifier_here(Parser* p, Tok t) {
+    if (!tok_is_identifier(t)) return false;
+    if (tok_is(t, "await")) return !p->shared->in_async && !p->shared->in_static_block;
+    if (tok_is(t, "yield")) return !p->shared->in_generator;
+    return true;
+}
+
 static bool tok_is_start_of_left_hand_side_expression(Parser* p, Tok t) {
     static const char* const words[] = { "this", "super", "null", "true", "false", "function", "class", "new", nullptr };
     if (tok_is_number(t) || tok_is_string(t) || tok_is_template(t)) return true;
@@ -1490,7 +1514,7 @@ static bool tok_is_start_of_left_hand_side_expression(Parser* p, Tok t) {
         Tok next = tok_next(p, t);
         return tok_is(next, "(") || tok_is(next, "<") || tok_is(next, ".");
     }
-    return tok_is_one_of(t, words) || tok_is_identifier(t);
+    return tok_is_one_of(t, words) || tok_is_identifier_here(p, t);
 }
 
 // tsc's isStartOfExpression
@@ -1688,7 +1712,7 @@ static bool tok_is_heritage_clause_element(Parser* p, Tok t, bool in_error_recov
     if ((tok_is(t, "extends") || tok_is(t, "implements")) && tok_is_start_of_expression(p, tok_next(p, t))) {
         return false;
     }
-    return in_error_recovery ? tok_is_identifier(t) : tok_is_start_of_left_hand_side_expression(p, t);
+    return in_error_recovery ? tok_is_identifier_here(p, t) : tok_is_start_of_left_hand_side_expression(p, t);
 }
 
 // tsc's isListElement with inErrorRecovery (the stricter form, which is all the abort rule asks)
@@ -5064,6 +5088,7 @@ static bool heritage_is_entity_name(Expr const* e) {
 static void parse_heritage_expr(Parser* p, Expr* ret) {
     ExprCtx ctx = expr_ctx_null;
     ctx.reject_operators = true;
+    ctx.left_hand_side = true;
     Anchor a = anchor(p);
     expect_expr(p, ctx, ret);
     if (ret->tag == EXPR_GENERIC_PARAMS || !p->shared->source->is_js) return;
@@ -5747,8 +5772,9 @@ drop_and_fail:
 // Where an `await` here is (the resolve walk reports what isn't allowed). A class `static {}` block is its own error
 static AwaitPlace parser_await_place(Parser const* p) {
     if (p->shared->in_static_block) return AWAIT_IN_STATIC_BLOCK;
-    if (p->shared->in_async) return AWAIT_ALLOWED;
-    return p->shared->function_depth > 0 ? AWAIT_IN_FUNCTION : AWAIT_AT_TOP_LEVEL;
+    // (tsc: an await expression in an await context has nothing to check, one the first pass made is checked)
+    if (p->shared->function_depth == 0) return p->shared->in_async ? AWAIT_ALLOWED : AWAIT_AT_TOP_LEVEL;
+    return p->shared->in_async ? AWAIT_ALLOWED : AWAIT_IN_FUNCTION;
 }
 
 // Call before parsing a function's arguments and body, and function_ctx_leave() after (on success and failure)
@@ -5756,7 +5782,9 @@ static FunctionCtx function_ctx_enter(Parser* p, FunctionFlags flags) {
     FunctionCtx saved = {
         .in_async = p->shared->in_async, .in_generator = p->shared->in_generator,
         .in_static_block = p->shared->in_static_block, .in_parameters = p->shared->in_parameters,
+        .outer_in_async = p->shared->outer_in_async,
     };
+    p->shared->outer_in_async = p->shared->in_async;
     p->shared->in_static_block = false;
     p->shared->in_parameters = false;
     p->shared->in_async = flags.is_async;
@@ -5770,6 +5798,7 @@ static void function_ctx_leave(Parser* p, FunctionCtx saved) {
     p->shared->in_generator = saved.in_generator;
     p->shared->in_static_block = saved.in_static_block;
     p->shared->in_parameters = saved.in_parameters;
+    p->shared->outer_in_async = saved.outer_in_async;
     p->shared->function_depth--;
 }
 
@@ -7733,12 +7762,10 @@ static bool await_is_operator(Parser* parent) {
     while (*c == ' ' || *c == '\t') {
         c++;
     }
-    if (identifier_char_size(c, true) || is_number_start_char(*c) || *c == '"' || *c == '\'' || *c == '`') {
-        return true;
-    }
-    // At the top level an operand can start with anything that can't continue an expression that began with an
-    // identifier called await
-    return parent->shared->function_depth == 0 && (*c == '(' || *c == '[' || *c == '{' || *c == '!' || *c == '~');
+    // (tsc's isAwaitExpression: an identifier, keyword or literal on the same line. In a module's top level every
+    // `await` is an operator, see ParserShared.top_level_await)
+    // (Not a template: `await \`\`` is a tagged template until a module reparses it, topLevelAwait.1)
+    return identifier_char_size(c, true) || is_number_start_char(*c) || *c == '"' || *c == '\'';
 }
 
 // tsc's isYieldExpression outside a yield context: `yield` followed by an identifier, keyword or literal on the same line
@@ -7809,13 +7836,6 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         parse_error(&p, op_span, 2524, "'await' expressions cannot be used in a parameter initializer.");
     }
     AwaitPlace await_place = op == UNARY_OP_AWAIT && !p.shared->in_parameters ? parser_await_place(&p) : AWAIT_ALLOWED;
-    // tsc reads a top-level `await (x)` as a call of `await`, which a module reparses as an expression in an await
-    // context (reparseTopLevelAwait): no grammar errors. `await x` is an await expression from the start
-    char c = *p.pos;
-    if (await_place == AWAIT_AT_TOP_LEVEL && !(identifier_char_size(p.pos, true) || is_number_start_char(c) || c == '"' ||
-        c == '\'' || c == '`')) {
-        await_place = AWAIT_ALLOWED;
-    }
 
     Expr expr;
     ctx.min_precedence = unary_op_get_precedence(op);
@@ -8643,6 +8663,13 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
     }
     Parser p = parser(parent);
     *ret = vec_expr_init();
+    bool in_async = p.shared->in_async, in_parameters = p.shared->in_parameters;
+    // (A parameter's decorators are in the function's surroundings: their `await`s are the outer function's)
+    if (in_parameters) {
+        p.shared->in_async = p.shared->outer_in_async;
+        p.shared->function_depth--;
+    }
+    p.shared->in_parameters = false; // (A parameter's decorator is no initializer: no TS2524)
     while (hop_char(&p, '@')) {
         hop_whitespace(&p);
         // Member accesses and calls, anything more has to be in parentheses
@@ -8650,11 +8677,21 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
         ctx.reject_operators = true;
         ctx.decorator = true;
         Expr expr;
-        if (expect_expr(&p, ctx, &expr)) {
+        if (p.shared->in_async && starts_with_followed_by_word_break(&p, "await")) {
+            // tsc's parseDecoratorExpression: `@await` in an await context is a missing identifier, then the rest
+            parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 5), 1109, "Expression expected.");
+            expr = expr_implicit_any(span_make(p.shared->source, p.pos, p.pos));
+            p.pos += 5;
+            parse_expr_right_side(&p, ctx, &expr);
+            vec_expr_push(ret, expr);
+        } else if (expect_expr(&p, ctx, &expr)) {
             vec_expr_push(ret, expr);
         }
         hop_whitespace(&p);
     }
+    p.shared->in_async = in_async;
+    p.shared->in_parameters = in_parameters;
+    if (in_parameters) p.shared->function_depth++;
     return parse_success(&p);
 }
 
@@ -8692,6 +8729,7 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
     if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
         return parse_fail(&p);
     }
+    note_top_level_await_identifier(&p, name.sv);
     *ret = (IdentifierExpr){ .name = name };
 
     return parse_success(&p);
@@ -9352,7 +9390,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             call.args = vec_expr_init();
         }
         *ret = expr_call(span_from(a), c_new(CallExpr, call));
-    } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v') &&
+    } else if ((!word || c == 'd' || c == 'a' || c == 'y' || c == 't' || c == 'v') && !ctx.left_hand_side &&
         parse_left_unary_op_expr(&p, ctx, ret)
     ) {
     } else if (c == 'f' && parse_function_keyword_function(&p, false, false, &parsed.function)) {
@@ -10243,6 +10281,11 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
 }
 
 // tsc's isBindingIdentifier: an identifier that isn't a reserved word (`yield`/`await` are the caller's business)
+// An `await` identifier outside functions (tsc's ContainsPossibleTopLevelAwait), for the top-level await reparse
+static void note_top_level_await_identifier(Parser* p, csview name) {
+    if (name.size == 5 && p->shared->function_depth == 0 && !memcmp(name.buf, "await", 5)) p->shared->saw_top_level_await = true;
+}
+
 static bool parse_binding_identifier(Parser* parent) {
     const char* start = parent->pos;
     if (!parse_identifier(parent, nullptr)) return false;
@@ -10250,6 +10293,7 @@ static bool parse_binding_identifier(Parser* parent) {
         parent->pos = start;
         return false;
     }
+    note_top_level_await_identifier(parent, csview_from_range(start, parent->pos));
     return true;
 }
 
@@ -11294,10 +11338,14 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     const char* jsdoc_from = list_start;
 
     u32 saved_context = list_enter(&p, ctx);
+    // (tsc's reparseTopLevelAwait parses the statements one by one, outside its list: nothing inside aborts at a token
+    // that could start a statement)
+    if (ctx == PARSING_SOURCE_ELEMENTS && p.shared->top_level_await) p.shared->parsing_context = saved_context;
     ModifiedParent outer_parent = p.shared->statement_parent;
     p.shared->statement_parent = !toplevel ? MODIFIED_IN_OTHER :
         ctx == PARSING_SOURCE_ELEMENTS ? MODIFIED_IN_SOURCE_FILE :
         MODIFIED_IN_MODULE_BLOCK;
+    bool file_level = ctx == PARSING_SOURCE_ELEMENTS;
     while(
         *p.pos &&
         (ctx == PARSING_SOURCE_ELEMENTS || *p.pos != '}') &&
@@ -11307,6 +11355,23 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         ))
     ) {
         Statement statement = {0};
+        const char* statement_start = p.pos;
+        bool outer_saw_await = p.shared->saw_top_level_await;
+        if (file_level) {
+            if (p.shared->top_level_await) {
+                // (In one of the first pass's statements with an `await` identifier)
+                ParserShared* sh = p.shared;
+                while (sh->await_statement_cursor < sh->await_statement_count &&
+                    sh->await_statements[2 * sh->await_statement_cursor + 1] <= p.pos
+                ) {
+                    sh->await_statement_cursor++;
+                }
+                sh->in_async = sh->await_statement_cursor < sh->await_statement_count &&
+                    sh->await_statements[2 * sh->await_statement_cursor] <= p.pos;
+            } else {
+                p.shared->saw_top_level_await = false;
+            }
+        }
         if (*p.pos == ';') {
             // tsc's EmptyStatement
             statement = statement_noop;
@@ -11335,6 +11400,17 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             p.pos++;
         } else if (list_abort_or_skip(&p, ctx)) {
             break;
+        }
+        if (file_level && !p.shared->top_level_await) {
+            ParserShared* sh = p.shared;
+            if (sh->saw_top_level_await && p.pos > statement_start) {
+                sh->await_statements = realloc(sh->await_statements, sizeof(char*) * 2 * (sh->await_statement_count + 1));
+                panic_if(!sh->await_statements, "out of memory");
+                sh->await_statements[2 * sh->await_statement_count] = statement_start;
+                sh->await_statements[2 * sh->await_statement_count + 1] = p.pos;
+                sh->await_statement_count++;
+            }
+            sh->saw_top_level_await |= outer_saw_await;
         }
         hop_whitespace(&p); // TODO: is this needed?
     }
@@ -12411,12 +12487,57 @@ static void json_check_value(Parser* p, Expr const* value) {
         "Property value can only be string literal, numeric literal, 'true', 'false', 'null', object literal or array literal.");
 }
 
+// Whether the file just parsed is a module, as far as the parser can tell (what the program decides later: tsc's
+// externalModuleIndicator and moduleDetection, see program.c)
+static bool parsed_file_is_module(SourceFile const* source, ParserShared const* shared) {
+    for_each (i, vec_statement, &source->ast.statements) {
+        switch (i->tag) {
+            case STATEMENT_IMPORT_EXPORT: {
+                PortStatement const* port = i->import_export;
+                if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import || port->main.is_require) && !port->jsdoc) {
+                    return true;
+                }
+            }   break;
+            case STATEMENT_EXPORT_DEFAULT_EXPR: return true;
+            case STATEMENT_DECL_NAMESPACE: case STATEMENT_DECL_VARIABLE: case STATEMENT_DECL_FUNCTION:
+            case STATEMENT_DECL_ENUM: case STATEMENT_DECL_CLASS: case STATEMENT_DECL_TYPE: case STATEMENT_DECL_INTERFACE:
+                if (i->decl.props.exported) return true;
+                break;
+            default: break;
+        }
+    }
+    CompilerOptions const* options = compiler_options();
+    if (options->module_detection == MODULE_DETECTION_FORCE) return true;
+    if (options->module_detection == MODULE_DETECTION_LEGACY) return shared->saw_import_meta;
+    csview name = cstr_sv(&source->canonical_path);
+    return shared->saw_import_meta || source->is_esm || csview_ends_with(name, ".mts") || csview_ends_with(name, ".cts") ||
+        csview_ends_with(name, ".mjs") || csview_ends_with(name, ".cjs") ||
+        (shared->saw_jsx && (options->jsx == JSX_REACT_JSX || options->jsx == JSX_REACT_JSXDEV));
+}
+
+static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, const char*** await_statements, u32* await_count);
+
 void parse_file(SourceFile* source, ErrorCtx* errs) {
+    const char** await_statements = nullptr;
+    u32 await_count = 0;
+    if (!parse_file_pass(source, errs, false, &await_statements, &await_count)) {
+        parse_file_pass(source, errs, true, &await_statements, &await_count);
+    }
+    free(await_statements);
+}
+
+// False if the file has to be parsed again with top_level_await (nothing of this pass is kept then, but the
+// statements to parse as await contexts)
+static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_await, const char*** await_statements, u32* await_count) {
+    u32 module_refs_before = source->module_ref_count;
     ParserShared shared = {
         .source = source,
         .fail_cache_start = source_file_start(source),
         .errors = vec_error_init(),
         .in_ambient = source->is_declaration,
+        .top_level_await = top_level_await,
+        .await_statements = top_level_await ? *await_statements : nullptr,
+        .await_statement_count = top_level_await ? *await_count : 0,
     };
 
     Parser p = {
@@ -12460,6 +12581,26 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
     if (shared.unterminated_comment) {
         const char* end = source_file_start(source) + cstr_size(&source->contents);
         parse_error(&p, span_make(source, end, end), 1010, "'*/' expected.");
+    }
+
+    // tsc's reparseTopLevelAwait, for the whole file rather than the statements with an `await`
+    if (!top_level_await && shared.await_statement_count && !source->is_declaration && !source->is_json &&
+        parsed_file_is_module(source, &shared)
+    ) {
+        *await_statements = shared.await_statements;
+        *await_count = shared.await_statement_count;
+        shared.await_statements = nullptr;
+        vec_statement_drop(&source->ast.statements);
+        source->ast.statements = vec_statement_init();
+        for (u32 i = module_refs_before; i < source->module_ref_count; i++) {
+            cstr_drop(&source->module_refs[i]->path);
+            free(source->module_refs[i]);
+        }
+        source->module_ref_count = module_refs_before;
+        free(shared.exports_aliases);
+        free(shared.module_exports_accesses);
+        parser_shared_drop(&shared);
+        return false;
     }
 
     // Grammar errors tsc's checker reports (checkGrammarModifiers, checkGrammarIndexSignatureParameters,
@@ -12509,5 +12650,7 @@ void parse_file(SourceFile* source, ErrorCtx* errs) {
         *error = (Error){0};
     }
 
+    if (top_level_await) shared.await_statements = nullptr; // (parse_file()'s)
     parser_shared_drop(&shared);
+    return true;
 }
