@@ -33433,7 +33433,7 @@ const baselines = {
     'wideningWithTopLevelTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'withExportDecl': {
         errors: true,

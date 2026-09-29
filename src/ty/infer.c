@@ -76,15 +76,24 @@ static void candidates_push(Ty const*** list, u32* len, Ty const* candidate) {
     (*list)[(*len)++] = candidate;
 }
 
-// tsc's isTypeParameterAtTopLevel, without the conditional type case
-static bool is_param_at_top_level(Ty const* type, Ty const* param) {
+// tsc's isTypeParameterAtTopLevel: a union or intersection member, or a branch of a conditional type (up to three
+// deep: `C1<C2<C3<T>>>` with each `T extends unknown ? T | undefined : never`)
+static bool param_at_top_level(Checker* me, Ty const* type, Ty const* param, u32 depth) {
     if (type == param) return true;
     if (type->kind == TY_UNION || type->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < type->composite.types.len; i++) {
-            if (is_param_at_top_level(type->composite.types.data[i], param)) return true;
+            if (param_at_top_level(me, type->composite.types.data[i], param, depth)) return true;
         }
     }
+    if (type->kind == TY_CONDITIONAL && depth < 3) {
+        return param_at_top_level(me, ty_conditional_branch(me, type, true), param, depth + 1) ||
+            param_at_top_level(me, ty_conditional_branch(me, type, false), param, depth + 1);
+    }
     return false;
+}
+
+static bool is_param_at_top_level(Checker* me, Ty const* type, Ty const* param) {
+    return param_at_top_level(me, type, param, 0);
 }
 
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target);
@@ -1176,7 +1185,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 candidates_push(&param->co, &param->co_len, source);
             }
             if (!(inf->priority & INFER_PRIORITY_RETURN_TYPE) && param->top_level && inf->original_target &&
-                !is_param_at_top_level(inf->original_target, target)
+                !is_param_at_top_level(me, inf->original_target, target)
             ) {
                 param->top_level = false;
             }
@@ -1602,7 +1611,7 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     for (u32 i = 0; i < params.len; i++) {
         // tsc: literals widen unless the type parameter is at the top level of the return type and hasn't been fixed
         // (or the constraint is primitive, see inference_call_result())
-        bool keep_literals = !fixing && !inf->params[i].fixed && is_param_at_top_level(return_type, params.data[i]);
+        bool keep_literals = !fixing && !inf->params[i].fixed && is_param_at_top_level(me, return_type, params.data[i]);
         results[i] = inference_call_result(me, inf, i, keep_literals);
         inferred[i] = results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
