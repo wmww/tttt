@@ -8648,7 +8648,7 @@ const baselines = {
     'declarationEmitSpreadStringlyKeyedEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitStringEnumUsedInNonlocalSpread': {
         errors: true,
@@ -65258,12 +65258,12 @@ const baselines = {
     'objectSpreadComputedProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadIndexSignature': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadNegative': {
         errors: false,

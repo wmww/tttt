@@ -2273,8 +2273,10 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             .name_is_value = origin->decl->name_is_value,
         });
     }
+    // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)
     for (u32 j = 0; j < members->index_count && out->index_count < c_arraylen(out->index); j++) {
-        out->index[out->index_count++] = members->index[j];
+        out->index[out->index_count] = members->index[j];
+        out->index[out->index_count++].readonly = false;
     }
 }
 
@@ -2428,7 +2430,9 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
             return;
         }
         if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return;
-        if (spreads_into_nothing(me, object)) return;
+        // (An empty object still makes what was spread a new object rather than tsc's emptyObjectType: index signatures
+        // written after it are the ones both have, none)
+        if (spreads_into_nothing(me, object) && !(object->flags & TYF_OBJECT)) return;
         LiteralBuilder right = { .empty_object = false };
         spread_props_of(me, apparent, partial != nullptr, &right);
         spread_acc_props(me, acc, &right);
