@@ -22768,7 +22768,7 @@ const baselines = {
     'narrowByEquality': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowByInstanceof': {
         errors: true,
@@ -22928,7 +22928,7 @@ const baselines = {
     'narrowingTruthyObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingTypeofDiscriminant': {
         errors: true,
@@ -37953,7 +37953,7 @@ const baselines = {
     'controlFlowTypeofObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowWhileStatement': {
         errors: true,

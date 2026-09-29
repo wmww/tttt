@@ -187,6 +187,13 @@ static Ty const* add_evolving_element(Checker* me, Ty const* evolving, Expr cons
     return evolving_array(me, ty_union(me, types, 2, nullptr, (TyList){0}));
 }
 
+// tsc's recombineUnknownType: `{} | null | undefined` made of the `{}` narrowing `unknown` makes is `unknown` again
+static Ty const* recombine_unknown(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION || ty->composite.types.len != 3 || !compiler_options()->strict_null_checks) return ty;
+    Ty const* parts[3] = { ty_unknown_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
+    return ty == ty_union(me, parts, 3, nullptr, (TyList){0}) ? ty_intrinsic(me, TY_UNKNOWN_) : ty;
+}
+
 // tsc's getUnionOrEvolvingArrayType: evolving arrays (and nevers) join into an evolving array, anything else makes
 // them final
 static Ty const* union_or_evolving(Checker* me, Ty const* const* types, u32 len, bool subtype_reduction) {
@@ -197,7 +204,7 @@ static Ty const* union_or_evolving(Checker* me, Ty const* const* types, u32 len,
         else if (!(types[i]->flags & TYF_NEVER)) all_evolving = false;
     }
     if (!has_evolving) {
-        return subtype_reduction ? ty_union_subtype_reduced(me, types, len) : ty_union(me, types, len, nullptr, (TyList){0});
+        return recombine_unknown(me, subtype_reduction ? ty_union_subtype_reduced(me, types, len) : ty_union(me, types, len, nullptr, (TyList){0}));
     }
     TyBuf mapped = {0};
     for (u32 i = 0; i < len; i++) {
@@ -207,8 +214,8 @@ static Ty const* union_or_evolving(Checker* me, Ty const* const* types, u32 len,
     if (all_evolving) {
         ret = evolving_array(me, ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0}));
     } else {
-        ret = subtype_reduction ? ty_union_subtype_reduced(me, mapped.data, mapped.len) :
-            ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0});
+        ret = recombine_unknown(me, subtype_reduction ? ty_union_subtype_reduced(me, mapped.data, mapped.len) :
+            ty_union(me, mapped.data, mapped.len, nullptr, (TyList){0}));
     }
     ty_buf_drop(&mapped);
     return ret;
@@ -2599,7 +2606,8 @@ static void push_if_unique(TyBuf* buf, Ty const* ty) {
 static Ty const* union_at_label(FlowQuery* q, TyBuf const* types, bool subtype_reduction) {
     Checker* me = q->me;
     Ty const* result = is_auto(me, q->declared) ? union_or_evolving(me, types->data, types->len, subtype_reduction) :
-        subtype_reduction ? ty_union_subtype_reduced(me, types->data, types->len) : ty_union(me, types->data, types->len, nullptr, (TyList){0});
+        recombine_unknown(me, subtype_reduction ? ty_union_subtype_reduced(me, types->data, types->len) :
+            ty_union(me, types->data, types->len, nullptr, (TyList){0}));
     // The same union as the declared type goes by the declared type's name
     Ty const* declared = q->declared;
     if (result != declared && result->kind == TY_UNION && declared->kind == TY_UNION &&
@@ -2679,7 +2687,7 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
         if (entry->flow == flow && entry->key == key && entry->types->len) {
             my flow_incomplete_seen++;
             Ty const* so_far = is_auto(me, q->declared) ? union_or_evolving(me, entry->types->data, entry->types->len, false) :
-                ty_union(me, entry->types->data, entry->types->len, nullptr, (TyList){0});
+                recombine_unknown(me, ty_union(me, entry->types->data, entry->types->len, nullptr, (TyList){0}));
             return (FlowType){ so_far, true };
         }
     }
