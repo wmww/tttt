@@ -421,7 +421,7 @@ static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, E
     if (compiler_options()->allow_umd_global_access) return;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind != SYMBOL_DECL_ALIAS || ((PortItem const*)decl->node)->tag != PORT_EXPORT_AS_NAMESPACE) return;
+        if (decl->kind != SYMBOL_DECL_ALIAS || !decl->node || ((PortItem const*)decl->node)->tag != PORT_EXPORT_AS_NAMESPACE) return;
     }
     error_ctx_error_d(errs, my name, 2686, "'", my name, "' refers to a UMD global, but the current file is a module. ",
         "Consider adding an import instead.");
@@ -1806,8 +1806,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             break;
 
         case EXPR_CLASS_DECL: {
-            Scope* class_name_scope = scope_new(names, SCOPE_BLOCK);
-            class_decl_add_names(my class_decl, class_name_scope, DECL_EXPORTED_NO, false);
+            Scope* class_name_scope = my class_decl->name_scope;
+            if (class_name_scope) scope_reparent(class_name_scope, names);
+            if (!class_name_scope) {
+                class_name_scope = scope_new(names, SCOPE_BLOCK);
+                class_decl_add_names(my class_decl, class_name_scope, DECL_EXPORTED_NO, false);
+            }
             class_decl_lookup_names(my class_decl, class_name_scope, errs);
         }   break;
 

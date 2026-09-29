@@ -134,6 +134,9 @@ typedef struct ClassDecl {
     // A JavaScript class expression that initializes a variable with expandos (`var C = class {}; C.x = 1`,
     // scope_add_expandos()): the variable, whose exports are static members of this class
     Symbol const* expando_host;
+    // A JavaScript class expression that `exports.C = class {}` aliases: the scope with its name, made (with the
+    // class's symbol) by the declare step, which the resolve walk takes instead of making one (scope_add_commonjs_export())
+    struct Scope* name_scope;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

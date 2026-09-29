@@ -313,6 +313,17 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     return ret;
 }
 
+void scope_reparent(Scope* me, Scope* parent) {
+    my parent = parent;
+    my errs = parent->errs;
+    my ambient = parent->ambient;
+    my flow = parent->flow;
+    my file = parent->file;
+    my strict = parent->strict;
+    my generics = parent->generics;
+    if (my kind == SCOPE_BLOCK) my function = parent->function;
+}
+
 bool block_has_use_strict(Block const* block) {
     for_each (i, vec_statement, &block->statements) {
         if (i->tag != STATEMENT_EXPR || i->expr.tag != EXPR_LITERAL || i->expr.literal.tag != VALUE_STRING ||
@@ -1334,10 +1345,14 @@ void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, FunctionImpl const* 
 
 static void declare_commonjs_export(
     Scope* me, csview name, Span name_span, Expr* value, TypeNode const* jsdoc_type, Span left, Span statement,
-    AssignmentDeclKind kind
+    AssignmentDeclKind kind, bool top_level
 ) {
     symbol_ensure_exports(my container);
-    bool alias = value->tag == EXPR_IDENTIFIER && !value->identifier.keyword;
+    // (A class expression is an alias of its class, tsc's isAliasableExpression: at the top level, where the declare
+    // step can make the class's symbol in the scope the resolve walk would)
+    bool class_alias = value->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(value) && top_level &&
+        kind == ASSIGNMENT_DECL_PROPERTY && !jsdoc_type && !csview_equals(name, "export=");
+    bool alias = (value->tag == EXPR_IDENTIFIER && !value->identifier.keyword) || class_alias;
     u32 includes = alias ? SYMBOL_ALIAS : SYMBOL_PROPERTY;
     bool merged;
     Symbol* symbol = declare_symbol(me, my container->exports, name, name_span, includes, 0, false, &merged);
@@ -1351,7 +1366,16 @@ static void declare_commonjs_export(
     if (alias) {
         if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
         symbol->alias->scope = me;
-        symbol->alias->name = value->identifier.name;
+        if (class_alias) {
+            ClassDecl* class_decl = value->class_decl;
+            if (!class_decl->name_scope) {
+                class_decl->name_scope = scope_new(me, SCOPE_BLOCK);
+                class_decl_add_names(class_decl, class_decl->name_scope, DECL_EXPORTED_NO, false);
+            }
+            symbol->alias->class_expr = class_decl;
+        } else {
+            symbol->alias->name = value->identifier.name;
+        }
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = left, .full = statement,
         });
@@ -1372,7 +1396,7 @@ static Expr* rightmost_assigned(Expr* value) {
     return value;
 }
 
-static void add_commonjs_export(Scope* me, Expr* assignment);
+static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level);
 
 // tsc's isExportsOrModuleExportsOrAlias: `exports`, `module.exports`, or a variable of the module initialized with one
 // of them (through assignments: `var a = module.exports = {}`)
@@ -1407,10 +1431,10 @@ static Scope* commonjs_module_scope(Scope* me) {
 }
 
 // `Object.defineProperty(exports, "x", {...})` (tsc's bindObjectDefinePropertyExport): an export declared by the call
-static void add_define_property_export(Scope* me, Expr* call) {
+static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
     Span name;
     if (!expr_is_define_property_call(call, &name) || !expr_is_exports_object(vec_expr_at(&call->call->args, 0))) return;
-    declare_commonjs_export(me, name.sv, name, call, nullptr, call->outer_span, call->outer_span, ASSIGNMENT_DECL_DEFINE_PROPERTY);
+    declare_commonjs_export(me, name.sv, name, call, nullptr, call->outer_span, call->outer_span, ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level);
     call->call->declares = symbol_table_get(my container->exports, name.sv);
 }
 
@@ -1418,14 +1442,14 @@ void scope_add_commonjs_export(Scope* me, Expr* assignment) {
     if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container) return;
     // Every assignment of a chain (`exports = module.exports = C`)
     while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
-        add_commonjs_export(me, assignment);
+        add_commonjs_export(me, assignment, true);
         assignment = &assignment->binary_op->right;
     }
-    add_define_property_export(me, assignment);
+    add_define_property_export(me, assignment, true);
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
-static void add_commonjs_export(Scope* me, Expr* assignment) {
+static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level) {
     BinaryOpExpr* op = assignment->binary_op;
     Span statement = assignment->outer_span;
     Span name = span_null;
@@ -1439,10 +1463,10 @@ static void add_commonjs_export(Scope* me, Expr* assignment) {
             if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || !is_exports_alias(me, object)) break;
             if (span_equals(object->identifier.name, "exports")) break; // (binary_commonjs_declaration()'s)
             left->property->commonjs_export_alias = true;
-            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_PROPERTY);
+            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
         }   break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY:
-            declare_commonjs_export(me, name.sv, name, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY);
+            declare_commonjs_export(me, name.sv, name, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
             break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
@@ -1455,12 +1479,12 @@ static void add_commonjs_export(Scope* me, Expr* assignment) {
                 for_each (i, vec_object_expr_item, &value->object) shorthands &= i->tag == OBJECT_ITEM_SHORTHAND;
                 if (shorthands) {
                     for_each (i, vec_object_expr_item, &value->object) {
-                        declare_commonjs_export(me, i->name_span.sv, i->name_span, &i->value, i->jsdoc_type, i->name_span, i->span, ASSIGNMENT_DECL_PROPERTY);
+                        declare_commonjs_export(me, i->name_span.sv, i->name_span, &i->value, i->jsdoc_type, i->name_span, i->span, ASSIGNMENT_DECL_PROPERTY, top_level);
                     }
                     break;
                 }
             }
-            declare_commonjs_export(me, c_sv("export="), op->left.outer_span, value, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY);
+            declare_commonjs_export(me, c_sv("export="), op->left.outer_span, value, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
         }   break;
     }
 }
@@ -1479,10 +1503,10 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
             if (nested) {
                 Expr* assignment = &statement->expr;
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
-                    add_commonjs_export(module, assignment);
+                    add_commonjs_export(module, assignment, false);
                     assignment = &assignment->binary_op->right;
                 }
-                add_define_property_export(module, assignment);
+                add_define_property_export(module, assignment, false);
             }
             break;
         case STATEMENT_DECL_VARIABLE:
@@ -1492,7 +1516,7 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL &&
                     !expr_is_perenthisized(assignment)
                 ) {
-                    add_commonjs_export(module, assignment);
+                    add_commonjs_export(module, assignment, false);
                     assignment = &assignment->binary_op->right;
                 }
             }
@@ -2203,6 +2227,7 @@ static Symbol* resolve_default_target(Symbol* me, PortItem* item, Symbol* module
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = my alias->scope->errs;
+    if (my alias->class_expr) return my alias->class_expr->symbol;
     if (!item) {
         // `export default x`, TS2304 comes from the expression
         Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);

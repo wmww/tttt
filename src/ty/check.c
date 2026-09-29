@@ -2917,7 +2917,8 @@ static void check_class_used_before_declaration(PropertyExpr const* access, Prop
     while (prop->target) prop = prop->target;
     Symbol const* symbol = prop->decl->symbol;
     ClassDecl const* class_decl = symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
-    if (!class_decl || class_decl->is_ambient || access->qualified_name) return;
+    // (A class declaration: `exports.C = class {}` aliases a class expression)
+    if (!class_decl || class_decl->is_ambient || class_decl->is_expression || access->qualified_name) return;
     Span used = access->prop.inner_span;
     if (!span_valid(used) || class_decl->full_span.source != used.source || !used.source || used.source->is_declaration) return;
     char const* declared_at = span_start_ptr(class_decl->full_span);

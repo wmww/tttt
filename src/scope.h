@@ -185,6 +185,8 @@ typedef struct SymbolAlias {
     Symbol* value_target;
     // An import or re-export of a name its module only exports through `export type *`: that star
     PortItem const* type_only_star;
+    // JavaScript `exports.C = class {}`: the class expression, whose symbol is the target (tsc's isAliasableExpression)
+    struct ClassDecl* class_expr;
 } SymbolAlias;
 
 // What only modules (files and ambient modules) have
@@ -509,6 +511,9 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 cstr symbol_fully_qualified_name(Symbol const* symbol);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
+// A scope made ahead of the resolve walk (ClassDecl.name_scope) takes what scope_new() inherits from where the walk
+// reaches it
+void scope_reparent(Scope* me, Scope* parent);
 Scope* scope_new_file(Binder* binder, SourceFile* file);
 // A scope for the inside of the declaration of `self` (see Scope.self), ambient if it is `declare`d. Only made when
 // unused names are reported or it is `declare`d, returns parent otherwise
