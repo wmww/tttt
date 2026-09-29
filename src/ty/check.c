@@ -1645,6 +1645,8 @@ bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
     return true;
 }
 
+static IndexInfo const* generic_write_index_info(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key);
+
 // Written to, a generic object's index signatures (its constraint's) don't apply: tsc's checkPropertyAccessExpression-
 // OrQualifiedName takes no index info for an assignment to a generic object, checkElementAccess's
 // AccessFlags.NoIndexSignatures leaves only a number one. The index signature that would have been used, else null
@@ -1652,6 +1654,18 @@ IndexInfo const* ty_generic_write_index_info(Checker* me, PropertyExpr const* ac
     if (!access->assignment_target || access->private_class) return nullptr;
     if (object->kind == TY_TYPE_PARAM ? object->param.state->is_this : !ty_is_generic_object(me, object)) return nullptr;
     key = ty_regular(me, key);
+    if (key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) && access->form == PROPERTY_EXPR_BRACKET) {
+        // (tsc's getIndexedAccessType asks every constituent: the first one that would use an index signature)
+        for (u32 i = 0; i < key->composite.types.len; i++) {
+            IndexInfo const* info = generic_write_index_info(me, access, object, key->composite.types.data[i]);
+            if (info) return info;
+        }
+        return nullptr;
+    }
+    return generic_write_index_info(me, access, object, key);
+}
+
+static IndexInfo const* generic_write_index_info(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
     if (ty_is_generic_index(key) || (key->flags & (TYF_ANY | TYF_NEVER | TYF_NULLABLE)) || key->kind == TY_UNION) return nullptr;
     Ty const* apparent = ty_apparent_type(me, object);
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;

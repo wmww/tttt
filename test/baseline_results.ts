@@ -2851,9 +2851,9 @@ const baselines = {
         types: true,
     },
     'cannotIndexGenericWritingError': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cannotInvokeNewOnErrorExpression': {
         errors: true,
