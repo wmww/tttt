@@ -343,6 +343,21 @@ static void note_arguments_reference(Scope const* names) {
 
 // TS1361/TS1362: a value that was imported or exported as a type only (tsc's
 // checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol). Fine in `typeof x` types and ambient contexts
+// A value use of `x` after an `import x = A.B` that resolved to nothing: tsc checks `A.B` as an expression then
+// (markAliasSymbolAsReferenced), which says `A` isn't found as a value either. Once per import, in its own file
+static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope const* names) {
+    Symbol const* symbol = my symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item || !my target->is_placeholder) return;
+    PortItem* item = symbol->alias->item;
+    Scope const* scope = symbol->alias->scope;
+    if (item->tag != PORT_IMPORT_ALIAS || item->value_use_checked || !vec_span_size(&item->alias_path)) return;
+    if (!scope || scope->file != names->file) return;
+    item->value_use_checked = true;
+    Span first = *vec_span_front(&item->alias_path);
+    if (!first.sv.size || scope_get_value(scope, first.sv, nullptr)) return;
+    scope_report_value_not_found(scope, first, false, scope->errs);
+}
+
 static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
     Symbol const* found = my symbol;
     if (!found || !(found->flags & SYMBOL_ALIAS) || found->flags & SYMBOL_VALUE) return;
@@ -560,6 +575,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             return;
         }
         check_type_only_value(me, names, errs);
+        check_unresolved_import_alias_value(me, names);
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
         check_umd_global_use(me, names, errs);

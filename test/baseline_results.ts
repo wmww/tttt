@@ -6051,7 +6051,7 @@ const baselines = {
         types: true,
     },
     'constructorWithIncompleteTypeAnnotation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -8776,7 +8776,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitUnknownImport2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58196,7 +58196,7 @@ const baselines = {
         types: true,
     },
     'parser519458': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

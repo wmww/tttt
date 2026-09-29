@@ -58,6 +58,9 @@ typedef struct PortItem {
     Symbol* symbol; // The alias symbol, set by scope_add_port(). Null for things that aren't aliases (`export *`)
     Symbol* source_symbol; // What source_name resolved to (which may be another alias), used by the tests
     bool jsdoc; // Of an `@import` tag (PortStatement.jsdoc)
+    // PORT_IMPORT_ALIAS: an unresolved `import x = A.B` was used as a value, which checked `A` as a value (tsc's
+    // markAliasSymbolAsReferenced: checkExpressionCached of the module reference)
+    bool value_use_checked;
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
