@@ -210,11 +210,12 @@ static void builder_add_interface_member(
             case INTERFACE_KEY_NAME:
             case INTERFACE_KEY_EXPR: {
                 Atom const* name = nullptr;
+                Ty const* key = nullptr;
                 if (interface_member_is_private_name(i)) break;
                 if (i->key.tag == INTERFACE_KEY_NAME) {
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
-                    Ty const* key = ty_expr_type(me, i->key.expr.ref);
+                    key = ty_expr_type(me, i->key.expr.ref);
                     name = ty_literal_name(me, key);
                     if (!name) break;
                 }
@@ -267,6 +268,7 @@ static void builder_add_interface_member(
                 if (is_method) prop->flags |= PROP_METHOD;
                 prop->decl->name_span = i->key.span;
                 prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
+                if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr.ref, key, false);
                 prop_add_decl_spans(me, prop, i->declarations.data, (u32)vec_span_size(&i->declarations));
                 builder_push(builder, props, prop);
             }   break;
@@ -687,10 +689,12 @@ static Prop* builder_add_class_prop(
 ) {
     Expr const* computed_key = item->tag == CLASS_ITEM_FIELD ? item->field.computed_key : item->method.computed_key;
     Atom const* name;
+    Ty const* key = nullptr;
     if (computed_key) {
         // Only a literal or unique symbol key names a member (tsc's late bound names), anything else is left out
         bool is_number = false;
-        name = ty_property_name_of_key(me, ty_expr_type(me, computed_key), &is_number);
+        key = ty_expr_type(me, computed_key);
+        name = ty_property_name_of_key(me, key, &is_number);
         if (!name) return nullptr;
     } else if (span_valid(class_item_private_name(item)) && parent) {
         name = ty_private_name(me, parent, cstr_sv(name_string));
@@ -705,6 +709,7 @@ static Prop* builder_add_class_prop(
     prop->decl->ctx = ctx;
     prop->decl->name_span = item->tag == CLASS_ITEM_FIELD ? item->field.name_span : item->method.name_span;
     prop->decl->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
+    if (computed_key) prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, computed_key, key, false);
     prop->flags = access_prop_flags(item->access) | (class_item_is_static((ClassItem*)item) ? PROP_STATIC : 0);
     prop_add_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
@@ -1794,6 +1799,7 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         if (declared) {
             prop->decl = arena_new(&my arena, PropDecl);
             prop->decl->name_span = declared->decl->name_span;
+            prop->decl->name_form = ty_prop_name_form_of(declared);
             prop->decl->decl_spans = declared->decl->decl_spans;
             prop->decl->decl_span_count = declared->decl->decl_span_count;
             prop->decl->name_is_value = declared->decl->name_is_value;
@@ -1871,6 +1877,7 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
             if (declared) {
                 prop->decl = arena_new(&my arena, PropDecl);
                 prop->decl->name_span = declared->decl->name_span;
+                prop->decl->name_form = ty_prop_name_form_of(declared);
                 prop->decl->decl_spans = declared->decl->decl_spans;
                 prop->decl->decl_span_count = declared->decl->decl_span_count;
                 prop->decl->name_is_value = declared->decl->name_is_value;
@@ -2112,6 +2119,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 if (declared) {
                     prop->decl = arena_new(&my arena, PropDecl);
                     prop->decl->name_span = declared->decl->name_span;
+                    prop->decl->name_form = ty_prop_name_form_of(declared);
                     prop->decl->decl_spans = declared->decl->decl_spans;
                     prop->decl->decl_span_count = declared->decl->decl_span_count;
                     prop->decl->name_is_value = declared->decl->name_is_value;
@@ -2983,7 +2991,7 @@ Ty const* ty_object_literal_of(
             prop->decl->name_span = props[i].name_span;
             prop->decl->name_is_value = props[i].name_is_value;
             prop->decl->literal_own = props[i].own;
-            prop->decl->numeric_redeclared = props[i].numeric_redeclared;
+            prop->decl->name_form = props[i].name_form;
             prop->decl->asserted = props[i].asserted;
             prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
@@ -3125,7 +3133,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .name_is_value = prop->decl->name_is_value,
             .asserted = prop->decl->asserted,
             .own = prop->decl->literal_own,
-            .numeric_redeclared = prop->decl->numeric_redeclared,
+            .name_form = ty_prop_name_form_of(prop),
         };
     }
     u32 count = members->prop_count;
@@ -3144,6 +3152,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .flags = PROP_OPTIONAL,
             .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
             .name_span = prop->decl->name_span,
+            .name_form = ty_prop_name_form_of(prop),
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
@@ -3280,7 +3289,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .name_is_value = prop->decl->name_is_value,
                 .asserted = prop->decl->asserted,
                 .own = prop->decl->literal_own,
-                .numeric_redeclared = prop->decl->numeric_redeclared,
+                .name_form = ty_prop_name_form_of(prop),
             };
         }
         IndexInfo index[8] = {0};
@@ -3339,7 +3348,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .name_is_value = prop->decl->name_is_value,
             .asserted = prop->decl->asserted,
             .own = prop->decl->literal_own,
-            .numeric_redeclared = prop->decl->numeric_redeclared,
+            .name_form = ty_prop_name_form_of(prop),
         };
     }
     IndexInfo index[8] = {0};

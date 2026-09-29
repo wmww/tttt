@@ -2249,6 +2249,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             .type = type,
             .asserted = annotation,
             .name_span = origin->decl->name_span,
+            .name_form = ty_prop_name_form_of(prop),
             .decl_spans = origin->decl->decl_spans,
             .decl_span_count = origin->decl->decl_span_count,
             .name_is_value = origin->decl->name_is_value,
@@ -2865,6 +2866,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             both[1] = i->span;
             existing->decl_spans = both;
             existing->decl_span_count = 2;
+            existing->name_form = ty_prop_name_form_merge(existing->name_form,
+                ty_prop_name_form(i->name_span.sv, i->computed_key, key_type, true));
             if (i->tag == OBJECT_ITEM_GETTER) {
                 existing->accessor = i->value.function;
                 existing->flags = (existing->flags & ~(u32)PROP_SETTER) | PROP_GETTER;
@@ -2881,9 +2884,11 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
         Span* decl_span = arena_new(&my arena, Span);
         *decl_span = i->span;
-        bool quoted = i->name_span.sv.size && (i->name_span.sv.buf[0] == '"' || i->name_span.sv.buf[0] == '\'');
-        bool numeric_redeclared = existing && (existing->numeric_redeclared || !quoted ||
-            !existing->name_span.sv.size || (existing->name_span.sv.buf[0] != '"' && existing->name_span.sv.buf[0] != '\''));
+        uint8_t name_form = ty_prop_name_form(i->name_span.sv, i->computed_key, key_type, true);
+        // (A method or accessor after another kind of member is a symbol of its own to tsc's binder, whose excludes
+        // conflict: its name is only its own)
+        bool own_symbol = (i->tag == OBJECT_ITEM_METHOD && !(existing && (existing->flags & PROP_METHOD))) || is_accessor;
+        if (existing && !own_symbol) name_form = ty_prop_name_form_merge(existing->name_form, name_form);
         u32 flags = 0;
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD;
         if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
@@ -2906,7 +2911,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .name_is_value = name_is_value,
             .asserted = asserted,
             .own = true,
-            .numeric_redeclared = numeric_redeclared,
+            .name_form = name_form,
         });
     }
     free(accessor_spans);

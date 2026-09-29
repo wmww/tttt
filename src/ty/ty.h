@@ -427,6 +427,22 @@ typedef enum PropFlags {
     PROP_SET_PROTECTED = 1 << 12,
 } PropFlags;
 
+// How a property's name prints (tsc's getPropertyNameNodeForSymbol), from how its declarations wrote it. Without
+// PROP_NAME_KNOWN it's read off PropDecl.name_span (see ty_display.c's display_member_name)
+typedef enum PropNameForm {
+    PROP_NAME_KNOWN = 1 << 0,
+    PROP_NAME_STRING = 1 << 1, // Every declaration names it with a string: a string literal, a string-typed computed name
+    PROP_NAME_SINGLE_QUOTED = 1 << 2, // Every declaration names it with a 'single-quoted' string literal
+    PROP_NAME_TYPED = 1 << 3, // tsc's nameType: a computed name's literal type (not a literal written in a class or
+                              // interface, which the binder names), a mapped type's key: `-1` prints as `[-1]`
+} PropNameForm;
+// The form of one declaration's name: `written` as written, or the type of its computed name (`literal_key`: an
+// object literal's, whose literal type is always its nameType)
+uint8_t ty_prop_name_form(csview written, Expr const* computed, Ty const* key_type, bool literal_key);
+uint8_t ty_prop_name_form_merge(uint8_t a, uint8_t b);
+// A property's form, known or read off its declaration (what a copy of it keeps)
+uint8_t ty_prop_name_form_of(Prop const* prop);
+
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
 // What a declared property knows about its declaration. Instantiations (which follow `target`) and synthetic
 // properties share ty_prop_decl_none, all zero and read-only: a property is 80 bytes, not 200
@@ -449,8 +465,7 @@ typedef struct PropDecl {
     u32 decl_span_count;
     bool name_is_value; // The name was written as a string or number literal
     bool literal_own; // A property of an object literal written in it (not spread): see ObjectLiteralProp.own
-    // Declared more than once, not every time with a string literal name (`{ 1: a, "1": b }`): prints as a number
-    bool numeric_redeclared;
+    uint8_t name_form; // PropNameForm: how the name prints
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
     struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
@@ -1412,7 +1427,7 @@ typedef struct ObjectLiteralProp {
     bool name_is_value;
     TypeNode const* asserted; // See Prop.asserted
     bool own; // Written in the literal itself, not spread into it: only those get excess property checks
-    bool numeric_redeclared; // See Prop.numeric_redeclared
+    uint8_t name_form; // See PropDecl.name_form
     Prop const* reuse; // The property is this one as it is (tsc: the same symbol), the other fields are ignored
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {

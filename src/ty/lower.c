@@ -1255,6 +1255,7 @@ static u32 intersection_props(Checker* me, Ty const* ty, ObjectLiteralProp** out
             FoundProp found = ty_find_prop(me, ty, prop->name);
             (*out)[count++] = (ObjectLiteralProp){
                 .name = prop->name, .flags = found.flags, .type = found.type, .name_span = prop->decl->name_span,
+                .name_form = ty_prop_name_form_of(prop),
             };
         }
     }
@@ -2083,6 +2084,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, Binding c
                 .decl_spans = origin ? origin->decl->decl_spans : nullptr,
                 .decl_span_count = origin ? origin->decl->decl_span_count : 0,
                 .name_is_value = origin && origin->decl->name_is_value,
+                .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
             };
         }
     }
@@ -2133,6 +2135,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, Binding const* 
             .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
             .type = prop_type(me, prop),
             .name_span = declared->decl->name_span,
+            .name_form = ty_prop_name_form_of(declared),
             .decl_spans = declared->decl->decl_spans,
             .decl_span_count = declared->decl->decl_span_count,
             .name_is_value = declared->decl->name_is_value,

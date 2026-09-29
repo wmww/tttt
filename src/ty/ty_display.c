@@ -194,12 +194,25 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
 }
 
 // tsc's escapeString() with a double quote: named escapes, other control characters and U+2028/2029/0085 as \uXXXX
+static void display_quoted_string(TyDisplay d, csview sv, bool single);
 static void display_string_literal(TyDisplay d, csview sv) {
-    out_lit(d, "\"");
+    display_quoted_string(d, sv, false);
+}
+
+static void display_quoted_string(TyDisplay d, csview sv, bool single) {
+    if (single) out_lit(d, "'");
+    else out_lit(d, "\"");
     for (isize_t i = 0; i < sv.size; i++) {
         unsigned char c = (unsigned char)sv.buf[i];
         switch (c) {
-            case '"': out_lit(d, "\\\""); break;
+            case '"':
+                if (single) out_lit(d, "\"");
+                else out_lit(d, "\\\"");
+                break;
+            case '\'':
+                if (single) out_lit(d, "\\'");
+                else out_lit(d, "'");
+                break;
             case '\\': out_lit(d, "\\\\"); break;
             case '\n': out_lit(d, "\\n"); break;
             case '\r': out_lit(d, "\\r"); break;
@@ -235,7 +248,8 @@ static void display_string_literal(TyDisplay d, csview sv) {
             }
         }
     }
-    out_lit(d, "\"");
+    if (single) out_lit(d, "'");
+    else out_lit(d, "\"");
 }
 
 // The text of a template literal as tsc's printer writes it: escapeString() with a backtick (newlines stay), and `${`
@@ -343,24 +357,72 @@ cstr ty_prop_written_name(Checker* me, Prop const* prop) {
     return ty_prop_name_cstr(me, prop->name);
 }
 
-// A property declared with a string literal name prints quoted even if it reads as a number (tsc's isStringNamed)
-static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
+uint8_t ty_prop_name_form(csview written, Expr const* computed, Ty const* key_type, bool literal_key) {
+    uint8_t form = PROP_NAME_KNOWN;
+    if (computed) {
+        if (!key_type) return form;
+        if (key_type->flags & TYF_STRING_LIKE) form |= PROP_NAME_STRING;
+        // (A literal written in a class or interface is the binder's name, tsc's getPropertyNameForPropertyNameNode)
+        bool written_literal = computed->tag == EXPR_LITERAL || (computed->tag == EXPR_UNARY_OP &&
+            (computed->unary_op->op == UNARY_OP_MINUS || computed->unary_op->op == UNARY_OP_PLUS) &&
+            computed->unary_op->expr.tag == EXPR_LITERAL);
+        if ((key_type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && (literal_key || !written_literal)) {
+            form |= PROP_NAME_TYPED;
+        }
+        return form;
+    }
+    if (written.size && (written.buf[0] == '"' || written.buf[0] == '\'')) form |= PROP_NAME_STRING;
+    if (written.size && written.buf[0] == '\'') form |= PROP_NAME_SINGLE_QUOTED;
+    return form;
+}
+
+// Another declaration of the same property: tsc asks every declaration whether it's string named or single quoted, the
+// name type is the last one's (checkObjectLiteral)
+uint8_t ty_prop_name_form_merge(uint8_t a, uint8_t b) {
+    return PROP_NAME_KNOWN | (a & b & (PROP_NAME_STRING | PROP_NAME_SINGLE_QUOTED)) | (b & PROP_NAME_TYPED);
+}
+
+uint8_t ty_prop_name_form_of(Prop const* prop) {
+    // The declaration: the property's own (a mapped type's property has its key's), else the one it instantiates
     Prop const* root = prop;
     while (root->target) root = root->target;
+    PropDecl const* decl = prop->decl;
+    for (Prop const* p = prop->target; p && !(decl->name_form & PROP_NAME_KNOWN) && !span_valid(decl->name_span); p = p->target) {
+        decl = p->decl;
+    }
+    uint8_t form = decl->name_form;
+    if (!(form & PROP_NAME_KNOWN)) {
+        form = span_valid(decl->name_span) && decl->name_span.sv.size && decl->name_span.sv.buf[0] != '[' ?
+            ty_prop_name_form(decl->name_span.sv, nullptr, nullptr, false) : PROP_NAME_KNOWN;
+    }
+    // (A mapped type's property is named by its key type)
+    if (root->name != prop->name) form |= PROP_NAME_TYPED;
+    return form;
+}
+
+// tsc's getPropertyNameNodeForSymbol: an identifier, a number, a string literal quoted like every declaration wrote it,
+// or `[-1]` for a negative number that came from a type
+static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
     csview sv = atom_sv(prop->name);
-    if (root->name != prop->name || !is_numeric_name(sv)) {
+    if (ty_unique_symbol_of_name(me, prop->name)) {
         display_prop_name(me, d, prop->name);
         return;
     }
-    // (Every declaration: `{ 1: a, "1": b }` is a number)
-    bool string_named = span_valid(root->decl->name_span) && !root->decl->numeric_redeclared;
-    Span const* spans = root->decl->decl_span_count ? root->decl->decl_spans : &root->decl->name_span;
-    u32 count = root->decl->decl_span_count ? root->decl->decl_span_count : 1;
-    for (u32 i = 0; i < count && string_named; i++) {
-        string_named = span_valid(spans[i]) && spans[i].sv.size >= 2 && (spans[i].sv.buf[0] == '"' || spans[i].sv.buf[0] == '\'');
+    uint8_t form = ty_prop_name_form_of(prop);
+    bool string_named = form & PROP_NAME_STRING;
+    bool single = form & PROP_NAME_SINGLE_QUOTED;
+    bool identifier = is_identifier_name(sv);
+    if ((form & PROP_NAME_TYPED) && !identifier && sv.size > 1 && sv.buf[0] == '-' && !string_named &&
+        value_is_numeric_literal_name(sv)
+    ) {
+        out_lit(d, "[");
+        out(d, sv);
+        out_lit(d, "]");
+        return;
     }
-    if (string_named) display_string_literal(d, sv);
-    else display_prop_name(me, d, prop->name);
+    if (identifier) out(d, sv);
+    else if (!string_named && is_numeric_name(sv)) out(d, sv);
+    else display_quoted_string(d, sv, single);
 }
 
 static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {

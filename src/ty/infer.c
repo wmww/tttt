@@ -544,7 +544,9 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
         panic_if(!*out, "out of memory");
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
-            (*out)[i] = (ObjectLiteralProp){ .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop) };
+            (*out)[i] = (ObjectLiteralProp){
+                .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
+            };
         }
         return members->prop_count;
     }
@@ -565,7 +567,10 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
                 *out = realloc(*out, sizeof(ObjectLiteralProp) * cap);
                 panic_if(!*out, "out of memory");
             }
-            (*out)[count++] = (ObjectLiteralProp){ .name = name, .flags = found.flags, .type = found.type };
+            (*out)[count++] = (ObjectLiteralProp){
+                .name = name, .flags = found.flags, .type = found.type,
+                .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
+            };
         }
     }
     return count;

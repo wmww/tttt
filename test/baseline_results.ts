@@ -8328,7 +8328,7 @@ const baselines = {
     'declarationEmitMappedTypePropertyFromNumericStringKey': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMappedTypeTemplateTypeofSymbol': {
         errors: false,
@@ -8558,7 +8558,7 @@ const baselines = {
     'declarationEmitPropertyNumericStringKey': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitProtectedMembers': {
         errors: true,
@@ -8653,7 +8653,7 @@ const baselines = {
     'declarationEmitStringEnumUsedInNonlocalSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitSymlinkPaths': {
         errors: true,
@@ -10403,7 +10403,7 @@ const baselines = {
     'duplicateObjectLiteralProperty_computedName1': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'duplicateObjectLiteralProperty_computedName2': {
         errors: true,
@@ -11063,7 +11063,7 @@ const baselines = {
     'enumKeysQuotedAsObjectPropertiesInDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumLiteralAssignableToEnumInsideUnion': {
         errors: true,
@@ -23618,7 +23618,7 @@ const baselines = {
     'noImplicitAnyStringIndexerOnObject': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noImplicitAnyUnionNormalizedObjectLiteral1': {
         errors: false,
@@ -29333,7 +29333,7 @@ const baselines = {
     'stringLiteralObjectLiteralDeclaration1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringLiteralPropertyNameWithLineContinuation1': {
         errors: true,
@@ -31186,9 +31186,9 @@ const baselines = {
         types: true,
     },
     'typeOfOnTypeArg': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeOfOperator1': {
         errors: false,
@@ -41368,12 +41368,12 @@ const baselines = {
     'computedPropertyNamesDeclarationEmit6_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesDeclarationEmit6_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNamesOnOverloads_ES5': {
         errors: true,
@@ -47901,9 +47901,9 @@ const baselines = {
         types: true,
     },
     'propertyAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyAccessNumericLiterals': {
         errors: true,
@@ -58823,7 +58823,7 @@ const baselines = {
     'parserForInStatement8': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserForStatement1.d': {
         errors: true,
@@ -66368,7 +66368,7 @@ const baselines = {
     'assignmentCompatWithObjectMembersStringNumericNames': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentCompatWithStringIndexer': {
         errors: true,
