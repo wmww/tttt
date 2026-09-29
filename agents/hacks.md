@@ -396,8 +396,7 @@ src` finds the code-side markers; every significant one has an entry here.
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `check_access` (TS2339, HACKs): lets through generic mapped types and unresolved bases; bracket access never reports;
   fires on modules too (wrong resolution shows as TS2339 next to TS2307). `ty_indexed_access_index_ok` lacks TS4105.
-  `ty_check_element_implicit_any` (TS7053, HACK) skips callable objects (predates expandos: retry), generic mapped
-  types, unresolved bases.
+  `ty_check_element_implicit_any` (TS7053, HACK) skips generic mapped types and unresolved bases.
 - `ty_check_type_reference_constraints` (HACK): deferred conditional arguments aren't checked for TS2344 (default
   constraint lacks inferConditionalConstraintMappedMember; 2000 conditionals vs a 2000-member union exhaust the budget).
 - `ty_check_index_constraints` on type literals only when syntactically needed: evaluating a literal early changes
@@ -411,7 +410,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - Emit helpers (`ty_check_emit_helpers`): spans by hand (`decorator_span()`, `function_error_span()`); "ambient"
   approximated per site (`ClassDecl.is_ambient`, `Binding.ambient`, `BlockTypecheckCtx.ambient`; want
   NodeFlags.Ambient); `for await` unchecked.
-- `binary_op_typecheck`: instanceof TS2358 skipped in JS (expr.c HACK; its "no JSDoc types" reason is stale: retry).
 - `unused_mark_jsdoc_links()` (HACK): `{@link X}` is a use by text scan (JSDoc is parsed now: resolve from tags).
   Member reads are a table keyed by declaration span start (`ty_mark_member_referenced`).
 - `for_in_accepts`: type parameters and deferred types accepted outright (TS2407 missed).

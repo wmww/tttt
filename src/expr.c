@@ -3197,8 +3197,7 @@ static bool binary_op_typecheck(
             u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
                 TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE;
             TyList parts = left->kind == TY_UNION ? left->composite.types : (TyList){ .data = &left, .len = 1 };
-            // HACK: not in JS files, whose JSDoc types tttt doesn't read
-            bool all_primitive = !(left->flags & (TYF_ANY | TYF_NEVER)) && !(expr->inner_span.source && expr->inner_span.source->is_js);
+            bool all_primitive = !(left->flags & (TYF_ANY | TYF_NEVER));
             for (u32 i = 0; i < parts.len && all_primitive; i++) all_primitive = assignable_to_kind(parts.data[i], primitive, false);
             if (all_primitive) {
                 error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2358, "The left-hand side of an 'instanceof' "
@@ -4035,6 +4034,15 @@ static bool expr_is_plain_identifier(Expr const* me, const char* name) {
 Span expr_static_property_name(Expr const* me) {
     if (my tag != EXPR_PROPERTY || expr_is_perenthisized(me) || my property->optional_chain) return span_null;
     Expr const* prop = &my property->prop;
+    if (prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_NUMBER && my property->form == PROPERTY_EXPR_BRACKET &&
+        !expr_is_perenthisized(prop)
+    ) {
+        // `o[77]` (tsc's isStringOrNumericLiteralLike): named by the number's text, when that is how it prints
+        csview digits = prop->inner_span.sv;
+        bool canonical = digits.size && (digits.buf[0] != '0' || digits.size == 1);
+        for (isize i = 0; i < digits.size && canonical; i++) canonical = digits.buf[i] >= '0' && digits.buf[i] <= '9';
+        return canonical && digits.size < 16 ? prop->inner_span : span_null;
+    }
     if (prop->tag != EXPR_LITERAL || prop->literal.tag != VALUE_STRING) return span_null;
     if (my property->form == PROPERTY_EXPR_DOT) return prop->inner_span;
     // Without the quotes

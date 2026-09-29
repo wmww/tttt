@@ -1740,9 +1740,8 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         }
         if ((ty_is_tuple(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
         if (object->flags & TYF_OBJECT) {
-            // HACK: as in check_access(): no expando members, mapped types over something generic, unresolved bases
+            // HACK: as in check_access(): mapped types over something generic, unresolved bases
             Members const* members = ty_members(me, object);
-            if (members->call_count && !members->construct_count) return;
             if (members->mapped && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
             if (ty_has_unresolved_base(me, object)) return;
         }
