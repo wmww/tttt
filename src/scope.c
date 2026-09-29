@@ -1182,13 +1182,13 @@ void scope_add_port(Scope* me, PortItem* item) {
             // checks are tsc's bindNamespaceExportDeclaration()
             if (span_valid(item->modifiers)) error_ctx_error_d(my errs, item->modifiers, 1184, "Modifiers cannot appear here.");
             if (item->not_top_level) {
-                error_ctx_error_d(my errs, item->full_span, 1316, "Global module exports may only appear at top level.");
+                error_ctx_error_d(my errs, span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
                 return;
             } else if (my kind != SCOPE_MODULE) {
-                error_ctx_error_d(my errs, item->full_span, 1314, "Global module exports may only appear in module files.");
+                error_ctx_error_d(my errs, span_with_semicolon(item->full_span), 1314, "Global module exports may only appear in module files.");
                 return;
             } else if (my file && !my file->is_declaration) {
-                error_ctx_error_d(my errs, item->full_span, 1315, "Global module exports may only appear in declaration files.");
+                error_ctx_error_d(my errs, span_with_semicolon(item->full_span), 1315, "Global module exports may only appear in declaration files.");
                 return;
             }
             if (!my container) return;

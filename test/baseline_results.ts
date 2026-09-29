@@ -51516,7 +51516,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsExportFormsErr': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
