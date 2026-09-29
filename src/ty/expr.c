@@ -337,6 +337,12 @@ static bool is_unit_for_reduction(Ty const* ty) {
     return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
 }
 
+// An instance type of a class (tsc's ObjectFlags.Class on getTargetType())
+static bool is_class_instance(Ty const* ty) {
+    if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
+    return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_CLASS_INSTANCE;
+}
+
 Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len) {
     if (len < 2) return len ? types[0] : ty_intrinsic(me, TY_NEVER);
     // Flatten first, so members of member unions take part
@@ -398,7 +404,10 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
                 Ty const* t = ty_prop_type_of(me, target, key->name);
                 if (t && is_unit_for_reduction(t) && ty_regular(me, t) != key_type) continue;
             }
-            if (ty_is_related(me, source, target, TY_RELATION_STRICT_SUBTYPE)) {
+            // (One class's instances are a subtype of another's only when derived from it)
+            if (ty_is_related(me, source, target, TY_RELATION_STRICT_SUBTYPE) &&
+                (!is_class_instance(source) || !is_class_instance(target) || ty_is_type_derived_from(me, source, target))
+            ) {
                 dropped[i] = true;
                 break;
             }

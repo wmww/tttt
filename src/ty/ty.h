@@ -502,6 +502,9 @@ typedef enum SignatureFlags {
     SIGNATURE_ABSTRACT  = 1 << 1,
     SIGNATURE_METHOD    = 1 << 2, // declared with method syntax: parameters are bivariant even under strictFunctionTypes
     SIGNATURE_NON_INFERRABLE = 1 << 3, // tsc's SignatureFlags.IsNonInferrable: a return-only signature (expr.c)
+    // A union signature one of whose members (tsc's compositeSignatures) is abstract: `new` of it is TS2511 (tsc's
+    // someSignature in resolveNewExpression)
+    SIGNATURE_SOME_ABSTRACT = 1 << 4,
 } SignatureFlags;
 
 typedef struct SigParam {

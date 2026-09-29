@@ -36,3 +36,7 @@
 - `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
   resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
   enum members. Unverified whether any test reaches that.
+- `./tscbaseline.sh` writes no `.symbols` for a file with an interface member named `[-1]` (tsc's symbol writer
+  throws), so `./filetest.sh` reports "did not run" without saying why.
+- A corpus's output can depend on the checker count (4 by default): a file can look fine alone and fail in the corpus.
+  Reproduce with `--checkers 1` and the suspect file first in `files`; `./checkerdiff.py` flags it.

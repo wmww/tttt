@@ -52,6 +52,18 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - Reverse mapped types refuse generic intersection sources (`T & {...}`), which tsc accepts (tttt's are eager).
 
 ## Relations, instantiation, reduction
+- Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
+  `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
+  forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).
+- `StateId<U>` to `StateId<T>` (xstate's StateId, no variance measurement) gives TS2589 next to the TS2322 tsc also
+  reports: the definitely-assignable checks instantiate deeply nested indexed-access chains. Repro:
+  test/probes/xstate/state_id_deep_nesting.ts.
+- inferConditionalConstraintMappedMember (types): `{ [K in keyof T]: X } extends { [_ in keyof T]: infer U } ? U : never`
+  has constraint X in tsc (K4 variant with template `1` gives number), tttt unknown; why tsc infers there despite the
+  generic mapped check type is unclear. Kept out of TS2344 by the deferred-conditional HACK.
+- usingDeclarationsWithIteratorObject: `Iterator.from(i)` in lib.esnext.iterator's `declare global` resolves
+  `Iterator<T, unknown, undefined>` to the module-local class (with map, filter...); tsc accepts a global Iterator
+  there (spurious TS2345/TS2351). Check how names inside a lib module's `declare global` resolve.
 - **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
   (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
   variables (see hacks.md) nor type parameters with a deferred declared constraint. Related: conflicting discriminants and privates are reduced at construction
@@ -145,7 +157,7 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   count (`explicit-vendor-chunk/webpack.config.js:7` TS2859 at K=1 / TS2589 at K=4, `lazy-compilation/webpack.config.js`):
   another depth-limit order dependence. The real path (what the scripts use) is identical at every K.
 
-## Circularity (plan 29 stage 3 leftovers)
+## Circularity (plan 29 stage 3 leftovers; the outer-declaration cases are plan 39)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
   TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax.
 - TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1,
@@ -175,6 +187,11 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   nodeModulesTripleSlashReferenceModeDeclarationEmit7).
 
 ## Narrowing and flow
+- dependentDestructuredVariables: narrowing destructured variables by each other (tsc's
+  getCandidateDiscriminantPropertyAccess on binding elements) isn't implemented: 20 spurious TS2339 (its TS7022s are
+  plan 39).
+- The JSX attribute types (`KEY_JSX_ATTRIBUTE`) and an IIFE parameter's contextual type depend on check order (the
+  last check wins).
 - **Destructuring assignment flow order** (controlFlowAssignmentPatternOrder, 12 spurious TS2322;
   controlFlowBindingPatternOrder): assignments in a pattern's computed keys and defaults happen in tsc's evaluation
   order, which the flow builder doesn't follow.

@@ -80,6 +80,7 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   Symbol()` read through a `@type {typeof S}` const prints `symbol` in tsc (jsdoc_accessor_type.ts).
 
 ## Underlines (node reuse)
+- A binding default `{} as any` misses tsc's empty `^^^` types-mask line (bindingDefaultAnyRemovesUndefined types).
 - `() => 'foo' as const`: tsc's underline reuses the `"foo"` (`^^^^^^     `), tttt underlines the whole return type.
 - readonly_through_prettify.ts: `| undefined` of optional properties under exactOptional-less strict: tsc's
   underline has gaps (reused nodes), tttt's doesn't.

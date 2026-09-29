@@ -226,9 +226,9 @@ const baselines = {
         types: true,
     },
     'abstractClassUnionInstantiation': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'abstractIdentifierNameStrict': {
         errors: true,
@@ -66648,7 +66648,7 @@ const baselines = {
     'arrayLiteralsWithRecursiveGenerics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'infiniteExpansionThroughInstantiation': {
         errors: true,

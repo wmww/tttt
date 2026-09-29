@@ -19,6 +19,12 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
   at the option (TS5xxx, paths validation, deprecations by version), TS6054.
 
 ## Known missing checks
+- `interface I<C> { a: StateNode<C, any> }` where StateNode requires `C extends MachineContext`: tsc's TS2344 on the
+  member's type argument is missing (xstate).
+- Missing TS2353 for `const x: Trans<E> = { NEXT: ... }` in a generic function with `Trans<E> = { [K in E['type'] |
+  '*']?: ... }` (xstate; excess property checks against a generic mapped type).
+- TS2712 (a dynamic `import()` in ES5 without a global `Promise` value, with TS2468): tsc reports it unconditionally in
+  checkImportCallExpression (createPromiseReturnType).
 - TS2510 ("Base constructors must all have the same return type") for an intersection base whose construct
   signatures return different types.
 - TS2344 on type references (`ty_check_type_reference_constraints`, check.c): 7 spurious in unknownType2
@@ -166,3 +172,14 @@ chain; TS18042 (a type imported in a .jsx/.js file: jsxCheckJsxNoTypeArgumentsAl
 (ElementAttributesProperty with several members); TS2639 (tsxNamespacedTagName2); TS2604 on a union of tag types
 (tsxDynamicTagName3). Types-component diffs there are general (contextualTypingOfOptionalMembers: `unknown` where tsc
 infers; `{ [__proto__]: null }` computed names in tsxEmitSpreadAttribute).
+
+## Elaboration (which member or level a relation error descends to; plan 34 is the text of the rest)
+- Into a `NoInfer` member: against `NoInfer<{ type: 'A' }> | Expr` tsc elaborates to `'"B"' is not assignable to
+  '"A"'`, tttt reports the whole argument (best_matching_type doesn't look through the substitution). tttt also adds
+  TS6500 related info on `NoInfer<{...}>` targets, tsc doesn't.
+- Union sources: for `Snap<...>` (a union alias) not assignable to `number`, tsc adds a line for the union's first
+  member; tttt omits it.
+- xstate meta.test.ts 270/434: elaboration stops one level too high (at `e2:`, tsc goes on to the `meta:` under the
+  `@ts-expect-error`). Not reduced.
+- mappedTypes6 / mappedTypeErrors2: `-?` template elaboration (tsc's NonNullable<T[P]> display and chain).
+

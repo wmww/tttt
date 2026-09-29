@@ -5206,9 +5206,13 @@ static Signature* union_signature(Checker* me, Signature const* base, Signature*
     Ty const** return_types = malloc(sizeof(Ty const*) * count);
     panic_if(!return_types, "out of memory");
     for (u32 i = 0; i < count; i++) return_types[i] = signature_return_type(me, composites[i]);
+    u32 some_abstract = 0;
+    for (u32 i = 0; i < count; i++) {
+        if (composites[i]->flags & (SIGNATURE_ABSTRACT | SIGNATURE_SOME_ABSTRACT)) some_abstract = SIGNATURE_SOME_ABSTRACT;
+    }
     Signature* ret = arena_new(&my arena, Signature);
     *ret = (Signature){
-        .flags = base->flags,
+        .flags = base->flags | some_abstract,
         .name_span = base->name_span,
         .decl_span = base->decl_span,
         .state = LAZY_STATE_DONE,
@@ -5307,7 +5311,8 @@ static Signature* combine_signatures(Checker* me, Signature const* left, Signatu
     }
     Signature* ret = arena_new(&my arena, Signature);
     *ret = (Signature){
-        .flags = left->flags & SIGNATURE_CONSTRUCT,
+        .flags = (left->flags & SIGNATURE_CONSTRUCT) |
+            ((left->flags | right->flags) & (SIGNATURE_ABSTRACT | SIGNATURE_SOME_ABSTRACT) ? SIGNATURE_SOME_ABSTRACT : 0),
         .name_span = left->name_span,
         .decl_span = left->decl_span,
         .state = LAZY_STATE_DONE,

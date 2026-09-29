@@ -347,3 +347,11 @@ From the four sub-agents' reports; test names are the ones to probe.
   PackFileCacheStrategy.js's LazyFunction chain (plan 19).
 - Can't pass: templateInsideCallback (pre/post-emit count line), jsDeclarationsDefault /
   jsDeclarationsJSDocRedirectedLookups / jsdocOuterTypeParameters1 (baselines made after declaration emit).
+- JSDoc nodes and outer type parameters: tsc instantiates a JSDoc object/function type node for *every* outer type
+  parameter (isTypeParameterPossiblyReferenced never meets the `@template` tag), so `@template T @callback B` used as
+  `B<string>` prints `B<string>` (jsdocCallbackAndType passes by now, but the mechanism is still narrow). tttt's
+  lowering collects the node's real free parameters, and `ty_anonymous_from_node()` can't enumerate the ones in scope;
+  making JSDoc nodes free_params_unknown let lib's `then<TResult1>` count as mentioned by a JSDoc-typed T (webpack +2).
+  The fixing side is handled narrowly in `assignment_mentions()` (`meets_jsdoc_node_in()`). A real fix records the
+  in-scope `@template`s on the lowering context.
+

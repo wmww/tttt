@@ -1169,29 +1169,29 @@ static Ty const* non_nullable_constraint_or(Checker* me, Ty const* ty) {
 }
 
 // tsc's isTypeDerivedFrom(): what `instanceof` goes by, the classes something is made of rather than its shape
-static bool is_type_derived_from(Checker* me, Ty const* source, Ty const* target) {
+bool ty_is_type_derived_from(Checker* me, Ty const* source, Ty const* target) {
     if (source->kind == TY_UNION) {
         for (u32 i = 0; i < source->composite.types.len; i++) {
-            if (!is_type_derived_from(me, source->composite.types.data[i], target)) return false;
+            if (!ty_is_type_derived_from(me, source->composite.types.data[i], target)) return false;
         }
         return true;
     }
     if (target->kind == TY_UNION) {
         for (u32 i = 0; i < target->composite.types.len; i++) {
-            if (is_type_derived_from(me, source, target->composite.types.data[i])) return true;
+            if (ty_is_type_derived_from(me, source, target->composite.types.data[i])) return true;
         }
         return false;
     }
     if (source->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < source->composite.types.len; i++) {
-            if (is_type_derived_from(me, source->composite.types.data[i], target)) return true;
+            if (ty_is_type_derived_from(me, source->composite.types.data[i], target)) return true;
         }
         return false;
     }
     if (source->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
         Ty const* constraint = ty_base_constraint(me, source);
         if (!constraint || constraint == source) constraint = ty_intrinsic(me, TY_UNKNOWN_);
-        return is_type_derived_from(me, constraint, target);
+        return ty_is_type_derived_from(me, constraint, target);
     }
     if (is_empty_anonymous_object(me, target)) return (source->flags & (TYF_OBJECT | TYF_NON_PRIMITIVE)) != 0;
     if (target == ty_global_object_type(me)) {
@@ -1227,7 +1227,7 @@ static Ty const* narrow_directly_related(Checker* me, Ty const* t, void const* a
     NarrowArg const* a = arg;
     Ty const* c = a->c;
     if (a->check_derived) {
-        return is_type_derived_from(me, t, c) ? t : is_type_derived_from(me, c, t) ? c : ty_intrinsic(me, TY_NEVER);
+        return ty_is_type_derived_from(me, t, c) ? t : ty_is_type_derived_from(me, c, t) ? c : ty_intrinsic(me, TY_NEVER);
     }
     return is_strict_subtype(me, t, c) ? t
         : is_strict_subtype(me, c, t)  ? c
@@ -1242,7 +1242,7 @@ static Ty const* narrow_generic_related(Checker* me, Ty const* t, void const* ar
     if (!(t->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return ty_intrinsic(me, TY_NEVER);
     Ty const* constraint = ty_base_constraint(me, t);
     if (!constraint || constraint == t) constraint = ty_intrinsic(me, TY_UNKNOWN_);
-    if (!(a->check_derived ? is_type_derived_from(me, a->c, constraint) : is_subtype(me, a->c, constraint))) {
+    if (!(a->check_derived ? ty_is_type_derived_from(me, a->c, constraint) : is_subtype(me, a->c, constraint))) {
         return ty_intrinsic(me, TY_NEVER);
     }
     Ty const* both[2] = { t, a->c };
@@ -1270,7 +1270,7 @@ static bool is_not_subset_of(Checker* me, Ty const* member, void const* arg) {
 }
 
 static bool is_not_derived_from(Checker* me, Ty const* member, void const* arg) {
-    return !is_type_derived_from(me, member, arg);
+    return !ty_is_type_derived_from(me, member, arg);
 }
 
 static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* candidate, bool assume_true, bool check_derived);
@@ -1965,11 +1965,11 @@ static Ty const* narrow_by_instanceof(FlowQuery* q, Ty const* type, BinaryOpExpr
     Ty const* right_type = ty_flow_expr_type(me, &binary->right);
     Ty const* object = ty_global_object_type(me);
     Ty const* function = ty_global_function_type(me);
-    if (!object || !function || !is_type_derived_from(me, right_type, object)) return type;
+    if (!object || !function || !ty_is_type_derived_from(me, right_type, object)) return type;
     Atom const* has_instance = ty_well_known_symbol_name(me, "hasInstance");
     Ty const* predicate = has_instance ? has_instance_predicate_type(me, right_type, has_instance) : nullptr;
     if (predicate) return narrowed_type(me, type, predicate, assume_true, true);
-    if (!is_type_derived_from(me, right_type, function)) return type;
+    if (!ty_is_type_derived_from(me, right_type, function)) return type;
     Ty const* instance = map_type(me, right_type, constructor_instance_type, nullptr);
     if ((type->flags & TYF_ANY) && (instance == object || instance == function)) return type;
     if (!assume_true && !((instance->flags & TYF_OBJECT) && !is_empty_anonymous_object(me, instance))) return type;

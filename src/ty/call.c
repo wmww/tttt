@@ -1982,16 +1982,17 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
         return any;
     }
     if (call->uses_new) {
-        bool all_abstract = true;
-        for (u32 i = 0; i < count; i++) all_abstract &= (signatures[i]->flags & SIGNATURE_ABSTRACT) != 0;
-        if (all_abstract) {
+        if (!ty_constructor_accessible(me, call, signatures[0], call_span, errs)) {
             mark_would_report(info);
-            error_ctx_error_d(errs, call_span, 2511, "Cannot create an instance of an abstract class.");
             free(signatures);
             return any;
         }
-        if (!ty_constructor_accessible(me, call, signatures[0], call_span, errs)) {
+        // (tsc's resolveNewExpression: someSignature, which looks into a union signature's members)
+        bool some_abstract = false;
+        for (u32 i = 0; i < count; i++) some_abstract |= (signatures[i]->flags & (SIGNATURE_ABSTRACT | SIGNATURE_SOME_ABSTRACT)) != 0;
+        if (some_abstract) {
             mark_would_report(info);
+            error_ctx_error_d(errs, call_span, 2511, "Cannot create an instance of an abstract class.");
             free(signatures);
             return any;
         }
