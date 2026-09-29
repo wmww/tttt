@@ -63763,12 +63763,12 @@ const baselines = {
     'intersectionReduction': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionReductionStrict': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionThisTypes': {
         errors: true,
@@ -64546,9 +64546,9 @@ const baselines = {
         types: true,
     },
     'nonPrimitiveUnionIntersection': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callSignatureWithOptionalParameterAndInitializer': {
         errors: true,

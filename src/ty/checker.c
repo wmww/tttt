@@ -1442,6 +1442,10 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             }
             buf.data[out++] = t;
         }
+        // `object` and a primitive (null and undefined included) are disjoint domains (tsc's getIntersectionType)
+        if ((includes & TYF_NON_PRIMITIVE) && (family || (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)))) {
+            is_never = true;
+        }
         if (literal) {
             // "a" & string is "a"
             u32 kept = 0;
