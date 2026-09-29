@@ -18833,7 +18833,7 @@ const baselines = {
     'isolatedDeclarationsLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationsRequiresDeclaration': {
         errors: false,

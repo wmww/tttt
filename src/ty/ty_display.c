@@ -1816,7 +1816,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         bool function_symbol = declared->decl->symbol && (declared->decl->symbol->flags & SYMBOL_FUNCTION) &&
             declared->decl->symbol->parent &&
             !(prop->flags & PROP_READONLY) && (type->flags & TYF_OBJECT);
-        Members const* type_members = (prop->flags & PROP_METHOD) || function_symbol ? ty_members(me, type) : nullptr;
+        // (Not a readonly one, `as const`: tsc's addPropertyToElementList prints it as a property)
+        Members const* type_members = ((prop->flags & PROP_METHOD) && !(prop->flags & PROP_READONLY)) || function_symbol ?
+            ty_members(me, type) : nullptr;
         if (type_members && type_members->call_count && !type_members->prop_count) {
             // Methods print once per signature
             for (u32 j = 0; j < type_members->call_count; j++) {
