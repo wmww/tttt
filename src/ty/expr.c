@@ -3747,6 +3747,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_IMPLICIT_ANY: return any_type(me);
         case EXPR_LITERAL:
             if (expr->literal.tag == VALUE_NULL) return ty_intrinsic(me, TY_NULL_WIDENING);
+            if (expr->undefined_assigned) return ty_intrinsic(me, TY_ERROR); // (tsc's checkIdentifier)
             if (expr->literal.tag == VALUE_UNDEFINED) return ty_intrinsic(me, TY_UNDEFINED_WIDENING);
             return ty_fresh_literal(me, ty_literal(me, &expr->literal));
         case EXPR_IDENTIFIER: {

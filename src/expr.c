@@ -985,6 +985,8 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
             "'node16', 'node18', 'nodenext', or 'preserve', and the 'target' option is set to 'es2017' or higher.");
     }
 }
+static bool is_written_undefined(Expr const* me);
+
 
 void expr_lookup_names_condition(Expr* me, Scope* names, ErrorCtx* errs, FlowNode* true_target, FlowNode* false_target) {
     FlowBuilder* flow = names->flow;
@@ -1474,7 +1476,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 for_each (i, vec_expr, my missing_decorators) expr_lookup_names(i, names, nullptr);
             }
             break;
-        case EXPR_LITERAL: break;
+        case EXPR_LITERAL:
+            my undefined_assigned = assignment_target != FLOW_TARGET_NONE && is_written_undefined(me);
+            break;
 
         case EXPR_IDENTIFIER:
             identifier_expr_lookup_names(&my identifier, names, errs);
@@ -1939,7 +1943,6 @@ Expr const* expr_effective_check_node(Expr const* me) {
 // checkDestructuringAssignment): each reference in it gets what it destructures to. Null `source` when that can't be
 // told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only
 // `source_expr`: the right-hand side of a plain assignment, which a failure is elaborated into
-static bool is_written_undefined(Expr const* me);
 static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs);
 static Expr const* skip_outer_expressions(Expr const* me);
 

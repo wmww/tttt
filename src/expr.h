@@ -135,15 +135,18 @@ typedef struct Expr {
     } tag;
     // An array or object literal that is assigned to, a destructuring pattern (tsc's isAssignmentTarget). Set by
     // expr_lookup_names()
-    bool assignment_pattern;
+    bool assignment_pattern : 1;
     // An object literal that initializes a JavaScript `/** @enum {T} */` variable: not open-ended (set by the parser)
-    bool jsdoc_enum_literal;
+    bool jsdoc_enum_literal : 1;
     // An EXPR_IMPLICIT_ANY that stands for a missing expression (`var x = ;`, parse error), not for an absent optional
     // one (`var x;`): the baselines show it like tsc's missing identifier
-    bool missing;
+    bool missing : 1;
     // An array literal spread into the arguments of a call or `new` (`f(...[1, "a"])`): a tuple (tsc's
     // isSpreadIntoCallOrNew)
-    bool spread_into_call;
+    bool spread_into_call : 1;
+    // `undefined = x`, `undefined++`: an assignment to tsc's undefinedSymbol, which isn't a variable (errorType). Set by
+    // expr_lookup_names()
+    bool undefined_assigned : 1;
     union {
         Value literal;
         IdentifierExpr identifier;
