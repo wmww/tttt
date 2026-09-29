@@ -33,6 +33,9 @@ typedef struct Arg {
     bool generic_call;
     // An object or array literal with a generic function in it that the first pass skipped (GenericFunctionMode)
     bool nested_generic;
+    // An element of a spread tuple: its label (tsc's SyntheticExpression.tupleNameSource), which a rest parameter's
+    // tuple keeps. Null if none
+    Atom const* tuple_name;
 } Arg;
 
 typedef struct Args {
@@ -159,11 +162,12 @@ static Args collect_args(Checker* me, CallInfo const* info) {
                 TupleShape const* shape = ty_is_tuple(operand) ? operand->reference.target->declared.tuple : operand->declared.tuple;
                 TyList elements = ty_is_tuple(operand) ? ty_reference_args(me, operand) : (TyList){0};
                 for (u32 j = 0; j < shape->arity; j++) {
+                    Atom const* name = shape->names ? shape->names[j] : nullptr;
                     if (shape->flags[j] & TUPLE_ELEMENT_REST) {
                         if (args.spread_index < 0) args.spread_index = (i32)args.len;
-                        args_push(&args, (Arg){ .expr = i, .type = ty_rest_element_type(me, elements.data[j]), .spread = true });
+                        args_push(&args, (Arg){ .expr = i, .type = ty_rest_element_type(me, elements.data[j]), .spread = true, .tuple_name = name });
                     } else {
-                        args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true });
+                        args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true, .tuple_name = name });
                     }
                 }
                 continue;
@@ -326,8 +330,13 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
     u32 arity = args->len > from ? args->len - from : 0;
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
+    Atom const** names = nullptr;
     for (u32 i = 0; i < arity; i++) {
         Arg const* arg = &args->data[from + i];
+        if (arg->tuple_name) {
+            if (!names) names = calloc(arity, sizeof(Atom const*));
+            names[i] = arg->tuple_name;
+        }
         if (arg->spread) {
             flags[i] = TUPLE_ELEMENT_REST;
             elements[i] = arg->variadic ? arg->variadic : ty_array(me, arg->type, false);
@@ -336,11 +345,12 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
             elements[i] = widen ? ty_widened_literal(me, type) : type;
         }
     }
-    TupleShape tuple = { .arity = arity, .flags = flags, .readonly = readonly };
+    TupleShape tuple = { .arity = arity, .flags = flags, .readonly = readonly, .names = names };
     Ty const* target = ty_tuple_target(me, &tuple);
     Ty const* ret = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
     free(flags);
     free(elements);
+    free(names);
     return ret;
 }
 

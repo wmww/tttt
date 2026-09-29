@@ -65728,7 +65728,7 @@ const baselines = {
     'namedTupleMembers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'namedTupleMembersErrors': {
         errors: true,
@@ -65748,7 +65748,7 @@ const baselines = {
     'partiallyNamedTuples3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalTupleElements1': {
         errors: false,

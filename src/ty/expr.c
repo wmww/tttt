@@ -3430,6 +3430,7 @@ typedef struct EffectiveArg {
     Expr const* expr; // A written argument, else an element of a spread tuple
     Ty const* type; // The element's type (the array's, for a rest element)
     bool spread; // A spread: of `expr` (a spread of something else than a tuple) or of the array `type`
+    Atom const* tuple_name; // An element of a spread tuple: its label, if any
 } EffectiveArg;
 
 // Null if a spread tuple has generic elements: where the arguments go isn't known then
@@ -3464,6 +3465,7 @@ static EffectiveArg* effective_call_args(Checker* me, CallExpr const* call, u32*
             ret[count++] = (EffectiveArg){
                 .type = elements.data[i], // (a rest element's is its array)
                 .spread = rest,
+                .tuple_name = shape->names ? shape->names[i] : nullptr,
             };
         }
     }
@@ -3526,8 +3528,13 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
             } else {
                 unsigned char* flags = calloc(arity ? arity : 1, 1);
                 Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
+                Atom const** names = nullptr; // (The labels of spread tuple elements stay: tsc's getSpreadArgumentType)
                 for (u32 a = 0; a < arity; a++) {
                     EffectiveArg const* arg = &args[at + a];
+                    if (arg->tuple_name) {
+                        if (!names) names = calloc(arity, sizeof(Atom const*));
+                        names[a] = arg->tuple_name;
+                    }
                     if (arg->spread) {
                         // (a variadic element when it's a type variable)
                         elements[a] = arg->type;
@@ -3536,11 +3543,12 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
                         elements[a] = ty_widened_literal(me, arg->expr ? ty_expr_type(me, arg->expr) : arg->type);
                     }
                 }
-                TupleShape shape = { .arity = arity, .flags = flags };
+                TupleShape shape = { .arity = arity, .flags = flags, .names = names };
                 Ty const* target = ty_tuple_target(me, &shape);
                 type = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
                 free(flags);
                 free(elements);
+                free(names);
             }
         } else if (at < arg_count) {
             // (then widened like a declaration's type: null is any without strictNullChecks). A spread element is
