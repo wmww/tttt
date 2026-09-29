@@ -22,6 +22,7 @@ ap.add_argument('--symbols', action='store_true')
 ap.add_argument('--names', action='store_true')
 ap.add_argument('--fine', action='store_true')
 ap.add_argument('--shape', action='store_true')
+ap.add_argument('--first-tsv', help='write test<TAB>kind of its first differing line<TAB>js to this file')
 args = ap.parse_args()
 REF = 'thirdparty/tsc/tests/baselines/reference/'
 DUMP = 'build/failstats/dump/'
@@ -80,6 +81,7 @@ single_js = collections.Counter()
 single_names = collections.defaultdict(list)
 first_of = collections.Counter() # tests by the kind of their first differing line (the likely root cause)
 first_names = collections.defaultdict(list)
+first_all = [] # (test, kind of its first differing line, js) for --first-tsv
 examples = collections.defaultdict(list)
 js_tests = 0
 for r in rows:
@@ -125,6 +127,7 @@ for r in rows:
         first_kind = 'underlines/order only'
     if first_kind and not js:
         first_of[first_kind] += 1; first_names[first_kind].append(name)
+    if first_kind: first_all.append((name, first_kind, js))
     if n == 0:
         test_kinds = {'underlines/order only'}
     if len(test_kinds) == 1:
@@ -146,6 +149,9 @@ if args.fine or args.shape:
 if args.names and args.k:
     print(f'\n{args.k} alone: ' + ' '.join(sorted(single_names[args.k])))
     if args.fine or args.shape: print(f'\n{args.k} first: ' + ' '.join(sorted(first_names[args.k])))
+if args.first_tsv:
+    with open(args.first_tsv, 'w') as f:
+        for name, k, js in first_all: f.write(f"{name}\t{'+'.join(k) if isinstance(k, tuple) else k}\t{int(js)}\n")
 random.seed(1)
 for k in [args.k] if args.k else lines_of:
     print(f'\n{k}:')
