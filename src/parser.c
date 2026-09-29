@@ -11041,6 +11041,16 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
     switch (statement->tag) {
         case STATEMENT_DECL_VARIABLE: {
             VecInitializedBinding* list = &statement->decl.variable.initializers;
+            if (vec_initialized_binding_size(list) > 1) {
+                // tsc's getNextJSDocCommentLocation takes the statement's JSDoc for the initializer of any of its
+                // declarations (getSingleVariableOfVariableStatement is the first, which is always there): each
+                // function gets the tags (their types go to the first)
+                for_each (i, vec_initialized_binding, list) {
+                    FunctionImpl* function = jsdoc_function_of(&i->value);
+                    if (function) jsdoc_apply_function(p, &tags, function);
+                }
+                break;
+            }
             if (vec_initialized_binding_size(list) != 1) break;
             InitializedBinding* initializer = list->data;
             JsDocTag* enum_tag = jsdoc_find_typed(&tags, JSDOC_TAG_ENUM);
