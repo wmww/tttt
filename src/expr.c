@@ -874,6 +874,7 @@ void expr_drop(Expr* me) {
         case EXPR_BINARY_OP:
             expr_drop(&my binary_op->left);
             expr_drop(&my binary_op->right);
+            free(my binary_op->access_site);
             if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) {
                 type_drop(my binary_op->jsdoc_type);
                 free(my binary_op->jsdoc_type);
@@ -1564,6 +1565,20 @@ static void plain_binary_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     if (spine != local) free(spine);
 }
 
+AccessSite* scope_access_site(Scope* names) {
+    ClassDecl const* enclosing_class = scope_enclosing_class(names);
+    ThisRef this_ref = scope_get_this(names, false);
+    Symbol const* this_parameter = this_ref.kind == THIS_PARAMETER ? this_ref.symbol : nullptr;
+    FunctionImpl const* this_function = this_ref.kind == THIS_ANY ? this_ref.function : nullptr;
+    if (!enclosing_class && !this_parameter && !this_function) return nullptr;
+    AccessSite* site = malloc(sizeof(AccessSite));
+    *site = (AccessSite){
+        .enclosing_class = enclosing_class, .containing_function = names->function, .this_parameter = this_parameter,
+        .this_function = this_function, .initializer_context = names->flow ? names->flow->initializer_context : 0,
+    };
+    return site;
+}
+
 void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_EXPR);
 
@@ -1639,6 +1654,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Expr* left = &my binary_op->left;
             Expr* right = &my binary_op->right;
             if (my binary_op->jsdoc_type && !my binary_op->jsdoc_type_borrowed) type_lookup_names(my binary_op->jsdoc_type, names, errs);
+            if (op == BINARY_OP_EQUAL && left->tag == EXPR_OBJECT) {
+                free(my binary_op->access_site);
+                my binary_op->access_site = scope_access_site(names);
+            }
             // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`
             if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !span_valid(right->function->arrow_span) &&
                 left->tag == EXPR_PROPERTY
@@ -2107,11 +2126,13 @@ Expr const* expr_effective_check_node(Expr const* me) {
 // checkDestructuringAssignment): each reference in it gets what it destructures to. Null `source` when that can't be
 // told (TODO: rest elements, iterables that aren't arrays), which checks the shape of the target only
 // `source_expr`: the right-hand side of a plain assignment, which a failure is elaborated into
-static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs);
+static void assignment_target_typecheck(
+    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, ErrorCtx* errs
+);
 static Expr const* skip_outer_expressions(Expr const* me);
 
 void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs) {
-    assignment_target_typecheck(target, source, nullptr, errs);
+    assignment_target_typecheck(target, source, nullptr, nullptr, errs);
 }
 
 // JavaScript `ns.a = {}` where `ns.a.b = v` makes `ns.a` a namespace: an assignment declaration that isn't checked
@@ -2147,7 +2168,9 @@ bool expr_check_reference_not_optional(Expr const* target, unsigned code, char c
     return false;
 }
 
-static void assignment_target_typecheck(Expr const* target, Ty const* source, Expr const* source_expr, ErrorCtx* errs) {
+static void assignment_target_typecheck(
+    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, ErrorCtx* errs
+) {
     Checker* checker = current_checker;
     if (!expr_check_reference_not_optional(target, 2779,
         "The left-hand side of an assignment expression may not be an optional property access.", errs)
@@ -2192,7 +2215,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
 
         case EXPR_UNARY_OP:
             // `x! = 1`
-            if (target->unary_op->op == UNARY_OP_RIGHT_BANG) assignment_target_typecheck(&target->unary_op->expr, source, source_expr, errs);
+            if (target->unary_op->op == UNARY_OP_RIGHT_BANG) assignment_target_typecheck(&target->unary_op->expr, source, source_expr, site, errs);
             else break;
             return;
 
@@ -2207,7 +2230,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             // `[x = 1] = a`: a default, which the walk checks as an assignment of its own
             if (target->binary_op->op != BINARY_OP_EQUAL || expr_is_perenthisized(target)) break;
             assignment_target_typecheck(
-                &target->binary_op->left, source ? ty_without_undefined(checker, source) : nullptr, nullptr, errs
+                &target->binary_op->left, source ? ty_without_undefined(checker, source) : nullptr, nullptr, site, errs
             );
             return;
 
@@ -2232,7 +2255,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                             rest = element ? ty_array(checker, element, false) : nullptr;
                         }
                     }
-                    assignment_target_typecheck(i->spread, rest, nullptr, errs);
+                    assignment_target_typecheck(i->spread, rest, nullptr, site, errs);
                 } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
                     // A hole
                 } else {
@@ -2257,7 +2280,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                         element = ty_access_reading(checker, source, ty_literal(checker, &key));
                         if (!element) element = ty_access_reading(checker, source, ty_intrinsic(checker, TY_NUMBER));
                     }
-                    assignment_target_typecheck(i, element, nullptr, errs);
+                    assignment_target_typecheck(i, element, nullptr, site, errs);
                 }
                 index++;
             }
@@ -2270,6 +2293,9 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
             if (source && !vec_object_expr_item_size(&target->object)) {
                 ty_check_non_null_non_void_at(checker, source, target->inner_span, false, errs);
             }
+            // (tsc's isThisInitializedObjectBindingExpression)
+            bool from_this = source_expr && source_expr->tag == EXPR_IDENTIFIER &&
+                source_expr->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
             for_each (i, vec_object_expr_item, &target->object) {
                 Ty const* property = nullptr;
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
@@ -2281,9 +2307,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                         Value name = { .tag = VALUE_STRING, .string = i->name_string };
                         property = ty_destructured_assignment_flow_type(checker, i, reference, name, i->name_span, property);
                     }
-                    bool from_this = source_expr && source_expr->tag == EXPR_IDENTIFIER &&
-                        source_expr->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
-                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, errs);
+                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, site, errs);
                     // What the source lacks is TS2339, on the source as it is: null and undefined too (tsc's
                     // checkObjectLiteralDestructuringPropertyAssignment). An object literal source may lack a property
                     // that has a default (AccessFlags.AllowMissing)
@@ -2304,7 +2328,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     if (!(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
                         ty_check_indexed_access_type(checker, source, key, key_span, key_span, errs);
                     }
-                    ty_check_destructured_member(checker, source, key, i->name_span, false, errs);
+                    ty_check_destructured_member(checker, source, key, i->name_span, from_this, site, errs);
                     property = ty_access_reading(checker, source, key);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD && i_index + 1 < vec_object_expr_item_size(&target->object)) {
@@ -2329,7 +2353,7 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                             rest = ty_object_rest_type(checker, source, (TyList){ .data = keys, .len = len });
                             free(keys);
                         }
-                        assignment_target_typecheck(&i->value, rest, nullptr, errs);
+                        assignment_target_typecheck(&i->value, rest, nullptr, site, errs);
                     }
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
                     // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
@@ -2338,16 +2362,16 @@ static void assignment_target_typecheck(Expr const* target, Ty const* source, Ex
                     Ty const* declared = ty_expr_type(checker, &i->value);
                     Ty const* default_type = ty_check_expr(checker, i->shorthand_default, declared);
                     expr_typecheck(i->shorthand_default, errs);
-                    assignment_target_typecheck(&i->value, default_type, i->shorthand_default, errs);
+                    assignment_target_typecheck(&i->value, default_type, i->shorthand_default, site, errs);
                     if (property && compiler_options()->strict_null_checks &&
                         !(default_type->flags & (TYF_ANY | TYF_UNKNOWN)) &&
                         ty_without_undefined(checker, default_type) == default_type
                     ) {
                         property = ty_without_undefined(checker, property);
                     }
-                    assignment_target_typecheck(&i->value, property, nullptr, errs);
+                    assignment_target_typecheck(&i->value, property, nullptr, site, errs);
                 } else if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) {
-                    assignment_target_typecheck(&i->value, property, nullptr, errs);
+                    assignment_target_typecheck(&i->value, property, nullptr, site, errs);
                 }
             }
             return;
@@ -3379,7 +3403,8 @@ static bool binary_op_typecheck(
             ) {
                 break;
             }
-            assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right, errs);
+            assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right,
+                expr->binary_op->access_site, errs);
             break;
 
         case BINARY_OP_DOUBLE_EQUAL:

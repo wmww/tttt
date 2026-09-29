@@ -21,10 +21,12 @@ typedef struct Binding {
         VecObjectBindingItem object;
     };
     Span content_span; // Just the name/array/object, not the type/value
-    bool rest; // `...x` as an element of an array or object pattern
-    bool rest_property_name; // `{ ...a: x }`: a rest element with a property name (TS2566)
+    // An object pattern: where its members are read (owned, may be null: see AccessSite). Set by binding_lookup_names()
+    struct AccessSite* access_site;
     Span element_span; // With the `...` and the default, only valid for elements of a pattern
     Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
+    bool rest; // `...x` as an element of an array or object pattern
+    bool rest_property_name; // `{ ...a: x }`: a rest element with a property name (TS2566)
     bool definitely_assigned; // `let x!: T`
     bool ambient; // Declared in an ambient context, set by binding_add_names()
     bool is_parameter; // Of a function's parameter (the parameter itself when it has no parent), see binding_add_names()

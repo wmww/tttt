@@ -7,6 +7,7 @@
 typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct UnaryOpExpr UnaryOpExpr;
 typedef struct PropertyExpr PropertyExpr;
+typedef struct AccessSite AccessSite;
 typedef struct PrivateNameExpr PrivateNameExpr;
 typedef struct GenericParamsExpr GenericParamsExpr;
 typedef struct AsTypeExpr AsTypeExpr;
@@ -446,6 +447,8 @@ typedef struct BinaryOpExpr {
     // JavaScript: the `a.b || {}` of `a.b = a.b || {}` (a function, class...: tsc's getDefaultedExpandoInitializer), whose
     // left side tsc doesn't check (checkBinaryExpression). Its type is its right side's. Set by the resolve walk
     bool defaulted_expando;
+    // `({ a } = o)`: where the destructured members are read (owned, may be null: see AccessSite)
+    AccessSite* access_site;
 } BinaryOpExpr;
 
 static inline void expr_mark_binary_operand(Expr* me) {
@@ -551,6 +554,20 @@ typedef struct PropertyExpr {
     uint8_t initializer_context;
     struct ClassItem const* initializer_field;
 } PropertyExpr;
+
+// Where a member is read, for its accessibility (private/protected, abstract in a constructor): see PropertyExpr's
+// fields of the same names. A destructuring pattern or assignment has one when it is in a class or has a `this`
+// (scope_access_site()), else it reads like at the top level
+struct AccessSite {
+    ClassDecl const* enclosing_class;
+    FunctionImpl const* containing_function;
+    Symbol const* this_parameter;
+    FunctionImpl const* this_function;
+    uint8_t initializer_context;
+};
+
+// Null when nothing about the place matters for accessibility (outside classes, no `this` to go by). Owned by the caller
+AccessSite* scope_access_site(Scope* names);
 
 typedef struct PrivateNameExpr {
     ClassDecl const* enclosing_class;

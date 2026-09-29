@@ -2181,7 +2181,7 @@ static bool containing_has_base(Checker* me, Ty const* containing, Ty const* bas
 }
 
 // tsc's getEnclosingClassFromThisParameter: the class or interface `this` is where a function says what it is
-static Ty const* this_parameter_class(Checker* me, PropertyExpr const* access) {
+static Ty const* this_parameter_class(Checker* me, AccessSite const* access) {
     Ty const* this_type = access->this_parameter ? ty_type_of_symbol(me, access->this_parameter) :
         access->this_function ? ty_contextual_this_type(me, access->this_function) : nullptr;
     if (this_type && this_type->kind == TY_TYPE_PARAM) this_type = ty_param_constraint(me, this_type);
@@ -2215,10 +2215,12 @@ static ClassDecl const* abstract_member_class(Prop const* prop, bool methods) {
 }
 
 // tsc's checkPropertyAccessibilityAtLocation for one (constituent) property, false if it reported
+// `site`: where it is read, `span` what the error is at, `this_object`: the object is `this` (tsc's isThisProperty,
+// isThisInitializedObjectBindingExpression, isThisInitializedDeclaration)
 static bool check_accessibility(
-    Checker* me, PropertyExpr const* site, Prop const* prop, Ty const* containing, bool is_super, ErrorCtx* errs
+    Checker* me, AccessSite const* site, Span span, bool this_object, bool writing, Prop const* prop,
+    Ty const* containing, bool is_super, ErrorCtx* errs
 ) {
-    Span span = site->prop.outer_span;
     if (is_super) {
         if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
             if (!(prop->flags & PROP_METHOD)) {
@@ -2246,13 +2248,13 @@ static bool check_accessibility(
         }
     }
     u32 modifiers = prop->flags & (PROP_PRIVATE | PROP_PROTECTED);
-    if ((prop->flags & PROP_ACCESSOR) && site->assignment_target) {
+    if ((prop->flags & PROP_ACCESSOR) && writing) {
         modifiers = (prop->flags & PROP_SET_PRIVATE ? PROP_PRIVATE : 0) |
             (prop->flags & PROP_SET_PROTECTED ? PROP_PROTECTED : 0);
     }
     // An abstract property read through `this` while the class initializes (tsc's isNodeUsedDuringClassInitialization:
     // directly in a constructor, or a field's initializer)
-    if (is_keyword(&site->expr, KEYWORD_IDENTIFIER_THIS) && ((site->containing_function &&
+    if (this_object && ((site->containing_function &&
         site->containing_function->constructed_class) || site->initializer_context == INITIALIZER_INSTANCE_FIELD ||
         site->initializer_context == INITIALIZER_STATIC_FIELD)
     ) {
@@ -3050,7 +3052,9 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     for (u32 i = 0; i < prop->decl->decl_span_count; i++) ty_mark_member_referenced(me, prop->decl->decl_spans[i]);
 }
 
-void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, ErrorCtx* errs) {
+void ty_check_destructured_member(
+    Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, AccessSite const* site, ErrorCtx* errs
+) {
     if (object->flags & TYF_ANY) return;
     Atom const* name = ty_literal_name(me, key);
     MemberRefs refs = {0};
@@ -3067,19 +3071,16 @@ void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, 
         }
         if (!self) mark_member_referenced(me, refs.props[i], nullptr);
     }
-    // tsc's checkPropertyAccessibility of a binding element or destructuring assignment property: a private member
-    // outside its class. TODO: protected members (the classes around the pattern aren't known here)
+    // tsc's checkPropertyAccessibility of a binding element or destructuring assignment property, where the pattern is
+    // (no site: at the top level)
+    if (!span_valid(span)) return;
+    AccessSite const top_level = {0};
     for (u32 i = 0; i < refs.len; i++) {
-        Prop const* prop = refs.props[i];
-        if (!(prop->flags & PROP_PRIVATE) || !prop->parent) continue;
-        ClassDecl const* declaring = class_decl_of(prop->parent);
-        if (!declaring || !span_valid(span) || (declaring->full_span.source == span.source &&
-            span_contains(declaring->full_span, span_start_ptr(span)))) continue;
-        cstr class_str = ty_to_cstr(me, ty_declared_type_of(me, prop->parent));
-        error_ctx_error_d(errs, span, 2341,
-            "Property '", atom_sv(prop->name), "' is private and only accessible within class '", class_str, "'.");
-        cstr_drop(&class_str);
-        return;
+        if (!check_accessibility(me, site ? site : &top_level, span, from_this, false, refs.props[i], refs.objects[i],
+            false, errs)
+        ) {
+            return;
+        }
     }
 }
 
@@ -3276,7 +3277,16 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     if (access->form == PROPERTY_EXPR_DOT) {
         bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);
         for (u32 i = 0; i < refs.len; i++) {
-            if (!check_accessibility(me, access, refs.props[i], refs.objects[i], is_super, errs)) break;
+            AccessSite site = {
+                .enclosing_class = access->enclosing_class, .containing_function = access->containing_function,
+                .this_parameter = access->this_parameter, .this_function = access->this_function,
+                .initializer_context = access->initializer_context,
+            };
+            if (!check_accessibility(me, &site, access->prop.outer_span, is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
+                access->assignment_target, refs.props[i], refs.objects[i], is_super, errs)
+            ) {
+                break;
+            }
         }
     }
     refs.len = 0;

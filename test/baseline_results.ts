@@ -246,7 +246,7 @@ const baselines = {
         types: true,
     },
     'abstractPropertyInConstructor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -35696,7 +35696,7 @@ const baselines = {
         types: true,
     },
     'privateProtectedMembersAreNotAccessibleDestructuring': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

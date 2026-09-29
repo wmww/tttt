@@ -893,7 +893,10 @@ bool ty_first_check(Checker* me, void const* node);
 // A property a destructuring pattern reads (`key` a literal type, else nothing is checked): marked referenced, and
 // TS2341 at span when it is private outside its class. `from_this`: an assignment from `this`, which doesn't read the
 // method it is in
-void ty_check_destructured_member(Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, ErrorCtx* errs);
+typedef struct AccessSite AccessSite; // expr.h
+void ty_check_destructured_member(
+    Checker* me, Ty const* object, Ty const* key, Span span, bool from_this, AccessSite const* site, ErrorCtx* errs
+);
 Atom const* checker_atom(Checker* me, csview sv);
 static inline Ty const* ty_intrinsic(Checker const* me, TyIntrinsic i) { return my intrinsics[i]; }
 
