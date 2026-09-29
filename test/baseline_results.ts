@@ -50106,7 +50106,7 @@ const baselines = {
         types: true,
     },
     'functionWithUseStrictAndSimpleParameterList_es2016': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

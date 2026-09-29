@@ -527,11 +527,52 @@ static void binding_check_unused_renamings(FunctionImpl const* function, Binding
     }
 }
 
+// tsc's checkGrammarForUseStrictSimpleParameterList (ES2016+): a "use strict" prologue in a body whose parameters
+// aren't all simple (an initializer, a pattern, a rest): TS1346 on each of those, TS1347 on the directive
+static void function_impl_check_use_strict_parameters(FunctionImpl const* me, ErrorCtx* errs) {
+    if (compiler_options()->target < SCRIPT_TARGET_ES2016 || !my has_body || my expression_body) return;
+    Statement const* directive = nullptr;
+    for_each (i, vec_statement, &my body.statements) {
+        if (i->tag != STATEMENT_EXPR || i->expr.tag != EXPR_LITERAL || i->expr.literal.tag != VALUE_STRING ||
+            expr_is_perenthisized(&i->expr) || *i->expr.inner_span.sv.buf == '`'
+        ) {
+            break;
+        }
+        if (cstr_equals(&i->expr.literal.string, "use strict")) {
+            directive = i;
+            break;
+        }
+    }
+    if (!directive) return;
+    bool any = false;
+    for_each (i, vec_function_arg, &my args) {
+        bool simple = !i->rest && i->initializer.value.tag == EXPR_IMPLICIT_ANY &&
+            i->initializer.binding.tag == BINDING_IDENTIFIER;
+        if (simple) continue;
+        Error* e = error_ctx_error_d(errs, i->span, 1346, "This parameter is not allowed with 'use strict' directive.");
+        error_add_related_d(e, directive->span, 1349, "'use strict' directive used here.");
+        any = true;
+    }
+    if (!any) return;
+    Error* e = error_ctx_error_d(errs, directive->span, 1347,
+        "'use strict' directive cannot be used with non-simple parameter list.");
+    bool first_one = true;
+    for_each (i, vec_function_arg, &my args) {
+        bool simple = !i->rest && i->initializer.value.tag == EXPR_IMPLICIT_ANY &&
+            i->initializer.binding.tag == BINDING_IDENTIFIER;
+        if (simple) continue;
+        if (first_one) error_add_related_d(e, i->span, 1348, "Non-simple parameter declared here.");
+        else error_add_related_d(e, i->span, 6204, "and here.");
+        first_one = false;
+    }
+}
+
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs) {
     if (!my has_body && my full_span.source && !my full_span.source->is_declaration) {
         for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
     }
     generic_typecheck(&my generic, errs);
+    function_impl_check_use_strict_parameters(me, errs);
     bool grammar_error = function_impl_check_grammar_parameters(me, errs);
     if (!grammar_error && my accessor && span_valid(my member_name)) {
         grammar_error = function_impl_check_grammar_accessor(me, errs);
