@@ -6,6 +6,7 @@
 #include "function_impl.h"
 #include "statement.h"
 #include "interface_decl.h"
+#include "enum_decl.h"
 
 // Type relations (assignable, comparable) over Ty. The structure follows tsc's isTypeRelatedTo -> isRelatedTo ->
 // recursiveTypeRelatedTo -> structuredTypeRelatedTo, because what's observable (which errors, which elaboration lines)
@@ -343,6 +344,67 @@ static bool enums_related(Checker* me, Symbol const* source, Symbol const* targe
     return true;
 }
 
+static inline bool same_literal_value(Ty const* s, Ty const* t);
+static void report_line(RelationState* st, unsigned ts_code, cstr message);
+static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen);
+
+// An enum member's value as a message shows it, `"a"` or `1`: the plain literal of the same value
+static cstr enum_value_display(Checker* me, Ty const* member) {
+    Value value = { .tag = VALUE_NUMBER };
+    if (member->flags & TYF_STRING_LITERAL) {
+        value = (Value){ .tag = VALUE_STRING, .string = cstr_from_sv(atom_sv(member->literal.string)) };
+    } else {
+        value.number = member->literal.value.number;
+    }
+    cstr ret = cstr_null;
+    ty_display(me, (TyDisplay){ .target = &ret }, ty_literal(me, &value));
+    if (value.tag == VALUE_STRING) cstr_drop(&value.string);
+    return ret;
+}
+
+// Why enums_related() said no (tsc's isEnumTypeRelatedTo with an error reporter): the first member of the source
+// enum that the target lacks or has another value for. Only regular enums of the same name get that far
+static void report_enums_unrelated(Checker* me, RelationState* st, Symbol const* source, Symbol const* target) {
+    if (!source || !target || source == target || !name_equals(source->name, target->name)) return;
+    if (!(source->flags & target->flags & SYMBOL_REGULAR_ENUM)) return;
+    for (u32 decl_index = 0; decl_index < source->decl_count; decl_index++) {
+        if (source->decls[decl_index].kind != SYMBOL_DECL_ENUM) continue;
+        EnumDecl const* enum_decl = source->decls[decl_index].node;
+        for_each (i, vec_enum_case, &enum_decl->cases) {
+            Symbol const* member = i->symbol;
+            if (!member || i->computed_name) continue;
+            Symbol const* other = symbol_get_export(target, member->name);
+            if (!other || !(other->flags & SYMBOL_ENUM_MEMBER)) {
+                cstr target_str = display_fully_qualified(me, ty_declared_type_of(me, target), false);
+                report_line(st, 2324, cstr_d("Property '", member->name, "' is missing in type '", target_str, "'."));
+                cstr_drop(&target_str);
+                return;
+            }
+            Ty const* source_value = ty_regular(me, ty_declared_type_of(me, member));
+            Ty const* target_value = ty_regular(me, ty_declared_type_of(me, other));
+            bool source_known = source_value->kind == TY_LITERAL && (source_value->flags & TYF_LITERAL);
+            bool target_known = target_value->kind == TY_LITERAL && (target_value->flags & TYF_LITERAL);
+            if (source_known && target_known) {
+                if (same_literal_value(source_value, target_value)) continue;
+                cstr expected = enum_value_display(me, target_value);
+                cstr given = enum_value_display(me, source_value);
+                report_line(st, 4125, cstr_d("Each declaration of '", target->name, ".", other->name, "' differs in its value, where '",
+                    expected, "' was expected but '", given, "' was given."));
+                c_drop(cstr, &expected, &given);
+                return;
+            }
+            Ty const* known = source_known ? source_value : target_known ? target_value : nullptr;
+            if (known && (known->flags & TYF_STRING_LITERAL)) {
+                cstr shown = enum_value_display(me, known);
+                report_line(st, 4126, cstr_d("One value of '", target->name, ".", other->name, "' is the string '", shown,
+                    "', and the other is assumed to be an unknown numeric value."));
+                cstr_drop(&shown);
+                return;
+            }
+        }
+    }
+}
+
 static inline bool same_literal_value(Ty const* s, Ty const* t) {
     if ((s->flags & TYF_LITERAL) != (t->flags & TYF_LITERAL)) return false;
     if (s->flags & TYF_STRING_LITERAL) return s->literal.string == t->literal.string;
@@ -418,6 +480,18 @@ static bool is_unknown_like_union(Checker* me, Ty const* t) {
         if (member->kind == TY_ANONYMOUS && ty_is_empty_anonymous_object(me, member)) return true;
     }
     return false;
+}
+
+// The enum cases of tsc's isSimpleTypeRelatedTo that ask isEnumTypeRelatedTo, explained
+static void report_enum_pair(Checker* me, RelationState* st, Ty const* s, Ty const* t) {
+    if (ty_is_enum_union(s) && ty_is_enum_union(t)) {
+        report_enums_unrelated(me, st, s->alias, t->alias);
+    } else if (s->kind == TY_LITERAL && t->kind == TY_LITERAL && s->literal.enum_decl && t->literal.enum_decl &&
+        (((s->flags & t->flags & TYF_LITERAL) && same_literal_value(s, t)) ||
+            ((s->flags & t->flags & TYF_ENUM) && name_equals(s->literal.enum_member->name, t->literal.enum_member->name)))
+    ) {
+        report_enums_unrelated(me, st, s->literal.enum_decl, t->literal.enum_decl);
+    }
 }
 
 static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s, Ty const* t) {
@@ -3774,7 +3848,8 @@ static Ternary structured_related_members(
             if (union_has_member(source, target)) return TERNARY_TRUE; // (tsc's someTypeRelatedToType)
             return some_related(me, st, source->composite.types, target);
         }
-        return each_related(me, st, source->composite.types, target, report);
+        // (Not about the members of `boolean` or an enum, primitives: tsc's unionOrIntersectionRelatedTo)
+        return each_related(me, st, source->composite.types, target, report && !(source->flags & TYF_BOOLEAN) && !ty_is_enum_union(source));
     }
     bool source_is_generic = source->kind == TY_TYPE_PARAM || (source->flags & TYF_DEFERRED) != 0;
     // A fresh empty object literal is never a subtype target of something non-empty, so `c || {}` reduces to c's type
@@ -5174,6 +5249,8 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         return TERNARY_TRUE;
     }
     if (is_simple_related(me, st, source, target)) return TERNARY_TRUE;
+    // (tsc's isSimpleTypeRelatedTo with an error reporter: why two enums of the same name aren't related)
+    if (report && ((source->flags | target->flags) & (TYF_ENUM | TYF_ENUM_LITERAL | TYF_UNION))) report_enum_pair(me, st, source, target);
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)
     ) {

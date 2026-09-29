@@ -10976,7 +10976,7 @@ const baselines = {
         types: true,
     },
     'enumAssignmentCompat3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63891,7 +63891,7 @@ const baselines = {
         types: true,
     },
     'enumLiteralTypes3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63961,7 +63961,7 @@ const baselines = {
         types: true,
     },
     'stringEnumLiteralTypes3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

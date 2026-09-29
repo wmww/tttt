@@ -50,3 +50,7 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
 - `??`, `||` and optional chains call `ty_non_nullish_part()` directly, which filters null/undefined even without
   strictNullChecks (tsc's getNonNullableType is the identity there). Test-neutral today; switch them to
   `ty_non_nullable()` if a non-strict test shows it (2026-09-29 NonNullable port leftover).
+- Members of an ambient non-const enum without initializer (`declare namespace n { enum E { A, B } }`) get 0, 1...
+  in `ty_resolve_enum()` (its TODO); tsc makes them computed (unknown values), which is what TS4126 "One value of
+  'E.A' is the string ..., and the other is assumed to be an unknown numeric value" reports (enumAssignmentCompat6,
+  which also needs `import("f")` qualification in the header). Changes what number literals such members accept.
