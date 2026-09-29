@@ -36928,7 +36928,7 @@ const baselines = {
     'privateNamesIncompatibleModifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNamesIncompatibleModifiersJs': {
         errors: true,
