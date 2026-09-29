@@ -12579,7 +12579,11 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             // (tsc's grammarErrorOnFirstToken: the `@`)
             parse_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
                 "Decorators are not valid here.");
-            vec_expr_drop(&decorators);
+            if (statement_declares_name(ret->tag) && !ret->decl.props.invalid_decorators) {
+                ret->decl.props.invalid_decorators = c_new(VecExpr, decorators);
+            } else {
+                vec_expr_drop(&decorators);
+            }
         }
     }
 

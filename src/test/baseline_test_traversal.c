@@ -2261,6 +2261,9 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 }
 
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
+    if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
+        for_each (i, vec_expr, my decl.props.invalid_decorators) expr_compile_test_info(i, ctx);
+    }
     if (span_valid(my jump_label)) {
         // Both labels and the targets of break and continue are shown as any
         ctx->any_keeps_underline = true;

@@ -82,8 +82,6 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   interface without a literal `length` (structured_related_members, before the reference case), which loses `2`.
   destructuringArrayBindingPatternAndAssignment2.
 - (error text session A, plan 34 related info/underlines + single codes) Left over, each small or blocked:
-  - Decorators on a non-class declaration (`@dec var x`, decoratorOnVar & 5 more): TS1206 is right, but the parser
-    drops the decorator expressions, so their names are neither resolved nor typed (symbols/types components).
   - The mock fs treats DOS-drive names (`A:/x.ts`, `c:/root/...`) as relative: commonSourceDir2/4 (TS5009),
     commonSourceDir5 and pathMappingBasedModuleResolution7_* (spurious TS2307/TS2792). module_name_is_relative()
     now knows drives; join() and the harness don't.

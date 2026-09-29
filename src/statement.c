@@ -637,6 +637,11 @@ static bool for_in_accepts(Checker* checker, Ty const* ty) {
 // Statements
 
 void statement_drop(Statement* me) {
+    if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
+        vec_expr_drop(my decl.props.invalid_decorators);
+        free(my decl.props.invalid_decorators);
+        my decl.props.invalid_decorators = nullptr;
+    }
     switch (my tag) {
         case STATEMENT_NOOP: break;
 
@@ -1603,6 +1608,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 }
 
 void statement_resolve_names(Statement* me, Scope* names, ErrorCtx* errs) {
+    if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
+        for_each (i, vec_expr, my decl.props.invalid_decorators) expr_lookup_names(i, names, nullptr);
+    }
     statement_resolve_names_labeled(me, 0, names, errs);
 }
 
