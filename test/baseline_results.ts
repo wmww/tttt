@@ -40283,7 +40283,7 @@ const baselines = {
     'emitArrowFunctionES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitArrowFunctionThisCapturing': {
         errors: true,

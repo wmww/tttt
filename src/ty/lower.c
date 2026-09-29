@@ -2369,9 +2369,12 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
         Ty const* declared = iterable ? ty_declared_type_of(me, iterable) : nullptr;
         Ty const* any = ty_intrinsic(me, TY_ANY);
         if (declared && declared->kind == TY_DECLARED && declared->declared.type_params.len) {
+            // (tsc's createIterableType: Iterable<any, void, undefined>)
             TyList params = declared->declared.type_params;
             Ty const** args = arena_new_n(&my arena, Ty const*, params.len);
-            for (u32 i = 0; i < params.len; i++) args[i] = any;
+            for (u32 i = 0; i < params.len; i++) {
+                args[i] = i == 1 ? ty_intrinsic(me, TY_VOID) : i == 2 ? ty_intrinsic(me, TY_UNDEFINED) : any;
+            }
             return ty_reference(me, declared, (TyList){ .data = args, .len = params.len });
         }
         return ty_array(me, any, false);
