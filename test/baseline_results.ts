@@ -19871,7 +19871,7 @@ const baselines = {
         types: true,
     },
     'jsxClassAttributeResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

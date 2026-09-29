@@ -134,8 +134,12 @@ Ty const* ty_jsx_signature_props(Checker* me, JsxElement const* element, Signatu
     Symbol const* class_attributes = ns ? export_with_meaning(ns, c_sv("IntrinsicClassAttributes"), SYMBOL_TYPE) : nullptr;
     if (class_attributes) {
         if (!instance) instance = ty_instantiate(me, signature_return_type(me, sig), mapper);
-        Ty const* host = instantiate_with_defaults(me, class_attributes, &instance, 1);
-        if (!host) host = ty_declared_type_of(me, binder_redirect(my binder, class_attributes));
+        // (tsc instantiates the type parameters of the declared type's symbol: a type alias's type is some other
+        // symbol's, or none's, so an alias stays as declared, its type parameters free)
+        Symbol const* redirected = binder_redirect(my binder, class_attributes);
+        Ty const* host = redirected->flags & SYMBOL_TYPE_ALIAS ? nullptr :
+            instantiate_with_defaults(me, class_attributes, &instance, 1);
+        if (!host) host = ty_declared_type_of(me, redirected);
         props = intersect(me, host, props);
     }
     return intersect(me, intrinsic_attributes, props);
