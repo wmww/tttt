@@ -16946,12 +16946,12 @@ const baselines = {
         types: true,
     },
     'indexSignatureInOtherFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'indexSignatureInOtherFile1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -39981,7 +39981,7 @@ const baselines = {
         types: true,
     },
     'symbolProperty32': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41076,12 +41076,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNames45_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNames45_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
