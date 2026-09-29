@@ -86,6 +86,7 @@ typedef struct FunctionImpl {
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
     bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
     bool jsdoc_type; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
+    Span jsdoc_new; // The `new` of a JSDoc `function(new: T, ...)` (what T is for), a parameter to tsc's baselines
     bool jsdoc_unchecked; // In a tag tsc's checker doesn't visit (`@returns`): no TS7014
     // A JSDoc `@callback`'s signature: tsc's isTypeParameterPossiblyReferenced finds no container on the way up from it
     // (the template tags are its siblings), so it may reference every type parameter in scope

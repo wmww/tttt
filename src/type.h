@@ -109,6 +109,9 @@ typedef struct TypeNode {
         TYPE_INTERSECTION,
         TYPE_UNIQUE_SYMBOL,
         TYPE_TEMPLATE,
+        // A JSDoc-only form written outside JSDoc (tsc's JSDocNullableType/JSDocNonNullableType: `?T`, `T?`, `!T`, `T!`),
+        // which the checker reports (TS17019/TS17020); everything else goes by `jsdoc->type`, what it means in JSDoc
+        TYPE_JSDOC,
     } tag;
     bool parsed : 1;
     bool parenthesized : 1; // Written in parentheses (the types baseline reprints annotations as written)
@@ -149,8 +152,16 @@ typedef struct TypeNode {
         VecTypeNode composite; // used for both TYPE_UNION and TYPE_INTERSECTION
         UniqueSymbolDecl unique_symbol;
         TemplateType* template_;
+        struct JsdocType* jsdoc;
     };
 } TypeNode;
+
+typedef struct JsdocType {
+    TypeNode type; // What it means: `T | null` for `?T`/`T?` (the union's first member is T), T for `!T`/`T!`
+    Span span; // The whole form, `?` or `!` included
+    bool non_null; // `!`, else `?`
+    bool postfix;
+} JsdocType;
 
 extern const TypeNode type_any;
 extern const TypeNode type_self_referential_error;

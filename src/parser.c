@@ -2307,6 +2307,18 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             }
             elem.optional = true;
         }
+        // Likewise outside JSDoc, where `T?` is a TYPE_JSDOC (tsc's parseTupleElementType)
+        if (!named && elem.type.tag == TYPE_JSDOC && elem.type.jsdoc->postfix && !elem.type.jsdoc->non_null &&
+            span_start_ptr(elem.type.jsdoc->span) == type_start
+        ) {
+            TypeNode* nullable = &elem.type.jsdoc->type;
+            TypeNode inner = *vec_type_front(&nullable->composite);
+            vec_type_pop(&nullable->composite); // (The synthesized null)
+            nullable->composite.size = 0;
+            type_drop(&elem.type);
+            elem.type = inner;
+            elem.optional = true;
+        }
         hop_whitespace(&p);
 
         if (!named && hop_char(&p, '?')) {
@@ -2399,6 +2411,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
         if (is_new) {
             // The type the construct signature makes
             function.is_constructor = true;
+            function.jsdoc_new = name;
             function.ret = type;
             function.ret_explicit = true;
         } else {
@@ -2450,33 +2463,62 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
     return parse_success(&p);
 }
 
+// A JSDoc-only type form outside JSDoc: tsc parses it all the same, then its checker says it isn't TypeScript
+// (checkJSDocTypeIsInJsFile, not in JavaScript files). TS8020 is reported here; `?T`, `T?`, `!T` and `T!` become
+// TYPE_JSDOC nodes, whose TS17019/TS17020 print a type
+static void jsdoc_type_outside_jsdoc(Parser* p, char const* start, TypeNode* ret, bool nullable, bool non_null, bool postfix) {
+    Span span = span_make(p->shared->source, start, p->pos);
+    if (!nullable && !non_null) {
+        if (!p->shared->source->is_js) {
+            parse_error(p, span, 8020, "JSDoc types can only be used inside documentation comments.");
+        }
+        return;
+    }
+    TypeNode meaning = *ret;
+    meaning.parsed = true;
+    *ret = (TypeNode){
+        .tag = TYPE_JSDOC,
+        .parsed = true,
+        .jsdoc = c_new(JsdocType, { .type = meaning, .span = span, .non_null = non_null, .postfix = postfix }),
+    };
+}
+
 // JSDoc's type forms that come first: `*` (any), `?` alone (any), `?T` (T | null), `!T` (T), `function(...)`
 static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
+    bool in_jsdoc = p.shared->in_jsdoc;
     if (hop_start_if_ends_on_word_break(&p, "function") && parse_jsdoc_function_type(&p, a, ret)) {
+        if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
         return parse_success(&p);
     }
     p.pos = a.start;
     if (hop_char(&p, '*')) {
         *ret = type_any;
+        if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
         return parse_success(&p);
     }
     if (hop_char(&p, '?')) {
-        hop_whitespace(&p);
-        char c = *p.pos;
+        Parser next = parser(&p);
+        hop_whitespace(&next);
+        char c = *next.pos;
         if (c == ',' || c == '}' || c == ')' || c == '>' || c == '=' || c == '|' || c == ']' || !c) {
+            parse_fail(&next);
             *ret = type_any;
+            if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
             return parse_success(&p);
         }
+        parse_success(&next);
         TypeNode inner;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &inner);
         *ret = jsdoc_union(inner, jsdoc_synthesized(type_null));
+        if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, true, false, false);
         return parse_success(&p);
     }
     if (hop_char(&p, '!')) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
+        if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, true, false);
         return parse_success(&p);
     }
     return parse_fail(&p);
@@ -2498,10 +2540,18 @@ static void hop_jsdoc_optional(Parser* parent, TypeNode* type) {
     parse_success(&p);
 }
 
-// JSDoc's postfix type forms: `T?` (T | null), `T!` (T)
+// JSDoc's postfix type forms: `T?` (T | null), `T!` (T). Outside JSDoc (jsdoc_type_outside_jsdoc()) only on the
+// same line, and not the first character of a longer token (`!=`, `??`, `?.`)
 static bool parse_jsdoc_postfix_type(Parser* parent, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
+    bool in_jsdoc = p.shared->in_jsdoc;
+    if (!in_jsdoc && (p.whitespace == WHITESPACE_NEWLINE || (p.pos[0] == '!' && p.pos[1] == '=') ||
+        (p.pos[0] == '?' && (p.pos[1] == '?' || (p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')))))
+    ) {
+        return parse_fail(&p);
+    }
     if (hop_char(&p, '!')) {
+        if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, left_start, left_and_ret, false, true, true);
         return parse_success(&p);
     }
     if (hop_char(&p, '?')) {
@@ -2511,8 +2561,12 @@ static bool parse_jsdoc_postfix_type(Parser* parent, char const* left_start, Typ
         parse_fail(&next);
         if (!type_follows) {
             *left_and_ret = jsdoc_union(*left_and_ret, jsdoc_synthesized(type_null));
-            p.shared->jsdoc_postfix_nullable_start = left_start;
-            p.shared->jsdoc_postfix_nullable_end = p.pos;
+            if (in_jsdoc) {
+                p.shared->jsdoc_postfix_nullable_start = left_start;
+                p.shared->jsdoc_postfix_nullable_end = p.pos;
+            } else {
+                jsdoc_type_outside_jsdoc(&p, left_start, left_and_ret, true, false, true);
+            }
             return parse_success(&p);
         }
     }
@@ -2526,7 +2580,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     hop_whitespace(&p);
 
-    if (p.shared->in_jsdoc && parse_jsdoc_postfix_type(&p, left_start, left_and_ret)) {
+    if ((*p.pos == '!' || *p.pos == '?') && parse_jsdoc_postfix_type(&p, left_start, left_and_ret)) {
         return parse_success(&p);
     }
 
@@ -2551,7 +2605,8 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         }
     }
 
-    if (TYPE_PRECEDENCE_TERNARY >= min_precedence) {
+    // (tsc's parseType: not after a line break, where `extends` starts the next member: `a?: T\n extends?: U`)
+    if (TYPE_PRECEDENCE_TERNARY >= min_precedence && p.whitespace != WHITESPACE_NEWLINE) {
         if (parse_ternary_type(&p, left_and_ret)) {
             return parse_success(&p);
         }
@@ -2599,7 +2654,12 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     hop_whitespace(&p);
     while (hop_char(&p, '.')) {
-        if (p.shared->in_jsdoc && *p.pos == '<') break; // `Array.<T>`
+        if (*p.pos == '<') { // JSDoc's `Array.<T>` (outside JSDoc tsc's checkTypeReferenceNode complains)
+            if (!p.shared->in_jsdoc && !p.shared->source->is_js) {
+                parse_error(&p, span_make(p.shared->source, p.pos - 1, p.pos), 8020, "JSDoc types can only be used inside documentation comments.");
+            }
+            break;
+        }
         vec_span_push(&namespaces, name);
         hop_whitespace(&p);
         // After the dot any identifier name goes, keywords too (`AtRule.default`)
@@ -2861,7 +2921,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     // Every branch below needs a particular first character: test it before trying the branch
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
-    if (p.shared->in_jsdoc && parse_jsdoc_prefix_type(&p, ret)) {
+    if ((c == '*' || c == '?' || c == '!' || c == 'f') && parse_jsdoc_prefix_type(&p, ret)) {
     } else if (hop_type_keyword(&p, "any")) {
         *ret = type_any;
     } else if (hop_type_keyword(&p, "unknown")) {
@@ -11694,7 +11754,7 @@ static bool is_grammar_code(unsigned code) {
     static unsigned const grammar_codes[] = {
         1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
         1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019,
+        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019, 8020,
     };
     for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
         if (code == grammar_codes[c]) return true;

@@ -13,6 +13,7 @@
 #include "math_helpers.h"
 #include "ty/ty.h"
 #include "unused.h"
+#include "source_file.h"
 
 const TypeNode type_any = { .tag = TYPE_ANY };
 const TypeNode type_self_referential_error = { .tag = TYPE_ANY, .any.self_referential_error = true };
@@ -127,6 +128,11 @@ void type_drop(TypeNode* me) {
             template_type_drop(my template_);
             free(my template_);
             break;
+
+        case TYPE_JSDOC:
+            type_drop(&my jsdoc->type);
+            free(my jsdoc);
+            break;
     }
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
@@ -234,6 +240,8 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
                 type_add_inferred_names_at(i, scope, INFER_POSITION_TEMPLATE, nullptr, 0);
             }
             break;
+
+        case TYPE_JSDOC: type_add_inferred_names_at(&my jsdoc->type, scope, position, reference, arg_index); break;
 
     }
 }
@@ -366,7 +374,31 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
                 type_lookup_names(i, names, errs);
             }
             break;
+
+        case TYPE_JSDOC: type_lookup_names(&my jsdoc->type, names, errs); break;
     }
+}
+
+// tsc's checkJSDocTypeIsInJsFile for JSDocNullableType/JSDocNonNullableType: what the form should have been written as
+static void jsdoc_type_typecheck(TypeNode const* me, ErrorCtx* errs) {
+    JsdocType const* jsdoc = my jsdoc;
+    if (!jsdoc->span.source || jsdoc->span.source->is_js) return;
+    Checker* checker = current_checker;
+    TypeNode const* inner = &jsdoc->type;
+    if (!jsdoc->non_null) {
+        check(inner->tag == TYPE_UNION && vec_type_size(&inner->composite) == 2);
+        inner = vec_type_at(&inner->composite, 0);
+    }
+    Ty const* type = ty_of_node(inner);
+    if (!jsdoc->non_null && type != ty_intrinsic(checker, TY_NEVER) && type != ty_intrinsic(checker, TY_VOID)) {
+        Ty const* members[3] = { type, ty_intrinsic(checker, TY_UNDEFINED), ty_intrinsic(checker, TY_NULL) };
+        type = ty_union(checker, members, jsdoc->postfix ? 2 : 3, nullptr, (TyList){0});
+    }
+    cstr text = ty_to_cstr(checker, type);
+    error_ctx_grammar_error_d(errs, jsdoc->span, jsdoc->postfix ? 17019 : 17020,
+        "'", jsdoc->non_null ? "!" : "?", "' at the ", jsdoc->postfix ? "end" : "start",
+        " of a type is not valid TypeScript syntax. Did you mean to write '", text, "'?");
+    cstr_drop(&text);
 }
 
 void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
@@ -436,5 +468,10 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             break;
 
         case TYPE_TEMPLATE: template_type_typecheck(my template_, errs); break;
+
+        case TYPE_JSDOC:
+            jsdoc_type_typecheck(me, errs);
+            type_typecheck(&my jsdoc->type, errs);
+            break;
     }
 }

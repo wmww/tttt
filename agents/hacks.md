@@ -168,6 +168,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
   truncates the span (was a bug in `parse_import_equals()`); the pattern may exist elsewhere.
 - `parse_import_type`/`add_module_ref`: a `ModuleRef` made in an abandoned parse attempt stays on the file's list
   (one more file looked for).
+- JSDoc types outside JSDoc (`jsdoc_type_outside_jsdoc()`): `?T`/`T?`/`!T`/`T!` are a `TYPE_JSDOC` wrapper around
+  the JSDoc meaning (checked by `jsdoc_type_typecheck()`), but `*`, `?` and `function(...)` report TS8020 from the
+  parser, as a grammar code, without a node of their own. A `function(...)` type's unnamed parameters are `argN` spans
+  that don't point into the source; the baseline walk skips them by that pointer test (`type_compile_test_info()`).
 - `CallExpr` argument types recomputed per use; `Value.object` refcount churn; `IdentifierType` could be split into a
   small common case; `CallableType`/`FunctionImpl` are two allocations (PERF comments).
 

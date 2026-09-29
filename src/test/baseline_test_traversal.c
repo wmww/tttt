@@ -725,7 +725,21 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             ctx->parameter_property_class = span_null;
             u32 saved = baseline_test_case_enter_generic(ctx, &my callable->function->generic);
             generic_compile_test_info(&my callable->function->generic, ctx);
+            FunctionImpl const* function = my callable->function;
+            if (span_valid(function->jsdoc_new)) { // (Outside JSDoc: `function(new: T)` in TypeScript)
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = function->jsdoc_new });
+                baseline_test_case_add_type(ctx, function->jsdoc_new, ty_of_node(&function->ret));
+            }
             for_each (i, vec_function_arg, &my callable->function->args) {
+                // (A JSDoc function type's unnamed parameters are `argN`, written nowhere)
+                Span name = i->initializer.binding.content_span;
+                if (function->jsdoc_type && i->initializer.binding.tag == BINDING_IDENTIFIER && name.source &&
+                    (name.sv.buf < cstr_str(&name.source->contents) ||
+                        name.sv.buf >= cstr_str(&name.source->contents) + cstr_size(&name.source->contents))
+                ) {
+                    if (i->initializer.binding.has_explicit_type) type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
+                    continue;
+                }
                 binding_content_compile_test_info(&i->initializer.binding, ctx);
                 if (i->initializer.binding.has_explicit_type) {
                     type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
@@ -797,6 +811,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 type_compile_test_info(i, ctx);
             }
             break;
+
+        case TYPE_JSDOC: type_compile_test_info(&my jsdoc->type, ctx); break;
     }
 }
 

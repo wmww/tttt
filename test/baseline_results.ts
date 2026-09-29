@@ -5552,8 +5552,8 @@ const baselines = {
     },
     'conditionalTypesASI': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'conditionalTypesSimplifyWhenTrivial': {
         errors: true,
@@ -13316,8 +13316,8 @@ const baselines = {
         types: true,
     },
     'expressionWithJSDocTypeArguments': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'expressionsForbiddenInParameterInitializers': {
@@ -25366,14 +25366,14 @@ const baselines = {
         types: false,
     },
     'parseInvalidNonNullableTypes': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parseInvalidNullableTypes': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'parseJsxElementInUnaryExpressionNoCrash1': {
         errors: true,
@@ -38481,9 +38481,9 @@ const baselines = {
         types: true,
     },
     'decoratorMetadata-jsdoc': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'decoratorMetadata': {
         errors: true,
@@ -52071,9 +52071,9 @@ const baselines = {
         types: true,
     },
     'jsdocDisallowedInTypescript': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsdocFunctionType': {
         errors: true,
