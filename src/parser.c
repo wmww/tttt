@@ -9580,6 +9580,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
     VecExpr substitutions;
     VecCStr texts;
+    // (Some branches below fill in ret's fields one by one: ret isn't zeroed)
+    ret->assignment_pattern = false;
+    ret->jsdoc_enum_literal = false;
+    ret->missing = false;
     // Most branches below need a particular first character: test it before trying the branch
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
@@ -9602,7 +9606,6 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         *ret = expr_private_name(span_from(a), c_new(PrivateNameExpr, {0}));
     } else if (c == '{' && parse_object(&p, &ret->object)) {
         ret->tag = EXPR_OBJECT;
-        ret->jsdoc_enum_literal = false; // (ret isn't zeroed)
     } else if (c == '[' && parse_array(&p, &ret->array)) {
         ret->tag = EXPR_ARRAY;
     } else if ((c == '@' || c == 'a' || c == 'c') && parse_class_decl(&p, false, &parsed.class_decl)) {
