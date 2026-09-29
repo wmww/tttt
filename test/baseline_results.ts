@@ -50273,7 +50273,7 @@ const baselines = {
     'importAssertion2(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAssertion3(module=es2015)': {
         errors: true,
@@ -50323,7 +50323,7 @@ const baselines = {
     'importAttributes2(module=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes3(module=es2015)': {
         errors: true,
@@ -50358,12 +50358,12 @@ const baselines = {
     'importAttributes7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes9': {
         errors: true,
@@ -55318,12 +55318,12 @@ const baselines = {
     'nodeModulesResolveJsonModule(module=node18)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesResolveJsonModule(module=nodenext)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesSynchronousCallErrors(module=node16)': {
         errors: true,

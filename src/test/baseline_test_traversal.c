@@ -1016,12 +1016,11 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         port_item_add_alias(i, ctx, my main.type_only);
     }
     if (span_valid(my missing_specifier)) baseline_test_case_add_type(ctx, my missing_specifier, ty_intrinsic(current_checker, TY_ANY));
-    // `with { type: "json" }`: the keys written as identifiers are any
+    // `with { type: "json" }`: the keys written as identifiers are errorType (tsc resolves them as nothing)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) {
             if (!span_valid(i->name) || i->name.sv.buf[0] == '"' || i->name.sv.buf[0] == '\'') continue;
-            ctx->any_keeps_underline = true;
-            baseline_test_case_add_type_node(ctx, i->name, &type_any);
+            baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ERROR));
         }
     }
 }
