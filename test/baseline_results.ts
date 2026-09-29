@@ -1483,7 +1483,7 @@ const baselines = {
     'assertionFunctionWildcardImport2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assertionFunctionsCanNarrowByDiscriminant': {
         errors: true,
@@ -17043,7 +17043,7 @@ const baselines = {
     'indexedAccessAndNullableNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessCanBeHighOrder': {
         errors: true,
@@ -17288,7 +17288,7 @@ const baselines = {
     'inferTypePredicates': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'inferTypesWithFixedTupleExtendsAtVariadicPosition': {
         errors: true,
@@ -17308,7 +17308,7 @@ const baselines = {
     'inferenceDoesNotAddUndefinedOrNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceDoesntCompareAgainstUninstantiatedTypeParameter': {
         errors: true,
@@ -31508,7 +31508,7 @@ const baselines = {
     'typePredicatesOptionalChaining1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicatesOptionalChaining2': {
         errors: true,

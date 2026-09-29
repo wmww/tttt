@@ -320,8 +320,6 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `chain_object_type()` (ty/expr.c): tsc marks the `undefined` of an optional chain that ended (a marker type) and
   strips only that; here every `undefined` of an object continuing a chain is taken for the marker, so `a?.b.c` with
   an optional `b` has no TS18048. Wants an `optional` intrinsic that prints as `undefined`.
-- `remove_nullable_by_intersection()`: always intersects with `{}` (tsc: `{} | null` / `{} | undefined` when the other
-  nullable is still possible).
 - `narrowable_type` (tsc's getNarrowableTypeForReference): constraint positions are marked by the resolve walk
   (`constraint_position` on IdentifierExpr/PropertyExpr); tsc's element-access rule is approximated by "literal index
   only". A pattern with a rest element (`pattern_type_has_rest`) is never a contextual type there (tsc types the

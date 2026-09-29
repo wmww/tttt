@@ -485,25 +485,31 @@ static Ty const* map_non_nullable(Checker* me, Ty const* ty, void const* arg) {
 
 typedef struct RemoveNullableArg {
     u32 target_facts;
-    Ty const* intersect_with;
+    u32 other_facts; // Zero if the type includes the other nullable already
+    Ty const* empty;
+    Ty const* empty_and_other;
 } RemoveNullableArg;
 
 static Ty const* map_remove_nullable(Checker* me, Ty const* ty, void const* arg) {
     RemoveNullableArg const* remove = arg;
     if (!has_type_facts(me, ty, remove->target_facts)) return ty;
-    Ty const* types[2] = { ty, remove->intersect_with };
+    bool could_be_other = remove->other_facts && has_type_facts(me, ty, remove->other_facts);
+    Ty const* types[2] = { ty, could_be_other ? remove->empty_and_other : remove->empty };
     return ty_intersection(me, types, 2, nullptr, (TyList){0});
 }
 
+// tsc's removeNullableByIntersection: each member that could be the nullable is intersected with `{}`, or with
+// `{} | other` when it could also be the other nullable and the type doesn't include that one already (`x !== null`
+// of a T is `T & ({} | undefined)`)
 static Ty const* remove_nullable_by_intersection(Checker* me, Ty const* ty, u32 target_facts, u32 other_facts, u32 other_includes, Ty const* other) {
     u32 facts = type_facts(me, ty, TF_EQ_UNDEFINED | TF_EQ_NULL | TF_IS_UNDEFINED | TF_IS_NULL);
     if (!(facts & target_facts)) return ty;
-    // HACK: tsc intersects with `{} | other` when the member could also be the other nullable and the type doesn't
-    // include it already. Here: only when that can't be the case
-    (void)other_facts;
-    (void)other;
-    if (!(facts & other_includes) && !compiler_options()->strict_null_checks) return ty;
-    RemoveNullableArg arg = { target_facts, ty_empty_object_type(me) };
+    Ty const* empty = ty_empty_object_type(me);
+    Ty const* parts[2] = { empty, other };
+    RemoveNullableArg arg = {
+        .target_facts = target_facts, .other_facts = facts & other_includes ? 0 : other_facts, .empty = empty,
+        .empty_and_other = ty_union(me, parts, 2, nullptr, (TyList){0}),
+    };
     return map_type(me, ty, map_remove_nullable, &arg);
 }
 
