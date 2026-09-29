@@ -2514,6 +2514,15 @@ static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
 }
 
 static void merge_augmentations(Binder* me) {
+    // tsc's resolveExternalModule for an augmentation: a name that leads to JavaScript (no declarations) and no
+    // ambient module can't be augmented
+    for (u32 i = 0; i < my augmentation_count; i++) {
+        NamespaceDecl* decl = my augmentations[i];
+        ModuleRef* ref = decl->module_ref;
+        if (ref->file || ref->failure != MODULE_REF_IS_JS || binder_module_of_ref(me, ref)) continue;
+        error_ctx_error_d(decl->inner_scope->errs, ref->span, 2665, "Invalid module name in augmentation. Module '",
+            ref->path, "' resolves to an untyped module at '", ref->resolved_path, "', which cannot be augmented.");
+    }
     // First what merges without resolving anything, then (in the same order) what needs aliases or `export *`
     // resolved, and augmentations of an `export =` module, which go into what it assigns
     for (int pass = 0; pass < 2; pass++) {
