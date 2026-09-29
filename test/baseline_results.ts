@@ -14401,7 +14401,7 @@ const baselines = {
         types: true,
     },
     'functionTypeArgumentArityErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23256,7 +23256,7 @@ const baselines = {
         types: true,
     },
     'newMap': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25096,7 +25096,7 @@ const baselines = {
         types: true,
     },
     'overloadsAndTypeArgumentArityErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47401,7 +47401,7 @@ const baselines = {
         types: true,
     },
     'overloadResolution': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -47411,7 +47411,7 @@ const baselines = {
         types: true,
     },
     'overloadResolutionConstructors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

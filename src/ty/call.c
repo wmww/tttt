@@ -1579,24 +1579,45 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
 
 static bool is_super_call(CallExpr const* call);
 
+// tsc's getTypeArgumentArityError: one signature states its range; overloads state the closest counts around the
+// given one (TS2743 when there are some on both sides)
 static void report_type_argument_arity(
     Checker* me, Signature* const* signatures, u32 count, CallInfo const* info, ErrorCtx* errs
 ) {
-    u32 min = UINT32_MAX;
-    u32 max = 0;
-    for (u32 i = 0; i < count; i++) {
-        signature_resolve(me, signatures[i]);
-        u32 sig_min = min_type_arguments(me, signatures[i]);
-        if (sig_min < min) min = sig_min;
-        if (signatures[i]->type_params.len > max) max = signatures[i]->type_params.len;
-    }
+    u32 arg_count = info->type_args.len;
     Span span = span_between(
         vec_spanned_type_at(info->type_arg_nodes, 0)->span, vec_spanned_type_back(info->type_arg_nodes)->span
     );
-    if (min == max) {
-        error_ctx_error_d(errs, span, 2558, "Expected ", min, " type arguments, but got ", info->type_args.len, ".");
+    if (count == 1) {
+        signature_resolve(me, signatures[0]);
+        u32 min = min_type_arguments(me, signatures[0]);
+        u32 max = signatures[0]->type_params.len;
+        if (min < max) {
+            error_ctx_error_d(errs, span, 2558, "Expected ", min, "-", max, " type arguments, but got ", arg_count, ".");
+        } else {
+            error_ctx_error_d(errs, span, 2558, "Expected ", min, " type arguments, but got ", arg_count, ".");
+        }
+        return;
+    }
+    i64 below = -1;
+    i64 above = -1;
+    for (u32 i = 0; i < count; i++) {
+        signature_resolve(me, signatures[i]);
+        u32 min = min_type_arguments(me, signatures[i]);
+        u32 max = signatures[i]->type_params.len;
+        if (min > arg_count) {
+            if (above < 0 || min < above) above = min;
+        } else if (max < arg_count) {
+            if (max > below) below = max;
+        }
+    }
+    if (below >= 0 && above >= 0) {
+        error_ctx_error_d(errs, span, 2743,
+            "No overload expects ", arg_count, " type arguments, but overloads do exist that expect either ", below,
+            " or ", above, " type arguments.");
     } else {
-        error_ctx_error_d(errs, span, 2558, "Expected ", min, "-", max, " type arguments, but got ", info->type_args.len, ".");
+        error_ctx_error_d(errs, span, 2558, "Expected ", below < 0 ? above : below, " type arguments, but got ",
+            arg_count, ".");
     }
 }
 
