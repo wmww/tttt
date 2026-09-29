@@ -1920,6 +1920,13 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             // The target contextually types what is assigned to it (tsc's getContextualTypeForBinaryOperand)
             left = ty_expr_type(me, &binary->left);
             Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
+            // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
+            // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
+            if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && binary->right.inner_span.source &&
+                binary->right.inner_span.source->is_js && binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_IDENTIFIER
+            ) {
+                assigned_context = left;
+            }
             // (An any target is a context too, which a `yield` records as what its generator is sent)
             if (!assigned_context && binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) {
                 assigned_context = left;
@@ -3707,7 +3714,10 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
             Ty const* ret = expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);
-            if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target) ret = object_literal_access(me, object, key);
+            // (An element access: a property access of what an object literal lacks is TS2339, checkPropertyAccessExpression)
+            if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target && expr->property->form == PROPERTY_EXPR_BRACKET) {
+                ret = object_literal_access(me, object, key);
+            }
             if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);
             if (!ret && expr->property->qualified_name && (key->flags & TYF_STRING_LITERAL)) {
                 Prop const* prop = ty_namespace_type_only_prop(me, object, ty_literal_name(me, key));
