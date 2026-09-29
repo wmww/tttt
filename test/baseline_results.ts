@@ -15938,7 +15938,7 @@ const baselines = {
     'implicitIndexSignatures': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'impliedNodeFormatEmit1(module=amd)': {
         errors: true,
@@ -39103,7 +39103,7 @@ const baselines = {
     'useObjectValuesAndEntries1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useObjectValuesAndEntries2': {
         errors: true,
