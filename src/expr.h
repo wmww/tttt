@@ -412,6 +412,9 @@ typedef struct BinaryOpExpr {
     bool jsx_siblings;
     // Owned, `/** @type {T} */ a.b = v` in JavaScript: the declared type of what the assignment declares (SymbolDecl.jsdoc_type)
     TypeNode* jsdoc_type;
+    // jsdoc_type is the outermost assignment's of a chain (`/** @type {T} */ a.x = b.y = v`: tsc's
+    // getNextJSDocCommentLocation goes up through assignments), not owned
+    bool jsdoc_type_borrowed;
     uint8_t jsdoc_modifiers; // JsDocModifiers: `/** @private */ this.x = v` (SymbolDecl.jsdoc_modifiers)
     // The declare step's scope_add_expandos() looked at it as a possible `f.x = v` expando; the resolve walk binds the
     // other ones (nested in expressions) with scope_add_nested_expando()

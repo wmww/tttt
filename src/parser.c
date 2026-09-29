@@ -10907,6 +10907,14 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
                     if (tag) assignment->jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+                    // (and of the assignments it assigns: `this.a = this.b = v`)
+                    for (Expr* e = &assignment->right; assignment->jsdoc_type && e->tag == EXPR_BINARY_OP &&
+                        e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e) && !e->binary_op->jsdoc_type;
+                        e = &e->binary_op->right
+                    ) {
+                        e->binary_op->jsdoc_type = assignment->jsdoc_type;
+                        e->binary_op->jsdoc_type_borrowed = true;
+                    }
                 }
                 assignment->jsdoc_modifiers = jsdoc_modifiers(&tags);
             }
