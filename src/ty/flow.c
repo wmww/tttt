@@ -912,9 +912,15 @@ static InitializedBinding const* root_initializer(Binding const* root) {
 }
 
 // What a declaration assigns to a binding (tsc's getInitialType): the root's initializer, and an element of an
-// annotated pattern is the element of that, not of the annotation (`let [x]: [string | number] = [1]` is number)
+// annotated pattern is the element of that, not of the annotation (`let [x]: [string | number] = [1]` is number); an
+// element with a default has the default's type as it is, not widened (`for (var { y = true } of a)` assigns true)
 static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     Checker* me = q->me;
+    if (!binding->parent && binding->source && binding->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR &&
+        binding->tag != BINDING_IDENTIFIER
+    ) {
+        return for_each_loop_statement_pattern_source_type(c_container_of(binding->source, ForEachLoopStatement, var_type));
+    }
     if (!binding->parent) {
         InitializedBinding const* initialized = root_initializer(binding);
         if (!initialized) return ty_binding_assigned_type(me, binding);
@@ -928,7 +934,12 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     Binding const* parent = binding->parent;
     Binding const* root = parent;
     while (root->parent) root = root->parent;
-    if (!root->has_explicit_type || binding->rest || !root_initializer(root)) return ty_binding_assigned_type(me, binding);
+    bool for_each = root->source && root->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR;
+    bool some_default = false;
+    for (Binding const* i = binding; i->parent; i = i->parent) some_default |= i->default_value != nullptr;
+    if (binding->rest || (!(root->has_explicit_type && root_initializer(root)) && !(some_default && (for_each || root_initializer(root))))) {
+        return ty_binding_assigned_type(me, binding);
+    }
     Ty const* object = initial_binding_type(q, parent);
     Ty const* key;
     if (parent->tag == BINDING_ARRAY) {
