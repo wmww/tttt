@@ -684,6 +684,18 @@ static u32 access_prop_flags(AccessModifier access) {
     return access == ACCESS_MODIFIER_PRIVATE ? PROP_PRIVATE : access == ACCESS_MODIFIER_PROTECTED ? PROP_PROTECTED : 0;
 }
 
+// Whether a class member's computed name can name it: a literal (the binder's name), or an entity name, which does when
+// its type is a literal or unique symbol (tsc's isLateBindableName). Anything else is left out without being checked
+static bool computed_key_may_name(Expr const* key) {
+    if (expr_is_perenthisized(key)) return false;
+    if (key->tag == EXPR_LITERAL) return key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER;
+    if (key->tag == EXPR_UNARY_OP && (key->unary_op->op == UNARY_OP_MINUS || key->unary_op->op == UNARY_OP_PLUS)) {
+        Expr const* operand = &key->unary_op->expr;
+        return operand->tag == EXPR_LITERAL && operand->literal.tag == VALUE_NUMBER && !expr_is_perenthisized(operand);
+    }
+    return expr_is_entity_name(key);
+}
+
 static Prop* builder_add_class_prop(
     Checker* me, MembersBuilder* builder, cstr const* name_string, Symbol const* parent, LowerCtx ctx, ClassItem const* item
 ) {
@@ -692,6 +704,7 @@ static Prop* builder_add_class_prop(
     Ty const* key = nullptr;
     if (computed_key) {
         // Only a literal or unique symbol key names a member (tsc's late bound names), anything else is left out
+        if (!computed_key_may_name(computed_key)) return nullptr;
         bool is_number = false;
         key = ty_expr_type(me, computed_key);
         name = ty_property_name_of_key(me, key, &is_number);

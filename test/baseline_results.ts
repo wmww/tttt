@@ -40818,12 +40818,12 @@ const baselines = {
     'computedPropertyNames21_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames21_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames22_ES5': {
         errors: true,
@@ -40838,12 +40838,12 @@ const baselines = {
     'computedPropertyNames23_ES5': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames23_ES6': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames24_ES5': {
         errors: true,
