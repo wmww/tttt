@@ -3312,6 +3312,15 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             if (from_return_type && found && !found->is_parameter) found = nullptr;
             if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
+        if (scope->kind == SCOPE_GLOBAL_AUGMENTATION) {
+            // A name the block declares is the merged global before the module file's locals: tsc's resolveNameHelper
+            // looks it up in the augmentation's exports, whose getMergedSymbol is the global (lib.esnext.iterator's
+            // `Iterator` is the global interface and `var`, not the file's local `abstract class Iterator`)
+            Symbol* found = symbol_table_lookup(&scope->binder->globals, name, hash);
+            bool declared_here = false;
+            for (u32 i = 0; found && i < found->decl_count && !declared_here; i++) declared_here = found->decls[i].block == scope;
+            if (declared_here && symbol_has_meaning(found, meaning)) return found;
+        }
         if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
         if (arguments && scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
             (arrows_have_arguments || !span_valid(scope->function->arrow_span))

@@ -2698,7 +2698,7 @@ const baselines = {
     'builtinIterator': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bundledDtsLateExportRenaming': {
         errors: true,
@@ -61466,9 +61466,9 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarationsWithIteratorObject': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usingDeclarations.1(target=es2015)': {
         errors: true,
@@ -62311,9 +62311,9 @@ const baselines = {
         types: true,
     },
     'usingDeclarationsWithIteratorObject': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usingDeclarationsWithLegacyClassDecorators.1(module=commonjs,target=es2015)': {
         errors: true,
