@@ -1654,6 +1654,14 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my property->prop.outer_span, .allow_declaration_empty = true });
         info.found = true;
     }
+    if (!info.found && my property->form == PROPERTY_EXPR_DOT && has_symbol_override(ctx, my inner_span)) {
+        // `F.prototype` of `F.prototype.x = v` shows the member it declares even where F has no `prototype` (a
+        // variable initialized with an object: prototype_symbol_overrides())
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
+        expr_compile_test_info(&my property->expr, ctx);
+        has_compiled_expr_info = true;
+        info.found = true;
+    }
     if (!info.found && (key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
         !(key->flags & TYF_ENUM_LITERAL) && my property->prop.tag == EXPR_LITERAL &&
         !csview_starts_with(my property->prop.outer_span.sv, "#")
