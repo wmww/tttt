@@ -330,6 +330,8 @@ static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body,
     if (!ret) {
         TyMapper const* mapper = ty_mapper_new(me, params, args);
         ret = ty_instantiate(me, body, mapper);
+        // (Its type parameters unused, the body is itself: it still goes by these arguments)
+        if (ret == body && body->alias == decl) ret = ty_realias(me, ret, decl, args);
         *intern_slot(me, &my links, stack_key, count) = ret;
     }
     return ret;

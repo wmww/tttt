@@ -8718,22 +8718,22 @@ const baselines = {
     'declarationEmitTypeAliasWithTypeParameters3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeAliasWithTypeParameters6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeParamMergedWithPrivate': {
         errors: true,
@@ -20178,32 +20178,32 @@ const baselines = {
     'jsxNamespaceGlobalReexport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxNamespaceGlobalReexportMissingAliasTarget': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespace': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=preserve)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespaceFromPragmaPickedOverGlobalOne': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceNoElementChildrenAttributeReactJsx(jsx=react-jsx)': {
         errors: true,
@@ -20893,7 +20893,7 @@ const baselines = {
     'mappedTypeInferenceCircularity': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeInferenceFromApparentType': {
         errors: false,

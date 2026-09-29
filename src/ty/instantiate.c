@@ -482,15 +482,28 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
 // `type Bar = Omit<Foo, "c">`: the instantiation of a generic alias written directly as the body of another alias goes
 // by the new name (tsc passes the new alias symbol to getTypeAliasInstantiation). Same members, its own identity
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args) {
-    if (ty->alias == alias) return ty;
-    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
-        return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+    bool same_args = ty->alias_args.len == alias_args.len;
+    for (u32 i = 0; same_args && i < alias_args.len; i++) same_args = ty->alias_args.data[i] == alias_args.data[i];
+    if (ty->alias == alias && same_args) return ty;
+    // The alias's own body with other type arguments, which it doesn't use (`type Foo<T> = { a: 1 }`, Foo<number>):
+    // an instantiation of its own that prints with them (tsc's getObjectTypeInstantiation keys on the alias type
+    // arguments too)
+    if (ty->alias == alias) {
+        if (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args || ty->anonymous.function) return ty;
+    } else {
+        if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+            return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+        }
+        if (ty->kind == TY_INTERSECTION) {
+            return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+        }
+        bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL;
+        if (!deferred && (ty->kind != TY_ANONYMOUS || (!ty->anonymous.target && !ty->anonymous.realiased) ||
+            ty->anonymous.applies_type_args)
+        ) {
+            return ty;
+        }
     }
-    if (ty->kind == TY_INTERSECTION) {
-        return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
-    }
-    bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL;
-    if (!deferred && (ty->kind != TY_ANONYMOUS || !ty->anonymous.target || ty->anonymous.applies_type_args)) return ty;
     u64 stack_key[40];
     u32 count = 4 + alias_args.len;
     if (count > c_arraylen(stack_key)) return ty;
