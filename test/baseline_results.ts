@@ -25458,7 +25458,7 @@ const baselines = {
     'parserPrivateIdentifierInArrayAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserUnparsedTokenCrash1': {
         errors: true,
@@ -36507,18 +36507,18 @@ const baselines = {
     },
     'privateNameInInExpressionTransform(target=es2020)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInInExpressionTransform(target=es2022)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInInExpressionTransform(target=esnext)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInInExpressionUnused(target=es2022)': {
         errors: true,

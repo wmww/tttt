@@ -1633,6 +1633,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
 
 // `#x in obj`: the member `#x` names, from the class that declares it
 static void private_name_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    if (!ctx->private_name_in_left) return; // (elsewhere it's nothing to tsc's getSymbolAtLocation either)
     Checker* checker = current_checker;
     Atom const* name = nullptr;
     Ty const* object = ty_private_name_owner(checker, me, &name);
@@ -1911,7 +1912,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 this_property_symbol_overrides(&my binary_op->left, ctx);
                 nested_expando_symbol_overrides(&my binary_op->left, ctx);
             }
+            ctx->private_name_in_left = my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME;
             expr_compile_test_info(&my binary_op->left, ctx);
+            ctx->private_name_in_left = false;
             while (ctx->symbol_override_count > overrides) {
                 ctx->symbol_override_count--;
                 cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
@@ -2203,6 +2206,8 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             Span parenthesized = span_make(my inner_span.source, start - 1, end + 1);
             baseline_test_case_add_type_recursive(ctx, my outer_span, parenthesized, ty_regular(current_checker, expr_get_type(me)));
         }
+    } else if (my tag == EXPR_PRIVATE_NAME && !ctx->private_name_in_left) {
+        // (tsc's isExpressionNode: a private name is an expression only as the left operand of `in`)
     } else if (my tag == EXPR_GENERIC_PARAMS && my generic_params->heritage) {
         // (A class's `extends B<T>` is tsc's ExpressionWithTypeArguments, which the type writer skips)
     } else if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc && span_eq(my outer_span, my as_type->expr.outer_span)) {
