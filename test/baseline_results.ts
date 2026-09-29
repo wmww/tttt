@@ -1496,7 +1496,7 @@ const baselines = {
         types: true,
     },
     'assignLambdaToNominalSubtypeOfFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48376,7 +48376,7 @@ const baselines = {
         types: true,
     },
     'typeSatisfaction_errorLocations1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67256,7 +67256,7 @@ const baselines = {
         types: true,
     },
     'genericCallWithFunctionTypedArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67386,7 +67386,7 @@ const baselines = {
         types: true,
     },
     'genericClassWithFunctionTypedMemberArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

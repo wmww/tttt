@@ -1396,7 +1396,10 @@ static Span report_unfit_argument(
         Arg const* arg = &args->data[index];
         bool is_rest_tuple = arg_type != arg->type;
         Expr const* effective = expr_effective_check_node(arg->expr);
-        span = is_rest_tuple ? span_of_args(args, (u32)index, args->len - 1) : effective->inner_span;
+        // (tsc's getSignatureApplicabilityError: the effective check node, or a synthetic expression over the rest
+        // arguments when there are several; getErrorSpanForNode then shortens functions to their name or first token)
+        span = is_rest_tuple && (u32)index + 1 < args->len ? span_of_args(args, (u32)index, args->len - 1) :
+            expr_error_span(effective);
         ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple ? nullptr : effective, errs);
     }
     free(shape.types);
