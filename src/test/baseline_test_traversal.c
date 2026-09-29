@@ -1133,17 +1133,30 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 .span = my method.name_span,
                 .text = member_text(ctx, ctx->class_symbol, class_name, written_name.sv, false),
             }, my method.computed_key);
-            // An overloaded method is all of its overloads (the member's type)
-            u32 overload_count = 0;
+            // A method is the member's type: all of its overloads, and those of the declarations it merges with
+            // (an interface's, overloads with a computed name)
             Ty const* type = class_item_get_type(me);
-            if (!my method.accessor && !my method.computed_key && ctx->class_symbol && overloads_merge(me, items, &overload_count) &&
-                overload_count > 1
-            ) {
+            if (!my method.accessor && ctx->class_symbol) {
                 Checker* checker = current_checker;
+                Atom const* name = nullptr;
+                if (my method.computed_key) {
+                    bool is_number = false;
+                    name = ty_property_name_of_key(checker, ty_expr_type(checker, my method.computed_key), &is_number);
+                } else {
+                    name = checker_atom(checker, cstr_sv(&my method.name_string));
+                }
                 Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
-                Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my method.name_string)));
-                if (prop) type = prop_type(checker, prop);
+                Prop const* prop = name ? ty_get_prop(checker, owner, name) : nullptr;
+                // (A single signature prints as declared by the declaration it is: its annotations are reused)
+                Ty const* merged = prop && (prop->flags & PROP_METHOD) ? prop_type(checker, prop) : nullptr;
+                Prop const* origin = prop;
+                while (origin && origin->target) origin = origin->target;
+                if (merged && (merged->flags & TYF_OBJECT) &&
+                    (ty_members(checker, merged)->call_count > 1 || origin->decl->function != &my method.func)
+                ) {
+                    type = merged;
+                }
             }
             baseline_test_case_add_type(ctx, my method.name_span, optional_member_type(type, my method.is_optional));
             // (Not in scope in its computed name)

@@ -981,8 +981,6 @@ static void builder_add_class_items(
                     if (has_getter) prop->decl->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }
-                // With overload signatures around, the implementation's own signature isn't visible
-                bool has_overloads = false;
                 u32 visible = 0;
                 for_each (other, vec_class_item, &class_decl->items) {
                     if (other->tag != CLASS_ITEM_METHOD || other->method.accessor || other->method.is_static != static_side ||
@@ -992,18 +990,8 @@ static void builder_add_class_items(
                     }
                     if (!visible && other != i) goto next_item; // Not the first declaration of this method
                     visible++;
-                    has_overloads |= !other->method.func.has_body;
                 }
                 {
-                    bool abstract_only = true; // Abstract methods have no body either, and aren't overloads of anything
-                    for_each (other, vec_class_item, &class_decl->items) {
-                        if (other->tag == CLASS_ITEM_METHOD && !other->method.accessor && other->method.is_static == static_side &&
-                            cstr_eq(&other->method.name_string, &i->method.name_string) && other->method.func.has_body
-                        ) {
-                            abstract_only = false;
-                        }
-                    }
-                    if (abstract_only) has_overloads = false;
                     FunctionImpl const** functions = arena_new_n(&my arena, FunctionImpl const*, visible);
                     u32 count = 0;
                     ClassItem const* previous = nullptr; // The class item before `other`
@@ -1015,9 +1003,9 @@ static void builder_add_class_items(
                         ) {
                             continue;
                         }
-                        if (has_overloads && other->method.func.has_body) continue;
                         // A body right after a declaration of the same method is its implementation, even after another
-                        // body (tsc's getSignaturesOfSymbol: `m() {} m(x) {}` has one signature)
+                        // body (tsc's getSignaturesOfSymbol: `m() {} m(x) {}` has one signature). One that isn't (the
+                        // static `m` between `m(x: string);` and `m(x) {}`) is a signature of its own
                         if (count && other->method.func.has_body && before && before->tag == CLASS_ITEM_METHOD &&
                             !before->method.accessor && before->method.is_static == static_side &&
                             cstr_eq(&before->method.name_string, &i->method.name_string)

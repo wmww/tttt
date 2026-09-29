@@ -14348,7 +14348,7 @@ const baselines = {
     'functionOverloadsOutOfOrder': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloadsRecursiveGenericReturnType': {
         errors: true,
@@ -21368,7 +21368,7 @@ const baselines = {
     'mixedStaticAndInstanceClassMembers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mixedTypeEnumComparison': {
         errors: true,
@@ -21403,7 +21403,7 @@ const baselines = {
     'mixingStaticAndInstanceOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'modFunctionCrash': {
         errors: true,
@@ -39823,7 +39823,7 @@ const baselines = {
     'symbolDeclarationEmit3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolDeclarationEmit4': {
         errors: true,
@@ -40018,7 +40018,7 @@ const baselines = {
     'symbolProperty39': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolProperty4': {
         errors: true,
@@ -40028,22 +40028,22 @@ const baselines = {
     'symbolProperty40': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolProperty41': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolProperty42': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolProperty43': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'symbolProperty44': {
         errors: false,
@@ -41028,12 +41028,12 @@ const baselines = {
     'computedPropertyNames40_ES5': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames40_ES6': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'computedPropertyNames41_ES5': {
         errors: true,
