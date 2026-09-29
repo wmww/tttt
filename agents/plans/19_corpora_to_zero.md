@@ -105,7 +105,6 @@ alias (`typeof CommonResult<false, O>`) left uninstantiated. Probes in `test/pro
 - Multi-file probes against a corpus: put them in `/tmp/x/` with relative imports into `thirdparty/corpora/...`, run
   `./release/tttt -q <options>` and `node thirdparty/tsc/lib/tsc.js --noEmit <options>` (filetest.sh copies the file
   away, so relative imports break).
-- `/tmp/realworld.txt` is shared: parallel agents overwrite each other's; copy it right after a run.
 - A diagnostic hidden behind `any`/the error type surfaces when its cover is fixed: counts can go up after a real fix
   (expect-type mismatches were all silent until call arity was rechecked; zod's DeepPartial behind the getter fix).
 - Estimates by grouping codes were often off by 5x (R2: ~190 estimated, 890 fixed): rank by sampled root cause.

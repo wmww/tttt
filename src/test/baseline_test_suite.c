@@ -209,6 +209,11 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
         color_error, failed, color_normal, " failed, ",
         vec_baseline_test_result_size(&my results), " total\n"
     );
+    if (my has_filter && passed + failed == 0) {
+        // STC's cregex silently matches nothing once a pattern gets long (a few hundred alternatives)
+        println(color_error, "The filter matched no tests", color_normal,
+            " (a long regex alternation can silently match nothing: use -f @names.txt)\n");
+    }
 
     intptr_t newly_passed_size = vec_baseline_test_result_c_ptr_size(&newly_passed);
     if (newly_passed_size) {

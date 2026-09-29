@@ -66,7 +66,10 @@ def main():
     wall = time.time() - start
     rss = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss // 1024
     text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))
-    with open('/tmp/realworld.txt', 'w') as f:
+    # per tree and corpus: concurrent runs (sub-agents in worktrees, several corpora) don't overwrite each other
+    tree = os.path.basename(os.path.dirname(os.path.abspath(__file__)))
+    outpath = f'/tmp/realworld-{tree}-{args.corpus}.txt'
+    with open(outpath, 'w') as f:
         f.write(text)
     lines = text.split('\n')
 
@@ -92,7 +95,7 @@ def main():
         return
 
     print(f'{status}, wall {wall:.2f}s, peak RSS {rss} MB, {sum(codes.values())} diagnostics in {len(files)} files '
-          f'(full output: /tmp/realworld.txt)')
+          f'(full output: {outpath})')
     for l in lines:
         if l.startswith('  time:') or 'panic' in l.lower() or 'invalid pointer' in l or re.search(r'\.c:\d+: error:', l):
             print('  ' + l.strip()[:200])
