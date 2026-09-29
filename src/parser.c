@@ -4780,7 +4780,8 @@ static bool parse_interface(Parser* parent, Interface* ret) {
     return parse_success(&p);
 }
 
-static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
+// after_declare: `declare type` commits to a type alias, a line break after `type` is TS1142 (tsc's isDeclaration)
+static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
 
@@ -4789,7 +4790,8 @@ static bool parse_type_decl(Parser* parent, TypeDecl* ret) {
     }
     hop_whitespace(&p);
     if (p.whitespace == WHITESPACE_NEWLINE) {
-        return parse_fail(&p);
+        if (!after_declare) return parse_fail(&p);
+        parse_error(&p, span_from_token(&p), 1142, "Line break not permitted here.");
     }
 
     Span name;
@@ -5920,7 +5922,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             Parser probe = parser(&p);
             probe.pos = name_start;
             Span ignored;
-            name_is_identifier = !yield_await_is_keyword_here(&probe) && parse_identifier(&probe, &ignored);
+            name_is_identifier = !yield_await_is_keyword_here(&probe) && parse_identifier(&probe, &ignored) &&
+                !is_reserved_word(ignored.sv);
             parse_fail(&probe);
         }
     }
@@ -7919,6 +7922,10 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     // `f?.(x)` and `a?.[i]`. `a?.b` is parse_dot_prop()'s, and `a ? .5 : b` is a ternary
     bool optional_chain = false;
+    // No optional chain in the callee of a `new` (tsc's parseMemberExpressionRest with allowOptionalChain false)
+    if (ctx.min_precedence == new_keyword_precedence && p.pos[0] == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')) {
+        return parse_fail(&p);
+    }
     // tsc's parseUpdateExpression: `a++` is no left-hand side expression, only operators continue it (`a--.b` and
     // `a++ ++` are missing a `;`)
     if (left_and_ret->tag == EXPR_UNARY_OP && !expr_is_perenthisized(left_and_ret) &&
@@ -8088,7 +8095,8 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     // Never in JavaScript files, to avoid the ambiguity with `<` and `>` (tsc's parseTypeArgumentsInExpression)
     if (c == '<' && !p.shared->source->is_js && parse_generic_params(&generic_p, true, &parsed.generic_params)) {
         bool success = false;
-        if (ctx.reject_operators) {
+        // (A decorator's type arguments are an expression's: `@g<T> class C {}` is `@g` and `<T> class C {}`)
+        if (ctx.reject_operators && !ctx.decorator) {
             success = true;
         } else if (*generic_p.pos == '>' || *generic_p.pos == '=') {
             // Fail
@@ -8970,6 +8978,16 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             call.callable = expr_implicit_any(span_from_pos(&p));
         } else {
             expect_expr(&p, sub_ctx, &call.callable);
+        }
+        Parser chain_p = parser(&p);
+        hop_whitespace(&chain_p);
+        if (chain_p.pos[0] == '?' && chain_p.pos[1] == '.' && !(chain_p.pos[2] >= '0' && chain_p.pos[2] <= '9')) {
+            // (tsc's parseNewExpressionOrNewDotTarget: `new A?.b()` is `(new A)?.b()`)
+            parse_error(&chain_p, span_make(p.shared->source, chain_p.pos, chain_p.pos + 2), 1209,
+                "Invalid optional chain from new expression. Did you mean to call '", call.callable.outer_span, "()'?");
+            parse_success(&chain_p);
+        } else {
+            parse_fail(&chain_p);
         }
         if (!parse_call_args(&p, &call.args)) {
             call.args = vec_expr_init();
@@ -11411,7 +11429,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .class = c_new(ClassDecl, parsed.class),
             },
         };
-    } else if (parse_type_decl(&p, &parsed.type_decl)) {
+    } else if (parse_type_decl(&p, vec_spanned_modifier_size(&modifiers.spanned) &&
+        vec_spanned_modifier_back(&modifiers.spanned)->tag == MODIFIER_DECLARE, &parsed.type_decl)
+    ) {
         modified.kind = MODIFIED_TYPE_ALIAS;
         parsed.type_decl.full_span = span_from(a);
         *ret = (Statement){
