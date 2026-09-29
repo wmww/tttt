@@ -54,8 +54,3 @@ planning stub), the rest to `bugs/*.md` (missing_checks.md has a new "Elaboratio
   in `ty_resolve_enum()` (its TODO); tsc makes them computed (unknown values), which is what TS4126 "One value of
   'E.A' is the string ..., and the other is assumed to be an unknown numeric value" reports (enumAssignmentCompat6,
   which also needs `import("f")` qualification in the header). Changes what number literals such members accept.
-- vue computes an assignability explanation it never shows: `(TSMethodSignature | TSPropertySignature) & { _ownerScope:
-  TypeScope }` to `TSType` goes through `ty_explain_unrelated()` (an argument check via `report_unfit_argument()`,
-  compiler-sfc resolveType.ts) although vue has no diagnostics. Since discriminated_union_target() sees intersection
-  sources' properties (tsc's findMatchingDiscriminantType), that explanation costs +0.2% instructions on vue. Find which
-  caller explains a failure whose diagnostic is dropped (speculative checking?) and skip the explanation there.

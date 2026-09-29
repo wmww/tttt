@@ -27011,7 +27011,7 @@ const baselines = {
         types: true,
     },
     'recursiveTupleTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

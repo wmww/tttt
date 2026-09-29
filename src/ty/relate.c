@@ -687,7 +687,8 @@ void ty_display_pair_cstr(Checker* me, Ty const* a, Ty const* b, cstr* a_out, cs
 void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* source_out, cstr* target_out) {
     source = ty_regular(me, source); // Messages see normalised types, like the relation
     bool widen = report_widens(me, target);
-    display_pair(me, widen ? ty_base_type_of_literal(me, source) : source, widen, target, source_out, target_out);
+    display_pair(me, widen && is_literal_type(source) ? ty_base_type_of_literal(me, source) : source, widen, target, source_out,
+        target_out);
 }
 
 // Whether the base constraint of `ty`, were it the constraint of the type parameter, would need the type parameter's
@@ -930,7 +931,7 @@ static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index)
 static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
     flush_incompatible(st);
     bool widen = report_widens(me, target);
-    Ty const* generalized = widen ? ty_base_type_of_literal(me, source) : source;
+    Ty const* generalized = widen && is_literal_type(source) ? ty_base_type_of_literal(me, source) : source;
     cstr source_str, target_str;
     display_pair(me, generalized, widen, target, &source_str, &target_str);
     // (An indexed access into a type parameter counts as one: tsc's reportRelationError looks at its object's flags)
