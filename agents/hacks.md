@@ -202,6 +202,20 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 - `expect_expr()` continues a missing operand with binary/assignment operators and `.` (tsc's missing identifier as
   a primary expression), but not `[`/`(` member/call continuations, and returns true when it built something (callers
   treat false as nothing to drop).
+- Escaped keywords (`hop_escaped_keyword()`): the keyword probe decodes a word that mismatches at a `\` and takes it
+  as the keyword with TS1260. tsc reports it only where the keyword token is consumed with nextToken(); a probe that
+  matches speculatively where tsc would read an identifier would report a TS1260 tsc doesn't (not seen in the suite).
+  Escaped *names* are still raw text (bugs/escaped_identifiers.md).
+- Decorators with no declaration after them (tsc's MissingDeclaration, TS1146) have no AST node: the statement fails
+  and the list reports TS1128 at the `@` (esDecorators-decoratorExpression.3, TransportStream). Needs a node whose
+  decorators the resolve walk and the baselines visit but the checker doesn't check.
+- Spans tsc takes from a node's full start (trivia included) are rebuilt by skipping spaces backwards from the token
+  (TS1433 on a decorated `this` parameter, TS1385-TS1388 from the operator's end): a comment in between isn't
+  skipped. `question_dot_after()` finds a decorator chain's `?.` by scanning forward to the next `?`.
+- `triple_slash_invalid_reference()` re-implements tsc's pragma regexes (tripleSlashXMLCommentStartRegEx and
+  getNamedArgRegEx) next to `parse_source_directive()`, which parses the same comment its own way.
+- A NUL byte in the source ends the file for the parser (`*p.pos == '\0'` is EOF everywhere):
+  scannerUnexpectedNullCharacter1, scannerStringLiteralWithContainingNullCharacter1.
 
 ## Binder (`scope.c`)
 - Identifiers keep `symbol` (what the name found, maybe an alias) and `target` (aliases resolved, cached at resolve
