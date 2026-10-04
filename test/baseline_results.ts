@@ -67518,7 +67518,7 @@ const baselines = {
     'discriminatedUnionTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminatedUnionTypes3': {
         errors: true,

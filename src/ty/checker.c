@@ -1415,7 +1415,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         for (u32 j = 0; j < buf.len; j++) if (buf.data[j]->kind == TY_UNION) combos *= buf.data[j]->composite.types.len;
         TyBuf results = {0};
         TyBuf parts = {0};
-        bool any_intersection = false;
+        bool any_intersection = false, reduced_later = false;
         for (u32 i = 0; i < combos; i++) {
             parts.len = 0;
             for (u32 j = 0; j < buf.len; j++) ty_buf_push(&parts, buf.data[j]);
@@ -1428,13 +1428,20 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
                 n /= l;
             }
             Ty const* r = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
-            if (r->flags & TYF_NEVER) continue;
+            if (r->flags & TYF_NEVER) {
+                // (Objects whose discriminants conflict: tsc reduces those only later, getReducedType, into a union of
+                // its own without the origin)
+                bool objects = true;
+                for (u32 j = 0; j < parts.len && objects; j++) objects = (parts.data[j]->flags & TYF_OBJECT) != 0;
+                reduced_later |= objects;
+                continue;
+            }
             any_intersection |= r->kind == TY_INTERSECTION;
             ty_buf_push(&results, r);
         }
         ty_buf_drop(&parts);
         OriginSpec spec = { TY_INTERSECTION, buf.data, buf.len };
-        bool use_origin = any_intersection &&
+        bool use_origin = any_intersection && !reduced_later &&
             constituent_count_of(results.data, results.len) > constituent_count_of(buf.data, buf.len);
         ret = results.len == 0 ? my intrinsics[TY_NEVER] :
             union_with_origin(me, results.data, results.len, alias, alias_args, use_origin ? &spec : nullptr);

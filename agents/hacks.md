@@ -438,6 +438,8 @@ src` finds the code-side markers; every significant one has an entry here.
   props (`ty_node_reaches_alias_in_flight`, `members_judgeable`) are skipped and the answer not remembered though the
   intersection is interned. It runs as its own region of the resolution stack (`resolving_start`, plan 39): a cycle its
   eager questions find mustn't mark what is being resolved around it (it made arktype's mapped `sequence` TS2615).
+  The cross product of an intersection of unions compensates (`reduced_later` in ty_intersection): an object
+  combination that came out never drops the origin, as tsc's later getReducedType would (discriminatedUnionTypes2).
   Real fix: a lazy reduced view.
 - `resolve_call` (call.c HACK): every resolution of a call starts a new region of the resolution stack; tsc's only
   the first (a nested one gets `resolvingSignature` and sees the whole stack). Since resolve-once (plan 38 stage 3) the
