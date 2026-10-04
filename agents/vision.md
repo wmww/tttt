@@ -24,10 +24,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   substitution types, deferred references, flow graph + narrowing, module resolution + tsconfig, iteration protocol,
   generators, `this` types, mixins, decorators, the missing type, union origins, elaboration, JSX, tsc's type printer
   and symbol chains, JSDoc + CommonJS + expandos, parallel checking and loading. ~96k lines of C.
-- **Absent or approximated tsc mechanisms**: declaration-emit diagnostics (plan 40: isolatedDeclarations and
-  symbol accessibility done, TS2742's module specifiers left), project references
-  (plan 41: semantics and `-b` done, read as sources; `-b` on TypeScript's src 1.32 s vs tsgo -b's 2.34; typescript-eslint
-  left), **laziness** (members, reverse mapped types, intersection reduction, contextual instantiation
+- **Absent or approximated tsc mechanisms**: declaration-emit diagnostics (plan 40 done 2026-10-04 bar TS7056 for
+  deep types and TS5088; module specifiers are generated for TS2742), project references (plan 41 done: read as
+  sources, tsc-src and typescript-eslint at 0 under `-b`, 1.3 s and 3.0 s vs tsc -b's 14-22 s), **laziness** (members, reverse mapped types, intersection reduction, contextual instantiation
   and return types are computed eagerly; plan 42), resolvingSignature and the rest of the circularity stack (blocked
   on laziness), permissive instantiation. Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
 

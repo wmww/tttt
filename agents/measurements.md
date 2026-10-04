@@ -10,15 +10,19 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Plan 41 stage 3: corpus typescript-eslint (2026-10-04)
-Suite 12712 -> 12712, 0 lost. **typescript-eslint** (`-b` at its root solution, 38 projects): 66 -> **0**
-diagnostics; tttt -b 3.03 s / 650-705 MB (best of 3, machine loaded by other agents; `--build-jobs 1` 3.4-3.8 s / 400
-MB); **tsc 5.8 -b 20.7-22.9 s / 1.5-2.3 GB** (from scratch on a /tmp copy); tsgo 7.0.2 -b fails it (TS 7
-differences), 5.4 s. Threads 1/4 byte-identical. Other corpora unchanged (webpack 6, xstate 8, drizzle 6, zod-root 55,
-tsc-src 12, rest 0); `./scenarios.py` 199/19/83. Callgrind c0da8315 -> end: tsc 4.711 -> 4.710, type-fest 3.223 ->
-3.211, valibot 5.056 -> 5.014, **react 1.636 -> 1.704 (+4.2%**: distributive constraints of `T & {}` check types,
-base_constraint() has no memo, triage), nest 1.269 -> 1.269, webpack 3.916 -> 3.912, zod 4.466 -> 4.470, xstate
-2.788 -> 2.771, drizzle 13.256 -> 13.264, vue 7.838 -> 7.832 G.
+## Todo entry 6: plan 40 stage 3, plan 41 stage 3 (2026-10-04)
+Suite 12712 -> 12728, 0 lost (TS2742 +14, tsc-src fixes +2). Corpora: **tsc-src 12 -> 0**, new corpus
+**typescript-eslint** (`-b` at its root solution, 38 projects) 66 -> **0**; webpack 6, xstate 8, drizzle 6, zod-root
+55, rest 0. `./scenarios.py` 199 -> **208** pass / 10 fail / 83 skipped. typescript-eslint: tttt -b 3.03 s / 650-705
+MB (machine loaded by other agents; `--build-jobs 1` 3.4-3.8 s / 400 MB); **tsc 5.8 -b 20.7-22.9 s / 1.5-2.3 GB** (from
+scratch on a /tmp copy); tsgo 7.0.2 -b fails it (TS 7 differences). tsc-src `-b` 1.34 s. Threads 1/4 byte-identical
+(`threadcheck.sh` now runs the `-b` corpora with `-b`). Callgrind c0da8315 -> end: tsc 4.712 -> 4.712, type-fest 3.222
+-> 3.213, valibot 5.051 -> 5.018, **react 1.634 -> 1.695 (+3.7%**: distributive constraints of `T & {}` check types,
+base_constraint() has no memo, triage), nest 1.265 -> 1.274 (+0.7%, alternative containing modules and specifiers in
+the declaration walk), webpack 3.913 -> 3.912, zod 4.466 -> 4.479, xstate 2.788 -> 2.769, drizzle 13.257 -> 13.335
+(+0.6%: the same, plus intern_get's per-call cost from a different memory layout at equal call counts), **vue 7.840 ->
+8.105 (+3.4%**: 9444083d, a widened object literal is no longer exempt from a weak target's optional properties, as in
+tsc; unions that reduced before stay wider; perf_leads).
 
 ## Plan 41 stage 2: `-b` perf (2026-10-04, todo entry 4)
 Suite 12377 -> 12377, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, tsc-src 12, rest 0);

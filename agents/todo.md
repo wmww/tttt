@@ -20,11 +20,14 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 5. Done (2026-10-04, one session, ~110 picked commits): types/symbols fan-out, suite 12377 -> 12712, 0 lost; types
    component 703 -> 560 failing, symbols 506 -> 217; xstate 12 -> 8, other corpora unchanged; callgrind within +0.5%
    (webpack), vue/drizzle down. Leftovers in plan 35's queue and bugs/display.md.
-6. **Plan 40 stage 3 + plan 41 stage 3**: module specifier generation once, for TS2742 and the references corpora;
-   the 11 tsc-src checker bugs; pin typescript-eslint as the second references corpus and take it toward 0.
+6. Done (2026-10-04, one session + two sub-agents, ~25 commits): plan 40 stage 3 (`module_specifiers.c`, TS2742,
+   alternative containing modules) and plan 41 stage 3 (tsc-src 12 -> 0, typescript-eslint pinned, 66 -> 0). Suite
+   12712 -> 12728, 0 lost; scenarios 199 -> 208. Callgrind react +3.7%, vue +3.4% (both from correct checker fixes:
+   leads for entry 8 in measurements.md / perf_leads.md), nest +0.7%.
 7. **Planning: plan 42** (laziness). Read the stub; inventory, prototype, decide. Must answer whether lazy per-name
    members are also the memory fix for drizzle.
-8. **Perf and memory**: a quiet `./bench.sh` run, now like-for-like on nest/drizzle/valibot/tsc (declaration
+8. **Perf and memory**: first the two regressions of entry 6 (react: base_constraint() memo, triage; vue: 9444083d's
+   wider unions, perf_leads.md), then a quiet `./bench.sh` run, now like-for-like on nest/drizzle/valibot/tsc (declaration
    diagnostics exist after entry 2: say so in measurements.md), `-b` on tsc-src vs `tsc -b`; profile what the window
    added; peak RSS (drizzle 1.8 GB vs single-threaded tsgo 1.05: `./arenasites.sh`, the `Signature` split, AST node
    sizes in `bugs/perf_leads.md`).

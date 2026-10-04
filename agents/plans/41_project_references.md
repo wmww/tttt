@@ -2,6 +2,11 @@
 Planned 2026-09-29 (todo entry 9 of the seventh window). Three stages, stage 1 is one to two sessions.
 
 ## Status (2026-10-04)
+**All three stages done** (todo entry 6 of the eighth window): tsc-src and typescript-eslint at 0 under `-b`;
+`./scenarios.py` 208 pass / 10 fail (TS1005 in tsconfig, TS5083 missing `extends`, TS6377 out of scope, the CLI's phase
+gating, TS2613/TS1192, TS1479: triage.md). What remains is perf (parallel name resolution of referenced sources, the
+biggest phase of `-b` on both corpora). The stage notes below are as they were written.
+
 **Stage 1 done** in one session (todo entry 3 of the eighth window): `src/project.{h,c}`, the redirects, `-p`/`-b`,
 `scenarios.py`, corpus `tsc-src`. documentation.md "Project references" describes what was built. Numbers:
 - `./realworld.py --corpus tsc-src` (`-b thirdparty/tsc/src`): 12 diagnostics, the 11 checker bugs below plus

@@ -8,6 +8,15 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 (to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
 `/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
 
+## Regressions of todo entry 6 (2026-10-04), for the next perf session
+- **vue +3.4%** (7.840 -> 8.105 G) from 9444083d (`requires_optional_properties()`: only an unwidened object literal
+  is exempt from a weak target's optional properties, as in tsc). Correct per tsc, but subtype reductions that used to
+  collapse `{}`-like widened literals now keep both members; the extra cost is spread over instantiation and property
+  lookups. Find which unions grew (TTTT_DEBUG_RELATE on vue's dts-test) and whether tsc has a cache tttt lacks there.
+- **react +3.7%** (1.634 -> 1.695 G) from a4aa6c6b (the distributive constraint of a conditional type whose check type
+  is a generic union/intersection, `T & {}`); 54770b41 recovered part. `base_constraint()` has no per-type memo, tsc's
+  getResolvedBaseConstraint caches (triage.md).
+
 ## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
 Measure with `./instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
 a worktree (`git worktree add /tmp/wt-perf <commit>`, symlink `thirdparty/tsc` and `thirdparty/corpora`, `meson setup`
