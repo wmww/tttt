@@ -37917,7 +37917,7 @@ const baselines = {
     },
     'controlFlowOptionalChain': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'controlFlowOptionalChain2': {
@@ -47687,7 +47687,7 @@ const baselines = {
     },
     'callChain': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'callChainInference': {
@@ -47772,7 +47772,7 @@ const baselines = {
     },
     'deleteChain': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'elementAccessChain.2': {
@@ -47787,7 +47787,7 @@ const baselines = {
     },
     'elementAccessChain': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'optionalChainingInArrow': {

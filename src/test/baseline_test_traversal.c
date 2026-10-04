@@ -2183,7 +2183,9 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     Checker* checker = current_checker;
     Ty const* object = ty_expr_type(checker, &my property->expr);
     Ty const* key = ty_access_key_type(checker, my property);
-    PropSymbolInfo info = { .qualified_name = my property->qualified_name };
+    // (`o["a"]`: tsc's getSymbolAtLocation of the literal is getPropertyOfType of the object's type, which has none
+    // when a member like `undefined` doesn't have it: `o?.["a"]`)
+    PropSymbolInfo info = { .qualified_name = my property->qualified_name, .strict_union = my property->form == PROPERTY_EXPR_BRACKET };
     if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
         collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
     }
