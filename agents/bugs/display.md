@@ -52,8 +52,15 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   first built (moot since plan 37 D builds Array at checker start), but the mechanism is still there for other global
   generics: if `X<T>` vs another spelling flips with `-f` vs a full run or with `--checkers`, find what the printer keys on.
 
-- tttt interns every empty `{}` literal as one type, so an earlier `{}` in a file changes union member order compared
-  with tsc (`test/probes/plan37/evolving/objects.ts` puts the affected case first).
+- tsc's type writer re-checks every expression it prints (getTypeOfExpression -> checkExpression, uncached), so the
+  object literal types in an expression's printed type are newer than everything the main check made: `true ? {} : 1`
+  prints `1 | {}`, and in `[{ id: 4 }, <{ id: number }>({})]` subtype reduction keeps the type literal (mutual subtypes:
+  the older stays) while the variable's own type, from the main check, keeps the object literal
+  (conditionalOperatorWithIdenticalBCT, contextualTyping36). tttt checks once; emulating it would mean re-checking or
+  re-sorting by "made in this expression".
+- Lib literal types made early: es2022IntlAPIs prints `"timeZone"` first (some lib member is lowered before tsc would).
+- strictFunctionTypesErrors: `typeof Foo.f1` (a static method of a non-exported class in a namespace) isn't reused by
+  tsc there but is in a reduced probe; cause not found.
 - A conditional type as a constraint prints parenthesized: `<Expected extends (Extends<A, Expected>) extends true ?
   ...>`, tsc without the parentheses (expect-type).
 - reactDefaultPropsInferenceSuccess: the TS6500 related info prints `keyof Props` where tsc prints `"when" | "error"`.
