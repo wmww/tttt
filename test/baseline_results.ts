@@ -13323,7 +13323,7 @@ const baselines = {
     'expressionsForbiddenInParameterInitializers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'extBaseClass1': {
         errors: true,
@@ -42583,7 +42583,7 @@ const baselines = {
     'FunctionDeclaration10_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration11_es6': {
         errors: true,
@@ -42628,12 +42628,12 @@ const baselines = {
     'FunctionDeclaration6_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration7_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'FunctionDeclaration8_es6': {
         errors: true,
@@ -45308,17 +45308,17 @@ const baselines = {
     'generatorTypeCheck57': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck58': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck59': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'generatorTypeCheck6': {
         errors: true,
@@ -55848,17 +55848,17 @@ const baselines = {
     'parser.asyncGenerators.classMethods.es2018': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.asyncGenerators.functionDeclarations.es2018': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.asyncGenerators.functionExpressions.es2018': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.asyncGenerators.objectLiteralMethods.es2018': {
         errors: false,

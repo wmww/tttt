@@ -330,6 +330,18 @@ static bool scope_has_arguments(Scope const* scope) {
     return false;
 }
 
+// The flow builder of the generator whose body a `yield` is in, as tsc's forEachYieldExpression finds them: not in its
+// parameters' initializers, nor in the decorators of a method or accessor of a class in it (a function-like node it
+// doesn't enter), but in a field's initializer of such a class
+static FlowBuilder* yield_generator_body_flow(Scope const* names) {
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        if (scope->kind == SCOPE_FUNCTION) return scope->function && scope->function->is_generator ? scope->flow : nullptr;
+        if (scope->parameters) return nullptr;
+        if (scope->member_decorator && !(scope->parent && scope->parent->in_field)) return nullptr;
+    }
+    return nullptr;
+}
+
 // In a class field (its initializer, computed name or decorators) or static block, not in a function or arrow function
 // in it (tsc's isInPropertyInitializerOrClassStaticBlock)
 static bool in_initializer_or_static_block(Scope const* scope) {
@@ -1780,18 +1792,22 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         Span keyword = { .source = my inner_span.source, .sv = csview_from_n(my inner_span.sv.buf, 5) };
                         error_ctx_grammar_error_d(errs, keyword, 1163, "A 'yield' expression is only allowed in a generator body.");
                         expr_lookup_names(operand, names, nullptr);
-                        break;
+                    } else {
+                        expr_lookup_names(operand, names, errs);
                     }
-                    expr_lookup_names(operand, names, errs);
-                    if (flow->function && flow->function->is_generator) {
+                    if (flow->function && flow->function->is_generator && !my unary_op->outside_generator) {
                         my unary_op->generator = flow->function;
                         my unary_op->no_type_params_in_scope = !names->generics;
-                        if (flow->yield_count == flow->yield_cap) {
-                            flow->yield_cap = flow->yield_cap ? flow->yield_cap * 2 : 4;
-                            flow->yields = realloc(flow->yields, sizeof(Expr const*) * flow->yield_cap);
-                            panic_if(!flow->yields, "out of memory");
+                    }
+                    // (A class field's in a generator is TS1163, but still something the generator yields)
+                    FlowBuilder* generator_flow = yield_generator_body_flow(names);
+                    if (generator_flow) {
+                        if (generator_flow->yield_count == generator_flow->yield_cap) {
+                            generator_flow->yield_cap = generator_flow->yield_cap ? generator_flow->yield_cap * 2 : 4;
+                            generator_flow->yields = realloc(generator_flow->yields, sizeof(Expr const*) * generator_flow->yield_cap);
+                            panic_if(!generator_flow->yields, "out of memory");
                         }
-                        flow->yields[flow->yield_count++] = me;
+                        generator_flow->yields[generator_flow->yield_count++] = me;
                     }
                     break;
 
