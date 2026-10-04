@@ -8633,7 +8633,7 @@ const baselines = {
     'declarationEmitScopeConsistency3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitShadowingInferNotRenamed': {
         errors: true,
@@ -8763,7 +8763,7 @@ const baselines = {
     'declarationEmitTypeofRest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitTypeofThisInClass': {
         errors: true,

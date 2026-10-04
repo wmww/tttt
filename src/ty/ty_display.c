@@ -685,6 +685,29 @@ static void param_names_leave(TyDisplay d, u32 saved) {
 static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csview first, u32 meaning) {
     // Unresolved names are an error type; type parameters and parameters in scope where they're printed (tsc checks
     // that by resolving from the signature's fake scope)
+    // (A name the signatures being printed declare as a parameter means that parameter there: a rest tuple's expanded
+    // elements are none that can be referenced, tsc's unknownSymbol)
+    if (meaning == SYMBOL_VALUE) {
+        for (TyDisplayParams const* i = d.printed_params; i; i = i->outer) {
+            for (u32 j = 0; j < i->count; j++) {
+                SigParam const* param = &i->params[j];
+                if (!csview_equals_sv(atom_sv(param->name), first)) continue;
+                return symbol && param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER &&
+                    param->decl->initializer.binding.symbol == symbol;
+            }
+        }
+    }
+    // (A parameter is only in scope inside its function: printed elsewhere it means nothing, tsc's symAtLocation)
+    if (symbol && symbol->is_parameter && span_valid(d.at) && symbol->decl_count && symbol->decls[0].block) {
+        FunctionImpl const* function = symbol->decls[0].block->function;
+        bool printed = false;
+        for (TyDisplayParams const* i = d.printed_params; i && !printed; i = i->outer) printed = i->function == function;
+        if (!printed && function && span_valid(function->full_span) && function->full_span.source == d.at.source &&
+            !span_contains_span(function->full_span, d.at)
+        ) {
+            return false;
+        }
+    }
     if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return true;
     if (symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN) return true; // `object`
     // (A local of a function or block never is: tsc's isDeclarationVisible() is false for it, and `enclosing` only knows
@@ -1739,6 +1762,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     u32 param_count = sig->param_count;
     SigParam const* params = expanded_params(me, sig, &param_count);
     if (!params) params = sig->params;
+    TyDisplayParams printed = { .params = params, .count = param_count, .function = function, .outer = d.printed_params };
+    if (d.underline) d.printed_params = &printed;
     if (sig->this_type) {
         out(reused_if(d, d.reused || (function && !jsdoc_this)), c_sv("this"));
         out_lit(d, ": ");

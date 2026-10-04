@@ -1960,7 +1960,16 @@ typedef struct TyDisplay {
     uint8_t jsdoc_literal_depth; // Inside that many JSDoc type literals being reprinted (their indentation)
     DeclTracker* tracker; // Declaration emit: null everywhere else
     bool in_object_literal; // Inside a type literal's members (tsc's InObjectTypeLiteral): `this` can't be written there
+    // The parameters of the signatures being printed (innermost first): the fake scope tsc's enterNewScope makes for a
+    // signature, where a reused `typeof x` must still mean the same (see name_accessible())
+    struct TyDisplayParams const* printed_params;
 } TyDisplay;
+typedef struct TyDisplayParams {
+    struct SigParam const* params;
+    u32 count;
+    struct FunctionImpl const* function; // Whose parameters they are, if known
+    struct TyDisplayParams const* outer;
+} TyDisplayParams;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig);
