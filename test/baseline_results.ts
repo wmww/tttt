@@ -43353,12 +43353,12 @@ const baselines = {
     'taggedTemplateStringsWithOverloadResolution3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithOverloadResolution3_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'taggedTemplateStringsWithTagNamedDeclare': {
         errors: true,

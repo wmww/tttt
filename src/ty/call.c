@@ -1860,6 +1860,25 @@ static Resolution resolve_with_signatures(
             check_args(me, &shape, args, false);
             free(shape.types);
             ret.ret = candidate_return_type(me, &candidate);
+        } else if (!info->type_arg_nodes) {
+            // No candidate was checked (wrong argument counts): tsc's pickLongestCandidateSignature, inferred from
+            // what doesn't depend on the candidate (inferSignatureInstantiationForOverloadFailure)
+            u32 best = 0;
+            u32 most = 0;
+            for (u32 i = 0; i < count; i++) {
+                u32 params = ty_signature_param_count(signatures[i]);
+                if (ty_signature_has_rest(signatures[i]) || params >= args->len) {
+                    best = i;
+                    break;
+                }
+                if (i == 0 || params > most) most = params, best = i;
+            }
+            if (signatures[best]->type_params.len) {
+                Candidate candidate = make_candidate(me, signatures[best], args, info, true, true);
+                ret.ret = resolved_return_type(me, &candidate);
+            } else {
+                ret.ret = signature_return_type(me, signatures[best]);
+            }
         } else {
             Ty const** return_types = malloc(sizeof(Ty const*) * count);
             u32 len = 0;
