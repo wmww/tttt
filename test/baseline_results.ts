@@ -29337,7 +29337,7 @@ const baselines = {
     },
     'stringLiteralPropertyNameWithLineContinuation1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'stringLiteralsErrors': {
@@ -40837,12 +40837,12 @@ const baselines = {
     },
     'computedPropertyNames23_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames23_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames24_ES5': {
@@ -40867,12 +40867,12 @@ const baselines = {
     },
     'computedPropertyNames26_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames26_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames27_ES5': {

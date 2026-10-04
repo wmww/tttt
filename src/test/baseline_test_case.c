@@ -1526,6 +1526,20 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     }
 
     cstr_append_lit(&text, ")");
+    // (A name written over several lines, `[\r\n x\r\n]`, has `\n` line breaks: tsc's symbolToString of the
+    // declaration name prints it again)
+    if (memchr(cstr_str(&text), '\r', (size_t)cstr_size(&text))) {
+        isize from = cstr_find(&text, " : Symbol(");
+        if (from != c_NPOS) {
+            cstr fixed = cstr_from_sv(csview_from_n(cstr_str(&text), from));
+            for (const char* c = cstr_str(&text) + from; *c; c++) {
+                if (c[0] == '\r' && c[1] == '\n') continue;
+                cstr_push(&fixed, c);
+            }
+            cstr_drop(&text);
+            text = fixed;
+        }
+    }
     BaselineTestFile* test_file = find_file(me, data.span.source);
     vec_line_numbered_str_push(&test_file->symbols, (LineNumberedStr){
         .line = line_for_placement,
