@@ -282,6 +282,10 @@ static void builder_add_interface_member(
                     ) {
                         // A property declared again (TS2717): one symbol, the first declaration's type
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                    } else if (!is_method && (existing->flags & PROP_METHOD) && !i->has_write_type && !i->computed_accessor) {
+                        // A property after a method of its name joins its symbol (PropertyExcludes is nothing), which
+                        // stays a method: only a declaration more
+                        prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
                     }
                     break;
                 }

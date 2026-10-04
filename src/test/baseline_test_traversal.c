@@ -633,11 +633,22 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     redeclared = prop;
                 }
             }
+            // A property after a method of its name joined the method's symbol (see builder_add_interface_member)
+            Prop const* joined = nullptr;
+            if (!my key.name_is_member_function && ctx->member_owner && !redeclared && vec_span_size(&my declarations)) {
+                Checker* checker = current_checker;
+                Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
+                bool mine = false;
+                for (u32 i = 0; prop && (prop->flags & PROP_METHOD) && i < prop->decl->decl_span_count; i++) {
+                    mine |= span_eq(prop->decl->decl_spans[i], *vec_span_at(&my declarations, 0));
+                }
+                if (mine) joined = prop;
+            }
             VecSpan declarations = vec_span_init();
             // (A symbol is named as its first declaration writes it: `1; 1.0;` is `I[1]` twice)
             csview written = my key.span.sv;
-            if ((merged && merged->decl->decl_span_count) || redeclared) {
-                Prop const* shown = merged ? merged : redeclared;
+            if ((merged && merged->decl->decl_span_count) || redeclared || joined) {
+                Prop const* shown = merged ? merged : redeclared ? redeclared : joined;
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
                 if (span_valid(shown->decl->name_span)) written = shown->decl->name_span.sv;
             } else {
