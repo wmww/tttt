@@ -18,6 +18,20 @@ Planned 2026-09-29 (todo entry 9 of the seventh window). Three stages, stage 1 i
   0.55 s, libs 0.05 s. **Name resolution of referenced projects' files, redone in every program, is the cost**; checking
   only the project's own files already made typecheck small. Teardown between programs isn't visible in the total.
 
+**Stage 2 done** (todo entry 4 of the eighth window, one session): `-b thirdparty/tsc/src` 3.65 s / 755 MB -> **1.32 s /
+785 MB** (best of 3; `--build-jobs 1`: 1.74 s / 540 MB). tsgo -b on a /tmp copy 2.34 s / 577-876 MB (it emits: noEmit
+isn't allowed in referenced projects), single-threaded 3.45 s; tsc -b 13.6 s. Output identical at every
+`--build-jobs`/`--threads`. What did it, in order of effect:
+1. Reference sources' function bodies with a written return type are neither parsed nor resolved (a brace scanner,
+   `skip_typed_body()`; TypeScript's compiler/ is isolatedDeclarations, so nearly every body). Resolve names summed
+   1.48 -> 0.58 s, load+parse 0.72 -> 0.32 s, free 0.55 -> 0.22 s.
+2. Two projects at once (`--build-jobs`, main.c's `Output` buffers printed in build order).
+3. `program_drop()` frees the files on the program's threads (teardown was ~65 ms per program, ~0.85 s in all).
+Tried and reverted: freeing finished programs on the idle main thread (malloc arena contention, 2 GB peak). Not done:
+a cross-program file cache (parsing is no longer the cost), parallel name resolution (now the biggest phase of `-b`,
+0.58 s summed, serial: vision's later list; it helps every corpus too). `--time` split now (J=1, summed): resolve 583,
+typecheck 441, load+parse 316, free 217, libs 74 ms.
+
 ## Why
 tttt ignores `references`. Two kinds of real projects use them:
 - **Monorepos built with `tsc -b`**: a solution tsconfig (`"files": []` + `references`), one composite project per
@@ -133,7 +147,7 @@ reference sources, `-p` and `-b`, the config diagnostics the scenarios need. Pin
 corpus **`tsc-src`** (`./realworld.py --corpus tsc-src` runs `tttt -b thirdparty/tsc/src`; the checkout already has
 `scripts/failed-tests.cjs`; don't run tsc -b in place, it writes `built/local`). Target: the 66 mechanism errors gone,
 the 11 checker bugs left (listed above), every project checked once. Scenario tests (see Validation) wired up.
-### Stage 2: perf of `-b` (1 session, measured first)
+### Stage 2: perf of `-b` (1 session, measured first) — done, see Status
 Each program re-reads, parses and binds every referenced file it reaches: compiler's 56 ms parse + 101 ms resolve
 names (4 threads, `--time`) is paid in 11 of the 13 programs; checking only a project's own files is already the big
 cut (compiler's 290 ms check happens once). Measure `-b src` against `tsc -b` (15.6 s) and tsgo `-b` if available in

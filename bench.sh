@@ -116,6 +116,29 @@ for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/ts
     (./release/tttt -q --time --keep-going -p $DIR 2>&1 > /dev/null || true) | grep -a '^time:' | sed 's/^/  /'
 done
 
+# Project references (plan 41): -b on TypeScript's own src/, 13 projects. tsc -b and tsgo -b emit (a referencing
+# project reads the .d.ts files of what it references; noEmit isn't allowed in a referenced project), so they run on a
+# /tmp copy, from scratch each time (built/ removed). tttt reads referenced projects from their sources, checks two
+# projects at a time with 4 threads, and exits 1 (the 12 diagnostics ./realworld.py --corpus tsc-src lists). tsgo
+# exits 2 on one TS 7 difference in harness/
+BUILD=/tmp/tttt-bench-tsc-b
+rm -rf $BUILD && mkdir -p $BUILD
+cp -r thirdparty/tsc/src thirdparty/tsc/scripts thirdparty/tsc/package.json $BUILD/
+ln -s "$PWD/thirdparty/tsc/node_modules" $BUILD/node_modules
+echo
+echo "-b thirdparty/tsc/src: $(find thirdparty/tsc/src -name '*.ts' | wc -l) files, $(find thirdparty/tsc/src -name tsconfig.json | wc -l) configs"
+measure "tttt" ./release/tttt -q --keep-going -b thirdparty/tsc/src
+measure "tsc -b (node)" sh -c "rm -rf $BUILD/built && node thirdparty/tsc/lib/tsc.js -b $BUILD/src"
+if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
+    measure "tsgo -b" sh -c "rm -rf $BUILD/built && tsc -b $BUILD/src"
+    measure "tsgo -b single-threaded" sh -c "rm -rf $BUILD/built && tsc -b --singleThreaded $BUILD/src"
+fi
+echo "tttt phases (one run with --build-jobs 1, summed over the projects):"
+(./release/tttt -q --time --keep-going --build-jobs 1 -b thirdparty/tsc/src 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
+    awk '{ name = $0; sub(/^time: /, "", name); sub(/ [0-9.]+ ms.*/, "", name); match($0, /[0-9.]+ ms/);
+        sum[name] += substr($0, RSTART, RLENGTH - 3) } END { for (n in sum) printf "  %s %.0f ms\n", n, sum[n] }'
+rm -rf $BUILD
+
 echo
 # The lib files esnext.full.d.ts references, transitively. They're given as root files: --no-lib also ignores
 # `/// <reference lib>`, and lib files loaded as libs aren't typechecked

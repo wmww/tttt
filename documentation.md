@@ -243,7 +243,11 @@ turns a resolved output into its source, for imports, type references, `/// <ref
 a referenced project's root file is `SourceFile.from_reference`: unchecked, every diagnostic in it dropped (parse
 errors too, at the end of `program_load_automatic_types()`), and its module names resolved by a resolver with *its*
 project's options (`program_resolver_of()`, `program_options_of()`); parsing, checking and the automatic types stay
-the program's. Where tsc -b's reading of the `.d.ts` shows to an importer, the source reads like one: a synthetic
+the program's. Since nothing in a reference source is checked, the body of a function with a written return type is
+neither parsed (`skip_typed_body()` steps over it with a brace scanner that falls back to parsing when unsure: a `/`
+after `)` or `}`, `import`, `require`) nor resolved (`function_impl_lookup_names_as()`): tsc -b's `.d.ts` has no bodies
+either, and they were most of the cost of `-b` (TypeScript's `compiler/`, isolatedDeclarations, is read by 11 of its
+13 programs). Where tsc -b's reading of the `.d.ts` shows to an importer, the source reads like one: a synthetic
 default (`source_file_reads_as_declaration()`), and its const enums are ambient for TS2748 unless its project preserves
 them (`SourceFile.reference_const_enums_ambient`).
 
@@ -253,8 +257,11 @@ and no `/// <reference types="node" />` leaking from a built `.d.ts`.
 
 The CLI: `-p` on a config with references checks that project with the redirects; on a solution config (no files,
 only references) it says nothing and exits 0. `-b [PROJECT...]` checks each project in build order as its own program,
-freed before the next (release builds otherwise leave the last program to the exit), going on past errors (tsc 5.6+;
-`--stopBuildOnErrors`). The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
+freed when done (release builds otherwise leave the last program to the exit; `program_drop()` frees the files on the
+program's threads), going on past errors (tsc 5.6+; `--stopBuildOnErrors`). No program needs another's result, so
+`--build-jobs J` projects are checked at once (default 2 with 4 threads, each program on threads/J), each into an
+`Output` buffer that the main thread prints in build order: the output doesn't depend on J. The project set's root
+files and every program's `ProjectRedirects` are made before the build threads start, which only read them. The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
 own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_files()`) go at the import that brought
 the file in (`SourceFile.included_at`). `./scenarios.py` replays the first command of tsc's own tsbuild/tsc project
 reference baselines against tttt; `./realworld.py --corpus tsc-src` is `-b` on TypeScript's `src`.

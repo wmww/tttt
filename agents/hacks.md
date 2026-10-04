@@ -614,11 +614,20 @@ src` finds the code-side markers; every significant one has an entry here.
   allowJs/resolveJsonModule defaults; `follow_links()` uses libc's realpath, not the `Fs` (the mock fs never links
   configs).
 - Project references (`project.c`, plan 41): a `ProjectSet` reads every config twice (options, then root files with a
-  scratch `CompilerOptions`); the redirect map is rebuilt per program (cheap next to name resolution, which stage 2
-  is about). `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is in the
+  scratch `CompilerOptions`); the redirect map is rebuilt per program (cheap next to name resolution). `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is in the
   program because: Matched by include pattern ..." chain (the program doesn't know which spec matched). Config
   diagnostics of references are only for the program's own config's direct references (tsc walks them transitively,
   reported on the parent config). `main.c` counts config diagnostics among the "parse errors" of its summary.
+- Reference sources' typed bodies (`skip_typed_body()`/`skip_balanced_braces()` in parser.c,
+  `function_impl_lookup_names_as()`'s `skip_body`, plan 41 stage 2): skipped by a hand scanner whose regex-or-division
+  rule is a heuristic (gives up after `)`/`}`/`++`/`--`; checked against the real parse on every corpus, see the
+  commit). What a skipped body would have done to the outside is lost: a `let` assigned only in it isn't
+  `is_assigned` (narrowing in an unannotated sibling closure of a reference source could differ), `Symbol.referenced`.
+  The parser can't tell an IIFE, so an annotated IIFE's body is skipped there (resolve then walks an empty body). The
+  real fix for the time it saves is cheaper ASTs (`bugs/perf_leads.md` "The AST"), not a better scanner.
+- `-b`'s `--build-jobs` default (`build()`, main.c) is 2 at 4 threads, picked by one corpus (tsc-src, best of 3: J=1 1.74 s /
+  540 MB, J=2 1.32 s / 785 MB, J=3 1.35 s / 930 MB, J=4 1.19 s / 1.2 GB): a memory-aware scheduler would size by
+  projects' file counts.
 - `main.c`: strict by default only without a tsconfig; `default_libs` when nothing picks `--lib`/`--target`;
   `--keep-going` unvalidated.
 

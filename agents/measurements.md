@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Plan 41 stage 2: `-b` perf (2026-10-04, todo entry 4)
+Suite 12377 -> 12377, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, tsc-src 12, rest 0);
+`./scenarios.py` 199 / 19 / 83 skipped. **`-b thirdparty/tsc/src`** (best of 3, quiet machine): tttt **1.32 s / 785
+MB** (was 3.65 s / 755 MB; `--build-jobs 1` 1.74 s / 540 MB, 4 jobs 1.19 s / 1.2 GB); tsgo 7.0.2 -b 2.34 s /
+577-876 MB, `--singleThreaded` 3.45 s / 584 MB; tsc 5.8 -b 13.6 s / 710-760 MB (both emit on a /tmp copy: a referenced
+project can't be noEmit; `bench.sh` now has this section). `--time` summed over the 13 programs at J=1: resolve names
+583, typecheck 441, load+parse 316, free 217, libs 74 ms. Callgrind 9f151959 -> end (single-project path): tsc 4.704
+-> 4.705, type-fest 3.217 -> 3.216, valibot 5.043 -> 5.042, react 1.631 -> 1.631, nest 1.266 -> 1.266, webpack 3.891
+-> 3.892, zod 4.446 -> 4.449, xstate 2.780 -> 2.782, drizzle 13.308 -> 13.311, vue 7.895 -> 7.894 G (flat).
+
 ## Plan 41 stage 1: project references (2026-10-04, todo entry 3)
 Suite 12376 -> 12377, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, rest 0). New corpus
 **tsc-src** (`-b thirdparty/tsc/src`, 13 projects): 12 diagnostics (plan 41's 11 checker bugs + one 4-checker-only),
