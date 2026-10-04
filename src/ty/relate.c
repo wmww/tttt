@@ -4602,8 +4602,10 @@ static Ternary structured_related_members(
 
     // A mapped type whose keys aren't known yet (target side first, like in tsc)
     MappedInfo const* target_mapped = target->kind == TY_ANONYMOUS ? ty_members(me, target)->mapped : nullptr;
-    // An empty object type is related to any mapped type with `?` (tsc's isPartialMappedType)
-    if (target_mapped && target_mapped->optional > 0 && st->relation != TY_RELATION_SUBTYPE &&
+    // An empty object type is related to any mapped type with `?` (tsc's isPartialMappedType), generic or not:
+    // `object` is a `Partial<Record<string, X>>`
+    MappedInfo const* target_partial = mapped_info_of(me, target, nullptr);
+    if (target_partial && target_partial->optional > 0 && st->relation != TY_RELATION_SUBTYPE &&
         st->relation != TY_RELATION_STRICT_SUBTYPE && is_empty_object_type(me, source)
     ) {
         return TERNARY_TRUE;
