@@ -425,9 +425,16 @@ static bool needs_qualification(ChainCtx* me, Symbol const* symbol, u32 meaning)
     return false;
 }
 
-// The module (file) a symbol is declared directly in, if any
+// The module (file) a symbol is declared directly in, if any; or the ambient module (`declare module "m" {}`) whose
+// block declares it (tsc's getContainersOfSymbol: a module block's module that `export =`s it, checked by the caller)
 static Symbol const* declaring_module(Symbol const* symbol) {
     if (!symbol->decl_count) return nullptr;
+    Scope const* block = symbol->decls[0].block;
+    if (block && block->kind == SCOPE_NAMESPACE && block->container && block->container->is_module &&
+        !block->container->module->file
+    ) {
+        return symbol_table_get(&block->locals, symbol->name) == symbol ? block->container : nullptr;
+    }
     SourceFile const* file = symbol->decls[0].name.source;
     if (!file || !file->is_module || !file->scope || !file->scope->container) return nullptr;
     Symbol const* module = file->scope->container;

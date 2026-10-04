@@ -16083,7 +16083,7 @@ const baselines = {
     'importDeclFromTypeNodeInJsSource': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclRefereingExternalModuleWithNoResolve': {
         errors: true,
@@ -16838,7 +16838,7 @@ const baselines = {
     'incompatibleExports1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incompatibleExports2': {
         errors: true,
@@ -20043,7 +20043,7 @@ const baselines = {
     'jsxFragmentFactoryNoUnusedLocals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxFragmentFactoryReference(jsx=preserve)': {
         errors: true,
@@ -63663,7 +63663,7 @@ const baselines = {
     'importTypeAmbient': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTypeAmbientMissing': {
         errors: true,
