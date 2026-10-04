@@ -10402,17 +10402,17 @@ const baselines = {
     },
     'duplicateObjectLiteralProperty_computedName1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateObjectLiteralProperty_computedName2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateObjectLiteralProperty_computedName3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateObjectLiteralProperty_computedNameNegative1': {
@@ -40002,7 +40002,7 @@ const baselines = {
     },
     'symbolProperty36': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty37': {
@@ -67642,7 +67642,7 @@ const baselines = {
     },
     'uniqueSymbolsPropertyNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'unknownControlFlow': {

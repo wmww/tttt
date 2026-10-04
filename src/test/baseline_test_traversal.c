@@ -1741,14 +1741,60 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
 // the literal's members): a later member of the same name joins it unless the symbol has a meaning it excludes
 // (a property excludes nothing, a method other values, an accessor other values but its other half). *first: the
 // symbol's first member (whose value types it)
+// An object literal member's binder name (tsc's getDeclarationName: a written name, a literal computed name's text,
+// `+1`/`-1` as written), or with `late` its late bound name (a computed entity name of a literal or unique symbol
+// type). Null for a symbol of its own
+static Atom const* object_member_name(ObjectExprItem const* item, bool* late) {
+    *late = false;
+    if (item->tag == OBJECT_ITEM_SPREAD) return nullptr;
+    Checker* checker = current_checker;
+    Expr const* key = item->computed_key;
+    if (!key) return checker_atom(checker, cstr_sv(&item->name_string));
+    if (expr_is_perenthisized(key)) return nullptr;
+    bool is_number = false;
+    if ((key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) ||
+        (key->tag == EXPR_TEMPLATE && !key->template_->tag && vec_expr_is_empty(&key->template_->substitutions))
+    ) {
+        return ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
+    }
+    if (key->tag == EXPR_UNARY_OP && (key->unary_op->op == UNARY_OP_MINUS || key->unary_op->op == UNARY_OP_PLUS)) {
+        Expr const* operand = &key->unary_op->expr;
+        if (operand->tag != EXPR_LITERAL || operand->literal.tag != VALUE_NUMBER || expr_is_perenthisized(operand)) return nullptr;
+        Atom const* text = ty_property_name_of_key(checker, ty_expr_type(checker, operand), &is_number);
+        if (!text) return nullptr;
+        cstr name = cstr_d(key->unary_op->op == UNARY_OP_MINUS ? "-" : "+", atom_sv(text));
+        Atom const* ret = checker_atom(checker, cstr_sv(&name));
+        cstr_drop(&name);
+        return ret;
+    }
+    if (!expr_is_entity_name(key)) return nullptr;
+    *late = true;
+    return ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
+}
+
+// The declarations of an object literal member's symbol: the binder's table joins members of a name unless the first
+// one's meaning excludes the new one's (then it's a symbol of its own); late bound names (lateBindMember) the same way
+// among themselves
 static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprItem const* item, ObjectExprItem const** first) {
     VecSpan ret = vec_span_init();
     *first = item;
-    if (item->tag == OBJECT_ITEM_SPREAD || item->computed_key) return ret;
+    if (item->tag == OBJECT_ITEM_SPREAD) return ret;
+    // (Only an object with a computed name asks the checker for names)
+    bool computed = false;
+    for_each (other, vec_object_expr_item, object) computed |= other->computed_key != nullptr;
+    bool late = false;
+    Atom const* name = computed ? object_member_name(item, &late) : nullptr;
+    if (computed && !name) return ret;
     enum { PROP = 1, METHOD = 2, GET = 4, SET = 8 };
     u32 flags = 0; // The table's symbol of the name
     for_each (other, vec_object_expr_item, object) {
-        if (other->tag == OBJECT_ITEM_SPREAD || other->computed_key || !cstr_eq(&other->name_string, &item->name_string)) continue;
+        if (other->tag == OBJECT_ITEM_SPREAD) continue;
+        if (computed) {
+            bool other_late = false;
+            if (object_member_name(other, &other_late) != name || other_late != late) continue;
+        } else if (!cstr_eq(&other->name_string, &item->name_string)) {
+            continue;
+        }
         u32 kind = other->tag == OBJECT_ITEM_METHOD ? METHOD : other->tag == OBJECT_ITEM_GETTER ? GET :
             other->tag == OBJECT_ITEM_SETTER ? SET : PROP;
         u32 excludes = kind == PROP ? 0 : kind == METHOD ? (PROP | GET | SET) : kind == GET ? (PROP | METHOD | GET) : (PROP | METHOD | SET);
@@ -2243,6 +2289,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 ) {
                     // A name declared by several properties is one symbol, typed by the first of them
                     // (named like its first declaration: `{ a: 1, \u0061: 2 }` is `a` at both)
+                    bool literal_key = i->computed_key && i->computed_key->tag == EXPR_LITERAL;
+                    VecSpan key_declarations = literal_key ? vec_span_clone(merged) : vec_span_init();
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = merged,
                         .span = i->name_span,
@@ -2250,6 +2298,15 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         .name_is_value = first->name_is_value,
                     });
                     baseline_test_case_add_type(ctx, i->name_span, ty_object_literal_member_type(current_checker, me, first));
+                    if (literal_key) {
+                        baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            .declarations = key_declarations,
+                            .span = i->computed_key->outer_span,
+                            .name = first->name_span,
+                            .name_is_value = first->name_is_value,
+                        });
+                    }
+                    if (i->computed_key) expr_compile_test_info(i->computed_key, ctx);
                     if (i->tag == OBJECT_ITEM_SHORTHAND) {
                         if (i->shorthand_default) expr_compile_test_info(i->shorthand_default, ctx);
                     } else {
