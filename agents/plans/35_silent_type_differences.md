@@ -121,6 +121,19 @@ What the agents left, roughly by size (their test names are examples):
       first and its late painting sets `isVisible` on what it emitted, so the same name is reused afterwards
       (privacyFunctionParameterDeclFile & co.). Adding symbol_type_accessible_at() to name_accessible() in ty_display.c
       was +5 -4 for that reason; doing it right needs the declaration walk's painted set kept for the types baseline.
+    - **Naming from a block scope**: TyDisplay.enclosing is the file/namespace scope, so a name shadowed by a local
+      where the type is printed isn't noticed: tsc qualifies with `import("f")` (enumAssignmentCompat6,
+      expandoFunctionBlockShadowing, multipleExportDefault3, exportAssignmentOfExportNamespaceWithDefault), and a
+      reused `typeof b` of a function local in its own return annotation falls back (functionVariableInReturnTypeAnnotation).
+      Needs the innermost scope at the printed position (the resolve walk could record it per types-baseline node).
+    - node16 `import * as` of a CommonJS module (item 2): the chains (`cjs.mjs.cjs.type` vs tsc's `mjs.cjs.cjs.type`,
+      nodeModules*PackageExports, ~30 symbols + types tests) come from tsc's per-import module clones; not attempted.
+    - CommonJS naming (plan 26 territory): `typeof mod1."d"` for an element-access export with expando members
+      (moduleExportsElementAccessAssignment: tsc's createEntityNameFromSymbolChain keeps the written quotes, but
+      typeFromPropertyAssignment39's `foo["baz"]` prints `foo.baz`, rule unknown), `typeof x.F` for a JS class
+      reached through a require (lateBoundAssignmentDeclarationSupport6: the value-meaning chain misses
+      `module.exports.F = F`), jsDeclarationsFunctionsCjs, moduleExportAliasImported, moduleExportPropertyAssignmentDefault,
+      jsdocTypeReferenceToImportOfFunctionExpression.
     - Unexplained so far: typeArgumentInferenceWithObjectLiteral (`x => x` gets E1.X: when T is fixed tsc has only
       non-widened candidates), inferConditionalConstraintMappedMember (tsc: never), wellKnownSymbolExpando (tsc: no
       late-bound expando for `f[Symbol.iterator] = ...` in a TS file), typeGuardRedundancy (tsc keeps both signatures
