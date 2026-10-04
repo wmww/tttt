@@ -18756,7 +18756,7 @@ const baselines = {
         types: true,
     },
     'isolatedDeclarationErrorsAugmentation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

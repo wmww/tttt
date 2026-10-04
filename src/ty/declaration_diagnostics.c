@@ -2014,8 +2014,51 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
     my late_pass = true;
 }
 
+static bool was_painted(Walk* me, Symbol const* symbol) {
+    for (u32 i = 0; symbol && i < my painted_count; i++) {
+        if (my painted[i] == symbol) return true;
+    }
+    return false;
+}
+
+// tsc's isImportRequiredByAugmentation: the imported file declares something this module exports (an augmentation of
+// it), so declaration emit keeps `import "m"` even when nothing it imports is used
+static bool import_required_by_augmentation(Walk* me, SourceFile const* target) {
+    Symbol const* module = my file->scope ? my file->scope->container : nullptr;
+    SymbolTable const* exports = module ? module->exports : nullptr;
+    for (u32 i = 0; exports && i < exports->count; i++) {
+        Symbol const* symbol = exports->entries[i].symbol;
+        for (u32 j = 0; symbol && j < symbol->decl_count; j++) {
+            if (symbol->decls[j].name.source == target) return true;
+        }
+    }
+    return false;
+}
+
+// transformImportDeclaration: named imports none of which an emitted declaration names (so far) are elided, unless an
+// augmentation needs the import (TS9026)
+static void check_import(Walk* me, Statement const* statement) {
+    PortStatement const* port = statement->import_export;
+    if (!my isolated || !my file->is_module || port->side_effect_only || port->is_import_require || port->jsdoc) return;
+    if (!span_equals(port->keyword_span, "import") || !port->module_ref || !port->module_ref->file) return;
+    if (port->module_ref->file == my file) return;
+    if (port->main.tag != PORT_NOOP && port->main.tag != PORT_IMPORT_DEFAULT) return; // (a namespace import, `import x =`)
+    if (port->main.tag == PORT_IMPORT_DEFAULT && (!vec_port_item_size(&port->items) || was_painted(me, port->main.symbol))) {
+        return;
+    }
+    for_each (i, vec_port_item, &port->items) {
+        if (i->tag != PORT_IMPORT_SPECIFIC || was_painted(me, i->symbol)) return;
+    }
+    if (!import_required_by_augmentation(me, port->module_ref->file)) return;
+    report(me, statement->span, 9026, "Declaration emit for this file requires preserving this import for augmentations. "
+        "This is not supported with --isolatedDeclarations.");
+}
+
 static void check_statement_now(Walk* me, Statement const* statement, Container container) {
     switch (statement->tag) {
+        case STATEMENT_IMPORT_EXPORT:
+            check_import(me, statement);
+            return;
         case STATEMENT_DECL_VARIABLE: {
             if (!container.global && !container.ambient && statement->decl.props.exported == DECL_EXPORTED_NO) {
                 // (`export { x }` makes that one declaration visible)
