@@ -16042,7 +16042,7 @@ const baselines = {
     },
     'importAnImport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importAndVariableDeclarationConflict1': {
@@ -16767,7 +16767,7 @@ const baselines = {
     },
     'importedModuleClassNameClash': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importsInAmbientModules1': {
@@ -22492,7 +22492,7 @@ const baselines = {
     },
     'moduledecl': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'multiCallOverloads': {
