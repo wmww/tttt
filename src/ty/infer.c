@@ -151,19 +151,23 @@ Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
 // The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
 // getRestTypeAtPosition, less its shortcut for a lone rest parameter)
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper) {
-    u32 count = sig->param_count > from ? sig->param_count - from : 0;
-    // A rest parameter of a tuple type is its elements (tsc's createTupleType normalizing a variadic tuple element)
+    // A rest parameter of a tuple type is its elements (tsc's createTupleType normalizing a variadic tuple element),
+    // which `from` may be past the start of (tsc's getRestTypeAtPosition slices the tuple)
     Ty const* rest_tuple = nullptr;
-    if (count && sig->params[sig->param_count - 1].rest) {
+    if (sig->param_count && sig->params[sig->param_count - 1].rest) {
         Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
         if (ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) rest_tuple = rest;
     }
     TupleShape const* rest_shape = rest_tuple ? ty_tuple_shape(rest_tuple) : nullptr;
-    u32 arity = rest_shape ? count - 1 + rest_shape->arity : count;
+    u32 fixed_end = rest_shape ? sig->param_count - 1 : sig->param_count; // (Parameters before the tuple)
+    u32 fixed = fixed_end > from ? fixed_end - from : 0;
+    u32 skip = rest_shape && from > fixed_end ? from - fixed_end : 0;
+    u32 rest_count = rest_shape && rest_shape->arity > skip ? rest_shape->arity - skip : 0;
+    u32 arity = fixed + rest_count;
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Atom const** names = calloc(arity ? arity : 1, sizeof(Atom const*));
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
-    for (u32 j = 0; j < (rest_shape ? count - 1 : count); j++) {
+    for (u32 j = 0; j < fixed; j++) {
         SigParam const* param = &sig->params[from + j];
         // Optional past the minimum argument count (an untyped JS function's parameters all are); labelled by
         // parameter declarations with a plain name (getNameableDeclarationAtPosition: not a JS function's
@@ -173,13 +177,13 @@ Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from,
         names[j] = param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr;
         elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
     }
-    if (rest_shape) {
+    if (rest_count) {
         TyList rest_args = ty_reference_args(me, rest_tuple);
-        for (u32 k = 0; k < rest_shape->arity; k++) {
-            u32 j = count - 1 + k;
-            flags[j] = rest_shape->flags[k];
-            names[j] = rest_shape->names ? rest_shape->names[k] : nullptr;
-            elements[j] = rest_args.data[k];
+        for (u32 k = 0; k < rest_count; k++) {
+            u32 j = fixed + k;
+            flags[j] = rest_shape->flags[skip + k];
+            names[j] = rest_shape->names ? rest_shape->names[skip + k] : nullptr;
+            elements[j] = rest_args.data[skip + k];
         }
     }
     TupleShape shape = { .arity = arity, .flags = flags, .names = names };

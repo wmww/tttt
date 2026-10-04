@@ -15258,7 +15258,7 @@ const baselines = {
     'genericRestTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericReturnTypeFromGetter1': {
         errors: true,
