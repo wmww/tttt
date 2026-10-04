@@ -40,6 +40,40 @@ typedef struct ChainCtx {
     u32 visited_count;
 } ChainCtx;
 
+// During a declaration walk (symbol_chain_set_painted()): the aliases of the big tables (the globals), which
+// trySymbolTable would otherwise find by looking at every entry, for every name the printer writes. The tables don't
+// change while checking; the index starts over with every walk
+#define ALIAS_INDEX_SLOTS 64
+#define ALIAS_INDEX_MAX 24
+#define ALIAS_INDEX_MIN_TABLE 64
+
+typedef struct AliasIndex {
+    SymbolTable const* table;
+    u32 generation;
+    u32 alias_count; // ALIAS_INDEX_MAX + 1: too many, scan the table
+    u32 aliases[ALIAS_INDEX_MAX];
+} AliasIndex;
+
+static thread_local AliasIndex alias_indexes[ALIAS_INDEX_SLOTS];
+static thread_local u32 alias_index_generation; // 0: not in a declaration walk
+
+static AliasIndex const* alias_index_of(SymbolTable const* table) {
+    if (!alias_index_generation || table->count < ALIAS_INDEX_MIN_TABLE) return nullptr;
+    AliasIndex* slot = &alias_indexes[((uintptr_t)table >> 4) % ALIAS_INDEX_SLOTS];
+    if (slot->table != table || slot->generation != alias_index_generation) {
+        *slot = (AliasIndex){ .table = table, .generation = alias_index_generation };
+        for (u32 i = 0; i < table->count; i++) {
+            if (!(table->entries[i].symbol->flags & SYMBOL_ALIAS)) continue;
+            if (slot->alias_count == ALIAS_INDEX_MAX) {
+                slot->alias_count++;
+                break;
+            }
+            slot->aliases[slot->alias_count++] = i;
+        }
+    }
+    return slot->alias_count > ALIAS_INDEX_MAX ? nullptr : slot;
+}
+
 static void add_table(ChainCtx* me, SymbolTable const* table, bool local_lookup) {
     if (!table || my table_count == SCOPE_TABLES_MAX) return;
     for (u32 i = 0; i < my table_count; i++) {
@@ -304,8 +338,10 @@ static bool try_table(
         return true;
     }
     // Through an alias in scope. (The tables a table overlays belong to the shared lib program, which has none)
-    for (u32 i = 0; i < table->count; i++) {
-        SymbolEntry const* entry = &table->entries[i];
+    AliasIndex const* aliases = alias_index_of(table);
+    u32 count = aliases ? aliases->alias_count : table->count;
+    for (u32 j = 0; j < count; j++) {
+        SymbolEntry const* entry = &table->entries[aliases ? aliases->aliases[j] : j];
         if (try_entry(me, symbol, meaning, entry->name, entry->symbol, ignore_qualification, local_lookup, out)) {
             return true;
         }
@@ -657,9 +693,41 @@ static bool statements_visible(Scope const* scope, u32 depth);
 static thread_local Symbol const* const* const* painted_symbols;
 static thread_local u32 const* painted_count;
 
+// During a declaration walk (painted_symbols set), the accessibility answers so far: the printer asks about the same
+// symbols from the same scope over and over. Painting more may change them, so it starts over then
+typedef struct AccessMemo {
+    Scope const* enclosing;
+    Symbol const* symbol;
+    u32 meaning;
+    bool allow_modules;
+    u32 generation; // Valid in this generation only
+    SymbolAccess access;
+} AccessMemo;
+
+#define ACCESS_MEMO_SIZE 1024
+static thread_local AccessMemo* access_memo;
+static thread_local u32 access_memo_painted;
+static thread_local u32 access_memo_generation;
+
 void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count) {
     painted_symbols = symbols;
     painted_count = count;
+    if (symbols && !access_memo) access_memo = calloc(ACCESS_MEMO_SIZE, sizeof(AccessMemo));
+    access_memo_generation++;
+    static thread_local u32 walks;
+    if (symbols && !++walks) walks = 1; // (0 is "not in a walk")
+    alias_index_generation = symbols ? walks : 0;
+    access_memo_painted = 0;
+}
+
+static AccessMemo* access_memo_slot(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool allow_modules) {
+    if (!painted_symbols) return nullptr;
+    if (*painted_count != access_memo_painted) {
+        access_memo_generation++;
+        access_memo_painted = *painted_count;
+    }
+    uintptr_t hash = ((uintptr_t)symbol >> 4) * 31 + ((uintptr_t)enclosing >> 4) * 17 + meaning * 7 + allow_modules;
+    return &access_memo[hash % ACCESS_MEMO_SIZE];
 }
 
 static bool is_painted(Symbol const* symbol) {
@@ -827,8 +895,27 @@ static Scope const* symbol_external_module(Symbol const* symbol) {
     return nullptr;
 }
 
+static SymbolAccess accessibility_compute(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool allow_modules);
+
 static SymbolAccess accessibility_at(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool allow_modules) {
     if (!enclosing || !symbol) return (SymbolAccess){ .kind = SYMBOL_ACCESSIBLE };
+    AccessMemo* slot = access_memo_slot(enclosing, symbol, meaning, allow_modules);
+    if (slot && slot->generation == access_memo_generation && slot->symbol == symbol && slot->enclosing == enclosing &&
+        slot->meaning == meaning && slot->allow_modules == allow_modules
+    ) {
+        return slot->access;
+    }
+    SymbolAccess ret = accessibility_compute(enclosing, symbol, meaning, allow_modules);
+    if (slot) {
+        *slot = (AccessMemo){
+            .enclosing = enclosing, .symbol = symbol, .meaning = meaning, .allow_modules = allow_modules,
+            .generation = access_memo_generation, .access = ret,
+        };
+    }
+    return ret;
+}
+
+static SymbolAccess accessibility_compute(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool allow_modules) {
     ChainCtx* ctx = malloc(sizeof(ChainCtx));
     chain_ctx_init(ctx, enclosing);
     SymbolAccess ret = {0};
