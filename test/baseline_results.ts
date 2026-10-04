@@ -18558,7 +18558,7 @@ const baselines = {
     'intersectionWithConstructSignaturePrototypeResult': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionsAndOptionalProperties': {
         errors: true,
@@ -66477,8 +66477,8 @@ const baselines = {
     },
     'intersectionIncludingPropFromGlobalAugmentation': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nullAssignableToEveryType': {
         errors: true,

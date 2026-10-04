@@ -247,6 +247,9 @@ typedef struct PropSymbolInfo {
     // declaration (hasNonUniformValueDeclaration)
     Span first_declaration;
     bool non_uniform;
+    // In an intersection: the members' own properties, not Object's or Function's (tsc's getPropertyOfType with
+    // skipObjectFunctionPropertyAugment, unless no member has one)
+    bool skip_augment;
 } PropSymbolInfo;
 
 static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* name, PropSymbolInfo* info, u32 depth) {
@@ -256,9 +259,18 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         if (constraint) object = constraint;
     }
     if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) {
-        PropSymbolInfo inner = { .declarations = vec_span_init(), .strict_union = info->strict_union };
+        bool intersection = object->kind == TY_INTERSECTION;
+        PropSymbolInfo inner = { .declarations = vec_span_init(), .strict_union = info->strict_union,
+            .skip_augment = intersection || info->skip_augment };
         for (u32 i = 0; i < object->composite.types.len; i++) {
             collect_prop_symbol(checker, object->composite.types.data[i], name, &inner, depth + 1);
+        }
+        if (intersection && !inner.found && !info->skip_augment) {
+            vec_span_drop(&inner.declarations);
+            inner = (PropSymbolInfo){ .declarations = vec_span_init(), .strict_union = info->strict_union };
+            for (u32 i = 0; i < object->composite.types.len; i++) {
+                collect_prop_symbol(checker, object->composite.types.data[i], name, &inner, depth + 1);
+            }
         }
         bool keep = inner.found && (object->kind == TY_INTERSECTION || !inner.missing_in_member);
         if (keep) {
@@ -293,7 +305,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         if (info->strict_union && !(object->flags & (TYF_NEVER | TYF_ANY))) info->missing_in_member = true;
         return;
     }
-    Prop const* prop = ty_get_object_prop(checker, object, name);
+    Prop const* prop = info->skip_augment ? ty_get_prop(checker, object, name) : ty_get_object_prop(checker, object, name);
     if (!prop && info->qualified_name) prop = ty_namespace_type_only_prop(checker, object, name);
     if (!prop) {
         info->missing_in_member = true;

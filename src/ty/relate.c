@@ -1223,24 +1223,34 @@ Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name) {
     return prop;
 }
 
+// `skip_augment`: only the types' own properties, not those of Object or Function (tsc's getPropertyOfType's
+// skipObjectFunctionPropertyAugment, which an intersection asks its members with first)
+static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment);
 static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth) {
+    return find_prop_in(me, ty, name, depth, false);
+}
+
+static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
     if (ty->kind == TY_INTERSECTION) {
         // The property of an intersection is a type of its own (tsc makes a synthetic symbol per name as well)
-        u64 key[2] = { ty->id, (u64)(uintptr_t)name };
+        u64 key[2] = { ty->id << 1 | skip_augment, (u64)(uintptr_t)name };
         FoundProp const* cached = intern_get(&my intersection_props, key, 2);
         if (cached) return *cached;
         Ty const* stack_buf[16];
         u32 len = 0;
         bool all_optional = true, any_member = false;
         u32 flags = 0;
+        // (The members' own properties first, Object's and Function's only if none has one)
+        bool own_only = true;
+        again:
         for (u32 i = 0; i < ty->composite.types.len && len < c_arraylen(stack_buf); i++) {
             // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
             // `(R & { T: X })['component']` with `component: (props: this['T']) => void` in R takes X
             Ty const* member = ty->composite.types.data[i];
             if (member->kind != TY_TYPE_PARAM) member = ty_with_this_arg(me, member, ty);
-            FoundProp part = find_prop(me, apparent_type(me, member), name, depth + 1);
+            FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
             if (!part.found) continue;
             if (!ret.prop) ret.prop = part.prop;
             stack_buf[len++] = part.type;
@@ -1250,6 +1260,10 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
             if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
             any_member |= class_member;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
+        }
+        if (!len && own_only && !skip_augment) {
+            own_only = false;
+            goto again;
         }
         if (len) {
             ret.found = true;
@@ -1270,7 +1284,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         u32 flags = 0;
         bool missing = false;
         for (u32 i = 0; i < members.len && !missing; i++) {
-            FoundProp part = find_prop(me, apparent_type(me, members.data[i]), name, depth + 1);
+            FoundProp part = find_prop_in(me, apparent_type(me, members.data[i]), name, depth + 1, skip_augment);
             missing = !part.found;
             if (missing) break;
             if (!ret.prop) ret.prop = part.prop;
@@ -1288,7 +1302,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
         return ret;
     }
     if (!(ty->flags & TYF_OBJECT)) return ret;
-    Prop const* prop = ty_get_object_prop(me, ty, name);
+    Prop const* prop = skip_augment ? ty_get_prop(me, ty, name) : ty_get_object_prop(me, ty, name);
     if (prop) {
         ret.found = true;
         ret.type = prop_type(me, prop);
