@@ -1888,6 +1888,14 @@ typedef struct TyParamNames {
     u32 cap;
 } TyParamNames;
 
+// Declaration emit's SymbolTracker (tsc's declarations.ts symbolTracker, plan 40): what the printer reports while it
+// prints a type the way a `.d.ts` would write it (TyDisplay.tracker)
+typedef struct DeclTracker {
+    // A symbol the printer names (lookupSymbolChain's trackSymbol)
+    void (*track_symbol)(struct DeclTracker* me, Symbol const* symbol, u32 meaning);
+    void* ctx;
+} DeclTracker;
+
 typedef struct TyDisplay {
     cstr* target;
     u32 depth;
@@ -1926,6 +1934,7 @@ typedef struct TyDisplay {
     // parenthesized as needed (tsc's factory, parenthesizeElementTypeOfArrayType). Only for the node itself
     bool array_element_node;
     uint8_t jsdoc_literal_depth; // Inside that many JSDoc type literals being reprinted (their indentation)
+    DeclTracker* tracker; // Declaration emit: null everywhere else
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);

@@ -155,6 +155,9 @@ typedef struct SymbolDecl {
     AssignmentDeclKind assignment; // SYMBOL_DECL_ASSIGNMENT only
     u32 flags; // What this declaration added to the symbol's flags
     uint8_t jsdoc_modifiers; // SYMBOL_DECL_ASSIGNMENT: JsDocModifiers
+    // A `var` (or sloppy mode function) hoisted out of the nested statement it is written in: `block` is where it was
+    // hoisted to, not the statement list it is in
+    bool hoisted;
     void const* node;
     // SYMBOL_DECL_ASSIGNMENT: the JSDoc `@type` of the assignment (`/** @type {T} */ this.x = v`), which is the
     // declared type (tsc's getAnnotatedTypeForAssignmentDeclaration)
@@ -422,6 +425,8 @@ typedef struct Scope {
     // The parameter list of a function: from ES2015 on the variables its body declares aren't visible there (tsc's
     // useOuterVariableScopeInParameter), although they share the function's scope
     bool parameters;
+    // statement_hoist_names() is declaring a nested statement's `var`s and functions here (SymbolDecl.hoisted)
+    bool hoisting;
     // Unless the downlevel emit moves the parameters into the body (tsc's useOuterVariableScopeInParameter)
     bool parameters_see_body;
     // The return type annotation of a function: of the function's scope it sees only the parameters, not what the body

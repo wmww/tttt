@@ -48,6 +48,7 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty);
 static bool shows_alias(TyDisplay d, Ty const* ty) {
     if (!ty->alias) return false;
     if (!d.enclosing) return true;
+    if (d.tracker) return symbol_type_accessible_at(d.enclosing, ty->alias);
     TypeDecl const* type_decl = symbol_find_node(ty->alias, SYMBOL_DECL_TYPE_ALIAS);
     return !type_decl || !type_decl->local;
 }
@@ -196,6 +197,7 @@ static void out_module_import(TyDisplay d, Symbol const* module) {
 }
 
 static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 meaning) {
+    if (d.tracker) d.tracker->track_symbol(d.tracker, symbol, meaning);
     csview js_name;
     if (ty_js_assigned_class_name(symbol, &js_name)) {
         out(d, js_name);
@@ -259,6 +261,34 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     symbol_chain_append_entity(&text, d.enclosing, &rest, true);
     out(d, cstr_sv(&text));
     cstr_drop(&text);
+}
+
+static void display_structure(Checker* me, TyDisplay d, Ty const* ty);
+
+// Declaration emit writes the types of a class expression, and of a class it can't name, as type literals (tsc's
+// WriteClassExpressionAsTypeLiteral: createAnonymousTypeNode of a class's static side, typeReferenceToTypeNode of an
+// instance)
+static bool class_as_literal(TyDisplay d, Ty const* declared) {
+    if (!d.tracker) return false;
+    Symbol const* symbol = declared->declared.symbol;
+    if (!symbol || !(symbol->flags & SYMBOL_CLASS)) return false;
+    ClassDecl const* cls = symbol_find_node(symbol, SYMBOL_DECL_CLASS);
+    if (!cls) return false;
+    if (cls->is_expression && declared->declared.kind == TY_DECLARED_CLASS_STATIC) return true;
+    return !symbol_value_accessible_at(d.enclosing, symbol);
+}
+
+// The structure of a class written as a type literal, once: inside itself it is `any` (tsc's visitAndTransformType)
+static void display_class_literal(Checker* me, TyDisplay d, Ty const* ty) {
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        if (i->ty == ty) {
+            out_lit(d, "any");
+            return;
+        }
+    }
+    TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
+    d.visiting = &visit;
+    display_structure(me, d, ty);
 }
 
 // The name of a declared type: by its symbol when it has one
@@ -2248,6 +2278,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                         display_structure(me, d, ty); // A module nobody named
                         break;
                     }
+                    if (class_as_literal(d, ty)) {
+                        display_class_literal(me, d, ty);
+                        break;
+                    }
                     out_lit(d, "typeof ");
                     out_declared_name(me, d, ty, SYMBOL_VALUE);
                     break;
@@ -2257,6 +2291,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     break;
 
                 default:
+                    if (class_as_literal(d, ty)) {
+                        display_class_literal(me, d, ty);
+                        break;
+                    }
                     out_declared_name(me, d, ty, SYMBOL_TYPE);
                     if (ty_local_type_params(ty).len) {
                         out_lit(d, "<");
@@ -2272,6 +2310,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             TyList args = ty_reference_args(me, ty);
             if (target->declared.kind == TY_DECLARED_CLASS_STATIC && is_mixin_static_side(me, target)) {
                 display_structure(me, d, ty);
+            } else if (target->declared.kind != TY_DECLARED_TUPLE_TARGET && class_as_literal(d, target)) {
+                display_class_literal(me, d, ty);
             } else if (target->declared.kind == TY_DECLARED_CLASS_STATIC) {
                 // The static side of a local class, applied to its outer type parameters (tsc: an anonymous type)
                 out_lit(d, "typeof ");

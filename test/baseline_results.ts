@@ -8036,7 +8036,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitExpandoPropertyPrivateName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8251,7 +8251,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitInvalidExport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8806,7 +8806,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitVarInElidedBlock': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15636,7 +15636,7 @@ const baselines = {
         types: true,
     },
     'globalThisDeclarationEmit': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

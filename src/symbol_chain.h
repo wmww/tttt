@@ -31,3 +31,37 @@ void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* c
 void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity);
 // Appends `name` as the next part of an expression printed by symbol_chain_append (`.name`, `["name"]`...)
 void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member);
+
+// Symbol accessibility for declaration emit (checker.ts isSymbolAccessible and hasVisibleDeclarations): whether a
+// `.d.ts` written for the enclosing scope's file could name the symbol. With tsc's shouldComputeAliasesToMakeVisible:
+// a declaration that isn't exported but is directly in a visible statement list counts as visible (declaration emit
+// would "late paint" it, emitting it too)
+typedef enum SymbolAccessibility : uint8_t {
+    SYMBOL_ACCESSIBLE,
+    SYMBOL_NOT_ACCESSIBLE,
+    SYMBOL_CANNOT_BE_NAMED, // Declared in another external module, and nothing here names it
+} SymbolAccessibility;
+
+typedef struct SymbolAccess {
+    SymbolAccessibility kind;
+    // tsc's errorModuleName: NOT_ACCESSIBLE, the container whose chain was accessible when that isn't the symbol
+    // (named from the enclosing scope); CANNOT_BE_NAMED, the symbol's external module (named fully qualified). Null
+    // when there is none
+    Symbol const* module;
+} SymbolAccess;
+
+// tsc's isSymbolAccessible(symbol, enclosing, meaning, shouldComputeAliasesToMakeVisible = true)
+SymbolAccess symbol_accessibility_at(Scope const* enclosing, Symbol const* symbol, u32 meaning);
+// tsc's isValueSymbolAccessible: accessible as a value (shouldComputeAliasesToMakeVisible false)
+bool symbol_value_accessible_at(Scope const* enclosing, Symbol const* symbol);
+// tsc's isTypeSymbolAccessible, the same as a type
+bool symbol_type_accessible_at(Scope const* enclosing, Symbol const* symbol);
+// tsc's hasVisibleDeclarations with late painting: every declaration is visible or directly in a visible statement
+// list (a file, a visible namespace's block)
+bool symbol_has_visible_declarations(Symbol const* symbol);
+// tsc's isDeclarationVisible of the statements directly in a scope (a file is, a namespace block is if its namespace
+// declaration is, nothing else is)
+bool scope_statements_visible(Scope const* scope);
+// The scope of the external module (a module file, `declare module "m" {}`) a scope is in, tsc's
+// getExternalModuleContainer. Null in a script
+Scope const* scope_external_module(Scope const* scope);

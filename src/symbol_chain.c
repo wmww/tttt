@@ -5,6 +5,7 @@
 #include "port_statement.h"
 #include "source_file.h"
 #include "ty/ty.h"
+#include "statement.h"
 
 // The symbol tables in scope at a location, from the inside (tsc's forEachSymbolTableInScope)
 
@@ -635,4 +636,205 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
             symbol_chain_append_member(out, name, symbol->flags & SYMBOL_ENUM_MEMBER);
         }
     }
+}
+
+// Accessibility (tsc's isSymbolAccessible, hasVisibleDeclarations, isDeclarationVisible)
+
+// The declaration of the namespace whose block a scope is
+static SymbolDecl const* namespace_decl_of_scope(Scope const* scope) {
+    Symbol const* ns = scope->container;
+    if (!ns) return nullptr;
+    for (u32 i = 0; i < ns->decl_count; i++) {
+        if (ns->decls[i].kind == SYMBOL_DECL_NAMESPACE && ((NamespaceDecl const*)ns->decls[i].node)->inner_scope == scope) {
+            return &ns->decls[i];
+        }
+    }
+    return nullptr;
+}
+
+static bool statements_visible(Scope const* scope, u32 depth);
+
+// `export = x`, `export default x` or `export { x }` in the module or namespace makes x's declarations visible (tsc's
+// collectLinkedAliases)
+static bool exported_by_alias(Scope const* scope, Symbol const* symbol) {
+    if ((scope->kind != SCOPE_MODULE && scope->kind != SCOPE_NAMESPACE) || !scope->container) return false;
+    SymbolTable const* exports = symbol_members(scope->container)->exports;
+    if (!exports) return false;
+    Binder const* binder = scope->binder;
+    Symbol const* target = binder_redirect(binder, symbol);
+    for (u32 i = 0; i < exports->count; i++) {
+        Symbol const* entry = exports->entries[i].symbol;
+        if (!entry || !(entry->flags & SYMBOL_ALIAS) || !entry->alias) continue;
+        u32 tag = entry->alias->item ? entry->alias->item->tag : PORT_EXPORT_SPECIFIC;
+        if (tag != PORT_EXPORT_SPECIFIC) continue; // (not an import or re-export)
+        Symbol const* resolved = symbol_resolve_alias((Symbol*)entry);
+        if (resolved && binder_redirect(binder, resolved) == target) return true;
+    }
+    return false;
+}
+
+// isDeclarationVisible of a namespace declaration
+static bool namespace_visible(Symbol const* ns, SymbolDecl const* decl, u32 depth) {
+    NamespaceDecl const* node = decl->node;
+    // (an external module augmentation is always visible, `declare module "m"` in a script is a global declaration)
+    if (node->is_augmentation || node->is_global) return true;
+    Scope const* outer = decl->block;
+    // (An ambient module `declare module "m"` in a script isn't declared in a scope: it is global)
+    if (!outer) return true;
+    if (decl->hoisted) return false;
+    bool in_ambient = (outer->kind == SCOPE_NAMESPACE && outer->ambient) || outer->kind == SCOPE_GLOBAL_AUGMENTATION;
+    if (ns->exported || in_ambient || exported_by_alias(outer, ns)) return statements_visible(outer, depth + 1);
+    return outer->kind == SCOPE_SCRIPT;
+}
+
+static bool statements_visible(Scope const* scope, u32 depth) {
+    switch (scope->kind) {
+        case SCOPE_MODULE:
+        case SCOPE_SCRIPT:
+        case SCOPE_GLOBAL:
+        case SCOPE_GLOBAL_AUGMENTATION:
+            return true;
+        case SCOPE_NAMESPACE: {
+            SymbolDecl const* decl = namespace_decl_of_scope(scope);
+            // (not knowing which declaration it is, rather nothing than a spurious diagnostic)
+            if (!decl || depth > 32) return true;
+            return namespace_visible(scope->container, decl, depth);
+        }
+        default: return false;
+    }
+}
+
+bool scope_statements_visible(Scope const* scope) { return statements_visible(scope, 0); }
+
+static bool decl_visible(SymbolDecl const* decl) {
+    switch (decl->kind) {
+        case SYMBOL_DECL_VARIABLE:
+        case SYMBOL_DECL_FUNCTION:
+        case SYMBOL_DECL_CLASS:
+        case SYMBOL_DECL_INTERFACE:
+        case SYMBOL_DECL_ENUM:
+        case SYMBOL_DECL_TYPE_ALIAS:
+            if (!decl->block) return true;
+            if (decl->hoisted) return false;
+            return scope_statements_visible(decl->block);
+        case SYMBOL_DECL_NAMESPACE: {
+            NamespaceDecl const* node = decl->node;
+            if (node->is_augmentation || node->is_global) return true;
+            if (!decl->block) return true;
+            if (decl->hoisted) return false;
+            return scope_statements_visible(decl->block);
+        }
+        case SYMBOL_DECL_ALIAS: {
+            PortItem const* item = decl->node;
+            // An export specifier or `export default x` isn't visible itself (tsc's default case, ExportAssignment);
+            // an import is if its statement list is (shown on demand)
+            if (!item) return false;
+            switch (item->tag) {
+                case PORT_EXPORT_SPECIFIC:
+                case PORT_REEXPORT_SPECIFIC:
+                case PORT_REEXPORT_GATHER:
+                    return false;
+                default:
+                    return !decl->block || scope_statements_visible(decl->block);
+            }
+        }
+        case SYMBOL_DECL_EXPR: return false; // `export default <expr>`
+        default: return true;
+    }
+}
+
+bool symbol_has_visible_declarations(Symbol const* symbol) {
+    // (A parameter is as visible as its function, which is being emitted where it is named)
+    if (symbol->is_parameter) return true;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (!decl_visible(&symbol->decls[i])) return false;
+    }
+    return true;
+}
+
+Scope const* scope_external_module(Scope const* scope) {
+    for (; scope; scope = scope->parent) {
+        if (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_GLOBAL_AUGMENTATION) return scope;
+        if (scope->kind == SCOPE_NAMESPACE && scope->container && scope->container->is_module) return scope;
+    }
+    return nullptr;
+}
+
+// tsc's isAnySymbolAccessible (allowModules): whether one of `symbols` is accessible or reachable through its
+// containers. `had`: a symbol whose chain was accessible but whose declarations weren't visible
+static bool any_accessible(
+    ChainCtx* me, Symbol const* const* symbols, u32 count, Symbol const* initial, u32 meaning, bool allow_modules,
+    u32 depth, SymbolAccess* out
+) {
+    Symbol const* had = nullptr;
+    bool module_bail = false;
+    for (u32 i = 0; i < count; i++) {
+        Symbol const* symbol = symbols[i];
+        SymbolChain chain;
+        if (accessible_chain(me, symbol, meaning, &chain)) {
+            had = symbol;
+            if (symbol_has_visible_declarations(chain.items[0])) {
+                *out = (SymbolAccess){ .kind = SYMBOL_ACCESSIBLE };
+                return true;
+            }
+        }
+        // (Any meaning of a module is accessible through an `import()` type, but its aliases are tried first)
+        if (allow_modules && is_external_module_symbol(symbol)) {
+            module_bail = true;
+            continue;
+        }
+        if (depth >= 8) continue;
+        Symbol const* parents[CONTAINERS_MAX];
+        u32 parent_count = containers_of(me, symbol, meaning, parents);
+        u32 parent_meaning = initial == symbol ? left_meaning(meaning) : meaning;
+        if (parent_count && any_accessible(me, parents, parent_count, initial, parent_meaning, allow_modules, depth + 1, out)) {
+            return true;
+        }
+    }
+    if (module_bail) {
+        *out = (SymbolAccess){ .kind = SYMBOL_ACCESSIBLE };
+        return true;
+    }
+    if (had) {
+        *out = (SymbolAccess){ .kind = SYMBOL_NOT_ACCESSIBLE, .module = had != initial ? had : nullptr };
+        return true;
+    }
+    return false;
+}
+
+// The external module a symbol is declared in (its first declaration that is in one)
+static Scope const* symbol_external_module(Symbol const* symbol) {
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        Scope const* scope = symbol->decls[i].block ? scope_external_module(symbol->decls[i].block) : nullptr;
+        if (scope) return scope;
+    }
+    return nullptr;
+}
+
+static SymbolAccess accessibility_at(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool allow_modules) {
+    if (!enclosing || !symbol) return (SymbolAccess){ .kind = SYMBOL_ACCESSIBLE };
+    ChainCtx* ctx = malloc(sizeof(ChainCtx));
+    chain_ctx_init(ctx, enclosing);
+    SymbolAccess ret = {0};
+    bool found = any_accessible(ctx, &symbol, 1, symbol, meaning, allow_modules, 0, &ret);
+    free(ctx);
+    if (found) return ret;
+    // A symbol another external module doesn't export (or that nothing here imports), or a local name
+    Scope const* module = symbol_external_module(symbol);
+    if (module && module != scope_external_module(enclosing)) {
+        return (SymbolAccess){ .kind = SYMBOL_CANNOT_BE_NAMED, .module = module->container };
+    }
+    return (SymbolAccess){ .kind = SYMBOL_NOT_ACCESSIBLE };
+}
+
+SymbolAccess symbol_accessibility_at(Scope const* enclosing, Symbol const* symbol, u32 meaning) {
+    return accessibility_at(enclosing, symbol, meaning, true);
+}
+
+bool symbol_value_accessible_at(Scope const* enclosing, Symbol const* symbol) {
+    return accessibility_at(enclosing, symbol, SYMBOL_VALUE, true).kind == SYMBOL_ACCESSIBLE;
+}
+
+bool symbol_type_accessible_at(Scope const* enclosing, Symbol const* symbol) {
+    return accessibility_at(enclosing, symbol, SYMBOL_TYPE, true).kind == SYMBOL_ACCESSIBLE;
 }

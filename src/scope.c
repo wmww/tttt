@@ -1022,6 +1022,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     }
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full, .block = scope,
+        .hoisted = scope->hoisting,
     });
     if (props.default_export && span_valid(props.name)) scope_declare_default_local(scope, symbol, props.name, excludes);
     if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) symbol_ensure_exports(symbol);

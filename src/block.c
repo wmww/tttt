@@ -25,7 +25,11 @@ void block_add_names(Block const* me, Scope* scope) {
         // The `var`s nested in it. A variable statement of this block (labeled or not) was just declared
         Statement const* inner = i;
         while (inner->tag == STATEMENT_LABELED) inner = inner->labeled.body;
-        if (hoist && inner->tag != STATEMENT_DECL_VARIABLE) statement_hoist_names(i, scope);
+        if (hoist && inner->tag != STATEMENT_DECL_VARIABLE) {
+            scope->hoisting = true;
+            statement_hoist_names(i, scope);
+            scope->hoisting = false;
+        }
     }
     scope_add_expandos(scope, me);
 }

@@ -1925,7 +1925,10 @@ void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
 // Whether the declaration diagnostics may still be reported: tsc's CLI doesn't emit with noEmit or noEmitOnError when
 // there are other diagnostics, nor computes them
 static bool program_declaration_diagnostics_gated(Program const* me) {
-    return my declaration_diagnostics_cli && (my options.no_emit || my options.no_emit_on_error);
+    // (TTTT_DECLARATION_DIAGNOSTICS=1: report them anyway, to audit a corpus that has other errors)
+    static int forced = -1;
+    if (forced < 0) forced = getenv("TTTT_DECLARATION_DIAGNOSTICS") != nullptr;
+    return my declaration_diagnostics_cli && (my options.no_emit || my options.no_emit_on_error) && !forced;
 }
 
 void program_set_threads(Program* me, u32 count) {

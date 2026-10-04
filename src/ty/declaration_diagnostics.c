@@ -10,6 +10,9 @@
 #include "block.h"
 #include "program.h"
 #include "callable_type.h"
+#include "symbol_chain.h"
+#include "several_types.h"
+#include "expr.h"
 
 // tsc's declaration transformer walks what a `.d.ts` would contain: the visible statements (everything in a script,
 // the exported ones and what `export { x }` names in a module), and in them the members that are emitted. Wherever a
@@ -59,11 +62,73 @@ typedef struct Place {
     bool heritage; // In a class's `extends` clause: every fallback is TS9021
 } Place;
 
+// The declaration being emitted whose diagnostics a name it can't use gets (tsc's getSymbolAccessibilityDiagnostic,
+// createGetSymbolAccessibilityDiagnosticForNode of the innermost declaration that canProduceDiagnostics)
+typedef enum EmitKind : uint8_t {
+    EMIT_NONE,
+    EMIT_VARIABLE, // A variable declaration or binding element
+    EMIT_PROPERTY, // A property declaration or signature, an expando assignment, a private constructor's property
+    EMIT_GETTER,
+    EMIT_SETTER,
+    EMIT_RETURN, // A signature's return type
+    EMIT_PARAMETER,
+    EMIT_TYPE_PARAMETER,
+    EMIT_METHOD_NAME, // A late bound name (createGetSymbolAccessibilityDiagnosticForNodeName)
+    EMIT_ACCESSOR_NAME,
+    EMIT_IMPLEMENTS,
+    EMIT_EXTENDS, // Of a class
+    EMIT_INTERFACE_EXTENDS,
+    EMIT_TYPE_ALIAS,
+    EMIT_DEFAULT_EXPORT,
+    EMIT_IMPORT_EQUALS,
+} EmitKind;
+
+// What a parameter, return type or type parameter belongs to
+typedef enum EmitSig : uint8_t {
+    SIG_FUNCTION, // A function declaration or function type
+    SIG_CONSTRUCTOR,
+    SIG_CONSTRUCT, // A construct signature or constructor type
+    SIG_CALL,
+    SIG_INDEX,
+    SIG_METHOD,
+    SIG_ACCESSOR,
+    SIG_CLASS,
+    SIG_INTERFACE,
+    SIG_TYPE_ALIAS,
+    SIG_MAPPED,
+    SIG_INFER,
+} EmitSig;
+
+typedef struct Emitting {
+    EmitKind kind;
+    EmitSig sig;
+    bool is_static;
+    bool in_class; // A member of a class, not of an interface or type literal
+    Span name; // The declaration's name (the message's first argument for most kinds), empty if it has none
+    Span at; // Where the diagnostic goes unless an entity name is to blame
+} Emitting;
+
 typedef struct Walk {
     SourceFile const* file;
     ErrorCtx* errs;
     Checker* checker;
     bool strict_null_checks;
+    bool isolated; // isolatedDeclarations: the syntactic builder's fallbacks are errors (TS9xxx)
+    Scope const* scope; // The statement list being walked (tsc's enclosingDeclaration, as far as names go)
+    Emitting emitting;
+    // Inside a type literal or mapped type that isn't a type alias's type: its members don't get diagnostics of their
+    // own (tsc's suppressNewDiagnosticContexts)
+    bool suppress_contexts;
+    bool member_static, member_in_class; // The class or interface member being walked
+    // The syntactic builder fell back to the checker's type somewhere in the declaration being emitted: its type is
+    // printed (the node builder's serializeTypeOfDeclaration and friends)
+    bool fell_back;
+    // Walking a type node the syntactic builder reuses (an assertion's, a function expression's annotations): a name
+    // that isn't accessible from here makes it fall back instead (trackExistingEntityName)
+    bool reusing;
+    // The diagnostics reported since this index are of the declaration being emitted (tsc deduplicates them)
+    isize_t emitting_errors;
+    DeclTracker tracker;
     // A module's local declarations that `export { x }` or `export default x` name (tsc's collectLinkedAliases makes
     // them visible)
     Symbol const** exported_locals;
@@ -71,6 +136,336 @@ typedef struct Walk {
 } Walk;
 
 static Place place_at(Near near, bool direct) { return (Place){ .near = near, .direct = direct }; }
+
+// Symbol accessibility diagnostics (TS4xxx)
+
+// The declaration emit accessibility messages (diagnosticMessages.json)
+static char const* access_message(unsigned code) {
+    switch (code) {
+        case 4000: return "Import declaration '{0}' is using private name '{1}'.";
+        case 4002: return "Type parameter '{0}' of exported class has or is using private name '{1}'.";
+        case 4004: return "Type parameter '{0}' of exported interface has or is using private name '{1}'.";
+        case 4006: return "Type parameter '{0}' of constructor signature from exported interface has or is using private name '{1}'.";
+        case 4008: return "Type parameter '{0}' of call signature from exported interface has or is using private name '{1}'.";
+        case 4010: return "Type parameter '{0}' of public static method from exported class has or is using private name '{1}'.";
+        case 4012: return "Type parameter '{0}' of public method from exported class has or is using private name '{1}'.";
+        case 4014: return "Type parameter '{0}' of method from exported interface has or is using private name '{1}'.";
+        case 4016: return "Type parameter '{0}' of exported function has or is using private name '{1}'.";
+        case 4019: return "Implements clause of exported class '{0}' has or is using private name '{1}'.";
+        case 4020: return "'extends' clause of exported class '{0}' has or is using private name '{1}'.";
+        case 4021: return "'extends' clause of exported class has or is using private name '{0}'.";
+        case 4022: return "'extends' clause of exported interface '{0}' has or is using private name '{1}'.";
+        case 4023: return "Exported variable '{0}' has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4024: return "Exported variable '{0}' has or is using name '{1}' from private module '{2}'.";
+        case 4025: return "Exported variable '{0}' has or is using private name '{1}'.";
+        case 4026: return "Public static property '{0}' of exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4027: return "Public static property '{0}' of exported class has or is using name '{1}' from private module '{2}'.";
+        case 4028: return "Public static property '{0}' of exported class has or is using private name '{1}'.";
+        case 4029: return "Public property '{0}' of exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4030: return "Public property '{0}' of exported class has or is using name '{1}' from private module '{2}'.";
+        case 4031: return "Public property '{0}' of exported class has or is using private name '{1}'.";
+        case 4032: return "Property '{0}' of exported interface has or is using name '{1}' from private module '{2}'.";
+        case 4033: return "Property '{0}' of exported interface has or is using private name '{1}'.";
+        case 4034: return "Parameter type of public static setter '{0}' from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4035: return "Parameter type of public static setter '{0}' from exported class has or is using private name '{1}'.";
+        case 4036: return "Parameter type of public setter '{0}' from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4037: return "Parameter type of public setter '{0}' from exported class has or is using private name '{1}'.";
+        case 4038: return "Return type of public static getter '{0}' from exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4039: return "Return type of public static getter '{0}' from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4040: return "Return type of public static getter '{0}' from exported class has or is using private name '{1}'.";
+        case 4041: return "Return type of public getter '{0}' from exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4042: return "Return type of public getter '{0}' from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4043: return "Return type of public getter '{0}' from exported class has or is using private name '{1}'.";
+        case 4044: return "Return type of constructor signature from exported interface has or is using name '{0}' from private module '{1}'.";
+        case 4045: return "Return type of constructor signature from exported interface has or is using private name '{0}'.";
+        case 4046: return "Return type of call signature from exported interface has or is using name '{0}' from private module '{1}'.";
+        case 4047: return "Return type of call signature from exported interface has or is using private name '{0}'.";
+        case 4048: return "Return type of index signature from exported interface has or is using name '{0}' from private module '{1}'.";
+        case 4049: return "Return type of index signature from exported interface has or is using private name '{0}'.";
+        case 4050: return "Return type of public static method from exported class has or is using name '{0}' from external module {1} but cannot be named.";
+        case 4051: return "Return type of public static method from exported class has or is using name '{0}' from private module '{1}'.";
+        case 4052: return "Return type of public static method from exported class has or is using private name '{0}'.";
+        case 4053: return "Return type of public method from exported class has or is using name '{0}' from external module {1} but cannot be named.";
+        case 4054: return "Return type of public method from exported class has or is using name '{0}' from private module '{1}'.";
+        case 4055: return "Return type of public method from exported class has or is using private name '{0}'.";
+        case 4056: return "Return type of method from exported interface has or is using name '{0}' from private module '{1}'.";
+        case 4057: return "Return type of method from exported interface has or is using private name '{0}'.";
+        case 4058: return "Return type of exported function has or is using name '{0}' from external module {1} but cannot be named.";
+        case 4059: return "Return type of exported function has or is using name '{0}' from private module '{1}'.";
+        case 4060: return "Return type of exported function has or is using private name '{0}'.";
+        case 4061: return "Parameter '{0}' of constructor from exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4062: return "Parameter '{0}' of constructor from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4063: return "Parameter '{0}' of constructor from exported class has or is using private name '{1}'.";
+        case 4064: return "Parameter '{0}' of constructor signature from exported interface has or is using name '{1}' from private module '{2}'.";
+        case 4065: return "Parameter '{0}' of constructor signature from exported interface has or is using private name '{1}'.";
+        case 4066: return "Parameter '{0}' of call signature from exported interface has or is using name '{1}' from private module '{2}'.";
+        case 4067: return "Parameter '{0}' of call signature from exported interface has or is using private name '{1}'.";
+        case 4068: return "Parameter '{0}' of public static method from exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4069: return "Parameter '{0}' of public static method from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4070: return "Parameter '{0}' of public static method from exported class has or is using private name '{1}'.";
+        case 4071: return "Parameter '{0}' of public method from exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4072: return "Parameter '{0}' of public method from exported class has or is using name '{1}' from private module '{2}'.";
+        case 4073: return "Parameter '{0}' of public method from exported class has or is using private name '{1}'.";
+        case 4074: return "Parameter '{0}' of method from exported interface has or is using name '{1}' from private module '{2}'.";
+        case 4075: return "Parameter '{0}' of method from exported interface has or is using private name '{1}'.";
+        case 4076: return "Parameter '{0}' of exported function has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4077: return "Parameter '{0}' of exported function has or is using name '{1}' from private module '{2}'.";
+        case 4078: return "Parameter '{0}' of exported function has or is using private name '{1}'.";
+        case 4081: return "Exported type alias '{0}' has or is using private name '{1}'.";
+        case 4082: return "Default export of the module has or is using private name '{0}'.";
+        case 4083: return "Type parameter '{0}' of exported type alias has or is using private name '{1}'.";
+        case 4084: return "Exported type alias '{0}' has or is using private name '{1}' from module {2}.";
+        case 4085: return "Extends clause for inferred type '{0}' has or is using private name '{1}'.";
+        case 4091: return "Parameter '{0}' of index signature from exported interface has or is using name '{1}' from private module '{2}'.";
+        case 4092: return "Parameter '{0}' of index signature from exported interface has or is using private name '{1}'.";
+        case 4095: return "Public static method '{0}' of exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4096: return "Public static method '{0}' of exported class has or is using name '{1}' from private module '{2}'.";
+        case 4097: return "Public static method '{0}' of exported class has or is using private name '{1}'.";
+        case 4098: return "Public method '{0}' of exported class has or is using name '{1}' from external module {2} but cannot be named.";
+        case 4099: return "Public method '{0}' of exported class has or is using name '{1}' from private module '{2}'.";
+        case 4100: return "Public method '{0}' of exported class has or is using private name '{1}'.";
+        case 4101: return "Method '{0}' of exported interface has or is using name '{1}' from private module '{2}'.";
+        case 4102: return "Method '{0}' of exported interface has or is using private name '{1}'.";
+        case 4103: return "Type parameter '{0}' of exported mapped object type is using private name '{1}'.";
+        case 4106: return "Parameter '{0}' of accessor has or is using private name '{1}'.";
+        case 4107: return "Parameter '{0}' of accessor has or is using name '{1}' from private module '{2}'.";
+        case 4108: return "Parameter '{0}' of accessor has or is using name '{1}' from external module '{2}' but cannot be named.";
+        default: impossible;
+    }
+}
+
+// The message of the accessibility diagnostic of what is being emitted (getSymbolAccessibilityDiagnostic): `module`, the
+// result has an errorModuleName; `cannot_be_named`, the symbol is from an external module that can't be named. 0 if
+// there is none (a constructor parameter property's own diagnostic is reported as a parameter)
+static unsigned access_code(Emitting const* e, bool module, bool cannot_be_named) {
+    // Codes for: a private name, a name from a private module, a name from an external module that can't be named (0:
+    // there is no such message, the private module one is used)
+    unsigned private_name = 0, private_module = 0, cannot = 0;
+#define CODES(a, b, c) (private_name = (a), private_module = (b), cannot = (c))
+    switch (e->kind) {
+        case EMIT_NONE: return 0;
+        case EMIT_VARIABLE: CODES(4025, 4024, 4023); break;
+        case EMIT_PROPERTY:
+        case EMIT_ACCESSOR_NAME:
+            if (e->is_static) CODES(4028, 4027, 4026);
+            else if (e->in_class) CODES(4031, 4030, 4029);
+            else CODES(4033, 4032, 0);
+            break;
+        case EMIT_METHOD_NAME:
+            if (e->is_static) CODES(4097, 4096, 4095);
+            else if (e->in_class) CODES(4100, 4099, 4098);
+            else CODES(4102, 4101, 0);
+            break;
+        case EMIT_SETTER:
+            if (e->is_static) CODES(4035, 4034, 0);
+            else CODES(4037, 4036, 0);
+            break;
+        case EMIT_GETTER:
+            if (e->is_static) CODES(4040, 4039, 4038);
+            else CODES(4043, 4042, 4041);
+            break;
+        case EMIT_RETURN:
+            switch (e->sig) {
+                case SIG_CONSTRUCT: CODES(4045, 4044, 0); break;
+                case SIG_CALL: CODES(4047, 4046, 0); break;
+                case SIG_INDEX: CODES(4049, 4048, 0); break;
+                case SIG_METHOD:
+                    if (e->is_static) CODES(4052, 4051, 4050);
+                    else if (e->in_class) CODES(4055, 4054, 4053);
+                    else CODES(4057, 4056, 0);
+                    break;
+                default: CODES(4060, 4059, 4058); break;
+            }
+            break;
+        case EMIT_PARAMETER:
+            switch (e->sig) {
+                case SIG_CONSTRUCTOR: CODES(4063, 4062, 4061); break;
+                case SIG_CONSTRUCT: CODES(4065, 4064, 0); break;
+                case SIG_CALL: CODES(4067, 4066, 0); break;
+                case SIG_INDEX: CODES(4092, 4091, 0); break;
+                case SIG_METHOD:
+                    if (e->is_static) CODES(4070, 4069, 4068);
+                    else if (e->in_class) CODES(4073, 4072, 4071);
+                    else CODES(4075, 4074, 0);
+                    break;
+                case SIG_ACCESSOR: CODES(4106, 4107, 4108); break;
+                default: CODES(4078, 4077, 4076); break;
+            }
+            break;
+        case EMIT_TYPE_PARAMETER: {
+            unsigned code = 4016;
+            switch (e->sig) {
+                case SIG_CLASS: code = 4002; break;
+                case SIG_INTERFACE: code = 4004; break;
+                case SIG_MAPPED: code = 4103; break;
+                case SIG_CONSTRUCT: code = 4006; break;
+                case SIG_CALL: code = 4008; break;
+                case SIG_METHOD: code = e->is_static ? 4010 : e->in_class ? 4012 : 4014; break;
+                case SIG_INFER: code = 4085; break;
+                case SIG_TYPE_ALIAS: code = 4083; break;
+                default: break;
+            }
+            return code;
+        }
+        case EMIT_IMPLEMENTS: return 4019;
+        case EMIT_EXTENDS: return span_valid(e->name) ? 4020 : 4021;
+        case EMIT_INTERFACE_EXTENDS: return 4022;
+        case EMIT_TYPE_ALIAS: return module ? 4084 : 4081;
+        case EMIT_DEFAULT_EXPORT: return 4082;
+        case EMIT_IMPORT_EQUALS: return 4000;
+    }
+#undef CODES
+    if (!module) return private_name;
+    return cannot_be_named && cannot ? cannot : private_module;
+}
+
+// Whether the kind's message starts with the declaration's name (tsc's typeName)
+static bool access_has_type_name(Emitting const* e) {
+    switch (e->kind) {
+        case EMIT_RETURN:
+        case EMIT_DEFAULT_EXPORT:
+            return false;
+        case EMIT_EXTENDS: return span_valid(e->name);
+        default: return true;
+    }
+}
+
+static void append_message(cstr* out, char const* template, csview const* args, u32 count) {
+    for (char const* c = template; *c; c++) {
+        if (c[0] == '{' && c[1] >= '0' && c[1] <= '9' && c[2] == '}') {
+            u32 i = (u32)(c[1] - '0');
+            if (i < count) cstr_append_sv(out, args[i]);
+            c += 2;
+            continue;
+        }
+        cstr_push(out, (char[]){ *c, 0 });
+    }
+}
+
+// handleSymbolAccessibilityError of a result that isn't accessible: `at`, the result's errorNode (an entity name),
+// else where the emitted declaration's diagnostics go
+static void report_access(Walk* me, SymbolAccessibility kind, csview symbol_name, csview module_name, bool has_module,
+    Span at
+) {
+    Emitting const* e = &my emitting;
+    unsigned code = access_code(e, has_module, kind == SYMBOL_CANNOT_BE_NAMED);
+    if (!code) return;
+    csview args[3];
+    u32 count = 0;
+    if (access_has_type_name(e)) args[count++] = e->name.sv;
+    args[count++] = symbol_name;
+    args[count++] = module_name;
+    cstr message = cstr_init();
+    append_message(&message, access_message(code), args, count);
+    if (!span_valid(at)) at = e->at;
+    for (isize_t i = my emitting_errors; i < vec_error_size(&my errs->errors); i++) {
+        Error const* other = vec_error_at(&my errs->errors, i);
+        if (other->ts_code == code && span_eq(other->span, at) && cstr_equals_sv(&other->message, cstr_sv(&message))) {
+            cstr_drop(&message);
+            return;
+        }
+    }
+    error_ctx_error_s(my errs, at, code, message);
+}
+
+// Enters the diagnostics of a declaration being emitted (createGetSymbolAccessibilityDiagnosticForNode), returning the
+// ones to restore after it. `at`: where they go, if not at the name
+static Emitting emit_enter(Walk* me, EmitKind kind, EmitSig sig, Span name, Span at) {
+    Emitting saved = my emitting;
+    my emitting = (Emitting){
+        .kind = kind, .sig = sig, .is_static = my member_static, .in_class = my member_in_class, .name = name,
+        .at = span_valid(at) ? at : name,
+    };
+    return saved;
+}
+
+// The same for a declaration inside a written type, which only gets diagnostics of its own outside type literals
+static Emitting emit_enter_nested(Walk* me, EmitKind kind, EmitSig sig, Span name, Span at) {
+    if (my suppress_contexts) return my emitting;
+    return emit_enter(me, kind, sig, name, at);
+}
+
+static void emit_leave(Walk* me, Emitting saved) { my emitting = saved; }
+
+// The node builder printing `type` for the declaration being emitted, for what its tracker reports (printed into a
+// scratch string)
+static void print_inferred(Walk* me, Ty const* type) {
+    if (!type || my emitting.kind == EMIT_NONE) return;
+    // (With the types baseline's node reuse, which an underline turns on: tsc's declaration emit reuses annotations the
+    // same way, naming what a reused name refers to anew where it means something else here)
+    cstr text = cstr_init(), underline = cstr_init();
+    ty_display(my checker, (TyDisplay){
+        .target = &text, .underline = &underline, .enclosing = my scope, .tracker = &my tracker,
+    }, type);
+    c_drop(cstr, &text, &underline);
+}
+
+// A declaration whose type the syntactic builder may fall back from: starts tracking that
+static bool fallback_begin(Walk* me) {
+    bool outer = my fell_back;
+    my fell_back = false;
+    my emitting_errors = vec_error_size(&my errs->errors);
+    return outer;
+}
+
+// ... and prints its type if it did. Returns whether it did
+static bool fallback_end(Walk* me, bool outer, Ty const* type) {
+    bool fell_back = my fell_back;
+    if (fell_back) print_inferred(me, type);
+    my fell_back = outer || fell_back;
+    return fell_back;
+}
+
+// trackSymbol: isSymbolAccessible from where the declaration is emitted, and its diagnostic
+static void track_symbol(DeclTracker* tracker, Symbol const* symbol, u32 meaning) {
+    Walk* me = tracker->ctx;
+    if (symbol->flags & SYMBOL_TYPE_PARAMETER) return;
+    SymbolAccess access = symbol_accessibility_at(my scope, symbol, meaning);
+    if (access.kind == SYMBOL_ACCESSIBLE) return;
+    // (symbolToString from the enclosing declaration)
+    SymbolChain chain = symbol_chain_at(my scope, symbol, meaning, false);
+    cstr name = cstr_init();
+    symbol_chain_append(&name, my scope, &chain);
+    cstr module = cstr_init();
+    if (access.module && access.kind == SYMBOL_CANNOT_BE_NAMED) {
+        cstr_drop(&module);
+        module = module_name_for_error(access.module, nullptr, false);
+    } else if (access.module) {
+        SymbolChain module_chain = symbol_chain_at(my scope, access.module, SYMBOL_NAMESPACE, false);
+        symbol_chain_append(&module, my scope, &module_chain);
+    }
+    report_access(me, access.kind, cstr_sv(&name), cstr_sv(&module), access.module != nullptr, span_null);
+    c_drop(cstr, &name, &module);
+}
+
+// tsc's isEntityNameVisible of a name in a written type, and handleSymbolAccessibilityError: `symbol` is what its first
+// identifier resolved to (null: unresolved, which the checker reports)
+static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 meaning) {
+    if (!symbol || my emitting.kind == EMIT_NONE) return;
+    if (symbol->flags & SYMBOL_TYPE_PARAMETER) return;
+    if (my reusing) {
+        if (symbol->is_parameter) return; // (resolvable here, so visible)
+        if (symbol_accessibility_at(my scope, symbol, meaning).kind != SYMBOL_ACCESSIBLE) my fell_back = true;
+        return;
+    }
+    if (symbol_has_visible_declarations(symbol)) return;
+    report_access(me, SYMBOL_NOT_ACCESSIBLE, first.sv, c_sv(""), false, first);
+}
+
+static Expr const* entity_leftmost(Expr const* expr) {
+    while (true) {
+        if (expr->tag == EXPR_PROPERTY) expr = &expr->property->expr;
+        else if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
+        else return expr;
+    }
+}
+
+// The first identifier of an entity name expression (`a` of `a.b.c`), checked
+static void check_entity_expression(Walk* me, Expr const* expr) {
+    Expr const* first = entity_leftmost(expr);
+    if (first->tag != EXPR_IDENTIFIER || first->identifier.this_kind) return;
+    check_entity_name(me, first->identifier.symbol, first->inner_span, SYMBOL_VALUE);
+}
 
 // Diagnostics
 
@@ -94,7 +489,7 @@ static char const* related_message(NearKind kind, unsigned* code) {
 
 // relatedSuggestionByDeclarationKind
 static void add_related(Error* error, Near near) {
-    if (near.kind == NEAR_NONE) return;
+    if (!error || near.kind == NEAR_NONE) return;
     unsigned code = 0;
     char const* message = related_message(near.kind, &code);
     bool named = near.kind == NEAR_VARIABLE || near.kind == NEAR_PARAMETER || near.kind == NEAR_PROPERTY;
@@ -106,6 +501,8 @@ static void add_related(Error* error, Near near) {
 }
 
 static Error* report(Walk* me, Span at, unsigned code, char const* message) {
+    my fell_back = true;
+    if (!my isolated) return nullptr;
     return error_ctx_error_d(my errs, at, code, message);
 }
 
@@ -164,6 +561,7 @@ static void report_expression(Walk* me, Span at, Place place, unsigned code, cha
         return;
     }
     Error* error = report(me, at, code ? code : 9013, code ? message : msg_expression);
+    if (!error) return;
     add_related(error, place.near);
     error_add_related_d(error, at, 9035,
         "Add satisfies and a type assertion to this expression (satisfies T as T) to make the type explicit.");
@@ -310,8 +708,8 @@ static Span assertion_type_span(Expr const* expr) {
 static bool type_of_expression(Walk* me, Expr const* expr, Place place, bool const_context, bool add_undefined,
     bool preserve_literals);
 static void check_written_type(Walk* me, TypeNode const* type);
-static void check_written_signature(Walk* me, FunctionImpl const* fn);
-static void check_generic(Walk* me, Generic const* generic);
+static void check_written_signature(Walk* me, FunctionImpl const* fn, EmitSig sig, bool declaration);
+static void check_generic(Walk* me, Generic const* generic, EmitSig sig);
 static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback,
     Span at);
 static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, Place place, bool in_function);
@@ -331,6 +729,10 @@ static bool type_of_assertion(Walk* me, Expr const* expr, Place place, bool add_
     Place inner = place;
     inner.contextual = true;
     if (is_const_type(&as->type)) return type_of_expression(me, &as->expr, inner, true, add_undefined, false);
+    bool outer_reusing = my reusing;
+    my reusing = true;
+    check_written_type(me, &as->type);
+    my reusing = outer_reusing;
     // serializeExistingTypeNodeWithFallback
     if (add_undefined && !can_add_undefined(me, &as->type)) {
         report_expression(me, assertion_type_span(expr), place, 0, nullptr);
@@ -572,8 +974,55 @@ static void check_parameters(Walk* me, FunctionImpl const* fn, Place place, bool
     for_each (i, vec_function_arg, &fn->args) check_parameter(me, fn, i, place, in_function);
 }
 
+// The type of a parameter where the node builder writes it: its symbol's, with `undefined` where declaration emit
+// adds it (the printer's names are all that matter here)
+static Ty const* parameter_type(Walk* me, FunctionImpl const* fn, FunctionArg const* arg) {
+    if (arg->initializer.binding.tag == BINDING_IDENTIFIER) {
+        Symbol const* symbol = arg->initializer.binding.symbol;
+        return symbol ? ty_type_of_symbol(my checker, symbol) : nullptr;
+    }
+    // (a binding pattern's: its signature parameter's)
+    Signature const* sig = ty_function_signature(my checker, fn);
+    for (u32 i = 0; sig && i < sig->param_count; i++) {
+        if (sig->params[i].decl == arg) return sig->params[i].type;
+    }
+    return nullptr;
+}
+
+// The parameters of a declaration the transformer visits, each with diagnostics of its own
+static void check_declaration_parameters(Walk* me, FunctionImpl const* fn, EmitSig sig) {
+    for_each (i, vec_function_arg, &fn->args) {
+        Span name = i->initializer.binding.content_span;
+        Emitting saved = emit_enter(me, EMIT_PARAMETER, sig, name, name);
+        bool outer = fallback_begin(me);
+        check_parameter(me, fn, i, (Place){0}, true);
+        fallback_end(me, outer, parameter_type(me, fn, i));
+        emit_leave(me, saved);
+    }
+}
+
+// The return type of a declaration's signature, with the signature's diagnostics
+static bool check_declaration_return(Walk* me, FunctionImpl const* fn, NearKind kind, EmitSig sig, Span at) {
+    Emitting saved = emit_enter(me, EMIT_RETURN, sig, fn->name, span_valid(at) ? at : span_valid(fn->name) ? fn->name : function_error_span(fn));
+    bool outer = fallback_begin(me);
+    bool failed = return_of_signature(me, fn, (Place){0}, kind, true, at);
+    my fell_back |= failed;
+    Ty const* type = nullptr;
+    if (my fell_back && !fn->ret_explicit) {
+        Signature const* sig_ = ty_function_signature(my checker, fn);
+        type = sig_ ? signature_return_type(my checker, sig_) : nullptr;
+    }
+    fallback_end(me, outer, type);
+    emit_leave(me, saved);
+    return failed;
+}
+
 // typeFromFunctionLikeExpression: never falls back, its parts report
 static void type_of_function_expression(Walk* me, FunctionImpl const* fn, Place place) {
+    bool outer_reusing = my reusing;
+    my reusing = true;
+    check_written_signature(me, fn, SIG_FUNCTION, false); // (its annotations are reused)
+    my reusing = outer_reusing;
     return_of_signature(me, fn, place, NEAR_FUNCTION_EXPRESSION, true, (Span){0});
     Place params = place;
     params.direct = false;
@@ -774,6 +1223,21 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
         report(me, member->decls[0].name, 9023, "Assigning properties to functions without declaring them is not "
             "supported with --isolatedDeclarations. Add an explicit declaration for the properties assigned to this "
             "function.");
+        // The members are written as a namespace's variables, of the checker's type (typeFromExpandoProperty)
+        bool outer_static = my member_static, outer_in_class = my member_in_class;
+        my member_static = my member_in_class = false;
+        // (the access `f.x` is the declaration, `x` its name)
+        Span at = member->decls[0].name;
+        Span name = at;
+        if (name.sv.size > member->name.size && csview_equals_sv(csview_slice(name.sv, name.sv.size - member->name.size, name.sv.size), member->name)) {
+            name = span_make(at.source, span_end_ptr(at) - member->name.size, span_end_ptr(at));
+        }
+        Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_INTERFACE, name, at);
+        bool outer = fallback_begin(me);
+        my fell_back = true;
+        fallback_end(me, outer, ty_type_of_symbol(my checker, member));
+        emit_leave(me, saved);
+        my member_static = outer_static, my member_in_class = outer_in_class;
     }
     return any;
 }
@@ -829,8 +1293,42 @@ static void check_binding_elements(Walk* me, Binding const* pattern) {
     }
 }
 
-// typeFromVariable
+static void check_variable_type(Walk* me, InitializedBinding const* decl, bool is_const);
+
+// The elements of a binding pattern are written as variables of their types (inferTypeOfDeclaration)
+static void print_binding_elements(Walk* me, Binding const* pattern) {
+    if (pattern->tag == BINDING_IDENTIFIER) {
+        Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, pattern->content_span, pattern->content_span);
+        bool outer = fallback_begin(me);
+        my fell_back = true;
+        fallback_end(me, outer, pattern->symbol ? ty_type_of_symbol(my checker, pattern->symbol) : nullptr);
+        emit_leave(me, saved);
+    } else if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) print_binding_elements(me, i);
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) print_binding_elements(me, &i->target);
+    }
+}
+
 static void check_variable(Walk* me, InitializedBinding const* decl, bool is_const) {
+    Binding const* binding = &decl->binding;
+    if (binding->tag != BINDING_IDENTIFIER) {
+        check_variable_type(me, decl, is_const);
+        print_binding_elements(me, binding);
+        return;
+    }
+    Emitting saved = emit_enter(me, EMIT_VARIABLE, SIG_FUNCTION, binding->content_span, binding->content_span);
+    bool outer = fallback_begin(me);
+    check_variable_type(me, decl, is_const);
+    // (A literal const is written with its initializer)
+    bool literal = is_const && decl->value.tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol);
+    if (literal) my fell_back = false;
+    fallback_end(me, outer, binding->symbol ? ty_type_of_symbol(my checker, binding->symbol) : nullptr);
+    emit_leave(me, saved);
+}
+
+// typeFromVariable
+static void check_variable_type(Walk* me, InitializedBinding const* decl, bool is_const) {
     Binding const* binding = &decl->binding;
     Expr const* init = &decl->value;
     if (binding->tag != BINDING_IDENTIFIER) {
@@ -880,11 +1378,11 @@ static bool emits_function_properties(FunctionImpl const* fn) {
 
 static void check_function_declaration(Walk* me, FunctionImpl const* fn, Statement const* statement) {
     if (is_overload_implementation(fn)) return;
-    check_written_signature(me, fn);
-    check_parameters(me, fn, (Place){0}, true);
+    check_written_signature(me, fn, SIG_FUNCTION, true);
+    check_declaration_parameters(me, fn, SIG_FUNCTION);
     // (Without a name, `export default function () {}` is spanned from its first token, the `export`)
     Span at = span_valid(fn->name) ? fn->name : block_first_token(statement->span);
-    return_of_signature(me, fn, (Place){0}, NEAR_FUNCTION_DECLARATION, true, at);
+    check_declaration_return(me, fn, NEAR_FUNCTION_DECLARATION, SIG_FUNCTION, at);
     if (emits_function_properties(fn)) check_expandos(me, fn->symbol, true);
 }
 
@@ -920,8 +1418,17 @@ static void find_setter(ClassDecl const* cls, ClassItem const* getter, Accessors
 }
 
 // typeFromProperty of a class field
+static void check_field_type(Walk* me, ClassItem const* item);
 static void check_field(Walk* me, ClassItem const* item) {
     if (item->access == ACCESS_MODIFIER_PRIVATE) return;
+    Emitting saved = emit_enter(me, EMIT_PROPERTY, SIG_CLASS, item->field.name_span, item->field.name_span);
+    bool outer = fallback_begin(me);
+    check_field_type(me, item);
+    fallback_end(me, outer, lazy_type_get((LazyType*)&item->field.lazy_type));
+    emit_leave(me, saved);
+}
+
+static void check_field_type(Walk* me, ClassItem const* item) {
     Expr const* init = &item->field.value;
     bool initialized = init->tag != EXPR_IMPLICIT_ANY;
     Near near = { .kind = NEAR_PROPERTY, .span = item->field.name_span, .name = item->field.name_span.sv };
@@ -949,7 +1456,10 @@ static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl 
 }
 
 static void check_class(Walk* me, ClassDecl const* cls) {
+    bool outer_static = my member_static, outer_in_class = my member_in_class;
+    my member_in_class = true;
     for_each (i, vec_class_item, &cls->items) {
+        my member_static = class_item_is_static((ClassItem*)i);
         Expr const* key = i->tag == CLASS_ITEM_METHOD ? i->method.computed_key :
             i->tag == CLASS_ITEM_FIELD ? i->field.computed_key : nullptr;
         if (is_dynamic_name(key)) {
@@ -982,13 +1492,20 @@ static void check_class(Walk* me, ClassDecl const* cls) {
                         if (j->initializer.binding.tag != BINDING_IDENTIFIER) {
                             check_binding_elements(me, &j->initializer.binding);
                         } else if (j->access != ACCESS_MODIFIER_PRIVATE) {
+                            // (a parameter's diagnostics, a property's if the constructor is private)
+                            Span name = j->initializer.binding.content_span;
+                            bool private_ctor = i->access == ACCESS_MODIFIER_PRIVATE;
+                            Emitting saved = emit_enter(me, private_ctor ? EMIT_PROPERTY : EMIT_PARAMETER, SIG_CONSTRUCTOR, name, name);
+                            bool outer = fallback_begin(me);
                             check_parameter(me, ctor, j, (Place){0}, false);
+                            fallback_end(me, outer, parameter_type(me, ctor, j));
+                            emit_leave(me, saved);
                         }
                     }
                 }
                 if (i->access != ACCESS_MODIFIER_PRIVATE) {
-                    check_written_signature(me, ctor);
-                    check_parameters(me, ctor, (Place){0}, true);
+                    check_written_signature(me, ctor, SIG_CONSTRUCTOR, true);
+                    check_declaration_parameters(me, ctor, SIG_CONSTRUCTOR);
                 }
                 break;
             }
@@ -997,20 +1514,34 @@ static void check_class(Walk* me, ClassDecl const* cls) {
                 FunctionImpl const* fn = &i->method.func;
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
                     if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn)) break;
-                    check_written_signature(me, fn);
-                    return_of_signature(me, fn, (Place){0}, NEAR_METHOD, true, (Span){0});
-                    check_parameters(me, fn, (Place){0}, true);
+                    check_written_signature(me, fn, SIG_METHOD, true);
+                    check_declaration_return(me, fn, NEAR_METHOD, SIG_METHOD, (Span){0});
+                    check_declaration_parameters(me, fn, SIG_METHOD);
                     break;
                 }
                 if (i->access == ACCESS_MODIFIER_PRIVATE) break;
-                check_written_signature(me, fn);
+                check_written_signature(me, fn, SIG_ACCESSOR, true);
                 Accessors pair = class_accessors(i);
-                if (i->method.accessor == CLASS_ACCESSOR_GET) {
+                bool getter = i->method.accessor == CLASS_ACCESSOR_GET;
+                Emitting saved = emit_enter(me, getter ? EMIT_GETTER : EMIT_SETTER, SIG_ACCESSOR, i->method.name_span, i->method.name_span);
+                bool outer = fallback_begin(me);
+                if (getter) {
                     find_setter(cls, i, &pair);
                     if (!fn->ret_explicit) type_of_accessor(me, pair, false, (Place){0});
                 } else {
                     type_of_accessor(me, pair, true, (Place){0});
                 }
+                Ty const* type = nullptr;
+                if (my fell_back) {
+                    // (the accessor pair's type: the getter's return type, else the setter's parameter's)
+                    Signature const* sig = pair.getter ? ty_function_signature(my checker, pair.getter) : nullptr;
+                    if (sig) type = signature_return_type(my checker, sig);
+                    else if (pair.setter && vec_function_arg_size(&pair.setter->args)) {
+                        type = parameter_type(me, pair.setter, vec_function_arg_at(&pair.setter->args, 0));
+                    }
+                }
+                fallback_end(me, outer, type);
+                emit_leave(me, saved);
                 break;
             }
             case CLASS_ITEM_FIELD:
@@ -1020,8 +1551,13 @@ static void check_class(Walk* me, ClassDecl const* cls) {
             default: break;
         }
     }
-    check_generic(me, &cls->generic);
-    for_each (i, vec_spanned_type, &cls->implements) check_written_type(me, &i->type);
+    my member_static = outer_static, my member_in_class = outer_in_class;
+    check_generic(me, &cls->generic, SIG_CLASS);
+    for_each (i, vec_spanned_type, &cls->implements) {
+        Emitting saved = emit_enter(me, EMIT_IMPLEMENTS, SIG_CLASS, cls->name, i->span);
+        check_written_type(me, &i->type);
+        emit_leave(me, saved);
+    }
     // A base that isn't a name is written as a variable of its type
     Expr const* base = &cls->extends;
     if (base->tag == EXPR_GENERIC_PARAMS) {
@@ -1029,31 +1565,60 @@ static void check_class(Walk* me, ClassDecl const* cls) {
         base = &base->generic_params->expr;
     }
     bool is_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
-    if (base->tag != EXPR_IMPLICIT_ANY && !is_null && !is_entity_name_expression(base)) {
+    if (base->tag == EXPR_IMPLICIT_ANY || is_null) return;
+    Emitting saved = emit_enter(me, EMIT_EXTENDS, SIG_CLASS, cls->name, cls->extends.outer_span);
+    if (is_entity_name_expression(base)) {
+        check_entity_expression(me, base);
+    } else {
+        // (written as a variable `_base` of the expression's type)
+        bool outer = fallback_begin(me);
         Place heritage = { .heritage = true };
         if (type_of_expression(me, base, heritage, false, false, false)) report_heritage(me, base->outer_span);
+        my fell_back = true;
+        fallback_end(me, outer, lazy_type_get((LazyType*)&base->lazy_type));
     }
+    emit_leave(me, saved);
 }
 
-static void check_generic(Walk* me, Generic const* generic) {
+static void check_generic(Walk* me, Generic const* generic, EmitSig sig) {
     for_each (i, vec_generic_item, &generic->items) {
+        Emitting saved = emit_enter_nested(me, EMIT_TYPE_PARAMETER, sig, i->name, i->name);
         if (i->extends_explicit) check_written_type(me, &i->extends);
         if (i->fallback_explicit) check_written_type(me, &i->fallback);
+        emit_leave(me, saved);
     }
 }
 
 // The types written in a signature (parameters, return type, type parameters)
-static void check_written_signature(Walk* me, FunctionImpl const* fn) {
-    check_generic(me, &fn->generic);
+// `declaration`: a declaration the transformer visits (its return type gets the signature's diagnostics), else a
+// function type or a function expression the syntactic builder reuses
+static void check_written_signature(Walk* me, FunctionImpl const* fn, EmitSig sig, bool declaration) {
+    check_generic(me, &fn->generic, sig);
     for_each (i, vec_function_arg, &fn->args) {
-        if (i->initializer.binding.has_explicit_type) check_written_type(me, &i->initializer.binding.explicit_type);
+        if (!i->initializer.binding.has_explicit_type) continue;
+        Span name = i->initializer.binding.content_span;
+        Emitting saved = declaration ? emit_enter(me, EMIT_PARAMETER, sig, name, name) :
+            emit_enter_nested(me, EMIT_PARAMETER, sig, name, name);
+        check_written_type(me, &i->initializer.binding.explicit_type);
+        emit_leave(me, saved);
+    }
+    Emitting saved = my emitting;
+    if (declaration) {
+        EmitKind kind = sig == SIG_ACCESSOR ? EMIT_GETTER : EMIT_RETURN;
+        saved = emit_enter(me, kind, sig, fn->name, span_valid(fn->name) ? fn->name : function_error_span(fn));
     }
     if (fn->ret_explicit) check_written_type(me, &fn->ret);
     if (fn->predicate && fn->predicate->has_type) check_written_type(me, &fn->predicate->type);
+    emit_leave(me, saved);
 }
 
-// The members of an interface or type literal (`decl`: an interface's, whose merged members come from elsewhere too)
-static void check_type_members(Walk* me, VecInterfaceMember const* members, Symbol const* decl) {
+// The members of an interface or type literal (`decl`: an interface's, whose merged members come from elsewhere too).
+// `own_contexts`: each member gets diagnostics of its own (an interface, a type alias's type literal)
+static void check_type_members(Walk* me, VecInterfaceMember const* members, Symbol const* decl, bool own_contexts) {
+    bool outer_suppress = my suppress_contexts;
+    bool outer_static = my member_static, outer_in_class = my member_in_class;
+    my suppress_contexts = !own_contexts;
+    my member_static = my member_in_class = false;
     for_each (i, vec_interface_member, members) {
         if (decl && i->origin_interface && i->origin_interface != decl) continue;
         Span at = interface_member_error_span(i);
@@ -1063,15 +1628,23 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
             if (span_valid(at) && (span_end_ptr(at)[0] == ';' || span_end_ptr(at)[0] == ',')) at.sv.size++;
         }
         if (i->key.tag == INTERFACE_KEY_MAPPED) {
+            Emitting saved = emit_enter_nested(me, EMIT_TYPE_PARAMETER, SIG_MAPPED, i->key.span, i->key.span);
             check_written_type(me, &i->key.mapped.in_type);
             if (i->key.mapped.has_as_type) check_written_type(me, &i->key.mapped.as_type);
+            emit_leave(me, saved);
             check_written_type(me, &i->type);
             continue;
         }
         if (i->key.tag == INTERFACE_KEY_INDEX) {
+            Emitting saved = emit_enter_nested(me, EMIT_PARAMETER, SIG_INDEX, i->key.index.name, i->key.index.name);
+            check_written_type(me, &i->key.index.type);
+            emit_leave(me, saved);
+            saved = emit_enter_nested(me, EMIT_RETURN, SIG_INDEX, span_null, at);
             check_written_type(me, &i->type);
+            emit_leave(me, saved);
             continue;
         }
+        bool callable = i->type.tag == TYPE_CALLABLE && i->type.callable && i->type.callable->function;
         if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr.ref) {
             Expr const* key = i->key.expr.ref;
             if (is_dynamic_name(key) && !is_global_symbol_reference(me, key) && !is_entity_name_expression(key)) {
@@ -1079,18 +1652,31 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
                     "expressions with --isolatedDeclarations.");
                 continue;
             }
+            // A late bound name's entity (checkName)
+            if (is_entity_name_expression(key)) {
+                Emitting saved = emit_enter_nested(me, i->is_method ? EMIT_METHOD_NAME : EMIT_PROPERTY, SIG_METHOD, i->key.span, i->key.span);
+                check_entity_expression(me, key);
+                emit_leave(me, saved);
+            }
         }
         if (i->implicit_any) {
             // A property signature without a type: getDiagnostic has no case for it
             report(me, i->key.span, 9013, msg_expression);
             continue;
         }
-        if (i->type.tag != TYPE_CALLABLE || !i->type.callable || !i->type.callable->function) {
+        if (!callable || (!i->is_method && i->key.tag != INTERFACE_KEY_CALLABLE)) {
+            Emitting saved = emit_enter_nested(me, EMIT_PROPERTY, SIG_INTERFACE, i->key.span, i->key.span);
             check_written_type(me, &i->type);
+            emit_leave(me, saved);
             continue;
         }
         FunctionImpl const* fn = i->type.callable->function;
-        check_written_signature(me, fn);
+        EmitSig sig = i->key.tag != INTERFACE_KEY_CALLABLE ? SIG_METHOD : fn->is_constructor ? SIG_CONSTRUCT : SIG_CALL;
+        if (my suppress_contexts) {
+            check_written_signature(me, fn, sig, false);
+        } else {
+            check_written_signature(me, fn, sig, true);
+        }
         if (fn->ret_explicit || fn->predicate) continue;
         if (fn->is_constructor) {
             Error* error = report(me, at, 9008,
@@ -1100,14 +1686,31 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
             report(me, at, 9013, msg_expression); // (method and call signatures: no case either)
         }
     }
+    my suppress_contexts = outer_suppress;
+    my member_static = outer_static, my member_in_class = outer_in_class;
+}
+
+// The first identifier of a written type reference, checked
+static void check_type_reference(Walk* me, IdentifierType const* type) {
+    if (type->import_ref || type->keyword || type->this_kind) return;
+    if (vec_span_size(&type->namespaces)) {
+        if (!vec_symbol_cptr_size(&type->namespace_symbols)) return;
+        check_entity_name(me, *vec_symbol_cptr_at(&type->namespace_symbols, 0), *vec_span_at(&type->namespaces, 0),
+            SYMBOL_NAMESPACE);
+        return;
+    }
+    check_entity_name(me, type->symbol, type->name, SYMBOL_TYPE);
 }
 
 // A written type of a declaration: the type literals in it are emitted, members and all (visitDeclarationSubtree)
 static void check_written_type(Walk* me, TypeNode const* type) {
     switch (type->tag) {
-        case TYPE_INTERFACE: check_type_members(me, &type->interface.members, nullptr); return;
+        case TYPE_INTERFACE: check_type_members(me, &type->interface.members, nullptr, false); return;
         case TYPE_CALLABLE:
-            if (type->callable && type->callable->function) check_written_signature(me, type->callable->function);
+            if (type->callable && type->callable->function) {
+                FunctionImpl const* fn = type->callable->function;
+                check_written_signature(me, fn, fn->is_constructor ? SIG_CONSTRUCT : SIG_FUNCTION, false);
+            }
             return;
         case TYPE_ARRAY: check_written_type(me, type->array.element); return;
         case TYPE_TUPLE:
@@ -1118,7 +1721,11 @@ static void check_written_type(Walk* me, TypeNode const* type) {
             for_each (i, vec_type, &type->composite) check_written_type(me, i);
             return;
         case TYPE_IDENTIFIER:
+            check_type_reference(me, type->identifier);
             for_each (i, vec_spanned_type, &type->identifier->generic_params) check_written_type(me, &i->type);
+            return;
+        case TYPE_TYPEOF:
+            if (type->typeof_->expr) check_entity_expression(me, type->typeof_->expr);
             return;
         case TYPE_INDEXED:
             check_written_type(me, &type->indexed->interface);
@@ -1144,9 +1751,13 @@ static void check_written_type(Walk* me, TypeNode const* type) {
 }
 
 static void check_interface(Walk* me, InterfaceDecl const* decl) {
-    check_generic(me, &decl->generic);
-    for_each (i, vec_spanned_type, &decl->extends) check_written_type(me, &i->type);
-    if (decl->type.tag == TYPE_INTERFACE) check_type_members(me, &decl->type.interface.members, decl->symbol);
+    check_generic(me, &decl->generic, SIG_INTERFACE);
+    for_each (i, vec_spanned_type, &decl->extends) {
+        Emitting saved = emit_enter(me, EMIT_INTERFACE_EXTENDS, SIG_INTERFACE, decl->name, i->span);
+        check_written_type(me, &i->type);
+        emit_leave(me, saved);
+    }
+    if (decl->type.tag == TYPE_INTERFACE) check_type_members(me, &decl->type.interface.members, decl->symbol, true);
 }
 
 // tsc's evaluator's hasExternalReferences for an enum member's initializer: it names a member of another enum
@@ -1250,8 +1861,15 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
             TypeDecl const* decl = &statement->decl.type;
             if (decl->jsdoc || decl->jsdoc_check_only) return;
             if (statement_visible(me, statement, container, decl->symbol)) {
-                check_generic(me, &decl->generic);
-                check_written_type(me, &decl->type);
+                check_generic(me, &decl->generic, SIG_TYPE_ALIAS);
+                // (A type literal that is the alias's type gives its members diagnostics of their own)
+                Emitting saved = emit_enter(me, EMIT_TYPE_ALIAS, SIG_TYPE_ALIAS, decl->name, decl->name);
+                if (decl->type.tag == TYPE_INTERFACE) {
+                    check_type_members(me, &decl->type.interface.members, nullptr, true);
+                } else {
+                    check_written_type(me, &decl->type);
+                }
+                emit_leave(me, saved);
             }
             return;
         }
@@ -1265,16 +1883,23 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
             bool augmentation = decl->is_augmentation || decl->is_global;
             if (!augmentation && !statement_visible(me, statement, container, decl->symbol)) return;
             bool ambient = container.ambient || statement->decl.props.declared || decl->is_ambient_module || decl->is_global;
+            Scope const* outer_scope = my scope;
+            if (decl->inner_scope) my scope = decl->inner_scope;
             check_statements(me, &decl->contents.statements, (Container){ .ambient = ambient });
+            my scope = outer_scope;
             return;
         }
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
             Expr const* expr = &statement->expr;
             if (expr->tag == EXPR_IDENTIFIER) return;
             Near near = { .kind = NEAR_EXPORT_ASSIGNMENT, .span = statement->span };
+            Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
+            bool outer = fallback_begin(me);
             if (type_of_expression(me, expr, place_at(near, true), false, false, true)) {
                 report_expression(me, expr->outer_span, place_at(near, true), 0, nullptr);
             }
+            fallback_end(me, outer, lazy_type_get((LazyType*)&expr->lazy_type));
+            emit_leave(me, saved);
             return;
         }
         default: return;
@@ -1319,13 +1944,16 @@ bool declaration_diagnostics_wanted(SourceFile const* file) {
 }
 
 void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
-    if (!declaration_diagnostics_wanted(file) || !compiler_options()->isolated_declarations) return;
+    if (!declaration_diagnostics_wanted(file)) return;
     Walk walk = {
         .file = file,
         .errs = errs,
         .checker = current_checker,
         .strict_null_checks = compiler_options()->strict_null_checks,
+        .isolated = compiler_options()->isolated_declarations,
+        .scope = file->scope,
     };
+    walk.tracker = (DeclTracker){ .track_symbol = track_symbol, .ctx = &walk };
     if (file->is_module) collect_exported_locals(&walk, &file->ast.statements);
     check_statements(&walk, &file->ast.statements, (Container){ .global = !file->is_module, .module_top_level = file->is_module });
     free(walk.exported_locals);
