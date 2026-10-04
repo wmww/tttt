@@ -621,15 +621,31 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             break;
 
-        case INTERFACE_KEY_EXPR:
+        case INTERFACE_KEY_EXPR: {
+            // A computed name that names a member merges like a written one (the checker's member has the
+            // declarations of its symbol, see builder_add_interface_member)
+            VecSpan declarations = vec_span_init();
+            if (ctx->member_owner) {
+                Checker* checker = current_checker;
+                bool is_number = false;
+                Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, my key.expr.ref), &is_number);
+                Prop const* prop = name ? ty_get_prop(checker, ctx->member_owner, name) : nullptr;
+                bool mine = false;
+                Span own = vec_span_size(&my declarations) ? *vec_span_at(&my declarations, 0) : my key.span;
+                for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], own);
+                if (mine && prop->decl->decl_span_count > 1) {
+                    for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
+                }
+            }
+            if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, my key.span);
             add_member_symbol(ctx, (BaselineSym){
-                .declarations = vec_span_single(my key.span),
+                .declarations = declarations,
                 .span = my key.span,
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             }, my key.expr.ref);
             baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
             computed_member_name_compile_test_info(my key.expr.ref, ctx);
-            break;
+        }   break;
 
         case INTERFACE_KEY_MAPPED:
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.mapped.type_name });
@@ -1163,6 +1179,88 @@ static bool overloads_merge(ClassItem const* me, VecClassItem const* items, u32*
     return merge;
 }
 
+// A class member's binder name and flags (1 property, 2 method, 4 get, 8 set) for the computed-name grouping below:
+// `late` for a computed name that isn't a literal (tsc's late bound names). Null without one
+static Atom const* class_member_name(ClassItem const* item, bool* late, u32* flags) {
+    Checker* checker = current_checker;
+    Expr const* key;
+    cstr const* name_string;
+    if (item->tag == CLASS_ITEM_FIELD) {
+        key = item->field.computed_key;
+        name_string = &item->field.name_string;
+        *flags = 1;
+    } else if (item->tag == CLASS_ITEM_METHOD) {
+        key = item->method.computed_key;
+        name_string = &item->method.name_string;
+        *flags = item->method.accessor == CLASS_ACCESSOR_GET ? 4 : item->method.accessor == CLASS_ACCESSOR_SET ? 8 : 2;
+    } else {
+        return nullptr;
+    }
+    *late = false;
+    if (!key) {
+        if (span_valid(class_item_private_name(item))) return nullptr;
+        return checker_atom(checker, cstr_sv(name_string));
+    }
+    if (expr_is_perenthisized(key)) return nullptr;
+    bool literal = (key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) ||
+        (key->tag == EXPR_TEMPLATE && !key->template_->tag && vec_expr_is_empty(&key->template_->substitutions));
+    if (!literal && !expr_is_entity_name(key)) return nullptr;
+    *late = !literal;
+    bool is_number = false;
+    return ty_property_name_of_key(checker, ty_expr_type(checker, key), &is_number);
+}
+
+// The members whose declarations one with a computed name shares a symbol with. A literal name is the binder's (like
+// a written name: joins the first member of the name unless that one has a meaning it excludes); any other is late
+// bound (tsc's lateBindMember), and in a class every late bound member of a name is one symbol, conflicts or not
+static u32 computed_member_symbol_items(ClassItem const* me, VecClassItem const* items, ClassItem const** out, u32 cap) {
+    bool late;
+    u32 flags;
+    Atom const* name = class_member_name(me, &late, &flags);
+    if (!name) return 0;
+    bool is_static = class_item_is_static((ClassItem*)me);
+    u32 len = 0;
+    if (late) {
+        for (ClassItem const* j = items->data; j < items->data + items->size; j++) {
+            bool other_late;
+            u32 other_flags;
+            if (class_item_is_static((ClassItem*)j) != is_static) continue;
+            if (class_member_name(j, &other_late, &other_flags) != name || !other_late) continue;
+            if (len < cap) out[len++] = j;
+        }
+        return len;
+    }
+    // (The binder, in order: each member's symbol is the first of its name or itself)
+    ClassItem const* firsts[64];
+    u32 count = 0;
+    ClassItem const* first = nullptr;
+    u32 existing = 0;
+    ClassItem const* mine = nullptr;
+    for (ClassItem const* j = items->data; j < items->data + items->size && count < c_arraylen(firsts); j++) {
+        bool other_late;
+        u32 other_flags;
+        if (class_item_is_static((ClassItem*)j) != is_static) continue;
+        if (class_member_name(j, &other_late, &other_flags) != name || other_late) continue;
+        u32 excludes = other_flags == 1 ? 0 : other_flags == 2 ? ~2u : other_flags == 4 ? ~8u : ~4u;
+        ClassItem const* symbol = j;
+        if (!first) {
+            first = j;
+            existing = other_flags;
+        } else if (!(existing & excludes)) {
+            symbol = first;
+            existing |= other_flags;
+        }
+        firsts[count] = symbol;
+        out[count < cap ? count : cap - 1] = j;
+        if (j == me) mine = symbol;
+        count++;
+    }
+    for (u32 k = 0; k < count && k < cap; k++) {
+        if (firsts[k] == mine) out[len++] = out[k];
+    }
+    return len;
+}
+
 void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span class_name, BaselineTestCase* ctx) {
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
@@ -1177,8 +1275,10 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             VecSpan declarations = {0};
             Span written_name = my method.name_span;
             ClassItem const* symbol_items[64];
-            u32 symbol_count = class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
-            if (symbol_count) {
+            u32 symbol_count = my method.computed_key ?
+                computed_member_symbol_items(me, items, symbol_items, c_arraylen(symbol_items)) :
+                class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
+            if (symbol_count > 1 || (symbol_count && !my method.computed_key)) {
                 // The declarations of its symbol (tsc's binder: see class_item_symbol_items())
                 for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
                 ClassItem const* first = symbol_items[0];
@@ -1247,7 +1347,9 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
 
         case CLASS_ITEM_FIELD: {
             ClassItem const* symbol_items[64];
-            u32 symbol_count = class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
+            u32 symbol_count = my field.computed_key ?
+                computed_member_symbol_items(me, items, symbol_items, c_arraylen(symbol_items)) :
+                class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
             VecSpan declarations = my field.computed_key || span_valid(class_item_private_name(me)) ? vec_span_init() :
                 class_prop_declarations(ctx->class_symbol, my field.is_static, cstr_sv(&my field.name_string), my span, 2);
             if (vec_span_is_empty(&declarations)) {

@@ -10272,7 +10272,7 @@ const baselines = {
     },
     'duplicateIdentifierComputedName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateIdentifierDifferentModifiers': {
@@ -25107,7 +25107,7 @@ const baselines = {
     },
     'overloadsWithComputedNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'overloadsWithConstraints': {
@@ -39802,7 +39802,7 @@ const baselines = {
     },
     'symbolDeclarationEmit12': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'symbolDeclarationEmit13': {
@@ -39822,7 +39822,7 @@ const baselines = {
     },
     'symbolDeclarationEmit3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolDeclarationEmit4': {
@@ -40007,17 +40007,17 @@ const baselines = {
     },
     'symbolProperty37': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty38': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty39': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty4': {
@@ -40027,22 +40027,22 @@ const baselines = {
     },
     'symbolProperty40': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty41': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty42': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty43': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty44': {
@@ -41027,12 +41027,12 @@ const baselines = {
     },
     'computedPropertyNames40_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames40_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames41_ES5': {
