@@ -18,6 +18,14 @@ Planned 2026-09-29 (todo entry 9 of the seventh window). Three stages, stage 1 i
   0.55 s, libs 0.05 s. **Name resolution of referenced projects' files, redone in every program, is the cost**; checking
   only the project's own files already made typecheck small. Teardown between programs isn't visible in the total.
 
+**Stage 3 part 1 done** (2026-10-04): tsc-src is at **0** (at 1 and 4 checkers). The 12 were 5 mechanisms: an
+intersection property's optional member lacking its undefined (callHierarchy), a short tuple padded with undefined
+in a union no member of which has the element as a property (fixNaNEquality, fixAddMissingConstraint), fresh vs
+regular literals in inference's matching pass (findAllReferences), a merged interface taking its type parameters
+from a parameterless first declaration (mocha's `NodeJS.EventEmitter` forward declaration: all of testRunner), and
+widened object literals still counting as object literals for requireOptionalProperties (services.ts:2434: not a
+type-id tie after all, `{}` simply isn't a strict subtype of the weak type). Left: the second corpus.
+
 **Stage 2 done** (todo entry 4 of the eighth window, one session): `-b thirdparty/tsc/src` 3.65 s / 755 MB -> **1.32 s /
 785 MB** (best of 3; `--build-jobs 1`: 1.74 s / 540 MB). tsgo -b on a /tmp copy 2.34 s / 577-876 MB (it emits: noEmit
 isn't allowed in referenced projects), single-threaded 3.45 s; tsc -b 13.6 s. Output identical at every

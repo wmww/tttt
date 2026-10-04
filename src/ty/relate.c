@@ -1873,7 +1873,9 @@ static bool is_numeric_prop_name(Atom const* name) {
 
 static bool requires_optional_properties(Checker* me, Ty const* source) {
     Ty const* literal = source->kind == TY_ANONYMOUS && source->anonymous.target ? source->anonymous.target : source;
-    if (literal->kind == TY_ANONYMOUS && literal->anonymous.object_literal) return false;
+    // (Not one widened for a declaration: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral, so
+    // `const empty = {}` lacks the optional properties of a weak type and isn't its subtype the other way round)
+    if (ty_is_unwidened_object_literal(literal)) return false;
     if (is_tuple(source)) return false;
     // `[]` (never[]; tsc's isEmptyArrayLiteralType)
     return !(ty_is_array(me, source) && (ty_reference_args(me, source).data[0]->flags & TYF_NEVER));
