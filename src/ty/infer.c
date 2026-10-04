@@ -934,7 +934,11 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         Ty const* constraint = mapped->constraint;
         InferParam const* keyof_param = constraint->kind == TY_KEYOF ? inference_param(inf, constraint->keyof.operand) : nullptr;
         bool keyof_blocked = constraint->kind == TY_KEYOF && (!keyof_param || keyof_param->fixed);
-        if (template && !keyof_blocked && template->kind == TY_INDEXED &&
+        // (Not for a conditional constraint, Omit's `Exclude<keyof T, X>`: tsc's inferToMappedType infers nothing from
+        // it, and the mapped type has no properties to infer from either. A union with literal keys, like
+        // `"a" | Exclude<keyof T, X>`, does have properties, which this stands in for)
+        bool keys_inferable = constraint->kind != TY_CONDITIONAL;
+        if (template && keys_inferable && !keyof_blocked && template->kind == TY_INDEXED &&
             template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
             ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))
         ) {
