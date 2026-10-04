@@ -63697,7 +63697,7 @@ const baselines = {
     },
     'importTypeLocalMissing': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importTypeNested': {

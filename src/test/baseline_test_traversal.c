@@ -891,6 +891,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     baseline_test_case_add_type_node(ctx, *i, &type_any);
                 }
                 if (heritage && !decl) break;
+                // (Nothing for a name an import type can't find: see below)
+                if (my identifier->import_ref && (!decl || decl->is_placeholder)) {
+                    vec_span_push(&so_far, *i);
+                    continue;
+                }
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declaration_get_spans(decl),
                     .allow_declaration_empty = true,
