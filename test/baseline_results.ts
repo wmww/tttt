@@ -7826,12 +7826,12 @@ const baselines = {
         types: true,
     },
     'declarationEmitComputedPropertyNameSymbol1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitComputedPropertyNameSymbol2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8101,7 +8101,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitExpressionWithNonlocalPrivateUniqueSymbol': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8331,7 +8331,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitMappedTypeTemplateTypeofSymbol': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -8346,7 +8346,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitMixinPrivateProtected': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8571,7 +8571,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitReadonlyComputedProperty': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -10676,7 +10676,7 @@ const baselines = {
         types: true,
     },
     'emitClassExpressionInDeclarationFile2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -65551,7 +65551,7 @@ const baselines = {
         types: true,
     },
     'declarationFiles': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

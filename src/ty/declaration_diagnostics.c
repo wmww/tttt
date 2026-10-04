@@ -106,6 +106,7 @@ typedef struct Emitting {
     bool in_class; // A member of a class, not of an interface or type literal
     Span name; // The declaration's name (the message's first argument for most kinds), empty if it has none
     Span at; // Where the diagnostic goes unless an entity name is to blame
+    Span fallback; // Without a name: where the symbol tracker's own diagnostics go (tsc's errorFallbackNode), else `at`
 } Emitting;
 
 typedef struct Walk {
@@ -414,6 +415,84 @@ static bool fallback_end(Walk* me, bool outer, Ty const* type) {
     if (fell_back) print_inferred(me, type);
     my fell_back = outer || fell_back;
     return fell_back;
+}
+
+// errorNameNode or errorFallbackNode, and errorDeclarationNameWithFallback
+static Span error_name_node(Walk* me, csview* name) {
+    Emitting const* e = &my emitting;
+    if (span_valid(e->name)) {
+        *name = e->name.sv;
+        return e->name;
+    }
+    *name = e->kind == EMIT_DEFAULT_EXPORT ? c_sv("default") : c_sv("(Missing)");
+    return span_valid(e->fallback) ? e->fallback : e->at;
+}
+
+// An error of the declaration being emitted at errorNameNode (once)
+static Error* report_once(Walk* me, Span at, unsigned code, cstr message) {
+    for (isize_t i = my emitting_errors; i < vec_error_size(&my errs->errors); i++) {
+        Error const* other = vec_error_at(&my errs->errors, i);
+        if (other->ts_code == code && span_eq(other->span, at) && cstr_equals_sv(&other->message, cstr_sv(&message))) {
+            cstr_drop(&message);
+            return nullptr;
+        }
+    }
+    return error_ctx_error_s(my errs, at, code, message);
+}
+
+// The symbol tracker's other reports
+static void tracker_report(DeclTracker* tracker, DeclTrackReport kind, csview property) {
+    Walk* me = tracker->ctx;
+    if (my emitting.kind == EMIT_NONE) return;
+    csview name;
+    Span at = error_name_node(me, &name);
+    switch (kind) {
+        case DECL_REPORT_PRIVATE_IN_CLASS_LITERAL: {
+            Error* error = report_once(me, at, 4094, cstr_d("Property '", property,
+                "' of exported anonymous class type may not be private or protected."));
+            if (error && my emitting.kind == EMIT_VARIABLE) {
+                error_add_related_d(error, at, 9027, "Add a type annotation to the variable ", name, ".");
+            }
+            return;
+        }
+        case DECL_REPORT_UNIQUE_SYMBOL:
+        case DECL_REPORT_THIS:
+            report_once(me, at, 2527, cstr_d("The inferred type of '", name, "' references an inaccessible '",
+                kind == DECL_REPORT_THIS ? "this" : "unique symbol", "' type. A type annotation is necessary."));
+            return;
+        case DECL_REPORT_NON_SERIALIZABLE:
+            report_once(me, at, 4118, cstr_d("The type of this node cannot be serialized because its property '", property,
+                "' cannot be serialized."));
+            return;
+    }
+}
+
+static void track_symbol(DeclTracker* tracker, Symbol const* symbol, u32 meaning);
+
+// trackComputedName: the first identifier of a late bound name as resolved from here, else as resolved where the name
+// is declared (which is a module's local there, never accessible from another file)
+static void track_computed_name(DeclTracker* tracker, csview name, SourceFile const* file) {
+    Walk* me = tracker->ctx;
+    char const* c = name.buf + (name.size && name.buf[0] == '[');
+    char const* end = name.buf + name.size;
+    while (c < end && (*c == ' ' || *c == '\t' || *c == '\n' || *c == '\r')) c++;
+    char const* start = c;
+    while (c < end && *c != '.' && *c != ']' && *c != ' ' && *c != '[' && *c != '(') c++;
+    csview first = csview_from_n(start, c - start);
+    if (!first.size) return;
+    Symbol const* found = scope_resolve(my scope, first, SYMBOL_VALUE);
+    if (found) {
+        track_symbol(tracker, found, SYMBOL_VALUE);
+        return;
+    }
+    Scope const* module = file && file->scope ? scope_external_module(file->scope) : nullptr;
+    if (module && module != scope_external_module(my scope)) {
+        cstr module_name = module_name_for_error(module->container, nullptr, false);
+        report_access(me, SYMBOL_CANNOT_BE_NAMED, first, cstr_sv(&module_name), true, span_null);
+        cstr_drop(&module_name);
+    } else {
+        report_access(me, SYMBOL_NOT_ACCESSIBLE, first, c_sv(""), false, span_null);
+    }
 }
 
 // trackSymbol: isSymbolAccessible from where the declaration is emitted, and its diagnostic
@@ -1002,8 +1081,9 @@ static void check_declaration_parameters(Walk* me, FunctionImpl const* fn, EmitS
 }
 
 // The return type of a declaration's signature, with the signature's diagnostics
-static bool check_declaration_return(Walk* me, FunctionImpl const* fn, NearKind kind, EmitSig sig, Span at) {
-    Emitting saved = emit_enter(me, EMIT_RETURN, sig, fn->name, span_valid(at) ? at : span_valid(fn->name) ? fn->name : function_error_span(fn));
+static bool check_declaration_return(Walk* me, FunctionImpl const* fn, NearKind kind, EmitSig sig, Span name, Span at) {
+    if (!span_valid(name)) name = fn->name;
+    Emitting saved = emit_enter(me, EMIT_RETURN, sig, name, span_valid(at) ? at : span_valid(name) ? name : function_error_span(fn));
     bool outer = fallback_begin(me);
     bool failed = return_of_signature(me, fn, (Place){0}, kind, true, at);
     my fell_back |= failed;
@@ -1382,7 +1462,7 @@ static void check_function_declaration(Walk* me, FunctionImpl const* fn, Stateme
     check_declaration_parameters(me, fn, SIG_FUNCTION);
     // (Without a name, `export default function () {}` is spanned from its first token, the `export`)
     Span at = span_valid(fn->name) ? fn->name : block_first_token(statement->span);
-    check_declaration_return(me, fn, NEAR_FUNCTION_DECLARATION, SIG_FUNCTION, at);
+    check_declaration_return(me, fn, NEAR_FUNCTION_DECLARATION, SIG_FUNCTION, (Span){0}, at);
     if (emits_function_properties(fn)) check_expandos(me, fn->symbol, true);
 }
 
@@ -1455,7 +1535,8 @@ static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl 
     return false;
 }
 
-static void check_class(Walk* me, ClassDecl const* cls) {
+// `statement`: the class declaration's (an anonymous one's diagnostics go to its first token)
+static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     bool outer_static = my member_static, outer_in_class = my member_in_class;
     my member_in_class = true;
     for_each (i, vec_class_item, &cls->items) {
@@ -1515,7 +1596,7 @@ static void check_class(Walk* me, ClassDecl const* cls) {
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
                     if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn)) break;
                     check_written_signature(me, fn, SIG_METHOD, true);
-                    check_declaration_return(me, fn, NEAR_METHOD, SIG_METHOD, (Span){0});
+                    check_declaration_return(me, fn, NEAR_METHOD, SIG_METHOD, i->method.name_span, (Span){0});
                     check_declaration_parameters(me, fn, SIG_METHOD);
                     break;
                 }
@@ -1566,7 +1647,9 @@ static void check_class(Walk* me, ClassDecl const* cls) {
     }
     bool is_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
     if (base->tag == EXPR_IMPLICIT_ANY || is_null) return;
-    Emitting saved = emit_enter(me, EMIT_EXTENDS, SIG_CLASS, cls->name, cls->extends.outer_span);
+    Emitting saved = emit_enter(me, EMIT_EXTENDS, SIG_CLASS, cls->name,
+        span_valid(cls->extends_clause) ? cls->extends_clause : cls->extends.outer_span);
+    my emitting.fallback = block_first_token(statement);
     if (is_entity_name_expression(base)) {
         check_entity_expression(me, base);
     } else {
@@ -1849,7 +1932,7 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         }
         case STATEMENT_DECL_CLASS: {
             ClassDecl const* cls = statement->decl.class;
-            if (statement_visible(me, statement, container, cls->symbol)) check_class(me, cls);
+            if (statement_visible(me, statement, container, cls->symbol)) check_class(me, cls, statement->span);
             return;
         }
         case STATEMENT_DECL_INTERFACE: {
@@ -1953,7 +2036,9 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
         .isolated = compiler_options()->isolated_declarations,
         .scope = file->scope,
     };
-    walk.tracker = (DeclTracker){ .track_symbol = track_symbol, .ctx = &walk };
+    walk.tracker = (DeclTracker){
+        .track_symbol = track_symbol, .track_computed_name = track_computed_name, .report = tracker_report, .ctx = &walk,
+    };
     if (file->is_module) collect_exported_locals(&walk, &file->ast.statements);
     check_statements(&walk, &file->ast.statements, (Container){ .global = !file->is_module, .module_top_level = file->is_module });
     free(walk.exported_locals);

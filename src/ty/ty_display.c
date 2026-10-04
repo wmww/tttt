@@ -952,6 +952,13 @@ static void display_node_signature_inner(Checker* me, TyDisplay d, FunctionImpl 
 // visitExistingNodeTreeSymbolsWorker, ComputedPropertyName), as written if it has none (a unique symbol)
 static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* expr) {
     Expr const* leftmost = entity_leftmost(expr);
+    // (declaration emit: a late bindable name in a reused node is tracked, visitExistingNodeTreeSymbols)
+    if (d.tracker && leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
+        (ty_expr_type(me, expr)->flags & TYF_UNIQUE_ES_SYMBOL)
+    ) {
+        Span name = expr->outer_span;
+        d.tracker->track_computed_name(d.tracker, csview_slice(name.sv, 0, name.sv.size), name.source);
+    }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
         !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE)
     ) {
@@ -1839,6 +1846,32 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
     return true;
 }
 
+// Declaration emit's checks of a property it writes (createTypeNodesFromResolvedType, addPropertyToElementList).
+// Whether it is skipped
+static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
+    // A class's `prototype` isn't written; its private and protected members can't be in a type literal
+    if (prop->flags & PROP_PROTOTYPE) return true;
+    if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) {
+        d.tracker->report(d.tracker, DECL_REPORT_PRIVATE_IN_CLASS_LITERAL, atom_sv(prop->name));
+    }
+    if (!ty_unique_symbol_of_name(me, prop->name)) return false;
+    // A late bound name: the declaration's computed name, else it can't be written
+    // (A mapped type's property is declared where the property it comes from is, see mapped_members())
+    Prop const* declared = prop;
+    while (declared->target && !span_valid(declared->decl->name_span) && !declared->decl->decl_span_count) {
+        declared = declared->target;
+    }
+    Span name = declared->decl->name_span;
+    if (span_valid(name) && name.sv.size && name.sv.buf[0] == '[') {
+        d.tracker->track_computed_name(d.tracker, name.sv, name.source);
+    } else if (!span_valid(name) && !declared->decl->decl_span_count) {
+        cstr text = ty_prop_name_cstr(me, prop->name);
+        d.tracker->report(d.tracker, DECL_REPORT_NON_SERIALIZABLE, cstr_sv(&text));
+        cstr_drop(&text);
+    }
+    return false;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     if (members->mapped) {
@@ -1880,6 +1913,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, " & ");
     }
     out_lit(d, "{ ");
+    d.in_object_literal = true;
     for (u32 i = 0; i < members->call_count; i++) {
         display_signature(me, d, members->call[i], ": ", false);
         out_lit(d, "; ");
@@ -1919,6 +1953,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     }
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
+        if (d.tracker) {
+            if (track_property(me, d, prop)) continue;
+        }
         Ty const* type = prop_type(me, prop);
         // (A property that is a function of a namespace, as a spread copies it: tsc prints a property whose symbol is a
         // Function or Method as methods)
@@ -1977,7 +2014,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             }
         }
         if (prop->flags & PROP_READONLY) out_lit(d, "readonly ");
-        display_member_name(me, d, prop);
+        TyDisplay name_d = d;
+        name_d.tracker = nullptr; // (named from its own declaration, see track_property())
+        display_member_name(me, name_d, prop);
         if (prop->flags & PROP_OPTIONAL) out_lit(d, "?");
         out_lit(d, ": ");
         // The annotation of a property signature unless instantiated, or the type assertion of an object literal's
@@ -2218,7 +2257,21 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 // `unique symbol` (tsc's AllowUniqueESSymbolType, in typeToString's default flags) unless asked to name
                 // the symbol, as an annotation that is reused does (it says `typeof sym`: the one that says `unique
                 // symbol` declares the symbol, and tsc doesn't reuse that one)
-                if (!d.typeof_unique_symbols && !d.reused) {
+                if (d.tracker && !d.reused) {
+                    // (declaration emit names it if it can, tsc's typeToTypeNodeHelper without AllowUniqueESSymbolType)
+                    UniqueSymbolDecl const* unique = ty->literal.unique;
+                    Symbol const* owner = unique->owner;
+                    // (A member's symbol is reached through its class, or a variable of its interface's type)
+                    bool named = owner && ((owner->flags & SYMBOL_INTERFACE) && span_valid(unique->member) ?
+                        symbol_type_accessible_at(d.enclosing, owner) : symbol_value_accessible_at(d.enclosing, owner));
+                    if (named) {
+                        out_lit(d, "typeof ");
+                        out_unique_symbol_name(me, d, unique);
+                    } else {
+                        d.tracker->report(d.tracker, DECL_REPORT_UNIQUE_SYMBOL, c_sv(""));
+                        out_lit(d, "unique symbol");
+                    }
+                } else if (!d.typeof_unique_symbols && !d.reused) {
                     out_lit(d, "unique symbol");
                 } else {
                     out_lit(d, "typeof ");
@@ -2257,6 +2310,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             break;
 
         case TY_TYPE_PARAM: {
+            if (d.tracker && d.in_object_literal && ty->param.state->is_this) {
+                d.tracker->report(d.tracker, DECL_REPORT_THIS, c_sv(""));
+            }
             bool declared_here = false;
             for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
             if (declared_here) out_lit(d, "infer ");

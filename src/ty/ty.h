@@ -1890,9 +1890,19 @@ typedef struct TyParamNames {
 
 // Declaration emit's SymbolTracker (tsc's declarations.ts symbolTracker, plan 40): what the printer reports while it
 // prints a type the way a `.d.ts` would write it (TyDisplay.tracker)
+typedef enum DeclTrackReport : uint8_t {
+    DECL_REPORT_PRIVATE_IN_CLASS_LITERAL, // reportPrivateInBaseOfClassExpression (`name`: the property)
+    DECL_REPORT_UNIQUE_SYMBOL, // reportInaccessibleUniqueSymbolError
+    DECL_REPORT_THIS, // reportInaccessibleThisError
+    DECL_REPORT_NON_SERIALIZABLE, // reportNonSerializableProperty (`name`: the property)
+} DeclTrackReport;
+
 typedef struct DeclTracker {
     // A symbol the printer names (lookupSymbolChain's trackSymbol)
     void (*track_symbol)(struct DeclTracker* me, Symbol const* symbol, u32 meaning);
+    // The computed name (`[a.b]`, as written) of a late bound property's declaration in `file` (trackComputedName)
+    void (*track_computed_name)(struct DeclTracker* me, csview name, struct SourceFile const* file);
+    void (*report)(struct DeclTracker* me, DeclTrackReport report, csview name);
     void* ctx;
 } DeclTracker;
 
@@ -1935,6 +1945,7 @@ typedef struct TyDisplay {
     bool array_element_node;
     uint8_t jsdoc_literal_depth; // Inside that many JSDoc type literals being reprinted (their indentation)
     DeclTracker* tracker; // Declaration emit: null everywhere else
+    bool in_object_literal; // Inside a type literal's members (tsc's InObjectTypeLiteral): `this` can't be written there
 } TyDisplay;
 void ty_display(Checker* me, TyDisplay d, Ty const* ty);
 void ty_display_signature(Checker* me, TyDisplay d, Signature const* sig);
