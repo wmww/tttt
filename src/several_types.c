@@ -538,8 +538,9 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 
 static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs) {
     if (my import_attributes) import_attributes_resolution_mode(my import_attributes, errs); // tsc's checkImportType
-    for_each (i, vec_spanned_type, &my generic_params) {
-        type_typecheck(&i->type, errs);
+    // (tsc's checkImportType doesn't check an import type's type arguments, only their constraints)
+    if (!my import_ref) {
+        for_each (i, vec_spanned_type, &my generic_params) type_typecheck(&i->type, errs);
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE &&
         !(my this_function && ty_js_this_class(my this_function))

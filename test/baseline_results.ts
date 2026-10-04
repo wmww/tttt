@@ -8271,7 +8271,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitIsolatedDeclarationErrorNotEmittedForNonEmittedFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

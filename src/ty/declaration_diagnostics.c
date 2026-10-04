@@ -220,6 +220,7 @@ static bool is_primitive_literal_value(Expr const* expr, bool include_bigint) {
 
 // tsc's isEntityNameExpression: a name, or a dotted name of names
 static bool is_entity_name_expression(Expr const* expr) {
+    if (expr_is_perenthisized(expr)) return false;
     if (expr->tag == EXPR_IDENTIFIER) return !expr->identifier.keyword;
     if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return false;
     return !expr->property->optional_chain && is_entity_name_expression(&expr->property->expr);
@@ -308,7 +309,11 @@ static Span assertion_type_span(Expr const* expr) {
 
 static bool type_of_expression(Walk* me, Expr const* expr, Place place, bool const_context, bool add_undefined,
     bool preserve_literals);
-static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback);
+static void check_written_type(Walk* me, TypeNode const* type);
+static void check_written_signature(Walk* me, FunctionImpl const* fn);
+static void check_generic(Walk* me, Generic const* generic);
+static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback,
+    Span at);
 static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, Place place, bool in_function);
 
 // The kind of `near` a function is
@@ -376,7 +381,8 @@ static bool has_return(Statement const* me) {
 // its body. Whether the builder fell back
 static bool type_of_single_return(Walk* me, FunctionImpl const* fn, Place place) {
     if (!fn->has_body || fn->body_missing) return true;
-    if (fn->is_async && fn->is_generator) return true;
+    // (getFunctionFlags & FunctionFlags.AsyncGenerator: either flag)
+    if (fn->is_async || fn->is_generator) return true;
     Expr const* candidate = nullptr;
     Near near = place.near;
     if (fn->expression_body) {
@@ -414,8 +420,11 @@ static bool type_of_single_return(Walk* me, FunctionImpl const* fn, Place place)
     return type_of_expression(me, candidate, (Place){ .near = near }, false, false, false);
 }
 
-// createReturnFromSignature, and the report of inferReturnTypeOfSignatureSignature. Whether the builder fell back
-static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback) {
+// createReturnFromSignature, and the report of inferReturnTypeOfSignatureSignature. Whether the builder fell back. `at`:
+// where the function's diagnostics go, if not function_error_span()
+static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, NearKind kind, bool report_fallback,
+    Span at
+) {
     if (fn->ret_explicit || fn->predicate) return false;
     if (!type_of_single_return(me, fn, place)) return false;
     if (!report_fallback) return true;
@@ -429,7 +438,7 @@ static bool return_of_signature(Walk* me, FunctionImpl const* fn, Place place, N
     kind_error(kind, &code, &message);
     // createReturnTypeError: the nearest declaration (none for a declaration directly in a statement list or class)
     // and the function
-    Span at = function_error_span(fn);
+    if (!span_valid(at)) at = function_error_span(fn);
     Error* error = report(me, at, code, message);
     add_related(error, place.near);
     add_related(error, (Near){ .kind = kind, .span = at });
@@ -471,7 +480,7 @@ static bool accessors_annotated(Accessors pair) {
 static void type_of_accessor(Walk* me, Accessors pair, bool of_setter, Place place) {
     if (accessors_annotated(pair)) return;
     if (pair.getter) {
-        if (return_of_signature(me, pair.getter, place, NEAR_GET_ACCESSOR, true)) report_accessor(me, pair, false, place);
+        if (return_of_signature(me, pair.getter, place, NEAR_GET_ACCESSOR, true, (Span){0})) report_accessor(me, pair, false, place);
         return;
     }
     if (of_setter) report_accessor(me, pair, true, place);
@@ -544,6 +553,8 @@ static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const*
         report_heritage(me, arg->span);
         return;
     }
+    // (createParameterError asks again, with the function as the enclosing declaration)
+    add_undefined = requires_adding_undefined(me, fn, arg, true);
     if (!add_undefined && init->tag != EXPR_IMPLICIT_ANY) {
         report_expression(me, init->outer_span, (Place){ .near = near, .direct = true }, 0, nullptr);
         return;
@@ -563,7 +574,7 @@ static void check_parameters(Walk* me, FunctionImpl const* fn, Place place, bool
 
 // typeFromFunctionLikeExpression: never falls back, its parts report
 static void type_of_function_expression(Walk* me, FunctionImpl const* fn, Place place) {
-    return_of_signature(me, fn, place, NEAR_FUNCTION_EXPRESSION, true);
+    return_of_signature(me, fn, place, NEAR_FUNCTION_EXPRESSION, true, (Span){0});
     Place params = place;
     params.direct = false;
     check_parameters(me, fn, params, true);
@@ -641,7 +652,7 @@ static void type_of_object(Walk* me, Expr const* expr, Place place, bool const_c
         switch (i->tag) {
             case OBJECT_ITEM_METHOD: {
                 FunctionImpl const* fn = i->value.function;
-                return_of_signature(me, fn, inner, NEAR_METHOD, true);
+                return_of_signature(me, fn, inner, NEAR_METHOD, true, (Span){0});
                 check_parameters(me, fn, inner, true);
                 break;
             }
@@ -662,10 +673,10 @@ static void type_of_object(Walk* me, Expr const* expr, Place place, bool const_c
                 } else if (first && !accessors_annotated(pair)) {
                     // inferAccessorType
                     if (i->tag == OBJECT_ITEM_GETTER) {
-                        if (return_of_signature(me, fn, inner, NEAR_GET_ACCESSOR, true)) report_accessor(me, pair, false, inner);
+                        if (return_of_signature(me, fn, inner, NEAR_GET_ACCESSOR, true, (Span){0})) report_accessor(me, pair, false, inner);
                     } else {
                         report_accessor(me, pair, true, inner);
-                        if (pair.getter && return_of_signature(me, pair.getter, inner, NEAR_GET_ACCESSOR, true)) {
+                        if (pair.getter && return_of_signature(me, pair.getter, inner, NEAR_GET_ACCESSOR, true, (Span){0})) {
                             report_accessor(me, pair, false, inner);
                         }
                     }
@@ -834,7 +845,10 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
         if (!is_primitive_literal_value(init, true)) report_variable(me, binding, init);
         return;
     }
-    if (binding->has_explicit_type) return;
+    if (binding->has_explicit_type) {
+        check_written_type(me, &binding->explicit_type);
+        return;
+    }
     Near near = { .kind = NEAR_VARIABLE, .span = binding->content_span, .name = binding->content_span.sv };
     bool failed = true;
     if (initialized && symbol_declared_once(binding->symbol) && !is_expando_variable(me, binding, init)) {
@@ -864,10 +878,13 @@ static bool emits_function_properties(FunctionImpl const* fn) {
     return !last || last == fn;
 }
 
-static void check_function_declaration(Walk* me, FunctionImpl const* fn) {
+static void check_function_declaration(Walk* me, FunctionImpl const* fn, Statement const* statement) {
     if (is_overload_implementation(fn)) return;
+    check_written_signature(me, fn);
     check_parameters(me, fn, (Place){0}, true);
-    return_of_signature(me, fn, (Place){0}, NEAR_FUNCTION_DECLARATION, true);
+    // (Without a name, `export default function () {}` is spanned from its first token, the `export`)
+    Span at = span_valid(fn->name) ? fn->name : block_first_token(statement->span);
+    return_of_signature(me, fn, (Place){0}, NEAR_FUNCTION_DECLARATION, true, at);
     if (emits_function_properties(fn)) check_expandos(me, fn->symbol, true);
 }
 
@@ -912,7 +929,10 @@ static void check_field(Walk* me, ClassItem const* item) {
         if (!is_primitive_literal_value(init, true)) report_declaration(me, near);
         return;
     }
-    if (item->field.has_explicit_type) return;
+    if (item->field.has_explicit_type) {
+        check_written_type(me, &item->field.explicit_type);
+        return;
+    }
     bool failed = true;
     if (initialized) failed = type_of_expression(me, init, place_at(near, true), false, false, item->field.is_readonly);
     if (failed) report_declaration(me, near);
@@ -944,7 +964,7 @@ static void check_class(Walk* me, ClassDecl const* cls) {
                 bool index = !(name_type->flags & (TYF_ANY | TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL)) &&
                     (name_type->flags & (TYF_STRING | TYF_NUMBER | TYF_ES_SYMBOL));
                 if (index && i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_NONE) {
-                    return_of_signature(me, &i->method.func, (Place){0}, NEAR_METHOD, true);
+                    return_of_signature(me, &i->method.func, (Place){0}, NEAR_METHOD, true, (Span){0});
                     check_parameters(me, &i->method.func, (Place){0}, true);
                 }
                 continue;
@@ -966,7 +986,10 @@ static void check_class(Walk* me, ClassDecl const* cls) {
                         }
                     }
                 }
-                if (i->access != ACCESS_MODIFIER_PRIVATE) check_parameters(me, ctor, (Place){0}, true);
+                if (i->access != ACCESS_MODIFIER_PRIVATE) {
+                    check_written_signature(me, ctor);
+                    check_parameters(me, ctor, (Place){0}, true);
+                }
                 break;
             }
             case CLASS_ITEM_METHOD: {
@@ -974,11 +997,13 @@ static void check_class(Walk* me, ClassDecl const* cls) {
                 FunctionImpl const* fn = &i->method.func;
                 if (i->method.accessor == CLASS_ACCESSOR_NONE) {
                     if (i->access == ACCESS_MODIFIER_PRIVATE || is_class_overload_implementation(cls, fn)) break;
-                    return_of_signature(me, fn, (Place){0}, NEAR_METHOD, true);
+                    check_written_signature(me, fn);
+                    return_of_signature(me, fn, (Place){0}, NEAR_METHOD, true, (Span){0});
                     check_parameters(me, fn, (Place){0}, true);
                     break;
                 }
                 if (i->access == ACCESS_MODIFIER_PRIVATE) break;
+                check_written_signature(me, fn);
                 Accessors pair = class_accessors(i);
                 if (i->method.accessor == CLASS_ACCESSOR_GET) {
                     find_setter(cls, i, &pair);
@@ -995,9 +1020,14 @@ static void check_class(Walk* me, ClassDecl const* cls) {
             default: break;
         }
     }
+    check_generic(me, &cls->generic);
+    for_each (i, vec_spanned_type, &cls->implements) check_written_type(me, &i->type);
     // A base that isn't a name is written as a variable of its type
     Expr const* base = &cls->extends;
-    if (base->tag == EXPR_GENERIC_PARAMS) base = &base->generic_params->expr;
+    if (base->tag == EXPR_GENERIC_PARAMS) {
+        for_each (i, vec_spanned_type, &base->generic_params->params) check_written_type(me, &i->type);
+        base = &base->generic_params->expr;
+    }
     bool is_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
     if (base->tag != EXPR_IMPLICIT_ANY && !is_null && !is_entity_name_expression(base)) {
         Place heritage = { .heritage = true };
@@ -1005,16 +1035,42 @@ static void check_class(Walk* me, ClassDecl const* cls) {
     }
 }
 
-// The members of an interface
-static void check_interface(Walk* me, InterfaceDecl const* decl) {
-    if (decl->type.tag != TYPE_INTERFACE) return;
-    for_each (i, vec_interface_member, &decl->type.interface.members) {
-        if (i->origin_interface && i->origin_interface != decl->symbol) continue;
+static void check_generic(Walk* me, Generic const* generic) {
+    for_each (i, vec_generic_item, &generic->items) {
+        if (i->extends_explicit) check_written_type(me, &i->extends);
+        if (i->fallback_explicit) check_written_type(me, &i->fallback);
+    }
+}
+
+// The types written in a signature (parameters, return type, type parameters)
+static void check_written_signature(Walk* me, FunctionImpl const* fn) {
+    check_generic(me, &fn->generic);
+    for_each (i, vec_function_arg, &fn->args) {
+        if (i->initializer.binding.has_explicit_type) check_written_type(me, &i->initializer.binding.explicit_type);
+    }
+    if (fn->ret_explicit) check_written_type(me, &fn->ret);
+    if (fn->predicate && fn->predicate->has_type) check_written_type(me, &fn->predicate->type);
+}
+
+// The members of an interface or type literal (`decl`: an interface's, whose merged members come from elsewhere too)
+static void check_type_members(Walk* me, VecInterfaceMember const* members, Symbol const* decl) {
+    for_each (i, vec_interface_member, members) {
+        if (decl && i->origin_interface && i->origin_interface != decl) continue;
         Span at = interface_member_error_span(i);
         if (i->key.tag == INTERFACE_KEY_CALLABLE && vec_span_size(&i->declarations)) {
             // (A signature's node ends after its `;` or `,`)
             at = *vec_span_at(&i->declarations, 0);
             if (span_valid(at) && (span_end_ptr(at)[0] == ';' || span_end_ptr(at)[0] == ',')) at.sv.size++;
+        }
+        if (i->key.tag == INTERFACE_KEY_MAPPED) {
+            check_written_type(me, &i->key.mapped.in_type);
+            if (i->key.mapped.has_as_type) check_written_type(me, &i->key.mapped.as_type);
+            check_written_type(me, &i->type);
+            continue;
+        }
+        if (i->key.tag == INTERFACE_KEY_INDEX) {
+            check_written_type(me, &i->type);
+            continue;
         }
         if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr.ref) {
             Expr const* key = i->key.expr.ref;
@@ -1029,9 +1085,13 @@ static void check_interface(Walk* me, InterfaceDecl const* decl) {
             report(me, i->key.span, 9013, msg_expression);
             continue;
         }
-        if (i->type.tag != TYPE_CALLABLE || !i->type.callable) continue;
+        if (i->type.tag != TYPE_CALLABLE || !i->type.callable || !i->type.callable->function) {
+            check_written_type(me, &i->type);
+            continue;
+        }
         FunctionImpl const* fn = i->type.callable->function;
-        if (!fn || fn->ret_explicit || fn->predicate) continue;
+        check_written_signature(me, fn);
+        if (fn->ret_explicit || fn->predicate) continue;
         if (fn->is_constructor) {
             Error* error = report(me, at, 9008,
                 "Method must have an explicit return type annotation with --isolatedDeclarations.");
@@ -1040,6 +1100,53 @@ static void check_interface(Walk* me, InterfaceDecl const* decl) {
             report(me, at, 9013, msg_expression); // (method and call signatures: no case either)
         }
     }
+}
+
+// A written type of a declaration: the type literals in it are emitted, members and all (visitDeclarationSubtree)
+static void check_written_type(Walk* me, TypeNode const* type) {
+    switch (type->tag) {
+        case TYPE_INTERFACE: check_type_members(me, &type->interface.members, nullptr); return;
+        case TYPE_CALLABLE:
+            if (type->callable && type->callable->function) check_written_signature(me, type->callable->function);
+            return;
+        case TYPE_ARRAY: check_written_type(me, type->array.element); return;
+        case TYPE_TUPLE:
+            for_each (i, vec_tuple_element, &type->tuple.elements) check_written_type(me, &i->type);
+            return;
+        case TYPE_UNION:
+        case TYPE_INTERSECTION:
+            for_each (i, vec_type, &type->composite) check_written_type(me, i);
+            return;
+        case TYPE_IDENTIFIER:
+            for_each (i, vec_spanned_type, &type->identifier->generic_params) check_written_type(me, &i->type);
+            return;
+        case TYPE_INDEXED:
+            check_written_type(me, &type->indexed->interface);
+            check_written_type(me, &type->indexed->index);
+            return;
+        case TYPE_KEYOF: check_written_type(me, &type->keyof->interface); return;
+        case TYPE_TERNARY:
+            check_written_type(me, &type->ternary->maybe_sub);
+            check_written_type(me, &type->ternary->maybe_super);
+            check_written_type(me, &type->ternary->if_true);
+            check_written_type(me, &type->ternary->if_false);
+            return;
+        case TYPE_TEMPLATE:
+            for_each (i, vec_type, &type->template_->types) check_written_type(me, i);
+            return;
+        case TYPE_INFERRED: check_written_type(me, &type->inferred->extends); return;
+        case TYPE_JSDOC: check_written_type(me, &type->jsdoc->type); return;
+        case TYPE_PREDICATE:
+            if (type->predicate->has_type) check_written_type(me, &type->predicate->type);
+            return;
+        default: return;
+    }
+}
+
+static void check_interface(Walk* me, InterfaceDecl const* decl) {
+    check_generic(me, &decl->generic);
+    for_each (i, vec_spanned_type, &decl->extends) check_written_type(me, &i->type);
+    if (decl->type.tag == TYPE_INTERFACE) check_type_members(me, &decl->type.interface.members, decl->symbol);
 }
 
 // tsc's evaluator's hasExternalReferences for an enum member's initializer: it names a member of another enum
@@ -1126,7 +1233,7 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         }
         case STATEMENT_DECL_FUNCTION: {
             FunctionImpl const* fn = statement->decl.function.impl;
-            if (statement_visible(me, statement, container, fn->symbol)) check_function_declaration(me, fn);
+            if (statement_visible(me, statement, container, fn->symbol)) check_function_declaration(me, fn, statement);
             return;
         }
         case STATEMENT_DECL_CLASS: {
@@ -1137,6 +1244,15 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         case STATEMENT_DECL_INTERFACE: {
             InterfaceDecl const* decl = statement->decl.interface;
             if (statement_visible(me, statement, container, decl->symbol)) check_interface(me, decl);
+            return;
+        }
+        case STATEMENT_DECL_TYPE: {
+            TypeDecl const* decl = &statement->decl.type;
+            if (decl->jsdoc || decl->jsdoc_check_only) return;
+            if (statement_visible(me, statement, container, decl->symbol)) {
+                check_generic(me, &decl->generic);
+                check_written_type(me, &decl->type);
+            }
             return;
         }
         case STATEMENT_DECL_ENUM: {
