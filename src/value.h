@@ -34,6 +34,14 @@ g_declare_arc(NativeFuncValue, native_func_value);
 g_declare_vec(Binding, binding);
 g_declare_vec(InitializedBinding, initialized_binding);
 
+// A bigint as written (`0x1_F`, without the `n`), which lives as long as the program's text (or a checker's atoms), and
+// a sign: exact at any size, printed and compared in decimal (bigint_append_decimal())
+typedef struct BigintValue {
+    char const* text;
+    u32 len;
+    bool negative;
+} BigintValue;
+
 typedef struct Value {
     enum {
         VALUE_UNDEFINED,
@@ -53,7 +61,7 @@ typedef struct Value {
         double number;
         cstr string;
         ArcSymbolValue symbol;
-        double bigint; // Cant be bothered
+        BigintValue bigint;
         ArcJsObject object; // PERF: const non-ref variant of object for perf during type checking
         ArcJsArray array;
         ArcJsFuncValue js_func;
@@ -256,4 +264,16 @@ static inline Value value_native_func(
             .data = data,
         }),
     };
+}
+
+// The decimal digits of a bigint, `-` first when negative and not zero
+void bigint_append_decimal(cstr* out, BigintValue value);
+bool bigint_is_zero(BigintValue value);
+static inline Value value_bigint(char const* text, u32 len, bool negative) {
+    return (Value){ .tag = VALUE_BIGINT, .bigint = { .text = text, .len = len, .negative = negative } };
+}
+static inline Value value_bigint_negated(Value const* me) {
+    Value ret = *me;
+    ret.bigint.negative = !ret.bigint.negative;
+    return ret;
 }

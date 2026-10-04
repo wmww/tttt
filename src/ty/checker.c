@@ -294,7 +294,7 @@ Checker* checker_new(Program* program) {
         ty_string_literal(me, c_sv(""));
         Value zero = { .tag = VALUE_NUMBER, .number = 0 };
         ty_literal(me, &zero);
-        Value zero_bigint = { .tag = VALUE_BIGINT, .bigint = 0 };
+        Value zero_bigint = value_bigint("0", 1, false);
         ty_literal(me, &zero_bigint);
     }
     {
@@ -360,7 +360,21 @@ static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enu
             flags = TYF_NUMBER_LITERAL;
             break;
         }
-        case VALUE_BIGINT: memcpy(&key[2], &value->bigint, sizeof(double)); flags = TYF_BIGINT_LITERAL; break;
+        case VALUE_BIGINT: {
+            // Keyed by its decimal text, which the type keeps (the value's text may not live as long)
+            cstr text = cstr_init();
+            bigint_append_decimal(&text, value->bigint);
+            csview digits = cstr_sv(&text);
+            bool negative = digits.size && digits.buf[0] == '-';
+            if (negative) digits = csview_slice(digits, 1, digits.size);
+            Atom const* atom = checker_atom(me, digits);
+            cstr_drop(&text);
+            normalized = value_bigint(atom->str, atom->len, negative);
+            value = &normalized;
+            key[2] = (u64)(uintptr_t)atom << 1 | negative;
+            flags = TYF_BIGINT_LITERAL;
+            break;
+        }
         case VALUE_STRING:
             string = checker_atom(me, cstr_sv(&value->string));
             key[2] = (u64)(uintptr_t)string;

@@ -12,7 +12,7 @@ void value_drop_internal(Value* me) {
         case VALUE_BOOLEAN:
         case VALUE_NUMBER: break;
         case VALUE_STRING: cstr_drop(&my string); break;
-        case VALUE_SYMBOL: arc_symbol_value_drop(&my symbol);
+        case VALUE_SYMBOL: arc_symbol_value_drop(&my symbol); break;
         case VALUE_BIGINT: break;
         case VALUE_OBJECT: arc_js_object_drop(&my object); break;
         case VALUE_ARRAY: arc_js_array_drop(&my array); break;
@@ -57,7 +57,7 @@ bool value_to_boolean(Value const* me) {
         case VALUE_NUMBER: return !isnan(my number) && my number != 0;
         case VALUE_STRING: return !cstr_is_empty(&my string);
         case VALUE_SYMBOL: return true;
-        case VALUE_BIGINT: return my number != 0;
+        case VALUE_BIGINT: return !bigint_is_zero(my bigint);
         case VALUE_OBJECT: return true;
         case VALUE_ARRAY: return true;
         case VALUE_JS_FUNC: return true;
@@ -79,7 +79,13 @@ double value_to_number(Value const* me) {
         case VALUE_NUMBER: return my number;
         case VALUE_STRING: return string_to_num(cstr_sv(&my string));
         case VALUE_SYMBOL: return 0;
-        case VALUE_BIGINT: return my bigint;
+        case VALUE_BIGINT: {
+            cstr text = cstr_init();
+            bigint_append_decimal(&text, my bigint);
+            double ret = strtod(cstr_str(&text), nullptr);
+            cstr_drop(&text);
+            return ret;
+        }
 
         case VALUE_ARRAY: {
             int len = vec_value_size(&my array.get->vec);
@@ -194,7 +200,7 @@ void cstr_append_value_js(cstr* target, Value const* me) {
             break;
 
         case VALUE_BIGINT:
-            cstr_append_d(target, DEFAULT_DISPLAY, (i64)my bigint);
+            bigint_append_decimal(target, my bigint);
             break;
 
         case VALUE_ARRAY:
@@ -251,7 +257,15 @@ bool value_strict_eq(Value const* a, Value const* b) {
         case VALUE_NUMBER: return a->number == b->number;
         case VALUE_STRING: return cstr_eq(&a->string, &b->string);
         case VALUE_SYMBOL: return a->symbol.get == b->symbol.get;
-        case VALUE_BIGINT: return a->bigint == b->bigint;
+        case VALUE_BIGINT: {
+            cstr x = cstr_init(), y = cstr_init();
+            bigint_append_decimal(&x, a->bigint);
+            bigint_append_decimal(&y, b->bigint);
+            bool ret = cstr_eq(&x, &y);
+            cstr_drop(&x);
+            cstr_drop(&y);
+            return ret;
+        }
         case VALUE_OBJECT: return a->object.get == b->object.get;
         case VALUE_ARRAY: return a->array.get == b->array.get;
         case VALUE_JS_FUNC: return a->js_func.get == b->js_func.get;
@@ -331,4 +345,66 @@ void native_func_value_drop(NativeFuncValue* me) {
     if (my drop) {
         my drop(my data);
     }
+}
+
+// Base 10^9 limbs, least significant first
+static u32 bigint_limbs(BigintValue value, u32** out) {
+    char const* p = value.text;
+    char const* end = value.text + value.len;
+    u32 base = 10;
+    if (end - p > 2 && p[0] == '0' && strchr("xXoObB", p[1])) {
+        base = (p[1] == 'x' || p[1] == 'X') ? 16 : (p[1] == 'o' || p[1] == 'O') ? 8 : 2;
+        p += 2;
+    }
+    u32 cap = (u32)(end - p) / 2 + 2;
+    u32* limbs = calloc(cap, sizeof(u32));
+    panic_if(!limbs, "out of memory");
+    u32 count = 0;
+    for (; p < end; p++) {
+        char c = *p;
+        u32 digit;
+        if (c >= '0' && c <= '9') digit = (u32)(c - '0');
+        else if (c >= 'a' && c <= 'f') digit = (u32)(c - 'a' + 10);
+        else if (c >= 'A' && c <= 'F') digit = (u32)(c - 'A' + 10);
+        else continue; // (`_` separators)
+        u64 carry = digit;
+        for (u32 i = 0; i < count; i++) {
+            u64 v = (u64)limbs[i] * base + carry;
+            limbs[i] = (u32)(v % 1000000000u);
+            carry = v / 1000000000u;
+        }
+        while (carry) {
+            limbs[count++] = (u32)(carry % 1000000000u);
+            carry /= 1000000000u;
+        }
+    }
+    *out = limbs;
+    return count;
+}
+
+bool bigint_is_zero(BigintValue value) {
+    for (u32 i = 0; i < value.len; i++) {
+        char c = value.text[i];
+        if (i == 1 && value.text[0] == '0' && strchr("xXoObB", c)) continue;
+        if (c != '0' && c != '_') return false;
+    }
+    return true;
+}
+
+void bigint_append_decimal(cstr* out, BigintValue value) {
+    u32* limbs;
+    u32 count = bigint_limbs(value, &limbs);
+    if (!count) {
+        cstr_append_lit(out, "0");
+    } else {
+        if (value.negative) cstr_append_lit(out, "-");
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%u", limbs[count - 1]);
+        cstr_append_n(out, buf, (isize)strlen(buf));
+        for (u32 i = count - 1; i-- > 0;) {
+            snprintf(buf, sizeof(buf), "%09u", limbs[i]);
+            cstr_append_n(out, buf, (isize)strlen(buf));
+        }
+    }
+    free(limbs);
 }

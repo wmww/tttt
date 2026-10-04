@@ -3348,7 +3348,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         if (parse_numeric_value(&p, &ret->value)) {
             ret->tag = TYPE_VALUE;
             if (ret->value.tag == VALUE_NUMBER) ret->value.number = -ret->value.number;
-            else ret->value.bigint = -ret->value.bigint;
+            else ret->value = value_bigint_negated(&ret->value);
             ret->value_span = span_from(value_anchor);
         } else {
             return parse_fail(&p);
@@ -8489,8 +8489,10 @@ static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
 static bool parse_numeric_value(Parser* parent, Value* ret) {
     double number;
     bool bigint;
+    char const* start = parent->pos;
     if (!scan_numeric_literal(parent, &number, &bigint)) return false;
-    *ret = bigint ? (Value){ .tag = VALUE_BIGINT, .bigint = number } : (Value){ .tag = VALUE_NUMBER, .number = number };
+    // (A bigint is its text: exact. The scanner left pos after its `n`)
+    *ret = bigint ? value_bigint(start, (u32)(parent->pos - start - 1), false) : (Value){ .tag = VALUE_NUMBER, .number = number };
     return true;
 }
 

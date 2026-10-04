@@ -807,7 +807,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     operand.sv.buf++;
                     operand.sv.size--;
                 }
-                Value positive = my value.tag == VALUE_BIGINT ? (Value){ .tag = VALUE_BIGINT, .bigint = -my value.bigint }
+                Value positive = my value.tag == VALUE_BIGINT ? value_bigint_negated(&my value)
                                                               : value_number(-my value.number);
                 baseline_test_case_add_type(ctx, operand, ty_literal(current_checker, &positive));
             }

@@ -39323,7 +39323,7 @@ const baselines = {
     'localesObjectArgument': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAsNamespace1(module=amd)': {
         errors: true,
@@ -64058,7 +64058,7 @@ const baselines = {
     'templateLiteralTypes4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralTypes5': {
         errors: true,

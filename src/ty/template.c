@@ -406,20 +406,11 @@ static bool is_valid_bigint_string(csview s) {
     return true;
 }
 
-// The value of a valid bigint string (is_valid_bigint_string())
-static double bigint_string_value(csview s) {
-    char const* p = s.buf;
-    char const* end = s.buf + s.size;
-    bool negative = p < end && *p == '-';
-    if (negative) p++;
-    int base = 10;
-    if (end - p > 2 && p[0] == '0' && strchr("xXoObB", p[1])) {
-        base = (p[1] == 'x' || p[1] == 'X') ? 16 : (p[1] == 'o' || p[1] == 'O') ? 8 : 2;
-        p += 2;
-    }
-    double value = 0;
-    for (; p < end; p++) value = value * base + (*p >= 'a' ? *p - 'a' + 10 : *p >= 'A' ? *p - 'A' + 10 : *p - '0');
-    return negative ? -value : value;
+// The value of a valid bigint string (is_valid_bigint_string()): its text, which `s` (an atom's) outlives
+static Value bigint_string_value(csview s) {
+    bool negative = s.size && s.buf[0] == '-';
+    if (negative) s = csview_slice(s, 1, s.size);
+    return value_bigint(s.buf, (u32)s.size, negative);
 }
 
 // tsc's inferToTemplateLiteralType, for a string literal matched by a placeholder that is a type variable whose
@@ -465,9 +456,9 @@ Ty const* ty_template_literal_for_constraint(Checker* me, Ty const* source, Ty c
         if (lf & TYF_NUMBER_LITERAL) continue;
         if ((rf & TYF_NUMBER_LITERAL) && right->literal.value.number == number) { left = right; continue; }
         if (lf & TYF_BIGINT) continue;
-        if (rf & TYF_BIGINT) { left = ty_literal(me, &(Value){ .tag = VALUE_BIGINT, .bigint = bigint_string_value(str) }); continue; }
+        if (rf & TYF_BIGINT) { left = ty_literal(me, &(Value[]){ bigint_string_value(str) }[0]); continue; }
         if (lf & TYF_BIGINT_LITERAL) continue;
-        if ((rf & TYF_BIGINT_LITERAL) && right->literal.value.bigint == bigint_string_value(str)) { left = right; continue; }
+        if ((rf & TYF_BIGINT_LITERAL) && right == ty_literal(me, &(Value[]){ bigint_string_value(str) }[0])) { left = right; continue; }
         if (lf & TYF_BOOLEAN_LITERAL) continue;
         if ((rf & TYF_BOOLEAN_LITERAL) && csview_equals(str, right->literal.value.boolean ? "true" : "false")) { left = right; continue; }
         if (lf & TYF_UNDEFINED) continue;
