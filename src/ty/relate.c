@@ -4180,9 +4180,10 @@ static Ternary structured_related_members(
     bool source_is_generic = source->kind == TY_TYPE_PARAM || (source->flags & TYF_DEFERRED) != 0;
     // A fresh empty object literal is never a subtype target of something non-empty, so `c || {}` reduces to c's type
     // rather than to whichever of two mutual subtypes comes first (tsc's structuredTypeRelatedToWorker)
-    // (Both subtype relations: inference's common supertype asks the plain one, `assign({}, options)`)
+    // (Both subtype relations: inference's common supertype asks the plain one, `assign({}, options)`. The source as it
+    // apparently is: `object`, and `unknown` without strictNullChecks, are `{}` there)
     if ((st->relation == TY_RELATION_STRICT_SUBTYPE || st->relation == TY_RELATION_SUBTYPE) && !source_is_generic &&
-        ty_is_fresh_object(target) && is_empty_object_type(me, target) && !is_empty_object_type(me, source)
+        ty_is_fresh_object(target) && is_empty_object_type(me, target) && !is_empty_object_type(me, apparent_type(me, source))
     ) {
         return TERNARY_FALSE;
     }
