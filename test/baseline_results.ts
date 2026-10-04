@@ -17298,7 +17298,7 @@ const baselines = {
     'inferenceAndHKTs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceAndSelfReferentialConstraint': {
         errors: true,
@@ -18718,17 +18718,17 @@ const baselines = {
     'ipromise2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ipromise3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ipromise4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isArray': {
         errors: true,
@@ -26218,7 +26218,7 @@ const baselines = {
     'propagationOfPromiseInitialization': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'properties': {
         errors: true,
@@ -67228,7 +67228,7 @@ const baselines = {
     'genericCallToOverloadedMethodWithOverloadedArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericCallTypeArgumentInference': {
         errors: true,
@@ -67388,7 +67388,7 @@ const baselines = {
     'genericClassWithFunctionTypedMemberArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericClassWithObjectTypeArgsAndConstraints': {
         errors: true,

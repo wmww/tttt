@@ -1705,7 +1705,18 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool own_instantiated = root->type_params.len && !sig->type_params.len;
     if (root != sig && !this_only && !class_default && !own_instantiated && !mentions_mapped(me, sig, root)) sig = root;
     bool instantiated = root != sig;
-    if (instantiated && root->type_params.len && !this_only) d.fresh_params = root->type_params;
+    // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
+    // `U` it mentions either)
+    if (instantiated && root->type_params.len && !this_only) {
+        if (d.fresh_params.len) {
+            Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
+            memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
+            memcpy(both + d.fresh_params.len, root->type_params.data, sizeof(Ty const*) * root->type_params.len);
+            d.fresh_params = (TyList){ .data = both, .len = d.fresh_params.len + root->type_params.len };
+        } else {
+            d.fresh_params = root->type_params;
+        }
+    }
     // (A class's constructor has its parameters reused, but it returns the class)
     FunctionImpl const* function = root->function && root->class_instance && !root->function->is_constructor ? nullptr : root->function;
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
@@ -1725,7 +1736,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
         if (binding && !(binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) binding = nullptr;
         bool reused = reusable && !jsdoc_this && binding && binding->has_explicit_type &&
-            (!instantiated || (sig->this_type == root->this_type && !mentions(me, sig->this_type, d.fresh_params)));
+            !mentions(me, sig->this_type, d.fresh_params) && (!instantiated || sig->this_type == root->this_type);
         // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
         // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
         Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
@@ -1763,7 +1774,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         out(reused_if(d, d.reused || (syntactic && param->decl && !contextual_jsdoc)), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
-            (!instantiated || (param->type == root->params[i].type && !mentions(me, param->type, d.fresh_params)));
+            !mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type);
         TyDisplay param_d = reused_if(d, false);
         // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
         // typeFromParameter -> typeFromExpression), unless something may type it contextually
@@ -1800,7 +1811,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
         function->jsdoc_tag_ret ? function->jsdoc_tag_ret : single_return_assertion(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
-        (!instantiated || (ret == signature_return_type(me, root) && !mentions(me, ret, d.fresh_params)));
+        !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root));
     if (predicate) {
         // In an instantiated signature, a parameter it names isn't the one of the instantiated signature (tsc resolves
         // it to the declaration's own), so the whole predicate is printed
