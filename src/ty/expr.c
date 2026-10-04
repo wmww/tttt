@@ -3052,9 +3052,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // (A method or accessor after another kind of member is a symbol of its own to tsc's binder, whose excludes
         // conflict: its name is only its own)
         bool own_symbol = (i->tag == OBJECT_ITEM_METHOD && !(existing && (existing->flags & PROP_METHOD))) || is_accessor;
-        // (A method written again is the same binder symbol, declared by both: `{ m() {}, m() {} }`. Properties too in
-        // tsc, but their first declaration span decides annotation reuse here, see bugs/display.md)
-        bool redeclares = existing && i->tag == OBJECT_ITEM_METHOD && (existing->flags & PROP_METHOD) && !existing->accessor;
+        // (A member written again is the same binder symbol, declared by both: `{ a: 1, a: 2 }`, `{ m() {}, m() {} }`)
+        bool redeclares = existing && !own_symbol && !existing->accessor;
         u32 decl_span_count = redeclares ? existing->decl_span_count + 1 : 1;
         Span* decl_span = arena_new_n(&my arena, Span, decl_span_count);
         if (redeclares) memcpy(decl_span, existing->decl_spans, sizeof(Span) * existing->decl_span_count);
@@ -3161,8 +3160,11 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     }
     Prop const* prop = name && (type->flags & TYF_OBJECT) ? ty_get_prop(me, type, name) : nullptr;
     // (Unless a later spread replaced it, or merged its optional property in)
-    bool own = prop && prop->decl->literal_own && (!prop->decl->decl_span_count || span_eq(prop->decl->decl_spans[0], item->span) ||
-        (prop->decl->decl_span_count == 2 && span_eq(prop->decl->decl_spans[1], item->span)));
+    // (A member written again, `{ a: 1, a: 2 }`, is declared by both but typed by the last: the others aren't it)
+    u32 spans = prop ? prop->decl->decl_span_count : 0;
+    bool accessor_pair = prop && (prop->flags & (PROP_GETTER | PROP_SETTER)) && spans == 2;
+    bool own = prop && prop->decl->literal_own && (!spans || span_eq(prop->decl->decl_spans[spans - 1], item->span) ||
+        (accessor_pair && span_eq(prop->decl->decl_spans[0], item->span)));
     if (prop && own) {
         // (An optional method's symbol has undefined in its type, tsc's getTypeOfFuncClassEnumModule)
         if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_type(me, prop_type(me, prop));

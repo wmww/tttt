@@ -21027,7 +21027,7 @@ const baselines = {
     },
     'memberOverride': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'memberScope': {
@@ -23752,7 +23752,7 @@ const baselines = {
     },
     'noRepeatedPropertyNames': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noSelfOnVars': {
