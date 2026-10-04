@@ -89,6 +89,9 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   (symbol_chain.c candidate_list): the import lines then print `typeof import("index")`, since the type itself must
   be a per-alias clone. (The *PackageExports*/*PatternExports* chains were a circular alias, fixed; see plan 35
   queue item 2 for what's left.)
+  be a per-alias clone (a symbols-only skip, gated on `!yield_module`, lost 25 node16 tests: tsc does name things
+  through some of those clones). Left: nodeModulesTypesVersionPackageExports x3 (`mod.x` from an ES module file is
+  bare `x` in tsc). The *PackageExports* `cjs`/`mjs` chains were circular aliases (TS2303), now unknown like tsc's.
 
 - JS corpus leftovers (probes in `test/probes/plan19/webpack/`): a `require("m").X` alias that resolves to nothing
   prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
@@ -102,6 +105,19 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   underline has gaps (reused nodes), tttt's doesn't.
 
 ## Symbols baseline
+- **Augmentation of an `export =` module merges into the export= target** in tsc (mergeModuleAugmentation resolves
+  the module through resolveExternalModuleSymbol first): `declare module "foo" { namespace M {} var M; export = M }`
+  then `module "foo" {}` elsewhere adds a declaration to M, not to "foo". tttt merges into the module symbol
+  (binder_link). Affects the symbols of module_augmentUninstantiatedModule, augmentExportEquals1/1_1/2_1,
+  importEqualsError45874, moduleAugmentationDisallowedExtensions, moduleAugmentationWithNonExistentNamedImport,
+  noCrashUMDMergedWithGlobalValue, moduleAugmentationDuringSyntheticDefaultCheck; probably also what members an
+  augmented `export =` module (express-style typings) has: check before changing the binder.
+- Object literal duplicate properties (`{ a: 1, a: 2 }`) are one binder symbol with both declarations in tsc
+  (memberOverride, noRepeatedPropertyNames); the literal's prop keeps only the last. Giving it both decl_spans in
+  ty_object_literal() lost lastPropertyInLiteralWins & co: decl_spans[0] also picks the annotation the types baseline
+  reuses. Needs the reuse to read the last declaration explicitly.
+- Conflict-marker trivia (`<<<<<<<`, `=======` to `>>>>>>>`) isn't skipped by `append_decl()`'s backwards trivia scan:
+  conflictMarker(Diff3)Trivia1/2 print the declaration after the marker line.
 - An augmentation of an `export =` module (`declare module "./file1" {}`): tsc's symbol at its name prints
   `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals4-6.
 - A module's own exports reached through an alias of the module (`import * as self from "./self"`) are named

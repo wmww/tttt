@@ -78,6 +78,10 @@ What the agents left, roughly by size (their test names are examples):
    readonly exports become new symbols without a parent): nodeModulesTypesVersionPackageExports x3 (`mod.x` of a
    cloned import is `Symbol(x)`, not `Symbol(mod.x)`), the `typeof m4`-vs-`m26` naming in bugs/display.md, maybe
    nodeModulesResolveJsonModule. A per-import module type is a refactor of how `import * as` resolves; small payoff.
+2. **node16 `import * as` of a CommonJS module** (~24: nodeModules1, nodeModulesAllowJs1, *PackageExports*): tsc
+   clones the module symbol per import (prints `typeof m4`); needs a per-import type, not a naming tweak. Notes in
+   `bugs/display.md`. (The *PackageExports* symbols chains were circular aliases, fixed 2026-10-04; the types
+   component's `typeof` clones remain.)
 3. **Line-missing one-offs** (~50): alias vs structure for recursive conditional/mapped types
    (recursiveConditionalCrash1-3), imports/exports inside functions (moduleElementsInWrongContext2/3), missing
    identifier recovery (`for ()`, reservedWords3, JSX namespaced names).
