@@ -950,6 +950,7 @@ BaselineTestCase run_baseline_test_case(
 }
 
 void baseline_test_case_drop(BaselineTestCase* me) {
+    for (u32 i = 0; i < my merged_declaration_count; i++) vec_span_drop(&my merged_declarations[i].declarations);
     program_destroy(my program);
     mock_fs_destroy(my fs);
     error_ctx_drop(my error_ctx);
@@ -1404,6 +1405,20 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         data.declarations = vec_span_clone(my symbol_overrides[i].declarations);
         data.allow_declaration_empty = true;
         break; // (The first one: an assignment's target is what it declares first)
+    }
+
+    for (u32 i = 0; i < my merged_declaration_count && vec_span_size(&data.declarations); i++) {
+        Span first = *vec_span_at(&data.declarations, 0);
+        bool member = false;
+        for_each (j, vec_span, &my merged_declarations[i].declarations) {
+            member |= j->sv.buf == first.sv.buf && j->sv.size == first.sv.size;
+        }
+        if (!member) continue;
+        vec_span_drop(&data.declarations);
+        data.declarations = vec_span_clone(my merged_declarations[i].declarations);
+        cstr_drop(&data.text);
+        data.text = cstr_from_sv(my merged_declarations[i].name);
+        break;
     }
 
     cstr text = cstr_d(">", data.span, " : Symbol(");

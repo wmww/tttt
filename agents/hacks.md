@@ -657,6 +657,12 @@ src` finds the code-side markers; every significant one has an entry here.
   (`commonjs_symbol_overrides()`, `prototype_symbol_overrides()`, `this_property_symbol_overrides()`) stand in for
   getSpecialPropertyAssignmentSymbol. JSDoc tag Decls get no leading trivia (sniffed). A module's `default` export
   symbol is named like its first declaration.
+- Class members aren't `Symbol`s, so tsc's member-table merges are rebuilt for the symbols baseline: a field and the
+  parameter property/interface member of its name take the class type's `Prop` declarations
+  (`class_prop_declarations()`), and a class/interface type parameter with an instance member of its name is one
+  symbol through `BaselineTestCase.merged_declarations` (`register_type_parameter_member_merges()`, keyed by the first
+  declaration span, registered when the class is walked: a use earlier in the file misses it). The checker doesn't
+  merge them (tsc's merged symbol changes nothing it checks that we know of).
 - `callee_compile_test_info`: `f<T>` gets its own line only when `?.` follows (source peek); `a<b>?.()` keeps an
   `EXPR_GENERIC_PARAMS` callee.
 - `render_types_or_symbols_file` drops one trailing line break per unit (a last unit before `// @link` lines is off).

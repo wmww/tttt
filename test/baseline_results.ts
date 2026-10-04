@@ -3617,7 +3617,7 @@ const baselines = {
     },
     'classExtendingAbstractClassWithMemberCalledTheSameAsItsOwnTypeParam': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classExtendingAny': {
@@ -5622,7 +5622,7 @@ const baselines = {
     },
     'conflictingTypeParameterSymbolTransfer': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'consistentAliasVsNonAliasRecordBehavior': {
@@ -8737,7 +8737,7 @@ const baselines = {
     },
     'declarationEmitTypeParamMergedWithPrivate': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitTypeParameterNameInOuterScope': {
@@ -23807,7 +23807,7 @@ const baselines = {
     },
     'noUnusedLocals_selfReference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noUnusedLocals_selfReference_skipsBlockLocations': {
@@ -64792,7 +64792,7 @@ const baselines = {
     },
     'objectTypesWithOptionalProperties2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectTypeLiteralSyntax': {

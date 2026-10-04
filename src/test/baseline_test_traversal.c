@@ -1321,6 +1321,32 @@ static void class_extends_compile_test_info(Expr* extends, Ty const* instance, B
     }
 }
 
+// A type parameter of a class or interface and its instance member of the same name are one symbol in tsc (both in
+// the members table), named as the type parameter: see BaselineTestCase.merged_declarations
+static void register_type_parameter_member_merges(Symbol const* owner, Generic const* generic, BaselineTestCase* ctx) {
+    if (!owner) return;
+    Ty const* declared = nullptr;
+    for_each (i, vec_generic_item, &generic->items) {
+        if (i->jsdoc || !i->owned_symbol || ctx->merged_declaration_count >= c_arraylen(ctx->merged_declarations)) continue;
+        Checker* checker = current_checker;
+        if (!declared) declared = ty_declared_type_of(checker, owner);
+        if (!declared || !(declared->flags & TYF_OBJECT)) return;
+        Prop const* prop = ty_get_prop(checker, declared, checker_atom(checker, i->name.sv));
+        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+        if (!prop || prop->parent != owner || !prop->decl->decl_span_count) continue;
+        VecSpan spans = symbol_declaration_spans(i->owned_symbol);
+        bool seen = false;
+        for_each (j, vec_span, &spans) seen |= span_eq(*j, prop->decl->decl_spans[0]);
+        if (seen) {
+            vec_span_drop(&spans);
+            continue;
+        }
+        for (u32 j = 0; j < prop->decl->decl_span_count; j++) vec_span_push(&spans, prop->decl->decl_spans[j]);
+        ctx->merged_declarations[ctx->merged_declaration_count].name = i->name.sv;
+        ctx->merged_declarations[ctx->merged_declaration_count++].declarations = spans;
+    }
+}
+
 void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase* ctx) {
     for_each (i, vec_expr, &my decorators) {
         expr_compile_test_info(i, ctx);
@@ -1341,6 +1367,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             baseline_test_case_add_type(ctx, my name, ty_class_instance_type(current_checker, my symbol));
         }
     }
+    register_type_parameter_member_merges(my symbol, &my generic, ctx);
     generic_compile_test_info(&my generic, ctx);
     // tsc shows the base type (getBaseTypes, with its arguments) at the base expression, not `typeof Base`, unless
     // there is none or it's `any`; then the name's parts. At every element of every `extends` clause
@@ -1415,6 +1442,7 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
             .name = default_export_name(my symbol),
         });
     }
+    register_type_parameter_member_merges(my symbol, &my generic, ctx);
     generic_compile_test_info(&my generic, ctx);
     for_each (i, vec_spanned_type, &my extends) heritage_type_compile_test_info(&i->type, ctx);
     for_each (i, vec_type, &my unchecked_extends) heritage_type_compile_test_info(i, ctx);

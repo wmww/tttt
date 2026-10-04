@@ -103,6 +103,14 @@ typedef struct BaselineTestCase {
         bool suppress; // No symbols line at all
     } symbol_overrides[8];
     u32 symbol_override_count;
+    // Declarations that are one symbol in tsc but not in tttt: a class's or interface's type parameter and a member of
+    // its name (tsc's binder declares both in the members table, TypeParameterExcludes allows a value). A symbols line
+    // whose first declaration is one of `declarations` shows them all, by `name`
+    struct {
+        csview name;
+        VecSpan declarations;
+    } merged_declarations[8];
+    u32 merged_declaration_count;
     // No types line at these spans (the nodes tsc's isPartOfTypeNode takes for a type: the property accesses of a
     // heritage clause's expression where a type is meant). Set around the traversal of such an expression
     Span hidden_type_spans[8];
