@@ -121,3 +121,25 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - A union property's symbol lists every member's declarations in tsc (`(A[] | B[]).filter` is `Symbol(Array.filter,
   Decl x4)`, tttt x2: unionOfArraysFilterCall).
 - A local type merged with an exported value of the same name lists both declarations (importElisionExportNonExportAndDefault).
+- Leftovers of the 2026-10-04 fan-out (fan-s1, symbols "name" bucket), each one test or a known mechanism:
+  - Spread identity (above): spreadMethods, spreadExpressionContextualTypeWithNamespace (`{ ...ns }.f` is `ns.f`).
+  - A static member and a namespace's export of the same name are one symbol (class statics are the class
+    symbol's exports in tsc): exportDefaultProperty2, exportEqualsProperty2 (`static B` + `namespace C { interface
+    B }`), declarationEmitLocalClassHasRequiredDeclare.
+  - Late-bound computed members merge with the written member of the same name, named and ordered like it
+    (`[c0]` with c0 = "1" after `1:` is `T0[1]`, Decls in binding order): dynamicNamesErrors.
+  - Expando declarations inside nested expressions (`(Foo.x = 1)`, `if (Foo.y = 1)`) aren't declarations of Foo
+    here (expandoFunctionNestedAssigments*), nor expandos of a `var` initialized with a function expression in TS
+    (typeFromPropertyAssignment29).
+  - `typeof import("./a").A.foo`: `foo` resolves to A (should be the static property): importTypeTypeofClassStaticLookup.
+  - A setter without `this` parameter takes its getter's (and vice versa): tsc's getSignatureFromDeclaration /
+    getAccessorThisParameter. tttt's this_ref is decided at lookup, before the other accessor's parameter symbol
+    exists when the setter comes first: thisTypeInAccessors (types too).
+  - Two test units with the same file name: tsc's vfs keeps the last content, both units print with their own text
+    and the one file's symbols (moduleResolutionWithExtensions).
+  - Union member order of instantiated anonymous types (discriminateWithDivergentAccessors1's Decl order), plan 21.
+  - `export { globalThis as global }` inside `declare global` gives globalThis a declaration (globalThisGlobalExportAsGlobal,
+    globalThisDeclarationEmit3).
+  - JSON module default (`ns.default : Symbol("package")`, nodeModulesResolveJsonModule x3): the default export of a
+    JSON module is the module symbol itself.
+  - The ~30 node16 `cjs`/`mjs` chains (nodeModules*PackageExports): plan 35 queue item 2.
