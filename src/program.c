@@ -2078,6 +2078,59 @@ static void program_check_builtin_global_names(Program* me) {
     }
 }
 
+// tsc's getDefaultLibFilePriority: the library files come first in the program, by their name's position in
+// commandLineParser's libEntries (lib.d.ts and lib.es6.d.ts, the targets' default libraries, before all), whatever
+// order their references loaded them in. It is the order globals merge their declarations in (a merged interface's
+// declarations, its overloads)
+static isize stdlib_priority(SourceFile const* source) {
+    static char const* const libs[] = {
+    "es5", "es6", "es2015", "es7", "es2016", "es2017", "es2018", "es2019", "es2020", "es2021", "es2022", "es2023",
+    "es2024", "esnext", "dom", "dom.iterable", "dom.asynciterable", "webworker", "webworker.importscripts",
+    "webworker.iterable", "webworker.asynciterable", "scripthost", "es2015.core", "es2015.collection",
+    "es2015.generator", "es2015.iterable", "es2015.promise", "es2015.proxy", "es2015.reflect", "es2015.symbol",
+    "es2015.symbol.wellknown", "es2016.array.include", "es2016.intl", "es2017.arraybuffer", "es2017.date",
+    "es2017.object", "es2017.sharedmemory", "es2017.string", "es2017.intl", "es2017.typedarrays",
+    "es2018.asyncgenerator", "es2018.asynciterable", "es2018.intl", "es2018.promise", "es2018.regexp",
+    "es2019.array", "es2019.object", "es2019.string", "es2019.symbol", "es2019.intl", "es2020.bigint", "es2020.date",
+    "es2020.promise", "es2020.sharedmemory", "es2020.string", "es2020.symbol.wellknown", "es2020.intl",
+    "es2020.number", "es2021.promise", "es2021.string", "es2021.weakref", "es2021.intl", "es2022.array",
+    "es2022.error", "es2022.intl", "es2022.object", "es2022.string", "es2022.regexp", "es2023.array",
+    "es2023.collection", "es2023.intl", "es2024.arraybuffer", "es2024.collection", "es2024.object", "es2024.promise",
+    "es2024.regexp", "es2024.sharedmemory", "es2024.string", "esnext.array", "esnext.collection", "esnext.symbol",
+    "esnext.asynciterable", "esnext.intl", "esnext.disposable", "esnext.bigint", "esnext.string", "esnext.promise",
+    "esnext.weakref", "esnext.decorators", "esnext.object", "esnext.iterator", "esnext.float16", "decorators",
+    "decorators.legacy",
+    };
+    if (!source->is_stdlib) return INTPTR_MAX;
+    csview name = basename_of(cstr_sv(&source->canonical_path));
+    if (csview_starts_with(name, "lib.")) name = csview_subview(name, 4, name.size - 4);
+    if (!csview_ends_with(name, ".d.ts")) return (isize)c_arraylen(libs) + 2;
+    name = csview_subview(name, 0, name.size - 5);
+    if (csview_equals(name, "default") || csview_equals(name, "es6") || csview_equals(name, "")) return 0;
+    for (isize i = 0; i < (isize)c_arraylen(libs); i++) {
+        if (csview_equals(name, libs[i])) return i + 1;
+    }
+    return (isize)c_arraylen(libs) + 2;
+}
+
+static void program_order_stdlib_first(Program* me) {
+    isize count = vec_source_file_ptr_size(&my source_files_ordered);
+    if (!count) return;
+    SourceFile** files = (SourceFile**)vec_source_file_ptr_at_mut(&my source_files_ordered, 0);
+    // (A stable insertion sort: few libraries, and most programs have them in order already)
+    for (isize i = 1; i < count; i++) {
+        SourceFile* file = files[i];
+        isize priority = stdlib_priority(file);
+        isize j = i;
+        while (j > 0 && stdlib_priority(files[j - 1]) > priority) {
+            files[j] = files[j - 1];
+            j--;
+        }
+        files[j] = file;
+    }
+    for (isize i = 0; i < count; i++) files[i]->program_order = (u32)i;
+}
+
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
@@ -2089,6 +2142,7 @@ void program_resolve_names(Program* me) {
     program_verify_project_files(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
+    program_order_stdlib_first(me);
 
     // Declare: symbols, the scopes of files and namespaces, exports
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {

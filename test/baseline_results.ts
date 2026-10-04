@@ -1322,12 +1322,12 @@ const baselines = {
     },
     'arrayToLocaleStringES2015': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arrayToLocaleStringES2020': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arrayToLocaleStringES5': {
@@ -14977,7 +14977,7 @@ const baselines = {
     },
     'genericFunctionInference1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericFunctionInference2': {
@@ -23267,7 +23267,7 @@ const baselines = {
     },
     'newNamesInGlobalAugmentations1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'newNonReferenceType': {
@@ -29807,7 +29807,7 @@ const baselines = {
     },
     'symbolObserverMismatchingPolyfillsWorkTogether': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symlinkedWorkspaceDependenciesNoDirectLinkGeneratesDeepNonrelativeName': {
@@ -39312,7 +39312,7 @@ const baselines = {
     },
     'es2020IntlAPIs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'intlNumberFormatES2020': {
@@ -39322,7 +39322,7 @@ const baselines = {
     },
     'localesObjectArgument': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAsNamespace1(module=amd)': {
@@ -40107,7 +40107,7 @@ const baselines = {
     },
     'symbolProperty55': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty56': {
@@ -40122,7 +40122,7 @@ const baselines = {
     },
     'symbolProperty58': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty59': {
@@ -40142,7 +40142,7 @@ const baselines = {
     },
     'symbolProperty61': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'symbolProperty7': {
@@ -43307,7 +43307,7 @@ const baselines = {
     },
     'taggedTemplateStringsTypeArgumentInferenceES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'taggedTemplateStringsWithIncompatibleTypedTags': {
@@ -43357,7 +43357,7 @@ const baselines = {
     },
     'taggedTemplateStringsWithOverloadResolution3_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'taggedTemplateStringsWithTagNamedDeclare': {
