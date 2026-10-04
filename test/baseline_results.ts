@@ -5837,7 +5837,7 @@ const baselines = {
     },
     'constEnums': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constInClassExpression': {
