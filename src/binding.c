@@ -355,10 +355,10 @@ static void binding_report_rest_initializer(Binding const* element, ErrorCtx* er
     error_ctx_grammar_error_d(errs, span_make(value.source, at - 1, at), 1186, "A rest element cannot have an initializer.");
 }
 
-static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, ErrorCtx* errs);
+static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, ErrorCtx* errs);
 
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
-    binding_typecheck_at(me, initializer, span_null, true, errs);
+    binding_typecheck_at(me, initializer, span_null, true, false, errs);
 }
 
 // A JavaScript `/** @type {T} */ const x = {}` whose members are expandos (`x.a = 1`) isn't checked against T (tsc's
@@ -399,8 +399,9 @@ static Ty const* parameter_element_before_widening(Binding const* me) {
 }
 
 // `assigned`: whether the root is assigned anything (not a variable or parameter without initializer)
-static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, ErrorCtx* errs) {
-    if (my has_explicit_type) type_typecheck(&my explicit_type, errs);
+// `type_checked`: the annotation was walked already
+static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, ErrorCtx* errs) {
+    if (my has_explicit_type && !type_checked) type_typecheck(&my explicit_type, errs);
     // A pattern without elements is checked for null and undefined instead: the initializer's type, and the pattern's
     // (tsc's checkVariableLikeDeclaration: checkNonNullNonVoidType, both are one diagnostic if they say the same)
     bool empty_pattern = my tag == BINDING_OBJECT && !vec_object_binding_item_size(&my object);
@@ -811,22 +812,25 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // checking the call (getQuickTypeOfExpression): an instantiation limit it runs into is the declaration's (TS2589)
     Checker* checker = current_checker;
     CurrentNode saved = ty_enter_node(checker, my binding.content_span);
+    // (The annotation is walked first, which makes the types of the literals in it: tsc's checkVariableLikeDeclaration)
+    if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && my value.tag == EXPR_CALL) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
-    binding_typecheck_at(&my binding, initializer, span_null, initializer, errs);
+    binding_typecheck_at(&my binding, initializer, span_null, initializer, true, errs);
     report_errors_from_widening(me, span_null, errs);
     ty_leave_node(checker, saved);
 }
 
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
+    if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
     initialized_binding_check_value(me);
     expr_typecheck(&my value, errs);
     Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
-    binding_typecheck_at(&my binding, initializer, span, initializer, errs);
+    binding_typecheck_at(&my binding, initializer, span, initializer, true, errs);
     report_errors_from_widening(me, span, errs);
     if (!initializer || my binding.has_explicit_type) return;
     // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it

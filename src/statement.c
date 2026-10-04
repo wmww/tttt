@@ -254,6 +254,8 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     ty_check_variance_annotations(current_checker, my symbol, &my generic, true, errs);
     // tsc's checkTypeReferenceNode resolves every reference it walks. When the reference is the body, that is the alias's
     // own type, which lowers it in the alias's context (a deferred reference, the alias name)
+    // A type literal body likewise: the walk below makes the types of the literals it meets (tsc's checkTypeLiteral)
+    if (my symbol && my type.tag == TYPE_INTERFACE) ty_declared_type_of(current_checker, my symbol);
     if (my symbol && my type.tag == TYPE_IDENTIFIER) {
         CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my type.identifier));
         ty_declared_type_of(current_checker, my symbol);

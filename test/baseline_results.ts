@@ -10858,12 +10858,12 @@ const baselines = {
     'emptyAnonymousObjectNarrowing(strictnullchecks=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyAnonymousObjectNarrowing(strictnullchecks=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emptyArgumentsListComment': {
         errors: true,
@@ -33393,7 +33393,7 @@ const baselines = {
     'weakTypeAndPrimitiveNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'webworkerIterable': {
         errors: true,
@@ -37922,8 +37922,8 @@ const baselines = {
     },
     'controlFlowOptionalChain2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'controlFlowOptionalChain3': {
         errors: true,
@@ -47358,7 +47358,7 @@ const baselines = {
     'callWithSpread4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callWithSpread5': {
         errors: true,
@@ -65633,7 +65633,7 @@ const baselines = {
     'thisTypeInFunctions4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisTypeInFunctionsNegative': {
         errors: false,
