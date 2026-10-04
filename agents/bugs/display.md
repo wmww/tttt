@@ -116,8 +116,6 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   (memberOverride, noRepeatedPropertyNames); the literal's prop keeps only the last. Giving it both decl_spans in
   ty_object_literal() lost lastPropertyInLiteralWins & co: decl_spans[0] also picks the annotation the types baseline
   reuses. Needs the reuse to read the last declaration explicitly.
-- Conflict-marker trivia (`<<<<<<<`, `=======` to `>>>>>>>`) isn't skipped by `append_decl()`'s backwards trivia scan:
-  conflictMarker(Diff3)Trivia1/2 print the declaration after the marker line.
 - An augmentation of an `export =` module (`declare module "./file1" {}`): tsc's symbol at its name prints
   `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals4-6.
 - A module's own exports reached through an alias of the module (`import * as self from "./self"`) are named

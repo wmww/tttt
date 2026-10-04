@@ -1272,6 +1272,31 @@ static bool is_lib_file_name(csview name) {
     return false;
 }
 
+// A merge conflict marker at the start of a line (`<<<<<<<`, `|||||||`, `=======`, `>>>>>>>`): its character
+static char conflict_marker_at(const char* line, const char* end) {
+    if (end - line < 7) return 0;
+    char c = line[0];
+    if (c != '<' && c != '|' && c != '=' && c != '>') return 0;
+    for (int i = 1; i < 7; i++) if (line[i] != c) return 0;
+    if (end - line > 7 && line[7] == c) return 0;
+    return c;
+}
+
+// From the start of a marker line back to the start of the closest earlier `marker` line, if the lines between have
+// no other marker (the region it skips); else `from`
+static const char* skip_back_to_marker(const char* file_start, const char* from, char marker) {
+    const char* line = from;
+    while (line > file_start) {
+        const char* previous = line - 1;
+        while (previous > file_start && previous[-1] != '\n') previous--;
+        char found = conflict_marker_at(previous, from);
+        if (found == marker) return previous;
+        if (found) return from;
+        line = previous;
+    }
+    return from;
+}
+
 static void append_decl(cstr* target, Span span) {
     if (!span_valid(span) || !span.source) {
         return;
@@ -1353,6 +1378,16 @@ static void append_decl(cstr* target, Span span) {
                 while (line_start > file_start && line_start[-1] != '\n') line_start--;
                 if (line_start == file_start && line_start[0] == '#' && line_start[1] == '!') {
                     start = file_start; // A shebang is trivia too
+                    break;
+                }
+                // A merge conflict marker line is trivia, and so is what `=======` (and diff3's `|||||||`) skip up to
+                // the next marker (tsc's scanConflictMarkerTrivia)
+                char marker = conflict_marker_at(line_start, cstr_str(&span.source->contents) + cstr_size(&span.source->contents));
+                if (marker) {
+                    keep_going = true;
+                    start = line_start;
+                    if (marker == '>') start = skip_back_to_marker(file_start, start, '=');
+                    if (marker == '>' || marker == '=') start = skip_back_to_marker(file_start, start, '|');
                     break;
                 }
                 // (Not a `//` in a string literal: `"https://x",`)

@@ -5572,22 +5572,22 @@ const baselines = {
     },
     'conflictMarkerDiff3Trivia1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'conflictMarkerDiff3Trivia2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'conflictMarkerTrivia1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'conflictMarkerTrivia2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'conflictMarkerTrivia3': {
