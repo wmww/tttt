@@ -1540,12 +1540,33 @@ static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
     return element && (element->flags & TYF_ANY) ? ty_intrinsic(me, TY_ANY) : ret;
 }
 
+// tsc's isTopSignature: `(...args: any) => any`, `(...args: never) => unknown` and the like, which every signature is
+// assignable to
+static bool is_top_signature(Checker* me, Signature const* sig) {
+    if (sig->type_params.len || (sig->this_type && !(sig->this_type->flags & TYF_ANY)) || sig->param_count != 1 ||
+        !sig->params[0].rest
+    ) {
+        return false;
+    }
+    Ty const* rest = sig->params[0].type;
+    if (ty_is_array(me, rest)) rest = ty_reference_args(me, rest).data[0];
+    return (rest->flags & (TYF_ANY | TYF_NEVER)) && (signature_return_type(me, sig)->flags & (TYF_ANY | TYF_UNKNOWN));
+}
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
 ) {
     signature_resolve(me, source);
     signature_resolve(me, target);
+    if (source == target) return TERNARY_TRUE;
+    // A top signature target takes anything; under the subtype relations a top source only takes another one
+    // (SignatureCheckMode.StrictTopSignature, which callbacks don't pass on)
+    bool strict_top = !callback && (st->relation == TY_RELATION_SUBTYPE || st->relation == TY_RELATION_STRICT_SUBTYPE);
+    bool source_top = strict_top && is_top_signature(me, source);
+    bool target_top = is_top_signature(me, target);
+    if (!source_top && target_top) return TERNARY_TRUE;
+    if (source_top && !target_top) return TERNARY_FALSE;
     // A generic source is instantiated in the context of the target (whose type parameters, if any, are canonical
     // already: instantiations share them)
     if (source->type_params.len && source->type_params.data != target->type_params.data) {
