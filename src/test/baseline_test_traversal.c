@@ -1434,6 +1434,20 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             } else {
                 vec_span_push(&declarations, my span);
             }
+            // A method of a class merged with an interface: the member's declarations are both's (the checker's member
+            // has them, see builder_add_interface_member)
+            if (!my method.accessor && !my method.computed_key && ctx->class_symbol && !span_valid(class_item_private_name(me))) {
+                Checker* checker = current_checker;
+                Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
+                    ty_declared_type_of(checker, ctx->class_symbol);
+                Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my method.name_string)));
+                bool mine = false;
+                for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], my span);
+                if (mine && prop->decl->decl_span_count > (u32)vec_span_size(&declarations)) {
+                    vec_span_clear(&declarations);
+                    for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
+                }
+            }
             // (named as its first declaration writes it)
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
