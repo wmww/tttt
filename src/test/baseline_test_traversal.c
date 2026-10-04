@@ -647,8 +647,17 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             u32 saved = method ? baseline_test_case_enter_generic(ctx, &my type.callable->function->generic) : 0;
             baseline_test_case_add_type(ctx, my key.span, type);
             if (method) baseline_test_case_leave_generic(ctx, saved);
-            // `get x(): T; set x(v: U)`: the second accessor names the same member, the setter declares its parameter
-            if (span_valid(my second_name)) {
+            // `get x(): T; set x(v: U)`: the second accessor names the same member, the setter declares its parameter.
+            // In source order: the first accessor's types come before the second's name
+            bool pair = span_valid(my second_name);
+            bool setter_first = pair && span_valid(my setter_param) && my setter_param.sv.buf < my second_name.sv.buf;
+            if (pair && !setter_first) type_compile_test_info(&my type, ctx);
+            if (span_valid(my setter_param) && setter_first) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my setter_param });
+                baseline_test_case_add_type(ctx, my setter_param, my has_write_type ? ty_of_node(&my write_type) : type);
+                if (my has_write_type) type_compile_test_info(&my write_type, ctx);
+            }
+            if (pair) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = vec_span_clone(my declarations),
                     .span = my second_name,
@@ -656,9 +665,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 });
                 baseline_test_case_add_type(ctx, my second_name, type);
             }
-            if (span_valid(my setter_param)) {
+            if (span_valid(my setter_param) && !setter_first) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my setter_param });
                 baseline_test_case_add_type(ctx, my setter_param, my has_write_type ? ty_of_node(&my write_type) : type);
+                if (pair && my has_write_type) type_compile_test_info(&my write_type, ctx);
+            }
+            if (pair) {
+                if (setter_first) type_compile_test_info(&my type, ctx);
+                return;
             }
         }   break;
 

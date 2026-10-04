@@ -9917,7 +9917,7 @@ const baselines = {
     },
     'divergentAccessorsTypes6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'divergentAccessorsTypes7': {
@@ -9927,8 +9927,8 @@ const baselines = {
     },
     'divergentAccessorsTypes8': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'divergentAccessorsVisibility1': {
         errors: true,
@@ -15562,7 +15562,7 @@ const baselines = {
     },
     'getterErrorMessageNotDuplicated': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'getterMissingReturnError': {
@@ -20847,7 +20847,7 @@ const baselines = {
     },
     'mappedTypeCircularReferenceInAccessor': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mappedTypeContextualTypesApplied': {
