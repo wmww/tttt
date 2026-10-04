@@ -18027,22 +18027,22 @@ const baselines = {
     },
     'interMixingModulesInterfaces2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interMixingModulesInterfaces3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interMixingModulesInterfaces4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interMixingModulesInterfaces5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interface0': {
@@ -18607,7 +18607,7 @@ const baselines = {
     },
     'intrinsics': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'invalidConstraint1': {
@@ -21082,7 +21082,7 @@ const baselines = {
     },
     'mergedDeclarationExports': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedDeclarations1': {
@@ -21362,7 +21362,7 @@ const baselines = {
     },
     'mixedExports': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mixedStaticAndInstanceClassMembers': {
@@ -21537,7 +21537,7 @@ const baselines = {
     },
     'moduleAndInterfaceWithSameName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAsBaseType': {
@@ -22677,7 +22677,7 @@ const baselines = {
     },
     'namespaceNotMergedWithFunctionDefaultExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'namespaces1': {
@@ -42837,7 +42837,7 @@ const baselines = {
     },
     'defaultExportsCannotMerge04': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportAndImport-es5-amd': {
@@ -65932,7 +65932,7 @@ const baselines = {
     },
     'typeAliasesDoNotMerge': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeAliasesForObjectTypes': {
