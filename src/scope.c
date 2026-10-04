@@ -2722,8 +2722,6 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         // (tsc's resolveAlias: the inner visit made the target unknownSymbol, and it stays that)
         target = nullptr;
     }
-    // (tsc's resolveAlias: the inner visit made the target unknownSymbol, which the outer one keeps)
-    if (my alias->state == ALIAS_CIRCULAR && my alias->item) target = nullptr;
     if (!target) {
         target = my alias->item ?
             binder_new_placeholder(my binder, my alias->item->decl_name, my alias->item->full_span) :
