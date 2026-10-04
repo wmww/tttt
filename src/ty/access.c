@@ -193,6 +193,22 @@ Ty const* ty_string_index_only_key(Checker* me, Ty const* object, Ty const* inde
     return index;
 }
 
+// Whether `member[index]` reads a property of its own rather than an index signature: a tuple's elements before its
+// first variadic one are properties "0", "1"... (tsc's createTupleTargetType), anything else's are its properties.
+// A union member's decides between tsc's union property and the union's index signatures
+static bool reads_own_prop(Checker* me, Ty const* member, Ty const* index) {
+    Ty const* apparent = ty_apparent_type(me, member);
+    TupleShape const* shape = ty_tuple_shape(apparent);
+    if (shape && (index->flags & TYF_NUMBER_LITERAL)) {
+        double n = index->literal.value.number;
+        u32 props = 0;
+        while (props < shape->arity && !(shape->flags[props] & TUPLE_ELEMENT_REST)) props++;
+        if (n >= 0 && n == (u32)n && (u32)n < props) return true;
+    }
+    Atom const* name = ty_literal_name(me, index);
+    return name && (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_find_prop(me, apparent, name).found;
+}
+
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool include_undefined = (flags & ACCESS_INCLUDE_UNDEFINED) != 0;
     if (depth > 16) return nullptr;
@@ -237,6 +253,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         Ty const* ret = nullptr;
         u32 len = 0;
         bool missing = false, padded = false, found_in_some = false;
+        u64 padded_tuples = 0; // (bit i: parts[i] is a too short tuple's undefined)
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
@@ -246,6 +263,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_tuple_shape(ty_apparent_type(me, member))) {
                 part = ty_intrinsic(me, TY_UNDEFINED);
                 padded = true;
+                if (len < 64) padded_tuples |= 1ull << len;
             } else if (!part && (index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) &&
                 ty_is_object_literal_without_spread(me, member)
             ) {
@@ -256,6 +274,29 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
                 found_in_some = true;
             }
             if (part) parts[len++] = part; else missing = true;
+        }
+        // But only a member's own property makes a union property (tsc's createUnionOrIntersectionProperty): when the
+        // others only have index signatures (`(string[] | [])[1]`), the union's index signatures are read, which are
+        // a tuple's element type. (Of a union of tuples only, each tuple's rest element or undefined is read: tsc's
+        // getPropertyTypeForIndexType with everyType(isTupleType))
+        if (padded_tuples && found_in_some && !missing) {
+            bool own = false, all_tuples = true;
+            for (u32 i = 0; i < object->composite.types.len && !own; i++) {
+                Ty const* member = object->composite.types.data[i];
+                if (member->flags & TYF_NULLABLE) continue;
+                own = reads_own_prop(me, member, index);
+                all_tuples &= ty_tuple_shape(ty_apparent_type(me, member)) != nullptr;
+            }
+            own |= all_tuples;
+            for (u32 i = 0, k = 0; !own && i < object->composite.types.len; i++) {
+                Ty const* member = object->composite.types.data[i];
+                if (member->flags & TYF_NULLABLE) continue;
+                if (k < 64 && (padded_tuples & (1ull << k))) {
+                    Ty const* element = access(me, member, ty_intrinsic(me, TY_NUMBER), depth + 1, flags);
+                    if (element) parts[k] = element;
+                }
+                k++;
+            }
         }
         missing |= padded && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
