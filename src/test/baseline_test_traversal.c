@@ -672,6 +672,16 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             });
             Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
             if (redeclared) type = prop_type(current_checker, redeclared);
+            // A property declared after a method of its name is that method's symbol (PropertyExcludes is nothing)
+            if (!merged && !redeclared && !my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
+                Checker* checker = current_checker;
+                Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
+                if (prop && (prop->flags & PROP_METHOD) && prop->decl->decl_span_count && vec_span_size(&my declarations) &&
+                    !span_eq(prop->decl->decl_spans[0], *vec_span_at(&my declarations, 0))
+                ) {
+                    type = prop_type(checker, prop);
+                }
+            }
             bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
             u32 saved = method ? baseline_test_case_enter_generic(ctx, &my type.callable->function->generic) : 0;
             baseline_test_case_add_type(ctx, my key.span, type);

@@ -21233,7 +21233,7 @@ const baselines = {
     'methodSignatureHandledDeclarationKindForSymbol': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mismatchedClassConstructorVariable': {
         errors: true,
