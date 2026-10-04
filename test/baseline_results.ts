@@ -5533,7 +5533,7 @@ const baselines = {
     'conditionalTypeRelaxingConstraintAssignability': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeSimplification': {
         errors: true,

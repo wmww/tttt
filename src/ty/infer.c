@@ -1280,6 +1280,34 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (source->kind == TY_SUBSTITUTION) {
         infer_from(me, inf, source->substitution.base, target);
         infer_with_priority(me, inf, ty_substitution_intersection(me, source), target, INFER_PRIORITY_SUBSTITUTE_SOURCE);
+    } else if (target->kind == TY_CONDITIONAL) {
+        // (Before a union source is taken apart, like tsc's inferFromTypes: `E` of a union alias infers E itself)
+        if (source->kind == TY_CONDITIONAL) {
+            infer_from(me, inf, source->conditional.check, target->conditional.check);
+            infer_from(me, inf, source->conditional.extends, target->conditional.extends);
+            Ty const* source_true = ty_conditional_branch(me, source, true);
+            infer_from(me, inf, source_true, ty_conditional_branch(me, target, true));
+            Ty const* source_false = ty_conditional_branch(me, source, false);
+            infer_from(me, inf, source_false, ty_conditional_branch(me, target, false));
+        } else {
+            // To both branches, the ones that aren't naked type parameters first, the naked ones less directly (tsc's
+            // inferToConditionalType + inferToMultipleTypesWithPriority)
+            u32 saved = inf->priority;
+            if (inf->contravariant) inf->priority |= INFER_PRIORITY_CONTRAVARIANT_CONDITIONAL;
+            Ty const* branches[2] = { ty_conditional_branch(me, target, true), ty_conditional_branch(me, target, false) };
+            bool naked = false;
+            for (u32 i = 0; i < 2; i++) {
+                if (inference_param(inf, branches[i])) {
+                    naked = true;
+                } else {
+                    infer_from(me, inf, source, branches[i]);
+                }
+            }
+            for (u32 i = 0; naked && i < 2; i++) {
+                if (inference_param(inf, branches[i])) infer_with_priority(me, inf, source, branches[i], INFER_PRIORITY_NAKED_TYPE_VARIABLE);
+            }
+            inf->priority = saved;
+        }
     } else if (target->kind == TY_UNION) {
         infer_to_union(me, inf, source, target);
     } else if (target->kind == TY_INTERSECTION) {
@@ -1324,33 +1352,6 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
     } else if (target->kind == TY_TEMPLATE_LITERAL) {
         infer_to_template(me, inf, source, target);
-    } else if (target->kind == TY_CONDITIONAL) {
-        if (source->kind == TY_CONDITIONAL) {
-            infer_from(me, inf, source->conditional.check, target->conditional.check);
-            infer_from(me, inf, source->conditional.extends, target->conditional.extends);
-            Ty const* source_true = ty_conditional_branch(me, source, true);
-            infer_from(me, inf, source_true, ty_conditional_branch(me, target, true));
-            Ty const* source_false = ty_conditional_branch(me, source, false);
-            infer_from(me, inf, source_false, ty_conditional_branch(me, target, false));
-        } else {
-            // To both branches, the ones that aren't naked type parameters first, the naked ones less directly (tsc's
-            // inferToConditionalType + inferToMultipleTypesWithPriority)
-            u32 saved = inf->priority;
-            if (inf->contravariant) inf->priority |= INFER_PRIORITY_CONTRAVARIANT_CONDITIONAL;
-            Ty const* branches[2] = { ty_conditional_branch(me, target, true), ty_conditional_branch(me, target, false) };
-            bool naked = false;
-            for (u32 i = 0; i < 2; i++) {
-                if (inference_param(inf, branches[i])) {
-                    naked = true;
-                } else {
-                    infer_from(me, inf, source, branches[i]);
-                }
-            }
-            for (u32 i = 0; naked && i < 2; i++) {
-                if (inference_param(inf, branches[i])) infer_with_priority(me, inf, source, branches[i], INFER_PRIORITY_NAKED_TYPE_VARIABLE);
-            }
-            inf->priority = saved;
-        }
     } else if (target->flags & TYF_OBJECT) {
         if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
             Ty const* apparent = ty_apparent_type(me, source);
