@@ -47403,7 +47403,7 @@ const baselines = {
     'overloadResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadResolutionClassConstructors': {
         errors: true,
@@ -47413,7 +47413,7 @@ const baselines = {
     'overloadResolutionConstructors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeArgumentInference': {
         errors: true,

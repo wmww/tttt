@@ -1818,14 +1818,19 @@ static Resolution resolve_with_signatures(
             // pickLongestCandidateSignature, the first overload with a rest parameter or enough parameters for the
             // arguments (getLongestCandidateIndex), when that one got as far as being checked
             u32 picked = unfit_count - 1;
+            Signature const* longest = nullptr;
             for (u32 i = 0; i < count; i++) {
                 if (!ty_signature_has_rest(signatures[i]) && ty_signature_param_count(signatures[i]) < args->len) continue;
+                longest = signatures[i];
                 for (u32 u = 0; u < unfit_count; u++) {
                     if (unfit[u].sig == signatures[i]) picked = u;
                 }
                 break;
             }
-            Candidate fallback = unfit[picked];
+            // (A non-generic one that wasn't checked, its type argument count being wrong: `f<T>(...)` of `f(s:
+            // string, n: number): number; f<T>(n: number, t: T): T` returns number)
+            Candidate fallback = longest && !longest->type_params.len && unfit[picked].sig != longest ?
+                (Candidate){ .sig = longest } : unfit[picked];
             if (fallback.sig->type_params.len && !info->type_arg_nodes) {
                 fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
