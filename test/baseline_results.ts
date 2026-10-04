@@ -63003,7 +63003,7 @@ const baselines = {
     'for-inStatementsArray': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-inStatementsArrayErrors': {
         errors: true,

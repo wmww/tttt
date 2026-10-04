@@ -4270,36 +4270,10 @@ static bool has_numeric_property_names(Checker* me, Ty const* type) {
 }
 
 // tsc's isForInVariableForNumericPropertyNames: `k` of `for (const k in xs)` where xs has only a number index
-// signature (an array) indexes as a number. TODO: only inside the loop's body
-static bool is_for_in_numeric_variable(Checker* me, Expr const* index) {
-    if (index->tag != EXPR_IDENTIFIER || !index->identifier.target) return false;
-    Symbol const* symbol = index->identifier.target;
-    // (A `var` declared several times: the nearest for-in declaring it before the access, approximating tsc's walk up
-    // to the loop whose body it is in)
-    ForEachLoopStatement const* loop = nullptr;
-    for (u32 d = 0; d < symbol->decl_count; d++) {
-        // (The declaration nearest before the access has to be the loop's)
-        Span name = symbol->decls[d].name;
-        if (symbol->decl_count > 1 && name.source == index->outer_span.source &&
-            span_start_ptr(name) < span_start_ptr(index->outer_span)
-        ) {
-            loop = nullptr;
-        }
-        if (symbol->decls[d].kind != SYMBOL_DECL_VARIABLE) continue;
-        Binding const* binding = symbol->decls[d].node;
-        if (!binding || binding->parent || !binding->source || binding->source->tag != LAZY_TYPE_FOR_EACH_LOOP_VAR) continue;
-        ForEachLoopStatement const* candidate = c_container_of(binding->source, ForEachLoopStatement, var_type);
-        if (candidate->keyword != FOR_EACH_LOOP_IN) continue;
-        Span iterable = candidate->iterable.outer_span;
-        if (symbol->decl_count > 1 && (iterable.source != index->outer_span.source ||
-            span_end_ptr(iterable) > span_start_ptr(index->outer_span))
-        ) {
-            continue;
-        }
-        loop = candidate;
-    }
-    if (!loop) return false;
-    return has_numeric_property_names(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
+// signature (an array) indexes as a number, in the loop's body
+static bool is_for_in_numeric_variable(Checker* me, PropertyExpr const* access) {
+    ForEachLoopStatement const* loop = access->for_in_loop;
+    return loop && has_numeric_property_names(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
 }
 
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
@@ -4314,7 +4288,7 @@ Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
     ) {
         return ty_prop_name_literal(me, ty_private_name(me, nullptr, name.sv));
     }
-    if (access->form == PROPERTY_EXPR_BRACKET && is_for_in_numeric_variable(me, &access->prop)) return ty_intrinsic(me, TY_NUMBER);
+    if (access->form == PROPERTY_EXPR_BRACKET && is_for_in_numeric_variable(me, access)) return ty_intrinsic(me, TY_NUMBER);
     return ty_element_index_type(me, &access->prop);
 }
 

@@ -1870,6 +1870,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 expr_lookup_names(&my property->expr, names, errs);
                 expr_lookup_names(&my property->prop, names, errs);
             }
+            if (my property->form == PROPERTY_EXPR_BRACKET && my property->prop.tag == EXPR_IDENTIFIER &&
+                my property->prop.identifier.target
+            ) {
+                my property->for_in_loop = scope_for_in_loop_of(names, my property->prop.identifier.target);
+            }
             break;
 
         case EXPR_GENERIC_PARAMS:

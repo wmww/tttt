@@ -412,6 +412,8 @@ typedef struct Scope {
     // Everything of a class's field (decorators, computed name, initializer): not directly in a constructor it's
     // nested in (tsc's isThisContainerOrFunctionBlock has PropertyDeclaration)
     bool in_field;
+    // The scope of a for-in loop, once the walk is in its body (tsc's isForInVariableForNumericPropertyNames)
+    struct ForEachLoopStatement const* for_in_body;
     // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
     bool member_decorator;
     // A computed member name of a class or interface: the type parameters of that class or interface, which it can't
@@ -559,6 +561,8 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 cstr symbol_fully_qualified_name(Symbol const* symbol);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
+// The innermost for-in loop whose body `names` is in and whose variable is `variable` (null if none)
+struct ForEachLoopStatement const* scope_for_in_loop_of(Scope const* names, Symbol const* variable);
 // What tsc's getContainingFunction finds for a node in this scope: Scope.function, or the function whose parameter a
 // decorator is of
 struct FunctionImpl const* scope_containing_function(Scope const* me);

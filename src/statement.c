@@ -1458,6 +1458,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 expr_lookup_names(&loop->variable.expr, names, errs);
                 expr_flow_assign_for_each(&loop->variable.expr, names, loop);
             }
+            if (loop->keyword == FOR_EACH_LOOP_IN) loop_scope->for_in_body = loop; // (Its body from here on)
             statement_add_names(&loop->body, loop_scope);
             statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_loop);
             flow_add_antecedent(flow, pre_loop, flow->current);
@@ -2439,4 +2440,22 @@ void switch_case_drop(SwitchCase* me) {
         expr_drop(&my pattern);
     }
     vec_statement_drop(&my statements);
+}
+
+ForEachLoopStatement const* scope_for_in_loop_of(Scope const* names, Symbol const* variable) {
+    for (Scope const* scope = names; scope; scope = scope->parent) {
+        ForEachLoopStatement const* loop = scope->for_in_body;
+        if (!loop) continue;
+        Symbol const* symbol = nullptr;
+        if (loop->variable.tag == FOR_EACH_LOOP_STATEMENT) {
+            VariableStatement const* statement = &loop->variable.statement;
+            if (vec_initialized_binding_size(&statement->initializers) && statement->initializers.data[0].binding.tag == BINDING_IDENTIFIER) {
+                symbol = statement->initializers.data[0].binding.symbol;
+            }
+        } else if (loop->variable.expr.tag == EXPR_IDENTIFIER) {
+            symbol = loop->variable.expr.identifier.target;
+        }
+        if (symbol && symbol == variable && (symbol->flags & SYMBOL_VARIABLE)) return loop;
+    }
+    return nullptr;
 }

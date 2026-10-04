@@ -553,6 +553,9 @@ typedef struct PropertyExpr {
     // whose initializer it is in
     uint8_t initializer_context;
     struct ClassItem const* initializer_field;
+    // `xs[k]` in the body of a `for (k in ys)` (the innermost such loop, ys being xs or not): see
+    // ty_access_key_type()
+    struct ForEachLoopStatement const* for_in_loop;
 } PropertyExpr;
 
 // Where a member is read, for its accessibility (private/protected, abstract in a constructor): see PropertyExpr's
