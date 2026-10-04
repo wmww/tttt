@@ -25108,7 +25108,7 @@ const baselines = {
     'overloadsWithComputedNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadsWithConstraints': {
         errors: true,

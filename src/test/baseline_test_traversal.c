@@ -738,6 +738,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // A computed name that names a member merges like a written one (the checker's member has the
             // declarations of its symbol, see builder_add_interface_member)
             VecSpan declarations = vec_span_init();
+            Prop const* overloads = nullptr; // (Overloaded methods are one member, of all their signatures)
             if (ctx->member_owner) {
                 Checker* checker = current_checker;
                 bool is_number = false;
@@ -748,6 +749,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], own);
                 if (mine && prop->decl->decl_span_count > 1) {
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
+                    if ((prop->flags & PROP_METHOD) && prop->decl->overload_count > 1) overloads = prop;
                 }
             }
             if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, vec_span_size(&my declarations) ? *vec_span_at(&my declarations, 0) : my key.span);
@@ -756,7 +758,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .span = my key.span,
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             }, my key.expr.ref);
-            baseline_test_case_add_type(ctx, my key.span, optional_member_type(ty_of_node(&my type), my optional));
+            baseline_test_case_add_type(ctx, my key.span, overloads ? prop_type(current_checker, overloads) :
+                optional_member_type(ty_of_node(&my type), my optional));
             computed_member_name_compile_test_info(my key.expr.ref, ctx);
         }   break;
 
