@@ -6077,7 +6077,7 @@ const baselines = {
     },
     'contextualComputedNonBindablePropertyType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'contextualExpressionTypecheckingDoesntBlowStack': {
@@ -6282,7 +6282,7 @@ const baselines = {
     },
     'contextualTypeSelfReferencing': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'contextualTypeShouldBeLiteral': {
@@ -15502,7 +15502,7 @@ const baselines = {
     },
     'genericsManyTypeParameters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericsWithDuplicateTypeParameters1': {
@@ -17297,7 +17297,7 @@ const baselines = {
     },
     'inferenceAndHKTs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferenceAndSelfReferentialConstraint': {
@@ -17462,7 +17462,7 @@ const baselines = {
     },
     'inferredReturnTypeIncorrectReuse1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferrenceInfiniteLoopWithSubtyping': {
@@ -23817,7 +23817,7 @@ const baselines = {
     },
     'noUnusedLocals_typeParameterMergedWithParameter': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noUnusedLocals_writeOnly': {
@@ -31222,7 +31222,7 @@ const baselines = {
     },
     'typeParameterAndArgumentOfSameName1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterArgumentEquivalence': {
@@ -31317,7 +31317,7 @@ const baselines = {
     },
     'typeParameterDoesntBlockParameterLookup': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterEquality': {

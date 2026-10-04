@@ -429,6 +429,9 @@ typedef struct Scope {
     SourceFile* file;
     // The parameter list of a function: from ES2015 on the variables its body declares aren't visible there (tsc's
     // useOuterVariableScopeInParameter), although they share the function's scope
+    // A scope of a function's type parameters (scope_new_generic()): the function's scope, which has its parameters
+    // and the top level of its body (one table in tsc: see baseline_symbol_declaration_spans())
+    struct Scope* type_params_function;
     bool parameters;
     // statement_hoist_names() is declaring a nested statement's `var`s and functions here (SymbolDecl.hoisted)
     bool hoisting;

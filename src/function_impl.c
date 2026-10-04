@@ -230,6 +230,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     unused_register(names, UNUSED_FUNCTION, me, span_null);
     // Handle generics (includes adding names)
+    Scope* type_params_scope = nullptr;
     if (!generic_empty(&my generic)) {
         Span owner = span_valid(my name) ? my name :
             span_valid(my member_name) ? my member_name : span_valid(my variable_name) ? my variable_name :
@@ -237,11 +238,13 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         // (A class method is named through its class, an object literal's isn't)
         ClassDecl const* method_of = span_valid(my member_name) && !my is_expression ? scope_enclosing_class(names) : nullptr;
         names = scope_new_generic(names, &my generic, owner, method_of ? class_decl_display_name(method_of) : span_null, errs);
+        type_params_scope = names;
     }
 
     for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_lookup_names(&my jsdoc_unmatched[i].type, names, errs);
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;
+    if (type_params_scope) type_params_scope->type_params_function = function_scope;
     function_scope->function = me;
     function_scope->strict |= my has_body && block_has_use_strict(&my body);
 

@@ -1653,26 +1653,40 @@ cstr baseline_test_case_module_alias_text(BaselineTestCase const* me, Symbol con
     return text;
 }
 
-// A local of a namespace block or module also has the exported declarations of its name in that block: tsc's binder
-// declares an exported declaration in the container's locals too (declareModuleMember: the local symbol, with no
-// meaning but ExportValue, and its exportSymbol), so a local declaration of the same name merges into that local
-// symbol. tttt's binder keeps the export out of the locals (lookups don't need it); only the declarations differ
+// The declarations of a symbol as tsc's binder has them, where tttt's binder splits one of its symbols in two:
+// - A local of a namespace block or module also has the exported declarations of its name in that block: tsc declares
+//   an exported declaration in the container's locals too (declareModuleMember: the local symbol, with no meaning but
+//   ExportValue, and its exportSymbol), so a local declaration of the same name merges into that local symbol. tttt
+//   keeps the export out of the locals (lookups don't need it)
+// - A function's type parameters are in the function's locals, with its parameters and the top level of its body
+//   (`function f<A>(A: A)` is one symbol A); tttt declares them in a scope around the function's
+// Only the declarations differ: the meanings and value declarations are tsc's already
 VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
     if (!me || !me->decl_count) return symbol_declaration_spans(me);
     // (An import is a local too, declared in the scope it resolves from)
     bool import = me->alias && me->is_local;
     Scope const* block = me->decls[0].block ? me->decls[0].block : import ? me->alias->scope : nullptr;
-    if (!block || !(me->is_local || import)) return symbol_declaration_spans(me);
-    Symbol const* container = block->container;
-    Symbol const* exported = container && container->exports ? symbol_table_get(container->exports, me->name) : nullptr;
-    if (!exported || exported == me) return symbol_declaration_spans(me);
+    if (!block) return symbol_declaration_spans(me);
+    Symbol const* twin = nullptr;
+    bool twin_same_block = false;
+    if (me->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER && block->type_params_function) {
+        twin = symbol_table_get(&block->type_params_function->locals, me->name);
+    } else if (block->kind == SCOPE_FUNCTION && block->parent && block->parent->type_params_function == block) {
+        twin = symbol_table_get(&block->parent->locals, me->name);
+        if (twin && !(twin->decl_count && twin->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER)) twin = nullptr;
+    } else if (me->is_local || import) {
+        Symbol const* container = block->container;
+        twin = container && container->exports ? symbol_table_get(container->exports, me->name) : nullptr;
+        twin_same_block = true;
+    }
+    if (!twin || twin == me) return symbol_declaration_spans(me);
     u32 count = 0;
-    for (u32 i = 0; i < exported->decl_count; i++) count += exported->decls[i].block == block;
+    for (u32 i = 0; i < twin->decl_count; i++) count += !twin_same_block || twin->decls[i].block == block;
     if (!count) return symbol_declaration_spans(me);
     // (In the order the binder declares them: source order, see symbol_declaration_spans() for functions)
     SymbolDecl* decls = malloc(sizeof(SymbolDecl) * (me->decl_count + count));
     u32 len = 0;
-    for (u32 i = 0; i < exported->decl_count; i++) if (exported->decls[i].block == block) decls[len++] = exported->decls[i];
+    for (u32 i = 0; i < twin->decl_count; i++) if (!twin_same_block || twin->decls[i].block == block) decls[len++] = twin->decls[i];
     for (u32 i = 0; i < me->decl_count; i++) decls[len++] = me->decls[i];
     for (u32 i = 1; i < len; i++) {
         for (u32 j = i; j > 0 && span_start_ptr(decls[j].full) < span_start_ptr(decls[j - 1].full); j--) {
