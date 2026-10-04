@@ -16088,7 +16088,7 @@ const baselines = {
     'importDeclRefereingExternalModuleWithNoResolve': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclTypes': {
         errors: true,
@@ -21748,7 +21748,7 @@ const baselines = {
     'moduleAugmentationInDependency2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAugmentationNoNewNames': {
         errors: true,
@@ -25953,7 +25953,7 @@ const baselines = {
     'privacyImportParseErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyInterface': {
         errors: true,
@@ -33613,7 +33613,7 @@ const baselines = {
     'ambientExternalModuleInsideNonAmbientExternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ambientExternalModuleMerging': {
         errors: true,
