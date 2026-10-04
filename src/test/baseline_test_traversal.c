@@ -255,7 +255,7 @@ typedef struct PropSymbolInfo {
     // same declaration again when two instantiations have it: `(A[] | B[]).filter`)
     // (tsc's symbol: the declared one, or an instantiation of it, told apart by type: instantiateSymbol keeps the
     // declared symbol when its type has no type variables, the same type here)
-    struct { Span decl; Ty const* type; TyMapper const* mapper; } seen[16];
+    struct { Span decl; Ty const* type; TyMapper const* mapper; Ty const* tuple; } seen[16];
     bool non_public; // A member property is private or protected
     u32 seen_count;
 } PropSymbolInfo;
@@ -304,7 +304,8 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             bool repeated = false;
             if (inner.seen_count == 1) {
                 for (u32 k = 0; k < info->seen_count; k++) {
-                    repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].type == inner.seen[0].type && info->seen[k].mapper == inner.seen[0].mapper;
+                    repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].type == inner.seen[0].type && info->seen[k].mapper == inner.seen[0].mapper &&
+                        info->seen[k].tuple == inner.seen[0].tuple;
                 }
                 if (!repeated && info->seen_count < c_arraylen(info->seen)) info->seen[info->seen_count++] = inner.seen[0];
             }
@@ -362,12 +363,20 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     // (tsc's instantiateSymbol keeps the declared symbol when its type has no type variables: the same type here)
     Ty const* type = prop_type(checker, prop);
     TyMapper const* mapper = prop->mapper && (prop == root || type != prop_type(checker, root)) ? prop->mapper : nullptr;
+    // (Each tuple type has an Array base of its own in tsc, whose instantiated members are distinct symbols; tttt's
+    // tuples of one element union share it)
+    Ty const* instantiated_by = mapper && ty_is_tuple(object) ? object : nullptr;
     for (u32 k = 0; k < info->seen_count; k++) {
-        if (span_eq(info->seen[k].decl, first_declaration) && info->seen[k].type == type && info->seen[k].mapper == mapper) return;
+        if (span_eq(info->seen[k].decl, first_declaration) && info->seen[k].type == type && info->seen[k].mapper == mapper &&
+            info->seen[k].tuple == instantiated_by
+        ) {
+            return;
+        }
     }
     if (info->seen_count < c_arraylen(info->seen)) {
         info->seen[info->seen_count].decl = first_declaration;
         info->seen[info->seen_count].mapper = mapper;
+        info->seen[info->seen_count].tuple = instantiated_by;
         info->seen[info->seen_count++].type = type;
     }
     // (A declaration once per property: some members' PropDecl repeat one, an enum merged with a namespace)

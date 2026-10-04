@@ -1202,7 +1202,7 @@ const baselines = {
     },
     'arrayDestructuringInSwitch1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'arrayDestructuringInSwitch2': {
@@ -28287,7 +28287,7 @@ const baselines = {
     },
     'sliceResultCast': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'slightlyIndirectedDeepObjectLiteralElaborations': {
