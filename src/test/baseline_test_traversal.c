@@ -1704,7 +1704,15 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         // (an augmentation of an `export =` module declares into the exported symbol: named like any symbol)
         if (!file && my is_ambient_module && my module_ref) {
             if (my symbol->is_module) {
-                file_name = cstr_d("\"", my module_ref->path, "\"");
+                // (its value, escaped like a string literal: `".\\m"`)
+                file_name = cstr_lit("\"");
+                csview path = cstr_sv(&my module_ref->path);
+                for (isize k = 0; k < path.size; k++) {
+                    if (path.buf[k] == '\\' || path.buf[k] == '"') cstr_push(&file_name, "\\");
+                    char c[2] = { path.buf[k], 0 };
+                    cstr_push(&file_name, c);
+                }
+                cstr_push(&file_name, "\"");
             } else {
                 Scope const* inner = ctx->enclosing;
                 ctx->enclosing = outer;
