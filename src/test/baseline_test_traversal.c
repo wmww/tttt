@@ -1337,7 +1337,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
                 ClassItem const* first = symbol_items[0];
                 written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
-            } else if (my method.accessor && my method.accessor_first) {
+            } else if (my method.accessor && my method.accessor_first && !my method.computed_key) {
                 // Both halves of an accessor pair declare the same property. Items live in one vec, so walk forward
                 // from the first
                 ClassItem* first = my method.accessor_first;

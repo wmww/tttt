@@ -40907,12 +40907,12 @@ const baselines = {
     },
     'computedPropertyNames2_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames2_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'computedPropertyNames30_ES5': {
@@ -41407,7 +41407,7 @@ const baselines = {
     },
     'computedPropertyNamesWithStaticProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'decoratorOnClassAccessor1.es6': {
