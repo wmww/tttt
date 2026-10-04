@@ -65013,7 +65013,7 @@ const baselines = {
     'genericObjectRest': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericRestArity': {
         errors: true,

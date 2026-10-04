@@ -2661,7 +2661,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         if (past_end) ret = ty_intrinsic(me, TY_UNDEFINED);
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     } else if (compiler_options()->strict_null_checks && !parent->parent && !parent->has_explicit_type &&
-        !(object->flags & TYF_ANY) && ty_can_be_nullish(me, object) && ty_non_nullable(me, object) != object &&
+        !(object->flags & (TYF_ANY | TYF_TYPE_PARAM)) && ty_can_be_nullish(me, object) && ty_non_nullable(me, object) != object &&
         (!binding_is_parameter(parent) || (!parent->ambient &&
             c_container_of(parent, InitializedBinding, binding)->value.tag != EXPR_IMPLICIT_ANY &&
             ty_can_be_nullish(me, ty_expr_type(me, &c_container_of(parent, InitializedBinding, binding)->value))))
@@ -2672,9 +2672,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     } else {
         ObjectBindingItem const* item = binding->parent_item;
         Ty const* key = item->computed_key ? ty_regular(me, ty_expr_type(me, item->computed_key)) : ty_literal(me, &item->source);
-        ret = ty_access_reading(me, object, key);
         // (A generic key is a deferred `T[K]`: tsc's getIndexedAccessType)
-        if (!ret && item->computed_key && ty_is_generic_index(key)) ret = ty_indexed(me, object, key);
+        ret = item->computed_key && ty_is_generic_index(key) ? ty_indexed(me, object, key) : ty_access_reading(me, object, key);
         // A property an object literal lacks is undefined when there's a default, which decides (tsc's
         // AccessFlags.AllowMissing)
         if (!ret && binding->default_value && object->kind == TY_ANONYMOUS && object->anonymous.object_literal) {
