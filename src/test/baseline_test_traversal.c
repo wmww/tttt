@@ -1318,6 +1318,17 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
                 member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
         });
         baseline_test_case_add_symbol_value(ctx, span, declaration);
+        // `[2] = 2`, `["4"] = 4`: the literal in the computed name names the member too
+        if (!i->computed_name && span_valid(i->full_name) && i->full_name.sv.size && i->full_name.sv.buf[0] == '[' && declaration) {
+            Span literal = i->name;
+            if (i->name_is_value) literal = span_make(literal.source, span_start_ptr(literal) - 1, span_end_ptr(literal) + 1);
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = symbol_declaration_spans(declaration),
+                .span = literal,
+                .text = !i->name_is_value && declaration->parent ? symbol_text(ctx, declaration) :
+                    member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
+            });
+        }
         // (A computed name isn't checked, its expression is any: tsc's isComputedNonLiteralName)
         if (i->computed_key) baseline_test_case_add_type_node(ctx, i->computed_key->outer_span, &type_any);
         if (i->value.tag != EXPR_IMPLICIT_ANY) {
