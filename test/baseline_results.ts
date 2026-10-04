@@ -8023,7 +8023,7 @@ const baselines = {
     'declarationEmitEnumReferenceViaImportEquals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=false)': {
         errors: true,
@@ -8483,7 +8483,7 @@ const baselines = {
     'declarationEmitPartialNodeReuseTypeReferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPartialReuseComputedProperty': {
         errors: true,
@@ -8588,17 +8588,17 @@ const baselines = {
     'declarationEmitReexportedSymlinkReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitReexportedSymlinkReference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitReexportedSymlinkReference3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRelativeModuleError': {
         errors: true,
@@ -12688,7 +12688,7 @@ const baselines = {
     'exportClassExtendingIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportClassWithoutName': {
         errors: true,
@@ -19173,7 +19173,7 @@ const baselines = {
     'jsEnumTagOnObjectFrozen': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsExpandoObjectDefineProperty': {
         errors: true,
@@ -49923,7 +49923,7 @@ const baselines = {
     'umd-augmentation-4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd-errors': {
         errors: false,
@@ -52918,12 +52918,12 @@ const baselines = {
     'inlineJsxFactoryDeclarationsLocalTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxFactoryLocalTypeGlobalFallback': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineJsxFactoryOverridesCompilerOption': {
         errors: true,
@@ -60208,7 +60208,7 @@ const baselines = {
     'importingExportingTypes': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferingFromAny': {
         errors: true,
