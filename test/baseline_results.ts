@@ -11207,12 +11207,12 @@ const baselines = {
     },
     'erasableSyntaxOnly': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'erasableSyntaxOnlyDeclaration': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'errorCause(target=es2021)': {
@@ -13057,7 +13057,7 @@ const baselines = {
     },
     'exportImportCanSubstituteConstEnumForValue': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportImportMultipleFiles': {
@@ -18302,12 +18302,12 @@ const baselines = {
     },
     'internalAliasEnumInsideTopLevelModuleWithExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'internalAliasEnumInsideTopLevelModuleWithoutExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'internalAliasFunction': {
@@ -25987,12 +25987,12 @@ const baselines = {
     },
     'privacyTopLevelInternalReferenceImportWithExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privacyTopLevelInternalReferenceImportWithoutExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'privacyTypeParameterOfFunction': {
@@ -51002,7 +51002,7 @@ const baselines = {
     },
     'invalidImportAliasIdentifiers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'shadowedInternalModule': {

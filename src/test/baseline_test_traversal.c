@@ -1148,7 +1148,10 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = symbol_declaration_spans(declaration),
             .span = span,
-            .text = member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
+            // (tsc's symbolToString of the member: an alias of the enum in scope names it, `import b = a.E` gives
+            // `b.x`)
+            .text = !i->name_is_value && declaration && declaration->parent ? symbol_text(ctx, declaration) :
+                member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
         });
         baseline_test_case_add_symbol_value(ctx, span, declaration);
         // (A computed name isn't checked, its expression is any: tsc's isComputedNonLiteralName)
