@@ -483,6 +483,9 @@ typedef struct PropDecl {
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
     struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
+    // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
+    // declarations), whose annotation is reused when it says the same
+    struct Prop const* mapped_from;
 } PropDecl;
 
 extern PropDecl const ty_prop_decl_none;

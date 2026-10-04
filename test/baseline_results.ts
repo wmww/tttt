@@ -8438,17 +8438,17 @@ const baselines = {
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitOptionalMappedTypePropertyNoStrictNullChecks4': {
         errors: true,
@@ -64163,7 +64163,7 @@ const baselines = {
     'mappedTypeModifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeOverlappingStringEnumKeys': {
         errors: true,

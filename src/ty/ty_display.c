@@ -2121,6 +2121,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // still says the same), or the type assertion of an object literal's
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
+        if (origin->decl->template_of && prop->decl->mapped_from) {
+            origin = prop->decl->mapped_from;
+            while (origin->target) origin = origin->target;
+        }
         TypeNode const* annotation = prop->decl->asserted;
         if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !origin->decl->overload_count &&
             !origin->decl->symbol

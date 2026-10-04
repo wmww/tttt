@@ -2431,6 +2431,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     prop->decl->decl_spans = declared->decl->decl_spans;
                     prop->decl->decl_span_count = declared->decl->decl_span_count;
                     prop->decl->name_is_value = declared->decl->name_is_value;
+                    prop->decl->mapped_from = declared;
                 }
                 builder_push(&builder, props, prop);
             } else {
