@@ -100,3 +100,20 @@ real-world corpora, because the current ones have almost nothing left to find.
 One concern: tttt has become about 8% slower (by instruction count) over roughly 20 sessions of fixes, with no perf
 session on the checker in between. It is still 2-6x faster than tsgo, but the next window includes a perf session to
 recover this before the new features add more.
+
+## 2026-10-04 — insights (after the seventh window)
+Another clean window: ten sessions, all committed, nothing lost. The suite went 12040 -> 12354 of 13540 (91%). That's a
+smaller gain than last time, as planned, since four sessions went into planning and measuring. Tests failing on
+errors alone fell from 810 to 427. Two new real-world projects were pinned and nearly cleared: drizzle-orm went from
+693 false errors to 6 and vue from 107 to 0. The ~8% slowdown flagged last time was reversed and then some, mostly
+by adding caches tsc has and tttt lacked (tsc's compiler sources: 5.2 -> 4.5 billion instructions).
+
+The next window builds two whole features that real users hit first and that are now fully planned. The first is
+the diagnostics tsc reports for libraries built with `declaration: true`. The second is project references
+(`tsc -b`, monorepos), with TypeScript's own source tree as the test project. These also make the speed comparison
+fairer, because tsc does declaration checking on four of our test projects and tttt doesn't yet.
+
+The main concern is a pattern across several sessions. tttt computes some things as soon as a type is created, where
+tsc only computes them when asked. Each session that ran into this patched around it locally, so the workarounds
+are piling up. A planning session will decide whether to switch to tsc's lazy approach. That might also fix the
+other weak number: memory use is above tsgo's on most projects, even though tttt is 3-11x faster.
