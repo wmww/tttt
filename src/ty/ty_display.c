@@ -1107,15 +1107,15 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
 
 static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list, char const* separator) {
     bool first = true;
-    bool union_list = separator[1] == '|';
     for_each (i, vec_type, list) {
         if (i->placeholder) continue;
         if (!first) out(d, csview_from(separator));
         first = false;
         // A member that needs parentheses without having them written: JSDoc's `?T`, `T=` of a union or function
-        // type (tsc's printer parenthesizes what it transformed them into)
+        // type, and a union or intersection in a union or intersection (tsc's visitor recreates the list node, and the
+        // factory's parenthesizeConstituentTypeOfUnionType/IntersectionType wraps them)
         bool parens = !i->parenthesized && (i->tag == TYPE_CALLABLE || i->tag == TYPE_UNION ||
-            (!union_list && i->tag == TYPE_INTERSECTION));
+            i->tag == TYPE_INTERSECTION || i->tag == TYPE_TERNARY);
         if (parens) out(reused_if(d, false), c_sv("("));
         display_node(me, d, i);
         if (parens) out(reused_if(d, false), c_sv(")"));

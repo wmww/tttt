@@ -16793,7 +16793,7 @@ const baselines = {
     'inKeywordAndIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inKeywordAndUnknown': {
         errors: true,
@@ -22938,7 +22938,7 @@ const baselines = {
     'narrowingTypeofFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingTypeofObject': {
         errors: true,
@@ -48078,7 +48078,7 @@ const baselines = {
     'typeGuardIntersectionTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsPrimitiveIntersection': {
         errors: true,
@@ -63748,7 +63748,7 @@ const baselines = {
     'intersectionNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionOfUnionNarrowing': {
         errors: true,
