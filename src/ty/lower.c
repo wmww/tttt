@@ -2747,7 +2747,28 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
                 *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = pre;
             }
         }
-        ret = ret->flags & TYF_ANY ? ret : ty_union_subtype_reduced(me, types, 2);
+        if (!(ret->flags & TYF_ANY)) {
+            // What the reduction keeps is decided with the default still fresh (tsc unions first and widens after): a
+            // fresh `{}` is no strict supertype of `{ flag: X }`, so `[{ flag } = {}]` keeps both
+            Ty const* fresh[2] = { types[0], default_type };
+            Ty const* reduced = ty_union_subtype_reduced(me, fresh, 2);
+            TyList members = reduced->kind == TY_UNION ? reduced->composite.types : (TyList){ .data = &reduced, .len = 1 };
+            bool kept_default = false;
+            for (u32 i = 0; i < members.len && !kept_default; i++) kept_default = members.data[i] == default_type;
+            if (kept_default && types[1] != default_type && default_type->kind == TY_ANONYMOUS &&
+                ty_is_fresh_object(default_type)
+            ) {
+                // (The kept members, the default widened)
+                TyBuf parts = {0};
+                for (u32 i = 0; i < members.len; i++) {
+                    ty_buf_push(&parts, members.data[i] == default_type ? types[1] : members.data[i]);
+                }
+                ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+                ty_buf_drop(&parts);
+            } else {
+                ret = ty_union_subtype_reduced(me, types, 2);
+            }
+        }
     }
     return ret;
 }
