@@ -682,6 +682,15 @@ void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCa
 
 static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTestCase* ctx);
 
+// The type parameter of `infer X`: from the end of `infer` (its leading trivia) to the end of the name
+static Span inferred_type_parameter_span(InferredType const* inferred) {
+    csview full = inferred->full_span.sv;
+    isize at = csview_find_sv(full, c_sv("infer"));
+    char const* start = at == c_NPOS ? inferred->name.sv.buf : full.buf + at + 5;
+    if (start > inferred->name.sv.buf) start = inferred->name.sv.buf;
+    return span_make(inferred->name.source, start, span_end_ptr(inferred->name));
+}
+
 void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
     if (my from_jsdoc) return; // tsc's walk doesn't go into JSDoc
     switch (my tag) {
@@ -838,7 +847,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
 
         case TYPE_INFERRED:
             baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .declarations = declaration_get_spans(my inferred->symbol_ref),
+                // (An `infer X` outside a conditional's extends clause, TS1338, is an anonymous type parameter
+                // declared by itself: tsc's bindAnonymousDeclaration)
+                .declarations = my inferred->symbol_ref ? declaration_get_spans(my inferred->symbol_ref) :
+                    vec_span_single(inferred_type_parameter_span(my inferred)),
                 .allow_declaration_empty = true,
                 .span = my inferred->name,
             });

@@ -63517,7 +63517,7 @@ const baselines = {
     },
     'inferTypes1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inferTypes2': {
@@ -64042,7 +64042,7 @@ const baselines = {
     },
     'templateLiteralTypes1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'templateLiteralTypes2': {
