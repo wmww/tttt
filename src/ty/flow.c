@@ -2033,9 +2033,29 @@ typedef struct PresenceArg {
     bool assume_true;
 } PresenceArg;
 
+// Whether every member of a union apparent type has the property or an index signature for it (tsc's getPropertyOfType
+// of the union finds a synthetic property): 0 no, 1 yes, 2 yes but partial (a member's index signature has it,
+// CheckFlags.WritePartial)
+static int union_has_prop(Checker* me, Ty const* apparent, Atom const* name) {
+    int ret = 1;
+    for (u32 i = 0; i < apparent->composite.types.len; i++) {
+        Ty const* member = ty_apparent_type(me, apparent->composite.types.data[i]);
+        if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) return 0;
+        if (ty_find_prop(me, member, name).found) continue;
+        if (!prop_type_by_name(me, member, name)) return 0;
+        ret = 2;
+    }
+    return ret;
+}
+
 static bool is_presence_possible(Checker* me, Ty const* member, void const* arg) {
     PresenceArg const* a = arg;
     Ty const* apparent = ty_apparent_type(me, member);
+    // (A type parameter constrained to a union: the union's property)
+    if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+        int found = union_has_prop(me, apparent, a->name);
+        return found == 2 || (found ? a->assume_true : !a->assume_true);
+    }
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return !a->assume_true;
     FoundProp prop = ty_find_prop(me, apparent, a->name);
     if (prop.found) return (prop.flags & PROP_OPTIONAL) || a->assume_true;
@@ -2078,7 +2098,9 @@ static Ty const* narrow_by_in(FlowQuery* q, Ty const* type, BinaryOpExpr const* 
     TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
     for (u32 i = 0; i < members.len && !is_known; i++) {
         Ty const* apparent = ty_apparent_type(me, members.data[i]);
-        is_known = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
+        is_known = apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN) && members.data[i]->kind != TY_UNION ?
+            union_has_prop(me, apparent, name) != 0 :
+            (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
             (ty_find_prop(me, apparent, name).found || prop_type_by_name(me, apparent, name));
     }
     if (!is_known) {

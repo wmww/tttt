@@ -16808,12 +16808,12 @@ const baselines = {
     'inKeywordTypeguard(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inKeywordTypeguard(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inOperator': {
         errors: true,
