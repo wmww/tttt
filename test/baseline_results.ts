@@ -41167,12 +41167,12 @@ const baselines = {
     },
     'computedPropertyNames5_ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames5_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertyNames6_ES5': {

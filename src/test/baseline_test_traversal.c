@@ -2431,7 +2431,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 ) {
                     // A name declared by several properties is one symbol, typed by the first of them
                     // (named like its first declaration: `{ a: 1, \u0061: 2 }` is `a` at both)
-                    bool literal_key = i->computed_key && i->computed_key->tag == EXPR_LITERAL;
+                    bool literal_key = i->computed_key && i->computed_key->tag == EXPR_LITERAL &&
+                        (i->computed_key->literal.tag == VALUE_STRING || i->computed_key->literal.tag == VALUE_NUMBER);
                     VecSpan key_declarations = literal_key ? vec_span_clone(merged) : vec_span_init();
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = merged,
@@ -2485,7 +2486,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         .name = named != i ? named->name_span : span_null,
                         .name_is_value = named->name_is_value,
                     });
-                    if (i->computed_key && i->computed_key->tag == EXPR_LITERAL) {
+                    if (i->computed_key && i->computed_key->tag == EXPR_LITERAL &&
+                        (i->computed_key->literal.tag == VALUE_STRING || i->computed_key->literal.tag == VALUE_NUMBER)
+                    ) {
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
                             .declarations = vec_span_single(i->span),
                             .span = i->computed_key->outer_span,
