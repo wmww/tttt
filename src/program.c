@@ -17,6 +17,7 @@
 #include "module_resolution.h"
 #include "json.h"
 #include "load_pool.h"
+#include "project.h"
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -85,6 +86,12 @@ typedef struct Program {
     cstr cwd; // program_cwd()
     Binder* binder;
     ModuleResolver* resolver; // Made on first use, the options are final by then
+    // program_set_references(): the referenced projects, and a resolver with each one's options for its files
+    ProjectRedirects const* redirects;
+    ModuleResolver** reference_resolvers;
+    u32 reference_count;
+    RealpathFn realpath; // program_set_realpath()
+    void* realpath_ctx;
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
@@ -167,6 +174,8 @@ static void program_drop(Program* me) {
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
+    for (u32 i = 0; i < my reference_count; i++) module_resolver_destroy(my reference_resolvers[i]);
+    free(my reference_resolvers);
     cstr_drop(&my lib_dir);
     cstr_drop(&my cwd);
     compiler_options_drop(&my options);
@@ -240,6 +249,13 @@ static Error* option_error_s(Program* me, Span site, unsigned code, cstr message
     if (span_valid(site)) return error_ctx_error_s(my errs, site, code, message);
     return error_ctx_global_error_s(my errs, code, message);
 }
+Error* program_config_error(Program* me, u32 start, u32 end, unsigned code, cstr message) {
+    if (!my config_source || end > cstr_size(&my config_source->contents) || start > end) {
+        return error_ctx_global_error_s(my errs, code, message);
+    }
+    return error_ctx_error_s(my errs, config_span(me, start, end), code, message);
+}
+
 // tsc's createDiagnosticForOptionName (on_key) and createOptionValueDiagnostic
 #define option_error_d_one(me, site, code, ...) option_error_s(me, site, code, cstr_d(__VA_ARGS__))
 #define option_error_d(me, name, name2, on_key, code, ...) do { \
@@ -262,8 +278,40 @@ void program_destroy(Program* me) {
 }
 
 static ModuleResolver* program_resolver(Program* me) {
-    if (!my resolver) my resolver = module_resolver_new(my fs, &my options);
+    if (!my resolver) {
+        my resolver = module_resolver_new(my fs, &my options);
+        if (my realpath) module_resolver_set_realpath(my resolver, my realpath, my realpath_ctx);
+        module_resolver_set_redirects(my resolver, my redirects);
+    }
     return my resolver;
+}
+
+// What resolves the module names of a file: the program's resolver, or its referenced project's
+static ModuleResolver* program_resolver_of(Program const* me, SourceFile const* file) {
+    if (file && file->from_reference) return my reference_resolvers[file->from_reference - 1];
+    check(my resolver);
+    return my resolver;
+}
+
+// The options module resolution goes by in a file (tsc's getCompilerOptionsForFile)
+static CompilerOptions const* program_options_of(Program const* me, SourceFile const* file) {
+    if (file && file->from_reference) return project_redirects_options(my redirects, file->from_reference - 1);
+    return &my options;
+}
+
+void program_set_references(Program* me, ProjectRedirects const* redirects) {
+    ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    check(!my reference_count && !my pool);
+    my redirects = redirects;
+    if (my resolver) module_resolver_set_redirects(my resolver, redirects);
+    my reference_count = project_redirects_count(redirects);
+    my reference_resolvers = c_new_n(ModuleResolver*, my reference_count + 1);
+    for (u32 i = 0; i < my reference_count; i++) {
+        ModuleResolver* resolver = module_resolver_new(my fs, project_redirects_options(redirects, i));
+        if (my realpath) module_resolver_set_realpath(resolver, my realpath, my realpath_ctx);
+        module_resolver_set_redirects(resolver, redirects);
+        my reference_resolvers[i] = resolver;
+    }
 }
 
 void program_set_lib_dir(Program* me, csview dir) {
@@ -275,7 +323,10 @@ void program_follow_lib_references(Program* me) {
 }
 
 void program_set_realpath(Program* me, cstr (*realpath)(void* ctx, csview path), void* ctx) {
+    my realpath = realpath;
+    my realpath_ctx = ctx;
     module_resolver_set_realpath(program_resolver(me), realpath, ctx);
+    for (u32 i = 0; i < my reference_count; i++) module_resolver_set_realpath(my reference_resolvers[i], realpath, ctx);
 }
 
 // The fs' working directory as of its first use (the harness sets it up after making the program), which must not
@@ -313,6 +364,36 @@ static bool source_declares_ambient_module(SourceFile const* source, csview name
 
 static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* ref, ResolvedModule* resolved_ptr);
 
+static bool path_is_js(csview path) {
+    return csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".mjs") ||
+        csview_ends_with(path, ".cjs");
+}
+
+static bool is_declaration_path(csview path) {
+    return csview_ends_with(path, ".d.ts") || csview_ends_with(path, ".d.mts") || csview_ends_with(path, ".d.cts");
+}
+
+// The source file a referenced project's output declaration file stands for (absolute), empty if path isn't one
+static csview program_source_of_output(Program const* me, csview path) {
+    if (!my redirects || !is_declaration_path(path)) return c_sv("");
+    if (path.size && path.buf[0] == '/') return project_redirects_source_of_output(my redirects, path);
+    cstr absolute = absolute_path_of(program_cwd(me), path);
+    csview ret = project_redirects_source_of_output(my redirects, cstr_sv(&absolute));
+    cstr_drop(&absolute);
+    return ret;
+}
+
+// A resolution that found a referenced project's output finds its source (tsc's getSourceOfProjectReferenceRedirect)
+static void program_redirect_resolved(Program const* me, ResolvedModule* resolved) {
+    if (resolved->kind != RESOLVED_DTS) return;
+    csview source = program_source_of_output(me, cstr_sv(&resolved->path));
+    if (!source.size) return;
+    cstr_assign_sv(&resolved->path, source);
+    resolved->kind = path_is_js(source) ? RESOLVED_JS : RESOLVED_TS;
+    resolved->is_external_library = false;
+    cstr_take(&resolved->package_id, cstr_null);
+}
+
 // tsc's tryExtractTSExtension: the name ends in .d.ts, .d.mts, .d.cts, .ts, .tsx, .mts or .cts
 static bool name_has_ts_extension(csview name) {
     static const char* const extensions[] = { ".ts", ".tsx", ".mts", ".cts" };
@@ -329,7 +410,8 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
     ResolutionMode mode = ref->syntax == MODULE_REF_REQUIRE ? RESOLUTION_MODE_REQUIRE_SYNTAX :
         ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     csview name = cstr_sv(&source->canonical_path);
-    if (my options.module_resolution == MODULE_RESOLUTION_BUNDLER && my options.resolve_package_json_exports &&
+    CompilerOptions const* options = program_options_of(me, source);
+    if (options->module_resolution == MODULE_RESOLUTION_BUNDLER && options->resolve_package_json_exports &&
         mode == RESOLUTION_MODE_COMMONJS && (csview_ends_with(name, ".cts") || csview_ends_with(name, ".cjs"))
     ) {
         mode = RESOLUTION_MODE_REQUIRE_SYNTAX;
@@ -341,10 +423,12 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
 
 // A resolved TypeScript file becomes part of the program, anything else is remembered on the ref as why there's no file
 static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* ref) {
-    ModuleResolver* resolver = program_resolver(me);
+    program_resolver(me);
+    ModuleResolver* resolver = program_resolver_of(me, source);
     csview containing = cstr_sv(&source->canonical_path);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+    program_redirect_resolved(me, &resolved);
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
         cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
         cstr message = cstr_d(
@@ -468,7 +552,9 @@ static SourceFile* program_load_reference_path(Program* me, Span path_span, csvi
     bool extension = path_has_extension(path);
     for (isize i = extension ? 0 : 1; i < (extension ? 1 : (isize)c_arraylen(extensions)) && !ret; i++) {
         cstr candidate = cstr_d(full, extensions[i]);
-        if (fs_is_reg_file(my fs, cstr_sv(&candidate))) ret = program_add_source_idempotent(me, cstr_sv(&candidate));
+        csview source = program_source_of_output(me, cstr_sv(&candidate));
+        if (source.size) ret = program_add_source_idempotent(me, source);
+        else if (fs_is_reg_file(my fs, cstr_sv(&candidate))) ret = program_add_source_idempotent(me, cstr_sv(&candidate));
         cstr_drop(&candidate);
     }
     cstr_drop(&full);
@@ -485,9 +571,12 @@ static SourceFile* program_load_type_reference(
     else if (override == IMPORT_RESOLUTION_REQUIRE) mode = RESOLUTION_MODE_COMMONJS;
     else if (source && source->has_format) mode = source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     else has_mode = false;
+    program_resolver(me);
     ResolvedModule resolved = module_resolver_resolve_type_reference(
-        program_resolver(me), name, source ? cstr_sv(&source->canonical_path) : c_sv(""), has_mode ? &mode : nullptr
+        program_resolver_of(me, source), name, source ? cstr_sv(&source->canonical_path) : c_sv(""),
+        has_mode ? &mode : nullptr
     );
+    program_redirect_resolved(me, &resolved);
     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
         program_add_source_idempotent(me, cstr_sv(&resolved.path));
     resolved_module_drop(&resolved);
@@ -599,11 +688,6 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 // Loads the file at the given path, adds it to the program, and returns a SourceFile for it. Returns nullptr on error.
 // Only loads each file once, even if paths aren't expressed identically. Calls itself recursively to load imports and
 // referenced files.
-static bool path_is_js(csview path) {
-    return csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".mjs") ||
-        csview_ends_with(path, ".cjs");
-}
-
 // `// @ts-check` (1) or `// @ts-nocheck` (-1) in the comments at the top of a file, the last one wins. 0 without
 static int source_check_directive(csview contents) {
     int ret = 0;
@@ -729,6 +813,16 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
     if (source_file->is_json) source_file->unchecked = true;
     source_file->plain_js = source_file->is_js && !check_directive && !my options.is_set[COMPILER_OPTION_check_js] &&
         !my options.no_check;
+    // A referenced project's file is that project's to check and report
+    if (my redirects && !is_stdlib) {
+        cstr absolute = absolute_path_of(program_cwd(me), path);
+        source_file->from_reference = project_redirects_project_of(my redirects, cstr_sv(&absolute));
+        cstr_drop(&absolute);
+        if (source_file->from_reference) {
+            source_file->unchecked = true;
+            source_file->plain_js = false;
+        }
+    }
 
     if (is_stdlib) {
         source_file->is_stdlib = true;
@@ -736,14 +830,17 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
         cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
     }
 
-    bool node_formats = (my options.module >= MODULE_KIND_NODE16 && my options.module <= MODULE_KIND_NODENEXT) ||
-        my options.module_resolution == MODULE_RESOLUTION_NODE16 ||
-        my options.module_resolution == MODULE_RESOLUTION_NODENEXT;
+    CompilerOptions const* options = program_options_of(me, source_file);
+    bool node_formats = (options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT) ||
+        options->module_resolution == MODULE_RESOLUTION_NODE16 ||
+        options->module_resolution == MODULE_RESOLUTION_NODENEXT;
     // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile, which also looks at the
     // package.json of anything in node_modules)
     bool in_node_modules = csview_contains(cstr_sv(&source_file->canonical_path), "/node_modules/");
     if ((node_formats || in_node_modules) && !is_stdlib && !source_file->is_json) {
-        FileFormat format = module_resolver_file_format(my resolver, cstr_sv(&source_file->canonical_path));
+        FileFormat format = module_resolver_file_format(
+            program_resolver_of(me, source_file), cstr_sv(&source_file->canonical_path)
+        );
         source_file->is_esm = format.mode == RESOLUTION_MODE_ESM;
         source_file->has_format = true;
         source_file->package_has_type = format.package_has_type;
@@ -775,13 +872,14 @@ static void program_queue_path(Program* me, LoadPool* pool, csview absolute, boo
 // Resolutions go to the shared resolver's cache, where the loader finds them
 static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile const* file) {
     if (my options.no_resolve) return;
-    ModuleResolver* resolver = my resolver;
+    ModuleResolver* resolver = program_resolver_of(me, file);
     csview containing = cstr_sv(&file->canonical_path);
     for (u32 i = 0; i < file->module_ref_count; i++) {
         ModuleRef const* ref = file->module_refs[i];
         if (ref->is_declaration || ref->ambient_only) continue;
         ResolutionMode mode = program_module_ref_mode(me, file, ref);
         ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+        program_redirect_resolved(me, &resolved);
         bool load = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || resolved.kind == RESOLVED_JSON ||
             (resolved.kind == RESOLVED_JS && my options.allow_js && !(resolved.is_external_library &&
                 csview_contains(cstr_sv(&resolved.path), "/node_modules/")));
@@ -812,6 +910,7 @@ static void program_load_ahead_from(Program* me, LoadPool* pool, SourceFile cons
                 ResolvedModule resolved = module_resolver_resolve_type_reference(
                     resolver, cstr_sv(&directive->path), containing, has_mode ? &mode : nullptr
                 );
+                program_redirect_resolved(me, &resolved);
                 if (resolved.kind != RESOLVED_NONE) program_queue_path(me, pool, cstr_sv(&resolved.path), false);
                 resolved_module_drop(&resolved);
             }   break;
@@ -958,6 +1057,9 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
 failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
+    // A referenced project's output is its source
+    csview source_of_output = program_source_of_output(me, path);
+    if (source_of_output.size) path = source_of_output;
 
     // tsc's getSourceFileFromReferenceWorker for a root: an extension that isn't a script's (a `.map`, a `.txt`)
     static const char* const scripts[] = { ".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs", ".json" };
@@ -1098,6 +1200,8 @@ void program_load_automatic_types(Program* me) {
     }
     str_list_drop(&names);
     clear_compiler_options();
+    // (The parse errors of referenced projects' files, before anyone reports them)
+    if (my reference_count) error_ctx_remove_unchecked(my errs);
 }
 
 void program_copy_globals_from(Program* me, Program const* other) {

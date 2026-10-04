@@ -132,6 +132,9 @@ typedef struct SourceFile {
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;
+    // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
+    // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
+    u32 from_reference;
     // Unchecked, but checked anyway for a few errors (tsc's isPlainJsFile: JavaScript without a `@ts-check`/`@ts-nocheck`
     // and with checkJs not set at all): only the ones on tsc's plainJSErrors list are reported
     bool plain_js;

@@ -22,6 +22,13 @@ void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path)
 // program whose libs are copied from another (program_copy_globals_from())
 void program_follow_lib_references(Program* me);
 
+// The projects the program's project references (project.h), before loading anything (and before
+// program_set_threads() has a load pool start): their outputs are read as their sources, their files are part of the
+// program but unchecked and unreported, and module names in them resolve with their project's options.
+// program_load_automatic_types() drops their parse errors. redirects must outlive the program
+typedef struct ProjectRedirects ProjectRedirects;
+void program_set_references(Program* me, ProjectRedirects const* redirects);
+
 // Change them before loading anything, and call compiler_options_resolve() when done. Parsing, name resolution and
 // checking of this program read them through compiler_options()
 CompilerOptions* program_options(Program* me);
@@ -29,6 +36,10 @@ CompilerOptions* program_options(Program* me);
 // The tsconfig.json the options came from (tsc's options.configFile): diagnostics about the options go on it. Returns
 // its source file, which isn't part of the program (nothing parses or checks it), null if it can't be read
 SourceFile const* program_set_config_file(Program* me, csview path);
+
+// A diagnostic at those byte offsets of the config file (a global one without a config)
+typedef struct Error Error;
+Error* program_config_error(Program* me, u32 start, u32 end, unsigned code, cstr message);
 
 // Where the program's diagnostics go (the checker reports tsc's `error(currentNode, ...)` diagnostics straight into it)
 ErrorCtx* program_errors(Program const* me);

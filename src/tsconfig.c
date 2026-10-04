@@ -601,3 +601,47 @@ cstr tsconfig_find(Fs const* fs, csview directory) {
     cstr_drop(&dir);
     return cstr_null;
 }
+
+failable tsconfig_load_references(Fs const* fs, csview path, TsconfigReference** out, u32* count) {
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(fs, &cwd)) bubble;
+    cstr absolute = absolute_path_of(cstr_sv(&cwd), path);
+    cstr_drop(&cwd);
+    if (fs_is_directory(fs, cstr_sv(&absolute))) cstr_append_lit(&absolute, "/tsconfig.json");
+    cstr contents = cstr_null;
+    try (fs_read_file(fs, cstr_sv(&absolute), &contents)) cleanup {
+        cstr_drop(&absolute);
+    }
+    JsonValue document = {0};
+    bool parsed = json_parse(cstr_sv(&contents), &document);
+    cstr_drop(&contents);
+    JsonValue const* references = parsed ? json_get_tagged(&document, "references", JSON_ARRAY) : nullptr;
+    csview dir = parent_of(cstr_sv(&absolute));
+    for (isize i = 0; references && i < references->count; i++) {
+        JsonValue const* entry = &references->items[i];
+        csview written = json_get_string(entry, "path");
+        if (entry->tag != JSON_OBJECT || !written.size) continue;
+        JsonValue const* circular = json_get_tagged(entry, "circular", JSON_BOOL);
+        TsconfigReference reference = {
+            .written = path_join(dir, written),
+            .circular = circular && circular->boolean,
+            .start = entry->start,
+            .end = entry->end,
+        };
+        reference.path = csview_ends_with(written, ".json") ? cstr_clone(reference.written) :
+            path_join(cstr_sv(&reference.written), c_sv("tsconfig.json"));
+        *out = realloc(*out, sizeof(TsconfigReference) * (*count + 1));
+        (*out)[(*count)++] = reference;
+    }
+    json_drop(&document);
+    cstr_drop(&absolute);
+    return ok;
+}
+
+void tsconfig_references_drop(TsconfigReference* references, u32 count) {
+    for (u32 i = 0; i < count; i++) {
+        cstr_drop(&references[i].path);
+        cstr_drop(&references[i].written);
+    }
+    free(references);
+}

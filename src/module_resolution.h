@@ -67,6 +67,11 @@ void module_resolver_destroy(ModuleResolver* me);
 typedef cstr (*RealpathFn)(void* ctx, csview path);
 void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void* ctx);
 
+// The outputs of referenced projects exist for this resolver, built or not (project.h): their declaration files and
+// directories. The caller turns an output it finds into its source. redirects must outlive the resolver
+typedef struct ProjectRedirects ProjectRedirects;
+void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* redirects);
+
 // Both take any path for containing_file (relative ones are relative to the fs' working directory)
 ResolvedModule module_resolver_resolve(
     ModuleResolver* me,

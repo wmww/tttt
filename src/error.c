@@ -615,8 +615,8 @@ void error_ctx_remove_unchecked(ErrorCtx* me) {
     for (intptr_t i = 0; i < vec_error_size(&my errors); i++) {
         Error* error = vec_error_at_mut(&my errors, i);
         SourceFile const* source = error->span.source;
-        if (source && source->unchecked && error->phase >= ERROR_PHASE_RESOLVE_NAMES &&
-            !(source->plain_js && plain_js_reports(error->ts_code))
+        if (source && (source->from_reference || (source->unchecked && error->phase >= ERROR_PHASE_RESOLVE_NAMES &&
+            !(source->plain_js && plain_js_reports(error->ts_code))))
         ) {
             error_drop(error);
         } else {

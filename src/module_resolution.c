@@ -1,5 +1,6 @@
 #include "module_resolution.h"
 #include "json.h"
+#include "project.h"
 #include <pthread.h>
 
 // tsc's version, for `typesVersions` and versioned `types@>=5.0` conditions
@@ -59,6 +60,7 @@ typedef struct ModuleResolver {
     cstr cwd;
     RealpathFn realpath;
     void* realpath_ctx;
+    ProjectRedirects const* redirects; // module_resolver_set_redirects()
     // Resolutions may run on several threads at once (a program's load pool): the caches are shared, under lock (the
     // filesystem probing between a miss and the insert isn't; two threads may both do a lookup, and agree)
     pthread_mutex_t lock;
@@ -120,9 +122,29 @@ void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void*
     my realpath_ctx = ctx;
 }
 
+void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* redirects) {
+    my redirects = redirects;
+}
+
+// Where path leads once symlinks are followed, for a path that may not exist: a referenced project's output that was
+// never built, through a workspace link (its nearest existing directory is followed). Empty if nothing could be
+static cstr real_path_lenient(ModuleResolver* me, csview path) {
+    cstr real = my realpath(my realpath_ctx, path);
+    if (cstr_size(&real) || !my redirects) return real;
+    cstr_drop(&real);
+    isize slash = path.size;
+    while (slash > 0 && path.buf[slash - 1] != '/') slash--;
+    if (slash <= 1) return cstr_null;
+    cstr parent = real_path_lenient(me, csview_slice(path, 0, slash - 1));
+    if (!cstr_size(&parent)) return parent;
+    cstr ret = cstr_d(parent, "/", csview_slice(path, slash, path.size));
+    cstr_drop(&parent);
+    return ret;
+}
+
 static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
     if (!my realpath || !resolved->is_external_library || my options->preserve_symlinks) return;
-    cstr real = my realpath(my realpath_ctx, cstr_sv(&resolved->path));
+    cstr real = real_path_lenient(me, cstr_sv(&resolved->path));
     if (cstr_size(&real)) {
         cstr_take(&resolved->path, real);
     } else {
@@ -232,12 +254,30 @@ static bool path_contains_node_modules(csview path) {
 
 // ---- Files ----
 
+// A referenced project's output (built or not) and its directories exist (tsc's
+// updateHostForUseSourceOfProjectReferenceRedirect), also when reached through a link in a node_modules
 static bool file_exists(State* me, csview path) {
-    return fs_is_reg_file(my resolver->fs, path);
+    if (fs_is_reg_file(my resolver->fs, path)) return true;
+    ModuleResolver* resolver = my resolver;
+    if (!resolver->redirects) return false;
+    if (project_redirects_source_of_output(resolver->redirects, path).size) return true;
+    if (!resolver->realpath || !path_contains_node_modules(path)) return false;
+    cstr real = real_path_lenient(resolver, path);
+    bool ret = cstr_size(&real) && project_redirects_source_of_output(resolver->redirects, cstr_sv(&real)).size;
+    cstr_drop(&real);
+    return ret;
 }
 
 static bool directory_exists(State* me, csview path) {
-    return fs_is_directory(my resolver->fs, path);
+    if (fs_is_directory(my resolver->fs, path)) return true;
+    ModuleResolver* resolver = my resolver;
+    if (!resolver->redirects) return false;
+    if (project_redirects_output_directory(resolver->redirects, path)) return true;
+    if (!resolver->realpath || !path_contains_node_modules(path)) return false;
+    cstr real = real_path_lenient(resolver, path);
+    bool ret = cstr_size(&real) && project_redirects_output_directory(resolver->redirects, cstr_sv(&real));
+    cstr_drop(&real);
+    return ret;
 }
 
 // tsc's tryFile(): with `moduleSuffixes`, "a.ts" is looked for as "a<suffix>.ts" for each suffix in order

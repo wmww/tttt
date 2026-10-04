@@ -30,6 +30,7 @@ core_files = files(
     'module_resolution.c',
     'load_pool.c',
     'tsconfig.c',
+    'project.c',
     'scope.c',
     'symbol_chain.c',
     'lib_features.c',
