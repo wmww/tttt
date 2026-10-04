@@ -1242,6 +1242,7 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         u32 len = 0;
         bool all_optional = true, any_member = false;
         u32 flags = 0;
+        u32 optional_parts = 0; // (bit i: stack_buf[i] came from an optional property)
         // (The members' own properties first, Object's and Function's only if none has one)
         bool own_only = true;
         again:
@@ -1253,6 +1254,7 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
             if (!part.found) continue;
             if (!ret.prop) ret.prop = part.prop;
+            if (part.flags & PROP_OPTIONAL) optional_parts |= 1u << len;
             stack_buf[len++] = part.type;
             // Only class members (properties, methods, accessors) have a say: a variable of a namespace or of
             // `typeof globalThis` is neither optional nor required (tsc's createUnionOrIntersectionProperty)
@@ -1267,6 +1269,18 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         }
         if (len) {
             ret.found = true;
+            // tsc intersects the members' getTypeOfSymbol, which includes an optional property's undefined: in
+            // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`.
+            // (When all are optional the result is optional and its readers add undefined themselves.)
+            bool optional_result = all_optional && any_member;
+            if (optional_parts && !optional_result && optional_adds_undefined()) {
+                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
+                for (u32 i = 0; i < len; i++) {
+                    if (optional_parts & (1u << i)) {
+                        stack_buf[i] = ty_union(me, (Ty const*[]){ stack_buf[i], undefined }, 2, nullptr, (TyList){0});
+                    }
+                }
+            }
             ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
             ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
         }
@@ -4088,11 +4102,20 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             Ty const* parts[16];
             u32 part_count = 0;
             bool all_optional = true;
+            u32 optional_parts = 0;
             for (u32 j = m; j < members.len && part_count < c_arraylen(parts); j++) {
                 Prop const* part = ty_get_prop(me, members.data[j], name);
                 if (!part) continue;
+                if (part->flags & PROP_OPTIONAL) optional_parts |= 1u << part_count;
                 parts[part_count++] = prop_type(me, part);
                 all_optional &= (part->flags & PROP_OPTIONAL) != 0;
+            }
+            // (An optional part's undefined counts when the property is required: see find_prop_in())
+            if (optional_parts && !all_optional && optional_adds_undefined()) {
+                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
+                for (u32 j = 0; j < part_count; j++) {
+                    if (optional_parts & (1u << j)) parts[j] = ty_union(me, (Ty const*[]){ parts[j], undefined }, 2, nullptr, (TyList){0});
+                }
             }
             FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0,
                 .type = part_count == 1 ? parts[0] : ty_intersection(me, parts, part_count, nullptr, (TyList){0}) };
