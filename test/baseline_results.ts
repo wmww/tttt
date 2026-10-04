@@ -67587,7 +67587,7 @@ const baselines = {
     },
     'unionTypePropertyAccessibility': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unionTypeReadonly': {

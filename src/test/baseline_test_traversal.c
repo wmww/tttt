@@ -256,6 +256,7 @@ typedef struct PropSymbolInfo {
     // (tsc's symbol: the declared one, or an instantiation of it, told apart by type: instantiateSymbol keeps the
     // declared symbol when its type has no type variables, the same type here)
     struct { Span decl; Ty const* type; TyMapper const* mapper; } seen[16];
+    bool non_public; // A member property is private or protected
     u32 seen_count;
 } PropSymbolInfo;
 
@@ -280,6 +281,10 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             }
         }
         bool keep = inner.found && (object->kind == TY_INTERSECTION || !inner.missing_in_member);
+        // (A union of distinct private or protected properties with no declaration in common has no property: tsc's
+        // createUnionOrIntersectionProperty, getCommonDeclarationsOfSymbols)
+        bool inaccessible = !intersection && inner.non_public && inner.seen_count > 1 && inner.non_uniform;
+        if (inaccessible) keep = false;
         if (keep) {
             if (!info->found) {
                 info->found = true;
@@ -306,7 +311,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             if (!repeated) {
                 for_each (k, vec_span, &inner.declarations) vec_span_push(&info->declarations, *k);
             }
-        } else if (object->kind == TY_UNION || !inner.found) {
+        } else if ((object->kind == TY_UNION && !inaccessible) || !inner.found) {
             // (An intersection without the property is a member of an outer union that lacks it)
             info->missing_in_member = true;
         }
@@ -351,6 +356,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         info->non_uniform = true;
     }
     info->member_count++;
+    info->non_public |= (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) != 0;
     // (tsc's instantiateSymbol keeps the declared symbol when its type has no type variables: the same type here)
     Ty const* type = prop_type(checker, prop);
     TyMapper const* mapper = prop->mapper && (prop == root || type != prop_type(checker, root)) ? prop->mapper : nullptr;
