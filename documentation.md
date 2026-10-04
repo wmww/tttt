@@ -230,6 +230,13 @@ The AST is now in it's finished state, so we can traverse it looking for type er
 initializeTypeChecker creates (Array, Object, Function, String, ..., RegExp) in tsc's order: type ids decide the order
 of printed union members, so creation order is part of the output.
 
+After its files are checked, each checker runs `declaration_diagnostics_check()` (`ty/declaration_diagnostics.c`) on
+them with `declaration`/`composite`: the diagnostics tsc's declaration transformer reports, without emitting anything
+(plan 40). It walks what a `.d.ts` would contain and ports the syntactic type builder's decisions; so far the
+isolatedDeclarations TS9xxx. They go into an ErrorCtx of their own, merged after comment directives (tsc's
+getDeclarationDiagnostics is apart from the checker's), and the CLI drops them with noEmit/noEmitOnError when anything
+else was reported, like tsc's emitFilesAndReportErrors.
+
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).
 
