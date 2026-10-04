@@ -3058,7 +3058,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         }
 
         case TYPE_INFERRED: {
-            if (!node->inferred->symbol_ref) return ty_intrinsic(me, TY_ERROR);
+            // (Outside a conditional's extends clause, TS1338: an anonymous type parameter, tsc's
+            // bindAnonymousDeclaration)
+            if (!node->inferred->symbol_ref) return ty_synthetic_type_param(me, node->inferred->name.sv);
             Ty const* param = ty_type_param(me, node->inferred->symbol_ref);
             param->param.state->is_infer = true;
             return param;
