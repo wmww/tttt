@@ -12563,7 +12563,7 @@ const baselines = {
     'exportAsNamespaceConflict': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'exportAsNamespace_augment': {
         errors: false,
@@ -21763,7 +21763,7 @@ const baselines = {
     'moduleAugmentationWithNonExistentNamedImport': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'moduleAugmentationsBundledOutput1': {
         errors: true,
@@ -53912,7 +53912,7 @@ const baselines = {
     },
     'unicodeEscapesInJsxtags': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'allowImportingTsExtensions(moduleresolution=bundler)': {

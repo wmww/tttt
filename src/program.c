@@ -2164,6 +2164,7 @@ void program_resolve_names(Program* me) {
         scope_check_export_merges(source->scope, block_span(&source->ast));
         if (source->is_module && !source->is_js) scope_check_duplicate_exports(source->scope);
     }
+    binder_declare_global_augmentations(my binder);
     binder_link_global_expandos(my binder);
     program_check_builtin_global_names(me);
     binder_check_ambient_module_exports(my binder, my errs);

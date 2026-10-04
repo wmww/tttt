@@ -499,6 +499,12 @@ typedef struct Binder {
     NamespaceDecl** augmentations; // malloc'd
     u32 augmentation_count;
     u32 augmentation_cap;
+    // `declare global {}` blocks in modules, in declaration order: their declarations go into the globals after every
+    // file's (tsc's initializeTypeChecker merges global augmentations after the files' locals), see
+    // binder_declare_global_augmentations()
+    NamespaceDecl** global_augmentations; // malloc'd
+    u32 global_augmentation_count;
+    u32 global_augmentation_cap;
     // Locals scope_check_export_merges() leaves to binder_link(): their alias declarations' spaces need the target
     struct PendingExportMerge* pending_export_merges; // malloc'd
     u32 pending_export_merge_count;
@@ -543,6 +549,9 @@ void binder_resolve_remaining_aliases(Binder* me);
 void binder_link_global_expandos(Binder* me);
 // A `declare module "m" {}` in a module, whose declarations binder_link() merges into "m"
 void binder_add_augmentation(Binder* me, NamespaceDecl* decl);
+// A `declare global {}` in a module, declared by binder_declare_global_augmentations() once every file is
+void binder_defer_global_augmentation(Binder* me, NamespaceDecl* decl);
+void binder_declare_global_augmentations(Binder* me);
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags);
 Symbol* binder_new_module_symbol(Binder* me, SourceFile* file);
 // `globalThis`: a namespace whose exports are the globals

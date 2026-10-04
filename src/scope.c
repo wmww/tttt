@@ -127,6 +127,7 @@ void binder_destroy(Binder* me) {
     free(my symbols);
     free(my pattern_modules);
     free(my augmentations);
+    free(my global_augmentations);
     free(my pending_not_found);
     free(my pending_export_merges);
     if (my discarded_errs) {
@@ -2759,6 +2760,18 @@ PortItem const* symbol_type_only_declaration(Symbol const* me) {
 }
 
 // Module augmentations (tsc's mergeModuleAugmentation)
+
+void binder_defer_global_augmentation(Binder* me, NamespaceDecl* decl) {
+    if (my global_augmentation_count == my global_augmentation_cap) {
+        my global_augmentation_cap = my global_augmentation_cap ? my global_augmentation_cap * 2 : 4;
+        my global_augmentations = realloc(my global_augmentations, sizeof(NamespaceDecl*) * my global_augmentation_cap);
+    }
+    my global_augmentations[my global_augmentation_count++] = decl;
+}
+
+void binder_declare_global_augmentations(Binder* me) {
+    for (u32 i = 0; i < my global_augmentation_count; i++) namespace_decl_add_contents(my global_augmentations[i]);
+}
 
 void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {
     if (my augmentation_count == my augmentation_cap) {

@@ -505,6 +505,15 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     my inner_scope->export_context = my inner_scope->ambient && !block_has_export_declarations(&my contents);
     if (my is_ambient_module && my is_augmentation) my inner_scope->export_context = true;
 
+    // (A module's `declare global` merges into the globals after every file's own: tsc's initializeTypeChecker)
+    if (my is_global && scope->kind == SCOPE_MODULE) {
+        binder_defer_global_augmentation(scope->binder, me);
+        return;
+    }
+    namespace_decl_add_contents(me);
+}
+
+void namespace_decl_add_contents(NamespaceDecl* me) {
     block_add_names(&my contents, my inner_scope);
     scope_check_export_merges(my inner_scope, block_span(&my contents));
 }
