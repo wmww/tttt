@@ -561,6 +561,25 @@ src` finds the code-side markers; every significant one has an entry here.
 - JS syntax errors (TS8xxx, `js_syntax_error()`) come from the parser; what tsc skips inside is erased after
   (`js_syntax_skip_since()`): every skipped construct needs its call. Node array spans run first to last element.
 
+## Declaration diagnostics (`ty/declaration_diagnostics.c`, plan 40)
+- No late painting yet: `statement_visible()` is exported / `export { x }`-named / script / ambient namespace. tsc
+  also emits (and so checks) a non-exported statement that a visible declaration names (isEntityNameVisible's
+  aliasesToMakeVisible), e.g. computedPropertiesNarrowed's TS9010 on `let u = Symbol()` used as `[u]`. Stage 2 ports
+  isSymbolAccessible; then this becomes "visible or late painted".
+- The node builder's re-entry is ported in two spots only: an expando variable's function initializer
+  (`report_variable`, tsc prints the checker type and its signature goes through the syntactic builder again) and
+  string/number/symbol-named class methods (`check_class`, createLateBoundIndexSignatures, ignoring a class's explicit
+  index signature that would suppress it). In general tsc re-runs the builder for every signature/property declared
+  in the file that a printed fallback type mentions (`export const x = localFn` also checks localFn's return type).
+  Stage 2's printer tracker (`DeclTracker` in TyDisplay) is where that belongs, not more special cases here.
+- `is_optional_parameter` ignores getMinArgumentCount's trailing `void` parameters; `Place.contextual` is only set
+  through type assertions (the builder never descends into calls or JSX, the other isContextuallyTyped ancestors).
+- `declaration_diagnostics_wanted`: isSourceFileFromExternalLibrary is "loaded by an import and the path has
+  `node_modules/`"; JavaScript is skipped entirely (reportInferenceFallback ignores JS; with allowJs tsc would still
+  report the transformer's own TS9020/TS9023/TS9038 there, but isolatedDeclarations + allowJs is TS5053 anyway).
+- TS9026 (an import an augmentation needs) and TS9039 (trackExistingEntityName) aren't reported: both need symbol
+  accessibility (stage 2).
+
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
 - `path_is_drive_rooted` (`module_resolution.h`): a DOS drive path (`c:/x`) is a directory `c:` of the current
   directory everywhere (the mock fs, canonical paths, `join_rooted`/`option_path` resolve it against the cwd), what

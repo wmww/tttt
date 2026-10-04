@@ -13,3 +13,6 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
 
 - (triage 2026-09-29, group A) `test/probes/triage/pick_key_inference.ts`: tsc's TS2353 excess-property error on an
   object literal against `Pick<S, keyof S>` is missing (predates the Pick K inference fix).
+- (plan 40 stage 1, 2026-10-04) `export function f3() { return; return 1; }`: tsc's types baseline says
+  `f3 : () => number`, tttt `() => 1 | undefined` (the unreachable second return, or the bare return's undefined).
+- (plan 40 stage 1) `isolatedDeclarationErrorsAugmentation` also fails its types component, unrelated to TS9026.

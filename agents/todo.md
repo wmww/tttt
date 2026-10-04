@@ -6,8 +6,8 @@ since this file was written), the next session is insights, whatever is left her
 triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus numbers
 (`./realworld.py --corpus X` for every pinned corpus), `./instrcount.sh` and a commit.
 
-1. **Plan 40 stage 1** (execution): the declaration-diagnostics walk and gate, isolatedDeclarations TS9xxx. tsc's
-   `src/compiler` and valibot must stay 0: they are the oracle that matters more than the 17 tests.
+1. Done (2026-10-04, one session, 4 commits): plan 40 stage 1, suite 12354 -> 12366, 0 lost, tsc/valibot at 0, every
+   corpus unchanged. Leftovers for stage 2 are in the plan. `instrcount.sh` falls back to callgrind (perf blocked).
 2. **Plan 40 stage 2** (execution): accessibility (TS4xxx, TS2527, TS4094, TS7056). nest, drizzle, tsc, valibot at 0,
    0 lost among the passing declaration tests. If it overruns, the overrun comes out of entry 9.
 3. **Plan 41 stage 1** (execution): references, `-p`/`-b` semantics, pin `tsc-src`; the scenario tests mined from tsc's

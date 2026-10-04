@@ -95,14 +95,21 @@ corpus only): the perf numbers there flatter tttt until this lands. The suite ha
   related-info selection.
 
 ## Stages
-### Stage 1: the walk and isolatedDeclarations (1 session)
-The file walk and gate, then TS9xxx. Tests: the 17 (`./failstats.py --code TS9007` etc.; isolatedDeclarationErrors*,
-isolatedDeclarationLazySymbols, isolatedDeclarationsAddUndefined/AllowJs, computedPropertiesNarrowed,
-declarationEmitIsolatedDeclarationErrorNotEmittedForNonEmittedFile whose spurious TS2536 is a separate bug,
-jsDeclarations* TS9005/TS9006 which are JS declaration-emit, maybe leave). Must stay 0: `./realworld.py` (tsc's
-compiler: the strongest oracle there is for this) and `--corpus valibot`. The spurious TS7032/TS7010 in
-isolatedDeclarationErrorsClasses/Objects are plain checker bugs, worth fixing on the way.
+### Stage 1: the walk and isolatedDeclarations: DONE (2026-10-04)
+`src/ty/declaration_diagnostics.c`: the transformer's walk (visible statements, emitted members, written types), a port
+of the syntactic builder's decisions, the TS9xxx messages and related info, the transformer's TS9020/TS9023/TS9038.
+Runs in `check_share()` per file into a per-checker ErrorCtx merged after comment directives; the CLI drops them with
+noEmit/noEmitOnError when anything else was reported (`program_declaration_diagnostics_cli()`). Suite +12
+(12354 -> 12366, also TS7032 for object literal setters, TS7008/TS7010 for computed interface members, import type
+arguments unchecked), tsc's compiler and valibot at 0, callgrind +0.03% / +0.14% on them. Three probes of ~80
+declarations matched tsc exactly. Left for stage 2 (all need symbol accessibility, see hacks.md "Declaration
+diagnostics"): late painting (computedPropertiesNarrowed), TS9026 (isolatedDeclarationErrorsAugmentation, which also
+fails types), TS9039, the general node-builder re-entry. Not this plan: jsDeclarations* TS9005/TS9006 (JS declaration
+emit, symbolTableToDeclarationStatements).
 ### Stage 2: accessibility (1-2 sessions)
+Start from stage 1's walk: `check_written_type()` already visits every written type of an emitted declaration (add the
+entity-name checks there), `statement_visible()` is where late painting goes, and `Place`/`Near` carry what the
+diagnostic-by-kind table needs.
 The isSymbolAccessible family, the diagnostic-by-kind table, written types first, then the printer's tracker for
 inferred types (TS4023/4025/4032/4081/4118, TS4094, TS2527, TS5088, TS7056). Tests: declarationEmitComputedProperty
 NameSymbol1/2, declarationEmitReadonlyComputedProperty, declarationEmitVarInElidedBlock, globalThisDeclarationEmit,
