@@ -8028,12 +8028,12 @@ const baselines = {
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExactOptionalPropertyTypesNodeNotReused(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExpandoPropertyPrivateName': {
         errors: true,
@@ -64143,7 +64143,7 @@ const baselines = {
     'mappedTypeErrors': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mappedTypeErrors2': {
         errors: true,

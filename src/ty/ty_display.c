@@ -2121,7 +2121,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // still says the same), or the type assertion of an object literal's
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
-        if (origin->decl->template_of && prop->decl->mapped_from) {
+        bool mapped_from = origin->decl->template_of && prop->decl->mapped_from;
+        if (mapped_from) {
             origin = prop->decl->mapped_from;
             while (origin->target) origin = origin->target;
         }
@@ -2158,7 +2159,14 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             shown = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
         }
         bool optional = (prop->flags & PROP_OPTIONAL) != 0;
-        if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
+        // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
+        // union, like a parameter's, see annotation_plus_undefined())
+        if (mapped_from && annotation && !d.reused && d.underline && d.enclosing && annotation_plus_undefined(me, annotation, shown)) {
+            display_node(me, d, annotation);
+            out(reused_if(d, false), c_sv(" | undefined"));
+        }
+        else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
+        else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
         else if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, type, optional)) display_node(me, d, annotation);
         else display_annotated(me, d, annotation, shown, optional);
         out_lit(d, "; ");
