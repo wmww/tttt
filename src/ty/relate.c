@@ -1703,7 +1703,8 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     copy->ret_state = LAZY_STATE_DONE;
     copy->predicate = nullptr;
     copy->predicate_done = true;
-    return ty_is_related(me, ty_signature_type(me, source), ty_signature_type(me, copy), TY_RELATION_ASSIGNABLE);
+    Ty const* source_type = ty_signature_type(me, source);
+    return ty_is_related(me, source_type, ty_signature_type(me, copy), TY_RELATION_ASSIGNABLE);
 }
 
 // Instantiations of the same generic type or type literal, whose signatures pair up one to one
@@ -3253,7 +3254,8 @@ static Ternary generic_mapped_target_related(
         Ty const* both[2] = { target_keys, source_keys };
         Ty const* common = ty_intersection(me, both, 2, nullptr, (TyList){0});
         if (common->flags & TYF_NEVER) return TERNARY_FALSE;
-        return is_related_to(me, st, ty_indexed(me, source, common), ty_instantiate(me, template, keyed), report);
+        Ty const* indexed = ty_indexed(me, source, common);
+        return is_related_to(me, st, indexed, ty_instantiate(me, template, keyed), report);
     }
     if (mapped->optional > 0) {
         Ty const* both[2] = { target_keys, source_keys };
@@ -3276,13 +3278,17 @@ static Ternary generic_mapped_target_related(
             TyMapper const* mapper = ty_mapper_new(
                 me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &keys, .len = 1 }
             );
-            related = is_related_to(me, st, ty_indexed(me, source, keys), ty_instantiate(me, template, mapper), report);
+            Ty const* indexed = ty_indexed(me, source, keys);
+            related = is_related_to(me, st, indexed, ty_instantiate(me, template, mapper), report);
         }
         ty_buf_drop(&known);
         return related;
     }
     if (!is_related_to(me, st, target_keys, source_keys, false)) return TERNARY_FALSE;
-    if (keyed) return is_related_to(me, st, ty_indexed(me, source, target_keys), ty_instantiate(me, template, keyed), report);
+    if (keyed) {
+        Ty const* indexed = ty_indexed(me, source, target_keys);
+        return is_related_to(me, st, indexed, ty_instantiate(me, template, keyed), report);
+    }
     if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.index == mapped->type_param) {
         return is_related_to(me, st, source, template->indexed.object, report);
     }
@@ -3290,7 +3296,8 @@ static Ternary generic_mapped_target_related(
     TyMapper const* mapper = ty_mapper_new(
         me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &mapped->constraint, .len = 1 }
     );
-    return is_related_to(me, st, ty_indexed(me, source, target_keys), ty_instantiate(me, template, mapper), report);
+    Ty const* indexed = ty_indexed(me, source, target_keys);
+    return is_related_to(me, st, indexed, ty_instantiate(me, template, mapper), report);
 }
 
 // What can be written to `T[K]` whatever T and K turn out to be (tsc's structuredTypeRelatedTo with AccessFlags.Writing):
@@ -4019,10 +4026,12 @@ static Ternary identity_structured(Checker* me, RelationState* st, Ty const* sou
             result = is_related_to(me, st, source->conditional.check, target->conditional.check, false);
             if (result) result &= is_related_to(me, st, source->conditional.extends, target->conditional.extends, false);
             if (result) {
-                result &= is_related_to(me, st, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true), false);
+                Ty const* source_branch = ty_conditional_branch(me, source, true);
+                result &= is_related_to(me, st, source_branch, ty_conditional_branch(me, target, true), false);
             }
             if (result) {
-                result &= is_related_to(me, st, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false), false);
+                Ty const* source_branch = ty_conditional_branch(me, source, false);
+                result &= is_related_to(me, st, source_branch, ty_conditional_branch(me, target, false), false);
             }
             return result;
         case TY_TEMPLATE_LITERAL: {
@@ -4504,7 +4513,10 @@ static Ternary structured_related_members(
                         Ty const* source_true = ty_instantiate(me, ty_conditional_branch(me, source, true), mapper);
                         related &= is_related_to(me, st, source_true, ty_conditional_branch(me, target, true), false);
                     }
-                    if (related) related &= is_related_to(me, st, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false), false);
+                    if (related) {
+                        Ty const* source_false = ty_conditional_branch(me, source, false);
+                        related &= is_related_to(me, st, source_false, ty_conditional_branch(me, target, false), false);
+                    }
                     if (related) return related;
                 }
             }
@@ -5883,7 +5895,8 @@ static Ternary signatures_identical_in(
         if (!source_predicate->type || !target_predicate->type) return TERNARY_FALSE;
         return result & sig_types_compare(me, st, source_predicate->type, target_predicate->type, partial);
     }
-    return result & sig_types_compare(me, st, signature_return_type(me, source), signature_return_type(me, target), partial);
+    Ty const* source_return = signature_return_type(me, source);
+    return result & sig_types_compare(me, st, source_return, signature_return_type(me, target), partial);
 }
 
 static bool signatures_identical(

@@ -2825,7 +2825,8 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
                 }
             }
             if (!first || !span_valid(first->key.span) || first->key.span.source->is_stdlib) continue;
-            check_subsequent_property(me, i->key.span, member_declared_type(me, first), member_declared_type(me, i), first->key.span, errs);
+            Ty const* first_type = member_declared_type(me, first);
+            check_subsequent_property(me, i->key.span, first_type, member_declared_type(me, i), first->key.span, errs);
         }
     }
     for (u32 l = 0; l < list_count; l++) {

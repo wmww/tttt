@@ -333,7 +333,8 @@ static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body,
 
 // The instantiation of a generic type alias (canonical) with these type arguments, as `A<args>` written would be
 Ty const* ty_alias_instance(Checker* me, Symbol const* decl, TyList args) {
-    return alias_instance(me, decl, ty_declared_type_of(me, decl), ty_alias_type_params(me, decl), args);
+    Ty const* declared = ty_declared_type_of(me, decl);
+    return alias_instance(me, decl, declared, ty_alias_type_params(me, decl), args);
 }
 
 TyList ty_alias_type_params(Checker* me, Symbol const* decl) {

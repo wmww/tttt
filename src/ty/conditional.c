@@ -323,7 +323,8 @@ static bool definitely_related(Checker* me, Ty const* check_type, Ty const* exte
             me, (TyList){ .data = params.data, .len = params.len }, (TyList){ .data = restrictive, .len = params.len }
         );
         free(restrictive);
-        ret = ty_is_related(me, ty_instantiate(me, check_type, mapper), ty_instantiate(me, extends, mapper), TY_RELATION_ASSIGNABLE);
+        Ty const* instantiated_check = ty_instantiate(me, check_type, mapper);
+        ret = ty_is_related(me, instantiated_check, ty_instantiate(me, extends, mapper), TY_RELATION_ASSIGNABLE);
     }
     ty_buf_drop(&params);
     return ret;

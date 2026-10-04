@@ -58,6 +58,13 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   ...>`, tsc without the parentheses (expect-type).
 - reactDefaultPropsInferenceSuccess: the TS6500 related info prints `keyof Props` where tsc prints `"when" | "error"`.
 
+- **Type creation order is union order.** tsc sorts union members by type id, so tttt has to make types in tsc's order.
+  Known rules now ported: the class check makes the class's value type first, type parameters are made in
+  checkTypeParameter order (constraint references first), type literals when the check walk meets them, annotations
+  before initializers, `{}` is one early type (emptyTypeLiteralType). C's unspecified argument evaluation order is a
+  trap: `union_of(me, make_a(), make_b())` makes b first under GCC. `./argorder.py` lists such calls (the remaining
+  ones are relation-only or deliberate).
+
 ## Names and specifiers
 - enumAssignmentCompat6 (passes errors): in f.ts, a function-local `enum DiagnosticCategory` shadows the file's exported
   one; tsc prints the exported one as `import("f").DiagnosticCategory` in the types baseline (not accessible by name

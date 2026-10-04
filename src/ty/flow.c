@@ -914,7 +914,8 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
             return nullptr; // TODO: the rest of a tuple or object
     }
     if (ret && path->default_value) {
-        ret = union_of(me, type_with_facts(me, ret, TF_NE_UNDEFINED), ty_flow_expr_type(me, path->default_value));
+        Ty const* defined = type_with_facts(me, ret, TF_NE_UNDEFINED);
+        ret = union_of(me, defined, ty_flow_expr_type(me, path->default_value));
     }
     return ret;
 }
@@ -967,7 +968,10 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     Ty const* ret = object->flags & TYF_ANY ? nullptr : ty_access_reading(me, object, key);
     if (!ret) return ty_binding_assigned_type(me, binding);
     // (tsc's getTypeWithDefault)
-    if (binding->default_value) ret = union_of(me, type_with_facts(me, ret, TF_NE_UNDEFINED), ty_flow_expr_type(me, binding->default_value));
+    if (binding->default_value) {
+        Ty const* defined = type_with_facts(me, ret, TF_NE_UNDEFINED);
+        ret = union_of(me, defined, ty_flow_expr_type(me, binding->default_value));
+    }
     return ret;
 }
 
@@ -1851,9 +1855,10 @@ static Ty const* narrow_by_type_name(Checker* me, Ty const* type, csview name) {
     if (csview_equals(name, "symbol")) return narrow_by_type_facts(me, type, ty_intrinsic(me, TY_ES_SYMBOL), TF_TYPEOF_EQ_SYMBOL);
     if (csview_equals(name, "object")) {
         if (type->flags & TYF_ANY) return type;
-        return union_of(me,
-            narrow_by_type_facts(me, type, ty_intrinsic(me, TY_NON_PRIMITIVE), TF_TYPEOF_EQ_OBJECT),
-            narrow_by_type_facts(me, type, ty_intrinsic(me, TY_NULL), TF_EQ_NULL));
+        // (In this order: C leaves the order arguments are evaluated in open, and which type is made first decides
+        // union order, `(T & object) | (T & null)`)
+        Ty const* object = narrow_by_type_facts(me, type, ty_intrinsic(me, TY_NON_PRIMITIVE), TF_TYPEOF_EQ_OBJECT);
+        return union_of(me, object, narrow_by_type_facts(me, type, ty_intrinsic(me, TY_NULL), TF_EQ_NULL));
     }
     if (csview_equals(name, "function")) {
         if (type->flags & TYF_ANY) return type;

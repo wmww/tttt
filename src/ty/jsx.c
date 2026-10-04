@@ -267,7 +267,8 @@ static void check_string_literal_tag(Checker* me, JsxElement const* element, Ty 
     }
     if (all.len == names.len && all.len) {
         Ty const* each = all.len == 1 ? all.data[0] : ty_intersection(me, all.data, all.len, nullptr, (TyList){0});
-        Ty const* props = intersect(me, ty_jsx_type(me, element, c_sv("IntrinsicAttributes")), managed_attributes(me, element, each));
+        Ty const* intrinsic = ty_jsx_type(me, element, c_sv("IntrinsicAttributes"));
+        Ty const* props = intersect(me, intrinsic, managed_attributes(me, element, each));
         Ty const* source = ty_check_expr(me, &element->attributes, props);
         ty_check_assignable_expr(me, source, props, element->tag_name.inner_span, &element->attributes, errs);
     }

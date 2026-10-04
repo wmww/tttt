@@ -50,7 +50,8 @@ static TyIterationTypes const no_iteration_types;
 Atom const* ty_well_known_symbol_name(Checker* me, char const* name) {
     Symbol const* symbol = program_get_global(my program, c_sv("Symbol"), SYMBOL_VALUE);
     if (!symbol) return nullptr;
-    Ty const* key = ty_access(me, ty_type_of_symbol(me, symbol), ty_string_literal(me, csview_from(name)));
+    Ty const* object = ty_type_of_symbol(me, symbol);
+    Ty const* key = ty_access(me, object, ty_string_literal(me, csview_from(name)));
     return key && (key->flags & TYF_UNIQUE_ES_SYMBOL) ? key->literal.string : nullptr;
 }
 
@@ -101,9 +102,9 @@ static TyIterationTypes const* combine(Checker* me, TyIterationTypes const* cons
     }
     TyIterationTypes const* ret = &no_iteration_types;
     if (yields.len) {
-        ret = make_types(me,
-            ty_union(me, yields.data, yields.len, nullptr, (TyList){0}),
-            ty_union(me, return_parts.data, return_parts.len, nullptr, (TyList){0}),
+        Ty const* yield = ty_union(me, yields.data, yields.len, nullptr, (TyList){0});
+        Ty const* returned = ty_union(me, return_parts.data, return_parts.len, nullptr, (TyList){0});
+        ret = make_types(me, yield, returned,
             ty_intersection(me, nexts.data, nexts.len, nullptr, (TyList){0})
         );
     }
@@ -289,9 +290,9 @@ static TyIterationTypes const* iteration_types_of_method(Checker* me, Ty const* 
         else if (iterator && prop->parent == iterator->declared.symbol) owner = iterator;
         if (owner && owner->declared.type_params.len == 3) {
             sig_list_drop(&sigs);
-            return make_types(me,
-                param_at_prop(me, prop, owner, 0),
-                param_at_prop(me, prop, owner, 1),
+            Ty const* first = param_at_prop(me, prop, owner, 0);
+            Ty const* second = param_at_prop(me, prop, owner, 1);
+            return make_types(me, first, second,
                 which == METHOD_NEXT ? param_at_prop(me, prop, owner, 2) : nullptr
             );
         }
@@ -378,7 +379,8 @@ TyIterationTypes const* ty_iteration_types_of_iterator(Checker* me, Ty const* ty
 // makes Awaited<T> of a generic T)
 static TyIterationTypes const* resolve_types(Checker* me, TyIterationTypes const* types, bool async) {
     if (!async) return types;
-    return make_types(me, ty_awaited(me, types->yield_type), ty_awaited(me, types->return_type), types->next_type);
+    Ty const* yield = ty_awaited(me, types->yield_type);
+    return make_types(me, yield, ty_awaited(me, types->return_type), types->next_type);
 }
 
 // tsc's getIterationTypesOfIterableFast + Slow for one of the resolvers

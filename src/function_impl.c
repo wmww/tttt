@@ -699,7 +699,8 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
                 error_ctx_error_d(errs, predicate->name, 1229, "A type predicate cannot reference a rest parameter.");
             } else if (predicate->has_type && span_valid(predicate->type_span)) {
                 Checker* checker = current_checker;
-                ty_check_type_predicate(checker, ty_from_node(checker, &predicate->type, (LowerCtx){ .generic = true }),
+                Ty const* predicate_type = ty_from_node(checker, &predicate->type, (LowerCtx){ .generic = true });
+                ty_check_type_predicate(checker, predicate_type,
                     ty_binding_type(checker, &arg->initializer.binding, (LowerCtx){ .generic = true }), predicate->type_span,
                     errs);
             }

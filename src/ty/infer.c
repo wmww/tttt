@@ -1328,8 +1328,10 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         if (source->kind == TY_CONDITIONAL) {
             infer_from(me, inf, source->conditional.check, target->conditional.check);
             infer_from(me, inf, source->conditional.extends, target->conditional.extends);
-            infer_from(me, inf, ty_conditional_branch(me, source, true), ty_conditional_branch(me, target, true));
-            infer_from(me, inf, ty_conditional_branch(me, source, false), ty_conditional_branch(me, target, false));
+            Ty const* source_true = ty_conditional_branch(me, source, true);
+            infer_from(me, inf, source_true, ty_conditional_branch(me, target, true));
+            Ty const* source_false = ty_conditional_branch(me, source, false);
+            infer_from(me, inf, source_false, ty_conditional_branch(me, target, false));
         } else {
             // To both branches, the ones that aren't naked type parameters first, the naked ones less directly (tsc's
             // inferToConditionalType + inferToMultipleTypesWithPriority)

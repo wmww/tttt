@@ -673,7 +673,8 @@ bool ty_infer_from_template(Checker* me, Ty const* source, Ty const* target, Ty 
         for (u32 i = 0; i < len; i++) {
             Ty const* s = source->template_literal.types.data[i];
             Ty const* t = target->template_literal.types.data[i];
-            bool fits = ty_is_related(me, base_constraint_or_self(me, s), base_constraint_or_self(me, t), TY_RELATION_ASSIGNABLE);
+            Ty const* source_constraint = base_constraint_or_self(me, s);
+            bool fits = ty_is_related(me, source_constraint, base_constraint_or_self(me, t), TY_RELATION_ASSIGNABLE);
             out[i] = fits ? s : string_like_of(me, s);
         }
         return true;

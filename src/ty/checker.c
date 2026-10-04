@@ -2399,7 +2399,8 @@ Ty const* ty_actual_type_variable(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INDEXED &&
         (ty->indexed.object->kind == TY_SUBSTITUTION || ty->indexed.index->kind == TY_SUBSTITUTION)
     ) {
-        return ty_indexed(me, ty_actual_type_variable(me, ty->indexed.object), ty_actual_type_variable(me, ty->indexed.index));
+        Ty const* object = ty_actual_type_variable(me, ty->indexed.object);
+        return ty_indexed(me, object, ty_actual_type_variable(me, ty->indexed.index));
     }
     return ty;
 }
