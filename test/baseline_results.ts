@@ -20713,7 +20713,7 @@ const baselines = {
     'literalFreshnessPropagationOnNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literalIntersectionYieldsLiteral': {
         errors: true,

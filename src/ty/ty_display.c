@@ -2373,8 +2373,12 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
                 }
             }
         }
+        // (A member that is itself a union is one in an origin, `(string | false) | (string | false)[]` of a hidden
+        // local alias: tsc's printer parenthesizes a union constituent of a union)
+        bool union_member = t->kind == TY_UNION && !(t->flags & TYF_BOOLEAN) && !ty_is_enum_union(t) &&
+            !(t->composite.origin && t->composite.origin->kind == TY_KEYOF);
         bool parens = is_function_like(me, d, t) || (!shows_alias(d, t) && (t->kind == TY_CONDITIONAL || t->kind == TY_INTERSECTION ||
-            (t->kind == TY_UNION && t->composite.origin && t->composite.origin->kind == TY_INTERSECTION)));
+            union_member));
         display_parenthesized_if(me, qualified_if(d, collisions, i), t, parens);
     }
     free(collisions);
