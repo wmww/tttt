@@ -56,3 +56,11 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   property declarations by (declaration, type, mapper)) are recomputed for display (hacks.md). It's display-only and
   passes 290 symbols components, but it is a parallel model of tsc's binder. Decide whether member Symbols (which plan
   42's lazily resolved members may want anyway) should replace it, or whether it's an acceptable harness cost.
+- (plan 41 stage 3, typescript-eslint, 2026-10-04) `base_constraint()` (relate.c) has no memo; tsc caches
+  getResolvedBaseConstraint per type. Making a generic union/intersection check type distribute its constraint
+  (2e5558fe, tsc's getConstraintOfDistributiveConditionalType) cost bulletproof-react +4% instructions (1.636 -> 1.704
+  G, after caching the distributive constraint at depth 0): React's NonNullable `T & {}` check types re-run base
+  constraints each time. A per-type memo (careful with the depth cutoff and constraints being resolved) likely wins
+  more than that back everywhere.
+- (plan 41 stage 3) realworld.py prints `../../home/ai/tttt/thirdparty/corpora/...` paths for corpora in a worktree
+  (the realpath of the symlinked corpora relative to the worktree): cosmetic, but long.

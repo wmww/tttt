@@ -40,6 +40,21 @@ a cross-program file cache (parsing is no longer the cost), parallel name resolu
 0.58 s summed, serial: vision's later list; it helps every corpus too). `--time` split now (J=1, summed): resolve 583,
 typecheck 441, load+parse 316, free 217, libs 74 ms.
 
+**Stage 3, typescript-eslint done** (2026-10-04, one session; the 11 tsc-src checker bugs are another agent's): corpus
+**`typescript-eslint`** pinned (v8.57.2, 1bf86c9f, the last commit before TypeScript 6; `./realworld.py --corpus
+typescript-eslint` runs `tttt -b` at its root solution: 38 composite projects, nested per-package solutions,
+`${configDir}`, NodeNext, workspace packages through node_modules symlinks into `dist/*.d.ts`). ensure-corpora.sh's LINK
+field takes `workspace:GLOB`; the overlay has the two generated files (types' ast-spec.ts, the website's
+recent-blog-posts.json). tsc 5.8 -b on a /tmp copy: 0 errors, 21-23 s, 1.5-2.3 GB. **66 -> 0 diagnostics**, none of
+them the references mechanism (resolution through the workspace symlinks and the redirect worked first time): 30
+grammar errors of skipLibCheck'd .d.ts files, 137 declaration diagnostics (TS4082/TS4023 through an `export =`
+namespace merge, visible once eslint-plugin had no type errors) and 9 checker bugs (partial mapped types, async
+`Promise<void>` return context, Omit inference, top signatures, distributive constraints of `T & {}`, readonly through
+a narrowed `this`, `switch (typeof x?.y)`, fresh `{}` binding defaults, overload failure's longest candidate). tttt
+-b 3.0 s / 650-700 MB (`--build-jobs 1` 3.4-3.8 s / 400 MB) on a loaded machine; summed phases at J=1: resolve names
+1.03 s, load+parse 0.74, typecheck 0.69, free 0.47, libs 0.21 (38 programs: per-program name resolution of reference
+sources is again the cost, stage 2's unfinished item). Not in bench.sh/instrcount.sh (tsc -b alone is 21 s).
+
 ## Why
 tttt ignores `references`. Two kinds of real projects use them:
 - **Monorepos built with `tsc -b`**: a solution tsconfig (`"files": []` + `references`), one composite project per

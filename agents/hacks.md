@@ -209,7 +209,9 @@ src` finds the code-side markers; every significant one has an entry here.
   `key.expr.owned` + `ref` on interface members; `LAZY_TYPE_FUNCTION` memoises the already interned
   `ty_function_type()`.
 - `ty_binding_assigned_type`: not memoised; a default replaces only an all-undefined element (tsc: undefined removed
-  first). `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop `[x = x]`,
+  first). tsc unions the element with the default (subtype reduction) and widens after; tttt widens the default first,
+  then reduces, except that a fresh object literal default is reduced fresh and widened in place (`[{ flag } = {}]`):
+  other defaults whose freshness matters to the reduction would still differ. `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop `[x = x]`,
   see `ty_binding_type`); `binding_element_implied_type` runs
   defaults under `flow_uncached`. `binding_element_context` includes index signatures (tsc's getTypeOfPropertyOfType
   doesn't).
@@ -234,6 +236,10 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_optional_param_type()`); tsc shows it in the signature too.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
+- `infer_from_object_types()`, a generic mapped target `{ [P in C]: T[P] }`: the source goes to T as if homomorphic
+  unless C is a conditional (Omit's `Exclude<keyof T, X>`, where tsc infers nothing). A union with literal keys
+  (`"a" | Exclude<keyof T, X>`) still takes that path, standing in for tsc's inference from the properties those keys
+  give (complicatedIndexesOfIntersectionsAreInferencable); tsc's inferToMappedType returns false for it.
 - `first_unfit_skipped_literal()` (`resolve_with_signatures`): tsc's SkipContextSensitive round still relates a
   context-sensitive object/array literal argument (its sensitive functions as anyFunctionType) to the parameter; tttt
   skips the whole argument in that round, and does the literal check only for non-generic overloads of a call with

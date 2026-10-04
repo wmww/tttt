@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Plan 41 stage 3: corpus typescript-eslint (2026-10-04)
+Suite 12712 -> 12712, 0 lost. **typescript-eslint** (`-b` at its root solution, 38 projects): 66 -> **0**
+diagnostics; tttt -b 3.03 s / 650-705 MB (best of 3, machine loaded by other agents; `--build-jobs 1` 3.4-3.8 s / 400
+MB); **tsc 5.8 -b 20.7-22.9 s / 1.5-2.3 GB** (from scratch on a /tmp copy); tsgo 7.0.2 -b fails it (TS 7
+differences), 5.4 s. Threads 1/4 byte-identical. Other corpora unchanged (webpack 6, xstate 8, drizzle 6, zod-root 55,
+tsc-src 12, rest 0); `./scenarios.py` 199/19/83. Callgrind c0da8315 -> end: tsc 4.711 -> 4.710, type-fest 3.223 ->
+3.211, valibot 5.056 -> 5.014, **react 1.636 -> 1.704 (+4.2%**: distributive constraints of `T & {}` check types,
+base_constraint() has no memo, triage), nest 1.269 -> 1.269, webpack 3.916 -> 3.912, zod 4.466 -> 4.470, xstate
+2.788 -> 2.771, drizzle 13.256 -> 13.264, vue 7.838 -> 7.832 G.
+
 ## Plan 41 stage 2: `-b` perf (2026-10-04, todo entry 4)
 Suite 12377 -> 12377, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, tsc-src 12, rest 0);
 `./scenarios.py` 199 / 19 / 83 skipped. **`-b thirdparty/tsc/src`** (best of 3, quiet machine): tttt **1.32 s / 785
