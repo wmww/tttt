@@ -98,32 +98,45 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
     if (my has_write_type) type_lookup_names(&my write_type, names, errs);
 }
 
+// A method signature (written as one: not a property of a function type)
+static bool interface_member_is_method_signature(InterfaceMember const* me) {
+    bool method = my key.tag == INTERFACE_KEY_NAME ? my key.name_is_member_function : my is_method;
+    return method && my type.tag == TYPE_CALLABLE;
+}
+
+Span interface_member_error_span(InterfaceMember const* me) {
+    Span at = my key.span;
+    if (!interface_member_is_method_signature(me)) return at;
+    FunctionImpl const* function = my type.callable->function;
+    if (span_valid(function->full_span) && function->full_span.source == at.source) {
+        const char* end = span_end_ptr(function->full_span);
+        const char* after = end;
+        while (*after == ' ' || *after == '\t') after++;
+        if (*after == ';' || *after == ',') end = after + 1;
+        if (end > span_start_ptr(at)) at = span_make(at.source, span_start_ptr(at), end);
+    }
+    return at;
+}
+
+// tsc's reportImplicitAny of a property signature, and of a method signature's return type
+static void interface_member_check_implicit_any(InterfaceMember const* me, ErrorCtx* errs) {
+    if (my implicit_any && compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js) {
+        error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
+    }
+    if (interface_member_is_method_signature(me)) {
+        function_impl_check_implicit_any_return(my type.callable->function, my key.span, interface_member_error_span(me), errs);
+    }
+}
+
 void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
-            // tsc's reportImplicitAny of a property signature, and of a method signature's return type
-            if (my implicit_any && compiler_options()->no_implicit_any && my key.span.source && !my key.span.source->is_js) {
-                error_ctx_error_d(errs, my key.span, 7008, "Member '", my key.span, "' implicitly has an 'any' type.");
-            }
-            // (A method signature's errors are at the whole signature, its `;` or `,` included: tsc's
-            // getErrorSpanForNode has no case for it)
-            Span at = my key.span;
-            bool method = my key.name_is_member_function && my type.tag == TYPE_CALLABLE;
-            if (method) {
-                FunctionImpl const* function = my type.callable->function;
-                if (span_valid(function->full_span) && function->full_span.source == at.source) {
-                    const char* end = span_end_ptr(function->full_span);
-                    const char* after = end;
-                    while (*after == ' ' || *after == '\t') after++;
-                    if (*after == ';' || *after == ',') end = after + 1;
-                    if (end > span_start_ptr(at)) at = span_make(at.source, span_start_ptr(at), end);
-                }
-            }
             // tsc's checkPropertySignature, checkMethodDeclaration
             if (!is_in_class && interface_member_is_private_name(me)) {
-                error_ctx_error_d(errs, at, 18016, "Private identifiers are not allowed outside class bodies.");
+                error_ctx_error_d(errs, interface_member_error_span(me), 18016,
+                    "Private identifiers are not allowed outside class bodies.");
             }
-            if (method) function_impl_check_implicit_any_return(my type.callable->function, my key.span, at, errs);
+            interface_member_check_implicit_any(me, errs);
             break;
 
         case INTERFACE_KEY_INDEX: {
@@ -182,6 +195,7 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                 }
             }
             expr_typecheck_type_only_site(my key.expr.ref, errs);
+            if (!is_in_class) interface_member_check_implicit_any(me, errs);
             break;
 
         case INTERFACE_KEY_MAPPED:

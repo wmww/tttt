@@ -71,6 +71,11 @@ void program_typecheck(Program* me);
 // Call it while loading
 void program_set_checkers(Program* me, u32 count);
 
+// The program is checked like tsc's command line does (not like its test harness): with noEmit or noEmitOnError, the
+// declaration diagnostics (declaration_diagnostics.h) are only reported if there is no other diagnostic, `earlier_errors`
+// saying whether earlier phases reported some. Call it before program_typecheck()
+void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
+
 // How many threads run those checkers (0 is the default, 1: the calling thread alone). The output doesn't depend on
 // it. Call it while loading
 void program_set_threads(Program* me, u32 count);

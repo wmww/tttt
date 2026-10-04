@@ -43,6 +43,7 @@ core_files = files(
     'ty/checker.c',
     'ty/members.c',
     'ty/enums.c',
+    'ty/declaration_diagnostics.c',
     'ty/instantiate.c',
     'ty/lower.c',
     'ty/ty_display.c',

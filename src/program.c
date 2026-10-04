@@ -1,6 +1,7 @@
 #include "program.h"
 #include "string_helpers.h"
 #include "unused.h"
+#include "ty/declaration_diagnostics.h"
 #include "import_attributes.h"
 #include "parser.h"
 #include "block.h"
@@ -94,6 +95,9 @@ typedef struct Program {
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
     u32 checker_count;
     u32 requested_checkers; // program_set_checkers()
+    // program_declaration_diagnostics_cli(): earlier phases reported something
+    bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
+    ErrorCtx* declaration_errs; // One per checker while typechecking: the declaration diagnostics of its files
     u32 threads; // program_set_threads(), 0: 1
     LoadPool* pool; // While loading with threads: parses files ahead of the loader
     i64 (*file_size)(void* ctx, csview path); // program_set_file_size()
@@ -1913,6 +1917,17 @@ void program_set_checkers(Program* me, u32 count) {
     my requested_checkers = count;
 }
 
+void program_declaration_diagnostics_cli(Program* me, bool earlier_errors) {
+    my declaration_diagnostics_cli = true;
+    my declaration_diagnostics_earlier = earlier_errors;
+}
+
+// Whether the declaration diagnostics may still be reported: tsc's CLI doesn't emit with noEmit or noEmitOnError when
+// there are other diagnostics, nor computes them
+static bool program_declaration_diagnostics_gated(Program const* me) {
+    return my declaration_diagnostics_cli && (my options.no_emit || my options.no_emit_on_error);
+}
+
 void program_set_threads(Program* me, u32 count) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     my threads = count;
@@ -2015,6 +2030,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         SourceFile* source = *i;
         if (source->is_stdlib || !source_file_is_checked(source) || index++ % count != c) continue;
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
+        if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
     }
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
@@ -2049,7 +2065,10 @@ void program_typecheck(Program* me) {
     ErrorCtx* checker_errs = c_new_n(ErrorCtx, count);
     my binder->frozen = true;
     my errs->frozen = true;
+    bool declaration_diagnostics = !(program_declaration_diagnostics_gated(me) && my declaration_diagnostics_earlier);
+    my declaration_errs = declaration_diagnostics ? c_new_n(ErrorCtx, count) : nullptr;
     for (u32 c = 0; c < count; c++) {
+        if (my declaration_errs) my declaration_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
         checker_errs[c] = (ErrorCtx){ .phase = ERROR_PHASE_TYPECHECK, .parent = my errs };
         my checkers[c] = c ? checker_new(me) : my checker;
         my checkers[c]->errs = &checker_errs[c];
@@ -2087,6 +2106,16 @@ void program_typecheck(Program* me) {
     error_ctx_remove_unchecked(my errs);
     program_apply_comment_directives(me, ERROR_PHASE_TYPECHECK);
     program_report_unused_expect_errors(me);
+    // (Comment directives don't apply to them: tsc's getDeclarationDiagnostics is apart from the checker's)
+    if (my declaration_errs) {
+        bool keep = !program_declaration_diagnostics_gated(me) || error_ctx_empty(my errs);
+        for (u32 c = 0; c < count; c++) {
+            if (keep) error_ctx_merge(my errs, &my declaration_errs[c]);
+            error_ctx_drop(&my declaration_errs[c]);
+        }
+        free(my declaration_errs);
+        my declaration_errs = nullptr;
+    }
     program_amalgamate_duplicates(me);
     error_ctx_sort_and_dedupe(my errs);
 

@@ -267,6 +267,7 @@ static_failable check_files(Options const* opts, returns int) {
 
     intptr_t type_errors = 0;
     if (ret == 0 || opts->keep_going) {
+        program_declaration_diagnostics_cli(program, parse_errors || name_errors);
         program_typecheck(program);
 
         if (error_ctx_empty(&errs)) {

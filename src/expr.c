@@ -4059,6 +4059,23 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                     error_ctx_grammar_error_d(errs, span_make(i->span.source, end - 1, end), 1005, "'{' expected.");
                 }
                 expr_typecheck(&i->value, errs);
+                // tsc's getTypeOfAccessors: a setter without a parameter annotation or a getter to take the type from is
+                // implicitly any
+                if (i->tag == OBJECT_ITEM_SETTER && i->value.tag == EXPR_FUNCTION && compiler_options()->no_implicit_any &&
+                    i->name_span.source && !i->name_span.source->is_js && !i->jsdoc_type
+                ) {
+                    FunctionArg const* value = nullptr;
+                    for_each (arg, vec_function_arg, &i->value.function->args) {
+                        Binding const* binding = &arg->initializer.binding;
+                        if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
+                        value = arg;
+                        break;
+                    }
+                    if (value && !value->initializer.binding.has_explicit_type && !value->initializer.getter) {
+                        error_ctx_error_d(errs, i->name_span, 7032, "Property '", i->name_span,
+                            "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
+                    }
+                }
                 if (i->jsdoc_type) {
                     type_typecheck(i->jsdoc_type, errs);
                     // (At the property assignment, tsc's getErrorSpanForNode of it: a method's is its name)
