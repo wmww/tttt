@@ -392,11 +392,14 @@ Ty const* function_impl_evaluate_type(FunctionImpl* me) {
     return ty_function_type(current_checker, me);
 }
 
-void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter) {
+void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr const* key) {
     for_each (i, vec_function_arg, &setter->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
-        if (!i->initializer.binding.has_explicit_type) i->initializer.getter = getter;
+        if (!i->initializer.binding.has_explicit_type) {
+            i->initializer.getter = getter;
+            i->initializer.getter_key = key;
+        }
         else if (!getter->ret_explicit) getter->setter_type = &i->initializer.binding.explicit_type;
         return;
     }
@@ -865,7 +868,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
     for_each (i, vec_function_arg, &my args) {
         if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
         if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
-        if (i->initializer.getter || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
+        if (initialized_binding_getter(&i->initializer) || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
         if (i->name_is_type && my is_type && !my is_constructor) {
             error_ctx_error_d(errs, i->span, 7051, "Parameter has a name but no type. Did you mean 'arg", (u32)i_index, ": ",
                 i->initializer.binding.content_span, i->rest ? "[]" : "", "'?");

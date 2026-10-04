@@ -2039,7 +2039,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                             csview_equals_sv(other->computed_key->outer_span.sv, own_key->outer_span.sv) :
                             cstr_eq(&other->name_string, &i->name_string))
                         ) {
-                            function_impl_pair_setter(i->value.function, other->value.function);
+                            function_impl_pair_setter(i->value.function, other->value.function, own_key);
                             break;
                         }
                     }
@@ -4092,7 +4092,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                         value = arg;
                         break;
                     }
-                    if (value && !value->initializer.binding.has_explicit_type && !value->initializer.getter) {
+                    if (value && !value->initializer.binding.has_explicit_type && !initialized_binding_getter(&value->initializer)) {
                         error_ctx_error_d(errs, i->name_span, 7032, "Property '", i->name_span,
                             "' implicitly has type 'any', because its set accessor lacks a parameter type annotation.");
                     }

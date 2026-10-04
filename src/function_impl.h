@@ -232,6 +232,6 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me);
 // The checks on a parameter list. `is_type`: a function type or signature, which can't have initializers
 // A setter's unannotated parameter has the type the getter of the same property returns
 // and a getter without a return type annotation returns what the setter's parameter annotation says (setter_type)
-void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter);
+void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, struct Expr const* key);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);

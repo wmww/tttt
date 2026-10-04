@@ -40908,12 +40908,12 @@ const baselines = {
     'computedPropertyNames2_ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames2_ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computedPropertyNames30_ES5': {
         errors: true,

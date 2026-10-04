@@ -136,10 +136,14 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
 
 Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     check(my tag == CLASS_ITEM_METHOD && my method.accessor);
-    if (my method.accessor == CLASS_ACCESSOR_SET && my method.accessor_getter) {
+    Checker* checker = current_checker;
+    // (With a computed name, only if it is a literal or unique symbol: tsc's isLateBindableName)
+    Expr const* key = my method.computed_key;
+    bool late_bound = !key || key->tag == EXPR_LITERAL ||
+        (ty_expr_type(checker, (Expr*)key)->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL));
+    if (my method.accessor == CLASS_ACCESSOR_SET && my method.accessor_getter && late_bound) {
         return lazy_type_get(&my method.accessor_getter->method.accessor_type);
     }
-    Checker* checker = current_checker;
     Members const* members = ty_members(checker, ty_function_type(checker, &my method.func));
     if (members->call_count != 1) return ty_intrinsic(checker, TY_ANY);
     Signature const* sig = members->call[0];
@@ -512,7 +516,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                         // would pair the two: tsc's isLateBindableName)
                         Expr const* key = i->method.computed_key;
                         if (i->method.accessor == CLASS_ACCESSOR_SET && (!key || key->tag == EXPR_LITERAL || expr_is_entity_name(key))) {
-                            function_impl_pair_setter(&i->method.func, &other->method.func);
+                            function_impl_pair_setter(&i->method.func, &other->method.func, key);
                         }
                     }
                 }

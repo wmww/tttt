@@ -697,18 +697,26 @@ static Ty const* auto_type(InitializedBinding const* me) {
     ) {
         return nullptr;
     }
-    bool auto_any = my value.tag == EXPR_IMPLICIT_ANY ? !my getter :
+    bool auto_any = my value.tag == EXPR_IMPLICIT_ANY ? !initialized_binding_getter(me) :
         my value.tag == EXPR_LITERAL && (my value.literal.tag == VALUE_NULL || my value.literal.tag == VALUE_UNDEFINED);
     if (auto_any) return symbol->is_const ? nullptr : ty_intrinsic(current_checker, TY_AUTO);
     if (my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array)) return ty_auto_array(current_checker);
     return nullptr;
 }
 
+FunctionImpl const* initialized_binding_getter(InitializedBinding const* me) {
+    if (!my getter) return nullptr;
+    Expr const* key = my getter_key;
+    if (!key || key->tag == EXPR_LITERAL) return my getter;
+    Ty const* type = ty_expr_type(current_checker, (Expr*)key);
+    return type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL) ? my getter : nullptr;
+}
+
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Checker* checker = current_checker;
-    if (my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type && my getter) {
-        return ty_function_return_type(checker, my getter);
-    }
+    FunctionImpl const* getter = my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type ?
+        initialized_binding_getter(me) : nullptr;
+    if (getter) return ty_function_return_type(checker, getter);
     if (!my binding.has_explicit_type) {
         // A parameter of a function expression gets its type from the contextual signature, initializer or not
         if (my jsdoc_typed_by) ty_function_apply_jsdoc_type(checker, my jsdoc_typed_by, me);

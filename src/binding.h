@@ -99,6 +99,9 @@ typedef struct InitializedBinding {
     LazyType lazy_type;
     // The unannotated parameter of a setter: the getter of the same property, whose return type it has
     struct FunctionImpl const* getter;
+    // Their computed name (`set [k](v)`), if any: they are one property only if its type is a literal or unique symbol
+    // (tsc's isLateBindableName), see initialized_binding_getter()
+    struct Expr const* getter_key;
     // The parameter of a JavaScript function whose JSDoc `@type` types it (FunctionImpl.jsdoc_signature_type)
     struct FunctionImpl const* jsdoc_typed_by;
     // An unannotated `this` parameter: its function, whose contextual `this` type it has (tsc's
@@ -124,3 +127,6 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, 
 #define g_no_clone
 #define g_declared
 #include <cleat/generic/vec.h>
+
+// The getter whose return type an unannotated setter parameter has (InitializedBinding.getter), if they pair
+struct FunctionImpl const* initialized_binding_getter(InitializedBinding const* me);
