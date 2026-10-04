@@ -26657,7 +26657,7 @@ const baselines = {
     },
     'readonlyAssignmentInSubclassOfClassExpression': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'readonlyFloat32ArrayAssignableWithFloat32Array': {

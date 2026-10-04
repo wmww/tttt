@@ -2075,6 +2075,24 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
                 base = declared;
             }
         }
+        // A base constructor typed by a type literal (`class {} as new () => T`): that literal's `__type`
+        if (base && my super_call) {
+            Ty const* constructor = ty_expr_type(current_checker, &class_decl->extends);
+            while (constructor->kind == TY_ANONYMOUS && !constructor->anonymous.node && constructor->anonymous.target) {
+                constructor = constructor->anonymous.target;
+            }
+            TypeNode const* node = constructor->kind == TY_ANONYMOUS ? constructor->anonymous.node : nullptr;
+            Span declared_at = !node ? span_null : node->tag == TYPE_INTERFACE ? node->interface.span :
+                node->tag == TYPE_CALLABLE ? node->callable->function->full_span : span_null;
+            if (span_valid(declared_at)) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = vec_span_single(declared_at),
+                    .span = my name,
+                    .text = cstr_lit("__type"),
+                });
+                return;
+            }
+        }
         if (base && base->kind == TY_REFERENCE) base = base->reference.target;
         Symbol const* symbol = base && base->kind == TY_DECLARED ? base->declared.symbol :
             base && base->kind == TY_TYPE_PARAM ? base->param.symbol : nullptr; // (A mixin's `T`)
