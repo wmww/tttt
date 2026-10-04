@@ -2383,6 +2383,15 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
         if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
     }
+    // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
+    // unchecked (not a referenced project's, which that project reports)
+    index = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile* source = *i;
+        if (source->is_stdlib || source_file_is_checked(source) || source->from_reference || source->is_js) continue;
+        if (index++ % count != c) continue;
+        if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
+    }
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;

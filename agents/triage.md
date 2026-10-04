@@ -30,8 +30,6 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   and no options/global ones (`emitFilesAndReportErrors`), tsc -b goes on to semantic ones anyway; tttt reports name
   errors after parse errors and skips typechecking after either. Scenarios `when-project-references-composite-project-
   with-noEmit` (a TS2307 tsc doesn't report) and `in-bad-ref-branch-...` (a TS6133 tsc does).
-- (plan 41) Plan 40 gap from the scenarios: no declaration diagnostics at all with `--noCheck` (tsc still reports
-  TS4094: `tsbuild/noCheck/*/dts-errors`).
 - (plan 40 stage 3, 2026-10-04) CLI message text: a module named in a message ("from external module ...", TS4023 and
   friends) is tttt's path relative to the working directory (`"../../../tmp/ky/node_modules/ky/distribution/index"`)
   where tsc's CLI prints the module symbol's absolute name (`"/tmp/ky/node_modules/ky/distribution/index"`). The suite
