@@ -50,6 +50,7 @@ typedef enum GlobalType {
     GLOBAL_EMPTY_OBJECT, // Not a global: the `{}` type
     GLOBAL_ANY_FUNCTION, // Not a global: tsc's anyFunctionType
     GLOBAL_UNKNOWN_EMPTY_OBJECT, // Not a global: tsc's unknownEmptyObjectType, the `{}` of `unknown` narrowed
+    GLOBAL_EMPTY_TYPE_LITERAL, // Not a global: tsc's emptyTypeLiteralType, every `{}` written without an alias
 } GlobalType;
 
 typedef struct RelationState {
@@ -167,7 +168,9 @@ static u64 relation_key(Ty const* source, Ty const* target) {
     static char const* const names[] = { "String", "Number", "Boolean", "Symbol", "BigInt", "Function", "Object", "RegExp", "CallableFunction", "NewableFunction" };
     {
         my global_types_resolved[which] = true;
-        if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION || which == GLOBAL_UNKNOWN_EMPTY_OBJECT) {
+        if (which == GLOBAL_EMPTY_OBJECT || which == GLOBAL_ANY_FUNCTION || which == GLOBAL_UNKNOWN_EMPTY_OBJECT ||
+            which == GLOBAL_EMPTY_TYPE_LITERAL
+        ) {
             Ty* empty = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (which == GLOBAL_ANY_FUNCTION ? TYF_NON_INFERRABLE : 0));
             empty->anonymous.state = arena_new(&my arena, TyObjectState);
             empty->anonymous.state->members = arena_new(&my arena, Members);
@@ -198,6 +201,11 @@ void ty_init_global_types(Checker* me) {
         "IArguments", "Array", "Object", "Function", "CallableFunction", "NewableFunction", "String", "Number", "Boolean",
         "RegExp", "ReadonlyArray", "ThisType",
     };
+    // (tsc makes its empty object types before the global ones, when the checker is created)
+    global_type(me, GLOBAL_EMPTY_OBJECT);
+    global_type(me, GLOBAL_EMPTY_TYPE_LITERAL);
+    global_type(me, GLOBAL_UNKNOWN_EMPTY_OBJECT);
+    global_type(me, GLOBAL_ANY_FUNCTION);
     for (u32 i = 0; i < c_arraylen(names); i++) {
         bool bind_call_apply = !strcmp(names[i], "CallableFunction") || !strcmp(names[i], "NewableFunction");
         if (bind_call_apply && !compiler_options()->strict_bind_call_apply) continue;
@@ -217,6 +225,7 @@ Ty const* ty_global_function_type(Checker* me) { return global_type(me, GLOBAL_F
 Ty const* ty_global_object_type(Checker* me) { return global_type(me, GLOBAL_OBJECT); }
 Ty const* ty_empty_object_type(Checker* me) { return global_type(me, GLOBAL_EMPTY_OBJECT); }
 Ty const* ty_unknown_empty_object_type(Checker* me) { return global_type(me, GLOBAL_UNKNOWN_EMPTY_OBJECT); }
+Ty const* ty_empty_type_literal(Checker* me) { return global_type(me, GLOBAL_EMPTY_TYPE_LITERAL); }
 Ty const* ty_any_function_type(Checker* me) { return global_type(me, GLOBAL_ANY_FUNCTION); }
 Symbol const* ty_global_value_symbol(Checker* me, csview name) { return program_get_global(my program, name, SYMBOL_VALUE); }
 

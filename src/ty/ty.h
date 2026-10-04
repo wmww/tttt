@@ -799,8 +799,8 @@ struct Checker {
     Ty const* auto_array; // ty_auto_array(), made with array_target
     Ty const* readonly_array_target;
     struct Signature** unknown_signature; // tsc's unknownSignature (no parameters, returning errorType) as a list of one
-    Ty const* global_types[13]; // GlobalType in relate.c: String, Number... looked up on first use
-    bool global_types_resolved[13];
+    Ty const* global_types[14]; // GlobalType in relate.c: String, Number... looked up on first use
+    bool global_types_resolved[14];
     u32 instantiation_depth;
     // Conditional types picked as the branch of a conditional type being instantiated now, which don't count towards
     // instantiation_depth (tsc resolves those in a loop, getConditionalType's tailCount), and the next ty_instantiate()
@@ -1254,6 +1254,7 @@ Ty const* ty_binding_type(Checker* me, Binding const* binding, LowerCtx ctx);
 Ty const* ty_empty_object_type(Checker* me); // `{}`
 // Also `{}`, but only as the non-nullish part of `unknown` while narrowing it (tsc's unknownEmptyObjectType, for TS2638)
 Ty const* ty_unknown_empty_object_type(Checker* me);
+Ty const* ty_empty_type_literal(Checker* me); // tsc's emptyTypeLiteralType
 Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file); // `module` of a CommonJS file
 // `module.exports` of a CommonJS file (what `this` is at its top level)
 Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file);

@@ -3046,6 +3046,10 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         }
 
         case TYPE_INTERFACE:
+            // (`{}` without an alias is one type, tsc's emptyTypeLiteralType: its id is older than anything written)
+            if (!alias && !vec_interface_member_size(&node->interface.members) && !node->interface.jsdoc_literal) {
+                return ty_empty_type_literal(me);
+            }
             return ty_anonymous_from_node(me, node, ctx, alias, alias_args);
 
         case TYPE_CALLABLE:

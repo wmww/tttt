@@ -28933,7 +28933,7 @@ const baselines = {
     'spreadOfObjectLiteralAssignableToIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadOfParamsFromGeneratorMakesRequiredParams': {
         errors: false,
@@ -37033,7 +37033,7 @@ const baselines = {
     'mixinAccessModifiers': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'mixinClassesAnnotated': {
         errors: true,
@@ -37963,7 +37963,7 @@ const baselines = {
     'controlFlowWithTemplateLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'definiteAssignmentAssertions': {
         errors: true,
