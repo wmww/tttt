@@ -1012,7 +1012,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
 
         case TYPE_TYPEOF:
             // (`typeof f<T>`'s type arguments are the type query's)
+            bool outer_in_type_query = ctx->in_type_query;
+            ctx->in_type_query = true;
             callee_compile_test_info(my typeof_->expr, ctx);
+            ctx->in_type_query = outer_in_type_query;
             break;
 
         case TYPE_TERNARY:
@@ -2315,10 +2318,15 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_IDENTIFIER:
-            // (A class's `this` is the symbol of its type where it isn't a parameter: none once narrowed to never,
-            // `"a" in this` of a class that has `a` in its else branch. tsc's getSymbolAtLocation, checkExpression)
-            if (my identifier.keyword == KEYWORD_IDENTIFIER_THIS && my identifier.this_kind == THIS_CLASS_INSTANCE &&
-                (ty_expr_type(current_checker, me)->flags & TYF_NEVER)
+            // A `this` expression's symbol is the symbol of its (narrowed) type (tsc's getSymbolAtLocation,
+            // checkExpression): none for a class's `this` narrowed to never (`"a" in this` of a class that has `a`, in
+            // its else branch) or to an intersection (`this instanceof D`). Not in a type query, which is the declared
+            // `this`
+            if (my identifier.keyword == KEYWORD_IDENTIFIER_THIS && (
+                    (my identifier.this_kind == THIS_CLASS_INSTANCE &&
+                        (ty_expr_type(current_checker, me)->flags & TYF_NEVER)) ||
+                    (!ctx->in_type_query && my identifier.target &&
+                        ty_expr_type(current_checker, me)->kind == TY_INTERSECTION))
             ) {
                 break;
             }

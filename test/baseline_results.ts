@@ -65212,7 +65212,7 @@ const baselines = {
     },
     'typeofThis': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeofThisWithImplicitThis': {
@@ -65337,7 +65337,7 @@ const baselines = {
     },
     'spreadObjectOrFalsy': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'spreadOverwritesProperty': {

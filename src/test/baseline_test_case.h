@@ -90,6 +90,7 @@ typedef struct BaselineTestCase {
     // The name of a value exported by `export = x` / `export default x`: not an expression to tsc's type writer, it
     // shows the symbol's type, without narrowing (getTypeOfNode, isInRightSideOfImportOrExportAssignment)
     struct Expr const* export_name;
+    bool in_type_query; // Walking the expression of a `typeof x` type
     bool private_name_in_left; // The next expression is the `#x` of `#x in o`, the only private name that is an expression
     // Set right before walking a heritage clause's type (`implements A`, an interface's `extends A`): tsc has no
     // symbols line for names there that don't resolve (not so in a type reference). The type consumes it
