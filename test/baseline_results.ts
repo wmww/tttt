@@ -547,7 +547,7 @@ const baselines = {
     },
     'allowSyntheticDefaultImports7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'allowSyntheticDefaultImports8': {
@@ -557,7 +557,7 @@ const baselines = {
     },
     'allowSyntheticDefaultImports9': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'allowSyntheticDefaultImportsCanPaintCrossModuleDeclaration': {
@@ -21932,17 +21932,17 @@ const baselines = {
     },
     'moduleNodeDefaultImports(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleNodeDefaultImports(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleNodeDefaultImports(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleNodeImportRequireEmit(target=es2016)': {

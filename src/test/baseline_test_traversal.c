@@ -1176,6 +1176,23 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = i->source_name,
                     .text = i->source_symbol->is_placeholder ? cstr_init() : symbol_text(ctx, i->source_symbol),
                 });
+            } else if (!quoted && csview_equals(i->source_name.sv, "default") && i->symbol->alias &&
+                i->symbol->alias->target && i->symbol->alias->target->is_module && !shorthand
+            ) {
+                // A synthetic default (a module without one, allowSyntheticDefaultImports or a CommonJS module from an
+                // ES module): the module itself (tsc's resolveExternalModuleSymbol of the `default` it can't find)
+                Symbol const* module = i->symbol->alias->target;
+                SourceFile const* file = module->module->file;
+                VecSpan declarations = vec_span_init();
+                if (file) vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+                VecSpan own = symbol_declaration_spans(module);
+                for_each (k, vec_span, &own) vec_span_push(&declarations, *k);
+                vec_span_drop(&own);
+                baseline_test_case_add_symbol(ctx, (BaselineSym){
+                    .declarations = declarations,
+                    .span = i->source_name,
+                    .text = symbol_text(ctx, module),
+                });
             } else if (shorthand && !quoted) {
                 // (tsc's getExternalModuleMember: any member of a shorthand ambient module is the module)
                 bool aliased = ctx->shorthand_module == shorthand && span_valid(ctx->shorthand_alias) &&
