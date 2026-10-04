@@ -47662,7 +47662,7 @@ const baselines = {
     },
     'objectLiteralGettersAndSetters': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectLiteralNormalization': {
