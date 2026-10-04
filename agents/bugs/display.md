@@ -80,9 +80,8 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   name the module through it (`typeof m26` via `import m26 = require`, not an earlier `import * as
   m4`). tttt's namespace import is the module itself. Tried making the chain skip such imports
   (symbol_chain.c candidate_list): the import lines then print `typeof import("index")`, since the type itself must
-  be a per-alias clone. Node16 tests (*PackageExports*, *PatternExports*: those
-  also print `typeof cjsi.cjs.mjs` where tsc's DFS goes through the `cjs` export whose exports table is a distinct
-  object, then `mjs`).
+  be a per-alias clone. (The *PackageExports*/*PatternExports* chains were a circular alias, fixed; see plan 35
+  queue item 2 for what's left.)
 
 - JS corpus leftovers (probes in `test/probes/plan19/webpack/`): a `require("m").X` alias that resolves to nothing
   prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
@@ -142,4 +141,5 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
     globalThisDeclarationEmit3).
   - JSON module default (`ns.default : Symbol("package")`, nodeModulesResolveJsonModule x3): the default export of a
     JSON module is the module symbol itself.
-  - The ~30 node16 `cjs`/`mjs` chains (nodeModules*PackageExports): plan 35 queue item 2.
+  - The node16 `cjs`/`mjs` chains (nodeModules*PackageExports): fixed (circular alias); the clone part is plan 35
+    queue item 2.

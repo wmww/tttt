@@ -72,9 +72,12 @@ self-referencing functions. Split by first-line kind duplicated little (accessor
 What the agents left, roughly by size (their test names are examples):
 1. **Union order** (~24 first-line, 18 alone): creation order of types; no general fix found (arrayFrom,
    controlFlowCaching, spreadUnion, subtypesOfTypeParameter). Plan 21 territory.
-2. **node16 `import * as` of a CommonJS module** (~24: nodeModules1, nodeModulesAllowJs1, *PackageExports*): tsc
-   clones the module symbol per import (prints `typeof m4`); needs a per-import type, not a naming tweak. Notes in
-   `bugs/display.md`.
+2. **node16 `import * as` of a CommonJS module**: the *PackageExports*/*PatternExports* chains (27 tests) were a
+   circular import alias keeping its target (fixed 2026-10-04). What's left really is tsc's per-import clone
+   (resolveESModuleSymbol -> cloneTypeAsModuleType, members through getTypeWithSyntheticDefaultImportType's spread:
+   readonly exports become new symbols without a parent): nodeModulesTypesVersionPackageExports x3 (`mod.x` of a
+   cloned import is `Symbol(x)`, not `Symbol(mod.x)`), the `typeof m4`-vs-`m26` naming in bugs/display.md, maybe
+   nodeModulesResolveJsonModule. A per-import module type is a refactor of how `import * as` resolves; small payoff.
 3. **Line-missing one-offs** (~50): alias vs structure for recursive conditional/mapped types
    (recursiveConditionalCrash1-3), imports/exports inside functions (moduleElementsInWrongContext2/3), missing
    identifier recovery (`for ()`, reservedWords3, JSX namespaced names).
@@ -126,8 +129,6 @@ What the agents left, roughly by size (their test names are examples):
       expandoFunctionBlockShadowing, multipleExportDefault3, exportAssignmentOfExportNamespaceWithDefault), and a
       reused `typeof b` of a function local in its own return annotation falls back (functionVariableInReturnTypeAnnotation).
       Needs the innermost scope at the printed position (the resolve walk could record it per types-baseline node).
-    - node16 `import * as` of a CommonJS module (item 2): the chains (`cjs.mjs.cjs.type` vs tsc's `mjs.cjs.cjs.type`,
-      nodeModules*PackageExports, ~30 symbols + types tests) come from tsc's per-import module clones; not attempted.
     - CommonJS naming (plan 26 territory): `typeof mod1."d"` for an element-access export with expando members
       (moduleExportsElementAccessAssignment: tsc's createEntityNameFromSymbolChain keeps the written quotes, but
       typeFromPropertyAssignment39's `foo["baz"]` prints `foo.baz`, rule unknown), `typeof x.F` for a JS class
