@@ -16,3 +16,8 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
 - (plan 40 stage 1, 2026-10-04) `export function f3() { return; return 1; }`: tsc's types baseline says
   `f3 : () => number`, tttt `() => 1 | undefined` (the unreachable second return, or the bare return's undefined).
 - (plan 40 stage 1) `isolatedDeclarationErrorsAugmentation` also fails its types component, unrelated to TS9026.
+- (plan 40 stage 2, 2026-10-04) Cross-test state dependence: `importAssertionNonstring` alone prints `{ field: any[] }`
+  (wrong; tsc `string[]`) and in the full suite `string[]`, in the build before stage 2 too; with `--checkers 4
+  --threads 4` the full suite now gives `any[]` there (`./release/baseline_tests --summary --dump DIR` 1 vs 4 checkers:
+  7 differing files, 6 before). Something an earlier test leaves cached (the lib program's types?) decides an array
+  literal's element type in an import attribute.

@@ -106,19 +106,25 @@ declarations matched tsc exactly. Left for stage 2 (all need symbol accessibilit
 diagnostics"): late painting (computedPropertiesNarrowed), TS9026 (isolatedDeclarationErrorsAugmentation, which also
 fails types), TS9039, the general node-builder re-entry. Not this plan: jsDeclarations* TS9005/TS9006 (JS declaration
 emit, symbolTableToDeclarationStatements).
-### Stage 2: accessibility (1-2 sessions)
-Start from stage 1's walk: `check_written_type()` already visits every written type of an emitted declaration (add the
-entity-name checks there), `statement_visible()` is where late painting goes, and `Place`/`Near` carry what the
-diagnostic-by-kind table needs.
-The isSymbolAccessible family, the diagnostic-by-kind table, written types first, then the printer's tracker for
-inferred types (TS4023/4025/4032/4081/4118, TS4094, TS2527, TS5088, TS7056). Tests: declarationEmitComputedProperty
-NameSymbol1/2, declarationEmitReadonlyComputedProperty, declarationEmitVarInElidedBlock, globalThisDeclarationEmit,
-declarationEmitInvalidExport, declarationEmitMappedTypeTemplateTypeofSymbol, declarationEmitMixinPrivateProtected,
-emitClassExpressionInDeclarationFile2, declarationEmitExpandoPropertyPrivateName, declarationEmitExpressionWithNonlocal
-PrivateUniqueSymbol, declarationFiles. Must stay 0: nest, drizzle, tsc, valibot, and 0 lost among the ~1490 suite
-tests with declarations. Measure instructions on drizzle and nest before and after (`./instrcount.sh drizzle nest`):
-the walk prints every exported inferred type, and drizzle's are big. tsc pays the same; a cost well under the check
-phase is fine, a multiple of it means the printer's declaration mode is doing something tsc doesn't.
+### Stage 2: accessibility: DONE (2026-10-04, one session)
+`symbol_chain.c` ports isSymbolAccessible / hasVisibleDeclarations / isDeclarationVisible (late painting,
+collectLinkedAliases for namespaces, `SymbolDecl.hoisted` for vars hoisted out of blocks); the walk runs under
+`declaration` alone (TS9xxx gated on isolatedDeclarations), gives each emitted declaration tsc's accessibility
+diagnostic (`Emitting`, ~85 messages), checks written entity names, and prints fallback types through `ty_display`
+with a `DeclTracker` (trackSymbol, trackComputedName, TS2527 unique symbol / `this`, TS4094, TS4118, TS7056 past 1M
+characters), with node reuse on, WriteClassExpressionAsTypeLiteral and alias accessibility. Late painting walks the
+non-exported declarations an emitted one names; TS9026. Suite 12366 -> 12376 (+10, 0 lost; every stage 2 test
+passes its errors but two, four still fail types/symbols), every corpus unchanged, and type-fest/react/zod/xstate/vue agree with tsc under a forced `--declaration` (both
+clean). Callgrind +0.6% nest, +1.0% drizzle, +0.3% tsc/valibot (after memoizing accessibility per walk and indexing
+big tables' aliases: the first version cost nest +3.5%). Left (hacks.md "Declaration diagnostics"):
+- TS7056 for deep recursive types (declarationEmitPrivatePromiseLikeInterface): tsc elides a symbol nested more than
+  10 deep (visitAndTransformType), tttt's printer at MAX_DISPLAY_DEPTH 8 overall. Porting the per-symbol depth to the
+  declaration mode is easy; the risk is time on big types (each print is bounded by the 1M characters, which at the
+  printer's ~5k instructions per character is seconds) and false TS7056 where tttt's printer expands what tsc names.
+- TS5088 (arrayFakeFlatNoCrashInferenceDeclarations): typeToTypeNodeOrCircularityElision's visited unions.
+- A declaration whose syntactic builder falls back prints its whole checker type (not only the parts tsc would).
+- getAlternativeContainingModules isn't in `containers_of()`.
+- The printer's `import("...")` specifiers are tttt's module names, which stage 3 replaces with generated specifiers.
 ### Stage 3: TS2742 (1 session; can wait for plan 41)
 The builder's `import("...")` specifier from moduleSpecifiers.ts (getModuleSpecifiers: relative path, the package
 name through node_modules, package.json `exports`/`typesVersions` blocking a subpath, symlinked packages and

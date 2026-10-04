@@ -562,23 +562,35 @@ src` finds the code-side markers; every significant one has an entry here.
   (`js_syntax_skip_since()`): every skipped construct needs its call. Node array spans run first to last element.
 
 ## Declaration diagnostics (`ty/declaration_diagnostics.c`, plan 40)
-- No late painting yet: `statement_visible()` is exported / `export { x }`-named / script / ambient namespace. tsc
-  also emits (and so checks) a non-exported statement that a visible declaration names (isEntityNameVisible's
-  aliasesToMakeVisible), e.g. computedPropertiesNarrowed's TS9010 on `let u = Symbol()` used as `[u]`. Stage 2 ports
-  isSymbolAccessible; then this becomes "visible or late painted".
+- `fallback_begin`/`fallback_end`: where the syntactic builder falls back anywhere in a declaration (any `report()`,
+  a literal it can't type), the *whole* declaration's checker type is printed for the tracker, not just the parts tsc
+  would serialize with the checker (it keeps syntactically typed parts as written). The written parts' names are
+  checked separately; a difference shows only when the checker's type names something the syntax didn't.
 - The node builder's re-entry is ported in two spots only: an expando variable's function initializer
-  (`report_variable`, tsc prints the checker type and its signature goes through the syntactic builder again) and
-  string/number/symbol-named class methods (`check_class`, createLateBoundIndexSignatures, ignoring a class's explicit
-  index signature that would suppress it). In general tsc re-runs the builder for every signature/property declared
-  in the file that a printed fallback type mentions (`export const x = localFn` also checks localFn's return type).
-  Stage 2's printer tracker (`DeclTracker` in TyDisplay) is where that belongs, not more special cases here.
+  (`report_variable`) and string/number/symbol-named class methods (`check_class`, createLateBoundIndexSignatures). In
+  general tsc re-runs the builder for every signature/property declared in the file that a printed fallback type
+  mentions; the tracker sees the names but TS9xxx inside them aren't reported.
+- Late painting (`paint`, `take_painted`, late passes in `declaration_diagnostics_check`): tsc transforms imports in
+  its first pass, so TS9026 sees only what was painted before the import; other statements are painted from any
+  point. A painted namespace is made visible to `symbol_chain.c` through a thread-local hook
+  (`symbol_chain_set_painted()`), which also enables a per-walk accessibility memo and alias index (both reset with
+  every walk). tsc's painting persists across files (node links); here it is per file.
+- `track_computed_name` takes the computed name's *text* (`[a.b]`) and resolves its first identifier from the
+  enclosing scope; the fallback (resolved where it's declared) is assumed to be a module's local (CannotBeNamed from
+  another module, NotAccessible otherwise), which is what tsc's resolveName gives for top-level module declarations.
+- TS7056 only for wide types: the printer's global MAX_DISPLAY_DEPTH elides before tsc's per-symbol depth of 10 would,
+  so deep recursive types (declarationEmitPrivatePromiseLikeInterface) stay under the 1M characters. TS5088 (cyclic
+  unions in conditional branches) isn't ported.
+- `symbol_chain.c` accessibility: `decl_visible()` fails open (visible) where it doesn't know a declaration's
+  statement list (no `block`, an ambient module, a namespace block it can't match); `containers_of()` lacks tsc's
+  getAlternativeContainingModules (a module that re-exports the symbol under another chain), which only matters for
+  symbols nothing else reaches.
 - `is_optional_parameter` ignores getMinArgumentCount's trailing `void` parameters; `Place.contextual` is only set
   through type assertions (the builder never descends into calls or JSX, the other isContextuallyTyped ancestors).
 - `declaration_diagnostics_wanted`: isSourceFileFromExternalLibrary is "loaded by an import and the path has
-  `node_modules/`"; JavaScript is skipped entirely (reportInferenceFallback ignores JS; with allowJs tsc would still
-  report the transformer's own TS9020/TS9023/TS9038 there, but isolatedDeclarations + allowJs is TS5053 anyway).
-- TS9026 (an import an augmentation needs) and TS9039 (trackExistingEntityName) aren't reported: both need symbol
-  accessibility (stage 2).
+  `node_modules/`"; JavaScript is skipped entirely (no JS declaration emit, jsDeclarations* TS9005/TS9006).
+- The printed `import("...")` specifiers are tttt's module names (`import("thirdparty/.../node_modules/@nestjs/...")`),
+  not tsc's generated specifiers: stage 3 (TS2742) needs the real ones.
 
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
 - `path_is_drive_rooted` (`module_resolution.h`): a DOS drive path (`c:/x`) is a directory `c:` of the current

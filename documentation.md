@@ -232,10 +232,20 @@ of printed union members, so creation order is part of the output.
 
 After its files are checked, each checker runs `declaration_diagnostics_check()` (`ty/declaration_diagnostics.c`) on
 them with `declaration`/`composite`: the diagnostics tsc's declaration transformer reports, without emitting anything
-(plan 40). It walks what a `.d.ts` would contain and ports the syntactic type builder's decisions; so far the
-isolatedDeclarations TS9xxx. They go into an ErrorCtx of their own, merged after comment directives (tsc's
-getDeclarationDiagnostics is apart from the checker's), and the CLI drops them with noEmit/noEmitOnError when anything
-else was reported, like tsc's emitFilesAndReportErrors.
+(plan 40). It walks what a `.d.ts` would contain (the visible statements, then the late painted ones: non-exported
+declarations an emitted one names) and ports the syntactic type builder's decisions; with isolatedDeclarations each
+fallback is a TS9xxx. Each emitted declaration has tsc's accessibility diagnostic (`Emitting`, the TS4xxx table by
+declaration kind). Written types check their entity names (isEntityNameVisible); where the syntactic builder falls
+back, the declaration's checker type is printed by `ty_display()` with a `DeclTracker` (`TyDisplay.tracker`), which
+reports what tsc's SymbolTracker does: every symbol the printer names (trackSymbol: `symbol_accessibility_at()` in
+`symbol_chain.c`, tsc's isSymbolAccessible with hasVisibleDeclarations and isDeclarationVisible), computed names,
+inaccessible unique symbols and `this` (TS2527), private members of classes written as type literals (TS4094),
+properties that can't be named (TS4118), output past 1M characters (TS7056). In declaration mode the printer reuses
+annotations like the types baseline does, prints class expressions and classes it can't name structurally
+(WriteClassExpressionAsTypeLiteral) and aliases only when accessible. They go into an ErrorCtx of their own, merged
+after comment directives (tsc's getDeclarationDiagnostics is apart from the checker's), and the CLI drops them with
+noEmit/noEmitOnError when anything else was reported, like tsc's emitFilesAndReportErrors
+(`TTTT_DECLARATION_DIAGNOSTICS=1` keeps them, to audit a corpus with other errors).
 
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).

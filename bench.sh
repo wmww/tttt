@@ -64,8 +64,10 @@ echo "tttt phases (one run):"
 # The pinned benchmark: tsc's own compiler sources, the same files every session (./realworld.py is the correctness
 # view of the same run). Everyone runs from its tsconfig. tttt exits 1: everything it reports there is a bug
 REAL=thirdparty/tsc/src/compiler
-# Its tsconfig is composite: without these tsc writes a tsbuildinfo and the next run checks nothing
-REAL_ARGS="--noEmit --composite false --incremental false --declaration false --declarationMap false --emitDeclarationOnly false --isolatedDeclarations false"
+# Its tsconfig is composite: without these tsc writes a tsbuildinfo and the next run checks nothing. Its declaration
+# and isolatedDeclarations stay on: with noEmit and no errors tsc reports the declaration diagnostics, which tttt
+# computes too (plan 40)
+REAL_ARGS="--noEmit --composite false --incremental false --emitDeclarationOnly false"
 echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
 measure "tttt" ./release/tttt -q --keep-going -p $REAL
