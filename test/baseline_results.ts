@@ -4167,7 +4167,7 @@ const baselines = {
     },
     'collisionArgumentsClassConstructor': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'collisionArgumentsClassMethod': {
@@ -4347,7 +4347,7 @@ const baselines = {
     },
     'collisionRestParameterClassConstructor': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'collisionRestParameterClassMethod': {
@@ -10277,7 +10277,7 @@ const baselines = {
     },
     'duplicateIdentifierDifferentModifiers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateIdentifierDifferentSpelling': {
@@ -13897,7 +13897,7 @@ const baselines = {
     },
     'functionArgShadowing': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionAssignabilityWithArrayLike01(strict=false)': {
@@ -25177,7 +25177,7 @@ const baselines = {
     },
     'parameterPropertyInConstructor2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'parameterPropertyInConstructor3': {
@@ -34782,12 +34782,12 @@ const baselines = {
     },
     'classAndInterfaceMergeConflictingMembers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classAndInterfaceWithSameName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classAndVariableWithSameName': {
@@ -35552,7 +35552,7 @@ const baselines = {
     },
     'constructorParameterProperties2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitReadonly': {
@@ -64617,7 +64617,7 @@ const baselines = {
     },
     'constructSignatureWithAccessibilityModifiersOnParameters2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'identicalCallSignatures': {

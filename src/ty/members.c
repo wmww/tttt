@@ -844,7 +844,11 @@ static Prop* builder_add_class_prop(
         name = checker_atom(me, cstr_sv(name_string));
     }
     Prop* existing = builder_find_prop(builder, name);
-    if (existing) return nullptr;
+    if (existing) {
+        // A field after a parameter property of its name: one symbol, the parameter's type (tsc's PropertyExcludes)
+        if (existing->decl->parameter_property && item->tag == CLASS_ITEM_FIELD) prop_add_decl_spans(me, existing, &item->span, 1);
+        return nullptr;
+    }
     Prop* prop = prop_new_declared(me);
     prop->name = name;
     prop->parent = parent;
@@ -1139,7 +1143,17 @@ static void builder_add_class_items(
                     Binding const* binding = &arg->initializer.binding;
                     if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
                     Atom const* name = checker_atom(me, binding->content_span.sv);
-                    if (builder_find_prop(builder, name)) continue;
+                    Prop* existing = builder_find_prop(builder, name);
+                    if (existing) {
+                        // A field declared before it: one symbol (tsc's PropertyExcludes is nothing), the field's type
+                        // (and the same parameter of another constructor declaration, an overload's: TS2369)
+                        if (((existing->flags & PROP_FIELD) && !(existing->flags & PROP_STATIC)) ||
+                            existing->decl->parameter_property
+                        ) {
+                            prop_add_decl_spans(me, existing, &arg->span, 1);
+                        }
+                        continue;
+                    }
                     Prop* prop = prop_new_declared(me);
                     prop->name = name;
                     prop->parent = parent;

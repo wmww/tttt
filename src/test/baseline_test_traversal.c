@@ -17,6 +17,7 @@
 #include "symbol_chain.h"
 
 static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx);
+static VecSpan class_prop_declarations(Symbol const* class_symbol, bool is_static, csview name, Span own, u32 min_count);
 
 // What the symbols baseline shows for a reference: the declarations of the symbol the name found (an alias shows its
 // import, not what it resolves to), or of the declaration when there is no symbol (keywords, synthetic nodes)
@@ -380,8 +381,12 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             if (my parent) ctx->any_keeps_underline = true; // A binding element
             if (!my parent && span_valid(ctx->parameter_property_class) && my symbol) {
                 // A parameter property's name declares the property (tsc's parameter.symbol is the property's)
+                // (One symbol with a field of its name: the class's)
+                VecSpan declarations = class_prop_declarations(ctx->parameter_property_symbol, false, my content_span.sv,
+                    ctx->parameter_property_arg, 1);
+                if (vec_span_is_empty(&declarations)) declarations = symbol_declaration_spans(my symbol);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = symbol_declaration_spans(my symbol),
+                    .declarations = declarations,
                     .namespaces = vec_span_single(ctx->parameter_property_class),
                     .span = my content_span,
                 });
@@ -469,6 +474,24 @@ static Ty const* optional_member_type(Ty const* type, bool optional) {
     Checker* checker = current_checker;
     Ty const* parts[2] = { type, ty_intrinsic(checker, TY_UNDEFINED) };
     return ty_union(checker, parts, 2, nullptr, (TyList){0});
+}
+
+// The declarations of a class's property symbol as the class's type has them, when they include `own` (a field and the
+// parameter property or interface member of its name are one symbol) and are at least `min_count`, else empty
+static VecSpan class_prop_declarations(Symbol const* class_symbol, bool is_static, csview name, Span own, u32 min_count) {
+    VecSpan ret = vec_span_init();
+    if (!class_symbol) return ret;
+    Checker* checker = current_checker;
+    Ty const* owner = is_static ? ty_static_type_of(checker, class_symbol) : ty_declared_type_of(checker, class_symbol);
+    if (!owner || !(owner->flags & TYF_OBJECT)) return ret;
+    Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, name));
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    if (!prop || prop->decl->decl_span_count < min_count) return ret;
+    bool has_own = false;
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) has_own |= span_eq(prop->decl->decl_spans[i], own);
+    if (!has_own) return ret;
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&ret, prop->decl->decl_spans[i]);
+    return ret;
 }
 
 // A member's symbol line; a computed name that is a literal (`["a"]`, `[0]`) names the member too
@@ -898,6 +921,8 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         Span saved = ctx->parameter_property_class;
         if (i->is_parameter_property && my constructed_class && span_valid(my constructed_class->name_span)) {
             ctx->parameter_property_class = my constructed_class->name_span;
+            ctx->parameter_property_symbol = my constructed_class;
+            ctx->parameter_property_arg = i->span;
         }
         initialized_binding_compile_test_info(&i->initializer, ctx);
         ctx->parameter_property_class = saved;
@@ -1203,9 +1228,12 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
         case CLASS_ITEM_FIELD: {
             ClassItem const* symbol_items[64];
             u32 symbol_count = class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
-            VecSpan declarations = vec_span_init();
-            for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
-            if (!symbol_count) vec_span_push(&declarations, my span);
+            VecSpan declarations = my field.computed_key || span_valid(class_item_private_name(me)) ? vec_span_init() :
+                class_prop_declarations(ctx->class_symbol, my field.is_static, cstr_sv(&my field.name_string), my span, 2);
+            if (vec_span_is_empty(&declarations)) {
+                for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
+                if (!symbol_count) vec_span_push(&declarations, my span);
+            }
             ClassItem const* first = symbol_count ? symbol_items[0] : me;
             Span written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
             add_member_symbol(ctx, (BaselineSym){

@@ -66,6 +66,8 @@ typedef struct BaselineTestCase {
     // The class whose constructor's parameter properties are being walked: their names are its members (`C.x`)
     Span parameter_property_class;
     struct Symbol const* class_symbol; // The class whose members are being walked
+    struct Symbol const* parameter_property_symbol; // With parameter_property_class: the class, and the parameter
+    Span parameter_property_arg;
     struct Ty const* member_owner; // The interface or type literal whose members are being walked
     struct Symbol const* member_container; // The class, interface or enum whose members are being walked (null: literal)
     // The object literal a variable is initialized with, while walking it: its symbol is named by the variable (tsc's
