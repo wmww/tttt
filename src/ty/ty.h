@@ -1895,6 +1895,7 @@ typedef enum DeclTrackReport : uint8_t {
     DECL_REPORT_UNIQUE_SYMBOL, // reportInaccessibleUniqueSymbolError
     DECL_REPORT_THIS, // reportInaccessibleThisError
     DECL_REPORT_NON_SERIALIZABLE, // reportNonSerializableProperty (`name`: the property)
+    DECL_REPORT_TRUNCATION, // reportTruncationError
 } DeclTrackReport;
 
 typedef struct DeclTracker {
@@ -1904,6 +1905,8 @@ typedef struct DeclTracker {
     void (*track_computed_name)(struct DeclTracker* me, csview name, struct SourceFile const* file);
     void (*report)(struct DeclTracker* me, DeclTrackReport report, csview name);
     void* ctx;
+    // The printed type passed the length tsc serializes (reportTruncationError, reported): the printer stops
+    bool truncated;
 } DeclTracker;
 
 typedef struct TyDisplay {

@@ -654,6 +654,22 @@ static SymbolDecl const* namespace_decl_of_scope(Scope const* scope) {
 
 static bool statements_visible(Scope const* scope, u32 depth);
 
+static thread_local Symbol const* const* const* painted_symbols;
+static thread_local u32 const* painted_count;
+
+void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count) {
+    painted_symbols = symbols;
+    painted_count = count;
+}
+
+static bool is_painted(Symbol const* symbol) {
+    if (!painted_symbols) return false;
+    for (u32 i = 0; i < *painted_count; i++) {
+        if ((*painted_symbols)[i] == symbol) return true;
+    }
+    return false;
+}
+
 // `export = x`, `export default x` or `export { x }` in the module or namespace makes x's declarations visible (tsc's
 // collectLinkedAliases)
 static bool exported_by_alias(Scope const* scope, Symbol const* symbol) {
@@ -683,7 +699,7 @@ static bool namespace_visible(Symbol const* ns, SymbolDecl const* decl, u32 dept
     if (!outer) return true;
     if (decl->hoisted) return false;
     bool in_ambient = (outer->kind == SCOPE_NAMESPACE && outer->ambient) || outer->kind == SCOPE_GLOBAL_AUGMENTATION;
-    if (ns->exported || in_ambient || exported_by_alias(outer, ns)) return statements_visible(outer, depth + 1);
+    if (ns->exported || in_ambient || exported_by_alias(outer, ns) || is_painted(ns)) return statements_visible(outer, depth + 1);
     return outer->kind == SCOPE_SCRIPT;
 }
 
@@ -774,7 +790,7 @@ static bool any_accessible(
         if (accessible_chain(me, symbol, meaning, &chain)) {
             had = symbol;
             if (symbol_has_visible_declarations(chain.items[0])) {
-                *out = (SymbolAccess){ .kind = SYMBOL_ACCESSIBLE };
+                *out = (SymbolAccess){ .kind = SYMBOL_ACCESSIBLE, .head = chain.items[0] };
                 return true;
             }
         }

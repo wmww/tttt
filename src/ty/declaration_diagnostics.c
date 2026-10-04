@@ -130,6 +130,12 @@ typedef struct Walk {
     // The diagnostics reported since this index are of the declaration being emitted (tsc deduplicates them)
     isize_t emitting_errors;
     DeclTracker tracker;
+    // The file's declarations an emitted one names that aren't visible themselves: declaration emit emits them too
+    // (late painting: tsc's aliasesToMakeVisible and lateMarkedStatements). `painted_done` of them were walked
+    Symbol const** painted;
+    u32 painted_count, painted_cap;
+    bool* painted_done;
+    bool late_pass; // Walking the statements again for painted ones only
     // A module's local declarations that `export { x }` or `export default x` name (tsc's collectLinkedAliases makes
     // them visible)
     Symbol const** exported_locals;
@@ -392,12 +398,16 @@ static void emit_leave(Walk* me, Emitting saved) { my emitting = saved; }
 // scratch string)
 static void print_inferred(Walk* me, Ty const* type) {
     if (!type || my emitting.kind == EMIT_NONE) return;
+    my tracker.truncated = false;
     // (With the types baseline's node reuse, which an underline turns on: tsc's declaration emit reuses annotations the
     // same way, naming what a reused name refers to anew where it means something else here)
     cstr text = cstr_init(), underline = cstr_init();
     ty_display(my checker, (TyDisplay){
         .target = &text, .underline = &underline, .enclosing = my scope, .tracker = &my tracker,
     }, type);
+    if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
+        fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.sv.size, my emitting.name.sv.buf, cstr_str(&text));
+    }
     c_drop(cstr, &text, &underline);
 }
 
@@ -415,6 +425,41 @@ static bool fallback_end(Walk* me, bool outer, Ty const* type) {
     if (fell_back) print_inferred(me, type);
     my fell_back = outer || fell_back;
     return fell_back;
+}
+
+// A declaration of this file that an emitted declaration names: if it isn't visible, it is emitted too
+static void paint(Walk* me, Symbol const* symbol) {
+    if (!symbol || symbol->exported || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return;
+    bool here = false;
+    for (u32 i = 0; i < symbol->decl_count && !here; i++) here = symbol->decls[i].name.source == my file;
+    if (!here) return;
+    for (u32 i = 0; i < my painted_count; i++) {
+        if (my painted[i] == symbol) return;
+    }
+    if (my painted_count == my painted_cap) {
+        my painted_cap = my painted_cap ? my painted_cap * 2 : 8;
+        my painted = realloc(my painted, my painted_cap * sizeof(*my painted));
+        my painted_done = realloc(my painted_done, my painted_cap * sizeof(*my painted_done));
+    }
+    my painted_done[my painted_count] = false;
+    my painted[my painted_count++] = symbol;
+}
+
+// Whether a painted declaration's statement is still to be walked (it is from now on)
+static bool take_painted(Walk* me, Symbol const* symbol) {
+    for (u32 i = 0; symbol && i < my painted_count; i++) {
+        if (my painted[i] != symbol || my painted_done[i]) continue;
+        my painted_done[i] = true;
+        return true;
+    }
+    return false;
+}
+
+static bool is_painted_pending(Walk* me, Symbol const* symbol) {
+    for (u32 i = 0; symbol && i < my painted_count; i++) {
+        if (my painted[i] == symbol) return !my painted_done[i];
+    }
+    return false;
 }
 
 // errorNameNode or errorFallbackNode, and errorDeclarationNameWithFallback
@@ -460,6 +505,10 @@ static void tracker_report(DeclTracker* tracker, DeclTrackReport kind, csview pr
             report_once(me, at, 2527, cstr_d("The inferred type of '", name, "' references an inaccessible '",
                 kind == DECL_REPORT_THIS ? "this" : "unique symbol", "' type. A type annotation is necessary."));
             return;
+        case DECL_REPORT_TRUNCATION:
+            report_once(me, at, 7056, cstr_from("The inferred type of this node exceeds the maximum length the compiler will "
+                "serialize. An explicit type annotation is needed."));
+            return;
         case DECL_REPORT_NON_SERIALIZABLE:
             report_once(me, at, 4118, cstr_d("The type of this node cannot be serialized because its property '", property,
                 "' cannot be serialized."));
@@ -500,7 +549,10 @@ static void track_symbol(DeclTracker* tracker, Symbol const* symbol, u32 meaning
     Walk* me = tracker->ctx;
     if (symbol->flags & SYMBOL_TYPE_PARAMETER) return;
     SymbolAccess access = symbol_accessibility_at(my scope, symbol, meaning);
-    if (access.kind == SYMBOL_ACCESSIBLE) return;
+    if (access.kind == SYMBOL_ACCESSIBLE) {
+        paint(me, access.head);
+        return;
+    }
     // (symbolToString from the enclosing declaration)
     SymbolChain chain = symbol_chain_at(my scope, symbol, meaning, false);
     cstr name = cstr_init();
@@ -524,10 +576,15 @@ static void check_entity_name(Walk* me, Symbol const* symbol, Span first, u32 me
     if (symbol->flags & SYMBOL_TYPE_PARAMETER) return;
     if (my reusing) {
         if (symbol->is_parameter) return; // (resolvable here, so visible)
-        if (symbol_accessibility_at(my scope, symbol, meaning).kind != SYMBOL_ACCESSIBLE) my fell_back = true;
+        SymbolAccess access = symbol_accessibility_at(my scope, symbol, meaning);
+        if (access.kind != SYMBOL_ACCESSIBLE) my fell_back = true;
+        else paint(me, access.head);
         return;
     }
-    if (symbol_has_visible_declarations(symbol)) return;
+    if (symbol_has_visible_declarations(symbol)) {
+        paint(me, symbol);
+        return;
+    }
     report_access(me, SYMBOL_NOT_ACCESSIBLE, first.sv, c_sv(""), false, first);
 }
 
@@ -1274,10 +1331,16 @@ typedef struct Container {
     bool module_top_level; // `export { x }` can name the declarations
 } Container;
 
-static bool statement_visible(Walk* me, Statement const* statement, Container container, Symbol const* symbol) {
+static bool statement_visible_at_first(Walk* me, Statement const* statement, Container container, Symbol const* symbol) {
     if (container.global || container.ambient) return true;
     if (statement_declares_name(statement->tag) && statement->decl.props.exported != DECL_EXPORTED_NO) return true;
     return container.module_top_level && is_exported_local(me, symbol);
+}
+
+// Whether to walk a declaration: it's visible, or (in a late pass) painted and not walked yet
+static bool statement_visible(Walk* me, Statement const* statement, Container container, Symbol const* symbol) {
+    if (!my late_pass) return statement_visible_at_first(me, statement, container, symbol);
+    return !statement_visible_at_first(me, statement, container, symbol) && take_painted(me, symbol);
 }
 
 // Declarations
@@ -1902,7 +1965,56 @@ static void check_enum(Walk* me, EnumDecl const* decl) {
 
 static void check_statements(Walk* me, VecStatement const* statements, Container container);
 
+static void check_statement_now(Walk* me, Statement const* statement, Container container);
+
+static Symbol const* statement_declared_symbol(Statement const* statement) {
+    switch (statement->tag) {
+        case STATEMENT_DECL_FUNCTION: return statement->decl.function.impl->symbol;
+        case STATEMENT_DECL_CLASS: return statement->decl.class->symbol;
+        case STATEMENT_DECL_INTERFACE: return statement->decl.interface->symbol;
+        case STATEMENT_DECL_TYPE: return statement->decl.type.symbol;
+        case STATEMENT_DECL_ENUM: return statement->decl.enum_->symbol;
+        case STATEMENT_DECL_NAMESPACE: return statement->decl.namespace.symbol;
+        default: return nullptr;
+    }
+}
+
 static void check_statement(Walk* me, Statement const* statement, Container container) {
+    if (!my late_pass) {
+        check_statement_now(me, statement, container);
+        return;
+    }
+    // A late pass: the painted declarations (a fresh walk of each), and visible namespaces may have some
+    if (statement->tag == STATEMENT_DECL_VARIABLE) {
+        bool visible = container.global || container.ambient || statement->decl.props.exported != DECL_EXPORTED_NO;
+        if (visible) return;
+        my late_pass = false;
+        for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
+            bool painted = i->binding.tag == BINDING_IDENTIFIER && !is_exported_local(me, i->binding.symbol) &&
+                take_painted(me, i->binding.symbol);
+            if (painted) check_variable(me, i, variable_statement_is_const(&statement->decl.variable));
+        }
+        my late_pass = true;
+        return;
+    }
+    if (statement->tag == STATEMENT_DECL_NAMESPACE) {
+        NamespaceDecl const* decl = &statement->decl.namespace;
+        bool augmentation = decl->is_augmentation || decl->is_global;
+        if (augmentation || statement_visible_at_first(me, statement, container, decl->symbol)) {
+            check_statement_now(me, statement, container); // (still a late pass inside)
+            return;
+        }
+    }
+    if (!statement_declares_name(statement->tag)) return;
+    Symbol const* symbol = statement_declared_symbol(statement);
+    if (!is_painted_pending(me, symbol)) return;
+    my late_pass = false;
+    take_painted(me, symbol);
+    check_statement_now(me, statement, (Container){ .global = true });
+    my late_pass = true;
+}
+
+static void check_statement_now(Walk* me, Statement const* statement, Container container) {
     switch (statement->tag) {
         case STATEMENT_DECL_VARIABLE: {
             if (!container.global && !container.ambient && statement->decl.props.exported == DECL_EXPORTED_NO) {
@@ -2039,7 +2151,22 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
     walk.tracker = (DeclTracker){
         .track_symbol = track_symbol, .track_computed_name = track_computed_name, .report = tracker_report, .ctx = &walk,
     };
+    symbol_chain_set_painted((Symbol const* const* const*)&walk.painted, &walk.painted_count);
     if (file->is_module) collect_exported_locals(&walk, &file->ast.statements);
-    check_statements(&walk, &file->ast.statements, (Container){ .global = !file->is_module, .module_top_level = file->is_module });
+    Container top = { .global = !file->is_module, .module_top_level = file->is_module };
+    check_statements(&walk, &file->ast.statements, top);
+    // What the walk painted, and what that paints (transformAndReplaceLatePaintedStatements)
+    for (u32 walked = 0; walked < walk.painted_count;) {
+        u32 count = walk.painted_count;
+        walk.late_pass = true;
+        check_statements(&walk, &file->ast.statements, top);
+        walk.late_pass = false;
+        // (one no statement declares has nothing to walk)
+        for (u32 i = 0; i < count; i++) walk.painted_done[i] = true;
+        walked = count;
+    }
+    symbol_chain_set_painted(nullptr, nullptr);
     free(walk.exported_locals);
+    free(walk.painted);
+    free(walk.painted_done);
 }

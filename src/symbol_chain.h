@@ -48,6 +48,9 @@ typedef struct SymbolAccess {
     // (named from the enclosing scope); CANNOT_BE_NAMED, the symbol's external module (named fully qualified). Null
     // when there is none
     Symbol const* module;
+    // ACCESSIBLE through a chain: the symbol it starts with, whose declarations may need to be emitted too (tsc's
+    // aliasesToMakeVisible are among them). Null otherwise
+    Symbol const* head;
 } SymbolAccess;
 
 // tsc's isSymbolAccessible(symbol, enclosing, meaning, shouldComputeAliasesToMakeVisible = true)
@@ -59,6 +62,9 @@ bool symbol_type_accessible_at(Scope const* enclosing, Symbol const* symbol);
 // tsc's hasVisibleDeclarations with late painting: every declaration is visible or directly in a visible statement
 // list (a file, a visible namespace's block)
 bool symbol_has_visible_declarations(Symbol const* symbol);
+// Declaration emit's late painted declarations on this thread (null: none): a painted namespace is visible like an
+// exported one (tsc's addVisibleAlias sets its isVisible). `symbols` and `count` are read where they are each time
+void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count);
 // tsc's isDeclarationVisible of the statements directly in a scope (a file is, a namespace block is if its namespace
 // declaration is, nothing else is)
 bool scope_statements_visible(Scope const* scope);

@@ -29,10 +29,18 @@ static void underline_since(TyDisplay d, isize_t start) {
     }
 }
 
+// The length past which declaration emit doesn't serialize a type (tsc's noTruncationMaximumTruncationLength)
+#define DECLARATION_MAX_LENGTH 1000000
+
 static void out(TyDisplay d, csview sv) {
+    if (d.tracker && d.tracker->truncated) return;
     isize_t start = cstr_size(d.target);
     cstr_append_sv(d.target, sv);
     underline_since(d, start);
+    if (d.tracker && cstr_size(d.target) > DECLARATION_MAX_LENGTH) {
+        d.tracker->truncated = true;
+        d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
+    }
 }
 #define out_lit(d, s) out(d, c_sv(s))
 
@@ -1932,6 +1940,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 if (ty_expr_type(me, component->name)->kind == TY_LITERAL) continue;
                 // (The member is its declaration reused, the type is made: the baseline's `^` line)
                 TyDisplay reused = reused_if(d, true);
+                if (d.tracker) {
+                    Span name = component->name->outer_span;
+                    d.tracker->track_computed_name(d.tracker, name.sv, name.source);
+                }
                 if (info->readonly) out_lit(reused, "readonly ");
                 out_lit(reused, "[");
                 out(reused, component->name->outer_span.sv);
@@ -1954,6 +1966,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         if (d.tracker) {
+            if (d.tracker->truncated) break;
             if (track_property(me, d, prop)) continue;
         }
         Ty const* type = prop_type(me, prop);
@@ -2201,6 +2214,7 @@ static void display_union(Checker* me, TyDisplay d, Ty const* ty) {
 }
 
 void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
+    if (d.tracker && d.tracker->truncated) return;
     if (ty == my display_of) ty = my display_as;
     if (ty->kind == TY_SUBSTITUTION) {
         // Its base (tsc's typeToTypeNodeHelper)
