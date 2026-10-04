@@ -223,6 +223,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     bool js_constructor_candidate = names->file && names->file->is_js && !span_valid(my arrow_span) && !my is_method &&
         !my accessor && !span_valid(my member_name);
     if (is_iife || ((my is_constructor || js_constructor_candidate) && my has_body)) flow.return_target = flow_new_branch_label(&flow);
+    // The body of a function with a written return type in a referenced project's source is never looked at: the
+    // file isn't checked, and nothing outside the body sees into it (tsc -b reads the project's `.d.ts`, which has no
+    // bodies at all). Not an IIFE's, which is part of the flow around it
+    bool skip_body = my has_body && my ret_explicit && !is_iife && names->file && names->file->from_reference &&
+        !names->file->is_js;
 
     unused_register(names, UNUSED_FUNCTION, me, span_null);
     // Handle generics (includes adding names)
@@ -265,7 +270,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
 
     // The toplevel of the function body is the same scope as the arguments
-    block_add_names(&my body, function_scope);
+    if (!skip_body) block_add_names(&my body, function_scope);
 
     function_scope->no_super = my is_constructor ? NO_SUPER_CONSTRUCTOR_ARGS : NO_SUPER_NONE;
     Scope* parameter_scope = scope_new(function_scope, SCOPE_BLOCK);
@@ -308,7 +313,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         }
     }
     saved_flow = type_flow_enter_statements();
-    block_lookup_names_as(&my body, true, function_scope, errs);
+    if (!skip_body) block_lookup_names_as(&my body, true, function_scope, errs);
     type_flow_restore(saved_flow);
 
     my end_flow = nullptr;

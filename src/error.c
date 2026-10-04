@@ -300,22 +300,32 @@ void error_format_pretty_summary(cstr* out, VecError const* errors, char const* 
 
 intptr_t print_error_ctx_max_display = 5000;
 
-void print_error_ctx(ErrorCtx const* me) {
+void display_error_ctx(ErrorCtx const* me, cstr* out) {
     const intptr_t max_display = print_error_ctx_max_display;
     intptr_t displayed = 0;
     for_each (i, vec_error, &my errors) {
-        println(debug_d(i), "\n");
+        DisplayCtx d = display_sequence(PRINT_DISPLAY, debug_d(i), "\n\n");
+        cstr_append_sv(out, cstr_sv(&d.target));
+        display_ctx_drop(&d);
         displayed++;
         if (displayed >= max_display) {
             break;
         }
     }
     if (vec_error_size(&my errors) > displayed) {
-        println(
-            color_error, "  ", vec_error_size(&my errors) - displayed,
-            " additional errors not shown", color_normal, "\n"
+        DisplayCtx d = display_sequence(PRINT_DISPLAY,
+            color_error, "  ", vec_error_size(&my errors) - displayed, " additional errors not shown", color_normal, "\n\n"
         );
+        cstr_append_sv(out, cstr_sv(&d.target));
+        display_ctx_drop(&d);
     }
+}
+
+void print_error_ctx(ErrorCtx const* me) {
+    cstr out = cstr_null;
+    display_error_ctx(me, &out);
+    fputs(cstr_str(&out), stdout);
+    cstr_drop(&out);
 }
 
 bool error_ctx_empty(ErrorCtx const* me) {

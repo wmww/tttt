@@ -81,6 +81,8 @@ void error_format_pretty_summary(cstr* out, VecError const* errors, char const* 
 
 extern intptr_t print_error_ctx_max_display; // tttt --all-errors lifts it
 void print_error_ctx(ErrorCtx const* me);
+// What print_error_ctx() prints, appended to *out
+void display_error_ctx(ErrorCtx const* me, cstr* out);
 bool error_ctx_empty(ErrorCtx const* me);
 void error_ctx_clear(ErrorCtx* me);
 Error* error_ctx_append_error(ErrorCtx* me, Error error);

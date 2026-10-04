@@ -16,7 +16,10 @@
 #include "string_helpers.h"
 #include "tsconfig.h"
 #include "project.h"
+#include "load_pool.h"
 #include <cleat/filesystem.h>
+#include <pthread.h>
+#include <stdatomic.h>
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,6 +42,7 @@ typedef struct Options {
     bool stop_build_on_errors; // --stopBuildOnErrors
     u32 checkers; // --checkers
     u32 threads; // --threads
+    u32 build_jobs; // --build-jobs: how many projects -b checks at once (0: decided by threads)
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -46,6 +50,31 @@ typedef struct Options {
     const char* option_values[MAX_COMPILER_OPTION_ARGS];
     intptr_t option_count;
 } Options;
+
+// Where a program's messages go: straight to stdout and stderr, or (-b checking projects concurrently) into buffers
+// that are printed in build order
+typedef struct Output {
+    bool buffered;
+    cstr out, err;
+} Output;
+
+static void output_put(Output* me, FILE* file, DisplayCtx d) {
+    if (my buffered) {
+        cstr_append_sv(file == stdout ? &my out : &my err, cstr_sv(&d.target));
+    } else {
+        fputs(cstr_str(&d.target), file);
+    }
+    display_ctx_drop(&d);
+}
+#define out_println(out, ...) output_put(out, stdout, display_sequence(PRINT_DISPLAY, __VA_OPT__(__VA_ARGS__,) "\n"))
+#define out_eprintln(out, ...) output_put(out, stderr, display_sequence(EPRINT_DISPLAY, __VA_OPT__(__VA_ARGS__,) "\n"))
+
+static void output_flush(Output* me) {
+    fputs(cstr_str(&my out), stdout);
+    fputs(cstr_str(&my err), stderr);
+    cstr_clear(&my out);
+    cstr_clear(&my err);
+}
 
 static double now_ms() {
     struct timespec ts;
@@ -66,9 +95,9 @@ static long resident_mb() {
 
 // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
 // program_load() does both (and chases imports) in one go
-static void phase_done(Options const* opts, const char* name, double* last) {
+static void phase_done(Options const* opts, Output* out, const char* name, double* last) {
     const double now = now_ms();
-    if (opts->time) eprintln("time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB)");
+    if (opts->time) out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB)");
     *last = now;
 }
 
@@ -124,11 +153,11 @@ static i64 file_size_of(void* ctx, csview path) {
 }
 
 // The tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line
-static_failable apply_compiler_options(Options const* opts, csview config, Program* program) {
+static_failable apply_compiler_options(Options const* opts, Output* out, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
     bool libs_decided = false;
     if (config.size) {
-        if (!opts->quiet) println(color_good, "Project ", config, color_normal);
+        if (!opts->quiet) out_println(out, color_good, "Project ", config, color_normal);
         // Files on the command line replace the config's
         try (tsconfig_load(fs, config, options, nullptr)) bubble;
         libs_decided = options->target_set || cstr_size(&options->lib);
@@ -166,15 +195,20 @@ static void destroy_program(Program* program, ErrorCtx* errs, [[maybe_unused]] b
 #endif
     program_destroy(program);
     error_ctx_drop(errs);
+    free(errs);
 }
 
 // Prints and clears whatever errors have accumulated so far, returning how many there were
-static intptr_t report_errors(ErrorCtx* errs) {
+static intptr_t report_errors(Output* out, ErrorCtx* errs) {
     if (error_ctx_empty(errs)) {
         return 0;
     }
     const intptr_t count = vec_error_size(&errs->errors);
-    print_error_ctx(errs);
+    if (out->buffered) {
+        display_error_ctx(errs, &out->out);
+    } else {
+        print_error_ctx(errs);
+    }
     error_ctx_clear(errs);
     return count;
 }
@@ -212,36 +246,28 @@ static void verify_references(Program* program, ProjectSet const* projects, u32 
 // config's options if there's a config), else the config's files. With a config the program sees the projects it
 // references through their sources (projects is where they're loaded, project the config's). Problems with the checked
 // program are printed as TypeScript diagnostics and reflected in that exit code; only failures that stop us checking
-// at all (an unreadable standard library or entry point) come back as errors. last: nothing is checked after it
-static_failable check_files(
-    Options const* opts, csview config, ProjectSet* projects, u32 project, bool last, CheckCounts* counts, returns int
+// at all (an unreadable standard library or entry point) come back as errors. redirects: what the config references
+// (null without a config), the caller's to free after the program. last: nothing is checked after it
+static_failable check_files(Options const* opts, Output* out, csview config, ProjectSet* projects, u32 project,
+    ProjectRedirects const* redirects, bool last, CheckCounts* counts, returns int
 ) {
-    ErrorCtx errs = error_ctx_init();
-    Program* program = program_new(&errs, fs);
+    ErrorCtx* errs = c_new(ErrorCtx, error_ctx_init());
+    Program* program = program_new(errs, fs);
     program_set_realpath(program, real_path_of, nullptr);
     program_set_file_size(program, file_size_of, nullptr);
     program_set_checkers(program, opts->checkers);
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
-    try (apply_compiler_options(opts, config, program)) cleanup {
-        destroy_program(program, &errs, last);
+    try (apply_compiler_options(opts, out, config, program)) cleanup {
+        destroy_program(program, errs, last);
     }
     // The config's root files, unless there are files on the command line
     if (config.size && !opts->path_count) {
         StrList const* listed = project_set_root_files(projects, project);
         for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
     }
-    ProjectRedirects* redirects = nullptr;
-    if (config.size) {
-        redirects = project_redirects_new(projects, project);
-        if (project_redirects_count(redirects)) {
-            program_set_references(program, redirects);
-        } else {
-            project_redirects_destroy(redirects);
-            redirects = nullptr;
-        }
-    }
+    if (project_redirects_count(redirects)) program_set_references(program, redirects);
     program_set_threads(program, opts->threads);
     // (Libraries' errors are dropped once they're loaded: these come after)
     bool has_inputs = opts->path_count + root_files.count > 0;
@@ -250,13 +276,12 @@ static_failable check_files(
         bool no_inputs = config.size && program_report_no_inputs(program);
         // A solution config: only references (tsc says nothing, and builds nothing without -b)
         bool solution = config.size && project_set_at(projects, project)->reference_count;
-        intptr_t config_errors = report_errors(&errs);
+        intptr_t config_errors = report_errors(out, errs);
         if (counts) counts->errors += config_errors;
         str_list_drop(&root_files);
-        destroy_program(program, &errs, last);
-        project_redirects_destroy(redirects);
+        destroy_program(program, errs, last);
         if (solution || no_inputs) {
-            if (solution && !opts->quiet && !opts->build) println("Only project references to check: use -b to check them");
+            if (solution && !opts->quiet && !opts->build) out_println(out, "Only project references to check: use -b to check them");
             return ok(config_errors ? 1 : 0);
         }
         return err_d("No input files: none on the command line and none from a tsconfig.json");
@@ -285,32 +310,31 @@ static_failable check_files(
     }
 
     if (!opts->no_lib) {
-        if (!opts->quiet) println(color_good, "Loading libraries...", color_normal);
+        if (!opts->quiet) out_println(out, color_good, "Loading libraries...", color_normal);
         try (load_stdlib(program)) cleanup {
-            destroy_program(program, &errs, last);
-            project_redirects_destroy(redirects);
+            destroy_program(program, errs, last);
         }
 
-        if (!error_ctx_empty(&errs)) {
-            const intptr_t lib_errors = vec_error_size(&errs.errors);
-            println("Encountered ", color_error, lib_errors, " errors", color_normal, " loading libraries.");
-            //print_error_ctx(&errs);
-            error_ctx_clear(&errs);
+        if (!error_ctx_empty(errs)) {
+            const intptr_t lib_errors = vec_error_size(&errs->errors);
+            out_println(out, "Encountered ", color_error, lib_errors, " errors", color_normal, " loading libraries.");
+            //print_error_ctx(errs);
+            error_ctx_clear(errs);
         }
     }
-    phase_done(opts, "load+parse libs", &last_time);
+    phase_done(opts, out, "load+parse libs", &last_time);
     if (config.size) verify_references(program, projects, project, true);
 
     SourceFile* source = nullptr;
     for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {
         csview path = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
-        if (!opts->quiet) println(color_good, "Loading ", path, "...", color_normal);
+        if (!opts->quiet) out_println(out, color_good, "Loading ", path, "...", color_normal);
         bool from_config = i >= opts->path_count;
         FailableResult loaded = program_load(program, path, &source);
         if (loaded.error && from_config) {
             // A `files` entry that doesn't exist: tsc's TS6053, and the rest is checked anyway
             failable_result_drop(&loaded);
-            Error* error = error_ctx_global_error_d(&errs, 6053, "File '", path, "' not found.");
+            Error* error = error_ctx_global_error_d(errs, 6053, "File '", path, "' not found.");
             error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
             error_sub_error_d(
                 vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Part of 'files' list in tsconfig.json"
@@ -319,27 +343,26 @@ static_failable check_files(
         }
         try (loaded) cleanup {
             str_list_drop(&root_files);
-            destroy_program(program, &errs, last);
-            project_redirects_destroy(redirects);
+            destroy_program(program, errs, last);
         }
     }
     str_list_drop(&root_files);
     program_load_automatic_types(program);
-    phase_done(opts, "load+parse files", &last_time);
+    phase_done(opts, out, "load+parse files", &last_time);
 
     int ret = 0;
-    const intptr_t parse_errors = report_errors(&errs);
+    const intptr_t parse_errors = report_errors(out, errs);
     if (parse_errors) ret = 1;
 
     program_resolve_names(program);
 
-    const intptr_t name_errors = report_errors(&errs);
+    const intptr_t name_errors = report_errors(out, errs);
     if (name_errors) ret = 1;
-    phase_done(opts, "resolve names", &last_time);
+    phase_done(opts, out, "resolve names", &last_time);
 
     if (opts->print_ast && source) {
-        println(color_good, "Parsed:", color_normal);
-        println(debug_d(&source->ast), "\n");
+        out_println(out, color_good, "Parsed:", color_normal);
+        out_println(out, debug_d(&source->ast), "\n");
     }
 
     intptr_t type_errors = 0;
@@ -347,19 +370,19 @@ static_failable check_files(
         program_declaration_diagnostics_cli(program, parse_errors || name_errors);
         program_typecheck(program);
 
-        if (error_ctx_empty(&errs)) {
-            println(color_good, "Typecheck passed", color_normal);
+        if (error_ctx_empty(errs)) {
+            out_println(out, color_good, "Typecheck passed", color_normal);
         } else {
-            println(color_error, "Typecheck failed", color_normal);
+            out_println(out, color_error, "Typecheck failed", color_normal);
         }
 
-        type_errors = report_errors(&errs);
+        type_errors = report_errors(out, errs);
         if (type_errors) ret = 1;
-        phase_done(opts, "typecheck", &last_time);
+        phase_done(opts, out, "typecheck", &last_time);
         if (opts->time) {
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
-                eprintln("time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
+                out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
                     " MB, ", checker->next_type_id, " types");
             }
 #ifdef TTTT_ARENA_SITES
@@ -369,14 +392,14 @@ static_failable check_files(
     }
 
     if (parse_errors || name_errors || type_errors) {
-        println(
+        out_println(out,
             "Checked ", program_get_file_count(program), " files, found ",
             parse_errors ? color_error : color_none, parse_errors, " parse errors", color_normal, ", ",
             name_errors  ? color_error : color_none, name_errors,  " name errors",  color_normal, " and ",
             type_errors  ? color_error : color_none, type_errors,  " type errors",  color_normal, "."
         );
     } else {
-        println(color_good, "Checked ", program_get_file_count(program), " files, no errors found!", color_normal);
+        out_println(out, color_good, "Checked ", program_get_file_count(program), " files, no errors found!", color_normal);
     }
 
     //println(color_good, "Running...", color_normal);
@@ -384,8 +407,8 @@ static_failable check_files(
     //println(color_good, "Run succeeded", color_normal);
 
     if (counts) counts->errors += parse_errors + name_errors + type_errors;
-    destroy_program(program, &errs, last);
-    project_redirects_destroy(redirects);
+    destroy_program(program, errs, last);
+    if (!last) phase_done(opts, out, "free", &last_time);
     return ok(ret);
 }
 
@@ -396,18 +419,75 @@ static_failable check_command_line(Options const* opts, returns int) {
     if (cstr_size(&config) && fs_is_directory(fs, cstr_sv(&config))) cstr_append_lit(&config, "/tsconfig.json");
     ProjectSet* projects = project_set_new(fs);
     u32 project = cstr_size(&config) ? project_set_load(projects, cstr_sv(&config)) : 0;
-    FailableResult result = check_files(opts, cstr_sv(&config), projects, project, true, nullptr, _OUTPUT_PARAM);
+    ProjectRedirects* redirects = cstr_size(&config) ? project_redirects_new(projects, project) : nullptr;
+    Output out = {0};
+    FailableResult result =
+        check_files(opts, &out, cstr_sv(&config), projects, project, redirects, true, nullptr, _OUTPUT_PARAM);
     // (The program may not have been freed: a release build leaves that to the exit)
 #ifdef DEBUG_BUILD
+    project_redirects_destroy(redirects);
     project_set_destroy(projects);
 #endif
     cstr_drop(&config);
     return result;
 }
 
+// One project of a -b build: checked on a build thread, its output kept for the main thread to print in build order
+typedef struct BuildJob {
+    Output out;
+    CheckCounts counts;
+    ProjectRedirects* redirects;
+    FailableResult result;
+    int ret;
+    bool done; // Under Build.lock
+} BuildJob;
+
+typedef struct Build {
+    Options const* opts;
+    Options project_opts; // The command line's options for each project, without its paths
+    ProjectSet const* projects;
+    u32 const* order;
+    u32 count;
+    BuildJob* jobs;
+    atomic_uint next; // The next job a build thread takes
+    atomic_uint end; // Nothing from here on is started (--stopBuildOnErrors)
+    pthread_mutex_t lock;
+    pthread_cond_t done;
+} Build;
+
+static void build_run(Build* me, u32 i) {
+    BuildJob* job = &my jobs[i];
+    Project const* project = project_set_at(my projects, my order[i]);
+    if (!project->readable) {
+        ErrorCtx errs = error_ctx_init();
+        error_ctx_global_error_d(&errs, 5083, "Cannot read file '", project->config, "'.");
+        job->counts.errors += report_errors(&job->out, &errs);
+        error_ctx_drop(&errs);
+        job->ret = 1;
+        return;
+    }
+    // (The project set is complete and only read from here on: build() listed every root file up front)
+    job->result = check_files(&my project_opts, &job->out, cstr_sv(&project->config), (ProjectSet*)my projects,
+        my order[i], job->redirects, i + 1 == my count, &job->counts, &job->ret);
+}
+
+static void* build_thread(void* arg) {
+    Build* me = arg;
+    for (u32 i; (i = atomic_fetch_add(&my next, 1)) < atomic_load(&my end);) {
+        build_run(me, i);
+        pthread_mutex_lock(&my lock);
+        my jobs[i].done = true;
+        pthread_cond_broadcast(&my done);
+        pthread_mutex_unlock(&my lock);
+    }
+    return nullptr;
+}
+
 // -b: every project the paths name (tsconfig.json files or their directories, `.` without any), each with what it
 // references before it (tsc's build order). Each is its own program, with its own options and the command line's, and
-// sees its references as sources. Like tsc 5.6+ goes on past a project with errors (not with --stopBuildOnErrors)
+// sees its references as sources. Like tsc 5.6+ goes on past a project with errors (not with --stopBuildOnErrors).
+// With sources rather than built outputs no program needs another's result: with --threads 4, two projects are checked
+// at once on two threads each (opts->build_jobs), their output printed in build order, so it doesn't depend on that
 static_failable build(Options const* opts, returns int) {
     ProjectSet* projects = project_set_new(fs);
     isize root_count = opts->path_count ? opts->path_count : 1;
@@ -421,43 +501,97 @@ static_failable build(Options const* opts, returns int) {
     u32 count = project_set_build_order(projects, roots, (u32)root_count, &order, &cycles);
     c_free_n(roots, root_count);
     int ret = 0;
+    Output direct = {0};
     if (cycles.count) {
         ErrorCtx errs = error_ctx_init();
         for (isize i = 0; i < cycles.count; i++) error_ctx_global_error_s(&errs, 6202, cstr_clone(cycles.items[i]));
-        report_errors(&errs);
+        report_errors(&direct, &errs);
         error_ctx_drop(&errs);
         ret = 1;
         count = 0; // (tsc builds nothing then)
     }
     str_list_drop(&cycles);
-    Options project_opts = *opts;
-    project_opts.path_count = 0;
+
+    u32 jobs = opts->build_jobs ? opts->build_jobs : opts->threads >= 4 ? 2 : 1;
+    if (jobs > count) jobs = count ? count : 1;
+    Build b = { .opts = opts, .project_opts = *opts, .projects = projects, .order = order, .count = count };
+    b.project_opts.path_count = 0;
+    b.project_opts.threads = opts->threads / jobs ? opts->threads / jobs : 1;
+    b.jobs = calloc((size_t)count + 1, sizeof(BuildJob));
+    atomic_init(&b.next, 0);
+    atomic_init(&b.end, count);
+    // Everything the programs read of the project set, made before any of them runs
+    for (u32 i = 0; i < count; i++) {
+        b.jobs[i].out.buffered = jobs > 1;
+        if (!project_set_at(projects, order[i])->readable) continue;
+        project_set_root_files(projects, order[i]);
+        b.jobs[i].redirects = project_redirects_new(projects, order[i]);
+    }
+    pthread_t* threads = nullptr;
+    if (jobs > 1) {
+        pthread_mutex_init(&b.lock, nullptr);
+        pthread_cond_init(&b.done, nullptr);
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setstacksize(&attr, worker_stack_size());
+        threads = c_new_n(pthread_t, jobs);
+        for (u32 t = 0; t < jobs; t++) {
+            panic_if(pthread_create(&threads[t], &attr, build_thread, &b), "couldn't start a build thread");
+        }
+        pthread_attr_destroy(&attr);
+    }
+
     CheckCounts counts = {0};
     u32 failed = 0;
+    FailableResult failure = {0};
     for (u32 i = 0; i < count; i++) {
-        Project const* project = project_set_at(projects, order[i]);
-        if (!project->readable) {
-            ErrorCtx errs = error_ctx_init();
-            error_ctx_global_error_d(&errs, 5083, "Cannot read file '", project->config, "'.");
-            counts.errors += report_errors(&errs);
-            error_ctx_drop(&errs);
+        BuildJob* job = &b.jobs[i];
+        if (jobs > 1) {
+            pthread_mutex_lock(&b.lock);
+            while (!job->done) pthread_cond_wait(&b.done, &b.lock);
+            pthread_mutex_unlock(&b.lock);
+            output_flush(&job->out);
+        } else {
+            build_run(&b, i);
+        }
+        if (job->result.error) {
+            // (What stops us checking at all: a later project's error isn't any less fatal, but this one comes first)
+            failure = job->result;
+            job->result = (FailableResult){0};
+            atomic_store(&b.end, 0);
+            break;
+        }
+        counts.errors += job->counts.errors;
+        if (job->ret || job->counts.errors) {
             failed++;
             ret = 1;
-            if (opts->stop_build_on_errors) break;
-            continue;
-        }
-        intptr_t before = counts.errors;
-        try (int project_ret, check_files(&project_opts, cstr_sv(&project->config), projects, order[i], i + 1 == count,
-            &counts, &project_ret)) cleanup {
-            free(order);
-        }
-        if (project_ret || counts.errors != before) {
-            failed++;
-            ret = 1;
-            if (opts->stop_build_on_errors) break;
+            if (opts->stop_build_on_errors) {
+                atomic_store(&b.end, 0);
+                break;
+            }
         }
     }
+    if (threads) {
+        for (u32 t = 0; t < jobs; t++) pthread_join(threads[t], nullptr);
+        free(threads);
+        pthread_cond_destroy(&b.done);
+        pthread_mutex_destroy(&b.lock);
+    }
+    for (u32 i = 0; i < count; i++) {
+        // (Whatever was checked past where the build stopped isn't printed)
+        cstr_drop(&b.jobs[i].out.out);
+        cstr_drop(&b.jobs[i].out.err);
+        failable_result_drop(&b.jobs[i].result);
+        project_redirects_destroy(b.jobs[i].redirects);
+    }
+    free(b.jobs);
     free(order);
+    if (failure.error) {
+#ifdef DEBUG_BUILD
+        project_set_destroy(projects);
+#endif
+        return failure;
+    }
     if (!opts->quiet || failed) {
         println(failed ? color_error : color_good, "Checked ", count, count == 1 ? " project" : " projects", ", ",
             failed, " with errors (", counts.errors, " errors)", color_normal);
@@ -502,6 +636,8 @@ int main(int argc, const char** argv) {
                 "  -b, --build [PROJECT...]  check each project (`.` by default) and everything it references, each\n"
                 "                with its own options, references first (-v, -f are accepted and ignored)\n"
                 "  --stopBuildOnErrors  with -b, stop after the first project with errors\n"
+                "  --build-jobs J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
+                "                4 threads, else 1). The output doesn't depend on it\n"
                 "  --no-lib      don't load the standard library\n"
                 "  --keep-going  typecheck even after parse or name errors\n"
                 "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
@@ -541,6 +677,8 @@ int main(int argc, const char** argv) {
             opts.checkers = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--threads") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
             opts.threads = (u32)atoi(argv[++i]);
+        } else if (streq(argv[i], "--build-jobs") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
+            opts.build_jobs = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {

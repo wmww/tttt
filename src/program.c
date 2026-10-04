@@ -164,12 +164,52 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
     return ret;
 }
 
+// Source files to free, shared by the threads of drop_source_files()
+typedef struct FileDrops {
+    SourceFile** files;
+    u32 count;
+    atomic_uint next;
+} FileDrops;
+
+static void* drop_source_files_thread(void* arg) {
+    FileDrops* drops = arg;
+    for (u32 i; (i = atomic_fetch_add(&drops->next, 1)) < drops->count;) {
+        source_file_drop(drops->files[i]);
+        *drops->files[i] = (SourceFile){0};
+    }
+    return nullptr;
+}
+
+// Frees what the source files hold (their ASTs, node by node) on the program's threads: a fifth of a big program's
+// time on one (-b frees a program per project). Each file's drop only touches its own nodes. The emptied files are
+// freed with the map
+static void drop_source_files(Program* me) {
+    u32 threads = my threads;
+    FileDrops drops = { .files = c_new_n(SourceFile*, hmap_box_source_file_size(&my source_files_map) + 1) };
+    atomic_init(&drops.next, 0);
+    for_each (i, hmap_box_source_file, &my source_files_map) drops.files[drops.count++] = i->second.get;
+    if (threads > drops.count / 16) threads = drops.count / 16;
+    // (Dropping recurses per nesting level like the checker does: its stack size)
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, worker_stack_size());
+    pthread_t* workers = c_new_n(pthread_t, threads + 1);
+    u32 started = 0;
+    while (started + 1 < threads && !pthread_create(&workers[started], &attr, drop_source_files_thread, &drops)) started++;
+    pthread_attr_destroy(&attr);
+    drop_source_files_thread(&drops);
+    for (u32 t = 0; t < started; t++) pthread_join(workers[t], nullptr);
+    free(workers);
+    free(drops.files);
+}
+
 static void program_drop(Program* me) {
     load_pool_destroy(my pool);
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
     free(my checkers);
     checker_drop(my checker);
+    drop_source_files(me);
     hmap_box_source_file_drop(&my source_files_map);
     hmap_source_file_ptr_drop(&my files_by_package_id);
     hmap_package_flag_drop(&my packages);
