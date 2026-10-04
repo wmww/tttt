@@ -509,6 +509,9 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             for_each (i, vec_type, &my composite) {
                 type_typecheck(i, errs);
             }
+            // Made after its members are walked (tsc's checkUnionOrIntersectionType), which decides union order:
+            // `(string & {}) | "-moz-initial"`
+            if (!current_checker->alias_body_walks) ty_of_node(me);
             break;
 
         case TYPE_TEMPLATE: template_type_typecheck(my template_, errs); break;

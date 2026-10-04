@@ -261,7 +261,9 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
         ty_declared_type_of(current_checker, my symbol);
         ty_leave_node(current_checker, saved);
     }
+    current_checker->alias_body_walks++;
     type_typecheck(&my type, errs);
+    current_checker->alias_body_walks--;
 }
 
 // Namespace declaration
