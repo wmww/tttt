@@ -570,16 +570,19 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 }
             }
             VecSpan declarations = vec_span_init();
+            // (A symbol is named as its first declaration writes it: `1; 1.0;` is `I[1]` twice)
+            csview written = my key.span.sv;
             if ((merged && merged->decl->decl_span_count) || redeclared) {
                 Prop const* shown = merged ? merged : redeclared;
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
+                if (span_valid(shown->decl->name_span)) written = shown->decl->name_span.sv;
             } else {
                 declarations = vec_span_clone(my declarations);
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my key.span,
-                .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
+                .text = member_text(ctx, ctx->member_container, scope, written, false),
             });
             Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
             if (redeclared) type = prop_type(current_checker, redeclared);

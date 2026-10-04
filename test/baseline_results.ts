@@ -10472,7 +10472,7 @@ const baselines = {
     },
     'duplicateStringNamedProperty1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateSymbolsExportMatching': {
@@ -50537,7 +50537,7 @@ const baselines = {
     },
     'derivedInterfaceIncompatibleWithBaseIndexer': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'interfaceExtendingOptionalChain': {
@@ -64352,7 +64352,7 @@ const baselines = {
     },
     'objectTypeWithDuplicateNumericProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectTypeWithNumericProperty': {
@@ -64807,12 +64807,12 @@ const baselines = {
     },
     'numericNamedPropertyDuplicates': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'numericStringNamedPropertyEquivalence': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'propertyNameWithoutTypeAnnotation': {
