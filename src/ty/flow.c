@@ -2604,14 +2604,22 @@ static FlowType type_at_switch_clause(FlowQuery* q, FlowNode const* flow) {
     } else {
         // `switch (x?.kind)`: in clauses whose cases are all something other than undefined, x isn't nullish (tsc's
         // narrowTypeBySwitchOptionalChainContainment)
-        if (compiler_options()->strict_null_checks && clause->clause_start != clause->clause_end &&
-            optional_chain_contains_reference(me, needle, q->reference)
-        ) {
+        // `switch (typeof x?.kind)` likewise, in clauses whose cases are all something other than "undefined"
+        bool contains = false, of_typeof = false;
+        if (compiler_options()->strict_null_checks && clause->clause_start != clause->clause_end) {
+            contains = optional_chain_contains_reference(me, needle, q->reference);
+            of_typeof = !contains && is_typeof_expr(needle) &&
+                optional_chain_contains_reference(me, &needle->unary_op->expr, q->reference);
+        }
+        if (contains || of_typeof) {
             TyBuf switch_types = {0};
             switch_clause_types(me, clause->switch_, &switch_types);
             bool every = true;
             for (u32 i = clause->clause_start; i < clause->clause_end; i++) {
-                every &= !(switch_types.data[i]->flags & (TYF_UNDEFINED | TYF_NEVER));
+                Ty const* case_type = switch_types.data[i];
+                every &= of_typeof ? !(case_type->flags & TYF_NEVER) && !((case_type->flags & TYF_STRING_LITERAL) &&
+                    case_type->literal.string && csview_equals(atom_sv(case_type->literal.string), "undefined")) :
+                    !(case_type->flags & (TYF_UNDEFINED | TYF_NEVER));
             }
             ty_buf_drop(&switch_types);
             if (every) type = type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL);
