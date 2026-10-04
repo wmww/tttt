@@ -152,17 +152,19 @@ Instructions (same setup as below) types session end -> triage end: tsc 5.181 ->
 valibot 5.615, react 2.089, nest 1.259 (+1.0%), webpack 4.025 (+1.0%), zod 4.635 (+0.8%), xstate 2.970 (+0.6%), after
 gating the escaped-name cooking and the JS TS2565 check (they had cost +1.9% on tsc).
 
-## Suite (2026-09-29, types session, todo entry 9, bc2752f2)
-**11962 / 13540** full pass (errors 12681, symbols 12952, types 12733; session start 11472, 0 components lost). The
-types component fails in 807 tests (1368 at the start). `./displaydiff.py`, tests (errors pass, types fail) 467 (73
-JS; 968 at the start); fixed by one kind (TS, JS): other 153 + 17, underlines/order only 47 + 5, line-missing 25 + 1,
-union-order 18, tsc-any 11, we-any 10 + 8, tsc-import() 9 + 2. `--fine`, TS tests by first differing line:
-line-missing 50, underlines/order 47, shape-other/declaration 34, union-order 24, signature-differs/declaration 22,
-typeof-other-name/declaration 19, object-differs/declaration 13, tsc-import() 12. `./failstats.py`: errors component
-fails in 859 tests (247 other text, 166 only missing, 161 missing+spurious, 153 tsc errors/tttt none, 65 only
-spurious, 55 tttt errors/tsc none); 47 tests have a spurious TS1xxx; log_error only in the two `_` tests (triage).
-`./jsstats.py`: **892** of 1049 JS tests pass. `./syntaxstats.py`: 34 parser-divergent tests (unchanged). The
-errtextdiff and older per-code lines of the previous entry weren't rerun.
+## Suite (2026-10-04, types/symbols fan-out, todo entry 5)
+**12712 / 13540** full pass (errors 13143, symbols 13323, types 12980; session start 12377, 0 components lost). Types
+component fails in 560 tests (703 at the start), symbols in 217 (506). `./displaydiff.py --fine --first-tsv`, tests
+whose errors pass: types 422 (67 JS; 508 at the start), by first differing line: line-missing 56, shape-other 48,
+underlines 38, signature-differs 35, tsc-any 32, we-any 26, union-differs 21, typeof-other-name 19; symbols 174 (56 JS;
+402), by first line: name 58, line-missing 32, decls-missing 30, decls-differ 18, other 11, decls-extra 11.
+`./failstats.py`: errors component fails in 397. `./jsstats.py`: **931** of 1049 JS tests pass. Corpora unchanged
+(webpack 6, xstate 12 -> **8** (fan-a: an outer mapper no longer overwrites a generic signature's own type
+parameters), drizzle 6, zod-root 55, tsc-src 12, rest 0); threadcheck identical; `./scenarios.py` 199/19/83.
+Callgrind 7aca543c -> end: tsc 4.705 -> 4.712, type-fest 3.216 -> 3.222, valibot 5.042 -> 5.051, react 1.631 ->
+1.634, nest 1.266 -> 1.265, webpack 3.892 -> 3.913 (+0.5%), zod 4.449 -> 4.466 (+0.4%), xstate 2.782 -> 2.788, drizzle
+13.311 -> 13.257, vue 7.895 -> 7.840 G (a bigint commit cost react +0.85% until literal_type() lost its inlined
+intern_slot(): bisected and fixed in the session).
 
 ## Corpora (2026-09-29, types session, bc2752f2)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest

@@ -49,3 +49,9 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   captured variable computed early gives another answer) and zod 2x TS2344 (`_TaskListNodeSchema`/`_Tree` against a
   constraint with `never` members, recursive-types.test.ts:474, mini/tests/index.test.ts:359). Both are order
   dependence bugs (plan 42 territory); find why before retrying the port.
+- (fan-out 2026-10-04, for insights) The symbols baseline harness (`src/test/baseline_test_traversal.c`,
+  `baseline_test_case.c`) grew ~650 lines this session rebuilding tsc's symbol identity that tttt's checker doesn't
+  have: members aren't Symbols, so merges (computed names, type parameter + member, namespace locals + exports, union
+  property declarations by (declaration, type, mapper)) are recomputed for display (hacks.md). It's display-only and
+  passes 290 symbols components, but it is a parallel model of tsc's binder. Decide whether member Symbols (which plan
+  42's lazily resolved members may want anyway) should replace it, or whether it's an acceptable harness cost.

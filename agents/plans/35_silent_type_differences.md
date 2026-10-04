@@ -68,25 +68,36 @@ noUncheckedIndexedAccess's missingType, `import x = N.C` and instantiation expre
 self-referencing functions. Split by first-line kind duplicated little (accessor pairs C/D, non-array rest targets and
 `!` in optional chains B/C).
 
-## Queue (after stage 3)
+## Stage 4 (done, 2026-10-04, todo entry 5): suite 12377 -> 12712
+Four Opus sub-agents (types semantics, types display, symbols names, symbols declarations), test lists by first
+differing line, ~110 commits, 0 lost, corpora unchanged but xstate 12 -> 8. Types component 703 -> 560 failing,
+symbols 506 -> 217. Main mechanisms: **type creation order** (class value types first, type parameters/type
+literals/intersections made when the check walk meets them, written `{}` interned at checker start, and *GCC
+evaluating call arguments right to left*: `./argorder.py` lists the calls that make two types as arguments),
+annotation reuse (nested function types, mapped properties, aliases through another import), lib files merged in
+tsc's lib order, parameter properties and fields as one property, circular import aliases resolving to nothing (the
+node16 PackageExports chains, +28), exact bigints, which `yield`s count, overload failure's longest candidate, and in
+the symbols harness a lot of tsc symbol identity rebuilt from tttt's split members (hacks.md: computed names, union
+property declarations, merges of type parameters/namespace locals/imports). Most of the harness work is display-only
+by necessity: tttt's members aren't Symbols.
+
+## Queue (after stage 4)
 What the agents left, roughly by size (their test names are examples):
-1. **Union order** (~24 first-line, 18 alone): creation order of types; no general fix found (arrayFrom,
-   controlFlowCaching, spreadUnion, subtypesOfTypeParameter). Plan 21 territory.
+1. **Union order** (14 first-line in fan-c's list): what stage 4's creation-order fixes didn't reach. tsc re-checks
+   each expression when the type writer prints it, so object literals there look newest
+   (conditionalOperatorWithIdenticalBCT, contextualTyping36: bugs/display.md); es2022IntlAPIs makes a lib literal
+   early somewhere. Plan 21 territory otherwise.
 2. **node16 `import * as` of a CommonJS module**: the *PackageExports*/*PatternExports* chains (27 tests) were a
    circular import alias keeping its target (fixed 2026-10-04). What's left really is tsc's per-import clone
    (resolveESModuleSymbol -> cloneTypeAsModuleType, members through getTypeWithSyntheticDefaultImportType's spread:
    readonly exports become new symbols without a parent): nodeModulesTypesVersionPackageExports x3 (`mod.x` of a
    cloned import is `Symbol(x)`, not `Symbol(mod.x)`), the `typeof m4`-vs-`m26` naming in bugs/display.md, maybe
    nodeModulesResolveJsonModule. A per-import module type is a refactor of how `import * as` resolves; small payoff.
-2. **node16 `import * as` of a CommonJS module** (~24: nodeModules1, nodeModulesAllowJs1, *PackageExports*): tsc
-   clones the module symbol per import (prints `typeof m4`); needs a per-import type, not a naming tweak. Notes in
-   `bugs/display.md`. (The *PackageExports* symbols chains were circular aliases, fixed 2026-10-04; the types
-   component's `typeof` clones remain.)
 3. **Line-missing one-offs** (~50): alias vs structure for recursive conditional/mapped types
    (recursiveConditionalCrash1-3), imports/exports inside functions (moduleElementsInWrongContext2/3), missing
    identifier recovery (`for ()`, reservedWords3, JSX namespaced names).
-4. **Underlines** (~40): annotation reuse on instantiated overloaded interface methods (ipromise2-4,
-   twoMergedInterfacesWithDifferingOverloads) and inside mapped types.
+4. **Underlines** (38 first-line): stage 4 did nested function types and mapped properties; strictFunctionTypesErrors
+   (tsc refuses to reuse `typeof Foo.f1` there but not in a reduced probe) is unexplained.
 5. **One type per expression** (~5): tsc re-checks arguments outside inference mode, or has a separate rest-element
    check (voidReturnIndexUnionInference, narrowingDestructuring, callChain.3, mappedTypeIndexedAccessConstraint).
 6. **Inference**: variadic middle rest parameters (`...args: [unknown, ...T, unknown]`, typeParameterConstModifiers:
@@ -94,7 +105,7 @@ What the agents left, roughly by size (their test names are examples):
    deep cases (multiSignatureTypeInference, nestedGenericSpreadInference, reverseMappedTypeRecursiveInference).
 7. **Spread of a union with generic members** (spreadObjectOrFalsy, spreadInvalidArgumentType): `SpreadAcc` can't keep
    them, a refactor.
-8. `yield` outside a generator's body (FunctionDeclaration6/7/10_es6, generatorTypeCheck57-59); merged/duplicate
+8. Merged/duplicate
    declarations (defaultNamedExportWithType1, typeAliasesForObjectTypes); scanner `\u` escapes in property names
    (scannerUnicodeEscapeInKeyword2); enum members with numeric names use the source text; declaration visibility
    (privacyInterface: depends on declaration emit); JS tests (~25) belong to plan 26.

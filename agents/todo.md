@@ -17,8 +17,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 4. Done (2026-10-04, one session, 3 commits): plan 41 stage 2. `-b` on tsc-src 3.65 s -> 1.32 s (tsgo -b 2.34 s),
    785 MB; reference sources' typed bodies skipped, two projects at once, parallel teardown. Suite, corpora and
    callgrind unchanged. Next lever for `-b` is parallel name resolution (plan 41 Status).
-5. **Fan-out: types and symbols components** (four Opus sub-agents in worktrees, `./displaydiff.py` buckets, disjoint
-   test lists, 0 lost at merge). These are now the two biggest failing components (704 and 507 tests vs errors' 427).
+5. Done (2026-10-04, one session, ~110 picked commits): types/symbols fan-out, suite 12377 -> 12712, 0 lost; types
+   component 703 -> 560 failing, symbols 506 -> 217; xstate 12 -> 8, other corpora unchanged; callgrind within +0.5%
+   (webpack), vue/drizzle down. Leftovers in plan 35's queue and bugs/display.md.
 6. **Plan 40 stage 3 + plan 41 stage 3**: module specifier generation once, for TS2742 and the references corpora;
    the 11 tsc-src checker bugs; pin typescript-eslint as the second references corpus and take it toward 0.
 7. **Planning: plan 42** (laziness). Read the stub; inventory, prototype, decide. Must answer whether lazy per-name
