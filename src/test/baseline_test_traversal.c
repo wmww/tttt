@@ -250,6 +250,11 @@ typedef struct PropSymbolInfo {
     // In an intersection: the members' own properties, not Object's or Function's (tsc's getPropertyOfType with
     // skipObjectFunctionPropertyAugment, unless no member has one)
     bool skip_augment;
+    // The member properties found so far: tsc's synthetic property lists the declarations of each distinct one (the
+    // same declaration again when two instantiations have it: `(A[] | B[]).filter`)
+    // (tsc's symbol: the declared one, or an instantiation of it, by mapper)
+    struct { Span decl; TyMapper const* mapper; } seen[16];
+    u32 seen_count;
 } PropSymbolInfo;
 
 static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* name, PropSymbolInfo* info, u32 depth) {
@@ -287,10 +292,17 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             }
             info->non_uniform |= inner.non_uniform;
             info->member_count += inner.member_count;
-            for_each (k, vec_span, &inner.declarations) {
-                bool seen = false;
-                for_each (l, vec_span, &info->declarations) seen |= span_cmp(*l, *k) == 0 && l->sv.size == k->sv.size;
-                if (!seen) vec_span_push(&info->declarations, *k);
+            // (A composite member with one property that has the name is that property's symbol, tsc's
+            // createUnionOrIntersectionProperty's singleProp: it may already be there. More are a symbol of their own)
+            bool repeated = false;
+            if (inner.seen_count == 1) {
+                for (u32 k = 0; k < info->seen_count; k++) {
+                    repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].mapper == inner.seen[0].mapper;
+                }
+                if (!repeated && info->seen_count < c_arraylen(info->seen)) info->seen[info->seen_count++] = inner.seen[0];
+            }
+            if (!repeated) {
+                for_each (k, vec_span, &inner.declarations) vec_span_push(&info->declarations, *k);
             }
         } else if (object->kind == TY_UNION) {
             info->missing_in_member = true;
@@ -328,10 +340,22 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         info->non_uniform = true;
     }
     info->member_count++;
+    // (tsc's instantiateSymbol keeps the declared symbol when its type has no type variables: the same type here)
+    TyMapper const* mapper = prop->mapper;
+    if (mapper && prop != root && prop_type(checker, prop) == prop_type(checker, root)) mapper = nullptr;
+    for (u32 k = 0; k < info->seen_count; k++) {
+        if (span_eq(info->seen[k].decl, first_declaration) && info->seen[k].mapper == mapper) return;
+    }
+    if (info->seen_count < c_arraylen(info->seen)) {
+        info->seen[info->seen_count].decl = first_declaration;
+        info->seen[info->seen_count++].mapper = mapper;
+    }
+    // (A declaration once per property: some members' PropDecl repeat one, an enum merged with a namespace)
     for (u32 j = 0; j < root->decl->decl_span_count; j++) {
-        bool seen = false;
-        for_each (k, vec_span, &info->declarations) seen |= span_cmp(*k, root->decl->decl_spans[j]) == 0 && k->sv.size == root->decl->decl_spans[j].sv.size;
-        if (!seen) vec_span_push(&info->declarations, root->decl->decl_spans[j]);
+        Span span = root->decl->decl_spans[j];
+        bool repeated = false;
+        for (u32 k = 0; k < j; k++) repeated |= span_eq(root->decl->decl_spans[k], span);
+        if (!repeated) vec_span_push(&info->declarations, span);
     }
 }
 

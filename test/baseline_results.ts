@@ -1317,7 +1317,7 @@ const baselines = {
     },
     'arraySlice': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'arrayToLocaleStringES2015': {
@@ -2327,7 +2327,7 @@ const baselines = {
     },
     'bestChoiceType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'bestCommonTypeReturnStatement': {
@@ -2847,7 +2847,7 @@ const baselines = {
     },
     'callsOnComplexSignatures': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'cannotIndexGenericWritingError': {
@@ -6092,7 +6092,7 @@ const baselines = {
     },
     'contextualOverloadListFromArrayUnion': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'contextualOverloadListFromUnionWithPrimitiveNoImplicitAny': {
@@ -6857,7 +6857,7 @@ const baselines = {
     },
     'controlFlowArrayErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'controlFlowArrays': {
@@ -23197,12 +23197,12 @@ const baselines = {
     },
     'neverAsDiscriminantType(strict=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'neverAsDiscriminantType(strict=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'newAbstractInstance': {
@@ -26717,7 +26717,7 @@ const baselines = {
     },
     'recursiveArrayNotCircular': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'recursiveBaseCheck': {
@@ -28242,7 +28242,7 @@ const baselines = {
     },
     'silentNeverPropagation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'simpleArrowFunctionParameterReferencedInObjectLiteral1': {
@@ -31332,12 +31332,12 @@ const baselines = {
     },
     'typeParameterExtendingUnion1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterExtendingUnion2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterExtendsPrimitive': {
@@ -31387,7 +31387,7 @@ const baselines = {
     },
     'typeParameterLeak': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeParameterListWithTrailingComma1': {
@@ -31647,7 +31647,7 @@ const baselines = {
     },
     'typeVariableConstraintIntersections': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeVariableConstraintedToAliasNotAssignableToUnion': {
@@ -32037,7 +32037,7 @@ const baselines = {
     },
     'unionCallMixedTypeParameterPresence': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unionErrorMessageOnMatchingDiscriminant': {
@@ -32057,12 +32057,12 @@ const baselines = {
     },
     'unionOfArraysFilterCall': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unionOfClassCalls': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'unionOfEnumInference': {

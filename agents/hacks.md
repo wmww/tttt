@@ -663,6 +663,14 @@ src` finds the code-side markers; every significant one has an entry here.
   symbol through `BaselineTestCase.merged_declarations` (`register_type_parameter_member_merges()`, keyed by the first
   declaration span, registered when the class is walked: a use earlier in the file misses it). The checker doesn't
   merge them (tsc's merged symbol changes nothing it checks that we know of).
+- tttt's binder splits symbols tsc's has as one, and the symbols baseline merges their declarations back
+  (`baseline_symbol_declaration_spans()`): a module/namespace local with the exported declarations of its name in its
+  block (tsc's declareModuleMember local symbol), a function's type parameter with a parameter/local of its name
+  (`Scope.type_params_function`). Computed member names are grouped by `computed_member_symbol_items()` /
+  `object_member_name()` (late-bound names through the checker's key type). A union/intersection property's symbol
+  dedupes its members' properties by (first declaration, mapper), treating an instantiated property whose type equals
+  the declared one as uninstantiated (tsc's instantiateSymbol keeps a symbol whose resolved type has no type variables:
+  lazy in tsc, so tsc may differ when the type wasn't resolved yet).
 - `callee_compile_test_info`: `f<T>` gets its own line only when `?.` follows (source peek); `a<b>?.()` keeps an
   `EXPR_GENERIC_PARAMS` callee.
 - `render_types_or_symbols_file` drops one trailing line break per unit (a last unit before `// @link` lines is off).
