@@ -7608,7 +7608,7 @@ const baselines = {
     'declarationEmitAliasInlineing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitAmdModuleDefault': {
         errors: true,
@@ -8103,7 +8103,7 @@ const baselines = {
     'declarationEmitExpressionWithNonlocalPrivateUniqueSymbol': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitFBoundedTypeParams': {
         errors: true,
@@ -8818,12 +8818,12 @@ const baselines = {
     'declarationEmitWithDefaultAsComputedName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitWithDefaultAsComputedName2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitWithInvalidPackageJsonTypings': {
         errors: true,
@@ -23778,7 +23778,7 @@ const baselines = {
     'noSymbolForMergeCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noTypeArgumentOnReturnType1': {
         errors: true,
@@ -65938,7 +65938,7 @@ const baselines = {
     'typeAliasesForObjectTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recurringTypeParamForContainerOfBase01': {
         errors: true,

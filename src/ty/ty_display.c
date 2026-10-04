@@ -56,9 +56,12 @@ static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty);
 static bool shows_alias(TyDisplay d, Ty const* ty) {
     if (!ty->alias) return false;
     if (!d.enclosing) return true;
-    if (d.tracker) return symbol_type_accessible_at(d.enclosing, ty->alias);
+    // (The types baseline's typeToTypeNode and declaration emit don't have UseAliasDefinedOutsideCurrentScope, which
+    // typeToString adds: an alias that isn't accessible from where it's printed prints its structure)
     TypeDecl const* type_decl = symbol_find_node(ty->alias, SYMBOL_DECL_TYPE_ALIAS);
-    return !type_decl || !type_decl->local;
+    if (type_decl && type_decl->local && !d.tracker) return false;
+    if (!d.tracker && !d.underline) return true;
+    return symbol_type_accessible_at(d.enclosing, ty->alias);
 }
 
 static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b);
@@ -772,6 +775,54 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     return (u32)vec_spanned_type_size(&identifier->generic_params) >= min;
 }
 
+static Expr const* entity_leftmost(Expr const* expr);
+
+// How tsc's tryVisitTypeReference reprints a (non-keyword, non-import) type reference: as written, by a name of its
+// target from where it's printed (serializeTypeName), or not at all (the node prints its type)
+typedef enum IdentifierReuse { IDENTIFIER_REUSED, IDENTIFIER_RENAMED, IDENTIFIER_MAPPED, IDENTIFIER_FAILS } IdentifierReuse;
+static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const* node) {
+    IdentifierType const* identifier = node->identifier;
+    bool qualified = vec_span_size(&identifier->namespaces) > 0;
+    Symbol const* symbol = identifier->symbol;
+    if (qualified) {
+        symbol = vec_symbol_cptr_size(&identifier->namespace_symbols) ?
+            *vec_symbol_cptr_at(&identifier->namespace_symbols, 0) : nullptr;
+    }
+    Span first = qualified ? *vec_span_at(&identifier->namespaces, 0) : identifier->name;
+    // (A type parameter that the instantiation maps: tsc's canReuseTypeNode)
+    bool mapped = !qualified && d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) &&
+        node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
+    if (mapped) return IDENTIFIER_MAPPED;
+    if (name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) return IDENTIFIER_REUSED;
+    Symbol const* target = identifier->target;
+    if (target && !target->is_local && !(target->flags & SYMBOL_TYPE_PARAMETER) &&
+        symbol_type_accessible_at(d.enclosing, target)
+    ) {
+        return IDENTIFIER_RENAMED;
+    }
+    return IDENTIFIER_FAILS;
+}
+
+// tsc's tryVisitSimpleTypeNode fails (the object of an indexed access, the operand of `keyof`): the whole indexed
+// access or `keyof` prints its type then
+static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
+    switch (node->tag) {
+        case TYPE_IDENTIFIER: {
+            IdentifierType const* identifier = node->identifier;
+            if (identifier->keyword || identifier->jsdoc || identifier->import_ref || identifier->import_argument) return false;
+            return identifier_reuse(me, d, node) == IDENTIFIER_FAILS;
+        }
+        case TYPE_TYPEOF: {
+            Expr const* leftmost = entity_leftmost(node->typeof_->expr);
+            return leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
+                !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE);
+        }
+        case TYPE_INDEXED: return simple_node_fails(me, d, &node->indexed->interface);
+        case TYPE_KEYOF: return simple_node_fails(me, d, &node->keyof->interface);
+        default: return false;
+    }
+}
+
 static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->keyword) {
@@ -801,21 +852,15 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
     }
     bool qualified = vec_span_size(&identifier->namespaces) > 0;
     Symbol const* symbol = identifier->symbol;
-    if (qualified) {
-        symbol = vec_symbol_cptr_size(&identifier->namespace_symbols) ?
-            *vec_symbol_cptr_at(&identifier->namespace_symbols, 0) : nullptr;
-    }
-    Span first = qualified ? *vec_span_at(&identifier->namespaces, 0) : identifier->name;
-    // (A type parameter that the instantiation maps: tsc's canReuseTypeNode)
-    bool mapped = !qualified && d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) &&
-        node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
-    if (mapped || !name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
+    IdentifierReuse reuse = identifier_reuse(me, d, node);
+    if (reuse != IDENTIFIER_REUSED) {
         isize_t start = cstr_size(d.target);
         isize_t underline_start = d.underline ? cstr_size(d.underline) : 0;
-        // tsc names what it refers to anew (serializeTypeName) and keeps the type arguments, unless it's a local that
-        // no name reaches (then the reference prints its type)
+        // tsc names what it refers to anew (serializeTypeName) and keeps the type arguments, unless no accessible
+        // name reaches it (then the reference prints its type)
         Symbol const* target = identifier->target;
-        if (!mapped && target && !target->is_local && !(target->flags & SYMBOL_TYPE_PARAMETER)) {
+        bool mapped = reuse == IDENTIFIER_MAPPED;
+        if (reuse == IDENTIFIER_RENAMED) {
             out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
             display_node_args(me, d, &identifier->generic_params);
         } else {
@@ -1122,6 +1167,17 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
     }
 }
 
+// tsc's tryVisitSimpleTypeNode (the object of an indexed access, the operand of `keyof`) reprints a type reference,
+// `typeof`, indexed access or `keyof` without the parentheses written around it
+static TypeNode node_without_simple_parens(TypeNode const* node) {
+    TypeNode copy = *node;
+    if (copy.parenthesized && (copy.tag == TYPE_IDENTIFIER || copy.tag == TYPE_TYPEOF || copy.tag == TYPE_INDEXED ||
+        copy.tag == TYPE_KEYOF)) {
+        copy.parenthesized = false;
+    }
+    return copy;
+}
+
 // Prints an annotation as written, as reused
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
     d.reused = !node->synthesized;
@@ -1174,16 +1230,33 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             }
             out_lit(d, "]");
             break;
-        case TYPE_INDEXED:
-            display_node(me, d, &node->indexed->interface);
+        case TYPE_INDEXED: {
+            if (simple_node_fails(me, d, &node->indexed->interface)) {
+                display_node_fallback(me, d, node);
+                break;
+            }
+            // tsc's tryVisitIndexedAccess: the object without its parentheses if it's simple, then the factory's
+            // parenthesizeNonArrayTypeOfPostfixType (`typeof a['a']` prints `(typeof a)["a"]`)
+            TypeNode object = node_without_simple_parens(&node->indexed->interface);
+            bool parens = !object.parenthesized && (object.tag == TYPE_TYPEOF || object.tag == TYPE_KEYOF);
+            if (parens) out(reused_if(d, false), c_sv("("));
+            display_node(me, d, &object);
+            if (parens) out(reused_if(d, false), c_sv(")"));
             out_lit(d, "[");
             display_node(me, d, &node->indexed->index);
             out_lit(d, "]");
             break;
-        case TYPE_KEYOF:
+        }
+        case TYPE_KEYOF: {
+            if (simple_node_fails(me, d, &node->keyof->interface)) {
+                display_node_fallback(me, d, node);
+                break;
+            }
             out_lit(d, "keyof ");
-            display_node(me, d, &node->keyof->interface);
+            TypeNode operand = node_without_simple_parens(&node->keyof->interface); // (tsc's tryVisitKeyOf)
+            display_node(me, d, &operand);
             break;
+        }
         case TYPE_TERNARY: {
             display_node(me, d, &node->ternary->maybe_sub);
             out_lit(d, " extends ");
