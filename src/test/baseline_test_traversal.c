@@ -892,7 +892,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             ) {
                 shown = nullptr;
             }
-            if (!(heritage && !shown)) baseline_test_case_add_symbol(ctx, (BaselineSym){
+            // (A name an import type can't find, in a module that doesn't resolve or doesn't export it, is nothing: tsc's
+            // getSymbolAtLocation of an ImportTypeNode's qualifier resolves through the module)
+            bool unresolved_import = my identifier->import_ref && (!shown || shown->is_placeholder);
+            if (!(heritage && !shown) && !unresolved_import) baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(my identifier->namespaces),
                 .declarations = declaration_get_spans(shown),
                 .allow_declaration_empty = true,

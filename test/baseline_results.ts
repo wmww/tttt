@@ -16697,7 +16697,7 @@ const baselines = {
     },
     'importTypeWithUnparenthesizedGenericFunctionParsed': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importUsedAsTypeWithErrors': {
@@ -21167,7 +21167,7 @@ const baselines = {
     },
     'metadataImportType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'metadataOfClassFromAlias': {
@@ -54227,12 +54227,12 @@ const baselines = {
     },
     'resolutionModeImportType1(moduleresolution=classic)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'resolutionModeImportType1(moduleresolution=node10)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'resolutionModeTripleSlash1': {
@@ -55037,17 +55037,17 @@ const baselines = {
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesImportAttributesTypeModeDeclarationEmitErrors(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesImportHelpersCollisions(module=node16)': {
@@ -55202,17 +55202,17 @@ const baselines = {
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesJson(module=node16)': {
