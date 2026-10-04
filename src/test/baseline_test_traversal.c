@@ -14,6 +14,7 @@
 #include "function_impl.h"
 #include "callable_type.h"
 #include "ty/ty.h"
+#include "ty/ty_internal.h"
 #include "symbol_chain.h"
 
 static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx);
@@ -320,7 +321,15 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     Prop const* prop = info->skip_augment ? ty_get_prop(checker, object, name) : ty_get_object_prop(checker, object, name);
     if (!prop && info->qualified_name) prop = ty_namespace_type_only_prop(checker, object, name);
     if (!prop) {
-        info->missing_in_member = true;
+        // (A member with an index signature for the name still has it: tsc's createUnionOrIntersectionProperty
+        // counts it as WritePartial, no declarations, `(T[] | [T]).0`)
+        Members const* members = ty_members(checker, object);
+        bool indexed = false;
+        for (u32 i = 0; i < members->index_count && !indexed; i++) {
+            Ty const* key = members->index[i].key;
+            indexed = (key->flags & TYF_STRING) || ((key->flags & TYF_NUMBER) && ty_is_numeric_name(name));
+        }
+        if (!indexed) info->missing_in_member = true;
         return;
     }
     Prop const* root = prop;

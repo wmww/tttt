@@ -65807,7 +65807,7 @@ const baselines = {
     },
     'unionsOfTupleTypes1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'variadicTuples1': {
@@ -67517,7 +67517,7 @@ const baselines = {
     },
     'discriminatedUnionTypes2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'discriminatedUnionTypes3': {
@@ -67607,7 +67607,7 @@ const baselines = {
     },
     'unionTypeWithIndexSignature': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'uniqueSymbols': {
