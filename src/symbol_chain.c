@@ -477,6 +477,12 @@ static Symbol const* alias_in_container(ChainCtx* me, Symbol const* container, S
     if (!members) return nullptr;
     Symbol const* export_equals = members->exports ? symbol_table_get(members->exports, c_sv("export=")) : nullptr;
     if (export_equals && same_reference(me, export_equals, symbol)) return container;
+    // (A module defined by an `export =` has the exports of what it assigns: tsc's getExportsOfModuleWorker, so a
+    // `declare namespace rules { export type { Docs } }` merged with the assigned `rules` exports the file's Docs)
+    if (export_equals) {
+        Symbol const* assigned = module_export_equals((Symbol*)members);
+        if (assigned && assigned != members && !(assigned->flags & SYMBOL_ALIAS)) members = symbol_members(assigned);
+    }
     Symbol const* quick = symbol_get_export(members, symbol->name);
     if (quick && same_reference(me, quick, symbol)) return quick;
     u32 count;
