@@ -15,10 +15,11 @@ out=$(mktemp -d)
 trap 'rm -rf "$out"' EXIT
 corpora=$(python3 -c 'import realworld, os, sys
 for name, path in realworld.CORPORA.items():
-    if len(sys.argv) < 2 or name in sys.argv[1:]: print(name, os.path.relpath(os.path.realpath(path)))' "$@")
+    flag = "-b" if name in realworld.BUILD_CORPORA else "-p"
+    if len(sys.argv) < 2 or name in sys.argv[1:]: print(name, flag, os.path.relpath(os.path.realpath(path)))' "$@")
 failed=0
-while read -r name path; do
-    run() { ./release/tttt -q --keep-going --all-errors --checkers "$CHECKERS" --threads "$1" -p "$path" > "$out/$name.$2" 2>&1; }
+while read -r name flag path; do
+    run() { ./release/tttt -q --keep-going --all-errors --checkers "$CHECKERS" --threads "$1" $flag "$path" > "$out/$name.$2" 2>&1; }
     run 1 base
     status=identical
     for i in 1 2 3; do
