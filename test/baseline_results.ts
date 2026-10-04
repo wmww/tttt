@@ -65663,7 +65663,7 @@ const baselines = {
     'thisTypeInTuples': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisTypeInTypePredicate': {
         errors: true,

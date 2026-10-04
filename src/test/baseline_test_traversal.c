@@ -670,7 +670,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .span = my key.span,
                 .text = member_text(ctx, ctx->member_container, scope, written, false),
             });
-            Ty const* type = merged ? prop_type(current_checker, merged) : optional_member_type(ty_of_node(&my type), my optional);
+            // (The declared member, `this` not instantiated: tsc's type of the merged symbol)
+            Prop const* declared_member = merged;
+            while (declared_member && declared_member->target) declared_member = declared_member->target;
+            Ty const* type = merged ? prop_type(current_checker, declared_member) : optional_member_type(ty_of_node(&my type), my optional);
             if (redeclared) type = prop_type(current_checker, redeclared);
             // A property declared after a method of its name is that method's symbol (PropertyExcludes is nothing)
             if (!merged && !redeclared && !my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
