@@ -2134,6 +2134,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         // An object literal's accessor: the getter's return annotation, else the setter's parameter's (tsc's
         // typeFromAccessor)
+        FunctionImpl const* syntactic_getter = nullptr;
         if ((origin->flags & (PROP_GETTER | PROP_SETTER)) && origin->decl->function) {
             FunctionImpl const* accessor = origin->decl->function;
             Binding const* param = vec_function_arg_size(&accessor->args) ?
@@ -2141,12 +2142,19 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (origin->decl->setter && !accessor->ret_explicit && vec_function_arg_size(&origin->decl->setter->args)) {
                 param = &vec_function_arg_at(&origin->decl->setter->args, 0)->initializer.binding;
                 if (param->has_explicit_type) annotation = &param->explicit_type;
+                else if (origin->flags & PROP_GETTER) syntactic_getter = accessor;
             } else if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) {
                 annotation = &accessor->ret;
-            } else if (!(origin->flags & PROP_GETTER) && param && param->has_explicit_type) {
+            } else if (origin->flags & PROP_GETTER) {
+                syntactic_getter = accessor;
+            } else if (param && param->has_explicit_type) {
                 annotation = &param->explicit_type;
             }
         }
+        // A getter returning a function expression has its type syntactically, parameter declarations reused (tsc's
+        // typeFromAccessor -> typeFromSingleReturnExpression)
+        TyDisplay type_d = d;
+        if (syntactic_getter && d.underline && d.enclosing) type_d.syntactic_function = single_return_function(me, syntactic_getter, type);
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)
@@ -2168,7 +2176,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
         else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
         else if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, type, optional)) display_node(me, d, annotation);
-        else display_annotated(me, d, annotation, shown, optional);
+        else display_annotated(me, type_d, annotation, shown, optional);
         out_lit(d, "; ");
     }
     out_lit(d, "}");

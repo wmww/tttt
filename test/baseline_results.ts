@@ -6538,7 +6538,7 @@ const baselines = {
     'contextualTypingOfAccessors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypingOfArrayLiterals1': {
         errors: true,
@@ -10843,7 +10843,7 @@ const baselines = {
     'emitThisInObjectLiteralGetter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitThisInSuperMethodCall': {
         errors: true,
