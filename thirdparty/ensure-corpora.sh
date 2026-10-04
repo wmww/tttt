@@ -14,7 +14,8 @@ if test "${1:-}" = --relock; then RELOCK=1; fi
 
 # NAME URL COMMIT PROJECT_DIR [LINK] (PROJECT_DIR: the directory with the package.json the dependencies are installed
 # for, relative to the checkout; LINK: node_modules/NAME is a symlink to LINK, relative to node_modules, as a project
-# that imports its own package name gets from `yarn link` or a workspace). If corpora-locks/NAME.package.json exists, it
+# that imports its own package name gets from `yarn link` or a workspace; `workspace:GLOB` instead links every package
+# directory GLOB matches, relative to the checkout, under its package.json name, as a workspace install does). If corpora-locks/NAME.package.json exists, it
 # replaces PROJECT_DIR/package.json before installing (a monorepo whose package manager npm can't read). The files under
 # corpora-locks/NAME.overlay/ are copied into the checkout (a tsconfig of our own, when upstream's doesn't fit)
 CORPORA=(
@@ -65,6 +66,16 @@ CORPORA=(
     # dependencies are every importer's (packages-private excluded) at pnpm-lock.yaml's versions, from
     # corpora-locks/vue.package.json
     "vue https://github.com/vuejs/core.git b5f8518379b77c3b62a7a9d2b52f6c76cda09bd5 ."
+    # typescript-eslint v8.57.2 (Mar 2026, plan 41 stage 3): the last commit before its move to TypeScript 6, the
+    # second project-references corpus (`tttt -b` at the root solution config: 38 composite projects, nested solution
+    # configs, `${configDir}` in the shared base config, NodeNext; workspace packages import each other through
+    # node_modules symlinks whose package.json `types`/`exports` point at dist/*.d.ts, mapped back to the sources). A
+    # pnpm workspace: the dependencies are every importer's at pnpm-lock.yaml's versions (flat, no conflicts), in
+    # upstream's root package.json without `workspaces` (integration-tests imports its packageManager), from
+    # corpora-locks/typescript-eslint.package.json. The overlay has the two generated files the build needs:
+    # packages/types/src/generated/ast-spec.ts (ast-spec's tsc -b + api-extractor rollup + copy-ast-spec.mts) and
+    # packages/website/data/recent-blog-posts.json (the website's recent-blog-posts plugin)
+    "typescript-eslint https://github.com/typescript-eslint/typescript-eslint.git 1bf86c9f5c799916d12079c037c79e10b29cdc9c . workspace:packages/*"
 )
 
 mkdir -p corpora
@@ -94,6 +105,13 @@ for ENTRY in "${CORPORA[@]}"; do
         printf "\x1b[34mInstalling the dependencies of corpus %s...\x1b[0m\n" "$NAME"
         cp "$LOCK" "$PROJECT/package-lock.json"
         (cd "$PROJECT" && npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund > /dev/null)
-        if test -n "$LINK"; then ln -s "$LINK" "$PROJECT/node_modules/$NAME"; fi
+        if test "${LINK#workspace:}" != "$LINK"; then
+            for PACKAGE in corpora/$NAME/${LINK#workspace:}; do
+                PACKAGE_NAME=$(node -p "require('./$PACKAGE/package.json').name")
+                rm -rf "$PROJECT/node_modules/$PACKAGE_NAME"
+                mkdir -p "$(dirname "$PROJECT/node_modules/$PACKAGE_NAME")"
+                ln -s "$(realpath --relative-to="$(dirname "$PROJECT/node_modules/$PACKAGE_NAME")" "$PACKAGE")" "$PROJECT/node_modules/$PACKAGE_NAME"
+            done
+        elif test -n "$LINK"; then ln -s "$LINK" "$PROJECT/node_modules/$NAME"; fi
     fi
 done

@@ -6,7 +6,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
   ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
-  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue; tsc-src is -b on TypeScript's src)
+  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue; tsc-src and typescript-eslint: -b on a solution config)
 """
 import argparse, collections, os, re, resource, subprocess, sys, time
 
@@ -31,7 +31,12 @@ CORPORA = {
     'drizzle': 'thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json',
     # vue core's packages and dts-test: component option overloads, props inference, JSX
     'vue': 'thirdparty/corpora/vue/tsconfig.corpus.json',
+    # typescript-eslint's root solution config, checked with -b (plan 41 stage 3): 38 composite projects, workspace
+    # packages importing each other through node_modules symlinks into dist/*.d.ts, `${configDir}`, nested solutions
+    'typescript-eslint': 'thirdparty/corpora/typescript-eslint',
 }
+# The corpora checked with -b (a solution config of project references) rather than -p
+BUILD_CORPORA = ('tsc-src', 'typescript-eslint')
 
 KEYWORDS = set('''else in of as is asserts new function catch export import type default case satisfies this void
 typeof instanceof get set static abstract declare namespace let const var for do while return throw class extends
@@ -55,7 +60,7 @@ def main():
     if args.options is None:
         # Through its real path: in a worktree thirdparty/corpora is a symlink, and a project reached through one
         # loads its own files twice (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too)
-        flag = '-b ' if args.corpus == 'tsc-src' else '-p '
+        flag = '-b ' if args.corpus in BUILD_CORPORA else '-p '
         args.options = flag + os.path.relpath(os.path.realpath(CORPORA[args.corpus]))
         if args.corpus not in ('tsc', 'tsc-src'):
             subprocess.run(['thirdparty/ensure-corpora.sh'], check=True)

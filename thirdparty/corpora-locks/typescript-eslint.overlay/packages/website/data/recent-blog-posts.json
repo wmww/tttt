@@ -1,0 +1,23 @@
+[
+  {
+    "date": "2026-01-05T00:00:00.000Z",
+    "description": "How the now-deprecated `ban-types` rule evolved over time to what is now several newer, targeted rules.",
+    "readingTime": 5,
+    "slug": "revamping-the-ban-types-rule",
+    "title": "Revamping the `ban-types` rule"
+  },
+  {
+    "date": "2025-05-29T00:00:00.000Z",
+    "description": "How typescript-eslint's new \"Project Service\" makes typed linting easier to configure, especially for large projects.",
+    "readingTime": 7,
+    "slug": "project-service",
+    "title": "Typed Linting with Project Service"
+  },
+  {
+    "date": "2025-01-21T00:00:00.000Z",
+    "description": "How typescript-eslint expands on TypeScript's type safety to catch explicit and implicit `any`s.",
+    "readingTime": 9,
+    "slug": "avoiding-anys",
+    "title": "Avoiding `any`s with Linting and TypeScript"
+  }
+]
