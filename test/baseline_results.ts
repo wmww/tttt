@@ -29188,7 +29188,7 @@ const baselines = {
     'strictFunctionTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictFunctionTypesErrors': {
         errors: true,
