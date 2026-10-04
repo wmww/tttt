@@ -1658,8 +1658,11 @@ cstr baseline_test_case_module_alias_text(BaselineTestCase const* me, Symbol con
 // meaning but ExportValue, and its exportSymbol), so a local declaration of the same name merges into that local
 // symbol. tttt's binder keeps the export out of the locals (lookups don't need it); only the declarations differ
 VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
-    if (!me || !me->is_local || !me->decl_count || !me->decls[0].block) return symbol_declaration_spans(me);
-    Scope const* block = me->decls[0].block;
+    if (!me || !me->decl_count) return symbol_declaration_spans(me);
+    // (An import is a local too, declared in the scope it resolves from)
+    bool import = me->alias && me->is_local;
+    Scope const* block = me->decls[0].block ? me->decls[0].block : import ? me->alias->scope : nullptr;
+    if (!block || !(me->is_local || import)) return symbol_declaration_spans(me);
     Symbol const* container = block->container;
     Symbol const* exported = container && container->exports ? symbol_table_get(container->exports, me->name) : nullptr;
     if (!exported || exported == me) return symbol_declaration_spans(me);

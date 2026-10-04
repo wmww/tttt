@@ -5142,7 +5142,7 @@ const baselines = {
     },
     'commonJsExportTypeDeclarationError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'commonJsImportClassExpression': {
@@ -5602,12 +5602,12 @@ const baselines = {
     },
     'conflictingDeclarationsImportFromNamespace1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'conflictingDeclarationsImportFromNamespace2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'conflictingMemberTypesInBases': {
@@ -12612,7 +12612,7 @@ const baselines = {
     },
     'exportAssignmentImportMergeNoCrash': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'exportAssignmentInterface': {
@@ -13882,7 +13882,7 @@ const baselines = {
     },
     'functionAndImportNameConflict': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'functionAndInterfaceWithSeparateErrors': {
@@ -16757,7 +16757,7 @@ const baselines = {
     },
     'importedEnumMemberMergedWithExportedAliasIsError': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importedModuleAddToGlobal': {
@@ -21062,12 +21062,12 @@ const baselines = {
     },
     'mergeWithImportedNamespace': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergeWithImportedType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mergedClassNamespaceRecordCast': {
