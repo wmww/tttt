@@ -25,37 +25,8 @@ static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const
     return symbol && symbol->decl_count ? symbol : decl;
 }
 
-// A local of a namespace block or module also has the exported declarations of its name in that block: tsc's binder
-// declares an exported declaration in the container's locals too (declareModuleMember: the local symbol, with no
-// meaning but ExportValue, and its exportSymbol), so a local declaration of the same name merges into that local
-// symbol. tttt's binder keeps the export out of the locals (lookups don't need it); only the declarations differ
-static VecSpan declaration_get_spans(Symbol const* me) {
-    if (!me || !me->is_local || !me->decl_count || !me->decls[0].block) return symbol_declaration_spans(me);
-    Scope const* block = me->decls[0].block;
-    Symbol const* container = block->container;
-    Symbol const* exported = container && container->exports ? symbol_table_get(container->exports, me->name) : nullptr;
-    if (!exported || exported == me) return symbol_declaration_spans(me);
-    u32 count = 0;
-    for (u32 i = 0; i < exported->decl_count; i++) count += exported->decls[i].block == block;
-    if (!count) return symbol_declaration_spans(me);
-    // (In the order the binder declares them: source order, see symbol_declaration_spans() for functions)
-    SymbolDecl* decls = malloc(sizeof(SymbolDecl) * (me->decl_count + count));
-    u32 len = 0;
-    for (u32 i = 0; i < exported->decl_count; i++) if (exported->decls[i].block == block) decls[len++] = exported->decls[i];
-    for (u32 i = 0; i < me->decl_count; i++) decls[len++] = me->decls[i];
-    for (u32 i = 1; i < len; i++) {
-        for (u32 j = i; j > 0 && span_start_ptr(decls[j].full) < span_start_ptr(decls[j - 1].full); j--) {
-            SymbolDecl t = decls[j];
-            decls[j] = decls[j - 1];
-            decls[j - 1] = t;
-        }
-    }
-    Symbol merged = *me;
-    merged.decls = decls;
-    merged.decl_count = len;
-    VecSpan ret = symbol_declaration_spans(&merged);
-    free(decls);
-    return ret;
+static inline VecSpan declaration_get_spans(Symbol const* me) {
+    return baseline_symbol_declaration_spans(me);
 }
 
 // The declarations of a module's `default` export are all named like its first one (`export default function f` and
@@ -411,7 +382,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
         // (A type parameter of merged declarations is declared by all of them)
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .span = i->name,
-            .declarations = i->owned_symbol ? symbol_declaration_spans(i->owned_symbol) : vec_span_single(i->full_span),
+            .declarations = i->owned_symbol ? baseline_symbol_declaration_spans(i->owned_symbol) : vec_span_single(i->full_span),
         });
         type_compile_test_info(&i->extends, ctx);
         if (i->fallback_explicit) {
@@ -433,7 +404,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                 // (One symbol with a field of its name: the class's)
                 VecSpan declarations = class_prop_declarations(ctx->parameter_property_symbol, false, my content_span.sv,
                     ctx->parameter_property_arg, 1);
-                if (vec_span_is_empty(&declarations)) declarations = symbol_declaration_spans(my symbol);
+                if (vec_span_is_empty(&declarations)) declarations = baseline_symbol_declaration_spans(my symbol);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declarations,
                     .namespaces = vec_span_single(ctx->parameter_property_class),
@@ -962,7 +933,7 @@ static void type_predicate_compile_test_info(TypePredicateNode* me, BaselineTest
     if (my jsdoc) return;
     if (my symbol) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = symbol_declaration_spans(my symbol),
+            .declarations = baseline_symbol_declaration_spans(my symbol),
             .span = my name,
             .name = my name,
         });
@@ -1007,7 +978,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
 // type of what it resolves to, errorType if that isn't a type
 static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool type_declaration) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
-        .declarations = symbol_declaration_spans(my symbol),
+        .declarations = baseline_symbol_declaration_spans(my symbol),
         .span = my decl_name,
         .text = symbol_text(ctx, my symbol),
     });
@@ -1488,7 +1459,7 @@ static void register_type_parameter_member_merges(Symbol const* owner, Generic c
         Prop const* prop = ty_get_prop(checker, declared, checker_atom(checker, i->name.sv));
         while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
         if (!prop || prop->parent != owner || !prop->decl->decl_span_count) continue;
-        VecSpan spans = symbol_declaration_spans(i->owned_symbol);
+        VecSpan spans = baseline_symbol_declaration_spans(i->owned_symbol);
         bool seen = false;
         for_each (j, vec_span, &spans) seen |= span_eq(*j, prop->decl->decl_spans[0]);
         if (seen) {

@@ -10477,7 +10477,7 @@ const baselines = {
     },
     'duplicateSymbolsExportMatching': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicateTypeParameters1': {
@@ -17887,7 +17887,7 @@ const baselines = {
     },
     'innerModExport2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'innerOverloads': {
@@ -22587,7 +22587,7 @@ const baselines = {
     },
     'multivar': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mutrec': {
@@ -24027,7 +24027,7 @@ const baselines = {
     },
     'nonMergedOverloads': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nonNullFullInference': {
@@ -24902,7 +24902,7 @@ const baselines = {
     },
     'overloadModifiersMustAgree': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'overloadOnConstAsTypeAnnotation': {
@@ -37992,7 +37992,7 @@ const baselines = {
     },
     'neverReturningFunctions1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'switchWithConstrainedTypeVariable': {
@@ -49897,7 +49897,7 @@ const baselines = {
     },
     'typeValueMerge1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typesOnlyExternalModuleStillHasInstance': {
@@ -50087,7 +50087,7 @@ const baselines = {
     },
     'functionOverloadErrors': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'functionOverloadErrorsSyntax': {
@@ -50997,7 +50997,7 @@ const baselines = {
     },
     'importAliasIdentifiers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'invalidImportAliasIdentifiers': {

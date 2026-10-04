@@ -1653,6 +1653,39 @@ cstr baseline_test_case_module_alias_text(BaselineTestCase const* me, Symbol con
     return text;
 }
 
+// A local of a namespace block or module also has the exported declarations of its name in that block: tsc's binder
+// declares an exported declaration in the container's locals too (declareModuleMember: the local symbol, with no
+// meaning but ExportValue, and its exportSymbol), so a local declaration of the same name merges into that local
+// symbol. tttt's binder keeps the export out of the locals (lookups don't need it); only the declarations differ
+VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
+    if (!me || !me->is_local || !me->decl_count || !me->decls[0].block) return symbol_declaration_spans(me);
+    Scope const* block = me->decls[0].block;
+    Symbol const* container = block->container;
+    Symbol const* exported = container && container->exports ? symbol_table_get(container->exports, me->name) : nullptr;
+    if (!exported || exported == me) return symbol_declaration_spans(me);
+    u32 count = 0;
+    for (u32 i = 0; i < exported->decl_count; i++) count += exported->decls[i].block == block;
+    if (!count) return symbol_declaration_spans(me);
+    // (In the order the binder declares them: source order, see symbol_declaration_spans() for functions)
+    SymbolDecl* decls = malloc(sizeof(SymbolDecl) * (me->decl_count + count));
+    u32 len = 0;
+    for (u32 i = 0; i < exported->decl_count; i++) if (exported->decls[i].block == block) decls[len++] = exported->decls[i];
+    for (u32 i = 0; i < me->decl_count; i++) decls[len++] = me->decls[i];
+    for (u32 i = 1; i < len; i++) {
+        for (u32 j = i; j > 0 && span_start_ptr(decls[j].full) < span_start_ptr(decls[j - 1].full); j--) {
+            SymbolDecl t = decls[j];
+            decls[j] = decls[j - 1];
+            decls[j - 1] = t;
+        }
+    }
+    Symbol merged = *me;
+    merged.decls = decls;
+    merged.decl_count = len;
+    VecSpan ret = symbol_declaration_spans(&merged);
+    free(decls);
+    return ret;
+}
+
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol const* declaration) {
     if (!declaration) {
         log_error("baseline_test_case_add_declaration() called with null declaration");
@@ -1660,7 +1693,7 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
     }
     check(span.source);
     baseline_test_case_add_symbol(me, (BaselineSym){
-        .declarations = symbol_declaration_spans(declaration),
+        .declarations = baseline_symbol_declaration_spans(declaration),
         .span = span,
         .name = declaration->name_span,
         .text = baseline_test_case_module_alias_text(me, declaration),

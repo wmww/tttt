@@ -208,6 +208,8 @@ void baseline_test_case_add_type(BaselineTestCase* me, Span span, Ty const* type
 void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview text);
 void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode const* node); // A written type
 void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span, Span inner_span, Ty const* type);
+// symbol_declaration_spans() as tsc's symbols baseline lists them (see the definition)
+VecSpan baseline_symbol_declaration_spans(Symbol const* me);
 void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol const* declaration);
 // The type of a symbol as a value (any if it has none) at span
 void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol const* symbol);
