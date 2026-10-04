@@ -8,8 +8,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 
 1. Done (2026-10-04, one session, 4 commits): plan 40 stage 1, suite 12354 -> 12366, 0 lost, tsc/valibot at 0, every
    corpus unchanged. Leftovers for stage 2 are in the plan. `instrcount.sh` falls back to callgrind (perf blocked).
-2. **Plan 40 stage 2** (execution): accessibility (TS4xxx, TS2527, TS4094, TS7056). nest, drizzle, tsc, valibot at 0,
-   0 lost among the passing declaration tests. If it overruns, the overrun comes out of entry 9.
+2. Done (2026-10-04, one session, 7 commits): plan 40 stage 2, suite 12366 -> 12376, 0 lost, every corpus unchanged,
+   callgrind +0.6% nest / +1.0% drizzle. Left: deep-recursion TS7056, TS5088 (plan 40). bench.sh's compiler corpus is
+   now like-for-like for entry 8.
 3. **Plan 41 stage 1** (execution): references, `-p`/`-b` semantics, pin `tsc-src`; the scenario tests mined from tsc's
    tsbuild baselines. Leaves exactly the 11 checker bugs the plan lists. Budget two sessions (entries 3-4).
 4. **Plan 41 stage 1, continued, or stage 2** (`-b` perf, measured first) if stage 1 fit in one.
