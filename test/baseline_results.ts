@@ -64813,7 +64813,7 @@ const baselines = {
     'numericStringNamedPropertyEquivalence': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propertyNameWithoutTypeAnnotation': {
         errors: true,

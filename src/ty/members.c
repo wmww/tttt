@@ -280,8 +280,14 @@ static void builder_add_interface_member(
                     } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->has_write_type &&
                         !i->computed_accessor
                     ) {
-                        // A property declared again (TS2717): one symbol, the first declaration's type
+                        // A property declared again (TS2717): one symbol, the first declaration's type. String named only
+                        // if every declaration is (tsc asks each one)
                         prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                        if (i->key.tag == INTERFACE_KEY_NAME && !existing->decl->name_form && span_valid(existing->decl->name_span)) {
+                            existing->decl->name_form = ty_prop_name_form_merge(
+                                ty_prop_name_form(existing->decl->name_span.sv, nullptr, nullptr, false),
+                                ty_prop_name_form(i->key.span.sv, nullptr, nullptr, false));
+                        }
                     } else if (!is_method && (existing->flags & PROP_METHOD) && !i->has_write_type && !i->computed_accessor) {
                         // A property after a method of its name joins its symbol (PropertyExcludes is nothing), which
                         // stays a method: only a declaration more
