@@ -35,7 +35,7 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   where tsc's CLI prints the module symbol's absolute name (`"/tmp/ky/node_modules/ky/distribution/index"`). The suite
   doesn't see it (the harness strips the test directory); `module_name_for_error()` and the CLI's path display.
 - (plan 41) Config diagnostics tttt lacks: TS1005 & co. for tsconfig JSON syntax errors; a missing `extends` (TS5083,
-  tsc goes on with the rest); `--composite null` on the command line (tttt takes `null` for a file name: TS6231).
+  tsc goes on with the rest);
   TS6377 (two projects writing one tsbuildinfo) is out of scope.
 - (plan 41) Checker gaps the scenarios show, not reference-specific: TS2613 (the "did you mean `import { local }`"
   variant of TS1192); no TS1192 for a default import of an ESM `.d.ts` package under bundler + esnext when both sides

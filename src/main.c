@@ -690,7 +690,7 @@ int main(int argc, const char** argv) {
             // option may come without a value, anything else has one
             bool has_value = i + 1 < argc && argv[i + 1][0] != '-' && (
                 !compiler_option_is_boolean(csview_from(argv[i] + 2)) ||
-                streq(argv[i + 1], "true") || streq(argv[i + 1], "false")
+                streq(argv[i + 1], "true") || streq(argv[i + 1], "false") || streq(argv[i + 1], "null")
             );
             CompilerOptions scratch = compiler_options_init();
             bool unknown = compiler_options_set(&scratch, csview_from(argv[i] + 2), c_sv("")) == COMPILER_OPTION_UNKNOWN;

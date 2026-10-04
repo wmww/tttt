@@ -181,9 +181,10 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
 
 #define X(field, lowercase, strict_family) \
     if (name_equals(name, lowercase)) { \
-        /* Like tsc's harness, anything but "true" is false */ \
+        /* Like tsc's harness, anything but "true" is false; null takes back a value given before (an extended */ \
+        /* config's, the command line's `--composite null`) */ \
         my field = name_equals(value, "true"); \
-        my is_set[COMPILER_OPTION_##field] = true; \
+        my is_set[COMPILER_OPTION_##field] = !name_equals(value, "null"); \
         return COMPILER_OPTION_OK; \
     }
     COMPILER_BOOL_OPTIONS(X)
