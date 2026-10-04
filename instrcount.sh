@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Instructions (perf stat instructions:u) per pinned corpus, single-threaded, no re-exec: the stable perf measure
-# across sessions (agents/measurements.md).
+# Instructions (perf stat instructions:u, else callgrind) per pinned corpus, single-threaded, no re-exec: the stable
+# perf measure across sessions (agents/measurements.md).
 #
 #   ./instrcount.sh [--bin path/to/tttt] [corpus...]     (default: ./release/tttt, every corpus but zod-root)
 set -euo pipefail
@@ -21,9 +21,27 @@ declare -A C=(
 )
 NAMES=("$@")
 test ${#NAMES[@]} -gt 0 || NAMES=(tsc type-fest valibot react nest webpack zod xstate drizzle vue)
-for n in "${NAMES[@]}"; do
-    p=$(realpath "${C[$n]}")
-    i=$(TTTT_NO_REEXEC=1 perf stat -x, -e instructions:u "$BIN" --checkers 1 --threads 1 -q --keep-going -p "$p" \
-        2>&1 >/dev/null | grep instructions:u | cut -d, -f1 || true)
-    printf '%-10s %8.3f G\n' "$n" "$(echo "$i / 1000000000" | bc -l)"
-done
+ARGS=(--checkers 1 --threads 1 -q --keep-going -p)
+# perf needs kernel.perf_event_paranoid <= 2 (some days the machine has 4): then callgrind counts instead, all corpora
+# at once (a few minutes; its counts run ~3% above perf's, so compare only numbers of the same tool)
+if TTTT_NO_REEXEC=1 perf stat -x, -e instructions:u true 2>&1 | grep -q instructions:u; then
+    for n in "${NAMES[@]}"; do
+        p=$(realpath "${C[$n]}")
+        i=$(TTTT_NO_REEXEC=1 perf stat -x, -e instructions:u "$BIN" "${ARGS[@]}" "$p" \
+            2>&1 >/dev/null | grep instructions:u | cut -d, -f1 || true)
+        printf '%-10s %8.3f G\n' "$n" "$(echo "$i / 1000000000" | bc -l)"
+    done
+else
+    echo "(perf unavailable: callgrind counts)"
+    DIR=$(mktemp -d /tmp/instrcount.XXXXXX)
+    for n in "${NAMES[@]}"; do
+        TTTT_NO_REEXEC=1 valgrind --tool=callgrind --callgrind-out-file="$DIR/$n.out" "$BIN" "${ARGS[@]}" \
+            "$(realpath "${C[$n]}")" > /dev/null 2> "$DIR/$n.log" &
+    done
+    wait
+    for n in "${NAMES[@]}"; do
+        i=$(grep -o 'Collected : [0-9]*' "$DIR/$n.log" | grep -o '[0-9]*$' || true)
+        printf '%-10s %8.3f G\n' "$n" "$(echo "${i:-0} / 1000000000" | bc -l)"
+    done
+    rm -rf "$DIR"
+fi
