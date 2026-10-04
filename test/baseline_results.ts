@@ -23897,22 +23897,22 @@ const baselines = {
     },
     'nodeNextPackageImportMapRootDir': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextPackageSelfNameWithOutDir': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextPackageSelfNameWithOutDirDeclDir': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextPackageSelfNameWithOutDirDeclDirComposite': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextPackageSelfNameWithOutDirDeclDirCompositeNestedDirs': {
@@ -23927,12 +23927,12 @@ const baselines = {
     },
     'nodeNextPackageSelfNameWithOutDirDeclDirRootDir': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeNextPackageSelfNameWithOutDirRootDir': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeResolution1': {
@@ -54637,17 +54637,17 @@ const baselines = {
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsSynchronousCallErrors(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesAllowJsTopLevelAwait(module=node16)': {
@@ -55327,17 +55327,17 @@ const baselines = {
     },
     'nodeModulesSynchronousCallErrors(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesSynchronousCallErrors(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesSynchronousCallErrors(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesTopLevelAwait(module=node16)': {

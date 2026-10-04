@@ -257,16 +257,30 @@ static char const* declared_at(Symbol const* symbol, SourceFile const* file) {
     return nullptr;
 }
 
+// Whether the symbol's declaration in the file is a function declaration: tsc's binder binds those of a block before
+// its other statements (bindEachFunctionsFirst), so they come first in the block's locals
+static bool declared_as_function(Symbol const* symbol, SourceFile const* file) {
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        if (symbol->decls[i].name.source == file && span_valid(symbol->decls[i].name)) {
+            return symbol->decls[i].kind == SYMBOL_DECL_FUNCTION;
+        }
+    }
+    return false;
+}
+
 typedef struct LocalEntry {
     SymbolEntry const* entry;
     char const* at;
     bool exported;
+    bool function;
 } LocalEntry;
 
+// The order of tsc's locals: insertion order, function declarations first
 static int compare_local_entries(void const* a, void const* b) {
-    char const* x = ((LocalEntry const*)a)->at;
-    char const* y = ((LocalEntry const*)b)->at;
-    return x < y ? -1 : x > y;
+    LocalEntry const* l = a;
+    LocalEntry const* r = b;
+    if (l->function != r->function) return l->function ? -1 : 1;
+    return l->at < r->at ? -1 : l->at > r->at;
 }
 
 // trySymbolTable over the locals of a module or namespace block, whose exported declarations are locals too for tsc
@@ -295,7 +309,8 @@ static bool try_locals_with_exports(
     u32 n = 0;
     for (u32 i = 0; i < locals->count; i++) {
         char const* at = declared_at(locals->entries[i].symbol, scope_table->file);
-        entries[n++] = (LocalEntry){ &locals->entries[i], at ? at : "", false };
+        entries[n++] = (LocalEntry){ &locals->entries[i], at ? at : "", false,
+            at && declared_as_function(locals->entries[i].symbol, scope_table->file) };
     }
     for (u32 i = 0; i < exports->count; i++) {
         SymbolEntry const* entry = &exports->entries[i];
@@ -303,7 +318,7 @@ static bool try_locals_with_exports(
         if (is_export_specifier(entry->symbol) || has_port_tag(entry->symbol, PORT_REEXPORT_GATHER)) continue;
         char const* at = declared_at(entry->symbol, scope_table->file);
         if (!at) continue;
-        entries[n++] = (LocalEntry){ entry, at, true };
+        entries[n++] = (LocalEntry){ entry, at, true, declared_as_function(entry->symbol, scope_table->file) };
     }
     qsort(entries, n, sizeof(LocalEntry), compare_local_entries);
     bool ret = false;
