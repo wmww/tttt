@@ -752,7 +752,7 @@ const baselines = {
     },
     'ambientPropertyDeclarationInJs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'ambientRequireFunction(module=commonjs)': {

@@ -922,6 +922,27 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
                 prop->flags |= PROP_READONLY;
             }
             builder_push(builder, props, prop);
+        } else if ((existing->flags & PROP_FIELD) && !(existing->flags & (PROP_METHOD | PROP_ACCESSOR)) &&
+            existing->decl->decl_span_count && vec_span_size(&spans) &&
+            spans.data[0].source == existing->decl->decl_spans[0].source &&
+            span_start_ptr(spans.data[0]) < span_start_ptr(existing->decl->decl_spans[0])
+        ) {
+            // `this.x = v` in a constructor before the field `x` of the class body: one symbol (tsc's declareSymbol
+            // makes the assignment's isReplaceableByMethod, which a property joins), declared in source order. After
+            // the field, the assignments don't declare it. The field keeps its type
+            u32 total = existing->decl->decl_span_count + (u32)vec_span_size(&spans);
+            Span* all = arena_new_n(&my arena, Span, total);
+            memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
+            memcpy(all + existing->decl->decl_span_count, spans.data, sizeof(Span) * vec_span_size(&spans));
+            for (u32 a = 1; a < total; a++) {
+                for (u32 b = a; b > 0 && all[b].source == all[b - 1].source && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
+                    Span t = all[b];
+                    all[b] = all[b - 1];
+                    all[b - 1] = t;
+                }
+            }
+            existing->decl->decl_spans = all;
+            existing->decl->decl_span_count = total;
         }
         vec_span_drop(&spans);
     }
