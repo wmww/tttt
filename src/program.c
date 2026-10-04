@@ -1079,7 +1079,15 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
 
+    // `/// <reference path>`s first, then the rest (`types`, `lib`): tsc's processReferencedFiles comes before
+    // processTypeReferenceDirectives, and the order files load in is the program's
     for_each (i, vec_statement, &source_file->ast.statements) {
+        if (i->tag == STATEMENT_SOURCE_DIRECTIVE && i->source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_PATH) {
+            program_handle_statement(me, source_file, i);
+        }
+    }
+    for_each (i, vec_statement, &source_file->ast.statements) {
+        if (i->tag == STATEMENT_SOURCE_DIRECTIVE && i->source_directive->tag == SOURCE_DIRECTIVE_REFERENCE_PATH) continue;
         program_handle_statement(me, source_file, i);
     }
     // tsc's setCommonJsModuleIndicator: ES imports and exports win

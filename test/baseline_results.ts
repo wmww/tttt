@@ -31567,7 +31567,7 @@ const baselines = {
     },
     'typeReferenceDirectives3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeReferenceDirectives4': {
