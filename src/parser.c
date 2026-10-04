@@ -11057,6 +11057,10 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                     hop_whitespace(&p);
                     Expr default_value;
                     expect_expr(&p, expr_ctx_null, &default_value);
+                    if (shorthand_allowed) {
+                        mark_named_evaluation(&default_value, false);
+                        mark_assigned_name(&default_value, name);
+                    }
                     binding.default_value = c_new(Expr, default_value);
                 }
             }

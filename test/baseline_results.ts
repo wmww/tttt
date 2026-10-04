@@ -3548,7 +3548,7 @@ const baselines = {
     'classExpressionNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classExpressionPropertyModifiers': {
         errors: true,
