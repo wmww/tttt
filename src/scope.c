@@ -2720,6 +2720,8 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         Span at = item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
         error_ctx_error_d(my alias->scope->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
     }
+    // (tsc's resolveAlias: the inner visit made the target unknownSymbol, which the outer one keeps)
+    if (my alias->state == ALIAS_CIRCULAR && my alias->item) target = nullptr;
     if (!target) {
         target = my alias->item ?
             binder_new_placeholder(my binder, my alias->item->decl_name, my alias->item->full_span) :
