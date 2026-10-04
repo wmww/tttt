@@ -1898,6 +1898,22 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             });
             return;
         }
+        // A type literal (`let p: Point = { m() { this } }` with `type Point = {...}`): its anonymous symbol `__type`
+        Ty const* literal_type = type;
+        while (literal_type && literal_type->kind == TY_ANONYMOUS && !literal_type->anonymous.node && literal_type->anonymous.target) {
+            literal_type = literal_type->anonymous.target;
+        }
+        if (!symbol && literal_type && literal_type->kind == TY_ANONYMOUS && literal_type->anonymous.node &&
+            literal_type->anonymous.node->tag == TYPE_INTERFACE && !literal_type->anonymous.object_literal &&
+            span_valid(literal_type->anonymous.node->interface.span)
+        ) {
+            baseline_test_case_add_symbol(ctx, (BaselineSym){
+                .declarations = vec_span_single(literal_type->anonymous.node->interface.span),
+                .span = my name,
+                .text = cstr_lit("__type"),
+            });
+            return;
+        }
         if (!symbol) {
             // (`this.m = function () { this }`: the `this` of the constructor, the class)
             if (type && type->kind == TY_TYPE_PARAM && type->param.state->is_this) type = ty_apparent_type(checker, type);

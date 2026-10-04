@@ -65652,7 +65652,7 @@ const baselines = {
     },
     'thisTypeInObjectLiterals2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'thisTypeInTaggedTemplateCall': {
