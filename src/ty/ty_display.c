@@ -8,6 +8,7 @@
 #include "source_file.h"
 #include "callable_type.h"
 #include "symbol_chain.h"
+#include "unicode_identifiers.h"
 #include "port_statement.h"
 #include "class_decl.h"
 
@@ -374,12 +375,16 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
 }
 
 // tsc's escapeString() with a double quote: named escapes, other control characters and U+2028/2029/0085 as \uXXXX
-static void display_quoted_string(TyDisplay d, csview sv, bool single);
+static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii);
 static void display_string_literal(TyDisplay d, csview sv) {
-    display_quoted_string(d, sv, false);
+    display_quoted_string(d, sv, false, false);
 }
 
-static void display_quoted_string(TyDisplay d, csview sv, bool single) {
+static u32 utf8_next(csview sv, isize_t* i);
+
+// `ascii`: everything else as `\uXXXX` escapes, like tsc's printer does a string literal node it made (a property name
+// from getPropertyNameNodeForSymbol), unlike a literal type's (EmitFlags.NoAsciiEscaping)
+static void display_quoted_string(TyDisplay d, csview sv, bool single, bool ascii) {
     if (single) out_lit(d, "'");
     else out_lit(d, "\"");
     for (isize_t i = 0; i < sv.size; i++) {
@@ -417,7 +422,18 @@ static void display_quoted_string(TyDisplay d, csview sv, bool single) {
                     code = (unsigned char)sv.buf[i + 2] == 0xA8 ? 0x2028 : 0x2029;
                     i += 2;
                 }
-                if (code) {
+                if (!code && ascii && c >= 0x80) {
+                    code = utf8_next(sv, &i);
+                    i--; // (The loop's increment)
+                    char buf[16];
+                    if (code >= 0x10000) {
+                        code -= 0x10000;
+                        snprintf(buf, sizeof buf, "\\u%04X\\u%04X", 0xD800 + (code >> 10), 0xDC00 + (code & 0x3FF));
+                    } else {
+                        snprintf(buf, sizeof buf, "\\u%04X", code);
+                    }
+                    out(d, csview_from(buf));
+                } else if (code) {
                     char buf[8];
                     snprintf(buf, sizeof buf, "\\u%04X", code);
                     out(d, csview_from(buf));
@@ -471,13 +487,32 @@ static void display_template_text(TyDisplay d, csview sv) {
     }
 }
 
+// One UTF-8 sequence at `*i` (advanced past it); malformed bytes are themselves
+static u32 utf8_next(csview sv, isize_t* i) {
+    unsigned char c = (unsigned char)sv.buf[*i];
+    u32 len = c >= 0xF0 ? 4 : c >= 0xE0 ? 3 : c >= 0xC0 ? 2 : 1;
+    if (*i + len > sv.size) len = 1;
+    u32 code = len == 1 ? c : c & (0xFF >> (len + 1));
+    for (u32 k = 1; k < len; k++) code = code << 6 | ((unsigned char)sv.buf[*i + k] & 0x3F);
+    *i += len;
+    return code;
+}
+
+// tsc's isIdentifierText (non-ASCII by the Unicode ID_Start/ID_Continue tables: an emoji isn't one)
 static bool is_identifier_name(csview sv) {
     if (!sv.size || (sv.buf[0] >= '0' && sv.buf[0] <= '9')) return false;
-    for (isize_t i = 0; i < sv.size; i++) {
+    for (isize_t i = 0; i < sv.size;) {
         char c = sv.buf[i];
+        if ((unsigned char)c >= 0x80) {
+            bool first = i == 0;
+            u32 code = utf8_next(sv, &i);
+            if (!(first ? unicode_is_identifier_start(code, true) : unicode_is_identifier_part(code, true))) return false;
+            continue;
+        }
         bool valid = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' ||
-            c == '#' || (unsigned char)c >= 0x80;
+            c == '#';
         if (!valid) return false;
+        i++;
     }
     return true;
 }
@@ -602,7 +637,7 @@ static void display_member_name(Checker* me, TyDisplay d, Prop const* prop) {
     }
     if (identifier) out(d, sv);
     else if (!string_named && is_numeric_name(sv)) out(d, sv);
-    else display_quoted_string(d, sv, single);
+    else display_quoted_string(d, sv, single, true);
 }
 
 static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {

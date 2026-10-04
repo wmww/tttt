@@ -8298,7 +8298,7 @@ const baselines = {
     'declarationEmitLateBoundAssignments2': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'declarationEmitLateBoundJSAssignments': {
         errors: true,

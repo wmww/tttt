@@ -1368,6 +1368,11 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     }
     prop->decl->ctx = (LowerCtx){ .generic = true };
     prop->decl->name_span = symbol->name_span;
+    // (Named by its key's type: `f[s] = v` with `s = "10"` is string named, `"10"`)
+    if (symbol->late_bound_key) {
+        prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, symbol->late_bound_key,
+            ty_expr_type(me, symbol->late_bound_key), false);
+    }
     // `N.p` in the symbols baseline
     if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
     VecSpan spans = symbol_declaration_spans(symbol);
