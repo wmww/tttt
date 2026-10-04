@@ -1385,6 +1385,16 @@ static void append_decl(cstr* target, Span span) {
     );
 }
 
+static void append_span_contents_without_newlines(cstr* target, Span span) {
+    const char* start = span_start_ptr(span);
+    const char* end = span_end_ptr(span);
+    // tsc's `sourceText.replace(/\r?\n/g, "")`: a lone \r stays
+    for (const char* c = start; c < end; c++) {
+        if (*c == '\n' || (*c == '\r' && c + 1 < end && c[1] == '\n')) continue;
+        cstr_push(target, c);
+    }
+}
+
 void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     if (my in_with) {
         cstr_drop(&data.text);
@@ -1421,7 +1431,9 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         break;
     }
 
-    cstr text = cstr_d(">", data.span, " : Symbol(");
+    cstr text = cstr_lit(">");
+    append_span_contents_without_newlines(&text, data.span);
+    cstr_append_lit(&text, " : Symbol(");
 
     bool has_namespace = false;
     if (cstr_size(&data.text)) {
@@ -1487,16 +1499,6 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     vec_span_drop(&data.declarations);
     vec_span_drop(&data.namespaces);
     cstr_drop(&data.text);
-}
-
-static void append_span_contents_without_newlines(cstr* target, Span span) {
-    const char* start = span_start_ptr(span);
-    const char* end = span_end_ptr(span);
-    // tsc's `sourceText.replace(/\r?\n/g, "")`: a lone \r stays
-    for (const char* c = start; c < end; c++) {
-        if (*c == '\n' || (*c == '\r' && c + 1 < end && c[1] == '\n')) continue;
-        cstr_push(target, c);
-    }
 }
 
 // One `>text : type` line plus its underline per parenthesization level of the expression
