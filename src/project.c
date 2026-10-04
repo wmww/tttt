@@ -39,6 +39,21 @@ Project const* project_set_at(ProjectSet const* me, u32 index) {
     return &my projects[index];
 }
 
+StrList const* project_set_root_files(ProjectSet* me, u32 index) {
+    check(index < my count);
+    Project* project = &my projects[index];
+    if (!project->root_files_listed && project->readable) {
+        CompilerOptions scratch = compiler_options_init();
+        try (tsconfig_load(my fs, cstr_sv(&project->config), &scratch, &project->root_files)) if_err (e) {
+            ignore e;
+            current_error_destroy();
+        }
+        compiler_options_drop(&scratch);
+    }
+    project->root_files_listed = true;
+    return &project->root_files;
+}
+
 u32 project_set_load(ProjectSet* me, csview path) {
     cstr cwd = cstr_null;
     try (fs_get_cwd(my fs, &cwd)) or_panic;
@@ -58,7 +73,7 @@ u32 project_set_load(ProjectSet* me, csview path) {
     hmap_project_index_insert(&my by_config, cstr_clone(config), index);
     Project project = { .config = config, .options = compiler_options_init() };
     project.readable = true;
-    try (tsconfig_load(my fs, cstr_sv(&project.config), &project.options, &project.root_files)) if_err (e) {
+    try (tsconfig_load(my fs, cstr_sv(&project.config), &project.options, nullptr)) if_err (e) {
         ignore e;
         current_error_destroy();
         project.readable = false;
@@ -137,7 +152,7 @@ u32 project_set_build_order(ProjectSet* me, u32 const* roots, u32 root_count, u3
 // ---- Redirects ----
 
 typedef struct ProjectRedirects {
-    ProjectSet const* set;
+    ProjectSet* set;
     u32* projects; // The referenced projects (indices into set)
     u32 count;
     HMapProjectIndex source_projects; // A root file of a referenced project -> 1 + its index in projects
@@ -198,6 +213,7 @@ static cstr common_source_directory(Project const* project) {
 }
 
 static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
+    project_set_root_files(my set, project_index);
     Project const* project = &my set->projects[project_index];
     u32 slot = my count++;
     my projects[slot] = project_index;
@@ -245,7 +261,7 @@ static void redirects_collect(ProjectRedirects* me, u32 project, uint8_t* seen) 
     }
 }
 
-ProjectRedirects* project_redirects_new(ProjectSet const* set, u32 project) {
+ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project) {
     ProjectRedirects* me = c_new(ProjectRedirects, { .set = set });
     my projects = c_new_n(u32, set->count + 1);
     uint8_t* seen = calloc((size_t)(set->count + 1), 1);

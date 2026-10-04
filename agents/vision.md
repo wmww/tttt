@@ -26,7 +26,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   and symbol chains, JSDoc + CommonJS + expandos, parallel checking and loading. ~96k lines of C.
 - **Absent or approximated tsc mechanisms**: declaration-emit diagnostics (plan 40: isolatedDeclarations and
   symbol accessibility done, TS2742's module specifiers left), project references
-  (plan 41, planned), **laziness** (members, reverse mapped types, intersection reduction, contextual instantiation
+  (plan 41: semantics and `-b` done, read as sources; `-b` perf and typescript-eslint left), **laziness** (members, reverse mapped types, intersection reduction, contextual instantiation
   and return types are computed eagerly; plan 42), resolvingSignature and the rest of the circularity stack (blocked
   on laziness), permissive instantiation. Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
 

@@ -601,13 +601,24 @@ src` finds the code-side markers; every significant one has an entry here.
   refused import (`MODULE_REF_IS_JS`) are two paths.
 - `module_resolver_resolve` (HACK): node10 and export-map packages resolve in two passes (TypeScript extensions
   first), reproducing tsc's selfNameModuleAugmentation behaviour (microsoft/TypeScript#50762) by other means.
+  `try_load_input_file_for_path` lets the TypeScript pass take a JavaScript input anyway (with allowJs), since tsc's
+  one pass maps an exports target to its input before the target's `.d.ts`: a patch on the patch.
 - `apply_realpath` loses the original path; no package ids (no duplicate-package handling).
 - `/// <reference lib>`: the CLI loads it after the program's files (`program_follow_lib_references()`; tsc: libs
   first; unknown names silently ignored, tsc TS2726). The harness adds it to the cached lib list up front by text scan
   (`load_test_source`); `@libReplacement: true` is unimplemented (libTypeScriptOverrideSimple & co.).
   `program_load_reference_path()` probes extensions by hand.
-- `tsconfig.c`: config errors are one `failable` message (no TS5xxx); `include` globs always skip dot and package
-  directories (tsc: only under `**`); the allowJs gate depends on option read order.
+- `tsconfig.c`: config errors are one `failable` message (no TS5xxx, no TS1005 for JSON syntax, a missing `extends`
+  fails the config where tsc says TS5083 and goes on); `include` globs always skip dot and package directories (tsc:
+  only under `**`). The walk runs before `compiler_options_resolve()`, so `allows_js()`/`resolves_json()` restate the
+  allowJs/resolveJsonModule defaults; `follow_links()` uses libc's realpath, not the `Fs` (the mock fs never links
+  configs).
+- Project references (`project.c`, plan 41): a `ProjectSet` reads every config twice (options, then root files with a
+  scratch `CompilerOptions`); the redirect map is rebuilt per program (cheap next to name resolution, which stage 2
+  is about). `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is in the
+  program because: Matched by include pattern ..." chain (the program doesn't know which spec matched). Config
+  diagnostics of references are only for the program's own config's direct references (tsc walks them transitively,
+  reported on the parent config). `main.c` counts config diagnostics among the "parse errors" of its summary.
 - `main.c`: strict by default only without a tsconfig; `default_libs` when nothing picks `--lib`/`--target`;
   `--keep-going` unvalidated.
 

@@ -123,15 +123,14 @@ static i64 file_size_of(void* ctx, csview path) {
     return stat(buf, &info) ? 0 : (i64)info.st_size;
 }
 
-// The tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line. The
-// config's root files are appended to root_files, unless there are files on the command line
-static_failable apply_compiler_options(Options const* opts, csview config, Program* program, StrList* root_files) {
+// The tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line
+static_failable apply_compiler_options(Options const* opts, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
     bool libs_decided = false;
     if (config.size) {
         if (!opts->quiet) println(color_good, "Project ", config, color_normal);
         // Files on the command line replace the config's
-        try (tsconfig_load(fs, config, options, opts->path_count && !opts->build ? nullptr : root_files)) bubble;
+        try (tsconfig_load(fs, config, options, nullptr)) bubble;
         libs_decided = options->target_set || cstr_size(&options->lib);
         // (Where the diagnostics about the options go, named like the files: relative to the working directory)
         cstr cwd = cstr_null;
@@ -159,7 +158,7 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
 }
 
 // last: nothing is checked after it (-b checks a program per project)
-static void destroy_program(Program* program, ErrorCtx* errs, bool last) {
+static void destroy_program(Program* program, ErrorCtx* errs, [[maybe_unused]] bool last) {
 #ifndef DEBUG_BUILD
     // The process is about to exit: freeing the AST node by node was a tenth of a run on a real project. Set
     // TTTT_TEARDOWN to look for leaks with a release build
@@ -225,9 +224,13 @@ static_failable check_files(
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
-    try (apply_compiler_options(opts, config, program, &root_files)) cleanup {
-        str_list_drop(&root_files);
+    try (apply_compiler_options(opts, config, program)) cleanup {
         destroy_program(program, &errs, last);
+    }
+    // The config's root files, unless there are files on the command line
+    if (config.size && !opts->path_count) {
+        StrList const* listed = project_set_root_files(projects, project);
+        for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
     }
     ProjectRedirects* redirects = nullptr;
     if (config.size) {

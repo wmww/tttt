@@ -11,9 +11,12 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 2. Done (2026-10-04, one session, 7 commits): plan 40 stage 2, suite 12366 -> 12376, 0 lost, every corpus unchanged,
    callgrind +0.6% nest / +1.0% drizzle. Left: deep-recursion TS7056, TS5088 (plan 40). bench.sh's compiler corpus is
    now like-for-like for entry 8.
-3. **Plan 41 stage 1** (execution): references, `-p`/`-b` semantics, pin `tsc-src`; the scenario tests mined from tsc's
-   tsbuild baselines. Leaves exactly the 11 checker bugs the plan lists. Budget two sessions (entries 3-4).
-4. **Plan 41 stage 1, continued, or stage 2** (`-b` perf, measured first) if stage 1 fit in one.
+3. Done (2026-10-04, one session, 3 commits): plan 41 stage 1. `-b thirdparty/tsc/src` (corpus tsc-src) leaves the 11
+   checker bugs + one 4-checker-only (triage), 3.65 s vs tsc -b's 15.6; `./scenarios.py` 199 pass / 19 fail (all in
+   triage); suite 12376 -> 12377, 0 lost, corpora and callgrind unchanged.
+4. **Plan 41 stage 2** (`-b` perf): stage 1 fit in one session. The profile is already in the plan's Status: name
+   resolution of referenced files redone per program is 1.5 of 3.6 s. Measure against `tsc -b` (a /tmp copy) and tsgo
+   `-b` in `./bench.sh` first.
 5. **Fan-out: types and symbols components** (four Opus sub-agents in worktrees, `./displaydiff.py` buckets, disjoint
    test lists, 0 lost at merge). These are now the two biggest failing components (704 and 507 tests vs errors' 427).
 6. **Plan 40 stage 3 + plan 41 stage 3**: module specifier generation once, for TS2742 and the references corpora;

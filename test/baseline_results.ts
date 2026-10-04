@@ -54377,8 +54377,8 @@ const baselines = {
     },
     'nodeAllowJsPackageSelfName2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'nodeModulesAllowJs1(module=node16)': {
         errors: true,

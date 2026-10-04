@@ -18,7 +18,8 @@ typedef struct Project {
     // The config's own options (no command line), resolved: what module resolution in the project's files and its
     // output paths go by
     CompilerOptions options;
-    StrList root_files; // Absolute
+    StrList root_files; // Absolute, once project_set_root_files() has listed them
+    bool root_files_listed;
     TsconfigReference* references;
     u32 reference_count;
     u32* referenced; // The project of each of references
@@ -33,6 +34,9 @@ void project_set_destroy(ProjectSet* me);
 // references (transitively) the first time
 u32 project_set_load(ProjectSet* me, csview path);
 Project const* project_set_at(ProjectSet const* me, u32 index);
+// The project's root files (tsc's fileNames), listed on first use: walking `include` is a measurable part of a small
+// project's time, so each project does it once
+StrList const* project_set_root_files(ProjectSet* me, u32 index);
 
 // tsc's build order of `-b` for the given projects: depth-first, references before what references them, in written
 // order. A cycle is reported in *cycle_errors (one message each, tsc's TS6202) unless a reference on the way is
@@ -42,7 +46,7 @@ u32 project_set_build_order(ProjectSet* me, u32 const* roots, u32 root_count, u3
 // What one program sees of the projects its project references, transitively (not the project itself)
 typedef struct ProjectRedirects ProjectRedirects;
 
-ProjectRedirects* project_redirects_new(ProjectSet const* set, u32 project);
+ProjectRedirects* project_redirects_new(ProjectSet* set, u32 project);
 void project_redirects_destroy(ProjectRedirects* me);
 // How many referenced projects (0: the program has no redirects)
 u32 project_redirects_count(ProjectRedirects const* me);

@@ -720,6 +720,11 @@ void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* co
     access_memo_painted = 0;
 }
 
+void symbol_chain_release_thread(void) {
+    free(access_memo);
+    access_memo = nullptr;
+}
+
 static AccessMemo* access_memo_slot(Scope const* enclosing, Symbol const* symbol, u32 meaning, bool allow_modules) {
     if (!painted_symbols) return nullptr;
     if (*painted_count != access_memo_painted) {

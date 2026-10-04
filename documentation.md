@@ -223,7 +223,41 @@ Imported files are discovered while loading, from the parser's list of module na
 
 `program.c` is the one caller: `program_load_module_ref()` resolves every `ModuleRef` of a loaded file in the mode its syntax asks for (`ModuleRef.syntax`: `import x = require()` is always CommonJS, `import()` always ESM, anything else the format of the file), adds TypeScript results to the program and records anything else on the ref (`ModuleRef.failure`: JavaScript without `allowJs` or from a package, `.tsx` without `jsx`...). A `.json` result (resolveJsonModule) is loaded as a source file too (`SourceFile.is_json`): the parser makes its one expression an `export =` statement. `import * as ns` of an `export =` module gets tsc's interop shapes in `namespace_import_type()` (lower.c: a synthetic `default`, or only the default for an ES module importing JSON). Diagnostics are reported from the ref when names are resolved, not while loading (`module_ref_report_unresolved()`: TS2307, TS2792 for classic, TS7016, TS2732, TS2834/TS2835, TS6142, TS6263; `module_ref_report_resolved()`: TS5097, TS1479/TS1471), so an unresolved import is no reason not to typecheck. `program_load_automatic_types()` adds the `@types` packages after the roots. With `noResolve` nothing is added, but names still find files that are roots.
 
-`src/tsconfig.{h,c}` reads a tsconfig.json: `extends` (paths and packages), `compilerOptions` (path options made absolute, `${configDir}`), and the root files from `files` / `include` / `exclude` (the walk only enters directories an include pattern can match something inside, `glob_may_match_inside()`). The CLI takes `-p`, or finds the nearest tsconfig.json when it is given no files; the test harness applies a `tsconfig.json` unit under the test's directives and takes its files as the roots, like tsc's `compilerRunner.ts`. The harness also mirrors tsc's virtual filesystem: relative `@Filename`s live in `/.src`, which is the working directory (`@currentDirectory` changes it), `@link` / `@symlink` make symlinks in the mock filesystem.
+`src/tsconfig.{h,c}` reads a tsconfig.json: `extends` (paths and packages), `compilerOptions` (path options made absolute, `${configDir}`), and the root files from `files` / `include` / `exclude` (the walk only enters directories an include pattern can match something inside, `glob_may_match_inside()`; a found `a.d.ts` or `a.js` next to `a.ts` is left out, tsc's extension priority; `.json` files only for include patterns ending in `.json`, with resolveJsonModule), and `references` (`tsconfig_load_references()`, see "Project references"). The CLI takes `-p`, or finds the nearest tsconfig.json when it is given no files; the test harness applies a `tsconfig.json` unit under the test's directives and takes its files as the roots, like tsc's `compilerRunner.ts`. The harness also mirrors tsc's virtual filesystem: relative `@Filename`s live in `/.src`, which is the working directory (`@currentDirectory` changes it), `@link` / `@symlink` make symlinks in the mock filesystem.
+
+### Project references
+`src/project.{h,c}` is the only code that knows about more than one tsconfig (plan 41). A `ProjectSet` loads a config
+and, recursively, every config its `references` name (`tsconfig_load_references()`; references aren't inherited
+through `extends`), each once by absolute path; a project's root files are listed on first use
+(`project_set_root_files()`, which the CLI also takes its roots from, so each include walk runs once).
+`project_set_build_order()` is tsc's `-b` order (depth-first, references first, TS6202 on a cycle unless `circular`).
+
+A program checks one project. The projects it references, transitively, are read **as sources, never as built
+outputs**: tsc's `useSourceOfProjectReferenceRedirect`, what its language service and tsgo's LSP do. `ProjectRedirects`
+(per program) holds every referenced project's root files and the output declaration path of each
+(getOutputDeclarationFileName: `declarationDir`, else `outDir`, below `rootDir`, composite's config directory or the
+common source directory; next to the source without either), mapped back to the source, and the declaration
+directories. The resolver's file and directory existence checks treat those outputs as existing, built or not, also
+through a `node_modules` link (a lenient realpath follows the nearest existing directory); `program_redirect_resolved()`
+turns a resolved output into its source, for imports, type references, `/// <reference path>` and roots. A file that is
+a referenced project's root file is `SourceFile.from_reference`: unchecked, every diagnostic in it dropped (parse
+errors too, at the end of `program_load_automatic_types()`), and its module names resolved by a resolver with *its*
+project's options (`program_resolver_of()`, `program_options_of()`); parsing, checking and the automatic types stay
+the program's. Where tsc -b's reading of the `.d.ts` shows to an importer, the source reads like one: a synthetic
+default (`source_file_reads_as_declaration()`), and its const enums are ambient for TS2748 unless its project preserves
+them (`SourceFile.reference_const_enums_ambient`).
+
+Divergences by design: no TS6305 ("output file has not been built"), never stale outputs (`scenarios.py` skips the
+scenarios that test either), a referenced project's declarations typed under the referencing program's strictness,
+and no `/// <reference types="node" />` leaking from a built `.d.ts`.
+
+The CLI: `-p` on a config with references checks that project with the redirects; on a solution config (no files,
+only references) it says nothing and exits 0. `-b [PROJECT...]` checks each project in build order as its own program,
+freed before the next (release builds otherwise leave the last program to the exit), going on past errors (tsc 5.6+;
+`--stopBuildOnErrors`). The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
+own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_files()`) go at the import that brought
+the file in (`SourceFile.included_at`). `./scenarios.py` replays the first command of tsc's own tsbuild/tsc project
+reference baselines against tttt; `./realworld.py --corpus tsc-src` is `-b` on TypeScript's `src`.
 
 ### Typecheck
 The AST is now in it's finished state, so we can traverse it looking for type errors. This is the phase when the `*_evaluate_type()` functions are called (via `ty_from_node()` / `ty_expr_type()` -> `lazy_type_get()` -> `lazy_type_evaluate()` -> `*_evaluate_type()`), each returning a `Ty const*`. Before the walk, `ty_init_global_types()` creates the global types tsc's

@@ -18,6 +18,7 @@
 #include "json.h"
 #include "load_pool.h"
 #include "project.h"
+#include "symbol_chain.h"
 #include <time.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -2276,6 +2277,7 @@ static void* check_shares_thread(void* shares) {
     set_compiler_options(&((CheckShares*)shares)->program->options);
     check_shares_run(shares);
     clear_compiler_options();
+    symbol_chain_release_thread();
     return nullptr;
 }
 

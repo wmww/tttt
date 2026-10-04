@@ -6,6 +6,11 @@
 #include "tsconfig.h"
 #include "json.h"
 
+typedef uint8_t PathKind; // PathSet: 1 a literal (`files`) root, 2 one include patterns found
+#define g_pro_key SvStr, svstr
+#define g_val PathKind, path_kind
+#include <cleat/generic/hmap.h>
+
 typedef struct ConfigLoad {
     Fs const* fs;
     CompilerOptions* options;
@@ -542,19 +547,11 @@ static char const* const extension_groups[3][5] = {
     { ".mts", ".d.mts", ".mjs" },
 };
 
-static bool in_list(StrList const* list, isize count, csview path) {
-    for (isize i = 0; i < count; i++) {
-        if (cstr_equals_sv(&list->items[i], path)) return true;
-    }
-    return false;
-}
 
 // tsc's hasFileWithHigherPriorityExtension: a file include patterns found is left out when the same name with an
 // extension before its own in its group is there too (literal or found): `a.d.ts` (an output) next to `a.ts`, `a.js`
 // next to `a.ts` with allowJs. Not a `.js` for a `.d.ts` (tsc's legacy behaviour)
-static bool has_higher_priority_sibling(
-    ConfigLoad* me, StrList const* literal, isize literal_count, StrList const* found, csview path
-) {
+static bool has_higher_priority_sibling(ConfigLoad* me, HMapPathKind const* files, csview path) {
     for (isize g = 0; g < (isize)c_arraylen(extension_groups); g++) {
         // The file's own extension in the group: the longest that matches (`.d.ts` before `.ts`)
         isize own = -1;
@@ -573,7 +570,7 @@ static bool has_higher_priority_sibling(
             if (is_js && !strncmp(extension, ".d.", 3)) continue;
             if (!allows_js(my options) && (!strcmp(extension, ".js") || !strcmp(extension, ".jsx"))) continue;
             cstr sibling = cstr_d(stem, extension);
-            bool there = in_list(literal, literal_count, cstr_sv(&sibling)) || in_list(found, found->count, cstr_sv(&sibling));
+            bool there = hmap_path_kind_get(files, cstr_sv(&sibling)) != nullptr;
             cstr_drop(&sibling);
             if (there) return true;
         }
@@ -630,17 +627,22 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
             collect_files(me, &patterns, cstr_sv(&bases.items[i]), &found, 0);
         }
     }
-    isize literal_count = out->count;
+    HMapPathKind files = {0};
+    for (isize i = 0; i < out->count; i++) hmap_path_kind_insert(&files, cstr_clone(out->items[i]), 1);
+    for (isize i = 0; i < found.count; i++) hmap_path_kind_insert(&files, cstr_clone(found.items[i]), 2);
     for (isize i = 0; i < found.count; i++) {
-        bool seen = false;
-        for (isize j = 0; j < out->count && !seen; j++) seen = cstr_eq(&out->items[j], &found.items[i]);
-        if (seen || has_higher_priority_sibling(me, out, literal_count, &found, cstr_sv(&found.items[i]))) continue;
-        str_list_push(out, cstr_sv(&found.items[i]));
+        csview path = cstr_sv(&found.items[i]);
+        if (hmap_path_kind_get(&files, path)->second == 1 || has_higher_priority_sibling(me, &files, path)) continue;
+        str_list_push(out, path);
     }
     // (tsc's wildCardJsonFileMap comes last)
     for (isize i = 0; i < patterns.json.count; i++) {
-        if (!in_list(out, out->count, cstr_sv(&patterns.json.items[i]))) str_list_push(out, cstr_sv(&patterns.json.items[i]));
+        csview path = cstr_sv(&patterns.json.items[i]);
+        if (hmap_path_kind_get(&files, path)) continue;
+        hmap_path_kind_insert(&files, cstr_from_sv(path), 2);
+        str_list_push(out, path);
     }
+    hmap_path_kind_drop(&files);
     str_list_drop(&patterns.json);
     str_list_drop(&found);
     str_list_drop(&bases);

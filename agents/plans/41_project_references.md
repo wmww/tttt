@@ -1,6 +1,23 @@
 # Plan 41: project references
 Planned 2026-09-29 (todo entry 9 of the seventh window). Three stages, stage 1 is one to two sessions.
 
+## Status (2026-10-04)
+**Stage 1 done** in one session (todo entry 3 of the eighth window): `src/project.{h,c}`, the redirects, `-p`/`-b`,
+`scenarios.py`, corpus `tsc-src`. documentation.md "Project references" describes what was built. Numbers:
+- `./realworld.py --corpus tsc-src` (`-b thirdparty/tsc/src`): 12 diagnostics, the 11 checker bugs below plus
+  services.ts:2434 (TS2345 `boolean | UserPreferences`), which only shows with 4 checkers: `preferences ?? emptyOptions`
+  subtype-reduces `{}` against the weak `UserPreferences` by type id order (tsc's strictSubtype tie break; triage).
+  3.65 s wall, 755 MB peak (tsc -b 15.6 s); threads 1 and 4 byte-identical.
+- `./scenarios.py`: 199 pass, 19 fail, 82 skipped with reasons. The 19: TS1005 in tsconfig (tttt's JSON reader
+  doesn't report syntax errors), TS4023/TS4094 (plan 40: a declaration walk gap, and none at all with `--noCheck`),
+  TS6377 (tsbuildinfo, out of scope), extends of a missing file (tsc: TS5083 and goes on; tttt fails the config), the
+  CLI's phase gating (tsc -p stops semantic diagnostics after options diagnostics, tsc -b doesn't; tttt stops
+  typechecking after name errors), TS2613/TS1192 and an ESM-to-ESM synthetic default under bundler, TS1479 on a JSX
+  runtime import, `--composite null`. All in triage.md.
+- Stage 2's profile (`--time`, summed over the 13 programs): resolve names 1.48 s, load+parse 0.78 s, typecheck
+  0.55 s, libs 0.05 s. **Name resolution of referenced projects' files, redone in every program, is the cost**; checking
+  only the project's own files already made typecheck small. Teardown between programs isn't visible in the total.
+
 ## Why
 tttt ignores `references`. Two kinds of real projects use them:
 - **Monorepos built with `tsc -b`**: a solution tsconfig (`"files": []` + `references`), one composite project per

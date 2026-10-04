@@ -65,6 +65,8 @@ bool symbol_has_visible_declarations(Symbol const* symbol);
 // Declaration emit's late painted declarations on this thread (null: none): a painted namespace is visible like an
 // exported one (tsc's addVisibleAlias sets its isVisible). `symbols` and `count` are read where they are each time
 void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count);
+// Frees this thread's accessibility memo of the declaration walks (a thread that checked is done)
+void symbol_chain_release_thread(void);
 // tsc's isDeclarationVisible of the statements directly in a scope (a file is, a namespace block is if its namespace
 // declaration is, nothing else is)
 bool scope_statements_visible(Scope const* scope);
