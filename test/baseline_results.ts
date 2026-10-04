@@ -16807,12 +16807,12 @@ const baselines = {
     },
     'inKeywordTypeguard(strict=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inKeywordTypeguard(strict=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'inOperator': {
@@ -65722,7 +65722,7 @@ const baselines = {
     },
     'indexerWithTuple': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'namedTupleMembers': {

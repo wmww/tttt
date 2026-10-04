@@ -305,7 +305,8 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             if (!repeated) {
                 for_each (k, vec_span, &inner.declarations) vec_span_push(&info->declarations, *k);
             }
-        } else if (object->kind == TY_UNION) {
+        } else if (object->kind == TY_UNION || !inner.found) {
+            // (An intersection without the property is a member of an outer union that lacks it)
             info->missing_in_member = true;
         }
         vec_span_drop(&inner.declarations);
@@ -390,6 +391,12 @@ static cstr member_text(BaselineTestCase* ctx, Symbol const* container, Span con
 // of its container (tsc's getContainersOfSymbol of a member), else bare
 static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fallback) {
     csview name = span_valid(info->name_span) ? info->name_span.sv : fallback.sv;
+    // (A property no declaration names, `x["a"]` of what `"a" in x` synthesized, is named by its symbol's name)
+    if (!span_valid(info->name_span) && name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'') &&
+        name.buf[name.size - 1] == name.buf[0] && !memchr(name.buf, '\\', (size_t)name.size)
+    ) {
+        name = csview_slice(name, 1, name.size - 1);
+    }
     cstr ret = cstr_init();
     Symbol const* member = info->member_symbol;
     // A member of a namespace's or module's object is its export (maybe an alias: getSymbolAtLocation doesn't resolve)
@@ -2278,6 +2285,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             break;
 
         case EXPR_IDENTIFIER:
+            // (A class's `this` is the symbol of its type where it isn't a parameter: none once narrowed to never,
+            // `"a" in this` of a class that has `a` in its else branch. tsc's getSymbolAtLocation, checkExpression)
+            if (my identifier.keyword == KEYWORD_IDENTIFIER_THIS && my identifier.this_kind == THIS_CLASS_INSTANCE &&
+                (ty_expr_type(current_checker, me)->flags & TYF_NEVER)
+            ) {
+                break;
+            }
             identifier_expr_compile_test_info(&my identifier, ctx);
             if (!my identifier.target && my identifier.is_arguments) {
                 // A function's `arguments` (tsc's argumentsSymbol, which has no declaration)
