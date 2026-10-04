@@ -1824,7 +1824,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     class_check_emit_helpers(me, errs);
 
-    generic_typecheck(&my generic, errs);
+    generic_typecheck(&my generic, false, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
     // (The base an `@augments` tag names instead: tsc checks its expression, checkClassLikeDeclaration)

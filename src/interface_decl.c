@@ -167,7 +167,7 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
-    generic_typecheck(&my generic, errs);
+    generic_typecheck(&my generic, false, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
     // tsc's getBaseTypes() reports every declaration of an interface whose bases lead back to it
     if (my symbol && span_valid(my name) && !my name.source->is_stdlib && ty_interface_in_base_cycle(current_checker, my symbol)) {

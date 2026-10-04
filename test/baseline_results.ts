@@ -14778,7 +14778,7 @@ const baselines = {
     'genericCapturingFunctionNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericChainedCalls': {
         errors: true,
@@ -66758,7 +66758,7 @@ const baselines = {
     'subtypesOfTypeParameterWithRecursiveConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypesOfUnion': {
         errors: true,
