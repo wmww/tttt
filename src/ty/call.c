@@ -1831,7 +1831,11 @@ static Resolution resolve_with_signatures(
             // string, n: number): number; f<T>(n: number, t: T): T` returns number)
             Candidate fallback = longest && !longest->type_params.len && unfit[picked].sig != longest ?
                 (Candidate){ .sig = longest } : unfit[picked];
-            if (fallback.sig->type_params.len && !info->type_arg_nodes) {
+            if (longest && longest->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
+                // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
+                // accessor)` before `spyOn(o, k)`) is still the one, inferred from the arguments
+                fallback = make_candidate(me, longest, args, info, true, true);
+            } else if (fallback.sig->type_params.len && !info->type_arg_nodes) {
                 fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
                 ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
