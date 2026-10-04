@@ -125,7 +125,11 @@ big tables' aliases: the first version cost nest +3.5%). Left (hacks.md "Declara
 - A declaration whose syntactic builder falls back prints its whole checker type (not only the parts tsc would).
 - getAlternativeContainingModules isn't in `containers_of()`.
 - The printer's `import("...")` specifiers are tttt's module names, which stage 3 replaces with generated specifiers.
-### Stage 3: TS2742 (1 session; can wait for plan 41)
+### Stage 3: TS2742: DONE (2026-10-04, todo entry 6 of the eighth window)
+`src/module_specifiers.c` (documentation.md, end of "Declaration diagnostics"), `DeclTracker.track_module_file`, and in
+`symbol_chain.c` getAlternativeContainingModules and sortByBestName. Suite +14, 0 lost; corpora unchanged; callgrind
+nest +0.7%, drizzle +0.5%. What's left of the plan: TS7056 for deep recursive types, TS5088, and the hacks.md
+"Declaration diagnostics" list. The original stage 3 text:
 The builder's `import("...")` specifier from moduleSpecifiers.ts (getModuleSpecifiers: relative path, the package
 name through node_modules, package.json `exports`/`typesVersions` blocking a subpath, symlinked packages and
 realpaths, the node16/nodenext mode swap retry), TS2742 when it contains `/node_modules/`. tttt has module resolution

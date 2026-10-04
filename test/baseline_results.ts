@@ -2703,7 +2703,7 @@ const baselines = {
     'bundledDtsLateExportRenaming': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cacheResolutions': {
         errors: true,
@@ -7776,7 +7776,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitCommonJsModuleReferencedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8128,7 +8128,7 @@ const baselines = {
     'declarationEmitForGlobalishSpecifierSymlink2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitForModuleImportingModuleAugmentationRetainsImport': {
         errors: true,
@@ -8411,7 +8411,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitObjectAssignedDefaultExport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8596,7 +8596,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitReexportedSymlinkReference3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -8796,7 +8796,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitUsingTypeAlias1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29788,7 +29788,7 @@ const baselines = {
     'symbolLinkDeclarationEmitModuleNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolLinkDeclarationEmitModuleNamesImportRef': {
         errors: true,
@@ -29798,7 +29798,7 @@ const baselines = {
     'symbolLinkDeclarationEmitModuleNamesRootDir': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symbolMergeValueAndImportedType': {
         errors: true,
@@ -54801,17 +54801,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54841,17 +54841,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesExportsSourceTs(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesExportsSourceTs(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesExportsSourceTs(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63752,8 +63752,8 @@ const baselines = {
     },
     'intersectionOfUnionNarrowing': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'intersectionOfUnionOfUnitTypes': {
         errors: true,
@@ -64721,9 +64721,9 @@ const baselines = {
         types: true,
     },
     'constructSignaturesWithOverloads2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructSignaturesWithOverloadsThatDifferOnlyByReturnType': {
         errors: true,

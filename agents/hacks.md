@@ -584,15 +584,23 @@ src` finds the code-side markers; every significant one has an entry here.
   so deep recursive types (declarationEmitPrivatePromiseLikeInterface) stay under the 1M characters. TS5088 (cyclic
   unions in conditional branches) isn't ported.
 - `symbol_chain.c` accessibility: `decl_visible()` fails open (visible) where it doesn't know a declaration's
-  statement list (no `block`, an ambient module, a namespace block it can't match); `containers_of()` lacks tsc's
-  getAlternativeContainingModules (a module that re-exports the symbol under another chain), which only matters for
-  symbols nothing else reaches.
+  statement list (no `block`, an ambient module, a namespace block it can't match).
+- `namespace_import_is_clone()` (`symbol_chain.c`): under esModuleInterop tsc resolves `import * as ns` of a module with
+  a `default` (or signatures) to a clone, so `ns` doesn't name the module as a container
+  (esModuleInteropDefaultImports). tttt types `ns` as the module itself, so the rule only applies to container lookups
+  (`ChainCtx.container_lookup`); a module printed as `typeof ns` still goes through `ns`. A real clone symbol for such
+  imports would remove the special case.
+- `module_specifiers.c` leaves out: getModuleSpecifierOverride (an `import("...")` type node reused from another file
+  gets its specifier regenerated in tsc), redirectTargetsMap (a duplicate package's other paths), the output files a
+  package.json `imports` entry may name, `moduleName` of AMD files, auto-import preferences. Alternative containers
+  (`alternative_modules()`) are cached per walk and per (symbol, program) on each thread; outside walks (types baseline,
+  messages) the file's imports are rescanned every time.
 - `is_optional_parameter` ignores getMinArgumentCount's trailing `void` parameters; `Place.contextual` is only set
   through type assertions (the builder never descends into calls or JSX, the other isContextuallyTyped ancestors).
 - `declaration_diagnostics_wanted`: isSourceFileFromExternalLibrary is "loaded by an import and the path has
   `node_modules/`"; JavaScript is skipped entirely (no JS declaration emit, jsDeclarations* TS9005/TS9006).
-- The printed `import("...")` specifiers are tttt's module names (`import("thirdparty/.../node_modules/@nestjs/...")`),
-  not tsc's generated specifiers: stage 3 (TS2742) needs the real ones.
+- The printed `import("...")` text is still tttt's module name (the specifier is only computed to decide TS2742 and the
+  container order); nothing compares the printed declaration text.
 
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
 - `path_is_drive_rooted` (`module_resolution.h`): a DOS drive path (`c:/x`) is a directory `c:` of the current

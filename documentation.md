@@ -288,6 +288,17 @@ after comment directives (tsc's getDeclarationDiagnostics is apart from the chec
 noEmit/noEmitOnError when anything else was reported, like tsc's emitFilesAndReportErrors
 (`TTTT_DECLARATION_DIAGNOSTICS=1` keeps them, to audit a corpus with other errors).
 
+Where the printer roots a name at `import("...")` of a file (`DeclTracker.track_module_file`), the walk asks how a
+`.d.ts` of its file would name that module: `program_module_specifier()` (an import of the file that resolves to it,
+else `module_specifier_generate()` in `src/module_specifiers.c`, tsc's moduleSpecifiers.ts in reverse of
+`module_resolution.c`: every name of the file through the symlinked directories the program met, a package name
+through node_modules unless `exports` blocks it, `paths`, else relative). A specifier through a `/node_modules/` is
+TS2742. The same specifiers order the containers a symbol can be named through (getSymbolChain's sortByBestName,
+`symbol_chain_set_module_specifier()`); without a walk, files go by their path, as tsc's printer without a host. The
+program's `SymlinkCache` learns links from every resolution that followed one (`ResolvedModule.original_path`) and
+from resolving the dependencies of the importing file's package.json (per package scope, so the answer doesn't depend
+on which checker asked first).
+
 ## Memory Management
 The source code and ASTs of all parsed files is kept valid until after all above phases have finished. The AST holds references to the code (via spans) and any types created from the AST may hold references into the AST, so it would not be safe to free either the code or the AST while anything created from it remains in use. Furthermore the AST should not be structurally modified after parsing to keep pointers valid (ex pushing to a vec that's part of the AST is generally unsafe, since it may trigger a reallocation and invalidate other elements).
 
