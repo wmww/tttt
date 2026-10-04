@@ -649,8 +649,11 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             VecSpan declarations = vec_span_init();
             // (A symbol is named as its first declaration writes it: `1; 1.0;` is `I[1]` twice)
             csview written = my key.span.sv;
-            if ((merged && merged->decl->decl_span_count) || redeclared || joined) {
-                Prop const* shown = merged ? merged : redeclared ? redeclared : joined;
+            // (An instantiation's declarations are its target's: `interface Array<T>` merged with the lib's)
+            Prop const* merged_root = merged;
+            while (merged_root && !merged_root->decl->decl_span_count && merged_root->target) merged_root = merged_root->target;
+            if ((merged_root && merged_root->decl->decl_span_count) || redeclared || joined) {
+                Prop const* shown = merged ? merged_root : redeclared ? redeclared : joined;
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
                 if (span_valid(shown->decl->name_span)) written = shown->decl->name_span.sv;
             } else {

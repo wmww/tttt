@@ -5267,7 +5267,7 @@ const baselines = {
     },
     'complexRecursiveCollections': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'complicatedGenericRecursiveBaseClassReference': {
@@ -10422,7 +10422,7 @@ const baselines = {
     },
     'duplicateOverloadInTypeAugmentation1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'duplicatePackage': {
@@ -29402,7 +29402,7 @@ const baselines = {
     },
     'styledComponentsInstantiaionLimitNotReached': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'subSubClassCanAccessProtectedConstructor': {
@@ -65662,7 +65662,7 @@ const baselines = {
     },
     'thisTypeInTuples': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thisTypeInTypePredicate': {
