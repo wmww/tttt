@@ -475,7 +475,13 @@ static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedI
     Ty const* indexed = ty_indexed(me, operand, mapped->type_param);
     Inference inf;
     inference_init(&inf, (TyList){ .data = &indexed, .len = 1 });
-    infer_types(me, &inf, source, ty_mapped_template(me, mapped), INFER_PRIORITY_NORMAL);
+    // (tsc's getTemplateTypeFromMappedType: a `?` mapped type's template is optional, which takes an optional source
+    // property's undefined)
+    Ty const* template = ty_mapped_template(me, mapped);
+    if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+        template = ty_union(me, (Ty const*[]){ template, ty_undefined_or_missing(me) }, 2, nullptr, (TyList){0});
+    }
+    infer_types(me, &inf, source, template, INFER_PRIORITY_NORMAL);
     Ty const* ret = inference_conditional_result(me, &inf, 0);
     inference_drop(&inf);
     return ret ? ret : ty_intrinsic(me, TY_UNKNOWN_);
@@ -563,10 +569,16 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
             Prop const* prop = members->props[i];
             // (Declared where the source's is: tsc's createReverseMappedType copies its declarations, which is where
             // TS6500 points and what the symbols baseline shows)
+            Prop const* origin = prop;
+            while (origin->target) origin = origin->target;
+            PropDecl const* decl = origin->decl;
+            TypeNode const* annotation = origin == prop && decl->node && decl->node->parsed && !decl->lazy &&
+                !decl->function && !decl->overload_count && !decl->symbol ? decl->node : nullptr;
             (*out)[i] = (ObjectLiteralProp){
                 .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
                 .name_span = prop->decl->name_span, .decl_spans = prop->decl->decl_spans,
                 .decl_span_count = prop->decl->decl_span_count, .name_is_value = prop->decl->name_is_value,
+                .asserted = annotation,
             };
         }
         return members->prop_count;
@@ -641,8 +653,17 @@ static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, Map
         u32 flags = prop->flags & (PROP_OPTIONAL | PROP_READONLY);
         if (mapped->optional > 0) flags &= ~(u32)PROP_OPTIONAL; // `?` in the mapped type: T's property needn't be
         if (mapped->readonly > 0) flags &= ~(u32)PROP_READONLY;
+        // (The source property's type as tsc's getTypeOfSymbol has it: an optional one's with undefined)
+        Ty const* source_type = prop->type;
+        Ty const* declared_type = prop->type;
+        if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+            source_type = ty_union(me, (Ty const*[]){ source_type, ty_undefined_or_missing(me) }, 2, nullptr, (TyList){0});
+        }
         prop->flags = flags;
-        prop->type = reverse_mapped_prop_type(me, prop->type, mapped, operand);
+        prop->type = reverse_mapped_prop_type(me, source_type, mapped, operand);
+        // (Declared by the source's declarations: the types baseline reuses their annotation where it still says the
+        // same, tsc's serializeTypeForDeclaration)
+        if (prop->type != declared_type) prop->asserted = nullptr;
     }
     if (has_string_index) string_index.value = reverse_mapped_prop_type(me, string_index.value, mapped, operand);
     Ty const* ret = ty_object_literal(me, source_props, source_prop_count, &string_index, has_string_index ? 1 : 0, OBJECT_SYNTHETIC);

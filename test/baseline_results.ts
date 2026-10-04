@@ -29273,7 +29273,7 @@ const baselines = {
     'strictOptionalProperties1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictOptionalProperties2': {
         errors: true,
@@ -64223,7 +64223,7 @@ const baselines = {
     'mappedTypesArraysTuples': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypesGenericTuples': {
         errors: true,
@@ -67468,7 +67468,7 @@ const baselines = {
     'unionTypeInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiteralWidened': {
         errors: true,
