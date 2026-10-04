@@ -916,6 +916,7 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
         if (source_file->from_reference) {
             source_file->unchecked = true;
             source_file->plain_js = false;
+            source_file->skip_typed_bodies = !source_file->is_js && !source_file->is_jsx && !source_file->is_json;
             CompilerOptions const* options = project_redirects_options(my redirects, source_file->from_reference - 1);
             source_file->reference_const_enums_ambient = !options->preserve_const_enums && !options->isolated_modules &&
                 !options->verbatim_module_syntax;

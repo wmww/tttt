@@ -139,6 +139,9 @@ typedef struct SourceFile {
     // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
     // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
     u32 from_reference;
+    // A referenced project's TypeScript (not TSX) file: the bodies of functions with a written return type are skipped
+    // rather than parsed where that's safe (parser.c's skip_typed_body()), and never resolved
+    bool skip_typed_bodies;
     // A referenced project's file whose project doesn't preserve const enums: tsc -b reads its `.d.ts`, where they're
     // ambient (TS2748 under isolatedModules, tsc's shouldPreserveConstEnums of the redirect)
     bool reference_const_enums_ambient;

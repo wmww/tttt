@@ -383,6 +383,7 @@ static bool parse_binary_op(Parser* parent, BinaryOp* op);
 static bool parse_left_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_right_unary_op(Parser* parent, UnaryOp* op);
 static bool parse_block(Parser* parent, bool toplevel, Block* ret);
+static bool skip_typed_body(Parser* parent, FunctionImpl* func);
 static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret);
 
 // The first push reserves room for 4, and these elements are big (a parameter is ~570 bytes): lists of one or two were
@@ -6184,7 +6185,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         parse_append_statement_sequence(&p, false, PARSING_BLOCK_STATEMENTS, list_start, &ret->body.statements);
         hop_whitespace(&p);
         expect_char(&p, '}');
-    } else if (!parse_block(&p, false, &ret->body)) {
+    } else if (!skip_typed_body(&p, ret) && !parse_block(&p, false, &ret->body)) {
         Expr expr;
         const char* body_pos = p.pos;
         if (!expect_expr(&p, ctx, &expr) && p.pos == body_pos) {
@@ -6277,6 +6278,153 @@ static bool parse_type_accessor(Parser* parent, FunctionFlags flags, FunctionImp
     return parse_success(&p);
 }
 
+static bool skip_word_char(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' ||
+        c == '\\' || (unsigned char)c >= 0x80;
+}
+
+// Steps over the rest of a template from s (inside it): to past its closing '`' (returns false), or past its next
+// `${` (returns true). *s is null where the file ends first
+static bool skip_template_part(char const** s) {
+    for (char const* at = *s;; at++) {
+        if (!*at) {
+            *s = nullptr;
+            return false;
+        }
+        if (*at == '\\' && at[1]) {
+            at++;
+        } else if (*at == '`') {
+            *s = at + 1;
+            return false;
+        } else if (*at == '$' && at[1] == '{') {
+            *s = at + 2;
+            return true;
+        }
+    }
+}
+
+// Where the code from the `{` at s ends: just past its `}`, or null where that isn't certain. Strings, comments,
+// templates (with their `${}`s) and regular expressions are stepped over. A `/` is a regular expression after an
+// operator, `(`, `[`, `,`... or an expression keyword, and a division after a name, a number, a string or `]`; after
+// `)` or `}` (`if (a) /x/`, a block before a statement) or `++`/`--` it could be either, which gives up. So does
+// `import` or `require` anywhere: they would add to the file's module names
+static char const* skip_balanced_braces(char const* s) {
+    enum { MAX_DEPTH = 128 };
+    bool template[MAX_DEPTH]; // Per open brace: whether it's a template's `${`
+    int depth = 0;
+    enum { LAST_PUNCTUATOR, LAST_WORD, LAST_VALUE, LAST_CLOSE } last = LAST_PUNCTUATOR;
+    csview word = {0}; // The last word, when last is LAST_WORD
+    char last_char = 0, before_last_char = 0; // The last two punctuators
+    static char const* const regex_after[] = {
+        "return", "typeof", "case", "do", "else", "in", "of", "new", "delete", "void", "throw", "instanceof", "yield",
+        "await",
+    };
+    while (s) {
+        char c = *s;
+        if (!c) return nullptr;
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+            s++;
+        } else if (c == '/' && s[1] == '/') {
+            while (*s && *s != '\n') s++;
+        } else if (c == '/' && s[1] == '*') {
+            char const* end = strstr(s + 2, "*/");
+            s = end ? end + 2 : nullptr;
+        } else if (c == '{' || c == '`' || c == '}') {
+            bool template_continues;
+            if (c == '{') {
+                if (depth == MAX_DEPTH) return nullptr;
+                template[depth++] = false;
+                s++;
+                last = LAST_PUNCTUATOR;
+                before_last_char = last_char;
+                last_char = '{';
+                continue;
+            } else if (c == '}') {
+                if (!depth) return nullptr;
+                s++;
+                if (!template[--depth]) {
+                    if (!depth) return s;
+                    last = LAST_CLOSE;
+                    continue;
+                }
+                template_continues = skip_template_part(&s);
+            } else {
+                s++;
+                template_continues = skip_template_part(&s);
+            }
+            if (template_continues) {
+                if (depth == MAX_DEPTH) return nullptr;
+                template[depth++] = true;
+                last = LAST_PUNCTUATOR;
+                last_char = '{';
+            } else {
+                last = LAST_VALUE;
+            }
+        } else if (c == '"' || c == '\'') {
+            for (s++; *s != c; s++) {
+                if (!*s || *s == '\n' || *s == '\r') return nullptr;
+                if (*s == '\\' && s[1]) s++;
+            }
+            s++;
+            last = LAST_VALUE;
+        } else if (c == '/') {
+            if (last == LAST_CLOSE) return nullptr;
+            bool regex = last == LAST_PUNCTUATOR;
+            if (regex && (last_char == '+' || last_char == '-') && before_last_char == last_char) return nullptr;
+            for (u32 i = 0; last == LAST_WORD && i < c_arraylen(regex_after); i++) {
+                if (csview_equals(word, regex_after[i])) regex = true;
+            }
+            if (!regex) {
+                s++;
+                last = LAST_PUNCTUATOR;
+                before_last_char = last_char;
+                last_char = '/';
+                continue;
+            }
+            bool in_class = false;
+            for (s++; *s != '/' || in_class; s++) {
+                if (!*s || *s == '\n' || *s == '\r') return nullptr;
+                if (*s == '\\' && s[1]) s++;
+                else if (*s == '[') in_class = true;
+                else if (*s == ']') in_class = false;
+            }
+            for (s++; skip_word_char(*s); s++) {}
+            last = LAST_VALUE;
+        } else if ((c >= '0' && c <= '9') || (c == '.' && s[1] >= '0' && s[1] <= '9')) {
+            for (s++; skip_word_char(*s) || *s == '.'; s++) {}
+            last = LAST_VALUE;
+        } else if (skip_word_char(c)) {
+            char const* start = s;
+            while (skip_word_char(*s)) s++;
+            word = (csview){ start, s - start };
+            if (csview_equals(word, "import") || csview_equals(word, "require")) return nullptr;
+            last = LAST_WORD;
+        } else {
+            last = c == ']' ? LAST_VALUE : c == ')' ? LAST_CLOSE : LAST_PUNCTUATOR;
+            before_last_char = last_char;
+            last_char = c;
+            s++;
+        }
+    }
+    return nullptr;
+}
+
+// tsc -b reads a referenced project's `.d.ts`, which has no function bodies: in a referenced project's TypeScript
+// source the body of a function with a written return type isn't parsed (nor resolved: function_impl_lookup_names_as)
+// when its end is certain (skip_balanced_braces()). The function keeps an empty body
+static bool skip_typed_body(Parser* parent, FunctionImpl* func) {
+    if (!parent->shared->source->skip_typed_bodies || !func->ret_explicit || *parent->pos != '{') return false;
+    char const* end = skip_balanced_braces(parent->pos);
+    if (!end) return false;
+    Parser p = parser(parent);
+    char const* open = p.pos;
+    p.pos = end - 1;
+    expect_closing(&p, '}', open);
+    func->body = (Block){0};
+    func->has_body = true;
+    return parse_success(&p);
+}
+
 static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, FunctionImpl* ret) {
     FunctionCtx saved = function_ctx_enter(parent, flags);
     bool success = parse_non_arrow_function_inner(parent, flags, ret);
@@ -6312,7 +6460,7 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
     }
     hop_whitespace(&p);
 
-    if (parse_block(&p, false, &ret->body)) {
+    if (skip_typed_body(&p, ret) || parse_block(&p, false, &ret->body)) {
         ret->has_body = true;
     } else if (*p.pos == ';' || *p.pos == '}' || !*p.pos || p.whitespace == WHITESPACE_NEWLINE) {
         ret->body = (Block){0};
