@@ -43,6 +43,26 @@ static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
     return ret;
 }
 
+// The name of a file's module from here: its path in quotes, unless an alias in scope names it (`var m =
+// require("./m")`, `import * as m`: tsc's getAccessibleSymbolChain)
+static cstr file_module_text(BaselineTestCase* ctx, Symbol const* module) {
+    SymbolChain chain = symbol_chain_at(ctx->enclosing, module, 0, false);
+    Symbol const* first = chain.len ? chain.items[0] : nullptr;
+    PortItem const* item = first && first != module && (first->flags & SYMBOL_ALIAS) && first->alias ?
+        first->alias->item : nullptr;
+    // (A namespace import can be a clone of the module, tsc's resolveESModuleSymbol, which the chain doesn't know
+    // about: with esModuleInterop when the module's type has a `default` or signatures. An ES module's import of a
+    // CommonJS one is a symbol of its own here already)
+    bool plain_namespace = item && item->tag == PORT_IMPORT_GATHER && (!compiler_options()->es_module_interop ||
+        (!symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("export="))));
+    if (item && (item->is_require || plain_namespace)) {
+        cstr ret = cstr_init();
+        symbol_chain_append(&ret, ctx->enclosing, &chain);
+        return ret;
+    }
+    return module_name_for_error(module, nullptr, false);
+}
+
 static bool has_symbol_override(BaselineTestCase const* ctx, Span span) {
     for (u32 i = 0; i < ctx->symbol_override_count; i++) {
         if (span_eq(ctx->symbol_overrides[i].span, span)) return true;
@@ -1482,7 +1502,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         cstr file_name = cstr_init();
         if (file) {
             vec_span_push(&decls, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
-            file_name = module_name_for_error(my symbol, nullptr, false);
+            file_name = file_module_text(ctx, my symbol);
         }
         VecSpan own = declaration_get_spans(my symbol);
         for_each (i, vec_span, &own) vec_span_push(&decls, *i);
@@ -2086,22 +2106,12 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (module && vec_expr_size(&my call->args) && vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL) {
                 // (a file's module is declared by the file, and named by its path without the extension)
                 SourceFile const* file = module->module ? module->module->file : nullptr;
-                // (unless an alias in scope names it: `var m = require("./m")`, tsc's getAccessibleSymbolChain)
-                bool aliased = false;
-                if (file) {
-                    SymbolChain chain = symbol_chain_at(ctx->enclosing, module, 0, false);
-                    // (Only a require alias: an ES namespace import can be a clone of the module, tsc's
-                    // resolveESModuleSymbol, which the chain doesn't know about)
-                    Symbol const* first = chain.len ? chain.items[0] : nullptr;
-                    aliased = first && first != module && (first->flags & SYMBOL_ALIAS) && first->alias &&
-                        first->alias->item && first->alias->item->is_require;
-                }
                 Span file_start = file ? (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) } : span_null;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = file ? vec_span_single(file_start) : declaration_get_spans(module),
                     .allow_declaration_empty = true,
                     .span = vec_expr_at(&my call->args, 0)->inner_span,
-                    .text = file && !aliased ? module_name_for_error(module, nullptr, false) : symbol_text(ctx, module),
+                    .text = file ? file_module_text(ctx, module) : symbol_text(ctx, module),
                 });
             }
             for_each (i, vec_expr, &my call->args) {

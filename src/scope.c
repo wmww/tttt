@@ -2215,6 +2215,8 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
     if (!module->module->file) return cstr_from_sv(module->name);
     if (by_specifier) return cstr_d("\"", ref->path, "\"");
     csview path = source_file_display_path(module->module->file);
+    // (`// @filename: ./a.ts` is the file `a.ts`: tsc's normalized name)
+    while (csview_starts_with(path, "./")) path = csview_slice(path, 2, path.size);
     static const char* const extensions[] = { ".d.ts", ".d.mts", ".d.cts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs", ".json" };
     for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); i++) {
         if (csview_ends_with(path, extensions[i])) {

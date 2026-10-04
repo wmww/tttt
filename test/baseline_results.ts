@@ -21047,18 +21047,18 @@ const baselines = {
     },
     'mergeSymbolReexportInterface': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mergeSymbolReexportedTypeAliasInstantiation': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mergeSymbolRexportFunction': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mergeWithImportedNamespace': {
         errors: true,
@@ -21587,17 +21587,17 @@ const baselines = {
     },
     'moduleAugmentationDoesInterfaceMergeOfReexport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationDoesNamespaceEnumMergeOfReexport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationDoesNamespaceMergeOfReexport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationDuringSyntheticDefaultCheck': {
@@ -28972,7 +28972,7 @@ const baselines = {
     },
     'stackDepthLimitCastingType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'standaloneBreak': {
@@ -38677,7 +38677,7 @@ const baselines = {
     },
     'importCallExpressionCheckReturntype1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importCallExpressionDeclarationEmit1': {
@@ -38692,7 +38692,7 @@ const baselines = {
     },
     'importCallExpressionDeclarationEmit3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importCallExpressionES5AMD': {
@@ -49907,12 +49907,12 @@ const baselines = {
     },
     'umd-augmentation-1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd-augmentation-2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'umd-augmentation-3': {
@@ -50367,7 +50367,7 @@ const baselines = {
     },
     'importAttributes9': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'inferFromBindingPattern': {
