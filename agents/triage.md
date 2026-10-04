@@ -40,3 +40,12 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   variant of TS1192); no TS1192 for a default import of an ESM `.d.ts` package under bundler + esnext when both sides
   are ES modules (tsc's canHaveSyntheticDefault `usageMode === targetMode === ESNext`); TS1479 for a CommonJS
   `.tsx` file's implicit `solid-js/jsx-runtime` import of an ESM package (`tsc/composite/synthetic-jsx-import-...`).
+- (fan-out C, 2026-10-04) **Evaluation order changes answers.** tsc's checkReturnStatement asks for the function's
+  return type at the first `return` (so every return expression's literals are older than what the statements in
+  between make: narrowingInCaseClauseAfterCaseClauseWithReturn, `"Not A, B, C or D" | "D"`). Doing the same in
+  tttt (`ty_function_return_type(ctx.function)` at the top of STATEMENT_RETURN_EXPR in statement_typecheck_inner,
+  unannotated functions only) passed the suite (+1) but produced corpus false positives: tsc
+  `transformers/module/esnextAnd2015.ts:251` TS18048 (`importRequireStatements` possibly undefined: flow narrowing of a
+  captured variable computed early gives another answer) and zod 2x TS2344 (`_TaskListNodeSchema`/`_Tree` against a
+  constraint with `never` members, recursive-types.test.ts:474, mini/tests/index.test.ts:359). Both are order
+  dependence bugs (plan 42 territory); find why before retrying the port.
