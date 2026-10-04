@@ -9842,12 +9842,12 @@ const baselines = {
     },
     'discriminateWithOptionalProperty4(exactoptionalpropertytypes=false)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'discriminateWithOptionalProperty4(exactoptionalpropertytypes=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'discriminatedUnionErrorMessage': {

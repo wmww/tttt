@@ -253,8 +253,9 @@ typedef struct PropSymbolInfo {
     bool skip_augment;
     // The member properties found so far: tsc's synthetic property lists the declarations of each distinct one (the
     // same declaration again when two instantiations have it: `(A[] | B[]).filter`)
-    // (tsc's symbol: the declared one, or an instantiation of it, by mapper)
-    struct { Span decl; TyMapper const* mapper; } seen[16];
+    // (tsc's symbol: the declared one, or an instantiation of it, told apart by type: instantiateSymbol keeps the
+    // declared symbol when its type has no type variables, the same type here)
+    struct { Span decl; Ty const* type; TyMapper const* mapper; } seen[16];
     u32 seen_count;
 } PropSymbolInfo;
 
@@ -298,7 +299,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             bool repeated = false;
             if (inner.seen_count == 1) {
                 for (u32 k = 0; k < info->seen_count; k++) {
-                    repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].mapper == inner.seen[0].mapper;
+                    repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].type == inner.seen[0].type && info->seen[k].mapper == inner.seen[0].mapper;
                 }
                 if (!repeated && info->seen_count < c_arraylen(info->seen)) info->seen[info->seen_count++] = inner.seen[0];
             }
@@ -351,14 +352,15 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     }
     info->member_count++;
     // (tsc's instantiateSymbol keeps the declared symbol when its type has no type variables: the same type here)
-    TyMapper const* mapper = prop->mapper;
-    if (mapper && prop != root && prop_type(checker, prop) == prop_type(checker, root)) mapper = nullptr;
+    Ty const* type = prop_type(checker, prop);
+    TyMapper const* mapper = prop->mapper && (prop == root || type != prop_type(checker, root)) ? prop->mapper : nullptr;
     for (u32 k = 0; k < info->seen_count; k++) {
-        if (span_eq(info->seen[k].decl, first_declaration) && info->seen[k].mapper == mapper) return;
+        if (span_eq(info->seen[k].decl, first_declaration) && info->seen[k].type == type && info->seen[k].mapper == mapper) return;
     }
     if (info->seen_count < c_arraylen(info->seen)) {
         info->seen[info->seen_count].decl = first_declaration;
-        info->seen[info->seen_count++].mapper = mapper;
+        info->seen[info->seen_count].mapper = mapper;
+        info->seen[info->seen_count++].type = type;
     }
     // (A declaration once per property: some members' PropDecl repeat one, an enum merged with a namespace)
     for (u32 j = 0; j < root->decl->decl_span_count; j++) {
