@@ -5337,12 +5337,12 @@ const baselines = {
     },
     'computedPropertiesInDestructuring1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertiesInDestructuring1_ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'computedPropertiesInDestructuring2': {
@@ -5387,7 +5387,7 @@ const baselines = {
     },
     'computerPropertiesInES5ShouldBeTransformed': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'concatClassAndString': {
@@ -9542,7 +9542,7 @@ const baselines = {
     },
     'destructureComputedProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructureOfVariableSameAsShorthand': {
@@ -27292,7 +27292,7 @@ const baselines = {
     },
     'renamingDestructuredPropertyInFunctionType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'renamingDestructuredPropertyInFunctionType2': {
@@ -63607,12 +63607,12 @@ const baselines = {
     },
     'contextuallyTypedBindingInitializer': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'contextuallyTypedBindingInitializerNegative': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'contextuallyTypedClassExpressionMethodDeclaration01': {
@@ -65012,7 +65012,7 @@ const baselines = {
     },
     'genericObjectRest': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericRestArity': {
@@ -65042,7 +65042,7 @@ const baselines = {
     },
     'objectRest': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectRest2': {

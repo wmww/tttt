@@ -461,6 +461,18 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
                 if (i->computed_key) {
+                    // A literal computed name `{ ["a"]: x }` is the binding element's own symbol to tsc's
+                    // getSymbolAtLocation: the variable it declares
+                    Expr const* key = i->computed_key;
+                    bool literal = (key->tag == EXPR_LITERAL && (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER)) ||
+                        (key->tag == EXPR_TEMPLATE && !key->template_->tag && vec_expr_is_empty(&key->template_->substitutions));
+                    if (literal && i->target.tag == BINDING_IDENTIFIER && i->target.symbol) {
+                        baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            .declarations = baseline_symbol_declaration_spans(i->target.symbol),
+                            .span = key->outer_span,
+                            .name = i->target.symbol->name_span,
+                        });
+                    }
                     expr_compile_test_info(i->computed_key, ctx);
                 } else if (!i->target.rest && !span_eq(i->source_span, i->target.content_span) &&
                     i->source_span.sv.size && i->source_span.sv.buf[0] != '"' && i->source_span.sv.buf[0] != '\'' && !isdigit((unsigned char)i->source_span.sv.buf[0])
