@@ -43012,12 +43012,12 @@ const baselines = {
     },
     'newTarget.es5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'newTarget.es6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'newTargetNarrowing': {

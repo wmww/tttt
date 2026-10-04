@@ -1935,7 +1935,21 @@ static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprIt
     return ret;
 }
 
+// `new.target` in a function expression: the function's symbol (named like tsc's getNameOfSymbolAsWritten: the
+// variable it initializes, else `(Anonymous function)`), declared by the expression
+static void new_target_function_symbol(IdentifierExpr const* me, Span span, BaselineTestCase* ctx) {
+    FunctionImpl const* function = my this_function;
+    baseline_test_case_add_symbol(ctx, (BaselineSym){
+        .declarations = vec_span_single(function->full_span),
+        .span = span,
+        .text = span_valid(function->variable_name) ? cstr_from_sv(function->variable_name.sv) : cstr_lit("(Anonymous function)"),
+    });
+}
+
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
+    if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET && !my target && my this_function) {
+        new_target_function_symbol(me, my name, ctx);
+    }
     if (my keyword == KEYWORD_IDENTIFIER_THIS) {
         this_compile_test_info(me, ctx);
         return;
@@ -2277,6 +2291,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         .span = target,
                         .name = my identifier.target->name_span,
                     });
+                } else if (my identifier.this_function && csview_equals(target.sv, "target")) {
+                    new_target_function_symbol(&my identifier, target, ctx);
                 }
                 baseline_test_case_add_type(ctx, target, ty_regular(current_checker, expr_get_type(me)));
             }
