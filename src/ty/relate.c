@@ -3440,12 +3440,13 @@ static Ty const* distributive_constraint(Checker* me, Ty const* conditional, u32
 static Ty const* distributive_constraint_uncached(Checker* me, Ty const* conditional, u32 depth, bool immediate);
 static Ty const* distributive_constraint_as(Checker* me, Ty const* conditional, u32 depth, bool immediate) {
     if (!conditional->conditional.distributive) return nullptr;
-    if (!immediate) return distributive_constraint_uncached(me, conditional, depth, false);
-    // (Cached like tsc's resolvedConstraintOfDistributive: the relation asks again and again)
-    u64 key[2] = { KEY_IMMEDIATE_DISTRIBUTIVE, conditional->id };
+    // (Cached like tsc's resolvedConstraintOfDistributive: the relation asks again and again, and base_constraint()
+    // of nested conditional types too. Not below the top of a base_constraint(), whose depth cutoff may have cut it)
+    if (!immediate && depth) return distributive_constraint_uncached(me, conditional, depth, false);
+    u64 key[2] = { immediate ? KEY_IMMEDIATE_DISTRIBUTIVE : KEY_BASE_DISTRIBUTIVE, conditional->id };
     Ty const* cached = intern_get(&my links, key, 2);
     if (cached) return cached == conditional ? nullptr : cached;
-    Ty const* ret = distributive_constraint_uncached(me, conditional, depth, true);
+    Ty const* ret = distributive_constraint_uncached(me, conditional, depth, immediate);
     *intern_slot(me, &my links, key, 2) = ret ? ret : conditional;
     return ret;
 }
