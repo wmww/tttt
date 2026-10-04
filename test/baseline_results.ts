@@ -63868,7 +63868,7 @@ const baselines = {
     'keyofIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'booleanLiteralTypes1': {
         errors: true,

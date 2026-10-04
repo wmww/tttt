@@ -3021,7 +3021,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // (Syntactically: the alias may be being resolved)
             TypeNode const* body = alias && decl && symbol_is_generic_alias(decl) ? alias_body_node(canonical(me, decl)) : nullptr;
             bool renames = false;
-            if (body && !is_intrinsic_body(body) && body->tag != TYPE_KEYOF) {
+            if (body && !is_intrinsic_body(body)) {
                 // An object type takes the new name when instantiated (tsc's getObjectTypeInstantiation), except a
                 // homomorphic mapped type; anything else keeps a name only if it still is what the alias names
                 SymbolLinks const* links = symbol_links(me, canonical(me, decl));
@@ -3031,7 +3031,12 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 TypeNode const* object_node = links->declared_state == LAZY_STATE_DONE &&
                     links->declared_type->kind == TY_ANONYMOUS && links->declared_type->anonymous.node ?
                     links->declared_type->anonymous.node : body;
-                renames = object ? !is_homomorphic_mapped_node(object_node) || ret->kind == TY_UNION : ret->alias == canonical(me, decl);
+                // (A union is instantiated under the new name whatever name it had: tsc's instantiateTypeWorker passes the
+                // alias to getUnionType, `type T05 = T02<A>` with `T02<T> = keyof (T & B)`, the union `keyof T | "b"`)
+                bool union_body = links->declared_state == LAZY_STATE_DONE && links->declared_type->kind == TY_UNION &&
+                    ret->kind == TY_UNION;
+                renames = object ? !is_homomorphic_mapped_node(object_node) || ret->kind == TY_UNION :
+                    ret->alias == canonical(me, decl) || union_body;
                 // An indexed access distributed over a union index is that union by the new name (getIndexedAccessType),
                 // and so is a conditional type distributed over a union (getConditionalTypeInstantiation's mapTypeWithAlias)
                 Ty const* declared = links->declared_state == LAZY_STATE_DONE ? links->declared_type : nullptr;
