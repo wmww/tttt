@@ -321,6 +321,7 @@ Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, T
         .flags = sig->flags,
         .target = sig,
         .mapper = ty_mapper_new(me, sig->type_params, (TyList){ .data = targets, .len = args.len }),
+        .instantiates_own_params = true,
     };
     *slot = ret;
     signature_resolve(me, ret);

@@ -545,6 +545,10 @@ struct Signature {
     // parameters' declarations its own (synthesized) parameters don't have
     struct Signature const* declared_by;
     bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
+    // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
+    // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
+    // its own, fresh ones (see clone_type_params())
+    bool instantiates_own_params;
     LowerCtx ctx;
     Signature const* target;
     TyMapper const* mapper;

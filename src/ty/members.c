@@ -2983,24 +2983,32 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
 static void clone_type_params(Checker* me, Signature* sig) {
     TyList params = sig->type_params;
     TyMapper const* outer = sig->mapper;
+    // (Its own type parameters in the outer mapper: being instantiated away, else shadowing the outer ones, tsc's
+    // instantiateSignature maps them to fresh ones first)
+    bool keep_mapped = sig->instantiates_own_params || sig->drops_mapped_type_params || (sig->flags & SIGNATURE_CONSTRUCT);
     bool any = false;
     for (u32 j = 0; j < outer->len && !any; j++) any = outer->targets[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
     for (u32 i = 0; i < params.len && !any; i++) {
         bool mapped = false;
         for (u32 j = 0; j < outer->len; j++) mapped |= outer->sources[j] == params.data[i];
-        any = !mapped && ty_param_is_bounded(params.data[i]);
+        any = mapped ? !keep_mapped : ty_param_is_bounded(params.data[i]);
     }
     if (!any) return;
     Ty const** fresh = arena_new_n(&my arena, Ty const*, params.len);
     Ty const** sources = arena_new_n(&my arena, Ty const*, outer->len + params.len);
     Ty const** targets = arena_new_n(&my arena, Ty const*, outer->len + params.len);
-    memcpy(sources, outer->sources, sizeof(Ty const*) * outer->len);
-    memcpy(targets, outer->targets, sizeof(Ty const*) * outer->len);
-    u32 len = outer->len;
+    u32 len = 0;
+    for (u32 j = 0; j < outer->len; j++) {
+        bool own = false;
+        for (u32 i = 0; i < params.len && !keep_mapped; i++) own |= outer->sources[j] == params.data[i];
+        if (own) continue;
+        sources[len] = outer->sources[j];
+        targets[len++] = outer->targets[j];
+    }
     for (u32 i = 0; i < params.len; i++) {
         bool mapped = false;
         for (u32 j = 0; j < outer->len; j++) mapped |= outer->sources[j] == params.data[i];
-        fresh[i] = mapped ? params.data[i] : ty_clone_type_param(me, params.data[i], nullptr, nullptr);
+        fresh[i] = mapped && keep_mapped ? params.data[i] : ty_clone_type_param(me, params.data[i], nullptr, nullptr);
         if (fresh[i] == params.data[i]) continue;
         sources[len] = params.data[i];
         targets[len] = fresh[i];
