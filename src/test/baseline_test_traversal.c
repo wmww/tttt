@@ -1628,7 +1628,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         }
         // (A namespace's own chain: an alias of its container in scope names it, `import ma = a` in `a.b` gives
         // `ma.b`)
-        if (!cstr_size(&file_name) && !file && !my is_ambient_module && my symbol->parent && !my symbol->is_module) {
+        if (!cstr_size(&file_name) && !file && !my is_ambient_module && !my symbol->is_module) {
             file_name = symbol_text(ctx, my symbol);
         }
         baseline_test_case_add_symbol(ctx, (BaselineSym){

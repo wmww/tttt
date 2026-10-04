@@ -3422,7 +3422,7 @@ const baselines = {
     },
     'circularReferenceInImport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'circularReferenceInReturnType': {
@@ -50987,7 +50987,7 @@ const baselines = {
     },
     'circularImportAlias': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportImportAlias': {
