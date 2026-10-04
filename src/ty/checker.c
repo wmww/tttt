@@ -341,6 +341,19 @@ void checker_drop(Checker* me) {
     free(me);
 }
 
+// A bigint keyed by its decimal text, which the type keeps (the value's text may not live as long): an atom's.
+// Out of line: literal_type() is hot and bigints are rare
+[[gnu::noinline]] static Value bigint_normalized(Checker* me, Value const* value) {
+    cstr text = cstr_init();
+    bigint_append_decimal(&text, value->bigint);
+    csview digits = cstr_sv(&text);
+    bool negative = digits.size && digits.buf[0] == '-';
+    if (negative) digits = csview_slice(digits, 1, digits.size);
+    Atom const* atom = checker_atom(me, digits);
+    cstr_drop(&text);
+    return value_bigint(atom->str, atom->len, negative);
+}
+
 static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enum_decl, Symbol const* enum_member) {
     // An enum's literal types are per (value, enum): members of one enum with the same value share a type, as in tsc
     u64 key[4] = { KEY_LITERAL, value->tag, 0, (u64)(uintptr_t)enum_decl };
@@ -360,21 +373,12 @@ static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enu
             flags = TYF_NUMBER_LITERAL;
             break;
         }
-        case VALUE_BIGINT: {
-            // Keyed by its decimal text, which the type keeps (the value's text may not live as long)
-            cstr text = cstr_init();
-            bigint_append_decimal(&text, value->bigint);
-            csview digits = cstr_sv(&text);
-            bool negative = digits.size && digits.buf[0] == '-';
-            if (negative) digits = csview_slice(digits, 1, digits.size);
-            Atom const* atom = checker_atom(me, digits);
-            cstr_drop(&text);
-            normalized = value_bigint(atom->str, atom->len, negative);
+        case VALUE_BIGINT:
+            normalized = bigint_normalized(me, value);
             value = &normalized;
-            key[2] = (u64)(uintptr_t)atom << 1 | negative;
+            key[2] = (u64)(uintptr_t)normalized.bigint.text << 1 | normalized.bigint.negative;
             flags = TYF_BIGINT_LITERAL;
             break;
-        }
         case VALUE_STRING:
             string = checker_atom(me, cstr_sv(&value->string));
             key[2] = (u64)(uintptr_t)string;
