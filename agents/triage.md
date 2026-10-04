@@ -30,9 +30,12 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   and no options/global ones (`emitFilesAndReportErrors`), tsc -b goes on to semantic ones anyway; tttt reports name
   errors after parse errors and skips typechecking after either. Scenarios `when-project-references-composite-project-
   with-noEmit` (a TS2307 tsc doesn't report) and `in-bad-ref-branch-...` (a TS6133 tsc does).
-- (plan 41) Plan 40 gaps from the scenarios: no declaration diagnostics at all with `--noCheck` (tsc still reports
-  TS4094: `tsbuild/noCheck/*/dts-errors`); TS4023 missing for `export const api = ky.extend({})` where ky's
-  `KyInstance` is a non-exported type alias of a package (`tsbuild/declarationEmit/*/reports-dts-generation-errors`).
+- (plan 41) Plan 40 gap from the scenarios: no declaration diagnostics at all with `--noCheck` (tsc still reports
+  TS4094: `tsbuild/noCheck/*/dts-errors`).
+- (plan 40 stage 3, 2026-10-04) CLI message text: a module named in a message ("from external module ...", TS4023 and
+  friends) is tttt's path relative to the working directory (`"../../../tmp/ky/node_modules/ky/distribution/index"`)
+  where tsc's CLI prints the module symbol's absolute name (`"/tmp/ky/node_modules/ky/distribution/index"`). The suite
+  doesn't see it (the harness strips the test directory); `module_name_for_error()` and the CLI's path display.
 - (plan 41) Config diagnostics tttt lacks: TS1005 & co. for tsconfig JSON syntax errors; a missing `extends` (TS5083,
   tsc goes on with the rest); `--composite null` on the command line (tttt takes `null` for a file name: TS6231).
   TS6377 (two projects writing one tsbuildinfo) is out of scope.

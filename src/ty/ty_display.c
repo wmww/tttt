@@ -279,6 +279,20 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
 
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty);
 
+// tsc's getTypeAliasForTypeLiteral: the type alias whose declared type is this type literal (written directly, perhaps
+// in parentheses)
+static Symbol const* type_alias_of_literal(Ty const* ty) {
+    TypeNode const* node = ty->anonymous.node;
+    Symbol const* alias = ty->alias;
+    if (!node || node->tag != TYPE_INTERFACE || !alias || !(alias->flags & SYMBOL_TYPE_ALIAS)) return nullptr;
+    for (u32 i = 0; i < alias->decl_count; i++) {
+        if (alias->decls[i].kind != SYMBOL_DECL_TYPE_ALIAS) continue;
+        TypeDecl const* decl = alias->decls[i].node;
+        if (decl && &decl->type == node) return alias;
+    }
+    return nullptr;
+}
+
 // Declaration emit writes the types of a class expression, and of a class it can't name, as type literals (tsc's
 // WriteClassExpressionAsTypeLiteral: createAnonymousTypeNode of a class's static side, typeReferenceToTypeNode of an
 // instance)
@@ -2621,6 +2635,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out_symbol_name(me, d, owner, SYMBOL_VALUE);
                     out_lit(d, ".");
                     out(d, method->member_name.sv);
+                    return;
+                }
+                // (and a type alias's type literal by the alias: tsc's getTypeAliasForTypeLiteral)
+                Symbol const* alias = type_alias_of_literal(ty);
+                if (alias) {
+                    out_symbol_name(me, d, alias, SYMBOL_TYPE);
                     return;
                 }
                 out_lit(d, "any");
