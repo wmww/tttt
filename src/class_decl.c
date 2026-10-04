@@ -1688,6 +1688,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
         expr_typecheck(i, errs);
     }
+    // The class's types are made here, before its members and heritage are looked at: its instance type and its value
+    // type, which merges a namespace of the same name (tsc's checkClassLikeDeclarationWorker, getTypeOfSymbol). Which
+    // types are older decides union order: `typeof c | T` for a T declared after the class
+    if (my symbol) {
+        ty_declared_type_of(current_checker, my symbol);
+        ty_type_of_symbol(current_checker, my symbol);
+    }
     if (!my is_ambient) class_check_static_name_conflicts(me, errs);
     bool legacy = compiler_options()->experimental_decorators;
     for_each (i, vec_class_item, &my items) {

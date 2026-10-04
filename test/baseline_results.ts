@@ -66733,7 +66733,7 @@ const baselines = {
     'subtypesOfTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypesOfTypeParameterWithConstraints': {
         errors: true,
