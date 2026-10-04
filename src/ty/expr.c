@@ -3048,12 +3048,17 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         ) {
             asserted = &i->value.as_type->type;
         }
-        Span* decl_span = arena_new(&my arena, Span);
-        *decl_span = i->span;
         uint8_t name_form = ty_prop_name_form(i->name_span.sv, i->computed_key, key_type, true);
         // (A method or accessor after another kind of member is a symbol of its own to tsc's binder, whose excludes
         // conflict: its name is only its own)
         bool own_symbol = (i->tag == OBJECT_ITEM_METHOD && !(existing && (existing->flags & PROP_METHOD))) || is_accessor;
+        // (A method written again is the same binder symbol, declared by both: `{ m() {}, m() {} }`. Properties too in
+        // tsc, but their first declaration span decides annotation reuse here, see bugs/display.md)
+        bool redeclares = existing && i->tag == OBJECT_ITEM_METHOD && (existing->flags & PROP_METHOD) && !existing->accessor;
+        u32 decl_span_count = redeclares ? existing->decl_span_count + 1 : 1;
+        Span* decl_span = arena_new_n(&my arena, Span, decl_span_count);
+        if (redeclares) memcpy(decl_span, existing->decl_spans, sizeof(Span) * existing->decl_span_count);
+        decl_span[decl_span_count - 1] = i->span;
         if (existing && !own_symbol) name_form = ty_prop_name_form_merge(existing->name_form, name_form);
         u32 flags = 0;
         if (i->tag == OBJECT_ITEM_METHOD) flags |= PROP_METHOD | (i->optional_method ? PROP_OPTIONAL : 0);
@@ -3077,7 +3082,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .accessor = is_accessor ? i->value.function : nullptr,
             .name_span = i->name_span,
             .decl_spans = decl_span,
-            .decl_span_count = 1,
+            .decl_span_count = decl_span_count,
             .name_is_value = name_is_value,
             .asserted = asserted,
             .own = true,

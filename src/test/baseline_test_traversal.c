@@ -2590,10 +2590,14 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 if (i->tag != OBJECT_ITEM_SPREAD) {
                     VecSpan declarations = {0};
                     ObjectExprItem const* named = i; // (named like its first declaration)
-                    if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) && !i->computed_key) {
-                        // (Its symbol: with the other accessor, alone if it conflicts with what came first)
+                    if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER || i->tag == OBJECT_ITEM_METHOD) &&
+                        !i->computed_key
+                    ) {
+                        // (Its symbol: with the other accessor or the other methods of its name, alone if it conflicts
+                        // with what came first)
                         ObjectExprItem const* accessor_first = nullptr;
                         declarations = object_member_symbol_decls(&my object, i, &accessor_first);
+                        if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, i->span);
                         if (accessor_first && vec_span_size(&declarations) > 1) named = accessor_first;
                     } else if ((i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) &&
                         (i->computed_key->tag == EXPR_LITERAL || expr_is_entity_name(i->computed_key))

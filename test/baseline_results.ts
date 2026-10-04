@@ -64607,7 +64607,7 @@ const baselines = {
     },
     'callSignaturesWithParameterInitializers2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'constructSignatureWithAccessibilityModifiersOnParameters': {
@@ -64682,7 +64682,7 @@ const baselines = {
     },
     'stringLiteralTypesInImplementationSignatures2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeParameterAsTypeArgument': {
