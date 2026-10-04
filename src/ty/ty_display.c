@@ -1166,7 +1166,8 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
         // type, and a union or intersection in a union or intersection (tsc's visitor recreates the list node, and the
         // factory's parenthesizeConstituentTypeOfUnionType/IntersectionType wraps them)
         bool parens = !i->parenthesized && (i->tag == TYPE_CALLABLE || i->tag == TYPE_UNION ||
-            i->tag == TYPE_INTERSECTION || i->tag == TYPE_TERNARY);
+            i->tag == TYPE_INTERSECTION || i->tag == TYPE_TERNARY ||
+            (i->tag == TYPE_JSDOC && !i->jsdoc->non_null && i->jsdoc->type.tag == TYPE_UNION));
         if (parens) out(reused_if(d, false), c_sv("("));
         display_node(me, d, i);
         if (parens) out(reused_if(d, false), c_sv(")"));
@@ -1323,7 +1324,10 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
             if (node->predicate->asserts) out_lit(d, "void");
             else out_lit(d, "boolean");
             break;
-        case TYPE_ANY: out_lit(d, "any"); break;
+        case TYPE_ANY:
+            if (node->jsdoc_unknown) out_lit(d, "unknown");
+            else out_lit(d, "any");
+            break;
         case TYPE_UNKNOWN: out_lit(d, "unknown"); break;
         case TYPE_NEVER: out_lit(d, "never"); break;
         case TYPE_VOID: out_lit(d, "void"); break;
@@ -2574,6 +2578,17 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out_lit(d, "typeof ");
                 out(d, exported->name_span.sv);
                 break;
+            }
+            // An instantiation expression made by `typeof f<T>` reprints that node (tsc's createAnonymousTypeNode with an
+            // InstantiationExpressionType whose node is a type query)
+            if (ty->anonymous.applies_type_args) {
+                TypeNode const* query = intern_get(&my links, (u64[]){ KEY_INSTANTIATION_QUERY, ty->id }, 2);
+                if (query && !simple_node_fails(me, d, query)) {
+                    TyDisplay node_d = d;
+                    node_d.reused = true;
+                    display_node(me, node_d, query);
+                    break;
+                }
             }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;

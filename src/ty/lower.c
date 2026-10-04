@@ -3105,10 +3105,34 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_KEYOF:
             return ty_keyof(me, ty_from_node(me, &node->keyof->interface, ctx));
 
-        case TYPE_TYPEOF:
+        case TYPE_TYPEOF: {
             // Widened like tsc's getTypeFromTypeQueryNode: `typeof undefined` is any without strictNullChecks.
             // TODO: `typeof x` of an identifier is its declared type, not the narrowed one (plan 03)
-            return ty_regular(me, ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false)); // (objects too)
+            Ty const* ret = ty_regular(me, ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false)); // (objects too)
+            // `typeof f<T>`: the printer reuses the node for that very type (tsc's InstantiationExpressionType.node)
+            // and each node has a type of its own (tsc's getInstantiationExpressionType caches per node)
+            if (ret->kind == TY_ANONYMOUS && ret->anonymous.applies_type_args) {
+                u64 key[2] = { KEY_INSTANTIATION_QUERY, ret->id };
+                void const** slot = intern_slot(me, &my links, key, 2);
+                u64 node_key[3] = { KEY_INSTANTIATION_QUERY, (u64)(uintptr_t)node, ret->id };
+                Ty const* own = *slot && *slot != node ? intern_get(&my links, node_key, 3) : nullptr;
+                if (own) return own;
+                if (*slot && *slot != node) {
+                    Ty* fresh = ty_alloc(me, TY_ANONYMOUS, ret->flags);
+                    fresh->anonymous.target = ret->anonymous.target;
+                    fresh->anonymous.mapper = ret->anonymous.mapper;
+                    fresh->anonymous.applies_type_args = true;
+                    fresh->anonymous.free_params_unknown = true;
+                    fresh->anonymous.state = arena_new(&my arena, TyObjectState);
+                    *intern_slot(me, &my links, node_key, 3) = fresh;
+                    ret = fresh;
+                    key[1] = ret->id;
+                    slot = intern_slot(me, &my links, key, 2);
+                }
+                *slot = node;
+            }
+            return ret;
+        }
 
         case TYPE_TERNARY: {
             // The extends type goes before the branches, it's what declares the `infer` type parameters

@@ -32,6 +32,7 @@ enum {
     KEY_TEMPLATE_LITERAL,
     KEY_STRING_MAPPING,
     KEY_MAPPED_KEY_PARAM, // MappedInfo -> TyMapper from its key type parameter to a constrained stand-in
+    KEY_INSTANTIATION_QUERY, // instantiation expression type id -> the `typeof f<T>` TypeNode that first lowered to it
     KEY_CONDITIONAL_INFERS, // root conditional type id -> TyList* of the `infer` type parameters its extends type declares
     KEY_CONDITIONAL_OUTER, // root conditional type id -> TyConditionalOuter
     KEY_CONDITIONAL_INSTANCE, // (root conditional type id, what its outer type parameters map to) -> Ty

@@ -2742,6 +2742,7 @@ static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
         if (c == ',' || c == '}' || c == ')' || c == '>' || c == '=' || c == '|' || c == ']' || !c) {
             parse_fail(&next);
             *ret = type_any;
+            ret->jsdoc_unknown = true;
             if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, false, false);
             return parse_success(&p);
         }

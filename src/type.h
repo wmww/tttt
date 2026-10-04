@@ -125,6 +125,7 @@ typedef struct TypeNode {
     // JSDoc `@param {...T} x` of a parameter that isn't a rest parameter: the union `T | undefined` it means, which
     // tsc's printer shows as the array type it makes of the JSDocVariadicType (`T[]`)
     bool jsdoc_variadic : 1;
+    bool jsdoc_unknown : 1; // JSDoc's `?` alone: any, which tsc's printer reprints as `unknown` (JSDocUnknownType)
     bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed) // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
     TypeFlow const* flow; // Null outside true branches
     union {

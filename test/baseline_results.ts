@@ -413,7 +413,7 @@ const baselines = {
     'aliasInstantiationExpressionGenericIntersectionNoCrash2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasOfGenericFunctionWithRestBehavedSameAsUnaliased': {
         errors: true,
@@ -13318,7 +13318,7 @@ const baselines = {
     'expressionWithJSDocTypeArguments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expressionsForbiddenInParameterInitializers': {
         errors: true,
@@ -27968,7 +27968,7 @@ const baselines = {
     'selfReferentialFunctionType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'semicolonsInModuleDeclarations': {
         errors: true,
@@ -65133,7 +65133,7 @@ const baselines = {
     'arrayTypeOfTypeOf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionLiteral': {
         errors: true,
