@@ -1485,6 +1485,7 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
             .declarations = declaration_get_spans(my symbol),
             .span = my name,
             .name = default_export_name(my symbol),
+            .text = baseline_test_case_module_alias_text(ctx, my symbol),
         });
         if (is_expr) {
             baseline_test_case_add_symbol_value(ctx, my name, my symbol);
@@ -1565,6 +1566,7 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
             .declarations = declaration_get_spans(my symbol),
             .span = my name,
             .name = default_export_name(my symbol),
+            .text = baseline_test_case_module_alias_text(ctx, my symbol),
         });
     }
     register_type_parameter_member_merges(my symbol, &my generic, ctx);

@@ -92,8 +92,10 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - An augmentation of an `export =` module (`declare module "./file1" {}`): tsc's symbol at its name prints
   `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals4-6.
 - A module's own exports reached through an alias of the module (`import * as self from "./self"`) are named
-  `self.x` at their declarations (baseline_test_case_module_alias_text): only function/variable declarations
-  (add_declaration) and type aliases ask; classes, interfaces, enums, namespaces don't yet.
+  `self.x` at their declarations (baseline_test_case_module_alias_text): functions, variables, type aliases,
+  classes and interfaces ask (namespaces and enum members use their full chain). An `export default class C`
+  reached through the alias is `self.default` in tsc, `C` here (its local symbol isn't the `default` export), and its
+  members `self.default.p` (defaultDeclarationEmitShadowedNamedCorrectly).
 - `infer X extends C<...>`: references inside an `infer` type parameter's constraint are missing
   (partial_check_overload.ts).
 - Mapped properties over an intersection: tsc lists the declarations from every intersection member that has the
