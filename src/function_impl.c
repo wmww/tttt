@@ -365,7 +365,8 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         // The awaited annotation, or a PromiseLike of it (tsc's getContextualTypeForReturnExpression)
         Ty const* annotated = my ret_explicit ? ty_unwrapped_return_type(checker, me) : nullptr;
         checker->return_context = nullptr;
-        if (annotated && !(annotated->flags & (TYF_ANY | TYF_VOID))) {
+        // (`void | PromiseLike<void>` for Promise<void>: `return new Promise(resolve => resolve())` infers void)
+        if (annotated && !(annotated->flags & TYF_ANY)) {
             Ty const* both[2] = { annotated, ty_promise_like_of(checker, annotated) };
             checker->return_context = ty_union(checker, both, 2, nullptr, (TyList){0});
         }
@@ -374,7 +375,7 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
             // async functions)
             Ty const* contextual = ty_return_expressions_context(checker, me);
             Ty const* awaited = contextual ? ty_async_contextual_awaited(checker, contextual) : nullptr;
-            if (awaited && !(awaited->flags & (TYF_ANY | TYF_VOID))) {
+            if (awaited && !(awaited->flags & TYF_ANY)) {
                 Ty const* both[2] = { awaited, ty_promise_like_of(checker, awaited) };
                 checker->return_context = both[1] ? ty_union(checker, both, 2, nullptr, (TyList){0}) : awaited;
             }
