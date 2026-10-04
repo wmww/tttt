@@ -2112,29 +2112,42 @@ static Ty const* non_undefined_type(Checker* me, Ty const* ty) {
     return ty_without_undefined(me, ty);
 }
 
-// Whether a computed key of type `key` names the property `name` (tsc's getRestType: the property's literal key type
-// is assignable to the key's; numeric names against `number` aren't told apart from string ones, TODO)
-static bool computed_key_names(Checker* me, Ty const* key, Atom const* name) {
+// Whether a key of type `key` names the property `name` (tsc's getRestType: the property's literal key type is
+// assignable to the key's). A literal key names it only as the same kind of literal: `0` a property declared with a
+// numeric name, `"0"` (or `0` against a string-named one, a tuple's element) not. Numeric names against `number` aren't
+// told apart from string ones, TODO
+static bool computed_key_names(Checker* me, Ty const* key, Atom const* name, bool numeric_name) {
     if (key->kind == TY_UNION) {
         for (u32 i = 0; i < key->composite.types.len; i++) {
-            if (computed_key_names(me, key->composite.types.data[i], name)) return true;
+            if (computed_key_names(me, key->composite.types.data[i], name, numeric_name)) return true;
         }
         return false;
     }
     if (key->flags & TYF_ANY) return true;
     bool is_number = false;
     Atom const* named = ty_property_name_of_key(me, key, &is_number);
-    if (named) return named == name;
+    if (named) return named == name && is_number == numeric_name;
     return key->kind == TY_INTRINSIC && (key->flags & TYF_STRING) && !ty_unique_symbol_of_name(me, name);
+}
+
+// Whether a property's literal key type is a number (tsc's getLiteralTypeFromProperty): declared with a numeric
+// literal name, or a computed one of a number literal type
+static bool prop_has_numeric_name(Prop const* prop) {
+    while (prop->target) prop = prop->target;
+    PropDecl const* decl = prop->decl;
+    if (decl->name_type) return (decl->name_type->flags & TYF_NUMBER_LITERAL) != 0;
+    if (!decl->name_is_value || !span_valid(decl->name_span) || !decl->name_span.sv.size) return false;
+    char c = decl->name_span.sv.buf[0];
+    return (c >= '0' && c <= '9') || c == '.';
 }
 
 static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern);
 Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys) { return object_rest_type(me, source, keys); }
 
 // Whether the keys a pattern names take the property `name` out of its rest
-static bool pattern_names(Checker* me, TyList keys, Atom const* name) {
+static bool pattern_names(Checker* me, TyList keys, Atom const* name, bool numeric_name) {
     for (u32 i = 0; i < keys.len; i++) {
-        if (computed_key_names(me, keys.data[i], name)) return true;
+        if (computed_key_names(me, keys.data[i], name, numeric_name)) return true;
     }
     return false;
 }
@@ -2176,7 +2189,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
             Atom const* name = members->props[j]->name;
             bool seen = false;
             for (u32 k = 0; k < count && !seen; k++) seen = props[k].name == name;
-            if (seen || pattern_names(me, pattern, name)) continue;
+            if (seen || pattern_names(me, pattern, name, prop_has_numeric_name(members->props[j]))) continue;
             FoundProp found = ty_find_prop(me, source, name);
             if (!found.found || (found.flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
             if (found.prop && !ty_is_spreadable_prop(me, found.prop)) continue;
@@ -2273,7 +2286,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         if (!ty_is_spreadable_prop(me, prop)) continue;
-        if (pattern_names(me, pattern, prop->name)) continue;
+        if (pattern_names(me, pattern, prop->name, prop_has_numeric_name(prop))) continue;
         // (tsc's getSpreadSymbol: the same property unless that makes it writable)
         if (!(prop->flags & PROP_READONLY)) {
             props[count++] = (ObjectLiteralProp){ .reuse = prop };

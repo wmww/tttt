@@ -27618,7 +27618,7 @@ const baselines = {
     'restElementWithNumberPropertyName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restIntersection': {
         errors: true,
