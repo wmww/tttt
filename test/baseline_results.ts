@@ -9577,7 +9577,7 @@ const baselines = {
     },
     'destructuringAssignmentWithDefault': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringAssignmentWithDefault2': {

@@ -336,6 +336,8 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
             Ty const* key = members->index[i].key;
             indexed = (key->flags & TYF_STRING) || ((key->flags & TYF_NUMBER) && ty_is_numeric_name(name));
         }
+        // (An object literal's type without it too: isObjectLiteralType, `(o || {}).a`)
+        if (object->kind == TY_ANONYMOUS && object->anonymous.object_literal) indexed = true;
         if (!indexed) info->missing_in_member = true;
         return;
     }
