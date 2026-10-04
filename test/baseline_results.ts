@@ -11208,12 +11208,12 @@ const baselines = {
     'erasableSyntaxOnly': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'erasableSyntaxOnlyDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorCause(target=es2021)': {
         errors: true,

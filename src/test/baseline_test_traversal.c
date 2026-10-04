@@ -1182,7 +1182,10 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = *i,
                     .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });
-                if (decl->flags & SYMBOL_TYPE && !decl->is_placeholder) {
+                if ((decl->flags & SYMBOL_ENUM_MEMBER) && !decl->is_placeholder) {
+                    // (An enum member's literal type, `E.B`, not a name to reuse)
+                    baseline_test_case_add_type(ctx, *i, ty_declared_type_of(current_checker, decl));
+                } else if (decl->flags & SYMBOL_TYPE && !decl->is_placeholder) {
                     TypeNode t = type_identifier(c_new(IdentifierType, {
                         .name = decl->name_span,
                         .target = decl,
