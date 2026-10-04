@@ -6,7 +6,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
   ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
-  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue)
+  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue; tsc-src is -b on TypeScript's src)
 """
 import argparse, collections, os, re, resource, subprocess, sys, time
 
@@ -14,6 +14,9 @@ import argparse, collections, os, re, resource, subprocess, sys, time
 # thirdparty/ensure-corpora.sh
 CORPORA = {
     'tsc': 'thirdparty/tsc/src/compiler',
+    # TypeScript's whole src: a solution config of 13 composite projects, checked with -b (plan 41: references read as
+    # sources). Its 12 diagnostics today are checker bugs in services/ and testRunner/
+    'tsc-src': 'thirdparty/tsc/src',
     'type-fest': 'thirdparty/corpora/type-fest',
     'valibot': 'thirdparty/corpora/valibot/library',
     'react': 'thirdparty/corpora/bulletproof-react/apps/react-vite',
@@ -52,8 +55,9 @@ def main():
     if args.options is None:
         # Through its real path: in a worktree thirdparty/corpora is a symlink, and a project reached through one
         # loads its own files twice (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too)
-        args.options = '-p ' + os.path.relpath(os.path.realpath(CORPORA[args.corpus]))
-        if args.corpus != 'tsc':
+        flag = '-b ' if args.corpus == 'tsc-src' else '-p '
+        args.options = flag + os.path.relpath(os.path.realpath(CORPORA[args.corpus]))
+        if args.corpus not in ('tsc', 'tsc-src'):
             subprocess.run(['thirdparty/ensure-corpora.sh'], check=True)
     if not args.no_build:
         subprocess.run(['ninja', '-C', 'release', 'tttt'], check=True, stdout=subprocess.DEVNULL)

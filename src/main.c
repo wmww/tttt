@@ -133,8 +133,13 @@ static_failable apply_compiler_options(Options const* opts, csview config, Progr
         // Files on the command line replace the config's
         try (tsconfig_load(fs, config, options, opts->path_count && !opts->build ? nullptr : root_files)) bubble;
         libs_decided = options->target_set || cstr_size(&options->lib);
-        // (Where the diagnostics about the options go)
-        program_set_config_file(program, config);
+        // (Where the diagnostics about the options go, named like the files: relative to the working directory)
+        cstr cwd = cstr_null;
+        try (fs_get_cwd(fs, &cwd)) bubble;
+        cstr relative = relative_path_of(cstr_sv(&cwd), config);
+        program_set_config_file(program, cstr_sv(&relative));
+        cstr_drop(&relative);
+        cstr_drop(&cwd);
     } else {
         ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
     }
@@ -239,6 +244,7 @@ static_failable check_files(
     bool has_inputs = opts->path_count + root_files.count > 0;
     if (!has_inputs) {
         if (config.size) verify_references(program, projects, project, false);
+        bool no_inputs = config.size && program_report_no_inputs(program);
         // A solution config: only references (tsc says nothing, and builds nothing without -b)
         bool solution = config.size && project_set_at(projects, project)->reference_count;
         intptr_t config_errors = report_errors(&errs);
@@ -246,8 +252,8 @@ static_failable check_files(
         str_list_drop(&root_files);
         destroy_program(program, &errs, last);
         project_redirects_destroy(redirects);
-        if (solution) {
-            if (!opts->quiet && !opts->build) println("Only project references to check: use -b to check them");
+        if (solution || no_inputs) {
+            if (solution && !opts->quiet && !opts->build) println("Only project references to check: use -b to check them");
             return ok(config_errors ? 1 : 0);
         }
         return err_d("No input files: none on the command line and none from a tsconfig.json");
@@ -296,7 +302,19 @@ static_failable check_files(
     for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {
         csview path = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
         if (!opts->quiet) println(color_good, "Loading ", path, "...", color_normal);
-        try (program_load(program, path, &source)) cleanup {
+        bool from_config = i >= opts->path_count;
+        FailableResult loaded = program_load(program, path, &source);
+        if (loaded.error && from_config) {
+            // A `files` entry that doesn't exist: tsc's TS6053, and the rest is checked anyway
+            failable_result_drop(&loaded);
+            Error* error = error_ctx_global_error_d(&errs, 6053, "File '", path, "' not found.");
+            error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+            error_sub_error_d(
+                vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Part of 'files' list in tsconfig.json"
+            );
+            continue;
+        }
+        try (loaded) cleanup {
             str_list_drop(&root_files);
             destroy_program(program, &errs, last);
             project_redirects_destroy(redirects);
@@ -505,8 +523,8 @@ int main(int argc, const char** argv) {
             opts.project = argv[++i];
         } else if (streq(argv[i], "-b") || streq(argv[i], "--build")) {
             opts.build = true;
-        } else if (opts.build && (streq(argv[i], "-v") || streq(argv[i], "--verbose") || streq(argv[i], "-f") ||
-            streq(argv[i], "--force"))
+        } else if (opts.build && (streq(argv[i], "-v") || streq(argv[i], "--v") || streq(argv[i], "--verbose") ||
+            streq(argv[i], "-f") || streq(argv[i], "--f") || streq(argv[i], "--force"))
         ) {
             // (Nothing is built, so there's nothing to say about it, nor anything up to date)
         } else if (streq(argv[i], "--stopBuildOnErrors")) {

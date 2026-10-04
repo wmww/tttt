@@ -85,6 +85,10 @@ typedef struct SourceFile {
     // tsc names such a file by its absolute path, which the harness writes before it strips its `/.src/` (it shows in
     // the types baseline's underlines of `typeof import("m")`)
     bool loaded_by_import;
+    bool is_root; // program_load() loaded it: a root file of the program (tsc's rootNames)
+    // The module name or `/// <reference path>` that first brought the file into the program, where tsc's diagnostics
+    // explaining a file go (TS6307, TS6059); invalid for a root file, which gets a global one
+    Span included_at;
     // A JavaScript file of a package the program followed imports into (maxNodeModuleJsDepth): how many such files deep
     // (tsc's currentNodeModulesDepth), 0 for the project's own. Such a file is never checked (isSourceFileFromExternalLibrary)
     u32 node_modules_js_depth;
@@ -135,6 +139,9 @@ typedef struct SourceFile {
     // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
     // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
     u32 from_reference;
+    // A referenced project's file whose project doesn't preserve const enums: tsc -b reads its `.d.ts`, where they're
+    // ambient (TS2748 under isolatedModules, tsc's shouldPreserveConstEnums of the redirect)
+    bool reference_const_enums_ambient;
     // Unchecked, but checked anyway for a few errors (tsc's isPlainJsFile: JavaScript without a `@ts-check`/`@ts-nocheck`
     // and with checkJs not set at all): only the ones on tsc's plainJSErrors list are reported
     bool plain_js;
@@ -192,6 +199,12 @@ CommentDirective* source_file_comment_directive_at_line(SourceFile* me, u32 line
 // Whether the checker walks the file: a checked one, or a plain JavaScript one for the errors that are reported there
 static inline bool source_file_is_checked(SourceFile const* me) {
     return !my unchecked || my plain_js;
+}
+
+// What tsc -b would read for the file: a declaration file, a referenced project's source standing for its `.d.ts`
+// output. For what an importer may assume of it (a synthetic default), not for how the file itself is checked
+static inline bool source_file_reads_as_declaration(SourceFile const* me) {
+    return my is_declaration || my from_reference;
 }
 
 // How messages name the file: the way the test wrote it under the harness, else the canonical path

@@ -1,3 +1,8 @@
+// realpath() and PATH_MAX, which strict -std=c2x hides
+#define _XOPEN_SOURCE 700
+#include <limits.h>
+#include <stdlib.h>
+
 #include "tsconfig.h"
 #include "json.h"
 
@@ -275,6 +280,14 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
     return false;
 }
 
+// A config found in a node_modules is where its links lead: what it extends is found from there (tsc resolves
+// `extends` like a module, with realpath). Only on the real filesystem
+static void follow_links(ConfigLoad* me, cstr* path) {
+    if (my fs != fs || !csview_contains(cstr_sv(path), "/node_modules/") || cstr_size(path) >= PATH_MAX) return;
+    char resolved[PATH_MAX];
+    if (realpath(cstr_str(path), resolved)) cstr_assign(path, resolved);
+}
+
 static_failable load_config(ConfigLoad* me, csview path) {
     if (my depth > 16 || my document_count == (isize)c_arraylen(my documents)) {
         return err_d(path, ": too many levels of 'extends' (a cycle?)");
@@ -298,6 +311,7 @@ static_failable load_config(ConfigLoad* me, csview path) {
             cstr_drop(&dir);
             return err_d(path, ": file '", name->string, "' not found");
         }
+        follow_links(me, &base);
         my depth++;
         try (load_config(me, cstr_sv(&base))) cleanup {
             cstr_drop(&base);
@@ -426,13 +440,18 @@ static cstr include_pattern(ConfigLoad* me, csview dir, csview written) {
     return absolute;
 }
 
+// allowJs, before compiler_options_resolve() (checkJs implies it)
+static bool allows_js(CompilerOptions const* options) {
+    return options->is_set[COMPILER_OPTION_allow_js] ? options->allow_js : options->check_js;
+}
+
 static bool has_source_extension(ConfigLoad* me, csview name) {
     static const char* const ts[] = { ".ts", ".tsx", ".mts", ".cts" };
     static const char* const js[] = { ".js", ".jsx", ".mjs", ".cjs" };
     for (isize i = 0; i < (isize)c_arraylen(ts); i++) {
         if (csview_ends_with(name, ts[i])) return true;
     }
-    if (!my options->allow_js) return false;
+    if (!allows_js(my options)) return false;
     if (csview_ends_with(name, ".min.js")) return false;
     for (isize i = 0; i < (isize)c_arraylen(js); i++) {
         if (csview_ends_with(name, js[i])) return true;
@@ -443,6 +462,7 @@ static bool has_source_extension(ConfigLoad* me, csview name) {
 typedef struct Patterns {
     StrList include;
     StrList exclude;
+    StrList json; // Found JSON files: only include patterns ending in `.json` take them, with resolveJsonModule
 } Patterns;
 
 static bool is_excluded(Patterns const* patterns, csview path) {
@@ -452,7 +472,14 @@ static bool is_excluded(Patterns const* patterns, csview path) {
     return false;
 }
 
-static void collect_files(ConfigLoad* me, Patterns const* patterns, csview dir, StrList* out, int depth) {
+// resolveJsonModule, before compiler_options_resolve() (the default of bundler resolution, which module preserve has)
+static bool resolves_json(CompilerOptions const* options) {
+    if (options->is_set[COMPILER_OPTION_resolve_json_module]) return options->resolve_json_module;
+    return options->module_resolution_set ? options->module_resolution == MODULE_RESOLUTION_BUNDLER :
+        options->module_set && options->module == MODULE_KIND_PRESERVE;
+}
+
+static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrList* out, int depth) {
     if (depth > 64) return;
     StrList subdirs = {0};
     for_each (item, fs_listdir_sorted, my fs, dir) {
@@ -471,6 +498,16 @@ static void collect_files(ConfigLoad* me, Patterns const* patterns, csview dir, 
             for (isize i = 0; i < patterns->include.count; i++) {
                 if (glob_matches(cstr_sv(&patterns->include.items[i]), cstr_sv(&path), false)) {
                     str_list_push(out, cstr_sv(&path));
+                    break;
+                }
+            }
+        } else if (resolves_json(my options) && csview_ends_with(item.name, ".json") &&
+            !is_excluded(patterns, cstr_sv(&path))
+        ) {
+            for (isize i = 0; i < patterns->include.count; i++) {
+                csview pattern = cstr_sv(&patterns->include.items[i]);
+                if (csview_ends_with(pattern, ".json") && glob_matches(pattern, cstr_sv(&path), false)) {
+                    str_list_push(&patterns->json, cstr_sv(&path));
                     break;
                 }
             }
@@ -496,6 +533,53 @@ static cstr pattern_base(csview pattern) {
     }
     if (!cstr_size(&ret)) cstr_assign(&ret, "/");
     return ret;
+}
+
+// tsc's extension groups (getSupportedExtensions), highest priority first
+static char const* const extension_groups[3][5] = {
+    { ".ts", ".tsx", ".d.ts", ".js", ".jsx" },
+    { ".cts", ".d.cts", ".cjs" },
+    { ".mts", ".d.mts", ".mjs" },
+};
+
+static bool in_list(StrList const* list, isize count, csview path) {
+    for (isize i = 0; i < count; i++) {
+        if (cstr_equals_sv(&list->items[i], path)) return true;
+    }
+    return false;
+}
+
+// tsc's hasFileWithHigherPriorityExtension: a file include patterns found is left out when the same name with an
+// extension before its own in its group is there too (literal or found): `a.d.ts` (an output) next to `a.ts`, `a.js`
+// next to `a.ts` with allowJs. Not a `.js` for a `.d.ts` (tsc's legacy behaviour)
+static bool has_higher_priority_sibling(
+    ConfigLoad* me, StrList const* literal, isize literal_count, StrList const* found, csview path
+) {
+    for (isize g = 0; g < (isize)c_arraylen(extension_groups); g++) {
+        // The file's own extension in the group: the longest that matches (`.d.ts` before `.ts`)
+        isize own = -1;
+        for (isize e = 0; e < 5 && extension_groups[g][e]; e++) {
+            char const* extension = extension_groups[g][e];
+            if (!csview_ends_with(path, extension)) continue;
+            if (own < 0 || strlen(extension) > strlen(extension_groups[g][own])) own = e;
+        }
+        if (own < 0) continue;
+        bool is_js = csview_ends_with(path, ".js") || csview_ends_with(path, ".jsx") || csview_ends_with(path, ".cjs") ||
+            csview_ends_with(path, ".mjs");
+        if (is_js && !allows_js(my options)) return false;
+        csview stem = csview_slice(path, 0, path.size - (isize)strlen(extension_groups[g][own]));
+        for (isize e = 0; e < own; e++) {
+            char const* extension = extension_groups[g][e];
+            if (is_js && !strncmp(extension, ".d.", 3)) continue;
+            if (!allows_js(my options) && (!strcmp(extension, ".js") || !strcmp(extension, ".jsx"))) continue;
+            cstr sibling = cstr_d(stem, extension);
+            bool there = in_list(literal, literal_count, cstr_sv(&sibling)) || in_list(found, found->count, cstr_sv(&sibling));
+            cstr_drop(&sibling);
+            if (there) return true;
+        }
+        return false;
+    }
+    return false;
 }
 
 static void collect_root_files(ConfigLoad* me, StrList* out) {
@@ -546,11 +630,18 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
             collect_files(me, &patterns, cstr_sv(&bases.items[i]), &found, 0);
         }
     }
+    isize literal_count = out->count;
     for (isize i = 0; i < found.count; i++) {
         bool seen = false;
         for (isize j = 0; j < out->count && !seen; j++) seen = cstr_eq(&out->items[j], &found.items[i]);
-        if (!seen) str_list_push(out, cstr_sv(&found.items[i]));
+        if (seen || has_higher_priority_sibling(me, out, literal_count, &found, cstr_sv(&found.items[i]))) continue;
+        str_list_push(out, cstr_sv(&found.items[i]));
     }
+    // (tsc's wildCardJsonFileMap comes last)
+    for (isize i = 0; i < patterns.json.count; i++) {
+        if (!in_list(out, out->count, cstr_sv(&patterns.json.items[i]))) str_list_push(out, cstr_sv(&patterns.json.items[i]));
+    }
+    str_list_drop(&patterns.json);
     str_list_drop(&found);
     str_list_drop(&bases);
     str_list_drop(&patterns.include);

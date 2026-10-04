@@ -3771,7 +3771,7 @@ static void check_const_enum_access(Expr const* me, Ty const* type, ErrorCtx* er
         error_ctx_error_d(errs, expr_error_span(me), 2475, "'const' enums can only be used in property or index access "
             "expressions or the right hand side of an import declaration or export assignment or type query.");
     }
-    if (!type->declared.symbol->is_ambient) return;
+    if (!symbol_const_enum_is_ambient(type->declared.symbol)) return;
     // With isolatedModules as given (not implied by verbatimModuleSyntax), or verbatimModuleSyntax where the name
     // isn't an import: an import of one is checked at the import (tsc's checkConstEnumAccess, checkAliasSymbol)
     CompilerOptions const* options = compiler_options();

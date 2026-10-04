@@ -128,14 +128,15 @@ void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* r
 
 // Where path leads once symlinks are followed, for a path that may not exist: a referenced project's output that was
 // never built, through a workspace link (its nearest existing directory is followed). Empty if nothing could be
-static cstr real_path_lenient(ModuleResolver* me, csview path) {
+cstr module_resolver_real_path_lenient(ModuleResolver* me, csview path) {
+    if (!my realpath) return cstr_null;
     cstr real = my realpath(my realpath_ctx, path);
     if (cstr_size(&real) || !my redirects) return real;
     cstr_drop(&real);
     isize slash = path.size;
     while (slash > 0 && path.buf[slash - 1] != '/') slash--;
     if (slash <= 1) return cstr_null;
-    cstr parent = real_path_lenient(me, csview_slice(path, 0, slash - 1));
+    cstr parent = module_resolver_real_path_lenient(me, csview_slice(path, 0, slash - 1));
     if (!cstr_size(&parent)) return parent;
     cstr ret = cstr_d(parent, "/", csview_slice(path, slash, path.size));
     cstr_drop(&parent);
@@ -144,7 +145,7 @@ static cstr real_path_lenient(ModuleResolver* me, csview path) {
 
 static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
     if (!my realpath || !resolved->is_external_library || my options->preserve_symlinks) return;
-    cstr real = real_path_lenient(me, cstr_sv(&resolved->path));
+    cstr real = module_resolver_real_path_lenient(me, cstr_sv(&resolved->path));
     if (cstr_size(&real)) {
         cstr_take(&resolved->path, real);
     } else {
@@ -260,10 +261,13 @@ static bool file_exists(State* me, csview path) {
     if (fs_is_reg_file(my resolver->fs, path)) return true;
     ModuleResolver* resolver = my resolver;
     if (!resolver->redirects) return false;
-    if (project_redirects_source_of_output(resolver->redirects, path).size) return true;
+    // (Of a source that exists: a `files` entry may name one that doesn't)
+    csview source = project_redirects_source_of_output(resolver->redirects, path);
+    if (source.size) return fs_is_reg_file(resolver->fs, source);
     if (!resolver->realpath || !path_contains_node_modules(path)) return false;
-    cstr real = real_path_lenient(resolver, path);
-    bool ret = cstr_size(&real) && project_redirects_source_of_output(resolver->redirects, cstr_sv(&real)).size;
+    cstr real = module_resolver_real_path_lenient(resolver, path);
+    source = cstr_size(&real) ? project_redirects_source_of_output(resolver->redirects, cstr_sv(&real)) : c_sv("");
+    bool ret = source.size && fs_is_reg_file(resolver->fs, source);
     cstr_drop(&real);
     return ret;
 }
@@ -274,7 +278,7 @@ static bool directory_exists(State* me, csview path) {
     if (!resolver->redirects) return false;
     if (project_redirects_output_directory(resolver->redirects, path)) return true;
     if (!resolver->realpath || !path_contains_node_modules(path)) return false;
-    cstr real = real_path_lenient(resolver, path);
+    cstr real = module_resolver_real_path_lenient(resolver, path);
     bool ret = cstr_size(&real) && project_redirects_output_directory(resolver->redirects, cstr_sv(&real));
     cstr_drop(&real);
     return ret;
@@ -965,13 +969,17 @@ static bool try_load_input_file_for_path(
                     ends_with(base_sv, ".d.cts") || ends_with(base_sv, ".cjs") || ends_with(base_sv, ".cts") ? cts :
                     ends_with(base_sv, ".d.json.ts") ? json : ts;
                 csview stem = csview_slice(base_sv, 0, base_sv.size - (isize)strlen(output_extensions[e]));
+                // (tsc resolves an exports target in one pass of every extension, where the input a target is the
+                // output of comes first: the TypeScript-only pass of the HACK in resolve_uncached() takes a JavaScript
+                // input too, as the JavaScript pass would never get here once the target's declaration file is found)
+                int input_extensions = extensions & EXT_TS && options->allow_js ? extensions | EXT_JS : extensions;
                 for (isize k = 0; inputs[k] && !found; k++) {
-                    if (!extension_is_ok(extensions, inputs[k])) continue;
+                    if (!extension_is_ok(input_extensions, inputs[k])) continue;
                     cstr input = cstr_d(stem, inputs[k]);
                     if (file_exists(me, cstr_sv(&input))) {
                         found = true;
                         Found loaded = {0};
-                        if (load_package_json_field(me, cstr_sv(&input), extensions, &loaded)) *out = loaded;
+                        if (load_package_json_field(me, cstr_sv(&input), input_extensions, &loaded)) *out = loaded;
                         else found = false;
                     }
                     cstr_drop(&input);

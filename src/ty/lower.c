@@ -1511,7 +1511,7 @@ static bool dynamic_import_has_synthetic_default(Symbol* module, SourceFile cons
         if (target->is_esm) return false;
     }
     if (!options->allow_synthetic_default_imports) return false;
-    if (!target || target->is_declaration) {
+    if (!target || source_file_reads_as_declaration(target)) {
         // (Not with a default export of its own, or an `__esModule` marker)
         return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
     }

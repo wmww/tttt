@@ -71,6 +71,10 @@ void module_resolver_set_realpath(ModuleResolver* me, RealpathFn realpath, void*
 // directories. The caller turns an output it finds into its source. redirects must outlive the resolver
 typedef struct ProjectRedirects ProjectRedirects;
 void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* redirects);
+// Where path leads once symlinks are followed, for a path that may not exist (a referenced project's output that was
+// never built, through a workspace link: its nearest existing directory is followed), with redirects. Empty if the
+// resolver has no realpath or nothing could be followed
+cstr module_resolver_real_path_lenient(ModuleResolver* me, csview path);
 
 // Both take any path for containing_file (relative ones are relative to the fs' working directory)
 ResolvedModule module_resolver_resolve(

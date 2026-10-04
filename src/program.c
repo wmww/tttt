@@ -249,6 +249,49 @@ static Error* option_error_s(Program* me, Span site, unsigned code, cstr message
     if (span_valid(site)) return error_ctx_error_s(my errs, site, code, message);
     return error_ctx_global_error_s(my errs, code, message);
 }
+static csview program_cwd(Program const* me);
+
+// JSON.stringify of an array of strings as written in the config, `fallback` without one
+static cstr config_string_list(JsonValue const* list, char const* fallback) {
+    if (!list || list->tag != JSON_ARRAY) return cstr_from(fallback);
+    cstr ret = cstr_lit("[");
+    for (isize i = 0; i < list->count; i++) {
+        if (list->items[i].tag != JSON_STRING) continue;
+        if (cstr_size(&ret) > 1) cstr_append_lit(&ret, ",");
+        cstr_append_lit(&ret, "\"");
+        cstr_append_sv(&ret, cstr_sv(&list->items[i].string));
+        cstr_append_lit(&ret, "\"");
+    }
+    cstr_append_lit(&ret, "]");
+    return ret;
+}
+
+bool program_report_no_inputs(Program* me) {
+    if (!my config_source || my config_json.tag != JSON_OBJECT) return false;
+    JsonValue const* files = json_get(&my config_json, "files");
+    JsonValue const* references = json_get(&my config_json, "references");
+    cstr config = absolute_path_of(program_cwd(me), cstr_sv(&my config_source->canonical_path));
+    bool reported = false;
+    // (tsc's getConfigFileSpecs and canJsonReportNoInputFiles)
+    if (files) {
+        bool no_references = !references || (references->tag == JSON_ARRAY && !references->count);
+        if (files->tag == JSON_ARRAY && !files->count && no_references && !json_get(&my config_json, "extends")) {
+            program_config_error(me, files->start, files->end, 18002,
+                cstr_d("The 'files' list in config file '", config, "' is empty."));
+            reported = true;
+        }
+    } else if (!references) {
+        cstr include = config_string_list(json_get(&my config_json, "include"), "[\"**/*\"]");
+        cstr exclude = config_string_list(json_get(&my config_json, "exclude"), "[]");
+        error_ctx_global_error_d(my errs, 18003, "No inputs were found in config file '", config,
+            "'. Specified 'include' paths were '", include, "' and 'exclude' paths were '", exclude, "'.");
+        c_drop(cstr, &include, &exclude);
+        reported = true;
+    }
+    cstr_drop(&config);
+    return reported;
+}
+
 Error* program_config_error(Program* me, u32 start, u32 end, unsigned code, cstr message) {
     if (!my config_source || end > cstr_size(&my config_source->contents) || start > end) {
         return error_ctx_global_error_s(my errs, code, message);
@@ -385,8 +428,14 @@ static csview program_source_of_output(Program const* me, csview path) {
 
 // A resolution that found a referenced project's output finds its source (tsc's getSourceOfProjectReferenceRedirect)
 static void program_redirect_resolved(Program const* me, ResolvedModule* resolved) {
-    if (resolved->kind != RESOLVED_DTS) return;
+    if (resolved->kind != RESOLVED_DTS || !my redirects) return;
     csview source = program_source_of_output(me, cstr_sv(&resolved->path));
+    if (!source.size && csview_contains(cstr_sv(&resolved->path), "/node_modules/")) {
+        // Through a link that wasn't followed (preserveSymlinks)
+        cstr real = module_resolver_real_path_lenient(my resolver, cstr_sv(&resolved->path));
+        if (cstr_size(&real)) source = program_source_of_output(me, cstr_sv(&real));
+        cstr_drop(&real);
+    }
     if (!source.size) return;
     cstr_assign_sv(&resolved->path, source);
     resolved->kind = path_is_js(source) ? RESOLVED_JS : RESOLVED_TS;
@@ -461,6 +510,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     }
     program_load_resolved(me, source, ref, &resolved);
     if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
+    if (is_new && ref->file && !span_valid(ref->file->included_at)) ref->file->included_at = ref->span;
     resolved_module_drop(&resolved);
 }
 
@@ -553,8 +603,12 @@ static SourceFile* program_load_reference_path(Program* me, Span path_span, csvi
     for (isize i = extension ? 0 : 1; i < (extension ? 1 : (isize)c_arraylen(extensions)) && !ret; i++) {
         cstr candidate = cstr_d(full, extensions[i]);
         csview source = program_source_of_output(me, cstr_sv(&candidate));
-        if (source.size) ret = program_add_source_idempotent(me, source);
-        else if (fs_is_reg_file(my fs, cstr_sv(&candidate))) ret = program_add_source_idempotent(me, cstr_sv(&candidate));
+        if (!source.size && fs_is_reg_file(my fs, cstr_sv(&candidate))) source = cstr_sv(&candidate);
+        if (source.size) {
+            bool is_new = !program_find_source(me, source);
+            ret = program_add_source_idempotent(me, source);
+            if (is_new && ret && !span_valid(ret->included_at)) ret->included_at = path_span;
+        }
         cstr_drop(&candidate);
     }
     cstr_drop(&full);
@@ -821,6 +875,9 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
         if (source_file->from_reference) {
             source_file->unchecked = true;
             source_file->plain_js = false;
+            CompilerOptions const* options = project_redirects_options(my redirects, source_file->from_reference - 1);
+            source_file->reference_const_enums_ambient = !options->preserve_const_enums && !options->isolated_modules &&
+                !options->verbatim_module_syntax;
         }
     }
 
@@ -1124,6 +1181,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
 
     // Add the source file to the program
     SourceFile* main_source = program_add_source_idempotent(me, path);
+    if (main_source && !my loading_stdlib) main_source->is_root = true;
 
     clear_compiler_options();
 
@@ -1576,11 +1634,29 @@ static cstr emit_output_path(Program const* me, csview path, csview out_dir, csv
 
 // tsc's sourceFileMayBeEmitted
 static bool emit_source_may_be_emitted(Program const* me, SourceFile const* source) {
-    if (source->is_declaration || source->is_stdlib) return false;
+    if (source->is_declaration || source->is_stdlib || source->from_reference) return false;
     csview path = cstr_sv(&source->canonical_path);
     if (csview_starts_with(path, "node_modules/") || csview_contains(path, "/node_modules/")) return false;
     if (!source->is_json) return true;
-    return cstr_size(&my options.out_file) || cstr_size(&my options.out_dir);
+    if (cstr_size(&my options.out_file)) return true;
+    if (!cstr_size(&my options.out_dir)) return false;
+    // Not when it would be written over itself, if the common source directory is known up front
+    CompilerOptions const* o = &my options;
+    if (!cstr_size(&o->root_dir) && !(o->composite && cstr_size(&o->config_dir))) return true;
+    csview cwd = program_cwd(me);
+    cstr common = cstr_size(&o->root_dir) ? absolute_path_of(cwd, cstr_sv(&o->root_dir)) : cstr_clone(o->config_dir);
+    cstr absolute = absolute_path_of(cwd, cstr_sv(&source->canonical_path));
+    // (tsc's getSourceFilePathInNewDirWorker: a file outside the common directory keeps its absolute path, so its
+    // output is itself)
+    bool same = true;
+    if (cstr_starts_with_sv(&absolute, cstr_sv(&common))) {
+        cstr joined = cstr_d(o->out_dir, "/", csview_slice(cstr_sv(&absolute), cstr_size(&common), cstr_size(&absolute)));
+        cstr output = absolute_path_of(cwd, cstr_sv(&joined));
+        same = cstr_eq(&output, &absolute);
+        c_drop(cstr, &joined, &output);
+    }
+    c_drop(cstr, &common, &absolute);
+    return !same;
 }
 
 // Reports one output path (tsc's verifyEmitFilePath): TS5055 if it is an input file, TS5056 the second time
@@ -1735,6 +1811,53 @@ static void program_verify_emit_paths(Program* me) {
     }
     cstr_drop(&common_dir);
     hmap_source_file_ptr_drop(&seen);
+}
+
+// tsc's addLazyProgramDiagnosticExplainingFile: at what first brought the file in (an import), else (a root file) a
+// global diagnostic saying why it is in the program
+static void program_error_explaining_file(Program* me, SourceFile const* file, unsigned code, cstr message) {
+    if (span_valid(file->included_at)) {
+        error_ctx_error_s(my errs, file->included_at, code, message);
+        return;
+    }
+    // (TODO: tsc says why it is: "The file is in the program because: Matched by default include pattern '**/*'")
+    error_ctx_global_error_s(my errs, code, message);
+}
+
+// tsc's verifyCompilerOptions on the files of the program: a composite project lists every file it emits (TS6307),
+// and with a rootDir (or composite's, the config's directory) every emitted file is in it (TS6059, from
+// getCommonSourceDirectory's checkSourceFilesBelongToPath)
+static void program_verify_project_files(Program* me) {
+    CompilerOptions const* o = &my options;
+    bool has_config = my config_source && cstr_size(&o->config_dir);
+    bool common_dir = cstr_size(&o->out_dir) || cstr_size(&o->root_dir) || cstr_size(&o->source_root) ||
+        cstr_size(&o->map_root) || ((o->declaration || o->composite) && cstr_size(&o->declaration_dir));
+    bool root_dir_check = common_dir && (cstr_size(&o->root_dir) || (o->composite && has_config));
+    bool list_check = o->composite && has_config;
+    if (!root_dir_check && !list_check) return;
+    csview cwd = program_cwd(me);
+    cstr root_dir = cstr_size(&o->root_dir) ? absolute_path_of(cwd, cstr_sv(&o->root_dir)) : cstr_clone(o->config_dir);
+    cstr config = my config_source ? absolute_path_of(cwd, cstr_sv(&my config_source->canonical_path)) : cstr_null;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        SourceFile const* file = *i;
+        if (!emit_source_may_be_emitted(me, file)) continue;
+        cstr absolute = absolute_path_of(cwd, cstr_sv(&file->canonical_path));
+        csview path = cstr_sv(&absolute);
+        csview root = cstr_sv(&root_dir);
+        bool under = path.size > root.size && !memcmp(path.buf, root.buf, (size_t)root.size) &&
+            (path.buf[root.size] == '/' || (root.size == 1 && root.buf[0] == '/'));
+        if (root_dir_check && !under) {
+            program_error_explaining_file(me, file, 6059, cstr_d("File '", absolute, "' is not under 'rootDir' '",
+                root_dir, "'. 'rootDir' is expected to contain all source files."));
+        }
+        if (list_check && !file->is_root) {
+            program_error_explaining_file(me, file, 6307, cstr_d("File '", absolute, "' is not listed within the file "
+                "list of project '", config, "'. Projects must list all files or use an 'include' pattern."));
+        }
+        cstr_drop(&absolute);
+    }
+    cstr_drop(&config);
+    cstr_drop(&root_dir);
 }
 
 // tsc's getDiagnosticsWithPrecedingDirectives: a semantic diagnostic (of `phase`, resolving names or typechecking) that
@@ -1921,6 +2044,7 @@ void program_resolve_names(Program* me) {
     program_validate_options(me);
     program_verify_module_kind(me);
     program_verify_emit_paths(me);
+    program_verify_project_files(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
 

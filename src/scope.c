@@ -2466,7 +2466,7 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
             // A CommonJS JavaScript module's synthetic default is the module (tsc's canHaveSyntheticDefault)
             return module;
         }
-        if (compiler_options()->allow_synthetic_default_imports && (!file || file->is_declaration) &&
+        if (compiler_options()->allow_synthetic_default_imports && (!file || source_file_reads_as_declaration(file)) &&
             !symbol_get_export(module, c_sv("__esModule")) && !(file && esm_imports_esm(item, file))
         ) {
             return module; // So is a declaration file's (tsc's canHaveSyntheticDefault)
@@ -3031,12 +3031,18 @@ void binder_resolve_remaining_aliases(Binder* me) {
     }
 }
 
+bool symbol_const_enum_is_ambient(Symbol const* me) {
+    return my is_ambient || (my name_span.source && my name_span.source->reference_const_enums_ambient);
+}
+
 // tsc's checkAliasSymbol under verbatimModuleSyntax: an import or export (not type-only, not ambient) of an ambient
 // const enum, which only the file that declares it could inline (TS2748; a use of it is then fine, see
 // check_const_enum_access())
 static void check_alias_ambient_const_enum(Symbol const* alias, Symbol const* target) {
     CompilerOptions const* options = compiler_options();
-    if (!options->verbatim_module_syntax || !(target->flags & SYMBOL_CONST_ENUM) || !target->is_ambient) return;
+    if (!options->verbatim_module_syntax || !(target->flags & SYMBOL_CONST_ENUM) || !symbol_const_enum_is_ambient(target)) {
+        return;
+    }
     PortItem const* item = alias->alias->item;
     Scope const* scope = alias->alias->scope;
     if (item->type_only || item->type_modifier || item->jsdoc || scope->ambient || (scope->file && scope->file->is_declaration)) return;
