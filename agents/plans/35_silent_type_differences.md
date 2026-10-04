@@ -92,6 +92,31 @@ What the agents left, roughly by size (their test names are examples):
    (scannerUnicodeEscapeInKeyword2); enum members with numeric names use the source text; declaration visibility
    (privacyInterface: depends on declaration emit); JS tests (~25) belong to plan 26.
 9. tsc artefacts not worth mimicking: awaitedType x2 (first alias a union was created with), fixingTypeParametersRepeatedly1.
+10. Left by fan-out agent A of 2026-10-04 (types: semantics/inference), each investigated far enough to name the
+    mechanism:
+    - **Generic function nested in a returned literal**: tsc's instantiateTypeWithSingleGenericCallSignature runs for
+      any identifier with a contextual signature inside an inferring call (`map("", () => ({ x: identity }))`
+      instantiates identity with the context's *fixing* mapper); tttt only does it for argument-level
+      `generic_function`/`nested_generic` Args (call.c). inferentialTypingWithFunctionTypeNested,
+      nestedGenericSpreadInference.
+    - **Circular returns are any in tsc**: `let x = { foo: () => x }` gives foo `() => any` (x's type is being
+      resolved when the arrow's return is asked); tttt resolves the return later and unrolls x
+      (genericCallOnMemberReturningClosedOverObject; the opposite of plan 42's direction).
+    - A spread namespace member declared by `export const f = (o: T) => {}` prints its parameters syntactically in tsc
+      (typeFromExpression); tttt's spread props don't keep the declaration (declarationEmitResolveTypesIfNotReusable).
+    - A reverse mapped optional property prints `a?: number | undefined` in tsc (its type includes the undefined),
+      `a?: number` in tttt.
+    - An import's non-string module specifier (`import * from Zero from "./0"`) is an expression tsc types (`Zero :
+      any`); tttt's parser drops it (invalidSyntaxNamespaceImportWith{AMD,Commonjs,System}).
+    - An ambient module nested in a script's ambient module is an augmentation to tsc (isModuleAugmentationExternal):
+      unmerged and uninstantiated it's any; tttt declares a global ambient module (privacyGloImportParseErrors).
+    - `x = 10 as T` parameter initializers print the asserted annotation syntactically (isolatedDeclarationsAddUndefined).
+    - Merged interfaces with differently named type parameters keep each declaration's own (TS2428,
+      twoGenericInterfacesDifferingByTypeParameterName); tttt maps the second's to the first's.
+    - Unexplained so far: typeArgumentInferenceWithObjectLiteral (`x => x` gets E1.X: when T is fixed tsc has only
+      non-widened candidates), inferConditionalConstraintMappedMember (tsc: never), wellKnownSymbolExpando (tsc: no
+      late-bound expando for `f[Symbol.iterator] = ...` in a TS file), typeGuardRedundancy (tsc keeps both signatures
+      of `x.substr | x.toFixed` in a conditional's subtype reduction), fakeInfinity2/3 (`() => Infinity`, not the alias).
 
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
