@@ -113,6 +113,14 @@ What the agents left, roughly by size (their test names are examples):
     - `x = 10 as T` parameter initializers print the asserted annotation syntactically (isolatedDeclarationsAddUndefined).
     - Merged interfaces with differently named type parameters keep each declaration's own (TS2428,
       twoGenericInterfacesDifferingByTypeParameterName); tttt maps the second's to the first's.
+    - **Reuse needs accessibility, which declaration emit's painting changes**: tsc's trackExistingEntityName only
+      reuses a name that isSymbolAccessible (shouldComputeAliasesToMakeVisible false); a non-exported alias inside a
+      non-exported namespace of a module isn't, so tsc prints its structure (instantiateContextualTypes,
+      declarationEmitInlinedDistributiveConditional, inlineMappedTypeModifierDeclarationEmit,
+      mappedTypeGenericInstantiationPreservesHomomorphism, deepKeysIndexing). But with `@declaration` the emit runs
+      first and its late painting sets `isVisible` on what it emitted, so the same name is reused afterwards
+      (privacyFunctionParameterDeclFile & co.). Adding symbol_type_accessible_at() to name_accessible() in ty_display.c
+      was +5 -4 for that reason; doing it right needs the declaration walk's painted set kept for the types baseline.
     - Unexplained so far: typeArgumentInferenceWithObjectLiteral (`x => x` gets E1.X: when T is fixed tsc has only
       non-widened candidates), inferConditionalConstraintMappedMember (tsc: never), wellKnownSymbolExpando (tsc: no
       late-bound expando for `f[Symbol.iterator] = ...` in a TS file), typeGuardRedundancy (tsc keeps both signatures
