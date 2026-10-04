@@ -2111,6 +2111,19 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
     int readonly = member_refs(me, object, name, refs, 0);
     if (readonly == 0) return is_namespace_import(&access->expr);
     if (readonly < 0) return false;
+    // (One property seen through several members, `this & Derived` after `this instanceof Derived`, is that property:
+    // tsc's createUnionOrIntersectionProperty returns the single symbol all constituents have)
+    if (refs->len > 1) {
+        Prop const* first = refs->props[0];
+        while (first->target) first = first->target;
+        bool same = true;
+        for (u32 i = 1; i < refs->len && same; i++) {
+            Prop const* other = refs->props[i];
+            while (other->target) other = other->target;
+            same = other == first;
+        }
+        if (same) refs->len = 1;
+    }
     // A class's own readonly properties can be assigned through `this` in its constructor (not in functions in there)
     if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && access->in_constructor_of &&
         !(refs->props[0]->flags & PROP_ACCESSOR) && refs->props[0]->parent == access->in_constructor_of
