@@ -24292,7 +24292,7 @@ const baselines = {
     },
     'objectBindingPattern_restElementWithPropertyName': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'objectCreate-errors': {
@@ -27682,7 +27682,7 @@ const baselines = {
     },
     'restParameterWithBindingPattern3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'restParameters': {

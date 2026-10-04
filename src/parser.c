@@ -10988,6 +10988,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                         parse_success(&colon);
                         target.rest = true;
                         target.rest_property_name = true;
+                        target.element_span = span_from(key_anchor); // (The element, from its `...`)
                         Span key_name = binding.content_span;
                         binding_drop(&binding);
                         vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
