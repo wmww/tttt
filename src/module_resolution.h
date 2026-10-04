@@ -45,6 +45,9 @@ typedef struct ResolvedModule {
     // and a version, else empty. The program takes a second file with the same id for the first (duplicate packages)
     cstr package_id;
     cstr package_name; // tsc's packageId.name: the package.json's name, with package_id
+    // Where path was before symlinks were followed (tsc's originalPath), empty if that changed nothing: what the
+    // program's symlink cache learns links from (module_specifiers.h)
+    cstr original_path;
     // tsc's alternateResult (absolute path): the declaration file a resolution without `exports` (node16/nodenext/
     // bundler) or with moduleResolution bundler (node10) would find, when this one found none
     cstr alternate_result;
@@ -75,6 +78,19 @@ void module_resolver_set_redirects(ModuleResolver* me, ProjectRedirects const* r
 // never built, through a workspace link: its nearest existing directory is followed), with redirects. Empty if the
 // resolver has no realpath or nothing could be followed
 cstr module_resolver_real_path_lenient(ModuleResolver* me, csview path);
+
+// What the reverse direction (module_specifiers.c) asks of the resolver's filesystem view and caches
+// The parsed package.json in directory (absolute), null if there is none. Cached; lives as long as the resolver
+struct JsonValue const* module_resolver_package_json(ModuleResolver* me, csview directory);
+// A file exists, referenced projects' outputs included (see module_resolver_set_redirects())
+bool module_resolver_file_exists(ModuleResolver* me, csview path);
+// An option's path made absolute: relative to the tsconfig it came from, else to the current directory
+cstr module_resolver_option_path(ModuleResolver* me, csview path);
+csview module_resolver_cwd(ModuleResolver* me);
+// The `paths`-like object of a package.json's first `typesVersions` entry that applies to tsc's version, null if none
+struct JsonValue const* module_resolver_types_versions(struct JsonValue const* package_json);
+// Whether a semver range ("types@>=5.0"'s ">=5.0") covers tsc's version
+bool module_resolver_version_in_range(csview range);
 
 // Both take any path for containing_file (relative ones are relative to the fs' working directory)
 ResolvedModule module_resolver_resolve(

@@ -6,6 +6,7 @@
 #include "source_file.h"
 #include "ty/ty.h"
 #include "statement.h"
+#include "program.h"
 
 // The symbol tables in scope at a location, from the inside (tsc's forEachSymbolTableInScope)
 
@@ -35,6 +36,9 @@ typedef struct ChainCtx {
     bool only_external_aliasing;
     bool yield_module;
     bool in_global_this; // Looking through globalThis's exports: they don't fall back to globalThis again
+    // Looking for a chain to a container of the symbol being named (getSymbolChain of a parent), see
+    // namespace_import_is_clone()
+    bool container_lookup;
     // tsc's visitedSymbolTablesMap: the tables being searched for each symbol, so that aliases of each other end
     VisitedTable visited[64];
     u32 visited_count;
@@ -135,6 +139,23 @@ static Symbol const* resolve_alias(Symbol const* symbol) {
     return ret;
 }
 
+// `import * as ns` that tsc resolves to a clone of the module (resolveESModuleSymbol under esModuleInterop when the
+// module's type has a `default` or signatures: cloneTypeAsModuleType with a synthetic default), which doesn't name the
+// module. tttt's type of `ns` is the module's, so this only matters where the module is a container something is
+// named through (ChainCtx.container_lookup); the module's own type is printed through `ns` like tsc prints the
+// clone's. HACK
+static bool namespace_import_is_clone(Symbol const* symbol) {
+    if (!symbol->gather_module || !compiler_options()->es_module_interop || !symbol->decl_count) return false;
+    SymbolDecl const* decl = &symbol->decls[0];
+    PortItem const* item = decl->kind == SYMBOL_DECL_ALIAS ? decl->node : nullptr;
+    if (!item || item->tag != PORT_IMPORT_GATHER) return false;
+    Symbol* module = symbol->gather_module;
+    if (symbol_get_export(module, c_sv("default"))) return true;
+    Symbol const* assigned = module->is_module ? module_export_equals(module) : module;
+    if (assigned && assigned->flags & SYMBOL_ALIAS) assigned = resolve_alias(assigned);
+    return assigned && (assigned->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS));
+}
+
 // The identity of what a symbol stands for: a namespace import (`import * as ns`) is its module
 static Symbol const* identity(ChainCtx const* me, Symbol const* symbol) {
     return merged(me, symbol_members(merged(me, symbol)));
@@ -202,6 +223,7 @@ static bool is_accessible(
     if (!from_table) return false;
     Symbol const* named = resolved ? resolved : from_table;
     if (named != symbol && identity(me, named) != identity(me, symbol)) return false;
+    if (my container_lookup && symbol->is_module && named != symbol && namespace_import_is_clone(merged(me, named))) return false;
     // (A table holds the symbol as it was declared: an `export =` target augmented later is tsc's merged clone, so
     // only modules themselves are skipped here)
     if (from_table->is_module) return false;
@@ -479,32 +501,178 @@ static Symbol const* file_symbol_exporting(ChainCtx* me, Symbol const* container
 
 #define CONTAINERS_MAX 8
 
-// tsc's getContainersOfSymbol (without the alternative containing modules: the modules that re-export the symbol)
-static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol const** out) {
-    u32 count = 0;
-    Symbol const* container = symbol->parent ? merged(me, symbol->parent) : nullptr;
-    if (container && !(symbol->flags & SYMBOL_TYPE_PARAMETER)) {
-        Symbol const* additional = file_symbol_exporting(me, container);
-        SymbolChain ignored;
-        if ((container->flags & left_meaning(meaning)) && accessible_chain(me, container, SYMBOL_NAMESPACE, &ignored)) {
-            out[count++] = container;
-            if (additional) out[count++] = additional;
-        } else {
-            if (additional) out[count++] = additional;
-            out[count++] = container;
+// tsc's getAlternativeContainingModules: the modules the enclosing file imports that export the symbol (perhaps through
+// `export *`), else every module of the program that does. Remembered per symbol during a declaration walk, which is of
+// one file (tsc caches it per symbol and file)
+typedef struct ExtendedContainers {
+    Symbol const* symbol;
+    u32 generation;
+    u32 count;
+    Symbol const* items[CONTAINERS_MAX];
+} ExtendedContainers;
+#define EXTENDED_CONTAINER_SLOTS 256
+static thread_local ExtendedContainers* extended_containers;
+
+// The modules of the program that export the symbol (not where it's named from): remembered per symbol on each thread
+typedef struct ProgramContainers {
+    Symbol const* symbol;
+    u32 program;
+    u32 count;
+    Symbol const* items[CONTAINERS_MAX];
+} ProgramContainers;
+#define PROGRAM_CONTAINER_SLOTS 1024
+static thread_local ProgramContainers* program_containers;
+
+static u32 program_modules_exporting(ChainCtx* me, Symbol const* symbol, Symbol const** out, u32 cap) {
+    Program const* program = current_checker->program;
+    if (!program_containers) program_containers = calloc(PROGRAM_CONTAINER_SLOTS, sizeof(ProgramContainers));
+    ProgramContainers* slot = &program_containers[((uintptr_t)symbol >> 4) % PROGRAM_CONTAINER_SLOTS];
+    u32 serial = program_serial(program);
+    if (slot->symbol != symbol || slot->program != serial) {
+        *slot = (ProgramContainers){ .symbol = symbol, .program = serial };
+        u32 files = program_source_count(program);
+        for (u32 i = 0; i < files && slot->count < CONTAINERS_MAX; i++) {
+            SourceFile const* other = program_source_at((Program*)program, i);
+            if (!other->is_module || !other->scope || !other->scope->container) continue;
+            Symbol const* module = other->scope->container;
+            if (alias_in_container(me, module, symbol)) slot->items[slot->count++] = module;
         }
-        return count;
     }
+    u32 count = slot->count < cap ? slot->count : cap;
+    memcpy(out, slot->items, count * sizeof(*out));
+    return count;
+}
+
+static u32 alternative_modules_uncached(ChainCtx* me, SourceFile const* file, Symbol const* symbol, Symbol const** out, u32 cap) {
+    u32 count = 0;
+    for (u32 i = 0; i < file->module_ref_count && count < cap; i++) {
+        ModuleRef const* ref = file->module_refs[i];
+        // (not the `declare module`s, nor the imports tsc synthesizes)
+        if (ref->is_declaration || ref->ambient_only || ref == file->helpers_ref || ref == file->jsx_runtime_ref) continue;
+        if (ref->module_state != ALIAS_DONE || !ref->module) continue;
+        if (alias_in_container(me, ref->module, symbol)) out[count++] = ref->module;
+    }
+    if (count || !current_checker) return count;
+    return program_modules_exporting(me, symbol, out, cap);
+}
+
+static u32 alternative_modules(ChainCtx* me, Symbol const* symbol, Symbol const** out, u32 cap) {
+    SourceFile const* file = my enclosing ? my enclosing->file : nullptr;
+    if (!file || !cap) return 0;
+    // (a walk is of one file)
+    if (!alias_index_generation) return alternative_modules_uncached(me, file, symbol, out, cap);
+    if (!extended_containers) extended_containers = calloc(EXTENDED_CONTAINER_SLOTS, sizeof(ExtendedContainers));
+    ExtendedContainers* slot = &extended_containers[((uintptr_t)symbol >> 4) % EXTENDED_CONTAINER_SLOTS];
+    if (slot->symbol != symbol || slot->generation != alias_index_generation) {
+        *slot = (ExtendedContainers){ .symbol = symbol, .generation = alias_index_generation };
+        slot->count = alternative_modules_uncached(me, file, symbol, slot->items, CONTAINERS_MAX);
+    }
+    u32 count = slot->count < cap ? slot->count : cap;
+    memcpy(out, slot->items, count * sizeof(*out));
+    return count;
+}
+
+// getWithAlternativeContainers: the container (first if it can be named from here), a module that `export =`s it, and
+// the modules that re-export the symbol
+static u32 with_alternative_containers(ChainCtx* me, Symbol const* symbol, Symbol const* container, u32 meaning, Symbol const** out) {
+    u32 count = 0;
+    Symbol const* additional = file_symbol_exporting(me, container);
+    SymbolChain ignored;
+    if ((container->flags & left_meaning(meaning)) && accessible_chain(me, container, SYMBOL_NAMESPACE, &ignored)) {
+        out[count++] = container;
+        if (additional) out[count++] = additional;
+    } else {
+        if (additional) out[count++] = additional;
+        out[count++] = container;
+    }
+    count += alternative_modules(me, symbol, out + count, CONTAINERS_MAX - count);
+    return count;
+}
+
+// tsc's getContainersOfSymbol
+static u32 containers_of(ChainCtx* me, Symbol const* symbol, u32 meaning, Symbol const** out) {
+    Symbol const* container = symbol->parent ? merged(me, symbol->parent) : nullptr;
+    if (container && !(symbol->flags & SYMBOL_TYPE_PARAMETER)) return with_alternative_containers(me, symbol, container, meaning, out);
     // A JavaScript class expression a CommonJS module exports (`module.exports = class {}`, `exports.C = class {}`)
     ClassDecl const* class_expression = symbol->flags & SYMBOL_CLASS ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
     if (class_expression && class_expression->is_expression && class_expression->commonjs_module) {
-        out[count++] = class_expression->commonjs_module;
-        return count;
+        out[0] = class_expression->commonjs_module;
+        return 1;
     }
     // A declaration directly in a module that the module exports under another name (`export = C`, `export { C as D }`)
     Symbol const* module = declaring_module(symbol);
-    if (module && alias_in_container(me, module, symbol)) out[count++] = module;
+    if (module && alias_in_container(me, module, symbol)) return with_alternative_containers(me, symbol, module, meaning, out);
+    return 0;
+}
+
+static thread_local ModuleSpecifierFn module_specifier_fn;
+static thread_local void* module_specifier_ctx;
+
+void symbol_chain_set_module_specifier(ModuleSpecifierFn fn, void* ctx) {
+    module_specifier_fn = fn;
+    module_specifier_ctx = ctx;
+}
+
+// getSpecifierForModuleSymbol of a container, empty if it isn't a module
+static cstr parent_specifier(Symbol const* parent) {
+    if (!parent->is_module || !parent->module) return cstr_null;
+    SourceFile const* file = parent->module->file;
+    if (!file) {
+        // An ambient module by its name
+        csview name = parent->name;
+        if (name.size >= 2 && (name.buf[0] == '"' || name.buf[0] == '\'')) name = csview_slice(name, 1, name.size - 1);
+        return cstr_from_sv(name);
+    }
+    if (module_specifier_fn) return module_specifier_fn(module_specifier_ctx, file);
+    // (without a host: the file's name, absolute; the files of a program are all below its directory, or have `..`s
+    // that count as components alike)
+    return cstr_d("/", file->canonical_path);
+}
+
+// moduleSpecifiers.countPathComponents
+static u32 path_components(csview path) {
+    u32 count = 0;
+    for (isize i = csview_starts_with(path, "./") ? 2 : 0; i < path.size; i++) count += path.buf[i] == '/';
     return count;
+}
+
+static bool specifier_is_relative(csview path) {
+    return csview_starts_with(path, "./") || csview_starts_with(path, "../") || csview_equals(path, ".") ||
+        csview_equals(path, "..");
+}
+
+// getSymbolChain's sortByBestName: modules with fewer path components first, non-relative before relative; the rest
+// stay where they are. V8 sorts arrays this short with a binary insertion sort, which this is (the comparison isn't a
+// total order, so the algorithm shows)
+static void sort_by_best_name(Symbol const** parents, u32 count) {
+    if (count < 2) return;
+    cstr specifiers[CONTAINERS_MAX];
+    u32 order[CONTAINERS_MAX];
+    for (u32 i = 0; i < count; i++) {
+        specifiers[i] = parent_specifier(parents[i]);
+        order[i] = i;
+    }
+    for (u32 i = 1; i < count; i++) {
+        u32 pivot = order[i];
+        u32 left = 0, right = i;
+        while (left < right) {
+            u32 mid = left + ((right - left) >> 1);
+            csview a = cstr_sv(&specifiers[pivot]), b = cstr_sv(&specifiers[order[mid]]);
+            int compared = 0;
+            if (a.size && b.size) {
+                bool a_relative = specifier_is_relative(a), b_relative = specifier_is_relative(b);
+                compared = a_relative == b_relative ? (int)path_components(a) - (int)path_components(b) : b_relative ? -1 : 1;
+            }
+            if (compared < 0) right = mid;
+            else left = mid + 1;
+        }
+        memmove(order + left + 1, order + left, (i - left) * sizeof(*order));
+        order[left] = pivot;
+    }
+    Symbol const* sorted[CONTAINERS_MAX];
+    for (u32 i = 0; i < count; i++) sorted[i] = parents[order[i]];
+    memcpy(parents, sorted, count * sizeof(*parents));
+    for (u32 i = 0; i < count; i++) cstr_drop(&specifiers[i]);
 }
 
 // tsc's getSymbolChain
@@ -514,9 +682,14 @@ static bool symbol_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, bool e
     if (depth < 8 && (!have || needs_qualification(me, chain.items[0], chain.len == 1 ? meaning : left_meaning(meaning)))) {
         Symbol const* parents[CONTAINERS_MAX];
         u32 parent_count = containers_of(me, have ? chain.items[0] : symbol, meaning, parents);
+        sort_by_best_name(parents, parent_count);
         for (u32 i = 0; i < parent_count; i++) {
             SymbolChain parent_chain = {0};
-            if (!symbol_chain(me, parents[i], left_meaning(meaning), false, depth + 1, &parent_chain)) continue;
+            bool was_container_lookup = my container_lookup;
+            my container_lookup = true;
+            bool found = symbol_chain(me, parents[i], left_meaning(meaning), false, depth + 1, &parent_chain);
+            my container_lookup = was_container_lookup;
+            if (!found) continue;
             Symbol const* members = symbol_members(parents[i]);
             Symbol const* export_equals = members && members->exports ? symbol_table_get(members->exports, c_sv("export=")) : nullptr;
             if (export_equals && same_reference(me, export_equals, symbol)) {
@@ -743,6 +916,10 @@ void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* co
 }
 
 void symbol_chain_release_thread(void) {
+    free(extended_containers);
+    extended_containers = nullptr;
+    free(program_containers);
+    program_containers = nullptr;
     free(access_memo);
     access_memo = nullptr;
 }

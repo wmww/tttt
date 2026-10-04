@@ -1915,6 +1915,9 @@ typedef struct DeclTracker {
     // The computed name (`[a.b]`, as written) of a late bound property's declaration in `file` (trackComputedName)
     void (*track_computed_name)(struct DeclTracker* me, csview name, struct SourceFile const* file);
     void (*report)(struct DeclTracker* me, DeclTrackReport report, csview name);
+    // A name the printer roots at `import("...")` of this file (symbolToTypeNode's import type: the specifier may only
+    // reach it through a node_modules, TS2742)
+    void (*track_module_file)(struct DeclTracker* me, struct SourceFile const* file);
     void* ctx;
     // The printed type passed the length tsc serializes (reportTruncationError, reported): the printer stops
     bool truncated;

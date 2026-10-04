@@ -93,6 +93,7 @@ void resolved_module_drop(ResolvedModule* me) {
     cstr_drop(&my suggested_extension);
     cstr_drop(&my package_id);
     cstr_drop(&my package_name);
+    cstr_drop(&my original_path);
     cstr_drop(&my alternate_result);
     cstr_drop(&my ambiguous_root_entry);
     cstr_drop(&my ambiguous_root_package_json);
@@ -105,6 +106,7 @@ static ResolvedModule resolved_module_clone(ResolvedModule const* me) {
     ret.suggested_extension = cstr_clone(my suggested_extension);
     ret.package_id = cstr_clone(my package_id);
     ret.package_name = cstr_clone(my package_name);
+    ret.original_path = cstr_clone(my original_path);
     ret.alternate_result = cstr_clone(my alternate_result);
     ret.ambiguous_root_entry = cstr_clone(my ambiguous_root_entry);
     ret.ambiguous_root_package_json = cstr_clone(my ambiguous_root_package_json);
@@ -147,6 +149,7 @@ static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
     if (!my realpath || !resolved->is_external_library || my options->preserve_symlinks) return;
     cstr real = module_resolver_real_path_lenient(me, cstr_sv(&resolved->path));
     if (cstr_size(&real)) {
+        if (!cstr_eq(&real, &resolved->path)) cstr_take(&resolved->original_path, cstr_clone(resolved->path));
         cstr_take(&resolved->path, real);
     } else {
         cstr_drop(&real);
@@ -1694,4 +1697,36 @@ FileFormat module_resolver_file_format(ModuleResolver* me, csview file) {
     cstr_drop(&scope_dir);
     cstr_drop(&dir);
     return ret;
+}
+
+// ---- What module_specifiers.c asks ----
+
+JsonValue const* module_resolver_package_json(ModuleResolver* me, csview directory) {
+    State state = { .resolver = me };
+    PackageJson const* package = package_json_of(&state, directory);
+    return package ? &package->json : nullptr;
+}
+
+bool module_resolver_file_exists(ModuleResolver* me, csview path) {
+    State state = { .resolver = me };
+    return file_exists(&state, path);
+}
+
+cstr module_resolver_option_path(ModuleResolver* me, csview path) {
+    resolver_init_cwd(me);
+    return option_path(me, path);
+}
+
+csview module_resolver_cwd(ModuleResolver* me) {
+    resolver_init_cwd(me);
+    return cstr_sv(&my cwd);
+}
+
+JsonValue const* module_resolver_types_versions(JsonValue const* package_json) {
+    PackageJson package = { .exists = true, .json = *package_json };
+    return version_paths_of(&package);
+}
+
+bool module_resolver_version_in_range(csview range) {
+    return version_in_range(range);
 }

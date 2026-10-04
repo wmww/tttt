@@ -2,6 +2,7 @@
 
 #include "span.h"
 #include "compiler_options.h"
+#include "module_specifiers.h"
 
 typedef struct Program Program;
 typedef struct ErrorCtx ErrorCtx;
@@ -89,6 +90,15 @@ void program_set_checkers(Program* me, u32 count);
 // declaration diagnostics (declaration_diagnostics.h) are only reported if there is no other diagnostic, `earlier_errors`
 // saying whether earlier phases reported some. Call it before program_typecheck()
 void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
+
+// How a declaration file of `importing` (a file of this program) would name the module `target` (tsc's
+// getSpecifierForModuleSymbol): an import of the file that resolves to it, else module_specifier_generate(). override:
+// the resolution mode an import type asks for. Thread safe
+cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override);
+// Different for every program this process makes (what memos that outlive a program key on, rather than its address)
+u32 program_serial(Program const* me);
+// tsc's getDefaultResolutionModeForFile
+SpecifierMode program_default_resolution_mode(Program const* me, SourceFile const* file);
 
 // How many threads run those checkers (0 is the default, 1: the calling thread alone). The output doesn't depend on
 // it. Call it while loading

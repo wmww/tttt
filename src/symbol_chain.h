@@ -65,6 +65,11 @@ bool symbol_has_visible_declarations(Symbol const* symbol);
 // Declaration emit's late painted declarations on this thread (null: none): a painted namespace is visible like an
 // exported one (tsc's addVisibleAlias sets its isVisible). `symbols` and `count` are read where they are each time
 void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count);
+// How a module's file is named from where symbols are being named on this thread (tsc's getSpecifierForModuleSymbol,
+// with the declaration emitter's resolver host), which decides between the containers a symbol can be named through
+// (getSymbolChain's sortByBestName). Null (the default): by the file's path, as tsc's printer without a host does
+typedef cstr (*ModuleSpecifierFn)(void* ctx, struct SourceFile const* file);
+void symbol_chain_set_module_specifier(ModuleSpecifierFn fn, void* ctx);
 // Frees this thread's accessibility memo of the declaration walks (a thread that checked is done)
 void symbol_chain_release_thread(void);
 // tsc's isDeclarationVisible of the statements directly in a scope (a file is, a namespace block is if its namespace

@@ -158,6 +158,8 @@ typedef struct ProjectRedirects {
     HMapProjectIndex source_projects; // A root file of a referenced project -> 1 + its index in projects
     HMapProjectIndex outputs; // An output declaration file -> its index in sources
     StrList sources;
+    HMapProjectIndex source_outputs; // A source -> its index in output_paths
+    StrList output_paths;
     StrList declaration_dirs;
 } ProjectRedirects;
 
@@ -245,6 +247,8 @@ static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
         }
         u32 source = (u32)my sources.count;
         str_list_push(&my sources, file);
+        hmap_project_index_insert(&my source_outputs, cstr_from_sv(file), (u32)my output_paths.count);
+        str_list_push(&my output_paths, cstr_sv(&output));
         hmap_project_index_insert(&my outputs, output, source);
     }
     cstr_drop(&common);
@@ -287,6 +291,8 @@ void project_redirects_destroy(ProjectRedirects* me) {
     hmap_project_index_drop(&my source_projects);
     hmap_project_index_drop(&my outputs);
     str_list_drop(&my sources);
+    hmap_project_index_drop(&my source_outputs);
+    str_list_drop(&my output_paths);
     str_list_drop(&my declaration_dirs);
     free(me);
 }
@@ -310,6 +316,12 @@ csview project_redirects_source_of_output(ProjectRedirects const* me, csview abs
     if (!me) return c_sv("");
     auto found = hmap_project_index_get(&my outputs, absolute);
     return found ? cstr_sv(&my sources.items[found->second]) : c_sv("");
+}
+
+csview project_redirects_output_of_source(ProjectRedirects const* me, csview absolute) {
+    if (!me) return c_sv("");
+    auto found = hmap_project_index_get(&my source_outputs, absolute);
+    return found ? cstr_sv(&my output_paths.items[found->second]) : c_sv("");
 }
 
 bool project_redirects_output_directory(ProjectRedirects const* me, csview absolute) {

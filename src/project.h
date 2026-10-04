@@ -56,6 +56,9 @@ u32 project_redirects_project_of(ProjectRedirects const* me, csview absolute);
 // The source file a referenced project's output declaration file stands for (absolute in and out), empty if absolute
 // isn't one. Whether or not the output exists
 csview project_redirects_source_of_output(ProjectRedirects const* me, csview absolute);
+// The other direction: the output declaration file of a referenced project's source (absolute in and out), empty if
+// absolute isn't one (or has no declaration output: `.d.ts`, `.json`)
+csview project_redirects_output_of_source(ProjectRedirects const* me, csview absolute);
 // Whether a directory exists as far as module resolution is concerned, though it may not on disk: a referenced
 // project's declaration directory (`declarationDir`, else `outDir`), something in it or a parent of it
 bool project_redirects_output_directory(ProjectRedirects const* me, csview absolute);

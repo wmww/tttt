@@ -93,6 +93,8 @@ typedef struct Program {
     u32 reference_count;
     RealpathFn realpath; // program_set_realpath()
     void* realpath_ctx;
+    SymlinkCache* symlinks; // What resolutions learned about symlinked directories, for program_module_specifier()
+    u32 serial; // program_serial()
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
@@ -159,7 +161,10 @@ Program* program_new(ErrorCtx* errs, Fs const* fs) {
         .fs = fs,
         .binder = binder_new(errs),
         .options = compiler_options_init(),
+        .symlinks = symlink_cache_new(),
     });
+    static atomic_uint serials;
+    ret->serial = atomic_fetch_add(&serials, 1) + 1;
     program_add_builtins(ret);
     return ret;
 }
@@ -215,6 +220,7 @@ static void program_drop(Program* me) {
     hmap_package_flag_drop(&my packages);
     vec_source_file_ptr_drop(&my source_files_ordered);
     module_resolver_destroy(my resolver);
+    symlink_cache_destroy(my symlinks);
     for (u32 i = 0; i < my reference_count; i++) module_resolver_destroy(my reference_resolvers[i]);
     free(my reference_resolvers);
     cstr_drop(&my lib_dir);
@@ -484,6 +490,13 @@ static void program_redirect_resolved(Program const* me, ResolvedModule* resolve
     cstr_take(&resolved->package_id, cstr_null);
 }
 
+// A resolution that followed a symlink (tsc's symlink cache, setSymlinksFromResolutions)
+static void program_learn_symlink(Program* me, ResolvedModule const* resolved) {
+    if (cstr_size(&resolved->original_path) && cstr_size(&resolved->path)) {
+        symlink_cache_add_resolution(my symlinks, cstr_sv(&resolved->original_path), cstr_sv(&resolved->path));
+    }
+}
+
 // tsc's tryExtractTSExtension: the name ends in .d.ts, .d.mts, .d.cts, .ts, .tsx, .mts or .cts
 static bool name_has_ts_extension(csview name) {
     static const char* const extensions[] = { ".ts", ".tsx", ".mts", ".cts" };
@@ -518,6 +531,7 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     csview containing = cstr_sv(&source->canonical_path);
     ResolutionMode mode = program_module_ref_mode(me, source, ref);
     ResolvedModule resolved = module_resolver_resolve(resolver, cstr_sv(&ref->path), containing, mode);
+    program_learn_symlink(me, &resolved);
     program_redirect_resolved(me, &resolved);
     if (cstr_size(&resolved.ambiguous_root_package_json)) {
         cstr shown = program_path_for_message(me, cstr_sv(&resolved.ambiguous_root_package_json));
@@ -671,6 +685,7 @@ static SourceFile* program_load_type_reference(
         program_resolver_of(me, source), name, source ? cstr_sv(&source->canonical_path) : c_sv(""),
         has_mode ? &mode : nullptr
     );
+    program_learn_symlink(me, &resolved);
     program_redirect_resolved(me, &resolved);
     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
         program_add_source_idempotent(me, cstr_sv(&resolved.path));
@@ -2463,4 +2478,81 @@ void program_typecheck(Program* me) {
 
 intptr_t program_get_file_count(Program const* me) {
     return hmap_box_source_file_size(&my source_files_map);
+}
+
+// tsc's importSyntaxAffectsModuleResolution
+static bool import_syntax_affects_resolution(CompilerOptions const* o) {
+    ModuleResolutionKind kind = o->module_resolution;
+    bool node_next = kind == MODULE_RESOLUTION_NODE16 || kind == MODULE_RESOLUTION_NODENEXT;
+    return node_next || ((node_next || kind == MODULE_RESOLUTION_BUNDLER) &&
+        (o->resolve_package_json_exports || o->resolve_package_json_imports));
+}
+
+static SpecifierMode specifier_mode_of_kind(ModuleKind kind) {
+    if (kind == MODULE_KIND_COMMONJS) return SPECIFIER_MODE_COMMONJS;
+    if (kind >= MODULE_KIND_ES2015 && kind <= MODULE_KIND_ESNEXT) return SPECIFIER_MODE_ESM;
+    return kind == MODULE_KIND_PRESERVE ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE;
+}
+
+SpecifierMode program_default_resolution_mode(Program const* me, SourceFile const* file) {
+    if (!import_syntax_affects_resolution(program_options_of(me, file))) return SPECIFIER_MODE_NONE;
+    return specifier_mode_of_kind(source_file_implied_format_for_emit(file));
+}
+
+// tsc's getModeForUsageLocation of an import
+static SpecifierMode program_usage_mode(Program const* me, SourceFile const* file, ModuleRef const* ref) {
+    if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) return SPECIFIER_MODE_ESM;
+    if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) return SPECIFIER_MODE_COMMONJS;
+    if (!import_syntax_affects_resolution(program_options_of(me, file))) return SPECIFIER_MODE_NONE;
+    if (ref->syntax == MODULE_REF_REQUIRE) return SPECIFIER_MODE_COMMONJS;
+    if (ref->syntax == MODULE_REF_DYNAMIC) return SPECIFIER_MODE_ESM;
+    return specifier_mode_of_kind(source_file_emit_module_kind(file));
+}
+
+cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override) {
+    SpecifierMode default_mode = program_default_resolution_mode(me, importing);
+    SpecifierMode wanted = override ? override : default_mode;
+    // An import that already names it (computeModuleSpecifiers' existingSpecifier, by the file's include reasons)
+    SpecifierImport* imports = malloc(sizeof(SpecifierImport) * (importing->module_ref_count + 1));
+    u32 import_count = 0;
+    for (u32 i = 0; i < importing->module_ref_count; i++) {
+        ModuleRef const* ref = importing->module_refs[i];
+        if (ref->is_declaration || ref->ambient_only || ref == importing->helpers_ref || ref == importing->jsx_runtime_ref) continue;
+        SpecifierMode mode = program_usage_mode(me, importing, ref);
+        imports[import_count++] = (SpecifierImport){ .text = cstr_sv(&ref->path), .mode = mode };
+        if (ref->file != target) continue;
+        if (mode != wanted && mode != SPECIFIER_MODE_NONE && wanted != SPECIFIER_MODE_NONE) continue;
+        free(imports);
+        return cstr_clone(ref->path);
+    }
+    csview cwd = program_cwd(me);
+    cstr importing_path = absolute_path_of(cwd, cstr_sv(&importing->canonical_path));
+    cstr target_path = absolute_path_of(cwd, cstr_sv(&target->canonical_path));
+    // (tsc's command line names a referenced project's output declaration file, which it reads in its place)
+    csview output = target->from_reference ? project_redirects_output_of_source(my redirects, cstr_sv(&target_path)) : c_sv("");
+    if (output.size) cstr_assign_sv(&target_path, output);
+    CompilerOptions const* options = program_options_of(me, importing);
+    cstr project_dir = cstr_size(&options->config_dir) ? absolute_path_of(cwd, cstr_sv(&options->config_dir)) : cstr_null;
+    SpecifierRequest request = {
+        .resolver = program_resolver_of(me, importing),
+        .options = options,
+        .symlinks = my symlinks,
+        .importing = cstr_sv(&importing_path),
+        .importing_format = importing->has_format ? (importing->is_esm ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_COMMONJS) :
+            SPECIFIER_MODE_NONE,
+        .importing_default_mode = default_mode,
+        .imports = imports,
+        .import_count = import_count,
+        .override_mode = override,
+        .target = cstr_sv(&target_path),
+        .project_dir = cstr_sv(&project_dir),
+    };
+    cstr ret = module_specifier_generate(&request);
+    c_drop(cstr, &importing_path, &target_path, &project_dir);
+    free(imports);
+    return ret;
+}
+
+u32 program_serial(Program const* me) {
+    return my serial;
 }

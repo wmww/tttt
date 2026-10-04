@@ -28,6 +28,7 @@ core_files = files(
     'program.c',
     'json.c',
     'module_resolution.c',
+    'module_specifiers.c',
     'load_pool.c',
     'tsconfig.c',
     'project.c',

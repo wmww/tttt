@@ -140,7 +140,18 @@ typedef struct Walk {
     // them visible)
     Symbol const** exported_locals;
     u32 exported_local_count;
+    // The specifiers asked for so far (the file's import types of each module): whether they only reach it through a
+    // node_modules, and that specifier
+    struct SpecifierMemo* specifiers;
+    u32 specifier_count, specifier_cap;
 } Walk;
+
+typedef struct SpecifierMemo {
+    SourceFile const* target;
+    bool has_plain, has_unsafe;
+    cstr plain; // getSpecifierForModuleSymbol without a mode of its own
+    cstr unsafe; // Of the import type naming the module, empty if portable
+} SpecifierMemo;
 
 static Place place_at(Near near, bool direct) { return (Place){ .near = near, .direct = direct }; }
 
@@ -517,6 +528,76 @@ static void tracker_report(DeclTracker* tracker, DeclTrackReport kind, csview pr
 }
 
 static void track_symbol(DeclTracker* tracker, Symbol const* symbol, u32 meaning);
+
+static bool reaches_into_node_modules(cstr const* specifier) {
+    return csview_find_sv(cstr_sv(specifier), c_sv("/node_modules/")) != c_NPOS;
+}
+
+// symbolToTypeNode's import type: TS2742 when its specifier can only reach the module through a node_modules (in
+// node16/nodenext, unless the other resolution mode's specifier can, with a `resolution-mode` attribute)
+static cstr unsafe_specifier(Walk* me, SourceFile const* target) {
+    CompilerOptions const* o = compiler_options();
+    if (o->module_resolution == MODULE_RESOLUTION_CLASSIC) return cstr_null;
+    bool node_next = o->module_resolution == MODULE_RESOLUTION_NODE16 || o->module_resolution == MODULE_RESOLUTION_NODENEXT;
+    Program* program = my checker->program;
+    bool file_esm = my file->has_format && my file->is_esm;
+    SpecifierMode override = SPECIFIER_MODE_NONE;
+    // (An import type of an ES module from another format says so)
+    if (node_next && target->has_format && target->is_esm && !file_esm) override = SPECIFIER_MODE_ESM;
+    cstr specifier = program_module_specifier(program, my file, target, override);
+    if (!reaches_into_node_modules(&specifier)) {
+        cstr_drop(&specifier);
+        return cstr_null;
+    }
+    if (node_next) {
+        cstr swapped = program_module_specifier(program, my file, target, file_esm ? SPECIFIER_MODE_COMMONJS : SPECIFIER_MODE_ESM);
+        bool portable = !reaches_into_node_modules(&swapped);
+        cstr_drop(&swapped);
+        if (portable) {
+            cstr_drop(&specifier);
+            return cstr_null;
+        }
+    }
+    return specifier;
+}
+
+static SpecifierMemo* specifier_memo(Walk* me, SourceFile const* target) {
+    for (u32 i = 0; i < my specifier_count; i++) {
+        if (my specifiers[i].target == target) return &my specifiers[i];
+    }
+    if (my specifier_count == my specifier_cap) {
+        my specifier_cap = my specifier_cap ? my specifier_cap * 2 : 4;
+        my specifiers = realloc(my specifiers, my specifier_cap * sizeof(*my specifiers));
+    }
+    my specifiers[my specifier_count] = (SpecifierMemo){ .target = target };
+    return &my specifiers[my specifier_count++];
+}
+
+// symbol_chain_set_module_specifier()'s hook: the containers a symbol can be named through are tried by their names
+static cstr walk_module_specifier(void* ctx, SourceFile const* target) {
+    Walk* me = ctx;
+    SpecifierMemo* memo = specifier_memo(me, target);
+    if (!memo->has_plain) {
+        memo->plain = program_module_specifier(my checker->program, my file, target, SPECIFIER_MODE_NONE);
+        memo->has_plain = true;
+    }
+    return cstr_clone(memo->plain);
+}
+
+static void track_module_file(DeclTracker* tracker, SourceFile const* target) {
+    Walk* me = tracker->ctx;
+    if (my emitting.kind == EMIT_NONE || target == my file) return;
+    SpecifierMemo* memo = specifier_memo(me, target);
+    if (!memo->has_unsafe) {
+        memo->unsafe = unsafe_specifier(me, target);
+        memo->has_unsafe = true;
+    }
+    if (!cstr_size(&memo->unsafe)) return;
+    csview name;
+    Span at = error_name_node(me, &name);
+    report_once(me, at, 2742, cstr_d("The inferred type of '", name, "' cannot be named without a reference to '",
+        memo->unsafe, "'. This is likely not portable. A type annotation is necessary."));
+}
 
 // trackComputedName: the first identifier of a late bound name as resolved from here, else as resolved where the name
 // is declared (which is a module's local there, never accessible from another file)
@@ -2192,9 +2273,11 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
         .scope = file->scope,
     };
     walk.tracker = (DeclTracker){
-        .track_symbol = track_symbol, .track_computed_name = track_computed_name, .report = tracker_report, .ctx = &walk,
+        .track_symbol = track_symbol, .track_computed_name = track_computed_name, .report = tracker_report,
+        .track_module_file = track_module_file, .ctx = &walk,
     };
     symbol_chain_set_painted((Symbol const* const* const*)&walk.painted, &walk.painted_count);
+    symbol_chain_set_module_specifier(walk_module_specifier, &walk);
     if (file->is_module) collect_exported_locals(&walk, &file->ast.statements);
     Container top = { .global = !file->is_module, .module_top_level = file->is_module };
     check_statements(&walk, &file->ast.statements, top);
@@ -2209,7 +2292,10 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
         walked = count;
     }
     symbol_chain_set_painted(nullptr, nullptr);
+    symbol_chain_set_module_specifier(nullptr, nullptr);
     free(walk.exported_locals);
     free(walk.painted);
     free(walk.painted_done);
+    for (u32 i = 0; i < walk.specifier_count; i++) c_drop(cstr, &walk.specifiers[i].plain, &walk.specifiers[i].unsafe);
+    free(walk.specifiers);
 }
