@@ -3,6 +3,7 @@
 #include "error.h"
 #include "scope.h"
 #include "binding.h"
+#include "ty/ty.h"
 
 void callable_type_drop(CallableType* me) {
     function_impl_drop(my function);
@@ -30,6 +31,11 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
     }
 }
 
+static void make_literals(TypeNode const* node) {
+    if (node->tag == TYPE_VALUE) ty_of_node(node);
+    if (node->tag == TYPE_UNION) for_each (i, vec_type, &node->composite) make_literals(i);
+}
+
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     // A JSDoc `function(...)` without `: R` (tsc's checkJSDocFunctionType, whatever noImplicitAny says)
     if (my function->jsdoc_type && !my function->jsdoc_callback && !my function->jsdoc_unchecked && !my function->ret_explicit &&
@@ -41,7 +47,12 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(my function, true, errs);
     function_impl_check_implicit_any_parameters(my function, errs);
     for_each (i, vec_function_arg, &my function->args) {
-        if (i->initializer.binding.has_explicit_type) type_typecheck(&i->initializer.binding.explicit_type, errs);
+        if (!i->initializer.binding.has_explicit_type) continue;
+        type_typecheck(&i->initializer.binding.explicit_type, errs);
+        // The parameter's type is made here (tsc's checkParameter asks for the parameter symbol's type), which decides
+        // union order: a literal type it names is older than one first written later. Only the literals are made
+        // (lowering every parameter type again cost webpack 0.2%)
+        make_literals(&i->initializer.binding.explicit_type);
     }
     type_typecheck(&my function->ret, errs);
     if (my function->predicate && my function->predicate->has_type) type_typecheck(&my function->predicate->type, errs);
