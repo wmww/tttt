@@ -34063,7 +34063,7 @@ const baselines = {
     'asyncGetter_es5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncImportedPromise_es5': {
         errors: true,
@@ -34373,7 +34373,7 @@ const baselines = {
     'asyncGetter_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncImportedPromise_es6': {
         errors: true,

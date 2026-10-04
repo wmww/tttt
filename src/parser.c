@@ -7325,12 +7325,16 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
 
     FunctionFlags function_flags = { .is_async = modifiers.includes[MODIFIER_ASYNC] };
     bool is_getter = false, is_setter = false;
+    // (An accessor is never async nor a generator to tsc, whatever its modifiers say: getFunctionFlags, and its body
+    // is parsed without the await context)
     if (hop_member_keyword(&p, "get", true)) {
         is_getter = true;
         function_flags.brace_expected = true;
+        function_flags.is_async = false;
     } else if (hop_member_keyword(&p, "set", true)) {
         is_setter = true;
         function_flags.brace_expected = true;
+        function_flags.is_async = false;
     } else if (!is_type && hop_char(&p, '*')) {
         function_flags.is_generator = true;
         function_flags.asterisk = span_from_previous_char(&p);
