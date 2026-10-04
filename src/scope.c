@@ -3634,7 +3634,10 @@ Generic const* symbol_type_generic(Symbol const* me) {
             }   break;
             default: continue;
         }
-        return generic_empty(generic) ? nullptr : generic;
+        // (A declaration without type parameters doesn't hide a later one's: `interface EventEmitter {}` and
+        // `interface EventEmitter<T = DefaultEventMap>` merge into a generic interface, tsc's
+        // getLocalTypeParametersOfClassOrInterfaceOrTypeAlias appends every declaration's)
+        if (!generic_empty(generic)) return generic;
     }
     return nullptr;
 }
