@@ -292,9 +292,27 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
         for (u32 j = 0; j < i; j++) seen |= same_block(my decls[j], my decls[i]);
         if (seen) continue;
         for (u32 pass = 0; pass < 2; pass++) {
+            isize from = vec_span_size(&ret);
+            bool assignments = false, jsdoc = false;
             for (u32 j = i; j < my decl_count; j++) {
                 if (!same_block(my decls[j], my decls[i]) || !span_valid(my decls[j].full)) continue;
-                if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) vec_span_push(&ret, my decls[j].full);
+                if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) {
+                    vec_span_push(&ret, my decls[j].full);
+                    assignments |= my decls[j].kind == SYMBOL_DECL_ASSIGNMENT || my decls[j].kind == SYMBOL_DECL_EXPANDO;
+                    jsdoc |= span_is_jsdoc_tag(my decls[j].full);
+                }
+            }
+            if (!assignments || jsdoc) continue;
+            // (The rest in source order: an expando assignment is declared after the namespaces it is between by
+            // tttt's resolve walk, by tsc's binder where it is)
+            for (isize a = from + 1; a < vec_span_size(&ret); a++) {
+                Span moved = ret.data[a];
+                isize b = a;
+                while (b > from && ret.data[b - 1].source == moved.source && ret.data[b - 1].sv.buf > moved.sv.buf) {
+                    ret.data[b] = ret.data[b - 1];
+                    b--;
+                }
+                ret.data[b] = moved;
             }
         }
     }
