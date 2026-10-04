@@ -676,7 +676,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
                 }
             }
-            if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, my key.span);
+            if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, vec_span_size(&my declarations) ? *vec_span_at(&my declarations, 0) : my key.span);
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my key.span,

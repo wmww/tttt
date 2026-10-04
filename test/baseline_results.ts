@@ -8162,7 +8162,7 @@ const baselines = {
     },
     'declarationEmitHigherOrderRetainedGenerics': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitImportInExportAssignmentModule': {
@@ -8572,7 +8572,7 @@ const baselines = {
     },
     'declarationEmitReadonlyComputedProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'declarationEmitRecursiveConditionalAliasPreserved': {
@@ -12527,12 +12527,12 @@ const baselines = {
     },
     'expandoFunctionSymbolProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'expandoFunctionSymbolPropertyJs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'experimentalDecoratorMetadataUnresolvedTypeObjectInEmit': {
@@ -23727,7 +23727,7 @@ const baselines = {
     },
     'noMappedGetSet': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noObjectKeysToKeyofT': {
