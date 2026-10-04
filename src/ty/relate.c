@@ -1326,6 +1326,37 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
     return ret;
 }
 
+static bool source_has_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth);
+static bool is_static_private_name(Checker* me, Prop const* prop);
+
+// tsc's getUnmatchedProperty from the target's `from`th property on: one the source lacks (optional ones only with
+// require_optional)
+static bool has_unmatched_target_prop(Checker* me, Ty const* source, Members const* target_members, u32 from, bool require_optional) {
+    for (u32 i = from; i < target_members->prop_count; i++) {
+        Prop const* target_prop = target_members->props[i];
+        if (target_prop->flags & PROP_PROTOTYPE) continue;
+        if ((target_prop->flags & PROP_OPTIONAL) && !require_optional) continue;
+        if (source_has_prop(me, source, target_prop->name, 0) || is_static_private_name(me, target_prop)) continue;
+        return true;
+    }
+    return false;
+}
+
+// find_prop()'s answer to whether there is one, without typing it (tsc's getPropertyOfType in getUnmatchedProperty)
+static bool source_has_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth) {
+    if (depth > 8) return false;
+    if (ty->kind == TY_INTERSECTION) return find_prop(me, ty, name, depth).found; // (precomputed)
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        TyList members = ty->composite.types;
+        for (u32 i = 0; i < members.len; i++) {
+            if (!source_has_prop(me, apparent_type(me, members.data[i]), name, depth + 1)) return false;
+        }
+        return members.len > 0;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    return ty_get_object_prop(me, ty, name) != nullptr;
+}
+
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0); }
 Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name) { return find_prop(me, ty, name, 0).prop; }
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple) { return tuple_as_array(me, tuple); }
@@ -2007,6 +2038,7 @@ typedef struct SourceProp {
 } SourceProp;
 
 static SourceProp* source_props(Checker* me, Ty const* source, Members const* source_members, u32* count_out);
+static bool source_has_prop(Checker* me, Ty const* ty, Atom const* name, u32 depth);
 
 static Ternary props_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool source_is_apparent,
@@ -2124,6 +2156,19 @@ static Ternary props_related_impl(
         free(props);
     }
 
+    // A property the source lacks fails it before any property's type is asked for (tsc's getUnmatchedProperty at the
+    // top of propertiesRelatedTo: `typeof globalThis extends { crypto: infer T; onmessage: any }` in @types/node, the
+    // declared type of the global `crypto` itself, is false without typing `crypto`). Only types that aren't known yet
+    // could tell: an object's properties are checked when the first of them is about to be resolved, a union's first
+    bool object_source = (source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION && source->kind != TY_UNION;
+    bool require_optional = !optionals_only && is_subtype_relation(st->relation) && requires_optional_properties(me, source);
+    // (An intersection's properties are made with their types: nothing to resolve)
+    bool unmatched_checked = optionals_only || source->kind == TY_INTERSECTION;
+    if (!unmatched_checked && !object_source) {
+        if (has_unmatched_target_prop(me, source, target_members, 0, require_optional)) return TERNARY_FALSE;
+        unmatched_checked = true;
+    }
+
     Ternary result = TERNARY_TRUE;
     Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
     for (u32 i = 0; i < target_members->prop_count; i++) {
@@ -2140,7 +2185,20 @@ static Ternary props_related_impl(
             Prop const* same = ty_get_object_prop(me, source, target_prop->name);
             if (same && same->decl->function == target_prop->decl->function && !same->target && same->flags == target_prop->flags) continue;
         }
-        FoundProp source_prop = find_prop(me, source, target_prop->name, 0);
+        FoundProp source_prop = {0};
+        if (object_source) {
+            Prop const* prop = ty_get_object_prop(me, source, target_prop->name);
+            if (prop && prop->type_state != LAZY_STATE_DONE && !unmatched_checked) {
+                unmatched_checked = true;
+                if (has_unmatched_target_prop(me, source, target_members, i + 1, require_optional)) {
+                    result = TERNARY_FALSE;
+                    goto done;
+                }
+            }
+            if (prop) source_prop = (FoundProp){ .found = true, .type = prop_type(me, prop), .flags = prop->flags, .prop = prop };
+        } else {
+            source_prop = find_prop(me, source, target_prop->name, 0);
+        }
         if (optionals_only && !source_prop.found) continue;
         // The same property (tsc's `sourceProp !== targetProp`): a member a derived class inherits against its base
         if (source_prop.found && source_prop.prop == target_prop) continue;
@@ -2151,9 +2209,10 @@ static Ternary props_related_impl(
             if ((target_prop->flags & PROP_OPTIONAL) && (!is_subtype_relation(st->relation) || !requires_optional_properties(me, source))) {
                 continue;
             }
-            return TERNARY_FALSE;
+            result = TERNARY_FALSE;
+            goto done;
         }
-        if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) return TERNARY_FALSE;
+        if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) { result = TERNARY_FALSE; goto done; }
         Ty const* source_type = source_prop.type;
         Ty const* target_type = prop_type(me, target_prop);
         if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
@@ -2172,7 +2231,8 @@ static Ternary props_related_impl(
                 report_incompatible(st, 2326, cstr_d("Types of property '", name, "' are incompatible."));
                 cstr_drop(&name);
             }
-            return TERNARY_FALSE;
+            result = TERNARY_FALSE;
+            goto done;
         }
         // (the types first: their failure explains better)
         if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable) {
@@ -2185,10 +2245,12 @@ static Ternary props_related_impl(
                 ));
                 c_drop(cstr, &source_str, &target_str, &name);
             }
-            return TERNARY_FALSE;
+            result = TERNARY_FALSE;
+            goto done;
         }
         result &= related;
     }
+done:
     return result;
 }
 

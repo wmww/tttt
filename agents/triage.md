@@ -21,11 +21,6 @@ reproducible. Stale entries (tests that pass now) were pruned from `bugs/*.md`.
   --threads 4` the full suite now gives `any[]` there (`./release/baseline_tests --summary --dump DIR` 1 vs 4 checkers:
   7 differing files, 6 before). Something an earlier test leaves cached (the lib program's types?) decides an array
   literal's element type in an import attribute.
-- (2026-10-04) `types: ["node"]` with `lib: ["es2020"]` and no skipLibCheck: tttt reports TS2502 "'crypto' is
-  referenced directly or indirectly in its own type annotation" at @types/node/crypto.d.ts:4466 (`var crypto: typeof
-  globalThis extends { crypto: infer T; ... } ? T : ...`); tsc is clean. A file with just `process;` under
-  `{"strict": true, "types": ["node"], "lib": ["es2020"], "module": "nodenext"}` (with node_modules pointing at
-  thirdparty/tsc/node_modules) shows it. tsc-src doesn't see it because of skipLibCheck.
 - (plan 41) CLI phase gating differs from tsc's: tsc -p reports semantic diagnostics only when there are no syntactic
   and no options/global ones (`emitFilesAndReportErrors`), tsc -b goes on to semantic ones anyway; tttt reports name
   errors after parse errors and skips typechecking after either. Scenarios `when-project-references-composite-project-
