@@ -112,6 +112,12 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   importEqualsError45874, moduleAugmentationDisallowedExtensions, moduleAugmentationWithNonExistentNamedImport,
   noCrashUMDMergedWithGlobalValue, moduleAugmentationDuringSyntheticDefaultCheck; probably also what members an
   augmented `export =` module (express-style typings) has: check before changing the binder.
+- Test files with mixed line endings: tsc's harness splits by `\r\n` when the file has one (splitContentByNewlines),
+  so a bare `\n` line stays inside a line and leading "empty" lines survive (genericArray0: line numbers off by one).
+  Porting the split in load_test_source() lost 21 tests (directives and rendering of such files): needs the
+  renderer to follow too.
+- JSON module default (`ns.default : Symbol("package")`, nodeModulesResolveJsonModule x3) and `typeof undefined` of
+  a local class named `undefined` (undefinedTypeAssignment4): small, not done.
 - Object literal duplicate properties (`{ a: 1, a: 2 }`) are one binder symbol with both declarations in tsc
   (memberOverride, noRepeatedPropertyNames); the literal's prop keeps only the last. Giving it both decl_spans in
   ty_object_literal() lost lastPropertyInLiteralWins & co: decl_spans[0] also picks the annotation the types baseline
