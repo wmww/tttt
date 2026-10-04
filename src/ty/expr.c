@@ -3743,8 +3743,8 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
     if (callee_type == ty_intrinsic(me, TY_SILENT_NEVER)) return callee_type;
     if (!call->uses_new && !call->is_extends) callee_type = ty_check_non_null_callee(me, callee_type, span_null, nullptr);
     Ty const* ret = ty_call_return_type(me, callee_type, call, call_span, ctx.raw_contextual);
-    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !call->uses_new) {
-        return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
+        return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error (`new super()` too)
     }
     // The initializer of a `const` (or a `static readonly` property) makes a new unique symbol
     if (call->unique_symbol.key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {

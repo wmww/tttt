@@ -29653,7 +29653,7 @@ const baselines = {
     'superNewCall1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'superNoModifiersCrash': {
         errors: true,
