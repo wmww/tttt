@@ -649,7 +649,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
                 if (prop && !(prop->flags & PROP_METHOD) && prop->decl->decl_span_count > 1 && prop->decl->node &&
-                    !prop->decl->write_node
+                    !prop_decl_rare(prop->decl)->write_node
                 ) {
                     redeclared = prop;
                 }

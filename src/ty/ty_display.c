@@ -2100,11 +2100,11 @@ static bool reverse_placeholder(TyDisplay d, Prop const* prop) {
     for (TyDisplayReverse const* i = d.reverse_stack; i; i = i->outer) {
         if (i->prop == prop) return true;
     }
-    if (d.reverse_stack->prop->decl->reverse_source->kind != TY_ANONYMOUS) return true;
-    MappedInfo const* root = mapped_root(prop->decl->reverse_of->mapped);
+    if (prop_decl_rare(d.reverse_stack->prop->decl)->reverse_source->kind != TY_ANONYMOUS) return true;
+    MappedInfo const* root = mapped_root(prop_decl_rare(prop->decl)->reverse_of->mapped);
     u32 depth = 0;
     for (TyDisplayReverse const* i = d.reverse_stack; i && depth < 3; i = i->outer, depth++) {
-        if (mapped_root(i->prop->decl->reverse_of->mapped) != root) return false;
+        if (mapped_root(prop_decl_rare(i->prop->decl)->reverse_of->mapped) != root) return false;
     }
     return depth == 3;
 }
@@ -2203,7 +2203,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (d.tracker->truncated) break;
             if (track_property(me, d, prop)) continue;
         }
-        bool reverse_prop = prop->decl->reverse_of != nullptr;
+        bool reverse_prop = prop_decl_rare(prop->decl)->reverse_of != nullptr;
         bool placeholder = reverse_prop && reverse_placeholder(d, prop);
         Ty const* type = placeholder ? ty_intrinsic(me, TY_ANY) : prop_type(me, prop);
         if (reverse_prop && !placeholder) {
@@ -2234,7 +2234,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         // An accessor pair whose setter takes another type than the getter gives prints as the pair (tsc's
         // addPropertyToElementList)
-        if (((declared->decl->setter && vec_function_arg_size(&declared->decl->setter->args)) || declared->decl->write_node) &&
+        if (((prop_decl_rare(declared->decl)->setter && vec_function_arg_size(&prop_decl_rare(declared->decl)->setter->args)) || prop_decl_rare(declared->decl)->write_node) &&
             !(declared->flags & PROP_OPTIONAL)
         ) {
             Ty const* write = prop_write_type(me, prop);
@@ -2243,24 +2243,24 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 display_member_name(me, d, prop);
                 out_lit(d, "(): ");
                 // (The annotations as written where they still say it: tsc's signatureToSignatureDeclarationHelper)
-                FunctionImpl const* getter = declared->decl->setter ? declared->decl->function : nullptr;
+                FunctionImpl const* getter = prop_decl_rare(declared->decl)->setter ? declared->decl->function : nullptr;
                 TypeNode const* read_node = getter ? (getter->ret_explicit ? &getter->ret : nullptr) : declared->decl->node;
                 display_annotated(me, d, prop == declared ? read_node : nullptr, type, false);
                 out_lit(d, "; set ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(");
                 // (The parameter's name is its declaration's, reused)
-                if (declared->decl->setter) {
+                if (prop_decl_rare(declared->decl)->setter) {
                     cstr param = cstr_null;
-                    append_binding_pattern(&param, &vec_function_arg_at(&declared->decl->setter->args, 0)->initializer.binding);
+                    append_binding_pattern(&param, &vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding);
                     out(reused_if(d, true), cstr_sv(&param));
                     cstr_drop(&param);
                 } else {
-                    out(reused_if(d, true), declared->decl->setter_param.sv);
+                    out(reused_if(d, true), prop_decl_rare(declared->decl)->setter_param.sv);
                 }
                 out_lit(d, ": ");
-                TypeNode const* write_node = declared->decl->setter ?
-                    &vec_function_arg_at(&declared->decl->setter->args, 0)->initializer.binding.explicit_type : declared->decl->write_node;
+                TypeNode const* write_node = prop_decl_rare(declared->decl)->setter ?
+                    &vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding.explicit_type : prop_decl_rare(declared->decl)->write_node;
                 display_annotated(me, d, prop == declared ? write_node : nullptr, write, false);
                 out_lit(d, "); ");
                 continue;
@@ -2277,9 +2277,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // still says the same), or the type assertion of an object literal's
         Prop const* origin = prop;
         while (origin->target) origin = origin->target;
-        bool mapped_from = origin->decl->template_of && prop->decl->mapped_from;
+        bool mapped_from = prop_decl_rare(origin->decl)->template_of && prop_decl_rare(prop->decl)->mapped_from;
         if (mapped_from) {
-            origin = prop->decl->mapped_from;
+            origin = prop_decl_rare(prop->decl)->mapped_from;
             while (origin->target) origin = origin->target;
         }
         TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted;
@@ -2295,8 +2295,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             FunctionImpl const* accessor = origin->decl->function;
             Binding const* param = vec_function_arg_size(&accessor->args) ?
                 &vec_function_arg_at(&accessor->args, 0)->initializer.binding : nullptr;
-            if (origin->decl->setter && !accessor->ret_explicit && vec_function_arg_size(&origin->decl->setter->args)) {
-                param = &vec_function_arg_at(&origin->decl->setter->args, 0)->initializer.binding;
+            if (prop_decl_rare(origin->decl)->setter && !accessor->ret_explicit && vec_function_arg_size(&prop_decl_rare(origin->decl)->setter->args)) {
+                param = &vec_function_arg_at(&prop_decl_rare(origin->decl)->setter->args, 0)->initializer.binding;
                 if (param->has_explicit_type) annotation = &param->explicit_type;
                 else if (origin->flags & PROP_GETTER) syntactic_getter = accessor;
             } else if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) {

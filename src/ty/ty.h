@@ -469,6 +469,26 @@ uint8_t ty_prop_name_form_of(Prop const* prop);
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
 // What a declared property knows about its declaration. Instantiations (which follow `target`) and synthetic
 // properties share ty_prop_decl_none, all zero and read-only: a property is 56 bytes, not 250
+// What few props have: accessors with a write type, mapped and reverse mapped types' (PropDecl.rare)
+typedef struct PropDeclRare {
+    // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
+    // `target`. See prop_write_type()
+    TypeNode const* write_node;
+    // An object literal's accessor pair: the setter (`function` is the getter), whose parameter's annotation is the
+    // write type. See prop_write_type()
+    FunctionImpl const* setter;
+    Span setter_param; // A type member accessor pair's setter parameter name (to print a divergent pair)
+    struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
+    // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
+    // declarations), whose annotation is reused when it says the same
+    struct Prop const* mapped_from;
+    // A property of a reverse mapped type: its type is inferred from `reverse_source` (the source property's type) on
+    // first use (tsc's getTypeOfReverseMappedSymbol). `reverse_declared` is the source property's declared type
+    struct ReverseMapped const* reverse_of;
+    Ty const* reverse_source;
+    Ty const* reverse_declared;
+} PropDeclRare;
+
 typedef struct PropDecl {
     // Exactly one source of the type (or it is known from the start): a node to lower, what the AST evaluates lazily
     // (an inferred class field, an accessor), a method, the overloads of a method, a symbol, a target to instantiate
@@ -479,13 +499,6 @@ typedef struct PropDecl {
     Symbol const* symbol; // A member of a namespace: the type of the symbol as a value
     u32 overload_count;
     LowerCtx ctx;
-    // A divergent accessor's setter parameter type (tsc's write type), lowered with `ctx`; instantiations follow
-    // `target`. See prop_write_type()
-    TypeNode const* write_node;
-    // An object literal's accessor pair: the setter (`function` is the getter), whose parameter's annotation is the
-    // write type. See prop_write_type()
-    FunctionImpl const* setter;
-    Span setter_param; // A type member accessor pair's setter parameter name (to print a divergent pair)
     // Where it was declared, for the symbols baseline (not copied to instantiations, follow `target`)
     Span name_span;
     Span const* decl_spans;
@@ -497,16 +510,15 @@ typedef struct PropDecl {
     Ty const* name_type; // An object literal's computed literal name's type, as it was (fresh): what keyof gives
     // Types baseline only: an object literal property `a: x as T` prints its type by reusing `T` (see ty_display.c)
     TypeNode const* asserted;
-    struct MappedInfo const* template_of; // The template of this mapped type, as a property its properties instantiate
-    // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
-    // declarations), whose annotation is reused when it says the same
-    struct Prop const* mapped_from;
-    // A property of a reverse mapped type: its type is inferred from `reverse_source` (the source property's type) on
-    // first use (tsc's getTypeOfReverseMappedSymbol). `reverse_declared` is the source property's declared type
-    struct ReverseMapped const* reverse_of;
-    Ty const* reverse_source;
-    Ty const* reverse_declared;
+    // Arena-allocated, null if all of it is: read through prop_decl_rare(), made by prop_decl_rare_mut() (members.c).
+    // Never shared: a copied PropDecl gets a copy (prop_copy_into())
+    PropDeclRare* rare;
 } PropDecl;
+
+static inline PropDeclRare const* prop_decl_rare(PropDecl const* decl) {
+    static const PropDeclRare none = {0};
+    return decl->rare ? decl->rare : &none;
+}
 
 extern PropDecl const ty_prop_decl_none;
 

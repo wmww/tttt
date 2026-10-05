@@ -612,7 +612,7 @@ static bool is_plain_identifier(csview sv) {
 // property keyed by an enum member is `[E.A]`
 static cstr missing_prop_name(Checker* me, Prop const* prop) {
     Prop const* template = prop->target;
-    if (template && template->decl->template_of && !template->decl->template_of->name_type && prop->mapper &&
+    if (template && prop_decl_rare(template->decl)->template_of && !prop_decl_rare(template->decl)->template_of->name_type && prop->mapper &&
         prop->mapper->len == 1
     ) {
         Ty const* key = prop->mapper->targets[0];

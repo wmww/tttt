@@ -31,12 +31,22 @@ static Prop* prop_new_declared(Checker* me) {
     return &both->prop;
 }
 
+// The rare part of a prop's declaration, to write
+static PropDeclRare* prop_decl_rare_mut(Checker* me, PropDecl* decl) {
+    if (!decl->rare) decl->rare = arena_new(&my arena, PropDeclRare);
+    return decl->rare;
+}
+
 // `*to = *from`, with a declaration of its own to add to
 static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
     *to = *from;
     if (from->decl == prop_decl_none()) return;
     to->decl = arena_new(&my arena, PropDecl);
     *to->decl = *from->decl;
+    if (from->decl->rare) {
+        to->decl->rare = arena_new(&my arena, PropDeclRare);
+        *to->decl->rare = *from->decl->rare;
+    }
 }
 
 typedef struct MembersBuilder {
@@ -260,9 +270,9 @@ static void builder_add_interface_member(
                     // The other accessor of `get [k]()` / `set [k](v)`: the getter's type is read, the setter's written
                     // (tsc's getWriteTypeOfSymbol)
                     if (i->computed_accessor == 2) {
-                        if (i->type.tag != TYPE_ANY || i->type.parsed) existing->decl->write_node = &i->type;
+                        if (i->type.tag != TYPE_ANY || i->type.parsed) prop_decl_rare_mut(me, existing->decl)->write_node = &i->type;
                     } else {
-                        existing->decl->write_node = existing->decl->node;
+                        prop_decl_rare_mut(me, existing->decl)->write_node = existing->decl->node;
                         existing->decl->node = &i->type;
                     }
                     existing->flags &= ~(u32)PROP_READONLY;
@@ -312,8 +322,8 @@ static void builder_add_interface_member(
                 prop->parent = i->origin_interface ? i->origin_interface : parent;
                 prop->decl->node = &i->type;
                 if (i->has_write_type) {
-                    prop->decl->write_node = &i->accessor->write_type;
-                    prop->decl->setter_param = i->accessor->setter_param;
+                    prop_decl_rare_mut(me, prop->decl)->write_node = &i->accessor->write_type;
+                    prop_decl_rare_mut(me, prop->decl)->setter_param = i->accessor->setter_param;
                 }
                 prop->decl->ctx = ctx;
                 prop->decl->ctx.method = is_method;
@@ -1107,7 +1117,7 @@ static void builder_add_class_items(
                     prop->flags = (prop->flags & ~(u32)(PROP_PRIVATE | PROP_PROTECTED)) | get_access |
                         (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
-                    if (has_getter) prop->decl->write_node = setter_type; // Writes go by the setter's parameter type
+                    if (has_getter) prop_decl_rare_mut(me, prop->decl)->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }
                 u32 visible = 0;
@@ -2436,7 +2446,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     // The template as a property to instantiate per key (lowered when a property's type is first asked for, like tsc's
     // getTypeOfMappedSymbol: the members can be there before the template can be lowered)
     Prop* template = prop_new_declared(me);
-    template->decl->template_of = mapped;
+    prop_decl_rare_mut(me, template->decl)->template_of = mapped;
 
     MembersBuilder builder = { .mapped = generic ? mapped : nullptr };
     for (u32 i = 0; i < key_count; i++) {
@@ -2497,7 +2507,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     prop->decl->decl_spans = declared->decl->decl_spans;
                     prop->decl->decl_span_count = declared->decl->decl_span_count;
                     prop->decl->name_is_value = declared->decl->name_is_value;
-                    prop->decl->mapped_from = declared;
+                    prop_decl_rare_mut(me, prop->decl)->mapped_from = declared;
                 }
                 builder_push(&builder, props, prop);
             } else {
@@ -2713,9 +2723,9 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
         // (Its own key is the name's string literal, `1` too: tsc's reverse mapped symbol has no valueDeclaration)
         prop->decl->name_is_value = false;
         prop->decl->asserted = props[i].asserted;
-        prop->decl->reverse_of = reverse;
-        prop->decl->reverse_source = source_type;
-        prop->decl->reverse_declared = props[i].type;
+        prop_decl_rare_mut(me, prop->decl)->reverse_of = reverse;
+        prop_decl_rare_mut(me, prop->decl)->reverse_source = source_type;
+        prop_decl_rare_mut(me, prop->decl)->reverse_declared = props[i].type;
         prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
         builder_push(&builder, props, prop);
     }
@@ -3067,14 +3077,14 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
         // (An unannotated getter has the type of its setter's annotation: tsc's getTypeOfAccessors)
-        FunctionImpl const* setter = prop->decl->setter;
+        FunctionImpl const* setter = prop_decl_rare(prop->decl)->setter;
         if (setter && !prop->decl->function->ret_explicit && setter_is_annotated(setter)) {
             type = ty_object_literal_accessor_type(me, setter, false);
         } else {
             type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
         }
     } else if (prop->target) {
-        MappedInfo const* template_of = prop->target->decl->template_of;
+        MappedInfo const* template_of = prop_decl_rare(prop->target->decl)->template_of;
         type = template_of && template_of->template_from ? ty_mapped_template_instantiated(me, template_of, prop->mapper) :
             ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
         // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
@@ -3092,14 +3102,14 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_function_type(me, prop->decl->function);
     } else if (prop->decl->lazy) {
         type = lazy_type_get((LazyType*)prop->decl->lazy);
-    } else if (prop->decl->template_of) {
-        type = ty_mapped_template(me, prop->decl->template_of);
-    } else if (prop->decl->reverse_of) {
-        ReverseMapped const* reverse = prop->decl->reverse_of;
-        type = ty_reverse_mapped_member_type(me, reverse, prop->decl->reverse_source);
+    } else if (prop_decl_rare(prop->decl)->template_of) {
+        type = ty_mapped_template(me, prop_decl_rare(prop->decl)->template_of);
+    } else if (prop_decl_rare(prop->decl)->reverse_of) {
+        ReverseMapped const* reverse = prop_decl_rare(prop->decl)->reverse_of;
+        type = ty_reverse_mapped_member_type(me, reverse, prop_decl_rare(prop->decl)->reverse_source);
         // (Declared by the source's declarations: the types baseline reuses their annotation where it still says the
         // same, tsc's serializeTypeForDeclaration)
-        if (type != prop->decl->reverse_declared) prop->decl->asserted = nullptr;
+        if (type != prop_decl_rare(prop->decl)->reverse_declared) prop->decl->asserted = nullptr;
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
@@ -3131,10 +3141,10 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     u64 key[2] = { KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop };
     if (prop->write_type_known) return intern_get(&my links, key, 2);
     Ty const* type = nullptr;
-    if (prop->decl->write_node) {
-        type = ty_from_node(me, prop->decl->write_node, prop->decl->ctx);
-    } else if (prop->decl->setter && setter_is_annotated(prop->decl->setter)) {
-        type = ty_object_literal_accessor_type(me, prop->decl->setter, false);
+    if (prop_decl_rare(prop->decl)->write_node) {
+        type = ty_from_node(me, prop_decl_rare(prop->decl)->write_node, prop->decl->ctx);
+    } else if (prop_decl_rare(prop->decl)->setter && setter_is_annotated(prop_decl_rare(prop->decl)->setter)) {
+        type = ty_object_literal_accessor_type(me, prop_decl_rare(prop->decl)->setter, false);
     } else if (prop->target) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
@@ -3594,7 +3604,7 @@ Ty const* ty_object_literal_of(
             prop->type = props[i].type;
             prop->type_state = props[i].type ? LAZY_STATE_DONE : LAZY_STATE_NOT_STARTED;
             prop->decl->function = props[i].accessor;
-            prop->decl->setter = props[i].setter;
+            if (props[i].setter) prop_decl_rare_mut(me, prop->decl)->setter = props[i].setter;
             prop->decl->name_span = props[i].name_span;
             prop->decl->name_is_value = props[i].name_is_value;
             prop->decl->literal_own = props[i].own;
@@ -3735,7 +3745,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .flags = prop->flags,
             .type = type,
             .accessor = prop->decl->function,
-            .setter = prop->decl->setter,
+            .setter = prop_decl_rare(prop->decl)->setter,
             .name_span = prop->decl->name_span,
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
@@ -3894,7 +3904,7 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
                 .flags = prop->flags,
                 .type = widened,
                 .accessor = prop->decl->function,
-                .setter = prop->decl->setter,
+                .setter = prop_decl_rare(prop->decl)->setter,
                 .name_span = prop->decl->name_span,
                 .decl_spans = prop->decl->decl_spans,
                 .decl_span_count = prop->decl->decl_span_count,
@@ -3967,7 +3977,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .flags = prop->flags,
             .type = prop->decl->function ? nullptr : ty_regular_object_literal(me, prop_type(me, prop)),
             .accessor = prop->decl->function,
-            .setter = prop->decl->setter,
+            .setter = prop_decl_rare(prop->decl)->setter,
             .name_span = prop->decl->name_span,
             .decl_spans = prop->decl->decl_spans,
             .decl_span_count = prop->decl->decl_span_count,
