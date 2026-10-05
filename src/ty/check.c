@@ -1049,7 +1049,10 @@ bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Spa
     VecTyReportLine lines = {0};
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
     Error* error = error_ctx_error_d(errs, tag_name, 2786, "'", tag_name, "' cannot be used as a JSX component.");
-    cstr source_str = ty_to_cstr(me, source);
+    // (The message is reportRelationError's head: the names told apart from the target's if they'd print the same)
+    cstr source_str, target_str;
+    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
+    cstr_drop(&target_str);
     switch (kind) {
         case JSX_COMPONENT_RETURN: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its return type '", source_str, "' is not a valid JSX element."); break;
         case JSX_COMPONENT_INSTANCE: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its instance type '", source_str, "' is not a valid JSX element."); break;

@@ -52916,7 +52916,7 @@ const baselines = {
         types: true,
     },
     'inlineJsxFactoryDeclarationsLocalTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
