@@ -35,7 +35,7 @@ typedef struct Options {
     bool quiet;   // Only print diagnostics and the final summary
     bool print_ast; // Dump the parsed AST of the (last) file before typechecking
     bool time;    // Print how long each phase took to stderr
-    bool keep_going; // Typecheck even if there were parse or name errors
+    bool keep_going; // Typecheck and report everything even after syntactic or options diagnostics (tsc stops)
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
     const char* project; // -p: a tsconfig.json or the directory of one
     bool build; // -b: paths are projects, each checked with everything it references, in build order
@@ -213,6 +213,46 @@ static intptr_t report_errors(Output* out, ErrorCtx* errs) {
     return count;
 }
 
+// Which of tsc's diagnostic kinds an error is, for emitFilesAndReportErrors' gating (tsc -p and -b alike): the config
+// file's parsing diagnostics are always reported; syntactic ones (parse errors) hide everything else; options and global
+// diagnostics (without a file, or in the config file) hide the semantic ones (everything located in a source file that
+// isn't a parse error, file inclusion diagnostics at an import included)
+typedef enum DiagnosticKind {
+    DIAGNOSTIC_CONFIG_PARSING,
+    DIAGNOSTIC_SYNTACTIC,
+    DIAGNOSTIC_OPTIONS,
+    DIAGNOSTIC_SEMANTIC,
+    DIAGNOSTIC_KIND_COUNT
+} DiagnosticKind;
+
+static DiagnosticKind diagnostic_kind(Error const* error) {
+    bool in_config = !span_valid(error->span) || (error->span.source && error->span.source->is_config);
+    if (in_config) return error->phase == ERROR_PHASE_PARSE ? DIAGNOSTIC_CONFIG_PARSING : DIAGNOSTIC_OPTIONS;
+    if (error->phase == ERROR_PHASE_PARSE && !error->grammar) return DIAGNOSTIC_SYNTACTIC;
+    return DIAGNOSTIC_SEMANTIC;
+}
+
+static void count_diagnostic_kinds(ErrorCtx const* errs, intptr_t counts[DIAGNOSTIC_KIND_COUNT]) {
+    for (DiagnosticKind k = 0; k < DIAGNOSTIC_KIND_COUNT; k++) counts[k] = 0;
+    for_each (i, vec_error, &errs->errors) counts[diagnostic_kind(i)]++;
+}
+
+// Drops the errors of the kind (what tsc doesn't ask the program for)
+static void drop_diagnostic_kind(ErrorCtx* errs, DiagnosticKind kind) {
+    VecError* errors = &errs->errors;
+    intptr_t kept = 0;
+    for (intptr_t i = 0; i < vec_error_size(errors); i++) {
+        Error* error = vec_error_at_mut(errors, i);
+        if (diagnostic_kind(error) == kind) {
+            error_drop(error);
+            continue;
+        }
+        if (kept != i) errors->data[kept] = *error;
+        kept++;
+    }
+    errors->size = kept;
+}
+
 // What one program found, for -b's summary
 typedef struct CheckCounts {
     intptr_t errors;
@@ -351,24 +391,42 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     phase_done(opts, out, "load+parse files", &last_time);
 
     int ret = 0;
+    // tsc's emitFilesAndReportErrors: semantic diagnostics only without syntactic, options and global ones
+    intptr_t kinds[DIAGNOSTIC_KIND_COUNT];
+    count_diagnostic_kinds(errs, kinds);
+    bool gated = !opts->keep_going && (kinds[DIAGNOSTIC_SYNTACTIC] || kinds[DIAGNOSTIC_OPTIONS]);
+    if (!opts->keep_going && kinds[DIAGNOSTIC_SYNTACTIC]) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
+    if (gated) drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
     const intptr_t parse_errors = report_errors(out, errs);
     if (parse_errors) ret = 1;
 
-    program_resolve_names(program);
+    intptr_t name_errors = 0, type_errors = 0;
+    if (!gated) {
+        program_resolve_names(program);
+        // (Not reported yet: global diagnostics found from here on hide them)
+        ErrorCtx names = error_ctx_scratch(errs);
+        names.errors = errs->errors;
+        errs->errors = (VecError){0};
+        phase_done(opts, out, "resolve names", &last_time);
 
-    const intptr_t name_errors = report_errors(out, errs);
-    if (name_errors) ret = 1;
-    phase_done(opts, out, "resolve names", &last_time);
+        if (opts->print_ast && source) {
+            out_println(out, color_good, "Parsed:", color_normal);
+            out_println(out, debug_d(&source->ast), "\n");
+        }
 
-    if (opts->print_ast && source) {
-        out_println(out, color_good, "Parsed:", color_normal);
-        out_println(out, debug_d(&source->ast), "\n");
-    }
-
-    intptr_t type_errors = 0;
-    if (ret == 0 || opts->keep_going) {
-        program_declaration_diagnostics_cli(program, parse_errors || name_errors);
+        program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names));
         program_typecheck(program);
+        // Global diagnostics (the checker's, without a file) hide the semantic ones
+        count_diagnostic_kinds(&names, kinds);
+        intptr_t type_kinds[DIAGNOSTIC_KIND_COUNT];
+        count_diagnostic_kinds(errs, type_kinds);
+        if (!opts->keep_going && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS])) {
+            drop_diagnostic_kind(&names, DIAGNOSTIC_SEMANTIC);
+            drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
+        }
+        name_errors = report_errors(out, &names);
+        error_ctx_drop(&names);
+        if (name_errors) ret = 1;
 
         if (error_ctx_empty(errs)) {
             out_println(out, color_good, "Typecheck passed", color_normal);
@@ -639,7 +697,7 @@ int main(int argc, const char** argv) {
                 "  --build-jobs J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
                 "                4 threads, else 1). The output doesn't depend on it\n"
                 "  --no-lib      don't load the standard library\n"
-                "  --keep-going  typecheck even after parse or name errors\n"
+                "  --keep-going  typecheck even after parse or options errors\n"
                 "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
                 "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
                 "                order of union members in messages depends on K\n"
