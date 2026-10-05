@@ -60311,9 +60311,9 @@ const baselines = {
         types: false,
     },
     'lateBoundAssignmentDeclarationSupport5': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'lateBoundAssignmentDeclarationSupport6': {
         errors: true,

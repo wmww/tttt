@@ -1035,7 +1035,16 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
         if (prototype->decls[i].kind != SYMBOL_DECL_ASSIGNMENT || literal->tag != EXPR_OBJECT) continue;
         Members const* members = ty_members(me, ty_widened_objects(me, ty_expr_type(me, literal)));
         for (u32 j = 0; j < members->prop_count; j++) {
-            if (!builder_find_prop(builder, members->props[j]->name)) builder_push(builder, props, members->props[j]);
+            if (builder_find_prop(builder, members->props[j]->name)) continue;
+            // (Not one a computed name that isn't a literal makes: tsc takes the binder's members, which don't have
+            // those late-bound names, `[_sym]: v`)
+            bool late_bound = false;
+            for_each (item, vec_object_expr_item, &literal->object) {
+                Expr const* key = item->computed_key;
+                if (!key || (key->tag == EXPR_LITERAL && !expr_is_perenthisized(key))) continue;
+                late_bound |= ty_literal_name(me, ty_regular(me, ty_expr_type(me, key))) == members->props[j]->name;
+            }
+            if (!late_bound) builder_push(builder, props, members->props[j]);
         }
         break;
     }
