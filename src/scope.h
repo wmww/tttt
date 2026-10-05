@@ -624,8 +624,9 @@ cstr symbol_fully_qualified_name(Symbol const* symbol);
 
 Scope* scope_new(Scope* parent, ScopeKind kind);
 // A walk-only scope (a parameter list's, a block's) whose walk is over: freed if nothing can point at it, which is when
-// it is still the binder arena's latest allocation (no child scope, symbol, declaration or flow node came after it)
-// and no pending report took it. `pending_mark` is scope_pending_mark() from when it was made
+// it is still the binder arena's latest allocation (no child scope, symbol, declaration or flow node came after it;
+// its ScopeRare may come right after it) and no pending report took it. Whatever stores a Scope pointer outside the
+// binder arena (malloc'd lists, the AST) must keep the scope from being released: see the pending reports. `pending_mark` is scope_pending_mark() from when it was made
 typedef struct ScopePendingMark { u32 not_found, export_merges; } ScopePendingMark;
 ScopePendingMark scope_pending_mark(Binder const* binder);
 void scope_release(Scope* me, ScopePendingMark pending_mark);

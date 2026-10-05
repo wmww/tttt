@@ -33,6 +33,7 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     unused_register(names, UNUSED_INTERFACE, me, span_null);
     my outer_generics = names->generics;
     names = scope_new_generic_merged(names, &my generic, my symbol, me, my name, errs);
+    ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
     scope_rare_mut(this_scope)->this_ref = (ThisRef){ .kind = THIS_INTERFACE, .symbol = my symbol, .interface = me };
     names = this_scope;
@@ -57,6 +58,7 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
         interface_member_lookup_names(i, names, errs);
     }
     names->flow->in_type_query = saved_type_query;
+    scope_release(this_scope, pending_mark);
 }
 
 // Whether the interface itself declares `prop` (rather than inheriting it)

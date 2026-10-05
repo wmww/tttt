@@ -327,6 +327,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
         case TYPE_INTERFACE: {
             // The members of a type literal are what a `this` type in them would be about (tsc's getThisContainer),
             // and they have none
+            ScopePendingMark pending_mark = scope_pending_mark(names->binder);
             Scope* literal_scope = scope_new(names, SCOPE_BLOCK);
             // Computed names in there are in a type: not uses of values (tsc's isInAmbientOrTypeNode)
             bool saved_type_query = names->flow->in_type_query;
@@ -336,6 +337,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
                 interface_member_lookup_names(i, literal_scope, errs);
             }
             names->flow->in_type_query = saved_type_query;
+            scope_release(literal_scope, pending_mark);
         }   break;
 
         case TYPE_ARRAY:

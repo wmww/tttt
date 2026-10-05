@@ -198,6 +198,7 @@ void class_decl_drop(ClassDecl* me) {
 
 // A computed member name or a decorator
 static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, ErrorCtx* errs) {
+    ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     scope->no_super = why;
     if (why == NO_SUPER_COMPUTED_NAME) {
@@ -208,6 +209,7 @@ static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, Er
     names->flow->initializer_context = INITIALIZER_NONE;
     expr_lookup_names(expr, scope, errs);
     names->flow->initializer_context = initializer_context;
+    scope_release(scope, pending_mark);
 }
 
 void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {

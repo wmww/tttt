@@ -378,8 +378,16 @@ ScopePendingMark scope_pending_mark(Binder const* binder) {
 
 void scope_release(Scope* me, ScopePendingMark pending_mark) {
     ScopePendingMark now = scope_pending_mark(my binder);
-    if (my rare || now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges) return;
-    arena_pop_last(&my binder->arena, me, sizeof(Scope));
+    if (now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges) return;
+    Arena* arena = &my binder->arena;
+    bool popped_rare = false;
+    if (my rare) {
+        // (Its rare part right after it, as when it was given one before anything else was allocated)
+        if ((char*)my rare != (char*)me + sizeof(Scope) || !arena_pop_last(arena, my rare, sizeof(ScopeRare))) return;
+        my rare = nullptr;
+        popped_rare = true;
+    }
+    if (!arena_pop_last(arena, me, sizeof(Scope)) && popped_rare) panic("a scope's rare part was the latest allocation, not the scope");
 }
 
 void scope_reparent(Scope* me, Scope* parent) {
