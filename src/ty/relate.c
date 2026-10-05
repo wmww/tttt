@@ -5047,9 +5047,11 @@ static Ternary structured_related_members(
     }
     // (As the array it extends against generic interfaces and classes, where variances help; structurally, with its
     // element properties, against anything else: `{ 0: number }`, `Pick<[string, ...string[]], ...>`)
-    // (Not against an interface that declares element properties, `interface tup { 0: X; 1: Y }`)
-    if (source_is_tuple && (target->kind == TY_REFERENCE ||
-        (target->kind == TY_DECLARED && !has_literal_length(me, target) && !has_numeric_props(me, target)))
+    // (Not against an interface that declares element properties, `interface tup { 0: X; 1: Y }`, generic or not:
+    // `interface KeyValuePair<K, V> extends Array<K | V> { 0: K; 1: V }`)
+    if (source_is_tuple && (target->kind == TY_REFERENCE || target->kind == TY_DECLARED) &&
+        ((target->kind == TY_REFERENCE && is_array_target(me, target->reference.target)) ||
+            (!has_literal_length(me, target) && !has_numeric_props(me, target)))
     ) {
         source = tuple_as_array(me, source);
     }
