@@ -21582,7 +21582,7 @@ const baselines = {
     },
     'moduleAugmentationDisallowedExtensions': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleAugmentationDoesInterfaceMergeOfReexport': {
@@ -21691,9 +21691,9 @@ const baselines = {
         types: true,
     },
     'moduleAugmentationImportsAndExports2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAugmentationImportsAndExports3': {
         errors: true,
