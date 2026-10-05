@@ -2,7 +2,7 @@
 
 **Status 2026-10-05**: effect pinned (6300 -> 63, see its section); vscode pinned (129 -> 0); the rest as below. **Status 2026-09-29 (seventh
 window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
-zod 0, zod-root = tsc's own 55, webpack 6, xstate 19, and two new corpora pinned and worked down the same day: **vue 0**
+zod 0, zod-root = tsc's own 55, webpack 6 (0 since 2026-10-05), xstate 19, and two new corpora pinned and worked down the same day: **vue 0**
 (107 at pinning) and **drizzle 8** (693 at pinning, after an OOM fix), see their sections. The history of R1-R21 (identity relation, homomorphic mapped
 modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and of the zod and
 type-fest items is in git (this file before the corpus sessions) and in the commits.
@@ -36,7 +36,7 @@ Corpus notes worth keeping:
   deep-partial.test.ts alone is 745 MB, `bugs/perf_leads.md`).
 
 ## What is left
-### webpack (9)
+### webpack (0)
 Fixed 2026-09-28 (probes in `test/probes/plan19/webpack/`, one commit each): JSDoc `[T?]` optional tuple elements,
 overload groups of merged global functions (node's setTimeout before DOM's), parameter defaults removing undefined
 (contextual/JSDoc-typed parameters, closures), JSDoc casts as narrowable references, a declaration's `@type` tag
@@ -46,15 +46,13 @@ Sixth window's corpus session (30 -> 18): unique symbols kept in declaration uni
 undefined, `{}` initializers with expandos unchecked, keyof `keyof T`, string-index-only element access, the whole base
 constraint for TS2731, description backticks, constructor-declared JS members by flow type, `@this` types unchecked, exports through a
 `module.exports` alias not read-only.
-Left, every one reduced:
-- **PackFileCacheStrategy.js 931, 942, 1032, 1047, 1087** (TS2322, LazyFunction and `Promise<PackContainer | Pack>`
-  chains): plan 38 stage 1 fixed the reduced probe `contextual_return_default_leak.ts` (tsc's `B` now) and four of
-  the nine (IdleFileCachePlugin:121, PackFileCacheStrategy 1239/1367/1438), but not these: another cause, reduce again.
-- `@template` on a variable statement (`@template T` + `@type {Record<string, (items: T[]) => X<T>>}`,
-  DefaultStatsFactoryPlugin:2733, TS2304 x2): plan 26 "Stage 3 leftovers".
-- The module-federation example's TS2322: the arrow's return type comes from its variable's `@type` in tsc (plan 26
-  leftovers, "TS6210 related info").
-- cleverMerge.js:355 `newFn[DYNAMIC_INFO] = ...`: late-bound expandos (plan 26 leftovers).
+**Zero since 2026-10-05.** The last six: the five PackFileCacheStrategy.js TS2322 (`this.lazy =
+SerializerMiddleware.unMemoizeLazy(this.lazy)`) were infer_to_union inferring the whole source rather than the source
+less its matched members to several naked type variables (`Promise<A> | A` to `T | U | Promise<T | U>`); cleverMerge's
+`newFn[DYNAMIC_INFO] = ...` was annotated_expando_type looking a late-bound expando up by name instead of by its key's
+type. The `@template`-on-a-variable-statement (DefaultStatsFactoryPlugin) and module-federation example diagnostics
+listed here before were gone by then (fixed along the way by other work). Plan 26's leftovers still list those
+mechanisms in general.
 
 
 ### xstate (2)

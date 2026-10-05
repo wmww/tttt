@@ -335,16 +335,15 @@ From the four sub-agents' reports; test names are the ones to probe.
   function's own parameters (jsDeclarationsFunctions); jsdocTemplateClass, jsdocTemplateConstructorFunction2,
   returnTagTypeGuard, jsdocTypeTagCast, overloadTag2.
 - **Late-bound expandos** (`f[symb] =`, `this[_symbol]`, `F.prototype[k]`): expandoFunctionSymbolPropertyJs,
-  lateBoundMethodNameAssigmentJS, lateBoundAssignmentDeclarationSupport4/5; webpack's cleverMerge.js TS2322.
+  lateBoundMethodNameAssigmentJS, lateBoundAssignmentDeclarationSupport4/5 (an annotated host's late-bound expando takes
+  the annotation's member by key type since 2026-10-05: webpack's cleverMerge.js).
 - **Checker**: TS1055/TS1065 (ES5 async return types, TS too: asyncFunctionDeclaration16_es5); isolatedDeclarations
   (TS9010, none exist); TS7022 for a self-importing JS default export (selfReferentialDefaultNoStackOverflow);
   TS7034/TS7005 for an evolving array read by `yield*` in a loop (yieldExpressionInControlFlow); binding-pattern
   contextual types making defaulted members optional (classExpressionNames: a naive version broke objectRestParameter,
   because tttt gives binding-pattern contexts through generic inference where tsc doesn't); `l = []` parameter
   initializers (typeFromJSInitializer); `module` redeclared per block (moduleExportAssignment2).
-- webpack's remaining 6: module-federation's returned array checked elementwise against `Configuration[]` (the arrow's
-  return type from the variable's `@type`, see the JSDoc item), cleverMerge.js (late-bound expando),
-  PackFileCacheStrategy.js's LazyFunction chain (plan 19).
+- webpack is at 0 (2026-10-05; plan 19).
 - Can't pass: templateInsideCallback (pre/post-emit count line), jsDeclarationsDefault /
   jsDeclarationsJSDocRedirectedLookups / jsdocOuterTypeParameters1 (baselines made after declaration emit).
 - JSDoc nodes and outer type parameters: tsc instantiates a JSDoc object/function type node for *every* outer type

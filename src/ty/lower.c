@@ -1082,8 +1082,10 @@ static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
     Binding const* binding = symbol_find_node(host, SYMBOL_DECL_VARIABLE);
     if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER || !binding->has_explicit_type) return nullptr;
     Ty const* annotation = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
-    // (An optional property's type is read with its undefined: tsc's getTypeOfPropertyOfType)
-    return ty_access(me, annotation, ty_string_literal(me, symbol->name));
+    // (An optional property's type is read with its undefined: tsc's getTypeOfPropertyOfType). A late-bound expando
+    // (`f[sym] = v`) by its key's type
+    Expr const* late_bound_key = symbol_rare(symbol)->late_bound_key;
+    return ty_access(me, annotation, late_bound_key ? ty_expr_type(me, late_bound_key) : ty_string_literal(me, symbol->name));
 }
 
 // What a declaring assignment (`exports.x = v`, `f.x = v`) assigns, before widening object literals (tsc's

@@ -12506,9 +12506,9 @@ const baselines = {
         types: true,
     },
     'expandoFunctionExpressionsWithDynamicNames2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionNestedAssigments': {
         errors: true,
