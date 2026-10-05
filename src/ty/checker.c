@@ -263,6 +263,46 @@ size_t ty_size_of_kind(TyKind kind) {
     return ty_kind_sizes[kind];
 }
 
+#ifdef TTTT_TY_POISON
+// Every poisoned Ty, to check at checker_drop() that nothing wrote past its kind's variant either
+#include <pthread.h>
+static pthread_mutex_t poisoned_lock = PTHREAD_MUTEX_INITIALIZER;
+static struct { Checker const* checker; Ty const* ty; }* poisoned;
+static size_t poisoned_len, poisoned_cap;
+
+static void poison_record(Checker const* checker, Ty const* ty) {
+    pthread_mutex_lock(&poisoned_lock);
+    if (poisoned_len == poisoned_cap) {
+        poisoned_cap = poisoned_cap ? poisoned_cap * 2 : 4096;
+        poisoned = realloc(poisoned, sizeof(*poisoned) * poisoned_cap);
+        panic_if(!poisoned, "out of memory");
+    }
+    poisoned[poisoned_len].checker = checker;
+    poisoned[poisoned_len++].ty = ty;
+    pthread_mutex_unlock(&poisoned_lock);
+}
+
+// Panics with the first Ty of the checker whose tail isn't all 0xa5 anymore, forgets the checker's
+static void poison_verify(Checker const* checker) {
+    pthread_mutex_lock(&poisoned_lock);
+    size_t kept = 0;
+    for (size_t i = 0; i < poisoned_len; i++) {
+        if (poisoned[i].checker != checker) {
+            poisoned[kept++] = poisoned[i];
+            continue;
+        }
+        Ty const* ty = poisoned[i].ty;
+        unsigned char const* bytes = (unsigned char const*)ty;
+        for (size_t at = ty_size_of_kind((TyKind)ty->kind); at < sizeof(Ty); at++) {
+            panic_if(bytes[at] != 0xa5, "Ty ", (i64)ty->id, " of kind ", (i64)ty->kind, ": byte ", (i64)at,
+                " past its variant (", (i64)ty_size_of_kind((TyKind)ty->kind), " bytes) was written");
+        }
+    }
+    poisoned_len = kept;
+    pthread_mutex_unlock(&poisoned_lock);
+}
+#endif
+
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
 #ifdef TTTT_ARENA_SITES
     arena_site_count(1, __builtin_return_address(0), ty_size_of_kind(kind));
@@ -271,6 +311,7 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
     // (Debugging: what reads past the kind's variant reads garbage)
     Ty* ret = arena_new(&my arena, Ty);
     memset((char*)ret + ty_size_of_kind(kind), 0xa5, sizeof(Ty) - ty_size_of_kind(kind));
+    poison_record(me, ret);
 #else
     Ty* ret = arena_alloc(&my arena, ty_size_of_kind(kind));
 #endif
@@ -397,6 +438,9 @@ void checker_defer_function(Checker* me, FunctionImpl* function) {
 
 void checker_drop(Checker* me) {
     if (!me) return;
+#ifdef TTTT_TY_POISON
+    poison_verify(me);
+#endif
     free(my deferred_functions);
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
@@ -659,7 +703,14 @@ typedef struct {
 } OriginSpec;
 
 static Ty const* make_origin(Checker* me, OriginSpec const* spec) {
+#ifdef TTTT_TY_POISON
+    Ty* ret = arena_new(&my arena, Ty);
+    memset((char*)ret + ty_size_of_kind(spec->kind), 0xa5, sizeof(Ty) - ty_size_of_kind(spec->kind));
+    ret->kind = spec->kind; // (For poison_verify(), which may see it before the kind is set below)
+    poison_record(me, ret);
+#else
     Ty* ret = arena_alloc(&my arena, ty_size_of_kind(spec->kind));
+#endif
     ret->kind = spec->kind;
     if (spec->kind == TY_KEYOF) {
         ret->keyof.operand = spec->types[0];
