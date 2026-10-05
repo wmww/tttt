@@ -81,6 +81,19 @@ the symbols harness a lot of tsc symbol identity rebuilt from tttt's split membe
 property declarations, merges of type parameters/namespace locals/imports). Most of the harness work is display-only
 by necessity: tttt's members aren't Symbols.
 
+## Stage 5 (done, 2026-10-05, todo entry 9): suite 12933 -> 13097
+Four Opus sub-agents (A types semantics, B types display, C missing/extra lines + JS, D symbols; lists by first
+differing line, symbols overlap to D), then second lists (A: plan 44's sweep causes; C: CommonJS aliases and parser
+shapes; D: its own binder leftovers). ~120 picks, 0 lost, corpora unchanged. Types component failing 488 -> 345,
+symbols 178 -> 131 (tests with errors passing and types failing 395 -> 258). Main mechanisms: underline reuse rules
+(infer names, fresh type parameters for `this`/overload/merged-interface instantiations, inference-renamed T1),
+`typeof` naming fallbacks, error-recovery identifiers getting lines, instantiation expressions (tsc's
+getInstantiationExpressionType), binder merges (augmentations, static member + namespace type, `declare global`,
+auto-accessors, merged class/interface type parameters by name), JS `this.x` in literal methods and function
+expressions as classes, CommonJS `exports.x = a.b` aliases, const contexts through spreads, generator TNext from
+`const y: T = yield`. The sections "Left by fan-out agent X of 2026-10-05" below supersede the older queue where they
+overlap; the next triage should merge them into one queue.
+
 ## Queue (after stage 4)
 What the agents left, roughly by size (their test names are examples):
 1. **Union order** (14 first-line in fan-c's list): what stage 4's creation-order fixes didn't reach. tsc re-checks
@@ -217,10 +230,6 @@ export context, UMD alias declarations, JSX attribute merges, spread/widened pro
   unresolved module: tsc prints `Class : Symbol(alias)` (unknown-symbol artifact). declarationFileNoCrashOnExtraExportModifier:
   `export { Sub }` inside `declare namespace exports` (merged with `export = exports` class) is `exports.Sub`.
 
-## Validation
-`./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
-inference rule that shows up here should be checked on zod and valibot (inference-heavy) for instruction counts too.
-
 ## Left by fan-out agent C of 2026-10-05
 Missing/extra lines and JS tests. What remains, by mechanism (test names are examples):
 - **Recovery shapes tttt's parser doesn't build**: `import { * } from` (tsc: a block `{ <missing> * <missing> }`,
@@ -296,3 +305,7 @@ Second round (same day): done since: CommonJS entity-name aliases, recovery init
 - moduleExportAssignment4 (`module.exports = exports['default']`): tsc's circularity is errorType, tttt any.
 - JS this-members merged with `F.prototype = {...}` accessors (jsDeclarationsFunctionLikeClasses2,
   checkExportsObjectAssignPrototypeProperty); `@enum` on `exports.a = {}` (enumTagOnExports, symbols too).
+
+## Validation
+`./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
+inference rule that shows up here should be checked on zod and valibot (inference-heavy) for instruction counts too.

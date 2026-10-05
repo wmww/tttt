@@ -32,7 +32,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    versioned dependencies, done on the way), nothing slower than tsc; effect 31 -> 7, xstate 2 -> 0; suite 12933, 0
    lost; checker counts byte-identical everywhere; instructions valibot -24%, effect -12%, react +1.1% (measurements.md).
    Left: plan 44 "Open root causes", plan 19 "effect".
-9. **Fan-out: types/symbols tail** (plan 35's queue, `./displaydiff.py --fine`, bugs/display.md), four sub-agents.
-10. **Triage.** Also: the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (725 lines: merge
+9. Done: types/symbols tail fan-out (four agents, then second lists: plan 44 causes, CommonJS aliases, binder
+   merges). Suite 12933 -> 13097, types failing 488 -> 345, symbols 178 -> 131, 0 lost; corpora unchanged; sweep
+   8579 / 8595; instructions flat (react +0.8%, effect -0.3%). Leftovers: plan 35 "Left by fan-out agent X".
+10. **Triage.** Also: merge plan 35's old queue and the four "Left by fan-out agent" sections into one queue; the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (816 lines: merge
    or delete entries whose code is gone).
 11. **Insights.**
