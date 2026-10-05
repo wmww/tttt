@@ -1770,7 +1770,8 @@ static bool is_comparable_or_coercible(Checker* me, Ty const* member, void const
 
 // tsc's isUnitLikeType: a unit type, or an intersection with one (a tagged literal, `"a" & { tag: 1 }`), of the base
 // constraint
-static bool is_unit_like_type(Checker* me, Ty const* ty) {
+// (The slow part, for members is_unit_type() says no to: hot in the narrowing of big unions)
+[[gnu::noinline]] static bool is_unit_like_type(Checker* me, Ty const* ty) {
     if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
         Ty const* constraint = ty_base_constraint(me, ty);
         if (constraint) ty = constraint;
@@ -1786,7 +1787,9 @@ static bool is_unit_like_type(Checker* me, Ty const* ty) {
 
 static bool is_not_unit_comparable_to(Checker* me, Ty const* member, void const* arg) {
     Ty const* value = arg;
-    return !(is_unit_like_type(me, member) && ty_is_comparable_either_way(me, member, value));
+    bool unit_like = is_unit_type(member) ||
+        ((member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED | TYF_INTERSECTION)) && is_unit_like_type(me, member));
+    return !(unit_like && ty_is_comparable_either_way(me, member, value));
 }
 
 typedef struct ExtractKindArg {
