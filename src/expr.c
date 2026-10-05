@@ -1850,7 +1850,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (op == BINARY_OP_EQUAL) scope_add_nested_expando(names, my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) mark_defaulted_expando(my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) scope_add_this_property(names, my binary_op);
-                if (op == BINARY_OP_EQUAL && names->file && !names->file->is_js) scope_note_ts_this_assignment(names, left);
+                if (op == BINARY_OP_EQUAL && names->file) scope_note_ts_this_assignment(names, left);
                 expr_lookup_names(right, names, errs);
                 if (!assignment_target) {
                     flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });

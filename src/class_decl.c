@@ -106,7 +106,8 @@ static Ty const* field_flow_type(Checker* checker, Expr const* reference, FlowNo
 // A TypeScript field without a type or initializer under noImplicitAny: the type `this.x` has at the end of the
 // constructor, or of the first static block that assigns more than null/undefined. Null: none (any)
 static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* me) {
-    if (!my field.ts_assigned || !compiler_options()->no_implicit_any) return nullptr;
+    // (In JavaScript always: tsc's getWidenedTypeForVariableLikeDeclaration)
+    if (!my field.ts_assigned || !(compiler_options()->no_implicit_any || (my field.name_span.source && my field.name_span.source->is_js))) return nullptr;
     for_each (i, vec_class_item, &my field.ts_assigned_class->items) {
         if (my field.is_static && i->tag == CLASS_ITEM_STATIC_BLOCK && i->static_block_return_flow) {
             Ty const* ret = field_flow_type(checker, my field.ts_assigned, i->static_block_return_flow);
