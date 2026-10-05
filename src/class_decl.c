@@ -240,6 +240,12 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
             function_impl_set_member_name(&me->method.func, my method.name_span);
+            if (my method.is_declare && !my method.accessor && !names->ambient) {
+                // (`declare m() {}`, TS1031: tsc's parseClassElement parses the member in an ambient context, unlike an
+                // accessor, parsed before it looks for `declare`)
+                names = scope_new(names, SCOPE_BLOCK);
+                names->ambient = true;
+            }
             function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 
@@ -1960,6 +1966,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     full = span_with_semicolon(full);
                     char const* end = span_end_ptr(full);
                     error_ctx_grammar_error_d(errs, span_make(full.source, end - 1, end), 1005, "'{' expected.");
+                }
+                // (tsc's checkGrammarModifiers: legacy decorators on both accessors of a pair, at the second)
+                if (i->method.accessor && compiler_options()->experimental_decorators && vec_expr_size(&i->decorators) &&
+                    i->method.accessor_first && i->method.accessor_first != i && vec_expr_size(&i->method.accessor_first->decorators)
+                ) {
+                    error_ctx_grammar_error_d(errs, block_first_token(i->span), 1207,
+                        "Decorators cannot be applied to multiple get/set accessors of the same name.");
                 }
                 function_impl_typecheck(&i->method.func, errs);
                 function_impl_check_implicit_any_return(&i->method.func, i->method.name_span, i->method.name_span, errs);

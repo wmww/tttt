@@ -29851,7 +29851,7 @@ const baselines = {
         types: true,
     },
     'systemExportAssignment2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29921,7 +29921,7 @@ const baselines = {
         types: true,
     },
     'systemModule2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30821,7 +30821,7 @@ const baselines = {
         types: true,
     },
     'typeAliasDeclarationEmit3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -37376,7 +37376,7 @@ const baselines = {
         types: true,
     },
     'derivedUninitializedPropertyDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -38161,7 +38161,7 @@ const baselines = {
         types: true,
     },
     'decoratorOnClassAccessor7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57676,7 +57676,7 @@ const baselines = {
         types: true,
     },
     'parserMemberFunctionDeclaration5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
