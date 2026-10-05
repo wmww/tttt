@@ -1046,6 +1046,29 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
         !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
     ) {
+        // tsc's tryVisitTypeQuery: a name that means something else here is named anew where its symbol is accessible
+        // (serializeTypeName), in a node with the query's range: `typeof import("a").x` reuses all but `"a"`, `typeof
+        // a.x` (through a namespace import) only `typeof `. Only for a plain name
+        Symbol const* symbol = leftmost == node->typeof_->expr ? leftmost->identifier.symbol : nullptr;
+        if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias((Symbol*)symbol);
+        if (symbol && !symbol->is_local && !symbol->is_parameter && !symbol->is_placeholder && symbol->parent &&
+            d.enclosing && d.underline && symbol_value_accessible_at(d.enclosing, symbol)
+        ) {
+            out_lit(d, "typeof ");
+            isize_t start = cstr_size(d.target);
+            isize_t underline_start = cstr_size(d.underline);
+            out_symbol_name(me, reused_if(d, false), symbol, SYMBOL_VALUE);
+            char const* text = cstr_str(d.target) + start;
+            char const* close = strncmp(text, "import(\"", 8) == 0 ? strstr(text, "\").") : nullptr;
+            isize_t extra = (cstr_size(d.underline) - underline_start) - (cstr_size(d.target) - start);
+            if (close && d.reused) {
+                char* underline = (char*)cstr_str(d.underline) + underline_start;
+                memset(underline, ' ', strlen("import("));
+                isize_t from = (close + 1 - text) + extra;
+                memset(underline + from, ' ', (size_t)(cstr_size(d.underline) - underline_start - from));
+            }
+            return;
+        }
         display_node_fallback(me, d, node);
         return;
     }
