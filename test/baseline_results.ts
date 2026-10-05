@@ -51596,7 +51596,7 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsImportAliasExposedWithinNamespaceCjs': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

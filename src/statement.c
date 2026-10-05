@@ -398,8 +398,10 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     // tsc's checkGrammarModuleElementContext: directly in a file or a namespace body, else only this is said about it
     bool misplaced = !my jsdoc && (my labeled || !(scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_MODULE ||
         scope->kind == SCOPE_NAMESPACE || scope->kind == SCOPE_GLOBAL_AUGMENTATION));
-    // (Like a typedef: exported from a module)
-    if (my jsdoc && scope->kind == SCOPE_MODULE) props.exported = DECL_EXPORTED_YES;
+    // (Exported from an ES module, a local of a CommonJS one: tsc's declareSourceFileMember with isExternalModule)
+    if (my jsdoc && scope->kind == SCOPE_MODULE && !(my full_span.source && my full_span.source->is_commonjs)) {
+        props.exported = DECL_EXPORTED_YES;
+    }
     ErrorCtx* errs = misplaced ? nullptr : scope->binder->errs;
     bool checked = true;
     for (Scope const* i = scope; i && checked; i = i->parent) checked = !i->with_body;
