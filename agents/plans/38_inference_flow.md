@@ -145,7 +145,10 @@ byte-identical, instructions -0.1% (type-fest) .. -9.4% (valibot), tsc -2.2%, xs
 
 Not done (each tried, measured, left):
 1. **tsc's resolvingSignature**: a call re-entered while in flight still resolves again (without being remembered).
-   Returning any instead: -10 +1 (witness passes; classVarianceResolveCircularity1/2, implicitAnyFromCircularInference,
+   **That is what tsc does too** (plan 42 planning, instrumented tsc: a nested getResolvedSignature resolves again,
+   without a barrier; resolvingSignature only reaches callers through SkipGenericFunctions and argument contextual
+   types). Don't return any on re-entry; plan 42 stages 3-4 have the real differences. Old measurement: returning any
+   instead: -10 +1 (witness passes; classVarianceResolveCircularity1/2, implicitAnyFromCircularInference,
    simpleRecursionWithBaseCase1's TS7023, controlFlowIterationErrors(Async), typeArgumentInference*...): tttt re-enters
    calls where tsc doesn't (eager return types, relation-time member resolution). With it, plan 39's first-resolution-only
    barrier becomes possible; alone (barrier skipped for in-flight re-resolutions) it is -1 (implicitAnyFromCircularInference).

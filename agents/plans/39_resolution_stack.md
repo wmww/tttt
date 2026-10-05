@@ -53,13 +53,14 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    tsc finds these cycles through a nested resolution of the same call, which has no barrier and returns
    `resolvingSignature` (any) at once. Plan 38 stage 3 (resolve once) landed, so the only nested resolutions left are
    in-flight re-entries: skipping the barrier for them is -1 (`s = foo(this)`), any for them -10 +1 (plan 38 "Stage 3"
-   not done 1). Next step: find why tttt re-enters those calls where tsc doesn't.
+   not done 1). **Plan 42 stages 3-4** (2026-10-05): tsc re-enters them too; the first-resolution-only barrier
+   is +circularReferenceInReturnType but zod 0 -> 6 until zod's getters stop being typed during `z.object()`.
 2. **Constraint lowering under the push** (TS2313 in recursiveMappedTypes, incorrectRecursiveMappedTypeConstraint,
    circularBaseTypes' `K`/`Y`): tsc's getResolvedBaseConstraint lowers the declared constraint while `(K,
    ImmediateBaseConstraint)` is pushed, and getTypeFromMappedTypeNode resolves the key constraint eagerly. Moving
    `declared_param_constraint()`'s lowering under the walk's push (ty_param_constraint walking first) made
    mappedTypeWithAny report TS2313 twice: tttt resolves members eagerly while lowering (`homomorphic_variable` ->
-   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. Y's cycle also goes through the eager intersection
+   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. **Plan 42 stage 3** lands it (prototyped, 0 lost). Y's cycle also goes through the eager intersection
    reduction (tsc: getReducedType in getBaseTypes), which runs under a barrier in tttt.
 3. **Accessors / object literal methods** (old item 5): TS7023 tsc reports while printing a type whose return type is
    in flight (thisInObjectLiterals and friends). Untouched. The mechanism: checking a return expression prints a type

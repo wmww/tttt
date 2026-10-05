@@ -15,8 +15,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   this window, was 107); **drizzle 6** (pinned, was 693); webpack 6; xstate 12; zod-root at tsc's 55.
 - **Perf**: the +8% creep was clawed back and more (tsc corpus 5.23 -> 4.53 G instructions, react -29%, vue -17%), by
   porting missing tsc caches, not by reverting. Resolve-once (plan 38 stage 3) took another 2-9%. `./bench.sh`
-  (09-29): faster than multi-threaded tsgo on every corpus, 2.8-11x. **Memory** is the weak number: peak RSS above
-  single-threaded tsgo's on most corpora (drizzle 1.8 GB vs 1.05).
+  (09-29): faster than multi-threaded tsgo on every corpus, 2.8-11x. **Memory** is on par like-for-like (plan 42
+  planning, 10-05): drizzle 896 MB at one checker vs single-threaded tsgo's 1054, 1.7 GB at four vs multi-threaded
+  tsgo's 1.87; four checkers re-instantiate the types drizzle's files share (2.4x the types of one).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, tsc's inference flow (lazy fixing, contextual instantiation, intra-expression sites,
@@ -26,9 +27,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   and symbol chains, JSDoc + CommonJS + expandos, parallel checking and loading. ~96k lines of C.
 - **Absent or approximated tsc mechanisms**: declaration-emit diagnostics (plan 40 done 2026-10-04 bar TS7056 for
   deep types and TS5088; module specifiers are generated for TS2742), project references (plan 41 done: read as
-  sources, tsc-src and typescript-eslint at 0 under `-b`, 1.3 s and 3.0 s vs tsc -b's 14-22 s), **laziness** (members, reverse mapped types, intersection reduction, contextual instantiation
-  and return types are computed eagerly; plan 42), resolvingSignature and the rest of the circularity stack (blocked
-  on laziness), permissive instantiation. Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
+  sources, tsc-src and typescript-eslint at 0 under `-b`, 1.3 s and 3.0 s vs tsc -b's 14-22 s), **laziness** at a few separate sites (reverse mapped types,
+  intersection reduction, mapped info read through expansion, return types read while a call is in flight; plan 42
+  stages 1-4, prototyped), contextual instantiation (push-down, not tsc's leaf-wise pull; type_core.md), the
+  first-resolution-only barrier (plan 42 stage 4), permissive instantiation. Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
 
 ## Course correction (insights of 2026-10-04, end of the seventh window)
 - **Health is good; no redesign.** Seventh clean window. Every planned item landed: two corpora pinned and taken to
@@ -39,12 +41,13 @@ types components) are the oracle, not the goal; real projects that are clean und
   take half the window.
 - **The pattern this window: eagerness.** The leftovers of plans 38 and 39, five hacks.md entries, three type_core
   bugs and two perf leads all end in "tttt computes X when it's made, tsc when it's asked". Each was patched locally.
-  Stop patching: plan 42 inventories the sites and decides on a port (likely lazily resolved members of instantiated
-  types, guarded by plan 39's stack). It may also be the memory fix. Until then, a fix that adds another eager
-  workaround in this area should go to plan 42's list instead.
+  Stop patching: plan 42 inventories the sites and decides on a port. (Planned 10-05: tttt already has tsc's lazy
+  members and property types; the sites are four independent stages of ~1 session, ~+6 tests, mostly hack deletions.
+  Not the memory fix. tsc *does* resolve re-entered calls again: plan 38's resolvingSignature premise was wrong.)
 - **The long tail moves to types and symbols.** Errors is no longer the biggest failing component; the window's
   fan-outs point at displaydiff's buckets first.
-- **Memory gets attention**: the perf session looks at peak RSS, not only instructions.
+- **Memory gets attention**: the perf session looks at peak RSS, not only instructions. Compare like-for-like (K=1 vs
+  tsgo `--singleThreaded`, K=4 vs tsgo); drizzle's lever is cross-checker duplication, not laziness.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -115,6 +118,5 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    stage 3), planning declaration diagnostics (40) and project references (41)~~ done.
 8. **Now**: executing 40 and 41 (with tsc-src and typescript-eslint as corpora), planning laziness (42), memory, the
    types/symbols long tail.
-9. Then: laziness stages, parallel name resolution, the check phase's load balance, a token cache / node arenas in
-   the parser.
-   token cache / node arenas in the parser, memory (the `Signature` split).
+9. Then: laziness stages (42), parallel name resolution, the check phase's load balance and file-to-checker affinity
+   (memory), a token cache / node arenas in the parser, compact instantiated Props / the `Signature` split.

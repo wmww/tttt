@@ -48,7 +48,11 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   52 MB (instantiated anonymous types 19, references 10), `intern_slot` keys 24, `builder_finish`'s member arrays 36,
   instantiated `Signature`s (192 bytes, same split possible: `instantiate_members`' second site) 14, scopes/symbols of
   name resolution ~38. Next steps if memory matters again: `Signature` split; `Prop` to 56 bytes (`write_type` into a
-  side table, `mapped_type` into `PropDecl`, `type_state` a byte); instantiating props lazily per name (tsc doesn't).
+  side table, `mapped_type` into `PropDecl`, `type_state` a byte); instantiating props lazily per name (tsc doesn't). Plan 42 measured (10-05): only 38% (drizzle), 18% (zod), 27%
+  (valibot) of instantiated Props ever get their type asked; a ~48-byte instantiated Prop (fields that follow `target`
+  dropped) is the cheap win. **drizzle's peak is cross-checker duplication**: `--checkers 1` 896 MB (tsgo 1 thread
+  1054), 4 checkers 1725 MB (tsgo multi-threaded 1869) with 1.66M types between them vs 683k for one; other corpora
+  grow 3-20% with K. Lever: file-to-checker affinity (plan 36 "Later") or shared lib/global types.
 - **Type counts are not the problem**: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k
   on valibot (tttt 385k). The old "3.5x on deep-partial.test.ts" was the variance bug below, fixed.
 - **The AST**: after the parser's shrink_to_fit (09-28), webpack's parse heap is ~198 MB live plus ~100 MB of malloc
@@ -97,8 +101,9 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   harness. With fewer checked files than checkers, the empty checkers still build their global types (~0.2 ms each).
 
 - **valibot +2.5% instructions** since the corpus session (todo entry 8): generic homomorphic mapped types get index
-  signatures from their constraint, eagerly instantiated. tsc resolves them lazily; a lazy IndexInfo value (or the
-  mapped type's members computed only when index infos are asked for) would take that back.
+  signatures from their constraint, eagerly instantiated. tsc's addMemberForKeyTypeWorker instantiates index
+  values eagerly too (plan 42 planning), so the difference is *whether* the members get resolved: look for the caller
+  that asks a generic mapped type's members where tsc relates/infers through the mapped type itself.
 
 - **Tuples' `this` members, type-fest +0.2%, xstate +0.26%** (`retarget_this_props()`, members.c): a tuple's
   members re-instantiate the few Array members that mention `this` (sort, reverse, fill, copyWithin, every) with the

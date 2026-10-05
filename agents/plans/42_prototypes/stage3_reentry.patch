@@ -1,0 +1,250 @@
+diff --git a/src/class_decl.c b/src/class_decl.c
+index 9b506792..b46966d4 100644
+--- a/src/class_decl.c
++++ b/src/class_decl.c
+@@ -128,7 +128,11 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
+         Ty const* assigned = field_type_from_assignments(checker, me);
+         if (assigned) return assigned;
+     }
+-    Ty const* ret = ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly);
++    // A call of a single non-generic signature has its type without the call being resolved (tsc's
++    // checkDeclarationInitializer, as for variables: initialized_binding_evaluate_type())
++    Ty const* value = ty_quick_expr_type(checker, &my field.value, false);
++    if (!value) value = ty_expr_type(checker, &my field.value);
++    Ty const* ret = ty_widened_for_declaration(checker, value, !my field.is_readonly);
+     // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
+     if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != me) ret = ty_intrinsic(checker, TY_ES_SYMBOL);
+     return ret;
+diff --git a/src/lazy_type.c b/src/lazy_type.c
+index 7e0aeae5..cf25ced2 100644
+--- a/src/lazy_type.c
++++ b/src/lazy_type.c
+@@ -128,6 +128,16 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
+         // Circularity is a property of declarations (that is where tsc detects and reports it): asked for again while in
+         // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
+         // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes
++        bool below_barrier = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION && !lazy_type_pattern_root(me) &&
++            !ty_resolving_find(current_checker, RESOLVING_DECLARATION, me) && !getenv("TTTT_NO_REEVAL");
++        // PROTOTYPE plan 42: in flight only below the barrier (tsc's findResolutionCycleStartIndex from resolutionStart):
++        // evaluated again, and the inner evaluation's result is the one remembered (getTypeOfVariableOrParameterOrProperty)
++        if (below_barrier) {
++            if (state->reevaluating) goto circular;
++            state->reevaluating = true;
++            goto evaluate;
++        }
++        circular:
+         if (my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION) {
+             Binding const* pattern = lazy_type_pattern_root(me);
+             if (pattern) ty_resolving_pattern_cycle(current_checker, me, pattern);
+@@ -151,6 +161,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
+         }
+     }
+     state->evaluation_started = true;
++    evaluate:;
+ 
+     // Declarations evaluate self-contained, see ty_flow_isolate()
+     bool isolate = my tag != LAZY_TYPE_EXPR;
+diff --git a/src/lazy_type.h b/src/lazy_type.h
+index 1d09adfa..07b2f890 100644
+--- a/src/lazy_type.h
++++ b/src/lazy_type.h
+@@ -6,6 +6,7 @@
+ typedef struct LazyMemo {
+     bool evaluation_started;
+     bool is_self_referential;
++    bool reevaluating; // PROTOTYPE plan 42
+     bool done;
+     unsigned char hits; // Expressions: re-entrant evaluations so far
+     struct Ty const* evaluated;
+diff --git a/src/ty/call.c b/src/ty/call.c
+index 043c282a..87292834 100644
+--- a/src/ty/call.c
++++ b/src/ty/call.c
+@@ -1005,7 +1005,9 @@ static TyMapper const* infer_type_arguments(
+         // (Only with a contextual signature, like tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod: without
+         // one, it waits for the check against the instantiated parameter, whose context may be the function itself)
+         if (arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread &&
+-            ty_function_assigned_contextual_signature(me, arg->expr->function)
++            ty_function_assigned_contextual_signature(me, arg->expr->function) &&
++            // PROTOTYPE plan 42: not again while in flight further up (tsc's ContextChecked)
++            (getenv("TTTT_NO_CTXCHECKED") || !ty_function_return_in_flight(me, arg->expr->function))
+         ) {
+             ty_argument_return_type(me, arg->expr->function);
+         }
+@@ -2045,8 +2047,11 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
+ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
+     u32 start = my resolving_start, call_start = my resolving_call_start;
+     my resolving_call_start = start;
+-    my resolving_start = my resolving_len;
++    if (!my resolving_nested_call || getenv("TTTT_BARRIER_ALWAYS")) my resolving_start = my resolving_len;
++    bool nested = my resolving_nested_call;
++    my resolving_nested_call = false;
+     Ty const* ret = resolve_call_inner(me, callee, info, call_span, errs);
++    my resolving_nested_call = nested;
+     my resolving_start = start;
+     my resolving_call_start = call_start;
+     return ret;
+@@ -2582,8 +2587,15 @@ static Ty const* call_return_type(
+     u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
+     CallResolution* resolution = (CallResolution*)intern_get(&my links, key, 2);
+     if (resolution && !resolution->in_flight) return resolution->ret;
+-    // TODO: tsc's resolvingSignature (any) for a call resolved again while in flight costs 10 tests, plan 38
+-    if (resolution || my flow_uncached) {
++    if (resolution) {
++        // tsc's getResolvedSignature: a call asked for again while in flight is resolved again, without a barrier of its own
++        bool saved = my resolving_nested_call;
++        my resolving_nested_call = true;
++        Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
++        my resolving_nested_call = saved;
++        return ret;
++    }
++    if (my flow_uncached) {
+         return resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
+     }
+     // (Not remembered while control flow analysis has nothing memoized: tsc's flowLoopStart === flowLoopCount)
+diff --git a/src/ty/checker.c b/src/ty/checker.c
+index 6ad37c66..a05ecd86 100644
+--- a/src/ty/checker.c
++++ b/src/ty/checker.c
+@@ -2206,6 +2206,16 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
+     // (members->mapped) defer, like tsc's isGenericObjectType
+     bool known_names = !ty_is_tuple(operand) || !(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+     if (!defer && (operand->flags & TYF_OBJECT) && known_names) {
++        // PROTOTYPE plan 42 (b): a generic mapped type's keys are its constraint, read from the declaration
++        if (operand->kind == TY_ANONYMOUS && !getenv("TTTT_NO_LAZY_MAPPED")) {
++            Ty const* root = operand->anonymous.target ? operand->anonymous.target : operand;
++            TypeNode const* node = root->anonymous.node;
++            if (node && node->tag == TYPE_INTERFACE && vec_interface_member_size(&node->interface.members) == 1 &&
++                vec_interface_member_at(&node->interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED) {
++                MappedInfo const* mapped = ty_mapped_info_unexpanded(me, operand);
++                if (mapped && !mapped->name_type && ty_is_generic_index(mapped->constraint)) return mapped->constraint;
++            }
++        }
+         Members const* members = ty_members(me, operand);
+         // Of a mapped type without an `as` clause, its constraint (tsc's getIndexTypeForMappedType):
+         // `keyof { [P in string]: X }` is string, `keyof Pick<T, unknown>` unknown
+diff --git a/src/ty/instantiate.c b/src/ty/instantiate.c
+index a0aac119..fb5102fe 100644
+--- a/src/ty/instantiate.c
++++ b/src/ty/instantiate.c
+@@ -195,7 +195,7 @@ static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo cons
+     if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
+     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
+     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
+-    MappedInfo const* mapped = ty_members(me, root)->mapped;
++    MappedInfo const* mapped = getenv("TTTT_NO_LAZY_MAPPED") ? ty_members(me, root)->mapped : ty_mapped_info_unexpanded(me, root);
+     // (tsc's getHomomorphicTypeVariable looks at the lowered constraint: a `keyof T` substituted in a true branch of
+     // `keyof T extends ...` isn't homomorphic, but a type parameter substituted in a true branch is still the one)
+     // It's the lowered constraint's operand, not the modifiers type: `keyof (T & Required<T>)` lowers to `keyof T`
+diff --git a/src/ty/lower.c b/src/ty/lower.c
+index 5623157b..360a411f 100644
+--- a/src/ty/lower.c
++++ b/src/ty/lower.c
+@@ -245,6 +245,15 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
+             } else {
+                 ty_resolving_push(me, RESOLVING_ALIAS, symbol);
+                 ret = lower(me, body, ctx, symbol, params);
++                // PROTOTYPE plan 42 (b): tsc's getTypeFromMappedTypeNode resolves the key's constraint eagerly, under the
++                // alias's push
++                if (!getenv("TTTT_NO_EAGER_MAPPED_KEY") && body->tag == TYPE_INTERFACE &&
++                    vec_interface_member_size(&body->interface.members) == 1) {
++                    InterfaceMember const* member = vec_interface_member_at(&body->interface.members, 0);
++                    if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped.symbol_ref) {
++                        ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped.symbol_ref));
++                    }
++                }
+                 if (ty_resolving_pop(me)) links->circular = true;
+                 if (links->circular) {
+                     // (An `@enum {T}`'s alias is reported at T: tsc's declaration is the tag, which has no name)
+@@ -3091,6 +3100,15 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
+             if (!alias && !vec_interface_member_size(&node->interface.members) && !node->interface.jsdoc_literal) {
+                 return ty_empty_type_literal(me);
+             }
++            // PROTOTYPE plan 42 (b): tsc's getTypeFromMappedTypeNode resolves the key's constraint eagerly
++            if (getenv("TTTT_EAGER_MAPPED_ANY") && vec_interface_member_size(&node->interface.members) == 1) {
++                InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
++                if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped.symbol_ref) {
++                    Ty const* ret = ty_anonymous_from_node(me, node, ctx, alias, alias_args);
++                    ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped.symbol_ref));
++                    return ret;
++                }
++            }
+             return ty_anonymous_from_node(me, node, ctx, alias, alias_args);
+ 
+         case TYPE_CALLABLE:
+diff --git a/src/ty/members.c b/src/ty/members.c
+index bedc6e8b..30308f37 100644
+--- a/src/ty/members.c
++++ b/src/ty/members.c
+@@ -2637,12 +2637,31 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
+ }
+ 
+ static Members const* resolve_intersection_members(Checker* me, Ty const* ty);
++static TyObjectState* object_state(Ty const* ty);
+ 
+ static Members const* resolve_members(Checker* me, Ty const* ty) {
+     if (ty->kind == TY_INTERSECTION) return resolve_intersection_members(me, ty);
++    TyObjectState* state = object_state(ty);
++    if (state && state->unexpanded) return expand_mapped(me, ty, state->unexpanded);
+     return expand_mapped(me, ty, resolve_members_inner(me, ty));
+ }
+ 
++// PROTOTYPE plan 42 (b): a mapped type's declaration (key, constraint, modifiers type) without its members, which a
++// generic homomorphic mapped type gets from its type variable's apparent type (tsc's getHomomorphicTypeVariable and
++// getIndexTypeForMappedType read the declaration only)
++MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
++    TyObjectState* state = object_state(ty);
++    if (!state) return nullptr;
++    if (state->members_state == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : state->members->expanded_from;
++    if (state->members_state == LAZY_STATE_IN_FLIGHT) return nullptr;
++    if (!state->unexpanded) {
++        state->members_state = LAZY_STATE_IN_FLIGHT;
++        state->unexpanded = resolve_members_inner(me, ty);
++        state->members_state = LAZY_STATE_NOT_STARTED;
++    }
++    return state->unexpanded->mapped;
++}
++
+ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
+     switch (ty->kind) {
+         case TY_DECLARED:
+@@ -3978,6 +3997,11 @@ bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
+ }
+ 
+ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
++    // PROTOTYPE plan 42 (b): the declared constraint is lowered under the walk's push (tsc's getResolvedBaseConstraint)
++    if (!param->param.state->circular && !param->param.state->clone_of && !param->param.state->is_this &&
++        param->param.state->constraint_state == LAZY_STATE_NOT_STARTED && !getenv("TTTT_NO_CONSTRAINT_PUSH")) {
++        ty_param_constraint_is_circular(me, param);
++    }
+     Ty const* constraint = declared_param_constraint(me, param);
+     if (!constraint || param->param.state->circular == 1) return constraint;
+     return ty_param_constraint_is_circular(me, param) ? nullptr : constraint;
+diff --git a/src/ty/ty.h b/src/ty/ty.h
+index 433d714d..a08982e4 100644
+--- a/src/ty/ty.h
++++ b/src/ty/ty.h
+@@ -216,6 +216,7 @@ typedef struct TyObjectState {
+     LazyState members_state;
+     uint8_t base_state; // LazyState of equivalent_base
+     Members const* members;
++    Members const* unexpanded; // PROTOTYPE plan 42 (b): resolve_members_inner()'s result, before expand_mapped()
+     Ty const* equivalent_base; // See ty_non_augmenting_base()
+ } TyObjectState;
+ 
+@@ -828,6 +829,7 @@ struct Checker {
+     u32 resolving_len;
+     u32 resolving_cap;
+     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
++    bool resolving_nested_call; // PROTOTYPE plan 42: the next resolve_call() is a re-entered one (no barrier)
+     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
+     bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
+     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
+@@ -1017,6 +1019,7 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
+ // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
+ TupleShape const* ty_tuple_shape(Ty const* ty);
+ Ty const* ty_keyof(Checker* me, Ty const* operand);
++struct MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty); // PROTOTYPE plan 42 (b)
+ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand);
+ // template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
+ Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);

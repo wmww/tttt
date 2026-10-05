@@ -24,14 +24,19 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    alternative containing modules) and plan 41 stage 3 (tsc-src 12 -> 0, typescript-eslint pinned, 66 -> 0). Suite
    12712 -> 12728, 0 lost; scenarios 199 -> 208. Callgrind react +3.7%, vue +3.4% (both from correct checker fixes:
    leads for entry 8 in measurements.md / perf_leads.md), nest +0.7%.
-7. **Planning: plan 42** (laziness). Read the stub; inventory, prototype, decide. Must answer whether lazy per-name
-   members are also the memory fix for drizzle.
+7. Done (2026-10-05, one session + three prototype sub-agents): plan 42 written. Go, as four independent ~1-session
+   stages (prototypes in `plans/42_prototypes/`, each 0 lost): reverse mapped types +1, reduced intersections +2,
+   mapped info / re-entry +2ish, optional barrier stage. tsc resolves re-entered calls again (plan 38's premise was
+   wrong). Not the memory fix: drizzle is 896 MB at one checker (tsgo 1 thread 1054), 1.7 GB at four (tsgo 1.87).
 8. **Perf and memory**: first the two regressions of entry 6 (react: base_constraint() memo, triage; vue: 9444083d's
    wider unions, perf_leads.md), then a quiet `./bench.sh` run, now like-for-like on nest/drizzle/valibot/tsc (declaration
    diagnostics exist after entry 2: say so in measurements.md), `-b` on tsc-src vs `tsc -b`; profile what the window
-   added; peak RSS (drizzle 1.8 GB vs single-threaded tsgo 1.05: `./arenasites.sh`, the `Signature` split, AST node
-   sizes in `bugs/perf_leads.md`).
-9. **Fan-out: errors component and JS** (`./failstats.py` shapes, `./jsstats.py`, `./syntaxstats.py`), or plan 42
-   stage 1 if the planning session found a cheap, 0-lost first stage.
+   added; peak RSS like-for-like (K=1 vs tsgo `--singleThreaded`, K=4 vs tsgo; drizzle's 4-checker peak is cross-checker
+   duplication: try file-to-checker affinity, plan 36 "Later"), then the compact instantiated Prop (62-82% are never
+   typed) and the `Signature` split (`bugs/perf_leads.md` Memory).
+9. **Plan 42 stages 1 and 2** (lazy reverse mapped types, lazy intersection reduction): both have 0-lost
+   prototypes that apply to 02ca5d29 (`plans/42_prototypes/stage1_*.patch`, `stage2_*.patch`); finish the items the
+   plan lists, run the checks the prototypes skipped, one commit per stage. If one runs long, stage 2 goes after the
+   insights entry. (The errors/JS fan-out moves to the next window.)
 10. **Triage.**
 11. **Insights.**
