@@ -46773,7 +46773,7 @@ const baselines = {
     'assignmentTypeNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compoundAdditionAssignmentLHSCanBeAssigned': {
         errors: true,

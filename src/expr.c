@@ -1279,6 +1279,7 @@ static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAs
                 case OBJECT_ITEM_PROPERTY:
                 case OBJECT_ITEM_SHORTHAND:
                     path.kind = FLOW_PATH_PROPERTY;
+                    path.default_value = i->shorthand_default; // `{ a = 1 } = e`
                     flow_destructuring_target(flow, &i->value, assign, path);
                     break;
                 case OBJECT_ITEM_SPREAD:
