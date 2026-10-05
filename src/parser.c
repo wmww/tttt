@@ -4072,8 +4072,9 @@ static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* t
                 tag->nested = true;
                 typedef_typed = true;
             } else if (owner == JSDOC_TAG_CALLBACK && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS ||
-                tag->kind == JSDOC_TAG_TEMPLATE)
+                tag->kind == JSDOC_TAG_TEMPLATE || tag->kind == JSDOC_TAG_THIS)
             ) {
+                // (`@this` too: tsc's parseChildParameterOrPropertyTag takes it among a callback's parameters)
                 tag->nested = true;
             } else if (owner == JSDOC_TAG_OVERLOAD && (tag->kind == JSDOC_TAG_PARAM || tag->kind == JSDOC_TAG_RETURNS)) {
                 // (tsc's parseJSDocSignature: parameters, then one `@returns`, which ends it)
@@ -4800,6 +4801,22 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
                     tag->predicate = nullptr;
                 }
             }
+            continue;
+        }
+        if (tag->kind == JSDOC_TAG_THIS) {
+            // The signature's `this` parameter (tsc's getSignatureFromDeclaration of a JSDocSignature)
+            bool has_this = vec_function_arg_size(&function.args) && function.args.data[0].jsdoc_this;
+            if (has_this) continue;
+            FunctionArg arg = { .jsdoc_this = true };
+            arg.initializer.binding = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = tag->tag_name, .has_explicit_type = true };
+            if (tag->has_type) {
+                Span type_span;
+                arg.initializer.binding.explicit_type = jsdoc_take_type(tag, &type_span);
+                binding_set_explicit_type_span(&arg.initializer.binding, type_span);
+            } else {
+                arg.initializer.binding.explicit_type = jsdoc_synthesized(type_any);
+            }
+            vec_function_arg_insert_n(&function.args, 0, &arg, 1);
             continue;
         }
         if (tag->kind != JSDOC_TAG_PARAM || !span_valid(tag->name) || memchr(tag->name.sv.buf, '.', (size_t)tag->name.sv.size)) continue;

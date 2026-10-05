@@ -51121,8 +51121,8 @@ const baselines = {
         types: true,
     },
     'callbackTag4': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'callbackTagNamespace': {
