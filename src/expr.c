@@ -2339,6 +2339,24 @@ static void assignment_target_typecheck_of(
                 if (i->tag == EXPR_SPREAD && i_index + 1 < vec_expr_size(&target->array)) {
                     error_ctx_error_d(errs, expr_outer_span(i), 2462, "A rest element must be last in a destructuring pattern.");
                 } else if (i->tag == EXPR_SPREAD) {
+                    // (tsc's checkArrayLiteralDestructuringElementAssignment: an initializer at its `=`, else a trailing comma)
+                    Expr const* rest_target = i->spread;
+                    if (rest_target->tag == EXPR_BINARY_OP && rest_target->binary_op->op == BINARY_OP_EQUAL &&
+                        !expr_is_perenthisized(rest_target)
+                    ) {
+                        char const* at = span_end_ptr(expr_outer_span(&rest_target->binary_op->left));
+                        char const* end = span_start_ptr(expr_outer_span(&rest_target->binary_op->right));
+                        while (at < end && *at != '=') at++;
+                        if (at < end) {
+                            error_ctx_error_d(errs, span_make(target->inner_span.source, at, at + 1), 1186,
+                                "A rest element cannot have an initializer.");
+                        }
+                    } else {
+                        Span comma = span_comma_after(expr_outer_span(i));
+                        if (span_valid(comma)) {
+                            error_ctx_grammar_error_d(errs, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
+                        }
+                    }
                     // The rest of a tuple, else an array of the elements (tsc's checkArrayLiteralDestructuringElementAssignment)
                     Ty const* rest = nullptr;
                     if (source) {
@@ -2427,6 +2445,11 @@ static void assignment_target_typecheck_of(
                 if (i->tag == OBJECT_ITEM_SPREAD && i_index + 1 < vec_object_expr_item_size(&target->object)) {
                     error_ctx_error_d(errs, i->span, 2462, "A rest element must be last in a destructuring pattern.");
                 } else if (i->tag == OBJECT_ITEM_SPREAD) {
+                    // (tsc's checkObjectLiteralDestructuringPropertyAssignment)
+                    Span comma = span_comma_after(i->span);
+                    if (span_valid(comma)) {
+                        error_ctx_grammar_error_d(errs, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
+                    }
                     if (expr_check_reference_not_optional(&i->value, 2778,
                         "The target of an object rest assignment may not be an optional property access.", errs)
                     ) {

@@ -41346,12 +41346,12 @@ const baselines = {
         types: true,
     },
     'computedPropertyNamesDeclarationEmit4_ES5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'computedPropertyNamesDeclarationEmit4_ES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42271,7 +42271,7 @@ const baselines = {
         types: true,
     },
     'restElementWithInitializer2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45576,12 +45576,12 @@ const baselines = {
         types: true,
     },
     'trailingCommasInBindingPatterns': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'trailingCommasInFunctionParametersAndArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48051,7 +48051,7 @@ const baselines = {
         types: true,
     },
     'typeGuardFunctionErrors': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

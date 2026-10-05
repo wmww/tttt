@@ -285,3 +285,23 @@ done:
     pthread_mutex_unlock(&escaped_lock);
     return ret;
 }
+
+Span span_comma_after(Span after) {
+    if (!span_valid(after) || !after.source) return span_null;
+    char const* at = span_end_ptr(after);
+    char const* file_end = cstr_str(&after.source->contents) + cstr_size(&after.source->contents);
+    while (at < file_end) {
+        if (*at == ' ' || *at == '\t' || *at == '\n' || *at == '\r' || *at == '\f' || *at == '\v') {
+            at++;
+        } else if (at + 1 < file_end && at[0] == '/' && at[1] == '/') {
+            while (at < file_end && *at != '\n') at++;
+        } else if (at + 1 < file_end && at[0] == '/' && at[1] == '*') {
+            at += 2;
+            while (at + 1 < file_end && !(at[0] == '*' && at[1] == '/')) at++;
+            at += 2;
+        } else {
+            break;
+        }
+    }
+    return at < file_end && *at == ',' ? span_make(after.source, at, at + 1) : span_null;
+}

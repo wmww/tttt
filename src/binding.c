@@ -387,6 +387,21 @@ static void binding_report_rest_initializer(Binding const* element, ErrorCtx* er
     error_ctx_grammar_error_d(errs, span_make(value.source, at - 1, at), 1186, "A rest element cannot have an initializer.");
 }
 
+// tsc's checkGrammarBindingElement: a trailing comma after the rest element (checkGrammarForDisallowedTrailingComma)
+static void binding_report_rest_trailing_comma(Binding const* element, ErrorCtx* errs) {
+    Span extent = element->content_span;
+    if (element->default_value) {
+        Span value = expr_outer_span(element->default_value);
+        if (span_valid(value) && span_valid(extent) && span_end_ptr(value) > span_end_ptr(extent)) {
+            extent = span_make(extent.source, span_start_ptr(extent), span_end_ptr(value));
+        }
+    }
+    Span comma = span_comma_after(extent);
+    if (span_valid(comma)) {
+        error_ctx_grammar_error_d(errs, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
+    }
+}
+
 static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, ErrorCtx* errs);
 
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
@@ -532,8 +547,9 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
             for_each (i, vec_binding, &my array) {
                 if (i->rest && i_index + 1 < vec_binding_size(&my array)) { // (tsc's checkGrammarBindingElement)
                     error_ctx_grammar_error_d(errs, i->content_span, 2462, "A rest element must be last in a destructuring pattern.");
-                } else if (i->rest && i->default_value) {
-                    binding_report_rest_initializer(i, errs);
+                } else if (i->rest) {
+                    binding_report_rest_trailing_comma(i, errs);
+                    if (i->default_value) binding_report_rest_initializer(i, errs);
                 }
                 // Past the end of a tuple (TS2493), unless there's a default
                 if (parent && i->tag != BINDING_NOOP && !i->rest && !i->default_value) {
@@ -551,9 +567,12 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
             bool from_this = !my parent && initializer && initializer->tag == EXPR_IDENTIFIER &&
                 initializer->identifier.keyword == KEYWORD_IDENTIFIER_THIS && !expr_is_perenthisized(initializer);
             for_each (i, vec_object_binding_item, &my object) {
+                if (i->target.rest && i_index + 1 == vec_object_binding_item_size(&my object)) {
+                    binding_report_rest_trailing_comma(&i->target, errs);
+                }
                 if (i->target.rest && i_index + 1 < vec_object_binding_item_size(&my object)) {
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2462, "A rest element must be last in a destructuring pattern.");
-                } else if (i->target.rest_property_name) {
+                                    } else if (i->target.rest_property_name) {
                     error_ctx_grammar_error_d(errs, i->target.content_span, 2566, "A rest element cannot have a property name.");
                 } else if (i->target.rest && i->target.default_value) {
                     binding_report_rest_initializer(&i->target, errs);
