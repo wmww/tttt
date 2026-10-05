@@ -94,8 +94,12 @@ fallback inference skipped nested generic calls that were already resolved; HACK
   nonexistent: 'd' }`). tsc reports it only when the same createMachine config also has `entry: [raise({ type: 'GO' },
   { delay: 'long' })]` (without it tsc is silent too): its excess-property error names the constraint's
   `DelayedTransitions<...>`, so tsc's `const TConfig` inference failed its constraint and the fresh literal was checked
-  against `MachineConfig<...>`. Why the inferred TConfig fails the constraint in tsc (the raise call?) and passes in
-  tttt is the open question; instrument tsc's getInferredType on it.
+  against `MachineConfig<...>`. Instrumented tsc (getInferredType, both rounds): TConfig has **no candidate at all**
+  and falls back to the constraint; minimal repro `setup({ delays: { short: 10, long: 1000 } }).createMachine({ states:
+  { a: { entry: [raise({ type: 'GO' }, { delay: 'long' })] }, c: { after: { long: 'd', nonexistent: 'd' } } } })`.
+  So the config literal is non-inferrable for tsc, presumably through the raise() call (a generic function returning a
+  function: SkipGenericFunctions in the first round, ObjectFlags.NonInferrableType propagating up the literal); why it
+  stays so in the Normal round is the open question. tttt infers TConfig from the literal.
 
 ### drizzle (0; 693 at pinning)
 Pinned 2026-09-29 (seventh window, todo entry 1): drizzle-orm at 15454dbe, the package's src and type-tests through
