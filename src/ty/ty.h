@@ -590,6 +590,9 @@ struct Signature {
     // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
     // its own, fresh ones (see clone_type_params())
     bool instantiates_own_params;
+    // Its own type parameters are cloned whatever the mapper (tsc's instantiateSignature always does; clone_type_params()
+    // skips it where nothing can tell, but a function expression typed by it shows its clones in the types baseline)
+    bool fresh_type_params;
     LowerCtx ctx;
     u32 param_count;
     u32 min_args;

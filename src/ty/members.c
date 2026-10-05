@@ -3388,7 +3388,7 @@ static void clone_type_params(Checker* me, Signature* sig) {
     // (Its own type parameters in the outer mapper: being instantiated away, else shadowing the outer ones, tsc's
     // instantiateSignature maps them to fresh ones first)
     bool keep_mapped = sig->instantiates_own_params || sig->drops_mapped_type_params || (sig->flags & SIGNATURE_CONSTRUCT);
-    bool any = false;
+    bool any = sig->fresh_type_params;
     for (u32 j = 0; j < outer->len && !any; j++) any = outer->targets[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
     for (u32 i = 0; i < params.len && !any; i++) {
         bool mapped = false;

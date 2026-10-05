@@ -67413,7 +67413,7 @@ const baselines = {
     'genericFunctionParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureTypeInference': {
         errors: true,

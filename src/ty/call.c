@@ -744,7 +744,7 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     // tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
     if (sig->param_count && sig->params[sig->param_count - 1].rest && sig->params[sig->param_count - 1].type->kind == TY_TYPE_PARAM) {
         Signature* instantiated = arena_new(&my arena, Signature);
-        *instantiated = (Signature){ .flags = sig->flags, .target = sig, .mapper = inference_mapper(me, outer->sig, inf, true) };
+        *instantiated = (Signature){ .flags = sig->flags, .target = sig, .mapper = inference_mapper(me, outer->sig, inf, true), .fresh_type_params = true };
         signature_resolve(me, instantiated);
         return instantiated;
     }
@@ -760,7 +760,7 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
     }
     TyMapper const* mapper = inference_mapper(me, outer->sig, inf, true);
     Signature* fixed = arena_new(&my arena, Signature);
-    *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper };
+    *fixed = (Signature){ .flags = sig->flags, .target = sig, .mapper = mapper, .fresh_type_params = true };
     signature_resolve(me, fixed);
     return fixed;
 }
