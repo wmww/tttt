@@ -3495,7 +3495,8 @@ static bool decorator_call(Checker* me, DecoratorSite site, DecoratorCall* out, 
                 { .name = checker_atom(me, c_sv("private")), .type = ty_intrinsic(me, is_private ? TY_TRUE : TY_FALSE) },
                 { .name = checker_atom(me, c_sv("static")), .type = ty_intrinsic(me, class_item_is_static(item) ? TY_TRUE : TY_FALSE) },
             };
-            Ty const* override = ty_object_literal(me, props, 3, nullptr, 0, OBJECT_SYNTHETIC);
+            // (tsc's createClassMemberDecoratorContextOverrideType: no symbol, no inferable index)
+            Ty const* override = ty_object_literal(me, props, 3, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_NO_INFERABLE_INDEX);
             Ty const* both[2] = { context, override };
             out->params[0] = target;
             out->params[1] = ty_intersection(me, both, 2, nullptr, (TyList){0});

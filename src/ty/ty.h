@@ -1668,7 +1668,7 @@ typedef enum ObjectLiteralKind {
     // Or'ed with the kind: an object literal of a JavaScript file, open-ended without noImplicitAny (tsc's
     // ObjectFlags.JSLiteral, isJSLiteralType)
     OBJECT_JS = 1 << 4,
-    // Or'ed with OBJECT_SYNTHETIC: a type tsc makes without a symbol (createEmptyObjectTypeFromStringLiteral), which
+    // Or'ed with OBJECT_SYNTHETIC: a type tsc makes without a symbol (createEmptyObjectTypeFromStringLiteral, binding patterns), which
     // has no inferable index (isObjectTypeWithInferableIndex)
     OBJECT_NO_INFERABLE_INDEX = 1 << 5,
 } ObjectLiteralKind;

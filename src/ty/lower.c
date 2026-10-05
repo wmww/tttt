@@ -2515,7 +2515,9 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
             panic_if(!props, "out of memory");
             props[count++] = prop;
         }
-        Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count, OBJECT_SYNTHETIC);
+        // (tsc's getTypeFromObjectBindingPattern makes it without a symbol: no inferable index)
+        Ty const* ret = ty_object_literal(me, props, count, index_count ? &index : nullptr, index_count,
+            OBJECT_SYNTHETIC | OBJECT_NO_INFERABLE_INDEX);
         free(props);
         if (!include_pattern) return ret;
         ret = ty_pattern_clone(me, ret);

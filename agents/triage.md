@@ -18,6 +18,14 @@ missing_checks.md "Module and import checks", type_core.md "Circularity" (getter
   tsc's checkNodeDeferred), but tsc also defers class expressions, JSX elements and type assertion checks; those
   still run in place. Order-dependent answers there would look like the zod TS2344s did: check before porting more.
 - `has_inferable_index()` (relate.c) grants every anonymous object type an implicit index signature; tsc only types with a symbol of the right kind (isObjectTypeWithInferableIndex). Found by the sweep (plan 44, rrdtool: D/literalKeyof.ts); check how much wider tttt's rule is and whether it hides errors elsewhere.
+- (effect corpus) `infer_rest_variadic`/`check_rest_arg` keep an argument's type from whichever candidate typed it
+  first (`if (arg->type) continue`), though its contextual type is now the candidate's rest element: with overloads
+  whose rest types differ, a later candidate sees types checked against an earlier one. tsc re-checks per candidate
+  (checkExpressionWithContextualType caches nothing across candidates for non-sensitive arguments). Tried 2026-10-05
+  (clearing the non-spread rest arguments' types at the top of infer_rest_variadic): suite, corpora (effect
+  byte-identical) and instructions unchanged, and no probe found that observes it (an earlier candidate regularizing a
+  literal, `q<T extends ["a"]>(n: number, ...a: T)` before `q<T extends string[]>(s: string, ...a: T)`, already
+  passes), so not committed; it was suspected of effect's 1-vs-4-checker differences, which are gone.
 
 - **A project reached through a symlink is checked differently and ~45x slower.** `tttt -p thirdparty/corpora/webpack` run from a worktree (where `thirdparty/corpora` is a symlink to the main checkout) takes 45 s instead of 1 s, makes 525k type mappers (93% repeats) and reports different diagnostics (TS2859 "Excessive complexity" in webpack's examples) than the same project by its real path. Probably files reached by both the symlinked and the real path are loaded twice (tsc resolves symlinks by default, preserveSymlinks false), so every type exists twice and nothing is identical. Repro: `cd /tmp/<worktree> && ./release/tttt -q --keep-going -p thirdparty/corpora/webpack | md5sum` vs the same with `$(realpath thirdparty/corpora/webpack)`. Measurement scripts that pass relative paths from a worktree (arenasites.sh copies, `--time` probes) measure this pathology instead of the real project; instrcount.sh and threadcheck.sh use realpath.
 

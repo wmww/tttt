@@ -2411,7 +2411,10 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
     // (Not tsc's emptyObjectType, which has no symbol: the apparent type of `object`)
     if (ty == global_type(me, GLOBAL_EMPTY_OBJECT)) return false;
     if (ty->kind == TY_ANONYMOUS) {
-        if (ty->anonymous.no_inferable_index) return false;
+        Ty const* origin = ty->anonymous.target && ty->anonymous.target->kind == TY_ANONYMOUS ? ty->anonymous.target : ty;
+        if (ty->anonymous.no_inferable_index || origin->anonymous.no_inferable_index) return false;
+        // (A reverse mapped type has one if what it was inferred from has: `T` from an interface has none)
+        if (ty->anonymous.is_reverse) return has_inferable_index(me, ty->anonymous.reverse->source);
         Members const* members = ty_members(me, ty);
         return !members->call_count && !members->construct_count;
     }
