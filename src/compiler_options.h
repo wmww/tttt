@@ -215,6 +215,9 @@ CompilerOptions compiler_options_init();
 void compiler_options_drop(CompilerOptions* me);
 // name is case insensitive ("strictNullChecks"), value is what would be written in a tsconfig or on the command line
 CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, csview value);
+// A name `lib` takes (case insensitive), and TS6046's message listing them
+bool compiler_options_lib_name_valid(csview name);
+cstr compiler_options_lib_names_message(void);
 // One entry of `paths` (there is no way to write them as a single string). Replaces an entry with the same pattern
 void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList substitutions);
 void compiler_options_clear_paths(CompilerOptions* me);

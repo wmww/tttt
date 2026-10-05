@@ -90,7 +90,7 @@ static void set_path_list(ConfigLoad* me, csview dir, const char* name, JsonValu
     cstr_drop(&joined);
 }
 
-static void apply_compiler_options(ConfigLoad* me, csview dir, JsonValue const* compiler_options) {
+static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, JsonValue const* compiler_options) {
     for (isize i = 0; i < compiler_options->count; i++) {
         const char* name = cstr_str(&compiler_options->members[i].key);
         JsonValue const* value = &compiler_options->members[i].value;
@@ -134,6 +134,12 @@ static void apply_compiler_options(ConfigLoad* me, csview dir, JsonValue const* 
             cstr joined = cstr_null;
             for (isize j = 0; j < value->count; j++) {
                 if (value->items[j].tag != JSON_STRING) continue;
+                // A lib that doesn't exist: TS6046 at it, and the rest goes on without it
+                if (!strcmp(name, "lib") && !compiler_options_lib_name_valid(cstr_sv(&value->items[j].string))) {
+                    config_diagnostic(me, 6046, compiler_options_lib_names_message(), config, value->items[j].start,
+                        value->items[j].end);
+                    continue;
+                }
                 if (cstr_size(&joined)) cstr_append_lit(&joined, ",");
                 cstr_append_sv(&joined, cstr_sv(&value->items[j].string));
             }
@@ -367,7 +373,7 @@ static_failable load_config(ConfigLoad* me, csview path) {
     }
 
     JsonValue const* compiler_options = json_get_tagged(document, "compilerOptions", JSON_OBJECT);
-    if (compiler_options) apply_compiler_options(me, cstr_sv(&dir), compiler_options);
+    if (compiler_options) apply_compiler_options(me, path, cstr_sv(&dir), compiler_options);
 
     // `files` and `include` are inherited as a pair, `exclude` on its own
     JsonValue const* files = json_get_tagged(document, "files", JSON_ARRAY);

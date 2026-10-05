@@ -130,9 +130,8 @@ static_failable load_stdlib(Program* program) {
     csview rest = cstr_sv(&libs);
     while (rest.size) {
         intptr_t end = csview_find_sv(rest, c_sv(","));
-        try (SourceFile* lib, program_load_stdlib(program, csview_slice(rest, 0, end), &lib)) cleanup {
-            cstr_drop(&libs);
-        }
+        // (A name that isn't a lib, `--lib foo`: tsc reports TS6046 and goes on without it)
+        try (SourceFile* lib, program_load_stdlib(program, csview_slice(rest, 0, end), &lib)) or_log(warn);
         ignore lib;
         if (end == c_NPOS) break;
         rest = csview_slice(rest, end + 1, INTPTR_MAX);

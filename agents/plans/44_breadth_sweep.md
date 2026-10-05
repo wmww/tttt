@@ -77,8 +77,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **Unknown `--lib` name aborts** (left from the lib-aliases fix): `load_stdlib()` (main.c) fails with "lib file not
-  found" where tsc reports TS6046 (the list of valid names) and checks without it.
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
