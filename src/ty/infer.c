@@ -917,12 +917,16 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
                 Ty const* arg = source_args.data[i];
                 elements[i] = shape->flags[i] & TUPLE_ELEMENT_REST ? ty_rest_element_type(me, arg) : arg;
             }
-            if (source_args.len) infer_from(me, inf, ty_union(me, elements, source_args.len, nullptr, (TyList){0}), element);
+            infer_from(me, inf, ty_union(me, elements, source_args.len, nullptr, (TyList){0}), element);
             free(elements);
         }
         return;
     }
-    if (is_empty_tuple(source) && ty_is_array(me, target)) return;
+    // (`[]` is an array of never: `[] extends Array<infer E>` infers never)
+    if (is_empty_tuple(source) && ty_is_array(me, target)) {
+        infer_from(me, inf, ty_intrinsic(me, TY_NEVER), ty_reference_args(me, target).data[0]);
+        return;
+    }
 
     Members const* target_members = ty_members(me, target);
     Members const* source_mapped_members = source->kind == TY_ANONYMOUS ? ty_members(me, source) : nullptr;
