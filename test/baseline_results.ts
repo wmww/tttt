@@ -31616,7 +31616,7 @@ const baselines = {
         types: true,
     },
     'typeUsedAsTypeLiteralIndex': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -683,7 +683,10 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             error_ctx_error_d(errs, identifier_expr_name(me), 2863, "A class cannot extend a primitive type like '", identifier_expr_name(me),
                 "'. Classes can only extend constructable values.");
         } else {
-            error_ctx_error_d(errs, identifier_expr_name(me), 2693, "'", identifier_expr_name(me), "' only refers to a type, but is being used as a value here.");
+            Expr const* lone_key = scope_rare(names)->lone_computed_key;
+            bool maybe_mapped = lone_key && lone_key->tag == EXPR_IDENTIFIER && &lone_key->identifier == me;
+            scope_report_type_as_value(names->binder, scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_TYPE),
+                identifier_expr_name(me), maybe_mapped, errs);
         }
     } else if (my call_child && span_equals(identifier_expr_name(me), "await")) {
         // (tsc's getCannotFindNameDiagnosticForName)

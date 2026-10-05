@@ -333,6 +333,12 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             bool saved_type_query = names->flow->in_type_query;
             names->flow->in_type_query = true;
             scope_rare_mut(literal_scope)->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
+            if (vec_interface_member_size(&my interface.members) == 1) {
+                InterfaceMember const* only = my interface.members.data;
+                if (only->key.tag == INTERFACE_KEY_EXPR && !only->is_method && !only->computed_accessor) {
+                    scope_rare_mut(literal_scope)->lone_computed_key = only->key.expr.ref;
+                }
+            }
             for_each (i, vec_interface_member, &my interface.members) {
                 interface_member_lookup_names(i, literal_scope, errs);
             }

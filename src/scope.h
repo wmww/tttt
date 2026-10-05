@@ -437,6 +437,9 @@ typedef struct ScopeRare {
     // The base class expression of a class (not its type arguments): the type parameters of that class, which it can't
     // reference (TS2562, tsc's resolveNameHelper at an ExpressionWithTypeArguments)
     struct Generic const* base_expression_of;
+    // The scope of a type literal whose only member is a property signature with a computed name: that name (an
+    // identifier naming a type there may have meant a mapped type, tsc's maybeMappedType)
+    struct Expr const* lone_computed_key;
     // A parameter decorator's scope: the function whose parameter it decorates, what tsc's getContainingFunction finds
     // for the decorator (TS1356 suggests making that one async)
     struct FunctionImpl const* decorated_function;
@@ -575,6 +578,10 @@ typedef struct Binder {
     struct PendingNotFound* pending_not_found; // malloc'd
     u32 pending_not_found_count;
     u32 pending_not_found_cap;
+    // Types used as values that may have meant a mapped type (TS2690 rather than TS2693), told by their types when
+    // checking starts (see scope_report_type_as_value())
+    struct PendingTypeAsValue* pending_type_as_value; // malloc'd
+    u32 pending_type_as_value_count;
     // Where the errors of what is resolved but never checked go (binder_discarded_errs()), owned
     ErrorCtx* discarded_errs;
     // Globals JavaScript expandos of another file declared or added to (`Outer.Inner = v` where the file doesn't
@@ -750,6 +757,9 @@ void add_duplicate_related(Error* error, Span at, Span other);
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs);
 // Its TS2552 half: `name`, which `at` needs, is misspelled (a spelling suggestion was found and reported)
 bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs);
+// TS2693 for a type used as a value, TS2690 if it may have meant a mapped type `{ [P in K]: ... }` (`maybe_mapped`: the
+// name is the lone computed key of a type literal, tsc's maybeMappedType, which is told by the type when checking starts)
+void scope_report_type_as_value(Binder* binder, Symbol const* type, Span name, bool maybe_mapped, ErrorCtx* errs);
 // TS2833 rather than TS2503 for a namespace with a close name in scope (tsc's resolveEntityName with a namespace meaning)
 bool scope_report_misspelled_namespace(Scope const* me, Span at, ErrorCtx* errs);
 // The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that

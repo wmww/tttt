@@ -131,6 +131,7 @@ void binder_destroy(Binder* me) {
     free(my augmentations);
     free(my global_augmentations);
     free(my pending_not_found);
+    free(my pending_type_as_value);
     free(my pending_export_merges);
     if (my discarded_errs) {
         error_ctx_drop(my discarded_errs);
@@ -3737,7 +3738,59 @@ static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
     return false;
 }
 
+typedef struct PendingTypeAsValue {
+    Symbol const* type;
+    Span name;
+    ErrorCtx* errs;
+} PendingTypeAsValue;
+
+void scope_report_type_as_value(Binder* binder, Symbol const* type, Span name, bool maybe_mapped, ErrorCtx* errs) {
+    if (!maybe_mapped || !type) {
+        error_ctx_error_d(errs, name, 2693, "'", name, "' only refers to a type, but is being used as a value here.");
+        return;
+    }
+    binder->pending_type_as_value = realloc(binder->pending_type_as_value,
+        sizeof(PendingTypeAsValue) * (binder->pending_type_as_value_count + 1));
+    panic_if(!binder->pending_type_as_value, "out of memory");
+    binder->pending_type_as_value[binder->pending_type_as_value_count++] = (PendingTypeAsValue){ type, name, errs };
+}
+
+// tsc's maybeMappedType: a union of string-like and number-like types (allTypesAssignableToKind(StringOrNumberLiteral))
+static bool maybe_mapped_type(Symbol const* type) {
+    Checker* checker = current_checker;
+    Ty const* declared = ty_declared_type_of(checker, type);
+    if (declared->kind != TY_UNION) return false;
+    for (u32 i = 0; i < declared->composite.types.len; i++) {
+        Ty const* member = declared->composite.types.data[i];
+        if (member->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID | TYF_UNDEFINED | TYF_NULL)) return false;
+        if (!ty_is_related(checker, member, ty_intrinsic(checker, TY_STRING), TY_RELATION_ASSIGNABLE) &&
+            !ty_is_related(checker, member, ty_intrinsic(checker, TY_NUMBER), TY_RELATION_ASSIGNABLE)
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static void report_types_as_values(Binder* me) {
+    for (u32 i = 0; i < my pending_type_as_value_count; i++) {
+        PendingTypeAsValue const* pending = &my pending_type_as_value[i];
+        Span name = pending->name;
+        if (maybe_mapped_type(pending->type)) {
+            bool k = csview_equals(name.sv, "K");
+            error_ctx_error_d(pending->errs, name, 2690, "'", name, "' only refers to a type, but is being used as a value "
+                "here. Did you mean to use '", k ? "P" : "K", " in ", name, "'?");
+        } else {
+            error_ctx_error_d(pending->errs, name, 2693, "'", name, "' only refers to a type, but is being used as a value here.");
+        }
+    }
+    free(my pending_type_as_value);
+    my pending_type_as_value = nullptr;
+    my pending_type_as_value_count = 0;
+}
+
 void scope_report_missing_prefixes(Binder* me) {
+    report_types_as_values(me);
     for (u32 i = 0; i < my pending_not_found_count; i++) {
         PendingNotFound const* pending = &my pending_not_found[i];
         if (report_missing_prefix(pending->scope, pending->name, pending->errs)) continue;
