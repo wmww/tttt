@@ -3569,7 +3569,7 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
 
 // What a type variable is known to be at least: tsc's getBaseConstraintOfType, without the circularity reporting.
 // Null if there's nothing to know (an unconstrained type parameter, `T[K]` that stays generic...)
-static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
+static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) {
     if (depth > 8) return nullptr;
     switch ((TyKind)ty->kind) {
         case TY_TYPE_PARAM: {
@@ -3722,6 +3722,21 @@ static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
         default:
             return nullptr;
     }
+}
+
+// (Cached at depth 0 like tsc's resolvedBaseConstraint: React's `T & {}` check types ask again and again. The depth
+// cutoff makes a deeper call's answer differ, so those aren't cached; a re-entered type computes again)
+static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth);
+static Ty const base_constraint_in_flight;
+static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth) {
+    if (depth || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return base_constraint_uncached(me, ty, depth);
+    u64 key[2] = { KEY_BASE_CONSTRAINT, ty->id };
+    Ty const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached == ty ? nullptr : cached == &base_constraint_in_flight ? base_constraint_uncached(me, ty, 0) : cached;
+    *intern_slot(me, &my links, key, 2) = &base_constraint_in_flight;
+    Ty const* ret = base_constraint_uncached(me, ty, 0);
+    *intern_slot(me, &my links, key, 2) = ret ? ret : ty;
+    return ret;
 }
 
 Ty const* ty_base_constraint(Checker* me, Ty const* ty) { return base_constraint(me, ty, 0); }
