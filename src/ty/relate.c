@@ -76,7 +76,14 @@ typedef struct RelationState {
     bool member_of_intersection_source;
     // The failure just reported heads the error itself (a weak type): no "not assignable" line for it
     bool head_reported;
+    // The pairs assumed related while they're being compared (tsc's maybeKeys), and a hash index of them (tsc's
+    // maybeKeysSet): a relation whose results stay Maybe keeps them all, 100k in d3-geo's `this & { stream }` methods,
+    // and scanning them at each pair was quadratic. maybe_heads[hash] is 1 + the newest entry with that hash,
+    // maybe_next[i] 1 + the one before it; entries go in stack order, so dropping from the top unlinks heads. Null
+    // while the stack is short, see maybe_push()
     u64* maybe_keys;
+    u32* maybe_next;
+    u32* maybe_heads;
     u32 maybe_count, maybe_cap;
     Ty const* source_stack[MAX_RELATION_DEPTH];
     Ty const* target_stack[MAX_RELATION_DEPTH];
@@ -5275,6 +5282,63 @@ static bool fails_common_properties(Checker* me, RelationState* st, Ty const* so
     }
 }
 
+// The maybe stack (RelationState.maybe_keys). Scanned while it's short (most relations stay below a few dozen pairs,
+// and the index's allocations cost 0.5% of valibot), indexed from MAYBE_INDEXED_CAP on, with 2x the capacity in buckets
+#define MAYBE_INDEXED_CAP 128
+
+static u32 maybe_hash(RelationState const* st, u64 key) {
+    return (u32)((key * 0x9E3779B97F4A7C15ull) >> 32) & (st->maybe_cap * 2 - 1);
+}
+
+static bool maybe_contains(RelationState const* st, u64 key) {
+    if (!st->maybe_heads) {
+        for (u32 i = 0; i < st->maybe_count; i++) {
+            if (st->maybe_keys[i] == key) return true;
+        }
+        return false;
+    }
+    for (u32 i = st->maybe_heads[maybe_hash(st, key)]; i; i = st->maybe_next[i - 1]) {
+        if (st->maybe_keys[i - 1] == key) return true;
+    }
+    return false;
+}
+
+static void maybe_push(RelationState* st, u64 key) {
+    if (st->maybe_count == st->maybe_cap) {
+        st->maybe_cap = st->maybe_cap ? st->maybe_cap * 2 : 32;
+        st->maybe_keys = realloc(st->maybe_keys, sizeof(u64) * st->maybe_cap);
+        panic_if(!st->maybe_keys, "out of memory");
+        if (st->maybe_cap >= MAYBE_INDEXED_CAP) {
+            st->maybe_next = realloc(st->maybe_next, sizeof(u32) * st->maybe_cap);
+            free(st->maybe_heads);
+            st->maybe_heads = calloc(st->maybe_cap * 2, sizeof(u32));
+            panic_if(!st->maybe_next || !st->maybe_heads, "out of memory");
+            for (u32 i = 0; i < st->maybe_count; i++) {
+                u32 h = maybe_hash(st, st->maybe_keys[i]);
+                st->maybe_next[i] = st->maybe_heads[h];
+                st->maybe_heads[h] = i + 1;
+            }
+        }
+    }
+    st->maybe_keys[st->maybe_count++] = key;
+    if (st->maybe_heads) {
+        u32 h = maybe_hash(st, key);
+        st->maybe_next[st->maybe_count - 1] = st->maybe_heads[h];
+        st->maybe_heads[h] = st->maybe_count;
+    }
+}
+
+static void maybe_truncate(RelationState* st, u32 len) {
+    if (!st->maybe_heads) {
+        st->maybe_count = len;
+        return;
+    }
+    while (st->maybe_count > len) {
+        u32 i = --st->maybe_count;
+        st->maybe_heads[maybe_hash(st, st->maybe_keys[i])] = st->maybe_next[i];
+    }
+}
+
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     RelationCache* cache = &my relations[st->relation];
     u64 key = relation_key(source, target);
@@ -5291,9 +5355,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     // A cached failure is computed again only to explain it, and then a pair on the stack is still assumed related.
     // Which comparisons explain (`report`) decides what is blamed, so it follows tsc closely
     if (cached == CACHE_FAILED && !report) return TERNARY_FALSE;
-    for (u32 i = 0; i < st->maybe_count; i++) {
-        if (st->maybe_keys[i] == key) return TERNARY_MAYBE;
-    }
+    if (maybe_contains(st, key)) return TERNARY_MAYBE;
     if (fails_common_properties(me, st, source, target, report)) {
         relation_cache_put(cache, key, CACHE_FAILED);
         return TERNARY_FALSE;
@@ -5303,12 +5365,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
         return TERNARY_FALSE;
     }
     u32 maybe_start = st->maybe_count;
-    if (st->maybe_count == st->maybe_cap) {
-        st->maybe_cap = st->maybe_cap ? st->maybe_cap * 2 : 32;
-        st->maybe_keys = realloc(st->maybe_keys, sizeof(u64) * st->maybe_cap);
-        panic_if(!st->maybe_keys, "out of memory");
-    }
-    st->maybe_keys[st->maybe_count++] = key;
+    maybe_push(st, key);
     unsigned saved_expanding = st->expanding;
     bool push_source = !(st->skip_push & 1), push_target = !(st->skip_push & 2);
     st->skip_push = 0;
@@ -5346,12 +5403,12 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
                 relation_cache_put(cache, st->maybe_keys[i], CACHE_SUCCEEDED | unreliable);
             }
             st->relation_count -= st->maybe_count - maybe_start;
-            st->maybe_count = maybe_start;
+            maybe_truncate(st, maybe_start);
         }
     } else {
         if (!st->overflow) relation_cache_put(cache, key, CACHE_FAILED | unreliable);
         st->relation_count--;
-        st->maybe_count = maybe_start;
+        maybe_truncate(st, maybe_start);
     }
     return result;
 }
@@ -6050,6 +6107,7 @@ static bool check_related(
     st->intersection_source = false;
     st->member_of_intersection_source = false;
     st->maybe_keys = nullptr;
+    st->maybe_next = st->maybe_heads = nullptr;
     st->maybe_count = st->maybe_cap = 0;
     st->depth = 0;
     st->source_depth = st->target_depth = 0;
@@ -6107,6 +6165,8 @@ static bool check_related(
     }
     vec_ty_report_line_drop(&st->lines);
     free(st->maybe_keys);
+    free(st->maybe_next);
+    free(st->maybe_heads);
     if (debug_env.debug_relate) {
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);

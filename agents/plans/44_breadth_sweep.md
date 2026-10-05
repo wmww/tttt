@@ -33,7 +33,7 @@ missing checks too.
 ## First numbers (2026-10-05, measurements.md "Breadth sweep" has the latest)
 8208 packages (6968 tsc-clean): **7969 match**, spurious-only 123, missing-only 105, both 10, crash 1, timeout 0; 114 s
 wall at -j4, tttt 456 s CPU vs tsc 5314 s. Slower than tsc: carbon-components-react (25 s vs 5.9), d3-geo
-(bugs/sweep_perf.md).
+(both fixed since: intersect_unions_of_primitives was quadratic in the unions, the relation maybe stack was scanned).
 
 Latest (2026-10-05, after the Small and six of the Medium root causes): **8072 match**, spurious-only 48, missing-only
 81, both 7, crash 0, timeout 0.
@@ -105,7 +105,6 @@ one commit each, `./sweep.py` before/after.
 ### Large / elsewhere
 - **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md
   `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
-- **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
 - Not investigated: mapbox, rangy, strophe (`declare global` namespace + UMD), prismjs (`"x/components/"` with a
   trailing slash resolving to the file), stampit, alpinejs, google-apps-script (property named `''`), d3-dispatch,
   ember (access-modifier, observable), function-bind, oidc-provider, d3-array, fabric's second `Image`, enzyme-async-helpers,

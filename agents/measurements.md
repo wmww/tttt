@@ -78,8 +78,7 @@ DefinitelyTyped ac3977d8, 8208 packages (8665 minus the generated gapi.client.*)
 matches tsc's (file, line, code) set exactly on **7969**; spurious only 123, missing only 105, both 10, **crash 1**
 (react-relay, SIGSEGV), timeout 0. 114 s wall at -j4; tttt 456 s summed single-threaded vs tsc 5.8 5314 s (one warm
 process, libs parsed once). tttt's median package 41 ms (startup ~6 ms: libs aren't the cost). **Slower than tsc**:
-carbon-components-react 25.4 s vs 5.9 s (all in `intersection` under `ty_keyof` from JSX props instantiation: bugs/
-sweep_perf.md), d3-geo 1.85 s vs 0.62 s. Before the session's symlink fix ~30% of the sample had thousands of
+carbon-components-react 25.4 s vs 5.9 s, d3-geo 1.85 s vs 0.62 s (both fixed the same day: 2.1 s and 0.07 s). Before the session's symlink fix ~30% of the sample had thousands of
 duplicate-declaration errors (every file of a linked @types package loaded twice). Top causes in plan 44.
 
 ## Effect corpus pinned (2026-10-05, ninth window's todo entry 2)
