@@ -659,7 +659,7 @@ static void collect_free_params_of_generic(Checker* me, Generic const* generic, 
     for_each (i, vec_generic_item, &generic->items) {
         if (i->symbol_ref) free_params_bind(out, ty_type_param(me, i->symbol_ref));
         collect_free_params(me, &i->extends, out);
-        collect_free_params(me, &i->fallback, out);
+        if (i->fallback) collect_free_params(me, i->fallback, out);
     }
 }
 

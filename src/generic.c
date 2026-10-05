@@ -10,7 +10,10 @@
 
 void generic_item_drop(GenericItem* me) {
     type_drop(&my extends);
-    type_drop(&my fallback);
+    if (my fallback) {
+        type_drop(my fallback);
+        free(my fallback);
+    }
 }
 
 void generic_drop(Generic* me) {
@@ -35,7 +38,7 @@ void generic_lookup_names(Generic const* me, Scope* names, ErrorCtx* errs) {
         type_lookup_names(&i->extends, names, errs);
         TypeParamDefaultScope saved = identifier_type_default_scope;
         identifier_type_default_scope = (TypeParamDefaultScope){ me, i_index };
-        type_lookup_names(&i->fallback, names, errs);
+        if (i->fallback) type_lookup_names(i->fallback, names, errs);
         identifier_type_default_scope = saved;
     }
 }
@@ -46,7 +49,7 @@ void generic_typecheck(Generic const* me, bool own_params, ErrorCtx* errs) {
     bool found_optional = false;
     for_each (i, vec_generic_item, &my items) {
         type_typecheck(&i->extends, errs);
-        type_typecheck(&i->fallback, errs);
+        if (i->fallback) type_typecheck(i->fallback, errs);
         // tsc's checkTypeParameter: the type parameter is made after what its constraint and default mention (which
         // decides union order), then hasNonCircularBaseConstraint
         bool circularity = i->extends_explicit && span_valid(i->extends_span);

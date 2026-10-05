@@ -1811,7 +1811,7 @@ static void check_generic(Walk* me, Generic const* generic, EmitSig sig) {
     for_each (i, vec_generic_item, &generic->items) {
         Emitting saved = emit_enter_nested(me, EMIT_TYPE_PARAMETER, sig, i->name, i->name);
         if (i->extends_explicit) check_written_type(me, &i->extends);
-        if (i->fallback_explicit) check_written_type(me, &i->fallback);
+        if (i->fallback_explicit) check_written_type(me, i->fallback);
         emit_leave(me, saved);
     }
 }
@@ -1849,9 +1849,9 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
     for_each (i, vec_interface_member, members) {
         if (decl && i->origin_interface && i->origin_interface != decl) continue;
         Span at = interface_member_error_span(i);
-        if (i->key.tag == INTERFACE_KEY_CALLABLE && vec_span_size(&i->declarations)) {
+        if (i->key.tag == INTERFACE_KEY_CALLABLE && span_valid(i->declaration)) {
             // (A signature's node ends after its `;` or `,`)
-            at = *vec_span_at(&i->declarations, 0);
+            at = i->declaration;
             if (span_valid(at) && (span_end_ptr(at)[0] == ';' || span_end_ptr(at)[0] == ',')) at.sv.size++;
         }
         if (i->key.tag == INTERFACE_KEY_MAPPED) {

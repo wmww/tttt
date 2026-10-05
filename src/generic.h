@@ -7,20 +7,20 @@ typedef struct vec_expr VecExpr;
 typedef struct GenericItem {
     Span name;
     Span full_span;
-    bool is_const; // `const T`
-    bool is_in; // `in T`: a variance annotation, with `is_out` too `in out T`
-    bool is_out; // `out T`
-    bool extends_explicit;
-    TypeNode extends;
-    Span extends_span; // Null for a JSDoc `@template`
-    bool fallback_explicit;
-    TypeNode fallback;
-    Symbol* owned_symbol;
-    Symbol const* symbol_ref;
-    bool jsdoc; // A JSDoc `@template`: not part of the baselines' walk
+    bool is_const : 1; // `const T`
+    bool is_in : 1; // `in T`: a variance annotation, with `is_out` too `in out T`
+    bool is_out : 1; // `out T`
+    bool extends_explicit : 1;
+    bool fallback_explicit : 1; // fallback is set
+    bool jsdoc : 1; // A JSDoc `@template`: not part of the baselines' walk
     // A JSDoc `@overload` in its host's comment: the host's `@template` of that name (symbol_ref, set when the host's
     // names are resolved), which it doesn't declare again (tsc: the same TypeParameterDeclaration)
-    bool jsdoc_shared;
+    bool jsdoc_shared : 1;
+    TypeNode extends;
+    Span extends_span; // Null for a JSDoc `@template`
+    TypeNode* fallback; // Owned, the default (`= T`); null without one
+    Symbol* owned_symbol;
+    Symbol const* symbol_ref;
     // A JSDoc `@template`'s whole tag, which the type parameters of the tag share (tsc's JSDocTemplateTag, where
     // unused.c reports them when none of them is used)
     Span jsdoc_tag;

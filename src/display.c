@@ -261,7 +261,7 @@ static void display_generic(Display d, Generic const* me) {
 
         if (i->fallback_explicit) {
             display_lit(d, " = ");
-            display_type(d, &i->fallback);
+            display_type(d, i->fallback);
         }
     }
     display_lit(d, ">");

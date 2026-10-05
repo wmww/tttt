@@ -254,7 +254,7 @@ static void builder_add_interface_member(
                         existing->decl->node = &i->type;
                     }
                     existing->flags &= ~(u32)PROP_READONLY;
-                    prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                    { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
                     break;
                 }
                 if (existing) {
@@ -276,13 +276,13 @@ static void builder_add_interface_member(
                         existing->thisless &= function_is_thisless(i->type.callable->function);
                         // (Optional if any overload is: tsc's binder adds SymbolFlags.Optional per declaration)
                         if (i->optional) existing->flags |= PROP_OPTIONAL;
-                        prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
                     } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->has_write_type &&
                         !i->computed_accessor
                     ) {
                         // A property declared again (TS2717): one symbol, the first declaration's type. String named only
                         // if every declaration is (tsc asks each one)
-                        prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
                         if (i->key.tag == INTERFACE_KEY_NAME && !existing->decl->name_form && span_valid(existing->decl->name_span)) {
                             existing->decl->name_form = ty_prop_name_form_merge(
                                 ty_prop_name_form(existing->decl->name_span.sv, nullptr, nullptr, false),
@@ -291,7 +291,7 @@ static void builder_add_interface_member(
                     } else if (!is_method && (existing->flags & PROP_METHOD) && !i->has_write_type && !i->computed_accessor) {
                         // A property after a method of its name joins its symbol (PropertyExcludes is nothing), which
                         // stays a method: only a declaration more
-                        prop_add_decl_spans(me, existing, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
                     }
                     break;
                 }
@@ -315,7 +315,7 @@ static void builder_add_interface_member(
                 if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr.ref, key, false);
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 if (key && (key->flags & TYF_NUMBER_LITERAL)) prop->decl->name_type = ty_regular(me, key);
-                prop_add_decl_spans(me, prop, i->declarations.data, (u32)vec_span_size(&i->declarations));
+                { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, prop, d, n); }
                 builder_push(builder, props, prop);
             }   break;
 
@@ -328,7 +328,7 @@ static void builder_add_interface_member(
                     .value = ty_from_node(me, &i->type, ctx),
                     .param_name = checker_atom(me, i->key.index->name.sv),
                     .readonly = i->readonly,
-                    .decl_span = vec_span_size(&i->declarations) ? *vec_span_at(&i->declarations, 0) : (Span){0},
+                    .decl_span = i->declaration,
                 };
                 // `[k: A | B]` is a signature for each valid key type of the union, the first one for a key type counts
                 // (tsc's getIndexInfosOfIndexSymbol)
@@ -385,7 +385,7 @@ static void builder_add_interface_member(
                     builder_add_callable(me, builder, i->type.callable->function, ctx) : nullptr;
                 if (sig) {
                     sig->name_span = i->key.span;
-                    if (vec_span_size(&i->declarations)) sig->decl_span = *vec_span_at(&i->declarations, 0);
+                    if (span_valid(i->declaration)) sig->decl_span = i->declaration;
                 }
             }   break;
         }
@@ -4139,7 +4139,7 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
     if (state->fallback_state == LAZY_STATE_NOT_STARTED) {
         state->fallback_state = LAZY_STATE_IN_FLIGHT;
         if (state->item && state->item->fallback_explicit) {
-            state->fallback = ty_from_node(me, &state->item->fallback, (LowerCtx){ .generic = true });
+            state->fallback = ty_from_node(me, state->item->fallback, (LowerCtx){ .generic = true });
         }
         state->fallback_state = LAZY_STATE_DONE;
     }

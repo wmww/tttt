@@ -459,7 +459,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
         });
         type_compile_test_info(&i->extends, ctx);
         if (i->fallback_explicit) {
-            type_compile_test_info(&i->fallback, ctx);
+            type_compile_test_info(i->fallback, ctx);
         }
     }
 }
@@ -656,12 +656,12 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             // A property after a method of its name joined the method's symbol (see builder_add_interface_member)
             Prop const* joined = nullptr;
-            if (!my key.name_is_member_function && ctx->member_owner && !redeclared && vec_span_size(&my declarations)) {
+            if (!my key.name_is_member_function && ctx->member_owner && !redeclared && span_valid(my declaration)) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
                 bool mine = false;
                 for (u32 i = 0; prop && (prop->flags & PROP_METHOD) && i < prop->decl->decl_span_count; i++) {
-                    mine |= span_eq(prop->decl->decl_spans[i], *vec_span_at(&my declarations, 0));
+                    mine |= span_eq(prop->decl->decl_spans[i], my declaration);
                 }
                 if (mine) joined = prop;
             }
@@ -676,7 +676,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 for (u32 i = 0; i < shown->decl->decl_span_count; i++) vec_span_push(&declarations, shown->decl->decl_spans[i]);
                 if (span_valid(shown->decl->name_span)) written = shown->decl->name_span.sv;
             } else {
-                declarations = vec_span_clone(my declarations);
+                declarations = interface_member_declaration_vec(me);
             }
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
@@ -692,8 +692,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             if (!merged && !redeclared && !my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
-                if (prop && (prop->flags & PROP_METHOD) && prop->decl->decl_span_count && vec_span_size(&my declarations) &&
-                    !span_eq(prop->decl->decl_spans[0], *vec_span_at(&my declarations, 0))
+                if (prop && (prop->flags & PROP_METHOD) && prop->decl->decl_span_count && span_valid(my declaration) &&
+                    !span_eq(prop->decl->decl_spans[0], my declaration)
                 ) {
                     type = prop_type(checker, prop);
                 }
@@ -715,7 +715,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             }
             if (pair) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = vec_span_clone(my declarations),
+                    .declarations = interface_member_declaration_vec(me),
                     .span = second_name,
                     .text = member_text(ctx, ctx->member_container, scope, second_name.sv, false),
                 });
@@ -762,14 +762,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, my key.expr.ref), &is_number);
                 Prop const* prop = name ? ty_get_prop(checker, ctx->member_owner, name) : nullptr;
                 bool mine = false;
-                Span own = vec_span_size(&my declarations) ? *vec_span_at(&my declarations, 0) : my key.span;
+                Span own = span_valid(my declaration) ? my declaration : my key.span;
                 for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], own);
                 if (mine && prop->decl->decl_span_count > 1) {
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
                     if ((prop->flags & PROP_METHOD) && prop->decl->overload_count > 1) overloads = prop;
                 }
             }
-            if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, vec_span_size(&my declarations) ? *vec_span_at(&my declarations, 0) : my key.span);
+            if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, span_valid(my declaration) ? my declaration : my key.span);
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my key.span,

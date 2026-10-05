@@ -2388,7 +2388,7 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
         for (u32 t = 0; generic && t < target_count; t++) {
             for_each (i, vec_generic_item, &generic->items) {
                 if (!name_equals(target[t]->name.sv, i->name.sv)) continue;
-                if (!defaults[t] && i->fallback_explicit) defaults[t] = &i->fallback;
+                if (!defaults[t] && i->fallback_explicit) defaults[t] = i->fallback;
                 if (!constraints[t] && i->extends_explicit) constraints[t] = &i->extends;
             }
         }
@@ -2418,8 +2418,8 @@ void ty_check_type_parameter_lists_identical(Checker* me, Symbol const* symbol, 
                 Ty const* a = ty_instantiate(me, ty_of_node(&source->extends), mapper);
                 identical = ty_is_related(me, a, ty_of_node(constraints[i]), TY_RELATION_IDENTITY);
             }
-            if (identical && source->fallback_explicit && defaults[i] && &source->fallback != defaults[i]) {
-                Ty const* a = ty_instantiate(me, ty_of_node(&source->fallback), mapper);
+            if (identical && source->fallback_explicit && defaults[i] && source->fallback != defaults[i]) {
+                Ty const* a = ty_instantiate(me, ty_of_node(source->fallback), mapper);
                 identical = ty_is_related(me, a, ty_of_node(defaults[i]), TY_RELATION_IDENTITY);
             }
         }
@@ -2458,7 +2458,7 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
         cstr key_str = ty_to_cstr(me, entries[i].key);
         for (u32 j = 0; j < entry_count; j++) {
             if (entries[j].key != entries[i].key) continue;
-            Span at = vec_span_size(&entries[j].member->declarations) ? *vec_span_front(&entries[j].member->declarations) : entries[j].member->key.span;
+            Span at = span_valid(entries[j].member->declaration) ? entries[j].member->declaration : entries[j].member->key.span;
             // (A lib's declarations aren't checked)
             if (!at.source || at.source->is_stdlib) continue;
             error_ctx_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");

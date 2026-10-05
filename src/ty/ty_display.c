@@ -1025,7 +1025,7 @@ static void display_node_type_params(Checker* me, TyDisplay d, Generic const* ge
         }
         if (i->fallback_explicit) {
             out_lit(d, " = ");
-            display_node(me, d, &i->fallback);
+            display_node(me, d, i->fallback);
         }
     }
     out_lit(d, ">");

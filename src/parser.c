@@ -2305,7 +2305,7 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         .extends = extends,
         .extends_span = extends_span,
         .fallback_explicit = fallback_explicit,
-        .fallback = fallback,
+        .fallback = fallback_explicit ? c_new(TypeNode, fallback) : nullptr,
     };
     return parse_success(&p);
 }
@@ -4802,7 +4802,7 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
             item.extends_explicit = true;
         }
         if (i->has_default) {
-            item.fallback = i->default_type;
+            item.fallback = c_new(TypeNode, i->default_type);
             item.fallback_explicit = true;
             i->has_default = false;
         }
@@ -5115,7 +5115,9 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             type = type_move(&arg->initializer.binding.explicit_type);
                         }
                         if (existing) {
-                            vec_span_push(&existing->declarations, item.span);
+                            InterfaceAccessor* pair = interface_member_accessor(existing);
+                            if (!vec_span_size(&pair->declarations)) vec_span_push(&pair->declarations, existing->declaration);
+                            vec_span_push(&pair->declarations, item.span);
                             interface_member_accessor(existing)->second_name = item.method.name_span;
                             if (!is_getter) existing->accessor->setter_param = setter_param;
                             // The setter's parameter type is what writes are checked against (tsc's getWriteTypeOfSymbol)
@@ -7644,7 +7646,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 });
             }
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
-            ret->interface_memeber.declarations = vec_span_single(span_from(a));
+            ret->interface_memeber.declaration = span_from(a);
             ret->interface_memeber.readonly = modifiers.includes[MODIFIER_READONLY];
             ret->interface_member_static = modifiers.includes[MODIFIER_STATIC];
             // `readonly [K in T]: X` (the modifier went to the list before the key was known to be mapped)
@@ -7678,7 +7680,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             });
             ret->tag = CLASS_ITEM_INTERFACE_MEMBER;
             ret->interface_memeber = (InterfaceMember){
-                .declarations = vec_span_single(span_from(a)),
+                .declaration = span_from(a),
                 .readonly = modifiers.includes[MODIFIER_READONLY],
                 .key.tag = INTERFACE_KEY_CALLABLE,
                 .type = function_impl_into_type(func),

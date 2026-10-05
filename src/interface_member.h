@@ -36,6 +36,8 @@ typedef struct InterfaceMappedKey {
 
 // What only a `get`/`set` pair in a type literal or an interface has
 typedef struct InterfaceAccessor {
+    // All the declarations when there is more than one (InterfaceMember.declaration is the first)
+    VecSpan declarations;
     // `get x(): T` with `set x(v: U)`: writes are checked against U (tsc's write type of a divergent accessor), when
     // InterfaceMember.has_write_type
     TypeNode write_type;
@@ -46,7 +48,8 @@ typedef struct InterfaceAccessor {
 
 // PERF: the rare parts (index signatures, mapped types, accessors) are boxed: there are hundreds of thousands of these
 typedef struct InterfaceMember {
-    VecSpan declarations;
+    // The (first) declaration, null for none: interface_member_declarations() has them all
+    Span declaration;
     // The original declared interface this member came from, used by the tests. Can be null.
     Symbol const* origin_interface;
     struct {
@@ -92,6 +95,23 @@ static inline InterfaceAccessor* interface_member_accessor(InterfaceMember* me) 
     }
     return my accessor;
 }
+// The member's declarations (the second and later ones of a `get`/`set` pair)
+static inline Span const* interface_member_declarations(InterfaceMember const* me, u32* count) {
+    if (my accessor && vec_span_size(&my accessor->declarations)) {
+        *count = (u32)vec_span_size(&my accessor->declarations);
+        return my accessor->declarations.data;
+    }
+    *count = span_valid(my declaration);
+    return &my declaration;
+}
+// A copy of interface_member_declarations()
+static inline VecSpan interface_member_declaration_vec(InterfaceMember const* me) {
+    u32 count;
+    Span const* spans = interface_member_declarations(me, &count);
+    VecSpan ret = vec_span_init();
+    for (u32 i = 0; i < count; i++) vec_span_push(&ret, spans[i]);
+    return ret;
+}
 static inline Span interface_member_second_name(InterfaceMember const* me) {
     return my accessor ? my accessor->second_name : span_null;
 }
@@ -116,7 +136,7 @@ static inline InterfaceMember interface_member_make(
     TypeNode type
 ) {
     return (InterfaceMember) {
-        .declarations = vec_span_single(declaration),
+        .declaration = declaration,
         .origin_interface = origin_interface,
         .readonly = readonly,
         .optional = optional,
