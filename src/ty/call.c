@@ -2439,6 +2439,11 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             error_ctx_error_d(errs, call_span, 2348,
                 "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
             cstr_drop(&rendered);
+        } else if (info->tagged_template && info->tagged_template->template_->array_element) {
+            // (tsc's resolveTaggedTemplateExpression: two templates in an array without a comma between them)
+            error_ctx_error_d(errs, expr_outer_span(info->tagged_template->template_->tag), 2796, "It is likely that you are "
+                "missing a comma to separate these two template expressions. They form a tagged template expression which "
+                "cannot be invoked.");
         } else {
             Error* e = not_callable_error(me, errs, info);
             // (tsc's invocationErrorDetails: about the apparent type, `{}` for unknown)

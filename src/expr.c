@@ -2170,6 +2170,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
             for_each (i, vec_expr, &my array) {
                 flow->assignment_target = assignment_target;
+                if (i->tag == EXPR_TEMPLATE && i->template_->tag && !expr_is_perenthisized(i)) i->template_->array_element = true;
                 expr_lookup_names(i, names, errs);
             }
             break;
