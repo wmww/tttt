@@ -3163,9 +3163,8 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             Ty const** types = malloc(sizeof(Ty const*) * (len ? len : 1));
             u32 placeholders = 0;
             for_each (i, vec_type, &node->composite) {
-                // HACK: parse_type() turns the leading operator of `& A & B` into an `any` operand (`never` for `|`),
-                // which the legacy code knows to skip. A written `any` is an identifier, so this can't be one
-                if (i_index == 0 && node->tag == TYPE_INTERSECTION && i->tag == TYPE_ANY) {
+                // (parse_type() turns the leading operator of `& A & B` into an `any` operand, `never` for `|`)
+                if (i->placeholder) {
                     placeholders++;
                     continue;
                 }

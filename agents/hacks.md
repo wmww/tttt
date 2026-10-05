@@ -480,8 +480,7 @@ src` finds the code-side markers; every significant one has an entry here.
   constraints (bugs/perf_leads.md).
 - Generic tuples: `base_constraint` replaces only variadics with array constraints; `normalized_tuple` makes
   `...readonly T[]` into `...T[]`; `lower_tuple` keeps the written `T[]` for rests (tsc: `T`).
-- `lower_identifier`: `object` is a builtin declaration named "object". lower.c HACK: composites skip the placeholder
-  `parse_type` makes for a leading `&`/`|`.
+- `lower_identifier`: `object` is a builtin declaration named "object".
 - `builder_add_interface_member`: index signature types lowered eagerly; non-literal computed keys dropped (tsc:
   late-bound index signatures).
 - `ty_union` doesn't subtype-reduce (`ty_union_subtype_reduced` on request) or drop nullables without

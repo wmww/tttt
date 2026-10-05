@@ -32238,12 +32238,12 @@ const baselines = {
     'unparenthesizedConstructorTypeInUnionOrIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unparenthesizedFunctionTypeInUnionOrIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unqualifiedCallToClassStatic1': {
         errors: true,
