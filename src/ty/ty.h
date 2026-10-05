@@ -1626,6 +1626,8 @@ Ty const* ty_jsx_attribute_type(Checker* me, Expr const* attributes, struct JsxA
 // `f<A, B>` as a value: the type arguments applied to the signatures that take that many
 Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args);
 // The same with the mapper from its signatures' type parameters built (the type itself if it's about none of them)
+#define MAX_TYPE_ARGS 32
+TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_ARGS]);
 Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper);
 bool ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper);
 

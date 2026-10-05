@@ -283,7 +283,7 @@ Ty const* ty_static_type_of(Checker* me, Symbol const* symbol) {
 
 // Type arguments as written, padded with defaults (then `any`) and truncated to the parameter count. The first `outer`
 // parameters are a local class or interface's outer ones, which are passed as themselves
-#define MAX_TYPE_ARGS 32
+
 static TyList lower_type_args(
     Checker* me, TyList params, u32 outer, VecSpannedType const* written, LowerCtx ctx, Ty const* args[MAX_TYPE_ARGS]
 ) {
@@ -327,6 +327,20 @@ static Ty const* alias_instance(Checker* me, Symbol const* decl, Ty const* body,
         *intern_slot(me, &my links, stack_key, count) = ret;
     }
     return ret;
+}
+
+static bool symbol_is_generic_alias(Symbol const* symbol) {
+    return symbol->flags & SYMBOL_TYPE_ALIAS && !symbol->is_placeholder && symbol_type_generic(symbol);
+}
+
+// A type's alias type arguments, the defaults filled in when it goes by a generic alias with none (an import's
+// reference without type arguments, see lower_identifier(): tsc's fillMissingTypeArguments where it compares them)
+TyList ty_alias_args_filled(Checker* me, Ty const* ty, Ty const* buf[MAX_TYPE_ARGS]) {
+    if (ty->alias_args.len || !ty->alias || !symbol_is_generic_alias(ty->alias)) return ty->alias_args;
+    TyList params = ty_alias_type_params(me, ty->alias);
+    if (!params.len || params.len > MAX_TYPE_ARGS) return ty->alias_args;
+    VecSpannedType none = {0};
+    return lower_type_args(me, params, 0, &none, (LowerCtx){0}, buf);
 }
 
 // The instantiation of a generic type alias (canonical) with these type arguments, as `A<args>` written would be
@@ -374,9 +388,7 @@ static Ty const* intrinsic_alias_instance(Checker* me, Symbol const* decl, Ty co
     return nullptr;
 }
 
-static bool symbol_is_generic_alias(Symbol const* symbol) {
-    return symbol->flags & SYMBOL_TYPE_ALIAS && !symbol->is_placeholder && symbol_type_generic(symbol);
-}
+
 
 // The type of a type reference whose name doesn't resolve: tsc's unresolvedType, which prints as written
 static Ty const* unresolved_reference(Checker* me, IdentifierType const* identifier) {
@@ -588,7 +600,15 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             Ty const* intrinsic = intrinsic_alias_instance(me, decl, args.data[0]);
             if (intrinsic) return intrinsic;
         }
-        return alias_instance(me, decl, declared, params, args);
+        Ty const* ret = alias_instance(me, decl, declared, params, args);
+        // Through an import without type arguments it goes by the alias with none (tsc's getTypeFromTypeAliasReference:
+        // the resolved alias of an import/export, aliasTypeArguments `[]`): it prints as `A`, not `A<defaults>`
+        if (!vec_spanned_type_size(&identifier->generic_params) && identifier->symbol && identifier->symbol != identifier->target &&
+            (identifier->symbol->flags & SYMBOL_ALIAS) && ret->alias == decl
+        ) {
+            ret = ty_realias(me, ret, decl, (TyList){0});
+        }
+        return ret;
     }
     return ty_regular(me, declared); // `E.x` as a type: an enum member's declared type is fresh
 }

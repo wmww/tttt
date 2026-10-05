@@ -8053,7 +8053,7 @@ const baselines = {
     'declarationEmitExportAssignedNamespaceNoTripleSlashTypesReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitExportAssignment': {
         errors: true,
@@ -13688,7 +13688,7 @@ const baselines = {
     'fixCrashAliasLookupForDefauledImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fixTypeParameterInSignatureWithRestParameters': {
         errors: true,
@@ -26653,7 +26653,7 @@ const baselines = {
     'reactTransitiveImportHasValidDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'readonlyAssignmentInSubclassOfClassExpression': {
         errors: true,

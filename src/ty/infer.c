@@ -1306,11 +1306,19 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     if (source->alias && source->alias == target->alias) {
         // Two instantiations of one type alias: by type argument, with the alias's variances (tsc). Without type
         // arguments the two are the same type, with nothing to infer
-        for (u32 i = 0; i < source->alias_args.len && i < target->alias_args.len; i++) {
-            if (!(target->alias_args.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        TyList source_args = source->alias_args;
+        TyList target_args = target->alias_args;
+        Ty const* source_buf[MAX_TYPE_ARGS];
+        Ty const* target_buf[MAX_TYPE_ARGS];
+        if (source_args.len != target_args.len) {
+            source_args = ty_alias_args_filled(me, source, source_buf);
+            target_args = ty_alias_args_filled(me, target, target_buf);
+        }
+        for (u32 i = 0; i < source_args.len && i < target_args.len; i++) {
+            if (!(target_args.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
             bool flip = ty_alias_param_is_contravariant(me, source->alias, i);
             if (flip) inf->contravariant = !inf->contravariant;
-            infer_from(me, inf, source->alias_args.data[i], target->alias_args.data[i]);
+            infer_from(me, inf, source_args.data[i], target_args.data[i]);
             if (flip) inf->contravariant = !inf->contravariant;
         }
         return;
