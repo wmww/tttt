@@ -49918,7 +49918,7 @@ const baselines = {
     'umd-augmentation-3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd-augmentation-4': {
         errors: true,

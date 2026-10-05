@@ -258,8 +258,13 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         SourceFile const* file = chain.items[0]->decls[0].full.source;
         if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file);
         out_lit(d, "import(\"");
-        out(d, file ? source_file_display_path(file) : c_sv(""));
+        csview path = file ? source_file_display_path(file) : c_sv("");
+        out(d, path);
         out_lit(d, "\")");
+        // (Named by its absolute path where an import found it first, see SourceFile.loaded_by_import)
+        if (d.underline && file && file->loaded_by_import && path.size && path.buf[0] != '/') {
+            cstr_append(d.underline, d.reused ? "      " : "^^^^^^");
+        }
         start = 1;
     } else if (chain.len && chain.items[0]->is_module) {
         out_module_import(d, chain.items[0]);
