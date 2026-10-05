@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Effect corpus pinned (2026-10-05, ninth window's todo entry 2)
+Effect 6300 -> 63 (plan 19 "effect"); suite 12758 -> 12759 (+1 component more), 0 lost; the other corpora unchanged
+(webpack 6, xstate 8, drizzle 6, rest 0). Callgrind (`./instrcount.sh`, now with effect) c21bcd49 -> end: tsc 4.736 ->
+4.736, type-fest 3.226 -> 3.227, valibot 5.003 -> 5.002, react 1.685 -> 1.685, nest 1.273 -> 1.274, webpack 3.898 ->
+3.898, zod 4.477 -> 4.478, **xstate 2.772 -> 2.879 (+3.9%)**, drizzle 13.332 -> 13.328, vue 8.120 -> 8.120, effect
+11.405 -> 11.064 G. xstate's cost is 7ea58a30 (a literal with a generic function in it is skipped in a candidate's
+first check, so the candidate is inferred a second time with everything, as tsc does); bisected, the other commits
+are within 0.1%. Effect: tsc 5.8.3 16.8 s / 1.8 GB; tttt ~1 s wall / 1.17 GB at K=4 (63 false errors, so not yet a
+like-for-like number).
+
 ## Plan 42 (2026-10-05): stages 1-2 (todo entry 9), stages 3-4 (next window's entry 1)
 Suite 12728 -> 12731 (stages 1-2) -> 12758 (3-4), 0 lost. Every corpus byte-identical throughout (webpack 6, drizzle
 6, xstate 8, zod-root 58 lines, rest 0; tsc-src/typescript-eslint 0). Callgrind (`./instrcount.sh`) f0fba718 -> stage

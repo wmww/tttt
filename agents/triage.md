@@ -17,3 +17,12 @@ missing_checks.md "Module and import checks", type_core.md "Circularity" (getter
 - (triage 2026-10-05, D) tttt now defers function expression bodies to the end of the file (`Checker.defer_functions`,
   tsc's checkNodeDeferred), but tsc also defers class expressions, JSX elements and type assertion checks; those
   still run in place. Order-dependent answers there would look like the zod TS2344s did: check before porting more.
+- (effect corpus, 2026-10-05) 7 of effect's 63 diagnostics differ between `--checkers 1` and 4 (`./checkerdiff.py
+  effect`: fiberRuntime.ts 3612 TS2769, Sink racing/zipping 57/73, vitest internal.ts 175 only at K=4; three only at
+  K=1). K=4 twice is identical, so it's check order, not a race: some memo depends on what was checked before it
+  (generic rest arguments keep their type from the first candidate that typed them, `infer_rest_variadic` skips
+  arguments with a type; a suspect). Find the first order-dependent one with `--dump` diffs on a probe.
+- (effect corpus) `infer_rest_variadic`/`check_rest_arg` keep an argument's type from whichever candidate typed it
+  first (`if (arg->type) continue`), though its contextual type is now the candidate's rest element: with overloads
+  whose rest types differ, a later candidate sees types checked against an earlier one. tsc re-checks per candidate
+  (checkExpressionWithContextualType caches nothing across candidates for non-sensitive arguments).

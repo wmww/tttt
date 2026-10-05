@@ -8,12 +8,8 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 
 1. Done: plan 42 stages 3 and 4 (suite 12753 -> 12758, 0 lost, every corpus byte-identical, callgrind within
    +0.3%). Plan 42 is finished; the resolve_call HACK is gone.
-2. **Corpus: pin Effect** (the `effect` core package of Effect-TS, with its type tests if it has them: HKT encodings,
-   generators as do-notation, `pipe` chains with dozens of overloads, variance annotations, branded types). It must be
-   clean under tsc 5.8 at a pinned commit (pick the last commit before any move to TS 6/7, like webpack/xstate). If
-   Effect doesn't fit, pick another library that's heavy on generics and that none of the current corpora
-   resembles, and say why. Rank the false errors by root cause, fix the top ones, and leave the rest in plan 19 with
-   numbers.
+2. Done: Effect v3.22.2 pinned (core package src + test + dtslint, 299k lines, tsc-clean), 6300 -> 63 the same
+   session (suite 12759, 0 lost; xstate +3.9% instructions, see measurements.md). The 63 by cause in plan 19 "effect".
 3. **Planning: plan 44 (breadth sweep)**. Prototype the tool and the first sample, then write the real plan. If the
    tool is done in the session, record the first numbers and file the top root causes.
 4. **Execution: plan 43** (AST and binder memory; nest <= 200 MB, webpack <= 300 MB at one checker). As many stages
@@ -26,7 +22,8 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 7. **Planning + execution: parallel name resolution** (plan 36's next step, and plan 41's `-b` lever). Write plan 45
    from what the binder still shares (hacks.md "Parallelism contract audit"), then execute stage 1 if it fits. Threads
    1/4 must stay byte-identical (`./threadcheck.sh`, `./checkerdiff.py`).
-8. **Corpus: whatever entries 2, 3 and 5 ranked first** (sweep and corpus root causes, ahead of suite plans), toward 0.
+8. **Corpus: whatever entries 2, 3 and 5 ranked first** (effect's top: return-type unions leaking a signature's own
+   type parameters, nested generic calls without contextual inference, plan 19) (sweep and corpus root causes, ahead of suite plans), toward 0.
 9. **Fan-out: types/symbols tail** (plan 35's queue, `./displaydiff.py --fine`, bugs/display.md), four sub-agents.
 10. **Triage.** Also: the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (725 lines: merge
    or delete entries whose code is gone).

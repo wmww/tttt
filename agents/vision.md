@@ -40,6 +40,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   chosen for what the current ones don't exercise (Effect-style HKT/generator-heavy generics; a large application
   for scale) and plans a **breadth sweep** (plan 44: hundreds of small typed packages, e.g. DefinitelyTyped, clean
   under tsc 5.8: crashes and false errors at breadth, cheaply). Fan-outs on the suite tail continue but at one each.
+  First data point (2026-10-05): **Effect** had 6300 false errors at pinning, 63 after one session, and the suite
+  moved by one component: generic calls returning generic functions as arguments and generic rest tuples (variadic,
+  unions of tuples, const) were paths the suite barely tests. New corpora are where the bugs are.
 - **Finish what's planned before planning more mechanisms**: plan 42 stages 3-4, plan 43 (AST memory), then parallel
   name resolution (the serial phase left; the `-b` lever and a wall-time lever everywhere).
 - **Decided: the symbols harness's rebuilt member identity is an acceptable harness cost** (triage item from the

@@ -1,6 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-09-29 (seventh window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
+**Status 2026-10-05**: effect pinned (6300 -> 63, see its section); the rest as below. **Status 2026-09-29 (seventh
+window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
 zod 0, zod-root = tsc's own 55, webpack 6, xstate 19, and two new corpora pinned and worked down the same day: **vue 0**
 (107 at pinning) and **drizzle 8** (693 at pinning, after an OOM fix), see their sections. The history of R1-R21 (identity relation, homomorphic mapped
 modifiers, const type parameters, skip-sensitive inference, the permissive instantiation, ...) and of the zod and
@@ -8,7 +9,7 @@ type-fest items is in git (this file before the corpus sessions) and in the comm
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
-nest, webpack, zod, xstate, drizzle, vue (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
+nest, webpack, zod, xstate, drizzle, vue, effect (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
 tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce each to a probe in
 `test/probes/plan19/<corpus>/`, fix the tsc rule behind it. Record the counts in the commit message and
 `measurements.md`; the suite and the other corpora are the regression checks.
@@ -115,6 +116,56 @@ function argument's return type not re-decided while in flight (neon-http TS7023
 non-generic variant of the last one still reports TS7023 where tsc doesn't (`proxy_recursive_wrap2.ts`, `wrap2`:
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
+
+### effect (63; 6300 at pinning)
+Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
+TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
+@effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
+tsconfig.corpus.json` (src + test + dtslint in one program, noEmit, noUnusedLocals off as in dtslint's config).
+exactOptionalPropertyTypes, NodeNext, self-references through `node_modules/effect -> packages/effect`. tsc 5.8.3: 0
+in 16.8 s, 1.8 GB. The largest library corpus (299k lines; 11.1 G instructions at one checker). What it exercises:
+dual APIs (`dual(2, ...)` + overloads), `pipe` with generic functions and generic calls as arguments, generators as
+do-notation (`Effect.gen`, `yield*` of YieldWrap), Schema classes (`class A extends Schema.Class<A>("A")({...})`),
+variance through `_A: Covariant<A>` structs, tstyche's `expect<>().type.toBe<>()`.
+
+The pinning session took it 6300 -> 63 (probes `test/probes/plan19/effect/`, one commit each): generic calls returning
+generic functions instantiated in context (`e.pipe(Effect.provideService(tag, svc))`, 5260 of the 6300), class
+bases on a conditional over the class itself (`[Self] extends [never]`: ty_is_generic_object resolved A's members),
+deferred interface references with defaults decided syntactically (`type AST = Union | ...` with `Union<M extends AST =
+AST>`, TS2456), generic rest parameters: union-of-tuples and tuple-with-variadic rest types (fast-check's
+`asyncProperty`, `STM.gen(this, function*)`, `catchTag(...tags: K, f)`) get per-position contextual types,
+literals that have room in them, and their context-sensitive functions wait out the skip-sensitive round; array-like
+type variables spread into tuples stay variadic; literals with generic functions in them skipped in a candidate's
+first check. Also `readonly ಠ_ಠ` (a modifier before a non-ASCII name).
+
+**Determinism**: 7 of the 63 differ between `--checkers 1` and 4 (`./checkerdiff.py effect`; K=4 twice is identical):
+fiberRuntime 3612, Sink racing/zipping 57/73, vitest internal 175 and three only at K=1. Order-dependent checking,
+like xstate's earlier (triage).
+
+Left, by cause (not reduced unless said):
+- **Return type unions of generic and instantiated signatures** (~12, Stream/constructors 353-368, Sink racing/zipping
+  53-86): `Stream.unfoldEffect(0, (n) => n < 10 ? Effect.succeed(Option.some([n, n + 1])) : Effect.succeed(Option.none()))`
+  infers `Effect<Option<readonly [A, S]>>` in one branch: apparently unfoldEffect's own `A, S` leak into the arrow's
+  inferred return type.
+  Then `Effect.gen` around it is `Effect<void, unknown, unknown>` (TS2375).
+- **Cause.test 546-567** (8): `Cause.flipCauseOption(Cause.sequential(Cause.fail(Option.some("e")), Cause.fail(Option.none())))`:
+  `Option.none()`'s `Option<E>` stays generic (nested generic calls as arguments, no contextual inference).
+- **vitest internal.ts 139/175** (6, TS7053): `arbitraries[key]` with `key: string` on a type parameter
+  `Arbitraries extends ...`: for-in key narrowing over a generic object.
+- **TS2769 on `dual<A, B>(arity, body)`** (core-effect 1834/1858, metric 542, fiberRuntime 3612): explicit type
+  arguments plus a body whose parameters are contextually typed from DataFirst.
+- **`"lookup" in options` on a type parameter** (LayerMap 402/403): `in` narrowing of a type parameter whose
+  constraint is a union of NoExcessProperties intersections.
+- **ReadonlyMailbox members** (stream.ts 3038-3040), runtime.ts 69/74 (FiberRefs dual with `this`), groupBy 258,
+  Micro 2730, Schema.ts 1004/1005 (variadic mapped rest `...typeParameters`), 4110, 4596/4629 (`a[0]` on
+  `NonNullable<Type<S>>`), 9195/9373 (`.FiberId.map(fiberIdDecode)` from a Union's members), TS2556 x2 (spread of
+  `as any` into a rest parameter: tsc accepts any).
+- **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses: dtslint TaggedClass 6, TaggedError 31,
+  TaggedRequest 28 (Schema tagged classes without the Self type argument should be an error), Schema.ts 9010,
+  fiberRuntime 1397.
+- Tests: Match 887/888 (`M.tag("A", () => "a")` inside `M.discriminators`), query 51, traversing 444
+  (`Effect.mergeAll(() => 1, ...)` zero literal), SchemaUserland 12, dtslint Effect 736 (`Effect.fn` generator as
+  catchTag handler).
 
 ### vue (0; 107 at pinning)
 Pinned 2026-09-29 (same session): vue core at b5f85183 (the last commit before TypeScript 6), every package's src and
