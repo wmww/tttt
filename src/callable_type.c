@@ -6,8 +6,8 @@
 #include "ty/ty.h"
 
 void callable_type_drop(CallableType* me) {
+    // (The function is in the CallableType's block, function_impl_into_type(): type_drop() frees both)
     function_impl_drop(my function);
-    free(my function);
 }
 
 static bool is_type_keyword(csview name) {

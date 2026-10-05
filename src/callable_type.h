@@ -7,7 +7,7 @@ typedef struct FunctionImpl FunctionImpl;
 // A function type or signature written as a type (`(x: T) => U`, `new () => T`, `m(): void` in an interface): a
 // FunctionImpl without a body, with FunctionImpl.is_type set
 typedef struct CallableType {
-    FunctionImpl* function; // Owned
+    FunctionImpl* function; // Owned, allocated in the same block right after the CallableType
 } CallableType;
 
 void callable_type_drop(CallableType* me);

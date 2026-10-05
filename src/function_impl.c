@@ -340,9 +340,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 }
 
 TypeNode function_impl_into_type(FunctionImpl me) {
-    // PERF: Maybe allocate the CallableType and FunctionImpl in the same memory block?
     me.is_type = true;
-    return type_callable(c_new(CallableType, { .function = c_new(FunctionImpl, me) }));
+    // (One block, which type_drop() frees with the CallableType)
+    struct { CallableType callable; FunctionImpl function; }* block = c_new(typeof(*block), { .function = me });
+    block->callable.function = &block->function;
+    return type_callable(&block->callable);
 }
 
 Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
