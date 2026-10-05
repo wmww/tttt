@@ -3791,8 +3791,8 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
         return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error (`new super()` too)
     }
     // The initializer of a `const` (or a `static readonly` property) makes a new unique symbol
-    if (call->unique_symbol.key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {
-        ret = ty_unique_symbol(me, &call->unique_symbol);
+    if (call->unique_symbol && call->unique_symbol->key && (ret->flags & TYF_ES_SYMBOL_LIKE) && is_symbol_call(me, call)) {
+        ret = ty_unique_symbol(me, call->unique_symbol);
     }
     return propagate_optional(me, ret, call->continues_chain, optional);
 }

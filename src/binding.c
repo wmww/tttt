@@ -662,7 +662,14 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
 // A `const` declaration of a variable can have a unique symbol type: its annotation and a `Symbol()` initializer say so
 void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* initializer) {
     if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL) annotation->unique_symbol = decl;
-    if (initializer && initializer->tag == EXPR_CALL && !initializer->call->uses_new) initializer->call->unique_symbol = decl;
+    if (!initializer || initializer->tag != EXPR_CALL || initializer->call->uses_new) return;
+    // (Only `Symbol()` or `Symbol.for()` makes one, see is_symbol_call())
+    CallExpr* call = initializer->call;
+    Expr const* callee = &call->callable;
+    if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
+    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(callee->inner_span.sv, "Symbol")) return;
+    if (!call->unique_symbol) call->unique_symbol = malloc(sizeof(UniqueSymbolDecl));
+    *call->unique_symbol = decl;
 }
 
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs) {

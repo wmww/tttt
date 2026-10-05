@@ -476,24 +476,24 @@ zsview binary_op_get_zv(BinaryOp op);
 
 typedef struct BinaryOpExpr {
     BinaryOp op;
-    Expr left;
-    Expr right;
-    bool is_operand; // An operand of another binary expression, without parentheses
-    bool indirect_call; // `(0, o.f)()`: the comma is how to call f without `this` (tsc's isIndirectCall)
+    bool is_operand : 1; // An operand of another binary expression, without parentheses
+    bool indirect_call : 1; // `(0, o.f)()`: the comma is how to call f without `this` (tsc's isIndirectCall)
     // `<a /><b />` where one element is expected: a comma made up by the parser, which already reported TS2657
-    bool jsx_siblings;
-    // Owned, `/** @type {T} */ a.b = v` in JavaScript: the declared type of what the assignment declares (SymbolDecl.jsdoc_type)
-    TypeNode* jsdoc_type;
+    bool jsx_siblings : 1;
     // jsdoc_type is the outermost assignment's of a chain (`/** @type {T} */ a.x = b.y = v`: tsc's
     // getNextJSDocCommentLocation goes up through assignments), not owned
-    bool jsdoc_type_borrowed;
-    uint8_t jsdoc_modifiers; // JsDocModifiers: `/** @private */ this.x = v` (SymbolDecl.jsdoc_modifiers)
+    bool jsdoc_type_borrowed : 1;
     // The declare step's scope_add_expandos() looked at it as a possible `f.x = v` expando; the resolve walk binds the
     // other ones (nested in expressions) with scope_add_nested_expando()
-    bool expando_bound;
+    bool expando_bound : 1;
     // JavaScript: the `a.b || {}` of `a.b = a.b || {}` (a function, class...: tsc's getDefaultedExpandoInitializer), whose
     // left side tsc doesn't check (checkBinaryExpression). Its type is its right side's. Set by the resolve walk
-    bool defaulted_expando;
+    bool defaulted_expando : 1;
+    uint8_t jsdoc_modifiers; // JsDocModifiers: `/** @private */ this.x = v` (SymbolDecl.jsdoc_modifiers)
+    Expr left;
+    Expr right;
+    // Owned, `/** @type {T} */ a.b = v` in JavaScript: the declared type of what the assignment declares (SymbolDecl.jsdoc_type)
+    TypeNode* jsdoc_type;
     // `({ a } = o)`: where the destructured members are read (owned, may be null: see AccessSite)
     AccessSite* access_site;
 } BinaryOpExpr;
@@ -688,8 +688,9 @@ typedef struct CallExpr {
     Expr callable;
     // PERF: types of each argument should be cached
     VecExpr args;
-    // The initializer of a declaration that can have a unique symbol type: `Symbol()` makes one (set when resolving)
-    UniqueSymbolDecl unique_symbol;
+    // The initializer of a declaration that can have a unique symbol type: `Symbol()` makes one (set when resolving,
+    // owned, null unless the callee is written `Symbol` or `Symbol.for`)
+    UniqueSymbolDecl* unique_symbol;
     Symbol const* declares; // What a JavaScript `Object.defineProperty(o, "x", {...})` declares (set when binding)
 } CallExpr;
 

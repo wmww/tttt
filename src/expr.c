@@ -931,6 +931,7 @@ void expr_drop(Expr* me) {
         case EXPR_CALL:
             expr_drop(&my call->callable);
             vec_expr_drop(&my call->args);
+            free(my call->unique_symbol);
             free(my call);
             break;
 
