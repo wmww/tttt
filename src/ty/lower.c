@@ -2330,7 +2330,20 @@ static Ty const* with_pattern_props(Checker* me, Ty const* type, Ty const* patte
     return ret;
 }
 
-// tsc's getTypeFromBindingElement: a default's type widened (and optional), a nested pattern's own type, else any
+// Whether a pattern element belongs to a `const` (or `using`) declaration, through any of its names
+static bool binding_in_const_declaration(Binding const* element) {
+    if (element->tag == BINDING_IDENTIFIER) return element->symbol && element->symbol->is_const;
+    if (element->tag == BINDING_ARRAY) {
+        for_each (item, vec_binding, &element->array) if (item->tag != BINDING_NOOP) return binding_in_const_declaration(item);
+    }
+    if (element->tag == BINDING_OBJECT) {
+        for_each (item, vec_object_binding_item, &element->object) return binding_in_const_declaration(&item->target);
+    }
+    return false;
+}
+
+// tsc's getTypeFromBindingElement: a default's type widened (and optional; but not its literals in a `const`: tsc's
+// widenTypeInferredFromInitializer), a nested pattern's own type, else any
 static Ty const* binding_element_implied_type(Checker* me, Binding const* element, bool include_pattern) {
     if (element->default_value) {
         // (Not remembered while the pattern is a contextual type: its sibling references are `any` then)
@@ -2347,7 +2360,7 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
         } else {
             type = ty_expr_type(me, element->default_value);
         }
-        type = ty_widened_for_declaration(me, type, true);
+        type = ty_widened_for_declaration(me, type, !binding_in_const_declaration(element));
         if (include_pattern) my flow_uncached--;
         if (!compiler_options()->strict_null_checks) return type;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
@@ -2730,7 +2743,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
             ty_is_related(me, ty_regular(me, default_type), types[0], TY_RELATION_STRICT_SUBTYPE)) {
             return types[0];
         }
-        types[1] = ty_widened_for_declaration(me, default_type, true);
+        // (tsc's widenTypeInferredFromInitializer: a `const` keeps the literals)
+        types[1] = ty_widened_for_declaration(me, default_type, !binding_in_const_declaration(binding));
         if (widens && binding->tag == BINDING_IDENTIFIER && !compiler_options()->strict_null_checks &&
             compiler_options()->no_implicit_any && ((raw->xflags | default_type->xflags) & TYX_CONTAINS_WIDENING)
         ) {
