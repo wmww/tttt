@@ -10,6 +10,13 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Inference invokeOnce for conditional targets (2026-10-05, todo entry 8, effect agent)
+Callgrind K1 (`./instrcount.sh`), 0979dc97 -> the fix: effect 11.520 -> 9.728 G (-15.6%), type-fest 3.232 -> 3.111
+(-3.7%), vue 7.828 -> 7.665 (-2.1%), valibot 3.884 -> 3.870, zod 4.488 -> 4.476, xstate 2.856 -> 2.864 (+0.3%),
+the rest within 0.1%. The +4.3% effect regression of 3ec34a9e (inference restarting from a non-object apparent type)
+was `any`/unions walked into recursive conditional aliases (Schema's `ElementsType<Tail, [...]>`: 112k infer_from
+calls for one restart; tsc's invokeOnce stops it at two levels).
+
 ## Parallel name resolution (2026-10-05, plan 45 stage 1, tenth window's todo entry 7)
 `--time` resolve names, best of 3, default threads (4 = 2 cores x SMT), load ~3: vscode 593 -> 283 ms (the walk 510
 -> ~200; declare 40 and link 28 stay serial), tsc `src/compiler` 77 -> 39, webpack 72 -> 63 (JavaScript walks

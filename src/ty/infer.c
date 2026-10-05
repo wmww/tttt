@@ -1288,6 +1288,17 @@ static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
     return ret;
 }
 
+// tsc's isDeeplyNestedType(type, stack, depth, 2) as inference's invokeOnce asks it: a type without a recursion identity
+// of its own (`any`) is its own identity there
+static bool infer_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
+    if (ty_is_deeply_nested(ty, stack, depth, 2)) return true;
+    if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_DEFERRED)) return false;
+    for (u32 i = 0; i < depth; i++) {
+        if (stack[i] == ty) return true;
+    }
+    return false;
+}
+
 static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if (!(target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty_is_no_infer(target)) return;
     if (source->alias && source->alias == target->alias) {
@@ -1366,6 +1377,23 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         infer_from(me, inf, source->substitution.base, target);
         infer_with_priority(me, inf, ty_substitution_intersection(me, source), target, INFER_PRIORITY_SUBSTITUTE_SOURCE);
     } else if (target->kind == TY_CONDITIONAL) {
+        // Once per pair, and not while both sides keep nesting (tsc's invokeOnce around inferToConditionalType): `any`
+        // to a recursive conditional alias (`ElementsType<Tail, [...]>`) would walk every level of it
+        if (!visited_add(inf, source, target) || inf->object_depth >= INFER_MAX_DEPTH) {
+            inf->depth--;
+            return;
+        }
+        unsigned saved_expanding = inf->expanding;
+        if (!(inf->expanding & 1) && infer_deeply_nested(source, inf->object_sources, inf->object_depth)) inf->expanding |= 1;
+        if (!(inf->expanding & 2) && infer_deeply_nested(target, inf->object_targets, inf->object_depth)) inf->expanding |= 2;
+        if (inf->expanding == 3) {
+            inf->expanding = saved_expanding;
+            inf->depth--;
+            return;
+        }
+        inf->object_sources[inf->object_depth] = source;
+        inf->object_targets[inf->object_depth] = target;
+        inf->object_depth++;
         // (Before a union source is taken apart, like tsc's inferFromTypes: `E` of a union alias infers E itself)
         if (source->kind == TY_CONDITIONAL) {
             infer_from(me, inf, source->conditional.check, target->conditional.check);
@@ -1393,6 +1421,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             }
             inf->priority = saved;
         }
+        inf->object_depth--;
+        inf->expanding = saved_expanding;
     } else if (target->kind == TY_UNION) {
         infer_to_union(me, inf, source, target);
     } else if (target->kind == TY_INTERSECTION) {
@@ -1444,8 +1474,10 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) {
                 // One that isn't an object starts over: `EB extends Die | Fail<E>` to `Fail<E'>` infers from each member
                 // (tsc's inferFromTypes restarting with the apparent source)
+                // (Not an unconstrained one's unknown, which infers nothing to an object target: a quarter million
+                // times in effect)
                 if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
-                    infer_from(me, inf, apparent, target);
+                    if (!(apparent->flags & (TYF_UNKNOWN | TYF_ANY | TYF_NEVER))) infer_from(me, inf, apparent, target);
                     inf->depth--;
                     return;
                 }
