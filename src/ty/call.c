@@ -868,9 +868,9 @@ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper
 // Checks argument i of those for a generic rest parameter, from `from` on (tsc's getSpreadArgumentType): its contextual
 // type is the rest type's element at its position, and a literal that has room in it isn't widened as a candidate
 // (`Literal("a")` under `...literals: Literals` with `Literals extends readonly LiteralValue[]` is `["a"]`)
-static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args const* args, u32 i, u32 from, bool is_const) {
+static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args const* args, u32 i, u32 from) {
     if (args->spread_index >= 0) return nullptr;
-    if (is_const || !ty_is_tuple(shape->rest_variadic)) {
+    if (!ty_is_tuple(shape->rest_variadic)) {
         // A rest type that isn't a tuple gives `T[i]` (with a `const T`, each argument is in a const context)
         Value index = value_number((double)(i - from));
         return ty_indexed(me, shape->rest_variadic, ty_literal(me, &index));
@@ -881,7 +881,7 @@ static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args 
 
 static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32 i, u32 from, bool is_const) {
     Arg* arg = &args->data[i];
-    Ty const* contextual = rest_arg_contextual(me, shape, args, i, from, is_const);
+    Ty const* contextual = rest_arg_contextual(me, shape, args, i, from);
     arg->type = ty_check_expr_in_const(me, arg->expr, contextual, is_const);
     if (!is_const && contextual && (arg->type->flags & TYF_FRESH_LITERAL) &&
         ty_is_literal_of_contextual_type(me, arg->type, contextual)
@@ -899,7 +899,7 @@ static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* s
     // getSpreadArgumentType, an indexed access with AccessFlags.Contextual): `gen(this, function*() { this.x })` under
     // `...args: [self: Self, body: (this: Self) => ...] | [body: ...]`
     bool sensitive = false;
-    for (u32 i = from; i < args->len && !is_const && args->spread_index < 0; i++) {
+    for (u32 i = from; i < args->len && args->spread_index < 0; i++) {
         sensitive |= !args->data[i].type && args->data[i].context_sensitive && args->data[i].expr->tag == EXPR_FUNCTION;
     }
     if (sensitive) {
@@ -909,17 +909,18 @@ static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* s
             if (arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION) {
                 arg->type = ty_any_function_type(me);
             } else {
-                check_rest_arg(me, shape, args, i, from, false);
+                check_rest_arg(me, shape, args, i, from, is_const);
             }
         }
-        infer_types(me, inf, rest_args_tuple(me, args, from, true, false), shape->rest_variadic, INFER_PRIORITY_NORMAL);
+        infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)),
+            shape->rest_variadic, INFER_PRIORITY_NORMAL);
         for (u32 i = from; i < args->len; i++) {
             Arg* arg = &args->data[i];
             if (!arg->context_sensitive || arg->expr->tag != EXPR_FUNCTION) continue;
             // (Its contextual type is instantiated where it is looked at, as in the second pass)
             my outer_inference = self;
             self->fixing = true;
-            arg->type = ty_check_expr(me, arg->expr, rest_arg_contextual(me, shape, args, i, from, false));
+            arg->type = ty_check_expr(me, arg->expr, rest_arg_contextual(me, shape, args, i, from));
             self->fixing = false;
             my outer_inference = nullptr;
         }
