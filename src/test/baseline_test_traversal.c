@@ -2160,8 +2160,11 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
             my this_kind == THIS_CLASS_STATIC ? ty_expr_type(current_checker, &class_decl->extends) :
             ty_class_base_instance(current_checker, class_decl);
         // (For a class that is its base constructor's type that's the same symbol, not for a mixin's `T`)
-        if (base && my super_call && class_decl->extends.tag == EXPR_IDENTIFIER) {
-            Ty const* constructor = ty_expr_type(current_checker, &class_decl->extends);
+        // (Any base expression: `extends getBase()`, `extends getBase()<number>`)
+        Expr const* base_expr = class_decl && class_decl->extends.tag == EXPR_GENERIC_PARAMS ?
+            &class_decl->extends.generic_params->expr : class_decl ? &class_decl->extends : nullptr;
+        if (base && my super_call && base_expr) {
+            Ty const* constructor = ty_expr_type(current_checker, base_expr);
             if (constructor->flags & TYF_TYPE_PARAM) base = constructor;
             // A base constructor declared as an interface's value (`declare var Set: SetConstructor`): that interface
             // (tsc's getSymbolAtLocation of `super()`, the symbol of the base constructor type)
