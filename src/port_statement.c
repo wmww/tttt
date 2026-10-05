@@ -240,6 +240,48 @@ static void report_string_export_names(PortItem const* item, ErrorCtx* errs) {
     if (!span_eq(item->source_name, item->decl_name)) report_string_export_name(item->decl_name, errs);
 }
 
+// tsc's isOnlyImportableAsDefault: in Node.js an ES module's import of JSON (a .json file or a .d.json.ts
+// declaration) gets only a default export
+static bool imports_json_as_esm(PortStatement const* me) {
+    ModuleKind module = compiler_options()->module;
+    if (module < MODULE_KIND_NODE16 || module > MODULE_KIND_NODENEXT || my is_import_require || !my module_ref) return false;
+    SourceFile const* from = my keyword_span.source;
+    SourceFile const* target = my module_ref->file;
+    if (!from || !from->is_esm || !target) return false;
+    return target->is_json || csview_ends_with(cstr_sv(&target->canonical_path), ".d.json.ts");
+}
+
+static char const* node_module_kind_name(ModuleKind kind) {
+    return kind == MODULE_KIND_NODE16 ? "Node16" : kind == MODULE_KIND_NODE18 ? "Node18" : "NodeNext";
+}
+
+// tsc's checkImportDeclaration (TS1543) and getExternalModuleMember (TS1544) for imports of JSON into an ES module
+static void port_statement_check_json_import(PortStatement const* me, ErrorCtx* errs) {
+    if (my jsdoc || !imports_json_as_esm(me)) return;
+    ModuleKind module = compiler_options()->module;
+    bool is_import = span_equals(my keyword_span, "import");
+    if (is_import && !my main.type_only && module >= MODULE_KIND_NODE18) {
+        bool type_json = false;
+        for_each (i, vec_import_attribute, my attributes ? &my attributes->elements : &(VecImportAttribute){0}) {
+            csview name = i->name.sv;
+            if (name.size >= 2 && (*name.buf == '"' || *name.buf == '\'')) name = csview_slice(name, 1, name.size - 1);
+            Expr const* value = &i->value;
+            type_json |= csview_equals(name, "type") && value->tag == EXPR_LITERAL && value->literal.tag == VALUE_STRING &&
+                cstr_equals(&value->literal.string, "json");
+        }
+        if (!type_json) {
+            error_ctx_error_d(errs, my target_path_span, 1543, "Importing a JSON file into an ECMAScript module requires a "
+                "'type: \"json\"' import attribute when 'module' is set to '", node_module_kind_name(module), "'.");
+        }
+    }
+    for_each (i, vec_port_item, &my items) {
+        if (i->tag != PORT_IMPORT_SPECIFIC && i->tag != PORT_REEXPORT_SPECIFIC) continue;
+        if (csview_equals(port_item_name(i->source_name), "default")) continue;
+        error_ctx_error_d(errs, i->source_name, 1544, "Named imports from a JSON file into an ECMAScript module are not "
+            "allowed when 'module' is set to '", node_module_kind_name(module), "'.");
+    }
+}
+
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
     if (my in_namespace && !my jsdoc) {
         if (port_statement_is_export_declaration(me)) {
@@ -286,6 +328,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             exported ? "exported using 'export type'." : "imported using 'import type'.");
         port_item_add_type_only_related(error, alias_type_only, port_item_name(alias_type_only->decl_name));
     }
+    port_statement_check_json_import(me, errs);
     // (tsc's checkImportEqualsDeclaration)
     if (compiler_options()->erasable_syntax_only && !ambient && !my jsdoc && (my main.tag == PORT_IMPORT_ALIAS || my is_import_require)) {
         error_ctx_error_d(errs, span_with_semicolon(span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
