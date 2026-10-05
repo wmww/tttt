@@ -838,12 +838,34 @@ static void display_node_args(Checker* me, TyDisplay d, VecSpannedType const* ar
 // A JSDoc reference tsc prints as its type instead of reusing it (visitExistingNodeTreeSymbols): a name with a JSDoc
 // meaning (`String`, `Object`, `array`...), one that finds nothing, a generic type without enough type arguments, a
 // name an `@import` declares (not a visible declaration to tsc)
+static bool has_prototype_members(Symbol const* symbol) {
+    SymbolTable const* members = symbol_rare(symbol)->members;
+    if (!members) return false;
+    for (u32 i = 0; i < members->count; i++) {
+        Symbol const* member = members->entries[i].symbol;
+        for (u32 j = 0; member && j < member->decl_count; j++) {
+            if (member->decls[j].kind == SYMBOL_DECL_ASSIGNMENT && member->decls[j].assignment == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->jsdoc_intrinsic || !identifier->target) return false;
     // A value used as a type (an expando `Outer.Inner = class {}`: tsc's getTypeFromJSDocValueReference) isn't found by
     // a type lookup, which reuse needs
     if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return false;
+    // A constructor function assigned to a variable or property (`var D = function () { this.x = 1 }`): the
+    // instance type's symbol is the function expression's, not the name's, so tsc's reuse check fails
+    // (With `D.prototype.x = v` the members are the name's own, which is then the instance type's symbol)
+    if ((identifier->target->flags & SYMBOL_CLASS) && (identifier->target->flags & (SYMBOL_VARIABLE | SYMBOL_PROPERTY)) &&
+        !has_prototype_members(identifier->target)
+    ) {
+        return false;
+    }
     Symbol const* first = identifier_type_namespace_count(identifier) ?
         (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
     if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&

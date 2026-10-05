@@ -60183,7 +60183,7 @@ const baselines = {
     'exportNestedNamespaces': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportNestedNamespaces2': {
         errors: true,
@@ -60453,7 +60453,7 @@ const baselines = {
     'moduleExportNestedNamespaces': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportPropertyAssignmentDefault': {
         errors: true,
@@ -60718,7 +60718,7 @@ const baselines = {
     'typeFromParamTagForFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment': {
         errors: true,
