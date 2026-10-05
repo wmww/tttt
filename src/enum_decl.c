@@ -148,11 +148,13 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         }
         if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
         ty_check_enum_initializer_references(current_checker, i, &i->value, errs);
-        Ty const* member = ty_declared_type_of(current_checker, i->symbol);
-        previous_number = member->flags & TYF_NUMBER_LITERAL;
+        // (Evaluated, not typed: the enum's literal types are made when something asks for them, which decides their
+        // order in unions)
+        double value = 0;
+        int constant = ty_enum_member_constant(current_checker, i, &value);
+        previous_number = constant == 1;
         Span at = expr_outer_span(&i->value);
-        if (member->flags & TYF_NUMBER_LITERAL) {
-            double value = member->literal.value.number;
+        if (constant == 1) {
             if (my is_const && isnan(value)) {
                 error_ctx_error_d(errs, at, 2478, "'const' enum member initializer was evaluated to disallowed value 'NaN'.");
             } else if (my is_const && !isfinite(value)) {
@@ -160,7 +162,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             }
             continue;
         }
-        if (member->flags & TYF_STRING_LITERAL) {
+        if (constant == 2) {
             // (tsc's computeConstantEnumMemberValue, getIsolatedModules)
             if ((compiler_options()->isolated_modules || compiler_options()->verbatim_module_syntax) &&
                 !ty_enum_initializer_is_syntactic_string(current_checker, &i->value)

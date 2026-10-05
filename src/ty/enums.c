@@ -274,6 +274,17 @@ bool ty_evaluate_string(Checker* me, Expr const* expr, cstr* out) {
     return true;
 }
 
+int ty_enum_member_constant(Checker* me, EnumCase const* member, double* number) {
+    EnumCase const* outer = my enum_evaluating;
+    my enum_evaluating = member;
+    EnumValue value = evaluate(me, &member->value, 0);
+    my enum_evaluating = outer;
+    int ret = !value.known ? 0 : value.is_string ? 2 : 1;
+    if (ret == 1) *number = value.number;
+    cstr_drop(&value.string);
+    return ret;
+}
+
 Ty const* ty_resolve_enum(Checker* me, Symbol const* decl) {
     Ty const** members = nullptr;
     u32 count = 0, cap = 0;

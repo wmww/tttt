@@ -39028,7 +39028,7 @@ const baselines = {
     'enumBasics': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumClassification': {
         errors: true,
@@ -67658,7 +67658,7 @@ const baselines = {
     'unknownType2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'witness': {
         errors: true,
