@@ -254,6 +254,19 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     if (my symbol && type_literal_has_index_constraints(&my type)) ty_declared_type_of(current_checker, my symbol);
     generic_typecheck(&my generic, true, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, true, errs);
+    // tsc's checkTypeAliasDeclaration: `= intrinsic` declares one of the compiler's types, known by name and arity
+    if (my type.tag == TYPE_IDENTIFIER && !my jsdoc && span_equals(my type.identifier->name, "intrinsic") &&
+        !identifier_type_namespace_count(my type.identifier) && !vec_spanned_type_size(&my type.identifier->generic_params)
+    ) {
+        isize params = vec_generic_item_size(&my generic.items);
+        static char const* const one[] = { "Uppercase", "Lowercase", "Capitalize", "Uncapitalize", "NoInfer" };
+        bool valid = params == 0 && span_equals(my name, "BuiltinIteratorReturn");
+        for (u32 i = 0; i < c_arraylen(one) && params == 1 && !valid; i++) valid = csview_equals(my name.sv, one[i]);
+        if (!valid) {
+            error_ctx_error_d(errs, my type.identifier->name, 2795, "The 'intrinsic' keyword can only be used to declare "
+                "compiler provided intrinsic types.");
+        }
+    }
     // tsc's checkTypeReferenceNode resolves every reference it walks. When the reference is the body, that is the alias's
     // own type, which lowers it in the alias's context (a deferred reference, the alias name)
     // A type literal body likewise: the walk below makes the types of the literals it meets (tsc's checkTypeLiteral)
