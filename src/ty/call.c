@@ -361,6 +361,13 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
 // `skip_sensitive`: a context-sensitive function not typed yet is anyFunctionType (tsc's SkipContextSensitive)
 static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive) {
     u32 arity = args->len > from ? args->len - from : 0;
+    // Just a spread of something of type any: any, not `any[]` (tsc's getSpreadArgumentType for a last spread argument
+    // takes an array-like type as it is), so `f(...x as any)` fits a rest parameter `L extends [A, ...A[]]`
+    if (arity == 1 && args->data[from].spread && !args->data[from].variadic && args->data[from].expr->tag == EXPR_SPREAD &&
+        (ty_expr_type(me, args->data[from].expr->spread)->flags & TYF_ANY)
+    ) {
+        return ty_intrinsic(me, TY_ANY);
+    }
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
     Atom const** names = nullptr;
