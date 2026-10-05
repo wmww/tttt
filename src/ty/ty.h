@@ -1293,6 +1293,7 @@ Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const
 Ty const* ty_base_constraint(Checker* me, Ty const* ty); // of a type parameter or deferred type, null if there's none
 Ty const* ty_conditional_constraint(Checker* me, Ty const* conditional); // tsc's getConstraintOfConditionalType, relate.c
 Ty const* ty_param_default(Checker* me, Ty const* param); // null if none
+bool ty_param_has_default(Ty const* param); // Whether it declares a default (without lowering it)
 
 // instantiate.c
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);

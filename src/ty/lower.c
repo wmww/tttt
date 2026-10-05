@@ -2830,8 +2830,10 @@ static Ty const* deferred_interface_reference(
     u32 written = (u32)vec_spanned_type_size(&identifier->generic_params);
     // A wrong number of type arguments is an error, not deferred
     if (written > params.len) return nullptr;
+    // (Whether there are defaults is syntactic, tsc's hasTypeParameterDefault: lowering them could reach the alias this
+    // is in, `type AST = Union | ...` with `class Union<M extends AST = AST>`)
     for (u32 i = written; i < params.len; i++) {
-        if (!ty_param_default(me, params.data[i])) return nullptr;
+        if (!ty_param_has_default(params.data[i])) return nullptr;
     }
     if (!alias) {
         bool defer = written != params.len;

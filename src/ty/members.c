@@ -4120,6 +4120,13 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     return ty_param_constraint_is_circular(me, param) ? nullptr : constraint;
 }
 
+bool ty_param_has_default(Ty const* param) {
+    check(param->kind == TY_TYPE_PARAM);
+    TyParamState const* state = param->param.state;
+    if (state->clone_of) return ty_param_has_default(state->clone_of);
+    return state->item && state->item->fallback_explicit;
+}
+
 Ty const* ty_param_default(Checker* me, Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState* state = param->param.state;
