@@ -3042,6 +3042,8 @@ static bool ty_type_variable_in(Ty const* ty) {
     return false;
 }
 
+static bool is_thenable(Checker* me, Ty const* ty);
+
 // tsc's isAwaitedTypeNeeded: a generic type that could be (or hold) a promise stays `Awaited<T>`
 static bool awaited_type_needed(Checker* me, Ty const* ty, Symbol const* awaited) {
     if ((ty->flags & TYF_ANY) || (awaited && ty->alias == awaited)) return false;
@@ -3051,17 +3053,10 @@ static bool awaited_type_needed(Checker* me, Ty const* ty, Symbol const* awaited
     if (!constraint && ty->kind != TY_TYPE_PARAM && !(ty->flags & TYF_DEFERRED) && (ty->flags & TYF_OBJECT)) constraint = ty;
     if (!constraint) return ty_type_variable_in(ty);
     if (constraint->flags & (TYF_ANY | TYF_UNKNOWN)) return true;
-    if (constraint->flags & TYF_NON_PRIMITIVE) return true;
-    if ((constraint->flags & TYF_OBJECT) && !ty_members(me, constraint)->mapped && !ty_members(me, constraint)->prop_count && !ty_members(me, constraint)->call_count &&
-        !ty_members(me, constraint)->construct_count && !ty_members(me, constraint)->index_count
-    ) {
-        return true; // `{}`
-    }
+    if (ty_is_empty_object_type(me, constraint)) return true; // `{}`, `object`, or a union with one
     TyList parts = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
-    Atom const* then = checker_atom(me, c_sv("then"));
     for (u32 i = 0; i < parts.len; i++) {
-        Ty const* apparent = ty_apparent_type(me, parts.data[i]);
-        if (ty_prop_type_of(me, apparent, then)) return true; // Thenable
+        if (is_thenable(me, parts.data[i])) return true;
     }
     return false;
 }

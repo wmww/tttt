@@ -2218,7 +2218,7 @@ const baselines = {
     'awaitedType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'awaitedTypeCrash': {
         errors: true,
@@ -2238,7 +2238,7 @@ const baselines = {
     'awaitedTypeStrictNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'badArrayIndex': {
         errors: true,
