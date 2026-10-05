@@ -442,25 +442,52 @@ static Generic const* decl_generic(Symbol const* symbol, u32 d) {
     }
 }
 
-static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
-    Generic const* ret = nullptr;
+// The merged list: of class and interface declarations every distinct name, in the order they come (a later one's
+// parameter of a known name is the same one, tsc's binder merges them by name); else the first declaration's
+typedef struct MergedTypeParams {
+    GenericItem const* items[32];
+    u32 count;
+} MergedTypeParams;
+
+static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParams* out) {
+    Generic const* first = nullptr;
+    u32 first_d = 0;
     *min = 0;
-    for (u32 d = 0; d < symbol->decl_count && !ret; d++) {
+    out->count = 0;
+    for (u32 d = 0; d < symbol->decl_count && !first; d++) {
         Generic const* generic = decl_generic(symbol, d);
-        if (!generic_empty(generic)) ret = generic;
+        if (!generic_empty(generic)) {
+            first = generic;
+            first_d = d;
+        }
     }
-    if (!ret) return nullptr;
-    u32 count = (u32)vec_generic_item_size(&ret->items);
-    for (u32 i = 0; i < count; i++) {
+    if (!first) return false;
+    for_each (i, vec_generic_item, &first->items) if (out->count < c_arraylen(out->items)) out->items[out->count++] = i;
+    bool merges = symbol->decls[first_d].kind == SYMBOL_DECL_CLASS || symbol->decls[first_d].kind == SYMBOL_DECL_INTERFACE;
+    for (u32 d = first_d + 1; merges && d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind != SYMBOL_DECL_CLASS && symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        for_each (i, vec_generic_item, &decl_generic(symbol, d)->items) {
+            bool known = false;
+            for (u32 k = 0; k < out->count && !known; k++) known = name_equals(out->items[k]->name.sv, i->name.sv);
+            if (!known && out->count < c_arraylen(out->items)) out->items[out->count++] = i;
+        }
+    }
+    for (u32 k = 0; k < out->count; k++) {
         bool has_default = false;
         for (u32 d = 0; d < symbol->decl_count; d++) {
             Generic const* generic = decl_generic(symbol, d);
             if (!generic) continue;
-            if (i < (u32)vec_generic_item_size(&generic->items)) has_default |= vec_generic_item_at(&generic->items, i)->fallback_explicit;
+            if (merges) {
+                for_each (i, vec_generic_item, &generic->items) {
+                    if (name_equals(i->name.sv, out->items[k]->name.sv)) has_default |= i->fallback_explicit;
+                }
+            } else if (k < (u32)vec_generic_item_size(&generic->items)) {
+                has_default |= vec_generic_item_at(&generic->items, k)->fallback_explicit;
+            }
         }
-        if (!has_default) *min = i + 1;
+        if (!has_default) *min = k + 1;
     }
-    return ret;
+    return true;
 }
 
 Span identifier_type_span(IdentifierType const* me) {
@@ -514,9 +541,9 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
 bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile const* source) {
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
-    Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
-    if (!params) return !arg_count || !(symbol->flags & SYMBOL_TYPE);
-    u32 count = (u32)vec_generic_item_size(&params->items);
+    MergedTypeParams params;
+    if (!generic_kind || !declared_type_params(symbol, &min, &params)) return !arg_count || !(symbol->flags & SYMBOL_TYPE);
+    u32 count = params.count;
     // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
     // are any)
     // (Not for a type alias: tsc's getTypeFromTypeAliasReference has no such leniency)
@@ -528,21 +555,21 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, b
     if (several_types_arity_fits(symbol, arg_count, span.source)) return false;
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
-    Generic const* params = generic_kind ? declared_type_params(symbol, &min) : nullptr;
-    if (!params) {
+    MergedTypeParams params;
+    if (!generic_kind || !declared_type_params(symbol, &min, &params)) {
         // (tsc's symbolToString of a class expression without a name)
         csview name = symbol->name.size || !(symbol->flags & SYMBOL_CLASS) ? symbol->name : c_sv("(Anonymous class)");
         error_ctx_error_d(errs, span, 2315, "Type '", name, "' is not generic.");
         return true;
     }
-    u32 count = (u32)vec_generic_item_size(&params->items);
+    u32 count = params.count;
     cstr name = cstr_from_sv(symbol->name);
     if (!(symbol->flags & SYMBOL_TYPE_ALIAS)) {
         // (tsc's typeToString of the generic type: its parameters)
         cstr_append(&name, "<");
         for (u32 i = 0; i < count; i++) {
             if (i) cstr_append(&name, ", ");
-            cstr_append_sv(&name, vec_generic_item_at(&params->items, i)->name.sv);
+            cstr_append_sv(&name, params.items[i]->name.sv);
         }
         cstr_append(&name, ">");
     }

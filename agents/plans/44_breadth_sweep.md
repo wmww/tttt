@@ -115,10 +115,6 @@ like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType
   getTargetOfNamespaceExportDeclaration -> resolveExternalModuleSymbol returns the *unmerged* module symbol when there
   is no `export =`: `getMergedSymbol(undefined) || moduleSymbol`), so `d3.Tooltip` is TS2694 there; tttt merges
   augmentations into the module's own exports. Would need the UMD view to skip names only augmentations add.
-- **leaflet-label**: an interface merged into a class with different type parameter lists (`class FeatureGroup<P>`
-  + `interface FeatureGroup<T extends ILayer>`): tsc's declared type takes the union of the declarations' type
-  parameters by name (`FeatureGroup<P, T>`, TS2314 at every one-argument reference) and reports TS2428 only at the
-  interface; tttt keeps the first declaration's list, reports TS2428 at both and then TS2415/TS2430.
 - **dynmap**: tsc's TS2317 for jquery's 1-parameter `interface Iterable<T>` (es5 lib) comes from typeToString in an
   elaboration calling getGlobalIterableType: incidental, not worth chasing.
 - **react-relay** (TS2322/TS2344/TS2339 on never): `EntryPoint<C, P>` isn't assignable to `EntryPoint<any, any>`

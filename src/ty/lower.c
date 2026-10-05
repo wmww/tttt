@@ -59,14 +59,36 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
     return *list;
 }
 
-// Makes the type parameters of a later declaration of a merged interface the same types as the first declaration's
-static void unify_type_params(Checker* me, TyList params, Generic const* other) {
-    for_each (i, vec_generic_item, &other->items) {
-        if ((u32)i_index >= params.len || !i->symbol_ref) break;
-        u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)i->symbol_ref };
-        void const** slot = intern_slot(me, &my links, key, 2);
-        if (!*slot) *slot = params.data[i_index];
+// The type parameters of a class or interface with several declarations (tsc's
+// getLocalTypeParametersOfClassOrInterfaceOrTypeAlias): the distinct names in the order the declarations introduce
+// them. A later declaration's parameter of a name already there is that same type (tsc's binder puts them in the
+// symbol's members, by name); `class C<P>` with `interface C<T>` is `C<P, T>` (TS2428)
+static TyList merged_local_type_params(Checker* me, Symbol const* symbol, Generic const* first) {
+    TyList local = ty_type_params_of(me, first);
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        Generic const* other = symbol->decls[d].kind == SYMBOL_DECL_INTERFACE ? &((InterfaceDecl const*)symbol->decls[d].node)->generic :
+            symbol->decls[d].kind == SYMBOL_DECL_CLASS ? &((ClassDecl const*)symbol->decls[d].node)->generic : nullptr;
+        if (!other || other == first) continue;
+        for_each (i, vec_generic_item, &other->items) {
+            if (!i->symbol_ref) continue;
+            Atom const* name = checker_atom(me, i->name.sv);
+            Ty const* same = nullptr;
+            for (u32 k = 0; k < local.len && !same; k++) if (local.data[k]->param.name == name) same = local.data[k];
+            u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)i->symbol_ref };
+            if (same) {
+                void const** slot = intern_slot(me, &my links, key, 2);
+                if (!*slot) *slot = same;
+                continue;
+            }
+            Ty const* param = ty_type_param(me, i->symbol_ref);
+            if (!param->param.state->item) param->param.state->item = i;
+            Ty const** data = arena_new_n(&my arena, Ty const*, local.len + 1);
+            if (local.len) memcpy(data, local.data, local.len * sizeof(*data));
+            data[local.len] = param;
+            local = (TyList){ .data = data, .len = local.len + 1 };
+        }
     }
+    return local;
 }
 
 Span ty_symbol_display_name(Symbol const* symbol) {
@@ -148,7 +170,7 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
     }
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE) {
         Generic const* first = symbol_type_generic(symbol);
-        TyList local = ty_type_params_of(me, first);
+        TyList local = merged_local_type_params(me, symbol, first);
         TyList outer = ret->declared.type_params;
         if (!outer.len) {
             ret->declared.type_params = local;
@@ -157,11 +179,6 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
             memcpy(data, outer.data, outer.len * sizeof(*data));
             memcpy(data + outer.len, local.data, local.len * sizeof(*data));
             ret->declared.type_params = (TyList){ .data = data, .len = outer.len + local.len };
-        }
-        for (u32 i = 0; i < symbol->decl_count; i++) {
-            if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
-            InterfaceDecl const* interface_decl = symbol->decls[i].node;
-            if (&interface_decl->generic != first) unify_type_params(me, local, &interface_decl->generic);
         }
         // (A class merged with an interface is a class: tsc's getDeclaredTypeOfClassOrInterface)
         if (kind == TY_DECLARED_CLASS_INSTANCE || (symbol->flags & SYMBOL_CLASS) || interface_has_this(symbol, 0)) {

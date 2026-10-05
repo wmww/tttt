@@ -24003,7 +24003,7 @@ const baselines = {
     'nonIdenticalTypeConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonInferrableTypePropagation1': {
         errors: true,
@@ -50468,7 +50468,7 @@ const baselines = {
     'twoGenericInterfacesDifferingByTypeParameterName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'twoGenericInterfacesDifferingByTypeParameterName2': {
         errors: true,
