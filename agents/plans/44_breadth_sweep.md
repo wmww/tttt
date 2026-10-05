@@ -92,8 +92,7 @@ like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tes
   (`first_unfit_argument_skipping`/`check_args_until_unfit` `skipped_arg`): tsc relates anyFunctionType (`{}`, but
   signatures always fit, checker.ts ~23891) to the parameter, so `c.query("SELECT", (err, r) => ...)` fails pg's
   `(config, values?: QueryConfigValues<I>)` overload in that round and the arrow isn't typed against it for good. Left
-  alone in session 8 (the effect agent owned the skip logic); pg matches since, re-check with
-  /tmp-style probes `declare function q(a: string, v?: number[]): void; declare function q(a: string, cb: (e: Error)
+  alone in session 8 (forwarded to the effect agent); pg matches since, re-check with a probe like `declare function q(a: string, v?: number[]): void; declare function q(a: string, cb: (e: Error)
   => void): void; q("x", e => {})`. The literal case is the Large item below.
 
 - **TS2303 on the import instead of the `export =` of a self-importing module** (koa-webpack, react-loadable;
@@ -132,9 +131,14 @@ like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tes
   interface; tttt keeps the first declaration's list, reports TS2428 at both and then TS2415/TS2430.
 - **dynmap**: tsc's TS2317 for jquery's 1-parameter `interface Iterable<T>` (es5 lib) comes from typeToString in an
   elaboration calling getGlobalIterableType: incidental, not worth chasing.
-- Not investigated: google-apps-script (property named `''`), ember (TS2615 `decrementProperty` circular in a mapped
-  type, observable-tests; two TS2578), function-bind (TS2578 at 31, 69-78: missing checks), d3-array (TS2345 on
-  `group(objArray, ...keys)` with `...keys: { [I in keyof TKeys]: (value, index, values) => TKeys[I] }`, TS7006 in
-  `cross([2, 3], [5, 6], (a, b) => ...)` against `[...iterables: { [K in keyof T]: Iterable<T[K]> }, reducer:
-  (...values: T) => U]`), react-relay (EntryPoint types: TS2344/TS2339 on never), fabric's second `Image`, kefir.
-  `./sweep.py --last -k ...` lists each.
+- **react-relay** (TS2322/TS2344/TS2339 on never): `EntryPoint<C, P>` isn't assignable to `EntryPoint<any, any>`
+  (repro: import EntryPointTypes, `const r: Record<string, EntryPoint<any, any> | undefined> = { a: e }` with
+  `e: EntryPoint<EntryPointComponent<{}, {}, { onClick: () => void }, {}>, { author: string }>`). The chain ends in
+  the alias `EntryPointComponent` (= `ComponentType<EntryPointProps<...>>`): TTTT_DUMP_VARIANCES gives its #2/#3
+  (TRuntimeProps, TExtraProps) reliable invariant (0) while #0/#1 and ComponentClass's P are invariant+unreliable (8),
+  so `{ onClick }` vs `{}` fails without a structural fallback. Suspect: the unreliable marker of ComponentClass's
+  variance doesn't propagate into the alias's measurement for those parameters. Not confirmed against tsc.
+- **d3-array**'s remaining TS7006 (`cross([2, 3], [5, 6], (a, b) => ...)`): the skip-round anyFunctionType cause above
+  (the arrow should fail `Iterable<T[K]>` of the first overload).
+- Not investigated: google-apps-script (property named `''`), fabric's second `Image`, kefir; d3-tip and dynmap as
+  above. `./sweep.py --last -k ...` lists each.
