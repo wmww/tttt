@@ -37,7 +37,8 @@ csview test_name_from_path(csview path);
 
 // A virtual file within a test case
 typedef struct BaselineTestFile {
-    cstr path;
+    cstr path; // With `/` for `\` (`// @Filename: C:\a\b.ts` is the program's C:/a/b.ts, as in tsc's harness)
+    cstr header; // The name as the test writes it, for the baselines' headers, when it isn't path
     SourceFile const* source; // Null for files that aren't scripts (package.json and so on)
     cstr raw_contents; // Only for files that aren't scripts, tsc still shows them in the errors baseline
     // A `// @Filename:` the test repeats later: the later copy is the file, this one is only shown (raw_contents)

@@ -32,9 +32,6 @@ missing_checks.md "Module and import checks", type_core.md "Circularity" (getter
   not merged: it fixes 2 of 3 errors of deeplyNestedMappedTypes but no whole test, and costs +0.17% instructions on
   drizzle (+0.05% type-fest) because comparisons that stopped early now go on, as tsc's do. Recreate it from that
   description (isDeeplyNestedType's mapped-type identity) when the `Id2<Id2<...>>` case is understood too.
-- (same session) tripleSlashReferenceAbsoluteWindowsPath: d's fix was superseded by c's triple-slash change, which turns
-  `C:\a\b\c.ts` into `C:/a/b/c.ts`; tttt's path joining doesn't treat that as absolute (and the test's file keeps the
-  backslash name). Not lost against the session start, but it passed mid-session.
 - (same session) valgrind shows a "possibly lost" block from the thread-local `program_modules_exporting` /
   `program_containers` caches in `symbol_chain.c` (never freed), eg importElisionConstEnumMerge1. Pre-existing.
 - (2026-10-05 fan-out) The symbols harness's expression walk is near the stack limit on binderBinaryExpressionStress:

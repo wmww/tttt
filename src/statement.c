@@ -1793,7 +1793,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 static cstr reference_path_for_message(csview containing, csview reference) {
     isize dir = containing.size;
     while (dir > 0 && containing.buf[dir - 1] != '/') dir--;
-    cstr joined = reference.size && reference.buf[0] == '/' ? cstr_from_sv(reference) :
+    bool rooted = (reference.size && reference.buf[0] == '/') || path_is_drive_rooted(reference);
+    cstr joined = rooted ? cstr_from_sv(reference) :
         cstr_d(csview_slice(containing, 0, dir), reference);
     csview rest = cstr_sv(&joined);
     bool absolute = rest.size && rest.buf[0] == '/';

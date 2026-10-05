@@ -681,7 +681,9 @@ static bool path_has_extension(csview path) {
 static SourceFile* program_load_reference_path(Program* me, Span path_span, csview path) {
     check(span_valid(path_span));
     csview dir = dirname_of(cstr_sv(&path_span.source->canonical_path));
-    cstr full = path.size && path.buf[0] == '/' ? cstr_from_sv(path) : cstr_d(dir, "/", path);
+    // (A drive root `c:/` is rooted too: one of the current directory, see path_is_drive_rooted())
+    bool rooted = (path.size && path.buf[0] == '/') || path_is_drive_rooted(path);
+    cstr full = rooted ? cstr_from_sv(path) : cstr_d(dir, "/", path);
     SourceFile* ret = nullptr;
     static const char* const extensions[] = { "", ".ts", ".tsx", ".d.ts" };
     bool extension = path_has_extension(path);

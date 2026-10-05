@@ -30586,9 +30586,9 @@ const baselines = {
         types: true,
     },
     'tripleSlashReferenceAbsoluteWindowsPath': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'tripleSlashTypesReferenceWithMissingExports(module=commonjs)': {
         errors: true,

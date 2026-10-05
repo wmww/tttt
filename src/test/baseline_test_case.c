@@ -110,6 +110,7 @@ csview test_name_from_path(csview path) {
 
 void baseline_test_file_drop(BaselineTestFile* me) {
     cstr_drop(&my path);
+    cstr_drop(&my header);
     cstr_drop(&my raw_contents);
     vec_line_numbered_str_drop(&my symbols);
     vec_line_numbered_str_drop(&my types);
@@ -376,7 +377,13 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
 
 // Takes ownership of contents. Only records the file once there's actually something behind it in the mock
 // filesystem, so a failure here can't leave us with a BaselineTestFile pointing at nothing
-static_failable add_virtual_source_file(BaselineTestCase* me, csview virtual_path, cstr contents) {
+static_failable add_virtual_source_file(BaselineTestCase* me, csview written_path, cstr contents) {
+    cstr normalized = cstr_from_sv(written_path);
+    for (isize k = 0; k < cstr_size(&normalized); k++) {
+        if (cstr_data(&normalized)[k] == '\\') cstr_data(&normalized)[k] = '/';
+    }
+    bool renamed = !csview_equals_sv(cstr_sv(&normalized), written_path);
+    csview virtual_path = cstr_sv(&normalized);
     if (fs_exists(mock_fs_get_fs(my fs), virtual_path)) {
         // A handful of tsc tests repeat a // @Filename:, in which case the last copy is the file (tsc's harness
         // writes them all to its virtual file system in order); an earlier one is still shown with its own text,
@@ -396,12 +403,17 @@ static_failable add_virtual_source_file(BaselineTestCase* me, csview virtual_pat
             }
             break;
         }
-        try (mock_fs_overwrite_file(my fs, virtual_path, contents)) bubble;
+        try (mock_fs_overwrite_file(my fs, virtual_path, contents)) cleanup {
+            cstr_drop(&normalized);
+        }
     } else {
-        try (mock_fs_create_file(my fs, virtual_path, contents)) bubble;
+        try (mock_fs_create_file(my fs, virtual_path, contents)) cleanup {
+            cstr_drop(&normalized);
+        }
     }
     vec_baseline_test_file_push(&my files, (BaselineTestFile){
-        .path = cstr_from_sv(virtual_path),
+        .path = normalized,
+        .header = renamed ? cstr_from_sv(written_path) : cstr_null,
     });
     return ok;
 }
@@ -606,6 +618,11 @@ static BaselineTestFile* find_file(BaselineTestCase* me, SourceFile const* sourc
     // A file the test didn't write: reached through a symlink by a path we didn't expect, say
     log_error("failed to find test for source file ", source->canonical_path);
     return nullptr;
+}
+
+// The name the baselines' headers give the file: as the test writes it
+static const char* baseline_test_file_header(BaselineTestFile const* file) {
+    return cstr_str(cstr_size(&file->header) ? &file->header : &file->path);
 }
 
 static const char* error_file_name(SourceFile const* source) {
@@ -1233,7 +1250,7 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     for_each (i, vec_baseline_test_file, &my files) {
         cstr_append_d(
             target, DEFAULT_DISPLAY,
-            "\r\n==== ", i->path, " (", i->error_count, " errors) ====\r\n"
+            "\r\n==== ", baseline_test_file_header(i), " (", i->error_count, " errors) ====\r\n"
         );
 
         render_lines_woven_with_file(
@@ -1277,7 +1294,7 @@ void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me)
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
         isize from = cstr_size(target);
-        render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->symbols,
+        render_types_or_symbols_file(target, baseline_test_file_header(i), cstr_sv(&i->source->contents), &i->symbols,
             false);
         remove_test_path_prefixes(target, from);
     }
@@ -1292,7 +1309,7 @@ void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, b
     for_each (i, vec_baseline_test_file, &my files) {
         if (!i->source) continue;
         isize from = cstr_size(target);
-        render_types_or_symbols_file(target, cstr_str(&i->path), cstr_sv(&i->source->contents), &i->types,
+        render_types_or_symbols_file(target, baseline_test_file_header(i), cstr_sv(&i->source->contents), &i->types,
             !had_errors);
         remove_test_path_prefixes(target, from);
     }
