@@ -2514,7 +2514,7 @@ static Ternary index_signatures_related(
         // parameter constrained by the instantiated constraint (tsc's fresh type parameter of an instantiated mapped type)
         if (source_members->mapped && target_has_string_index) {
             MappedInfo const* mapped = source_members->mapped;
-            Ty const* template = ty_instantiate(me, ty_mapped_template(me, mapped), mapped_key_param_mapper(me, mapped));
+            Ty const* template = ty_mapped_template_fresh(me, mapped);
             // (With the mapped type's `?`, its undefined: tsc's getTemplateTypeFromMappedType, see expand_mapped())
             if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
                 Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
@@ -3437,6 +3437,13 @@ static TyMapper const* mapped_key_param_mapper(Checker* me, MappedInfo const* ma
     ret = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &param, .len = 1 });
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
+}
+
+// A generic mapped type's template with its key as the type parameter of this instantiation (tsc's
+// getTemplateTypeFromMappedType of an instantiated mapped type, whose type parameter is fresh): what inference and the
+// index signature relation both see, so `F[P]` inferred from `Readonly<F>` is the `F[P]` it is related as
+Ty const* ty_mapped_template_fresh(Checker* me, MappedInfo const* mapped) {
+    return ty_instantiate(me, ty_mapped_template(me, mapped), mapped_key_param_mapper(me, mapped));
 }
 
 // tsc's mappedTypeRelatedTo: two mapped types whose keys aren't known relate by their modifiers (the target at least as

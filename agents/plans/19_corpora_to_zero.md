@@ -139,7 +139,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (9; 6300 at pinning)
+### effect (7; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -195,7 +195,9 @@ no signature (`zero: Z`) keeps no contextual signature, and sees its own type as
 (traversing 444 `Effect.mergeAll(() => 1, ...)`, probe `function_context_none_until_resolved.ts`; hacks.md
 KEY_CONTEXT_NONE). The arguments of a variadic rest parameter are checked with the inferring call as the outer
 inference (return mapper, return type computed then): `M.tag("A", () => "a")` under `[first: P, ...values: P[], f: Fn]`
-returns into `Ret` = `"a" | "b"` (Match 887/888, probe `variadic_rest_function_return_mapper.ts`).
+returns into `Ret` = `"a" | "b"` (Match 887/888, probe `variadic_rest_function_return_mapper.ts`). Inference from a generic mapped source's template
+uses the instantiation's fresh key parameter, the one the index signature relation uses (SchemaUserland 12: `F[P]`
+from `Readonly<F>` related to `ReadonlyRecord<string, F[P]>`, probe `generic_mapped_fresh_key_param.ts`).
 
 Left, by cause (not reduced unless said):
 - **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses.
@@ -216,7 +218,7 @@ Left, by cause (not reduced unless said):
   contextual type is fully instantiated with the return mapper (infer_type_arguments' first pass), so `new Promise`
   infers T = zipRight's uninferred A2 as a return-type candidate; tsc's getContextualType is raw there and only its
   returnMapper sees A2. Passing the raw type fixes it but breaks vue customElement.spec 1505 (Promise.resolve's
-  return mapper comes from `inf`, not a separate return inference: the valibot HACK in infer_type_arguments)), SchemaUserland 12, dtslint Effect 736 (`Effect.fn` generator as
+  return mapper comes from `inf`, not a separate return inference: the valibot HACK in infer_type_arguments)), dtslint Effect 736 (`Effect.fn` generator as
   catchTag handler).
 - `x[key]` constraint position: only an identifier object so far (`a.b[key]` isn't, TODO in expr.c).
 

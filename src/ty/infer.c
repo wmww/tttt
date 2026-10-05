@@ -939,7 +939,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         MappedInfo const* source_mapped = source_mapped_members->mapped;
         MappedInfo const* target_mapped = target_members->mapped;
         infer_from(me, inf, source_mapped->constraint, target_mapped->constraint);
-        infer_from(me, inf, ty_mapped_template(me, source_mapped), ty_mapped_template(me, target_mapped));
+        infer_from(me, inf, ty_mapped_template_fresh(me, source_mapped), ty_mapped_template(me, target_mapped));
         if (source_mapped->name_type && target_mapped->name_type) {
             infer_from(me, inf, source_mapped->name_type, target_mapped->name_type);
         }

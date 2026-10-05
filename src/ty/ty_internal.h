@@ -265,6 +265,7 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
 bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr);
 Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call); // call.c: a remembered resolution's return, or null
 void ty_late_contextual_return(Checker* me, FunctionImpl const* function); // expr.c
+Ty const* ty_mapped_template_fresh(Checker* me, MappedInfo const* mapped); // relate.c
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference
 void inference_drop(Inference* inf);
