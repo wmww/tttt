@@ -371,6 +371,9 @@ CompilerOptions* program_options(Program* me) {
 
 void program_destroy(Program* me) {
     if (me) {
+        // (The thread that destroys a program is usually the one that asked it for names outside the checkers, the test
+        // harness's symbols walk: its symbol chain caches. They're per thread and lazily remade, keyed by program)
+        symbol_chain_release_thread();
         program_drop(me);
         free(me);
     }
