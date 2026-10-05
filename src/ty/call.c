@@ -1044,6 +1044,15 @@ static TyMapper const* infer_type_arguments(
     }
     OuterInference self = { .sig = sig, .inf = &inf };
     my inferential_depth++;
+    // (tsc's impliedArity: a rest parameter that is a type parameter gets as many elements as there are arguments for
+    // it, unless one is a spread)
+    if (shape.rest_variadic && shape.rest_variadic->kind == TY_TYPE_PARAM && args->spread_index < 0) {
+        for (u32 i = 0; i < inf.len; i++) {
+            if (inf.params[i].param == shape.rest_variadic) {
+                inf.params[i].implied_arity_plus_one = (args->len > shape.count ? args->len - shape.count : 0) + 1;
+            }
+        }
+    }
 
     // A contextual type that is what a binding pattern implies (tsc's isFromBindingPattern) isn't one at all when every
     // type parameter has a default, else it only goes into the return mapper: `const [a, b] = f()` infers nothing

@@ -164,6 +164,9 @@ typedef struct InferParam {
     bool top_level; // every candidate so far came from the type parameter at the top level of a parameter type
     // The seam for the context-sensitive second pass (4b3): a result that is already decided. Inference leaves it alone
     Ty const* fixed;
+    // Of a rest parameter's type parameter, how many arguments it gets plus one (0: not known, a spread among them):
+    // tsc's InferenceInfo.impliedArity, which splits a source tuple against `[...T, ...U]`
+    u32 implied_arity_plus_one;
 } InferParam;
 
 // Flags like tsc's InferencePriority: a nested inference ORs its own in, and a higher number is a worse priority

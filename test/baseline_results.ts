@@ -50158,7 +50158,7 @@ const baselines = {
     'strictBindCallApply1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictBindCallApply2': {
         errors: true,

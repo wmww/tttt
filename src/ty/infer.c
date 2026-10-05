@@ -847,8 +847,19 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
             if (source_shape->flags[i] & TUPLE_ELEMENT_REST) break;
             infer_from(me, inf, source_args.data[i], target_args.data[i]);
         }
+    } else if (source_shape && target_arity - start - end == 2 && is_variadic_element(me, target_shape, target_args, start) &&
+        is_variadic_element(me, target_shape, target_args, start + 1)
+    ) {
+        // `[...T, ...U]` in the middle: split by the number of arguments T's rest parameter got (tsc's impliedArity)
+        InferParam const* first = inference_param(inf, target_args.data[start]);
+        u32 implied = first && first->implied_arity_plus_one ? first->implied_arity_plus_one - 1 : UINT32_MAX;
+        // (The first slice skips `end + source_arity - implied` at the end, as tsc's does)
+        if (implied != UINT32_MAX && start + end + implied <= source_arity && start + end + source_arity - implied <= source_arity) {
+            infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, end + source_arity - implied), target_args.data[start]);
+            infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start + implied, end), target_args.data[start + 1]);
+        }
     }
-    // TODO: two variadic/rest elements in the middle of the target (tsc's impliedArity cases)
+    // TODO: `[...T, ...rest]` and `[...rest, ...T]` in the middle of the target (tsc infers T by its constraint's arity)
     for (u32 i = 0; i < end; i++) {
         infer_from(me, inf, source_args.data[source_arity - 1 - i], target_args.data[target_arity - 1 - i]);
     }
