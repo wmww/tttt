@@ -73,13 +73,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 -p DIR`). Packages = sweep packages affected. Ordered by value for effort within each group; **do the small ones first**,
 one commit each, `./sweep.py` before/after.
 
-### Crash
-- **react-relay SIGSEGV** (A/crash/crash2.ts): unbounded recursion `apparent_type_inner` (TY_CONDITIONAL ->
-  base_constraint = `Props<C> & {relay}` because C's constraint feeds its own `infer P`) <-> the intersection branch's
-  `apparent_type` of the generic member. tsc: pushTypeResolution -> circularConstraintType -> `unknown`. Fix: an
-  in-progress guard in apparent_type (or resolve intersection members through the depth-guarded base_constraint). ~20
-  lines.
-
 ### Small (1-10 lines each)
 - **material-ui +TS2303 x2082** (3 packages; A/matui): in `scope_resolve` (scope.c) the module's `default` export check
   runs `symbol_has_meaning` before the cheap name comparison, resolving the alias being resolved. Swap the operands

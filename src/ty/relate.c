@@ -1101,7 +1101,26 @@ static inline Ty const* apparent_type(Checker* me, Ty const* ty) {
     return ty_reduced(me, apparent_type_inner(me, ty_reduced(me, ty)));
 }
 
+static Ty const* apparent_type_resolve(Checker* me, Ty const* ty);
+
+// A generic intersection or instantiable type whose apparent type needs itself (a constraint feeding its own `infer`:
+// `C extends Ctor<Props<C> & X>`) is circular, and apparently unknown (tsc's circularConstraintType through
+// pushTypeResolution in getResolvedBaseConstraint)
 static Ty const* apparent_type_inner(Checker* me, Ty const* ty) {
+    bool generic = ty->kind == TY_INTERSECTION || ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL ||
+        ty->kind == TY_SUBSTITUTION;
+    if (!generic) return apparent_type_resolve(me, ty);
+    for (u32 i = 0; i < my apparent_depth; i++) {
+        if (my apparent_stack[i] == ty) return ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    if (my apparent_depth == c_arraylen(my apparent_stack)) return ty_intrinsic(me, TY_UNKNOWN_);
+    my apparent_stack[my apparent_depth++] = ty;
+    Ty const* ret = apparent_type_resolve(me, ty);
+    my apparent_depth--;
+    return ret;
+}
+
+static Ty const* apparent_type_resolve(Checker* me, Ty const* ty) {
     if (ty->kind == TY_ANONYMOUS) return apparent_type_of_mapped(me, ty);
     if (ty->kind == TY_TYPE_PARAM) {
         // Through the constraint, which sees the type parameter as its `this` (`this.x` inside a class is `this`'s

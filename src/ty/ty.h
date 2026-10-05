@@ -919,6 +919,10 @@ struct Checker {
     struct Expr const* const_enum_object_ok;
     u32 type_only_site_depth;
     bool return_inference_skipped;
+    // The generic types whose apparent type is being resolved (relate.c's apparent_type_inner(), tsc's
+    // pushTypeResolution for a constraint): one met again is circular
+    Ty const* apparent_stack[32];
+    u32 apparent_depth;
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference* outer_inference;
