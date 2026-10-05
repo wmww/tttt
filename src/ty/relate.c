@@ -6012,11 +6012,18 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     return result;
 }
 
+// The error type is related to everything, in both directions: whatever made it was reported already. Except as a
+// source of the subtype relations, where it is any, which is a subtype of nothing but any and unknown (tsc has no
+// shortcut, isSimpleTypeRelatedTo: an overload taking `any` wins over a generic one for an unresolved name's argument)
+static inline bool error_related(Ty const* source, Ty const* target, TyRelation relation) {
+    if (target->flags & TYF_ERROR) return true;
+    return (source->flags & TYF_ERROR) && relation != TY_RELATION_SUBTYPE && relation != TY_RELATION_STRICT_SUBTYPE;
+}
+
 static bool check_related(
     Checker* me, Ty const* source, Ty const* target, TyRelation relation, VecTyReportLine* report_into, unsigned head_code
 ) {
-    // The error type is related to everything, in both directions: whatever made it was reported already
-    if ((source->flags | target->flags) & TYF_ERROR) return true;
+    if (error_related(source, target, relation)) return true;
     Ty const* fresh_union = source->kind == TY_UNION && (source->flags & TYF_FRESH_LITERAL) ? source : nullptr;
     source = ty_regular(me, source);
     target = ty_regular(me, target);
@@ -6122,7 +6129,7 @@ bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b) {
 bool ty_is_related_within(Checker* me, Ty const* source, Ty const* target) {
     RelationState* st = my relating;
     if (!st) return ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE);
-    if ((source->flags | target->flags) & TYF_ERROR) return true;
+    if (error_related(source, target, st->relation)) return true;
     return is_related_to(me, st, source, target, false) != TERNARY_FALSE;
 }
 

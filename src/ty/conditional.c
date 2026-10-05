@@ -393,11 +393,14 @@ Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false, TyMapper const* outer
 ) {
+    // (tsc compares with errorType itself, before deferring: an unresolved reference's error type (ty_unresolved, tsc's
+    // errorTypes) is any to it, `Parameters<Unresolved>` is unknown[]; a union with one is errorType)
+    Ty const* error = ty_intrinsic(me, TY_ERROR);
+    if (check_type == error || extends == error) return error;
     // (tsc's isDeferredType of the check type: `Required<T> extends {}` waits for T)
     if (ty_is_generic_index(check_type) || is_generic_mapped(me, check_type, 0) || is_deferred_tuple_check(me, check_type, extends)) {
         return nullptr;
     }
-    if ((check_type->flags | extends->flags) & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
 
     TyMapper const* mapper = nullptr;
     // Only its own `infer X`: one of an outer conditional type is a type variable like any other here, which keeps

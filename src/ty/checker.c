@@ -892,7 +892,8 @@ static Ty const* union_with_origin(
         includes |= buf.data[i]->flags;
         xincludes |= buf.data[i]->xflags;
         if ((buf.data[i]->flags & TYF_NULLABLE) && !(buf.data[i]->xflags & TYX_CONTAINS_WIDENING)) includes_non_widening = true;
-        includes_error |= buf.data[i] == my intrinsics[TY_ERROR]; // (Not an unresolved name's any: tsc's IncludesError)
+        // (An unresolved name's any too: tsc's isErrorType, IncludesError)
+        includes_error |= (buf.data[i]->flags & TYF_ERROR) != 0;
     }
     Ty const* ret = nullptr;
     if (includes & TYF_ANY) {
@@ -1557,7 +1558,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     for (u32 i = 0; i < buf.len; i++) {
         Ty const* t = buf.data[i];
         includes |= t->flags;
-        includes_error |= t == my intrinsics[TY_ERROR];
+        includes_error |= (t->flags & TYF_ERROR) != 0;
         if (t->kind == TY_UNION && !first_union) first_union = t;
     }
 
