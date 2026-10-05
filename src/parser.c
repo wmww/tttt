@@ -8157,6 +8157,7 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
     if (!expect_expr(&p, expr_ctx_null, ret)) {
         return parse_success(&p);
     }
+    parse_comma_ops_right_side(&p, ret); // (tsc's parseElementAccessExpressionRest: an Expression, commas too)
     hop_whitespace(&p);
 
     if (!expect_char(&p, ']')) {
@@ -9258,6 +9259,14 @@ static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
             })
         );
         if (missing) return parse_success(&p);
+        // (The next comma may follow whitespace; what follows the last operand stays unparsed)
+        Parser ahead = parser(&p);
+        hop_whitespace(&ahead);
+        if (*ahead.pos != ',') {
+            parse_fail(&ahead);
+            break;
+        }
+        parse_success(&ahead);
     }
     return parsed_commas ? parse_success(&p) : parse_fail(&p);
 }

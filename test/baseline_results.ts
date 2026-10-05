@@ -24316,9 +24316,9 @@ const baselines = {
         types: true,
     },
     'objectCreationOfElementAccessExpression': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'objectFreeze': {
         errors: true,
