@@ -3358,7 +3358,9 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_reverse_mapped_member_type(me, reverse, prop_decl_rare(prop->decl)->reverse_source);
         // (Declared by the source's declarations: the types baseline reuses their annotation where it still says the
         // same, tsc's serializeTypeForDeclaration)
-        if (type != prop_decl_rare(prop->decl)->reverse_declared) prop->decl->asserted = nullptr;
+        // (Or says it with undefined added: an optional one's type has it, see ty_display's annotation_plus_undefined())
+        Ty const* declared = prop_decl_rare(prop->decl)->reverse_declared;
+        if (type != declared && ty_without_undefined(me, type) != declared) prop->decl->asserted = nullptr;
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }

@@ -2383,7 +2383,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         bool optional = (prop->flags & PROP_OPTIONAL) != 0;
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
         // union, like a parameter's, see annotation_plus_undefined())
-        if (mapped_from && annotation && !d.reused && d.underline && d.enclosing && annotation_plus_undefined(me, annotation, shown)) {
+        bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
+        if ((mapped_from || reverse) && annotation && !d.reused && d.underline && d.enclosing && annotation_plus_undefined(me, annotation, shown)) {
             display_node(me, d, annotation);
             out(reused_if(d, false), c_sv(" | undefined"));
         }
