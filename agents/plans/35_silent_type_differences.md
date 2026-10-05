@@ -241,6 +241,7 @@ Missing/extra lines and JS tests. What remains, by mechanism (test names are exa
   (inexistentPropertyInsideToStringType). callbackTag4: reuse of a `@this {{...}}` type literal's members.
 - The other line-missing tests of the list were really display/accessibility (the queue's "reuse needs accessibility"
   item): recursiveConditionalCrash1-3, deepKeysIndexing, inlineMappedTypeModifierDeclarationEmit...
+
 ## Left by fan-out agent B of 2026-10-05 (types display)
 Each named far enough to start from; tests are the examples still failing.
 - **Type writer re-check** (contextualTyping36, conditionalOperatorWithIdenticalBCT): tsc's getTypeOfExpression rechecks
