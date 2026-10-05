@@ -62,15 +62,11 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
   balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
   lib/global types between checkers would take the rest.
-- **The AST is now the biggest gap**: nest (254 MB at K1 vs tsgo 212) and webpack (396 vs 303) are parse + name
-  resolution heavy (webpack: 217 MB resident after parsing, 285 after names, checker arena 78 MB). Millions of small
-  `c_new` nodes (~100 MB of malloc overhead on webpack, 09-28), `Span` is 24 bytes (`SourceFile*` + csview) and appears
-  twice in `Expr` (144 bytes), `PropertyExpr` 368 (7 checker/binder pointers), `BinaryOpExpr` 312, `Statement` 272,
-  `FunctionArg` 568, `InterfaceMember` 536. Levers: per-file node arenas (the parser frees on backtracking: it would
-  have to stop, failed attempts leak into the arena, bounded by the fail cache); a 16-byte Span (pointer + u32 length
-  + u32 file index, `.sv` through an accessor: ~1000+ uses) or 8 bytes (u32 offset + u32 length, the file from
-  context); moving checker/binder pointers out of AST nodes into side tables. Plan-sized: needs a planning session.
-- Name resolution adds ~60 MB on webpack (scopes 248 B, symbols 192 B).
+- **The AST is now the biggest gap** (nest, webpack above tsgo): plan 43 (`agents/plans/43_ast_memory.md`) measured
+  it. Malloc overhead is ~3%, not the ~100 MB massif suggested (its extra-heap estimate is wrong for glibc), so node
+  arenas are a time lever (malloc is ~12% of nest's instructions), not a memory one. Two thirds of the AST's words are
+  zero: unions sized by rare variants, optional children inline, JSDoc/checker fields in every node, `Expr`'s two
+  spans, list slack. The binder arena adds ~60 MB (`Scope` 296 B, `Symbol` 224 B). Ranked levers and staging there.
 - Type counts are not the problem: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k on
   valibot (tttt 385k).
 

@@ -1,0 +1,70 @@
+diff --git a/src/parser.c b/src/parser.c
+index 76d0e2ce..adf7aed3 100644
+--- a/src/parser.c
++++ b/src/parser.c
+@@ -2351,6 +2351,7 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
+     }
+ 
+     expect_char(&p, '>');
++    shrink_list(vec_generic_item, &ret->items);
+ 
+     return parse_success(&p);
+ }
+@@ -2406,6 +2407,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
+     if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked)) {
+         parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
+     }
++    shrink_list(vec_spanned_type, ret);
+ 
+     return parse_success(&p);
+ 
+@@ -3235,6 +3237,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode*
+     bool disallow_conditional = parent->shared->disallow_conditional;
+     bool parsed = parse_type_inner(parent, min_precedence, ret);
+     parent->shared->disallow_conditional = disallow_conditional;
++    if (parsed && (ret->tag == TYPE_UNION || ret->tag == TYPE_INTERSECTION)) shrink_list(vec_type, &ret->composite);
+     return parsed;
+ }
+ 
+@@ -6197,6 +6200,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
+             .tag = STATEMENT_RETURN_EXPR,
+             .expr = expr,
+         });
++        shrink_list(vec_statement, &ret->body.statements);
+         ret->expression_body = true;
+     }
+ 
+@@ -6876,6 +6880,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
+ 
+     // (A missing `]` is at the next token's full start: the literal ends with its last token)
+     if (!expect_closing(&p, ']', open)) unhop_trivia(&p);
++    shrink_list(vec_expr, ret);
+ 
+     return parse_success(&p);
+ }
+@@ -9142,6 +9147,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
+         parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
+     }
+ 
++    shrink_list(vec_expr, &substitutions);
++    if (texts) shrink_list(vec_cstr, texts);
+     *ret = substitutions;
+     return parse_success(&p);
+ }
+@@ -10471,6 +10478,7 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
+     }
+     list_leave(&p, saved_context);
+     expect_char(&p, '}');
++    shrink_list(vec_port_item, &ret->items);
+ 
+     return parse_success(&p);
+ }
+@@ -11540,6 +11548,8 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
+         hop_whitespace(&p);
+     }
+ 
++    shrink_list(vec_expr, &conditions);
++    shrink_list(vec_statement, &statements);
+     *ret = (IfStatement){
+         .conditions = conditions,
+         .statements = statements,

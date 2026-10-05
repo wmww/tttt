@@ -1,0 +1,38 @@
+diff --git a/src/main.c b/src/main.c
+index 77dff456..21b3f57b 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -95,7 +95,25 @@ static long resident_mb() {
+ 
+ // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
+ // program_load() does both (and chases imports) in one go
++
++#include "ast_walk.h"
++#include "statement.h"
++static u64 tmp_expr_tags[32], tmp_paren, tmp_exprs;
++static AstWalk tmp_count(Expr const* e, void* arg) { (void)arg; tmp_exprs++; tmp_expr_tags[e->tag]++; if (!span_eq(e->inner_span, e->outer_span)) tmp_paren++; return AST_WALK_CONTINUE; }
++static void tmp_count_program(Program* program) {
++    if (!getenv("EXPRCOUNT")) return;
++    u64 stmts = 0;
++    for (u32 i = 0; i < program_source_count(program); i++) {
++        SourceFile* f = program_source_at(program, i);
++        for (isize k = 0; k < vec_statement_size(&f->ast.statements); k++) { stmts++; ast_walk_statement(vec_statement_at(&f->ast.statements, k), tmp_count, nullptr); }
++    }
++    fprintf(stderr, "top-level statements %lu exprs %lu parenthesized %lu\n", stmts, tmp_exprs, tmp_paren);
++    for (int t = 0; t < 32; t++) if (tmp_expr_tags[t]) fprintf(stderr, "  tag %d: %lu\n", t, tmp_expr_tags[t]);
++}
++void memtrack_dump(const char* name) __attribute__((weak));
++void memtrack_scan(const char* name) __attribute__((weak));
+ static void phase_done(Options const* opts, Output* out, const char* name, double* last) {
++    if (memtrack_dump && getenv("MEMTRACK")) { char b[64]; int i = 0; for (; name[i] && i < 63; i++) b[i] = name[i] == ' ' || name[i] == '+' ? '_' : name[i]; b[i] = 0; memtrack_dump(b); if (memtrack_scan) memtrack_scan(b); }
+     const double now = now_ms();
+     if (opts->time) out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB)");
+     *last = now;
+@@ -354,6 +372,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
+     const intptr_t parse_errors = report_errors(out, errs);
+     if (parse_errors) ret = 1;
+ 
++    tmp_count_program(program);
+     program_resolve_names(program);
+ 
+     const intptr_t name_errors = report_errors(out, errs);

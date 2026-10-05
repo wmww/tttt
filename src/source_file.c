@@ -80,6 +80,8 @@ SourceFile source_file_make(cstr canonical_path, cstr contents) {
         }
         line_starts[line_count++] = (u32)(pos - start);
     }
+    // (Most files are much shorter than the first guess: 9 MB of the nest corpus was unused room)
+    if (line_count < cap) line_starts = realloc(line_starts, sizeof(u32) * line_count);
     return (SourceFile){
         .canonical_path = canonical_path,
         .contents = contents,
