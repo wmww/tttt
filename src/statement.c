@@ -166,8 +166,9 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
         source_file_emit_module_kind(my initializers.data[0].binding.content_span.source) < MODULE_KIND_SYSTEM;
     for_each (i, vec_initialized_binding, &my initializers) {
         if (check_marker) binding_check_es_module_marker(&i->binding, errs);
-        // An ambient variable without a type has nothing for control flow to type it by
-        if (declared && compiler_options()->no_implicit_any && i->binding.tag == BINDING_IDENTIFIER &&
+        // An ambient, exported or const variable without a type has nothing for control flow to type it by (tsc's
+        // getTypeForVariableLikeDeclaration: no autoType)
+        if ((declared || exported || variable_statement_is_const(me)) && compiler_options()->no_implicit_any && i->binding.tag == BINDING_IDENTIFIER &&
             !i->binding.has_explicit_type && initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY
         ) {
             error_ctx_error_d(errs, i->binding.content_span, 7005, "Variable '", i->binding.content_span,

@@ -36856,7 +36856,7 @@ const baselines = {
         types: true,
     },
     'privateNamesAndIndexedAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
