@@ -2966,8 +2966,13 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
         case EXPR_JSX_ATTRIBUTES:
             for_each (i, vec_jsx_attribute, &my jsx_attributes) {
                 if (i->tag != JSX_ATTRIBUTE_SPREAD) {
-                    // An attribute declares a property of the attributes object
-                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = vec_span_single(i->span), .span = i->name });
+                    // An attribute declares a property of the attributes object (its members: attributes of one name
+                    // are one symbol)
+                    VecSpan declarations = vec_span_init();
+                    for_each (j, vec_jsx_attribute, &my jsx_attributes) {
+                        if (j->tag != JSX_ATTRIBUTE_SPREAD && csview_equals_sv(j->name.sv, i->name.sv)) vec_span_push(&declarations, j->span);
+                    }
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = declarations, .span = i->name });
                     baseline_test_case_add_type(ctx, i->name, ty_jsx_attribute_type(current_checker, me, i));
                     jsx_namespaced_name_compile_test_info(i->name, ctx);
                 }

@@ -52992,7 +52992,7 @@ const baselines = {
     },
     'jsxParsingErrorImmediateSpreadInAttributeValue': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsxReactTestSuite': {
