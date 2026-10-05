@@ -149,11 +149,23 @@ static Signature* builder_add_callable(Checker* me, MembersBuilder* builder, Fun
 static void prop_add_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 count) {
     if (!count) return;
     if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
+    // (A prop's span lists are never written once made, and are replaced to add to them)
     Span* all = arena_new_n(&my arena, Span, prop->decl->decl_span_count + count);
     if (prop->decl->decl_span_count) memcpy(all, prop->decl->decl_spans, sizeof(Span) * prop->decl->decl_span_count);
     memcpy(all + prop->decl->decl_span_count, spans, sizeof(Span) * count);
     prop->decl->decl_spans = all;
     prop->decl->decl_span_count += count;
+}
+
+// prop_add_decl_spans() of spans that live as long as the checker (the AST's, or another prop's list): a prop without
+// any takes them as they are
+static void prop_add_shared_decl_spans(Checker* me, Prop* prop, Span const* spans, u32 count) {
+    if (count && prop->decl != prop_decl_none() && !prop->decl->decl_span_count) {
+        prop->decl->decl_spans = spans;
+        prop->decl->decl_span_count = count;
+        return;
+    }
+    prop_add_decl_spans(me, prop, spans, count);
 }
 
 // tsc's isThislessType: types that syntactically can't mention `this` (keywords, literals, arrays of those, names
@@ -254,7 +266,7 @@ static void builder_add_interface_member(
                         existing->decl->node = &i->type;
                     }
                     existing->flags &= ~(u32)PROP_READONLY;
-                    { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
+                    { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                     break;
                 }
                 if (existing) {
@@ -276,13 +288,13 @@ static void builder_add_interface_member(
                         existing->thisless &= function_is_thisless(i->type.callable->function);
                         // (Optional if any overload is: tsc's binder adds SymbolFlags.Optional per declaration)
                         if (i->optional) existing->flags |= PROP_OPTIONAL;
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                     } else if (!is_method && !(existing->flags & PROP_METHOD) && existing->decl->node && !i->has_write_type &&
                         !i->computed_accessor
                     ) {
                         // A property declared again (TS2717): one symbol, the first declaration's type. String named only
                         // if every declaration is (tsc asks each one)
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                         if (i->key.tag == INTERFACE_KEY_NAME && !existing->decl->name_form && span_valid(existing->decl->name_span)) {
                             existing->decl->name_form = ty_prop_name_form_merge(
                                 ty_prop_name_form(existing->decl->name_span.sv, nullptr, nullptr, false),
@@ -291,7 +303,7 @@ static void builder_add_interface_member(
                     } else if (!is_method && (existing->flags & PROP_METHOD) && !i->has_write_type && !i->computed_accessor) {
                         // A property after a method of its name joins its symbol (PropertyExcludes is nothing), which
                         // stays a method: only a declaration more
-                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, existing, d, n); }
+                        { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                     }
                     break;
                 }
@@ -315,7 +327,7 @@ static void builder_add_interface_member(
                 if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr.ref, key, false);
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 if (key && (key->flags & TYF_NUMBER_LITERAL)) prop->decl->name_type = ty_regular(me, key);
-                { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_decl_spans(me, prop, d, n); }
+                { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, prop, d, n); }
                 builder_push(builder, props, prop);
             }   break;
 
@@ -860,7 +872,7 @@ static Prop* builder_add_class_prop(
     Prop* existing = builder_find_prop(builder, name);
     if (existing) {
         // A field after a parameter property of its name: one symbol, the parameter's type (tsc's PropertyExcludes)
-        if (existing->decl->parameter_property && item->tag == CLASS_ITEM_FIELD) prop_add_decl_spans(me, existing, &item->span, 1);
+        if (existing->decl->parameter_property && item->tag == CLASS_ITEM_FIELD) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         return nullptr;
     }
     Prop* prop = prop_new_declared(me);
@@ -871,7 +883,7 @@ static Prop* builder_add_class_prop(
     prop->decl->name_is_value = item->tag == CLASS_ITEM_FIELD ? item->field.name_is_value : item->method.name_is_value;
     if (computed_key) prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, computed_key, key, false);
     prop->flags = access_prop_flags(item->access) | (class_item_is_static((ClassItem*)item) ? PROP_STATIC : 0);
-    prop_add_decl_spans(me, prop, &item->span, 1);
+    prop_add_shared_decl_spans(me, prop, &item->span, 1);
     builder_push(builder, props, prop);
     return prop;
 }
@@ -1087,7 +1099,7 @@ static void builder_add_class_items(
                         ) {
                             setter_type = &func->args.data[0].initializer.binding.explicit_type;
                         }
-                        if (other != i) prop_add_decl_spans(me, prop, &other->span, 1);
+                        if (other != i) prop_add_shared_decl_spans(me, prop, &other->span, 1);
                         if (other->method.accessor == CLASS_ACCESSOR_GET) get_access = access_prop_flags(other->access);
                         if (other->method.accessor == CLASS_ACCESSOR_SET) set_access = access_prop_flags(other->access);
                     }
@@ -1156,7 +1168,7 @@ static void builder_add_class_items(
                     prop->flags |= PROP_METHOD;
                     prop->thisless = true;
                     for (u32 f = 0; f < count; f++) prop->thisless &= function_is_thisless(functions[f]);
-                    prop_add_decl_spans(me, prop, spans, span_count);
+                    prop_add_shared_decl_spans(me, prop, spans, span_count);
                     if (i->method.is_optional) prop->flags |= PROP_OPTIONAL;
                     if (count > 1) {
                         prop->decl->overloads = functions;
@@ -1185,7 +1197,7 @@ static void builder_add_class_items(
                         if (((existing->flags & PROP_FIELD) && !(existing->flags & PROP_STATIC)) ||
                             existing->decl->parameter_property
                         ) {
-                            prop_add_decl_spans(me, existing, &arg->span, 1);
+                            prop_add_shared_decl_spans(me, existing, &arg->span, 1);
                         }
                         continue;
                     }
@@ -1196,7 +1208,7 @@ static void builder_add_class_items(
                     prop->flags = access_prop_flags(arg->access);
                     prop->decl->name_span = binding->content_span;
                     prop->decl->parameter_property = true;
-                    prop_add_decl_spans(me, prop, &arg->span, 1);
+                    prop_add_shared_decl_spans(me, prop, &arg->span, 1);
                     if (binding->has_explicit_type) {
                         prop->decl->node = &binding->explicit_type;
                     } else {
@@ -1439,7 +1451,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
                 prop_copy_into(me, existing, members->props[j]);
                 if (existing->type_state != LAZY_STATE_DONE) existing->type_state = LAZY_STATE_NOT_STARTED;
             } else if (existing) {
-                prop_add_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
+                prop_add_shared_decl_spans(me, existing, members->props[j]->decl->decl_spans, members->props[j]->decl->decl_span_count);
             } else {
                 Prop* prop = (Prop*)members->props[j];
                 ty_buf_push(&shared, (Ty const*)(void const*)prop);
@@ -1515,7 +1527,7 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         prop->decl->name_span = i->full_name;
         prop->decl->name_is_value = i->name_is_value;
         prop->decl->symbol = i->symbol;
-        prop_add_decl_spans(me, prop, &i->full_name, 1);
+        prop_add_shared_decl_spans(me, prop, &i->full_name, 1);
         any_numeric |= !(prop->type->flags & TYF_STRING_LITERAL);
         builder_push(builder, props, prop);
     }
@@ -3589,7 +3601,7 @@ Ty const* ty_object_literal_of(
             prop->decl->name_form = props[i].name_form;
             prop->decl->name_type = props[i].name_type;
             prop->decl->asserted = props[i].asserted;
-            prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
+            prop_add_shared_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
             flags |= props[i].type ? props[i].type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_NON_INFERRABLE) :
                 TYF_COULD_CONTAIN_TYPE_VARIABLES;
