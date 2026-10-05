@@ -10249,8 +10249,13 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
             hop_whitespace_full(&p, false, false);
             value_a = anchor(&p);
             if (*p.pos == '\'' || *p.pos == '"') {
-                if (!parse_string(&p, &value)) {
-                    value = cstr_null;
+                // The text between the quotes, no escapes (tsc's pragma regexes): `path='..\x.ts'` is a Windows path
+                char quote = *p.pos;
+                char const* end = p.pos + 1;
+                while (*end && *end != quote && *end != '\n' && *end != '\r') end++;
+                if (*end == quote) {
+                    value = cstr_from_sv((csview){ p.pos + 1, end - p.pos - 1 });
+                    p.pos = end + 1;
                 }
             } else {
                 Span value_span;
@@ -10271,6 +10276,12 @@ static bool parse_source_directive(Parser* parent, SourceDirectiveStatement* ret
                 ) {
                     found_reference_attr = true;
                     reference_path = cstr_move(&value);
+                    // (tsc's resolveTripleslashReference: normalizeSlashes)
+                    if (reference_attr == SOURCE_DIRECTIVE_REFERENCE_PATH) {
+                        for (isize k = 0; k < cstr_size(&reference_path); k++) {
+                            if (cstr_data(&reference_path)[k] == '\\') cstr_data(&reference_path)[k] = '/';
+                        }
+                    }
                     reference_path_span = span_from(value_a);
                 }
             }
