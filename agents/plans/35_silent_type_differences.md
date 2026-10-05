@@ -189,25 +189,25 @@ Mechanisms found but not fixed (types-semantics tail):
 ## Left by fan-out agent D of 2026-10-05 (symbols component)
 Done: 13 commits, see git log (pattern-root circularity, static member + namespace type merges, heritage entity names,
 widened objects for written/called properties, Unicode trivia in Decl positions...). Left, by mechanism:
-- **JS `this.x = v` in an object literal's method or accessor** declares x on the literal (tsc's bindThisPropertyAssignment
-  with the literal as containingClass): neither the binder nor the harness models it (checkObjectDefineProperty,
-  constructorTagOnObjectLiteralMethod, objectPropertyAsClass, thisInObjectJs, functionExpressionNames,
-  checkExportsObjectAssignProperty/PrototypeProperty). The biggest cluster left; do it in the binder (scope.c's
-  add_this_property) with a member table on the object literal.
-- **Spread keeps the property symbol** unless readonly-ness changes (tsc's getSpreadSymbol), and widening keeps it when
-  the type doesn't change (getWidenedProperty): spreadMethods, spreadExpressionContextualTypeWithNamespace,
-  nodeModulesTypesVersionPackageExports x3 (the readonly const of a synthetic-default spread *is* cloned: bare name).
-  Tried `.reuse = prop` in spread_props_of + widen copies: 25 type regressions (display of reused props loses
-  `asserted`, widening of function types differs). Needs PropDecl-level identity (`spread_of`) for the harness instead.
-- **Duplicate declarations make separate symbols** (tsc's declareSymbol on a conflict): the binder/checker merges them,
-  the harness shows one: moduleAugmentationDisallowedExtensions, moduleAugmentationWithNonExistentNamedImport,
-  importEqualsError45874, augmentExportEquals*, moduleAugmentationDuringSyntheticDefaultCheck. And the converse,
-  merges tsc does that tttt doesn't show: defaultNamedExportWithType1/3 + importElisionExportNonExportAndDefault (the
-  local of `export const Foo` merged with `type Foo` in locals: `export default Foo` resolves to that local),
-  genericDefaults (merged interfaces share one type parameter symbol: interface type parameters go in the members table),
-  duplicateVarsAcrossFileBoundaries, objectBindingPatternKeywordIdentifiers02/04, jsxParsingErrorImmediateSpreadInAttributeValue.
-- **UMD globals** (`export as namespace N`): tsc sets the global only if absent, then a script's declaration merges into
-  the resolved module (noCrashUMDMergedWithGlobalValue): the alias line shows only itself.
+Second round done: literal-method `this.x` members, `export default` of a local type + exported value, shared
+type parameters of merged interfaces, unmergeable augmentations, augmentations shadowing `export *`, augmentation
+export context, UMD alias declarations, JSX attribute merges, spread/widened property containers. Left:
+- **`a: function () { this.x = v }`** (a function expression that isn't a JS constructor): tsc declares x in the
+  function's own members, which changes its type (`typeof a`, constructible: `new o.a().x` is the member):
+  objectPropertyAsClass, thisInObjectJs, functionExpressionNames (also `A = function () {}` and a binding default as
+  constructors). Checker work on JS function types; checkExportsObjectAssignPrototypeProperty needs `this` in a
+  `defineProperty(F.prototype, ...)` descriptor to be F's instance.
+- **Spread of a namespace** (`{ ...ns }`): tsc keeps the export symbols (`stuff.func`); the copies would need the
+  export symbol, which PropDecl.symbol can't hold without becoming the type source
+  (spreadExpressionContextualTypeWithNamespace). nodeModulesTypesVersionPackageExports x3: the readonly const of a
+  synthetic-default namespace prints bare in tsc (a clone), `mod.x` here.
+- importEqualsError45874 (a global `import x = <unresolvable>` and a script's `const x`: tsc's mergeSymbol returns the
+  source when the alias resolves to unknownSymbol, two symbols), moduleAugmentationWithNonExistentNamedImport (same,
+  `declare global { namespace Bar }` against a UMD alias of an unresolvable import), duplicateVarsAcrossFileBoundaries
+  (a global `var p` merging into the clone of the namespace an `import p = P` alias resolves to),
+  moduleAugmentationDuringSyntheticDefaultCheck (a second augmentation through an `export = import * as` chain doesn't
+  add its declaration). All are tsc's checker-time mergeSymbol through aliases; the binder merges before resolving.
+- objectBindingPatternKeywordIdentifiers02/04: parser recovery of `{ while: while }` (two missing names in tsc).
 - mappedTypeConstraints: f2's `obj.b` of `Pick<T | U, keyof (T | U)>` gets both declarations alone, one when f3
   (`Pick<T & U, ...>`) follows: some memo shared between the two mapped types (order dependent).
 - isolatedDeclarationLazySymbols: `foo[o["a.b"]] = v` adds a declaration to foo (isDynamicName) but no member
