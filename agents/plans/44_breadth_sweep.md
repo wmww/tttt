@@ -80,8 +80,9 @@ one commit each, `./sweep.py` before/after.
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
-- **Union excess-property check ignores template/`string & {}` index keys** (dom-css, create-keyframe-animation;
-  C/unionidx*.ts): `prop_or_index_type` (relate.c) should use `ty_applicable_index_info`.
+- **Methods of an object literal against a union with an index signature member get no contextual parameter types**
+  (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
+  any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
 - **A module nested in a `declare module` block is an augmentation** (i18next-sprintf-postprocessor; D/augm):
   statement.c treats it as a global ambient module (`augmentation = scope->kind == SCOPE_MODULE` only).
 - **JSX factory from a UMD global gets no TS2686** (mdx 69; D/jsxumd): `jsx_reference_factory()` (expr.c) should call

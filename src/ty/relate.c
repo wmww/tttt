@@ -5497,19 +5497,11 @@ static Ty const* prop_or_index_type(Checker* me, Ty const* ty, Atom const* name)
         return ty_union(me, parts, 2, nullptr, (TyList){0});
     }
     if (prop) return prop_type(me, prop);
-    Members const* members = ty_members(me, ty);
-    for (u32 i = 0; i < members->index_count; i++) {
-        Ty const* key = members->index[i].key;
-        if (((key->flags & TYF_NUMBER) && ty_is_numeric_name(name)) ||
-            ((key->flags & TYF_ES_SYMBOL) && ty_unique_symbol_of_name(me, name))
-        ) {
-            return members->index[i].value;
-        }
-    }
-    for (u32 i = 0; i < members->index_count; i++) {
-        if (members->index[i].key->flags & TYF_STRING) return members->index[i].value;
-    }
-    return nullptr;
+    // (Any index signature that applies to the name: template literal and `string & {}` keys too, tsc's
+    // getApplicableIndexInfoForName)
+    if (!ty_members(me, ty)->index_count) return nullptr;
+    IndexInfo const* info = ty_applicable_index_info(me, ty, ty_prop_name_literal(me, name));
+    return info ? info->value : nullptr;
 }
 
 static bool related_for_matching(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
