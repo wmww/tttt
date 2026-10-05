@@ -1765,6 +1765,12 @@ VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
     } else if (block->kind == SCOPE_FUNCTION && block->parent && scope_rare(block->parent)->type_params_function == block) {
         twin = symbol_table_get(&block->parent->locals, me->name);
         if (twin && !(twin->decl_count && twin->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER)) twin = nullptr;
+    }
+    // (A type of the body conflicts with the type parameter, TS2300: tsc declares it as a symbol of its own)
+    if (twin && twin != me) {
+        bool me_param = me->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER;
+        bool twin_param = twin->decl_count && twin->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER;
+        if (me_param != twin_param && ((me_param ? twin : me)->flags & SYMBOL_TYPE)) twin = nullptr;
     } else if (me->is_local || import) {
         Symbol const* container = block->container;
         twin = container && container->exports ? symbol_table_get(container->exports, me->name) : nullptr;
