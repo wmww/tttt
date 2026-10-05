@@ -1,6 +1,6 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
-**Status 2026-10-05**: effect pinned (6300 -> 63, see its section); the rest as below. **Status 2026-09-29 (seventh
+**Status 2026-10-05**: effect pinned (6300 -> 63, see its section); vscode pinned (129 -> 0); the rest as below. **Status 2026-09-29 (seventh
 window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
 zod 0, zod-root = tsc's own 55, webpack 6, xstate 19, and two new corpora pinned and worked down the same day: **vue 0**
 (107 at pinning) and **drizzle 8** (693 at pinning, after an OOM fix), see their sections. The history of R1-R21 (identity relation, homomorphic mapped
@@ -9,7 +9,7 @@ type-fest items is in git (this file before the corpus sessions) and in the comm
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
-nest, webpack, zod, xstate, drizzle, vue, effect (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
+nest, webpack, zod, xstate, drizzle, vue, effect, vscode (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
 tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce each to a probe in
 `test/probes/plan19/<corpus>/`, fix the tsc rule behind it. Record the counts in the commit message and
 `measurements.md`; the suite and the other corpora are the regression checks.
@@ -166,6 +166,24 @@ Left, by cause (not reduced unless said):
 - Tests: Match 887/888 (`M.tag("A", () => "a")` inside `M.discriminators`), query 51, traversing 444
   (`Effect.mergeAll(() => 1, ...)` zero literal), SchemaUserland 12, dtslint Effect 736 (`Effect.fn` generator as
   catchTag handler).
+
+### vscode (0; 129 at pinning)
+Pinned 2026-10-05 (ninth window, todo entry 5) as the large application: VS Code at 156e400b (2025-03-28, the last
+commit on TypeScript 5.8 nightlies), upstream's `src/tsconfig.json` (4.5k files, 1.39M lines incl. monaco.d.ts and
+vscode.d.ts; nodenext, experimentalDecorators, noImplicitOverride, useDefineForClassFields off, browser + node +
+electron code in one program; extensions are separate projects, left out), npm ci of upstream's lock. tsc 5.8.2: 0
+in 38 s. tttt first stopped at 7 parse errors (an arrow function's type parameters committing it, `<T>(x => y)`; a
+first parameter that didn't commit followed by something other than `,`/`)`, `(readonly T[]) => {` in a return type),
+then 129, 0 the same session (main tree + four sub-agents, one commit per cause, list in git log): `this: void` not
+checked (38 TS2684), `readonly` dropped at the start of a tuple element (13), destructuring assignments to `this.x`
+in a constructor not initializing the field (16 TS2564), the annotated-property contextual type of `this.p = v`,
+an any contextual type not inferring any, closure variables starting at their declared type, flow through async
+IIFEs, `a.b!` of an only-nullish reference, `??=` as a read, mapped types over generic mapped types / union-constrained
+T, constructor return contextual types, async `void` contextual return types, deferred `T[keyof T & string]`, the
+boolean filter of the return mapper, union inference with one member left, union index signatures for an any key,
+never-reduced members of union property lookups, optional-chain return inference, `any & X` lowering, for-of
+widening, predicate methods not thisless, constructor overloads erased with the class's type parameters. Several
+moved effect and xstate too. Scale numbers in measurements.md ("vscode").
 
 ### vue (0; 107 at pinning)
 Pinned 2026-09-29 (same session): vue core at b5f85183 (the last commit before TypeScript 6), every package's src and
