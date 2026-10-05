@@ -62,7 +62,9 @@ fails types in both configurations.
   tsc's instantiations do) where tttt keeps going until its relation-count limit. Repro: from a worktree,
   `./release/tttt -q --keep-going --all-errors -p thirdparty/corpora/webpack` vs `node thirdparty/tsc/lib/tsc.js -p
   thirdparty/corpora/webpack --noEmit`. Measurement scripts already use real paths (realworld.py, instrcount.sh,
-  threadcheck.sh); hand-run `--time`/arenasites probes from a worktree must too.
+  threadcheck.sh); hand-run `--time`/arenasites probes from a worktree must too. Two of those diagnostics also depend
+  on the checker count (`explicit-vendor-chunk/webpack.config.js:7` TS2859 at K=1 / TS2589 at K=4,
+  `lazy-compilation/webpack.config.js`): another depth-limit order dependence (the real path is identical at every K).
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
   `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
   forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).
@@ -117,10 +119,6 @@ fails types in both configurations.
   nonoptional, _zod...`, tsc's with `default`, which fails at once. Union order again; the TS2344 text there also
   differs (property order, tsc's `... 62 more ...` truncation). `perf_leads.md` "Variance measurements" says how to
   build that zod variant (strip `in`/`out` both after `<`/`,` and at line starts inside multi-line lists).
-- Loading webpack through a symlinked path loads its files twice, and then two diagnostics still depend on the checker
-  count (`explicit-vendor-chunk/webpack.config.js:7` TS2859 at K=1 / TS2589 at K=4,
-  `lazy-compilation/webpack.config.js`): another depth-limit order dependence. The real path (what the scripts use) is
-  identical at every K.
 
 ## Circularity (plan 29 stage 3 leftovers; the outer-declaration cases are plan 39)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
