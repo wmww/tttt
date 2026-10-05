@@ -2655,7 +2655,10 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
     // (tsc's errorNoModuleMemberSymbol: a close enough export (for an identifier), then a default export)
     if (span_valid(name) && name.sv.size && name.sv.buf[0] != '"' && name.sv.buf[0] != '\'') {
         cstr module_name = module_name_for_error(module, item->module_ref, true);
-        bool reported = scope_report_misspelled_export(module, name, cstr_sv(&module_name), errs);
+        // (Among the exports of what `export =` names, tsc's targetSymbol)
+        Symbol const* target = module_export_equals((Symbol*)module);
+        if (target != module) target = target && !target->is_placeholder ? symbol_for_meaning(target, SYMBOL_NAMESPACE) : nullptr;
+        bool reported = target && scope_report_misspelled_export(target, name, cstr_sv(&module_name), errs);
         if (!reported && symbol_get_export(module, c_sv("default"))) {
             error_ctx_error_d(errs, name, 2614, "Module '", module_name, "' has no exported member '", name,
                 "'. Did you mean to use 'import ", name, " from ", module_name, "' instead?");
