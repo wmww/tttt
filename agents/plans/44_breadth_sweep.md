@@ -91,7 +91,11 @@ one commit each, `./sweep.py` before/after.
 - **Generic rest `[...AX, ...A]` implied arity** (call-bind; C/arity.ts): infer_to_tuple's "two variadic elements"
   TODO (tsc ~26690) plus impliedArity. ~60 lines.
 - **Rest `TArgs` inferred from the callback's own parameters** (immediate, macrotask, node; D/restTArgs.ts): tsc drops
-  a self-referential tuple candidate (isTupleOfSelf) and keeps `TArgs[0]` where tttt has never.
+  a self-referential tuple candidate (isTupleOfSelf) and keeps `TArgs[0]` where tttt has never. Tried (fan-out session): adding isTupleOfSelf to
+  infer_from's candidate push is easy but doesn't help, because the callback's parameter isn't `TArgs[0]` in tttt
+  (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
+  signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
+  `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
 - **Annotated parameters of nested context-sensitive functions aren't inferred from** (create-subscription, treeverse;
   D/annotatedOrder.ts): `infer_from_annotated_params()` (call.c) only for a direct function argument; tsc does it in
   contextuallyCheckFunctionExpressionOrObjectLiteralMethod.
