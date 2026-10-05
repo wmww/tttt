@@ -2570,6 +2570,9 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
 static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* index, bool written, bool include_undefined) {
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
     if (index->flags & TYF_NEVER) return index;
+    // (Before the generic index check: `{ [k: string]: V }[K]` with K extends string is V, tsc's
+    // getIndexedAccessTypeOrUndefined)
+    index = ty_string_index_only_key(me, object, index);
     // An element before the variadic part of a generic tuple is known (`[S, ...T][0]` is S, tsc's indexTypeLessThan
     // the fixed elements)
     if (ty_is_tuple(object) && ty_is_generic_tuple(me, object) && index_less_than_fixed(me, object, index)) {
@@ -2579,7 +2582,6 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         // (`unknown[K]` with a generic K is unknown, like any's: tsc's getIndexedAccessTypeOrUndefined)
         return object->flags & TYF_UNKNOWN ? object : nullptr;
     }
-    index = ty_string_index_only_key(me, object, index);
     Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
     if (!ret && (index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) {
