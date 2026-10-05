@@ -80,8 +80,6 @@ one commit each, `./sweep.py` before/after.
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
-- **A namespace re-exporting an `import x = require()` alias is non-instantiated** (gulp-run, iarna__toml; C/2339/b, c):
-  `statement_instance_state_of` (statement.c) must count PORT_IMPORT_GATHER with `is_require` as instantiated.
 - **Augmentation applied to the file instead of the ambient module** (yeoman-assert 21; C/2339/h): `augmented_module()`
   (scope.c) should take `binder_module_of_ref()` (ambient module first, tsc's resolveExternalModule) before `ref->file`.
 - **`unknown[K]` with generic K stays deferred** (dynamodb; C/2339/i): `try_resolve_indexed` (checker.c) returns the
