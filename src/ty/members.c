@@ -2702,6 +2702,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     }
     Members* ret = (Members*)builder_finish(me, &builder);
     if (!generic) ret->expanded_from = mapped;
+    ret->generic_keys_known = generic;
     return ret;
 }
 

@@ -1702,7 +1702,7 @@ static void check_access(
         // the modifiers type's apparent properties: a union constraint, `Pick<T, K>`) isn't checked. tsc reports what
         // its resolveMappedTypeMembers doesn't find; the expanded ones (`Omit<this, K>`, `Mutable<T>`) are checked
         Members const* members = ty_members(me, object);
-        if (members->mapped && !members->prop_count && !members->index_count &&
+        if (members->mapped && !members->prop_count && !members->index_count && !members->generic_keys_known &&
             (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
         ) {
             return;

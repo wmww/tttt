@@ -682,6 +682,9 @@ struct Members {
     // generic: a property per property of T's constraint (see expand_generic_homomorphic())
     MappedInfo const* mapped;
     MappedInfo const* expanded_from; // The mapped type these are the members of, once its keys are known
+    // A generic mapped type whose members are those of the lower bound of its keys (expand_mapped()), maybe none: they
+    // are all it has as far as property access goes
+    bool generic_keys_known;
     // Only in the raw members of a class or interface (declared_raw_members()) with a base whose members depend on the
     // type arguments (`interface I<T extends object> extends T`, or extending such a type): the bases, in order, with
     // the `this` type as this-argument. The members above are then only the type's own, and whoever instantiates or
