@@ -11428,7 +11428,7 @@ const baselines = {
     'es2018ObjectAssign': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5-amd': {
         errors: true,
@@ -39173,7 +39173,7 @@ const baselines = {
     'usePromiseFinally': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useRegexpGroups': {
         errors: true,

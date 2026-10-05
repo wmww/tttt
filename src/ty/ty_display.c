@@ -1816,6 +1816,23 @@ static bool mentions_mapped(Checker* me, Signature const* sig, Signature const* 
         mentions(me, signature_return_type(me, root), mapped);
 }
 
+// Whether an instantiated signature's mapper maps a type parameter of a merged declaration (an interface declared twice):
+// tsc's isTypeParameterPossiblyReferenced says yes for those whatever the node, so every anonymous type of the signature
+// is a new instantiation, which no annotation says
+static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature const* root) {
+    Binder const* binder = program_get_binder(my program);
+    for (Signature const* i = sig; i && i != root; i = i->target) {
+        for (u32 j = 0; i->mapper && j < i->mapper->len; j++) {
+            Ty const* source = i->mapper->sources[j];
+            if (source->kind == TY_TYPE_PARAM && !source->param.state->is_this && source->param.symbol &&
+                binder_redirect(binder, source->param.symbol)->decl_count > 1) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
     d.widen_literals = false;
     signature_resolve(me, sig);
@@ -1846,6 +1863,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool own_instantiated = root->type_params.len && !sig->type_params.len;
     if (root != sig && !this_only && !class_default && !own_instantiated && !sibling_mapped && !mentions_mapped(me, sig, root)) sig = root;
     bool instantiated = root != sig;
+    bool fresh_anonymous = instantiated && maps_merged_type_param(me, sig, root);
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
@@ -1919,7 +1937,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         out(reused_if(d, d.reused || (syntactic && param->decl && !contextual_jsdoc)), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
-            !mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type);
+            !mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type) &&
+            !(fresh_anonymous && param->type->kind == TY_ANONYMOUS);
         TyDisplay param_d = reused_if(d, false);
         // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
         // typeFromParameter -> typeFromExpression), unless something may type it contextually
@@ -1956,7 +1975,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
         function_impl_rare(function)->jsdoc_tag_ret ? function_impl_rare(function)->jsdoc_tag_ret : single_return_assertion(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
-        !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root));
+        !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root)) &&
+        !(fresh_anonymous && ret->kind == TY_ANONYMOUS);
     if (predicate) {
         // In an instantiated signature, a parameter it names isn't the one of the instantiated signature (tsc resolves
         // it to the declaration's own), so the whole predicate is printed
