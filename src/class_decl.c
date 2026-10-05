@@ -1,4 +1,5 @@
 #include "class_decl.h"
+#include "port_statement.h"
 #include "scope.h"
 #include "binding.h"
 #include "flow.h"
@@ -1719,6 +1720,63 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
     }
 }
 
+// tsc's markDecoratorMedataDataTypeNodeAsReferenced (getEntityNameForDecoratorMetadata, then
+// markEntityNameOrEntityExpressionAsReference): under isolatedModules and emitDecoratorMetadata with ES module output,
+// the serialized type of a decorated declaration can't be a type that came through a plain import (TS1272)
+static bool decorator_metadata_checked(void) {
+    CompilerOptions const* options = compiler_options();
+    return options->emit_decorator_metadata && (options->isolated_modules || options->verbatim_module_syntax) &&
+        options->module >= MODULE_KIND_ES2015;
+}
+
+static TypeNode const* metadata_entity_type(TypeNode const* node) {
+    if (!node) return nullptr;
+    if (node->tag == TYPE_IDENTIFIER && !node->identifier->keyword && !identifier_type_import_ref(node->identifier)) return node;
+    if (node->tag != TYPE_UNION && node->tag != TYPE_INTERSECTION) return nullptr;
+    // (getEntityNameForDecoratorMetadataFromTypeList: the members' common entity name, never/null/undefined aside)
+    TypeNode const* common = nullptr;
+    for_each (i, vec_type, &node->composite) {
+        if (i->tag == TYPE_NEVER) continue;
+        TypeNode const* entity = metadata_entity_type(i);
+        if (!entity) {
+            if (!compiler_options()->strict_null_checks && i->tag == TYPE_VALUE &&
+                (i->value.tag == VALUE_NULL || i->value.tag == VALUE_UNDEFINED)
+            ) {
+                continue;
+            }
+            return nullptr;
+        }
+        if (!common) common = entity;
+        else if (!csview_equals_sv(common->identifier->name.sv, entity->identifier->name.sv)) return nullptr;
+    }
+    return common;
+}
+
+static void check_decorator_metadata_type(TypeNode const* node, ErrorCtx* errs) {
+    TypeNode const* entity = metadata_entity_type(node);
+    if (!entity) return;
+    IdentifierType const* identifier = entity->identifier;
+    bool qualified = identifier_type_namespace_count(identifier) > 0;
+    Symbol const* root = qualified ? (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ?
+        *vec_symbol_cptr_front(identifier_type_namespace_symbols(identifier)) : nullptr) : identifier->symbol;
+    if (!root || !(root->flags & SYMBOL_ALIAS) || !root->alias || !root->alias->item) return;
+    if (symbol_resolved_flags(root) & SYMBOL_VALUE) return;
+    PortItem const* item = root->alias->item;
+    if (item->type_only) return;
+    Span first = qualified ? *vec_span_front(identifier_type_namespaces(identifier)) : identifier->name;
+    Span name = span_make(first.source, span_start_ptr(first), span_end_ptr(identifier->name));
+    Error* error = error_ctx_error_d(errs, name, 1272, "A type referenced in a decorated signature must be imported with "
+        "'import type' or a namespace import when 'isolatedModules' and 'emitDecoratorMetadata' are enabled.");
+    if (error) error_add_related_d(error, item->full_span, 1376, "'", first, "' was imported here.");
+}
+
+static void check_decorator_metadata_signature(FunctionImpl const* function, bool with_return, ErrorCtx* errs) {
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->initializer.binding.has_explicit_type) check_decorator_metadata_type(&i->initializer.binding.explicit_type, errs);
+    }
+    if (with_return && function->ret_explicit) check_decorator_metadata_type(&function->ret, errs);
+}
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (!ty_first_check(current_checker, me)) return;
 
@@ -1750,6 +1808,16 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             ty_check_decorator(current_checker, i, (DecoratorSite){ .class_decl = me, .param_index = -1, .at = decorator_span(i) }, errs);
         }
         expr_typecheck(i, errs);
+    }
+    // (tsc's markDecoratorAliasReferenced of a class: its first constructor with a body's parameters)
+    if (vec_expr_size(&my decorators) && !(compiler_options()->experimental_decorators && my is_expression) &&
+        decorator_metadata_checked()
+    ) {
+        for_each (i, vec_class_item, &my items) {
+            if (i->tag != CLASS_ITEM_CONSTRUCTOR || !i->constructor.func.has_body) continue;
+            check_decorator_metadata_signature(&i->constructor.func, false, errs);
+            break;
+        }
     }
     // The class's types are made here, before its members and heritage are looked at: its instance type and its value
     // type, which merges a namespace of the same name (tsc's checkClassLikeDeclarationWorker, getTypeOfSymbol). Which
@@ -1946,6 +2014,23 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         first_char.sv = csview_from_n(span_start_ptr(i->span), span_valid(i->span) ? 1 : 0);
         bool decorators_rejected = vec_expr_size(&i->decorators) && span_valid(i->span) &&
             (error_ctx_find(errs, first_char, 1206) || error_ctx_find(errs, first_char, 1249));
+        if (vec_expr_size(&i->decorators) && !decorators_rejected && decorator_metadata_checked()) {
+            // (tsc's markDecoratorAliasReferenced)
+            if (i->tag == CLASS_ITEM_METHOD && i->method.accessor) {
+                ClassItem const* getter = i->method.accessor == CLASS_ACCESSOR_GET ? i : i->method.accessor_getter;
+                FunctionImpl const* func = &i->method.func;
+                if (getter && getter->method.func.ret_explicit) check_decorator_metadata_type(&getter->method.func.ret, errs);
+                else if (i->method.accessor == CLASS_ACCESSOR_SET && vec_function_arg_size(&func->args) &&
+                    vec_function_arg_back(&func->args)->initializer.binding.has_explicit_type
+                ) {
+                    check_decorator_metadata_type(&vec_function_arg_back(&func->args)->initializer.binding.explicit_type, errs);
+                }
+            } else if (i->tag == CLASS_ITEM_METHOD) {
+                check_decorator_metadata_signature(&i->method.func, true, errs);
+            } else if (i->tag == CLASS_ITEM_FIELD && i->field.has_explicit_type) {
+                check_decorator_metadata_type(&i->field.explicit_type, errs);
+            }
+        }
         if (span_valid(private_name) && compiler_options()->target < SCRIPT_TARGET_ES2015 && !ambient_accessor &&
             !decorators_rejected
         ) {

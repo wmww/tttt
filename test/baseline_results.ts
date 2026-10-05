@@ -10696,7 +10696,7 @@ const baselines = {
         types: true,
     },
     'emitDecoratorMetadata_isolatedModules(module=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
