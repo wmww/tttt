@@ -50498,7 +50498,7 @@ const baselines = {
     'twoMergedInterfacesWithDifferingOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'twoMergedInterfacesWithDifferingOverloads2': {
         errors: true,

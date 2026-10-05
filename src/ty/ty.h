@@ -2113,6 +2113,9 @@ typedef struct TyDisplay {
     // signature, where a reused `typeof x` must still mean the same (see name_accessible())
     struct TyDisplayParams const* printed_params;
     bool no_reduction; // tsc's NoTypeReduction: an intersection that is never prints as the intersection
+    // The signature printed is one of several of an object type, one of which mentions what its instantiation maps:
+    // tsc instantiated them all (getObjectTypeInstantiation looks at every declaration of the symbol)
+    bool sibling_mentions_mapped;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

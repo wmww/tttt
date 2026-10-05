@@ -1840,15 +1840,17 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
     }
     signature_resolve(me, root);
+    bool sibling_mapped = d.sibling_mentions_mapped;
+    d.sibling_mentions_mapped = false;
     // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
     bool own_instantiated = root->type_params.len && !sig->type_params.len;
-    if (root != sig && !this_only && !class_default && !own_instantiated && !mentions_mapped(me, sig, root)) sig = root;
+    if (root != sig && !this_only && !class_default && !own_instantiated && !sibling_mapped && !mentions_mapped(me, sig, root)) sig = root;
     bool instantiated = root != sig;
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
     // reference's members are instantiated with `this` as the reference), with fresh type parameters)
-    if (instantiated && root->type_params.len && (!this_only || mentions_mapped(me, sig, root))) {
+    if (instantiated && root->type_params.len && (!this_only || sibling_mapped || mentions_mapped(me, sig, root))) {
         if (d.fresh_params.len) {
             Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);
@@ -2175,8 +2177,14 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     }
     out_lit(d, "{ ");
     d.in_object_literal = true;
+    TyDisplay sig_d = d;
+    for (u32 i = 0; i < members->call_count && members->call_count > 1 && d.underline && !sig_d.sibling_mentions_mapped; i++) {
+        Signature const* root = members->call[i];
+        while (root->target) root = root->target;
+        sig_d.sibling_mentions_mapped = root != members->call[i] && mentions_mapped(me, members->call[i], root);
+    }
     for (u32 i = 0; i < members->call_count; i++) {
-        display_signature(me, d, members->call[i], ": ", false);
+        display_signature(me, sig_d, members->call[i], ": ", false);
         out_lit(d, "; ");
     }
     for (u32 i = 0; i < members->construct_count; i++) {
