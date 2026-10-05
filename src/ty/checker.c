@@ -1152,12 +1152,30 @@ static bool is_known_object(Checker* me, Ty const* ty) {
     return (ty->flags & TYF_OBJECT) && (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_is_generic_object(me, ty));
 }
 
+// The same, cheap enough for every intersection's never-reduction (getReducedType): an object with the flag counts only
+// if it is a type literal as written (not an instantiation) that has it from a `typeof` alone, mentioning no type
+// parameter. Resolving the members of every generic instantiation in an intersection cost valibot 39% instructions
+static bool is_known_object_for_reduction(Checker* me, Ty const* ty) {
+    if (!(ty->flags & TYF_OBJECT)) return false;
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return true;
+    if (ty->kind != TY_ANONYMOUS) return false;
+    // (An instantiation of one, by a mapper whose types have no type variables: the literal instantiated inside a
+    // generic signature)
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    if (root->anonymous.target || !root->anonymous.free_params_unknown || root->anonymous.free_params.len) return false;
+    TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
+    for (u32 i = 0; mapper && i < mapper->len; i++) {
+        if (mapper->targets[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return false;
+    }
+    return !ty_is_generic_object(me, ty);
+}
+
 // A property of types[i] that a later member declares separately, one of them privately (tsc's
 // isConflictingPrivateProperty: a synthetic property with no single value declaration that contains a private one)
 static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* const* types, u32 i, u32 len) {
     for (u32 j = i + 1; j < len; j++) {
         Ty const* b = types[j];
-        if (!is_known_object(me, b)) continue;
+        if (!is_known_object_for_reduction(me, b)) continue;
         Prop const* other = ty_get_prop(me, b, prop->name);
         if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && root_declaration(prop) != root_declaration(other)) {
             return true;
@@ -1173,13 +1191,13 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
 static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
-        if (is_known_object(me, types[i])) objects++;
+        if (is_known_object_for_reduction(me, types[i])) objects++;
     }
     if (objects < 2) return nullptr;
     Atom const* private_name = nullptr;
     for (u32 i = 0; i < len; i++) {
         Ty const* a = types[i];
-        if (!is_known_object(me, a)) continue;
+        if (!is_known_object_for_reduction(me, a)) continue;
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count; p++) {
             Prop const* prop = members->props[p];
@@ -1188,7 +1206,7 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
             Ty const* a_type = nullptr;
             for (u32 j = i + 1; j < len; j++) {
                 Ty const* b = types[j];
-                if (!is_known_object(me, b)) continue;
+                if (!is_known_object_for_reduction(me, b)) continue;
                 Prop const* other = ty_get_prop(me, b, prop->name);
                 if (!other || (other->flags & PROP_OPTIONAL)) continue;
                 if (!a_type) a_type = prop_type(me, prop);
