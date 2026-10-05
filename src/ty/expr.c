@@ -1536,13 +1536,32 @@ static bool pattern_type_has_rest(Checker* me, Ty const* pattern) {
 // tsc's getNarrowableTypeForReference: in a constraint position, or where the contextual type isn't generic, a generic
 // type with a union constraint is narrowed as its constraint (`c && c.flags` with `c: T extends Ctx | undefined` reads
 // `flags` of Ctx; `isA(x) ? takesA(x) : takesB(x)` with `x: T extends A | B`)
-static Ty const* narrowable_type(Checker* me, bool constraint_position, Ty const* type, Ty const* contextual) {
+// tsc's someType(type, isGenericTypeWithoutNullableConstraint)
+static bool has_generic_without_nullable_constraint(Checker* me, Ty const* type) {
+    TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (!(member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
+        Ty const* constraint = base_constraint_or_type(me, member);
+        if (!ty_can_be_null(me, constraint) && !ty_can_be_undefined(me, constraint)) return true;
+    }
+    return false;
+}
+
+// `element_index`: the index of `x[i]` that the reference is the object of (null for any other constraint position)
+static Ty const* narrowable_type(Checker* me, bool constraint_position, Expr const* element_index, Ty const* type, Ty const* contextual) {
     if (ty_is_no_infer(type)) type = type->substitution.base;
     // HACK: tsc types the initializer of a pattern with a rest element again for the rest (CheckMode.RestBindingElement),
     // without the pattern as contextual type, so that the rest of a `T` stays generic. tttt has one type per
     // expression: a pattern with a rest element isn't a contextual type here
     if (contextual && (contextual->flags & TYF_BINDING_PATTERN) && pattern_type_has_rest(me, contextual)) contextual = nullptr;
     if (!has_generic_with_union_constraint(me, type)) return type;
+    // `x[i]` with a generic i keeps a type variable of x that can't be nullable as it is (tsc's isConstraintPosition)
+    if (constraint_position && element_index && has_generic_without_nullable_constraint(me, type) &&
+        ty_is_generic_index(ty_expr_type(me, element_index))
+    ) {
+        constraint_position = false;
+    }
     bool substitute = constraint_position ||
         (contextual && !my inferential_depth && !is_generic_type(me, contextual));
     if (!substitute) return type;
@@ -1609,7 +1628,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
             }
         }
     }
-    Ty const* type = narrowable_type(me, identifier->constraint_position, ty_identifier_reference_type(me, identifier), contextual);
+    Ty const* type = narrowable_type(me, identifier->constraint_position, identifier_element_index(identifier), ty_identifier_reference_type(me, identifier), contextual);
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         if (issue_only) return nullptr;
@@ -1740,7 +1759,7 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
     if (!is_narrowable_access(expr)) return type;
     // Methods don't narrow
     if (type->kind == TY_ANONYMOUS && type->anonymous.function && type->anonymous.function->is_method) return type;
-    type = narrowable_type(me, access->constraint_position, type, contextual);
+    type = narrowable_type(me, access->constraint_position, nullptr, type, contextual);
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
     // tsc's getFlowTypeOfReference: the operand of a non-null assertion is never nullish (see non_null_flow_type())
     if (access->non_null_operand && !(flow_type->flags & TYF_NEVER) && (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)) {

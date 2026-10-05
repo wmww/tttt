@@ -31658,7 +31658,7 @@ const baselines = {
     'typeVariableTypeGuards': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typecheckCommaExpression': {
         errors: true,

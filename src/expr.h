@@ -58,6 +58,9 @@ typedef struct IdentifierExpr {
     // The object of a property access or a callee (tsc's isConstraintPosition): a generic type with a union constraint
     // is narrowed as its constraint
     bool constraint_position : 1;
+    // The object of `x[i]` whose i isn't a literal: in constraint position unless i's type is generic and x's type has a
+    // type variable without a nullable constraint (tsc's isConstraintPosition). i is identifier_element_index()
+    bool element_object : 1;
     bool is_arguments : 1; // The implicit `arguments` of the function around it (tsc's argumentsSymbol)
     // A name an instance field can't use because its constructor declares it (TS2301): no target (any), but `symbol`
     // is still what it finds. Also `arguments` in a field or static block (TS2815, the error type)
@@ -89,7 +92,8 @@ typedef struct IdentifierExpr {
         // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
         // contextually typed (ty_contextual_this_type()). `new.target`: the function it is in
         FunctionImpl const* this_function_;
-        struct Expr const* evolving_index_; // EVOLVING_OP_ELEMENT_ASSIGNMENT: `i` of `x[i] = v` (never a keyword)
+        // EVOLVING_OP_ELEMENT_ASSIGNMENT: `i` of `x[i] = v` (never a keyword). Also `i` of an element_object's `x[i]`
+        struct Expr const* evolving_index_;
         // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
         struct Expr const* extends_entity_;
     };
@@ -114,7 +118,11 @@ static inline struct Expr const* identifier_evolving_index(IdentifierExpr const*
     return !my keyword && my evolving_op == EVOLVING_OP_ELEMENT_ASSIGNMENT ? my evolving_index_ : nullptr;
 }
 static inline struct Expr const* identifier_extends_entity(IdentifierExpr const* me) {
-    return !my keyword && !my require_call && my evolving_op != EVOLVING_OP_ELEMENT_ASSIGNMENT ? my extends_entity_ : nullptr;
+    return !my keyword && !my require_call && my evolving_op != EVOLVING_OP_ELEMENT_ASSIGNMENT && !my element_object ?
+        my extends_entity_ : nullptr;
+}
+static inline struct Expr const* identifier_element_index(IdentifierExpr const* me) {
+    return !my keyword && my element_object ? my evolving_index_ : nullptr;
 }
 
 void identifier_expr_drop(IdentifierExpr* me);

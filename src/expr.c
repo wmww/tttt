@@ -1895,6 +1895,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my property->form == PROPERTY_EXPR_DOT || my property->prop.tag == EXPR_LITERAL) {
                 if (my property->expr.tag == EXPR_IDENTIFIER) my property->expr.identifier.constraint_position = true;
                 if (my property->expr.tag == EXPR_PROPERTY) my property->expr.property->constraint_position = true;
+            } else if (my property->expr.tag == EXPR_IDENTIFIER && !my property->expr.identifier.keyword &&
+                !my property->expr.identifier.require_call
+            ) {
+                // (Decided once the index is typed, see identifier_element_index(). TODO: an access's object, `a.b[i]`)
+                IdentifierExpr* object = &my property->expr.identifier;
+                object->constraint_position = true;
+                object->element_object = true;
+                object->evolving_index_ = &my property->prop;
             }
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
