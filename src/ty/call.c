@@ -916,7 +916,7 @@ static void infer_rest_variadic(
     // `...args: [self: Self, body: (this: Self) => ...] | [body: ...]`
     bool sensitive = false;
     for (u32 i = from; i < args->len && args->spread_index < 0; i++) {
-        sensitive |= !args->data[i].type && args->data[i].context_sensitive && args->data[i].expr->tag == EXPR_FUNCTION;
+        sensitive |= !args->data[i].type && args->data[i].context_sensitive;
     }
     if (sensitive) {
         for (u32 i = from; i < args->len; i++) {
@@ -924,6 +924,9 @@ static void infer_rest_variadic(
             if (arg->type) continue;
             if (arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION) {
                 arg->type = ty_any_function_type(me);
+            } else if (arg->context_sensitive) {
+                // (A literal with such functions in it: they are left out the same way)
+                arg->type = ty_check_expr_skipping_sensitive(me, arg->expr, rest_arg_contextual(me, shape, args, i, from), is_const);
             } else {
                 check_rest_arg(me, shape, args, i, from, is_const);
             }
@@ -932,7 +935,7 @@ static void infer_rest_variadic(
             shape->rest_variadic, INFER_PRIORITY_NORMAL);
         for (u32 i = from; i < args->len; i++) {
             Arg* arg = &args->data[i];
-            if (!arg->context_sensitive || arg->expr->tag != EXPR_FUNCTION) continue;
+            if (!arg->context_sensitive) continue;
             if (skip_sensitive) {
                 arg->type = nullptr; // (Typed against the candidate chosen without it)
                 continue;
@@ -940,7 +943,7 @@ static void infer_rest_variadic(
             // (Its contextual type is instantiated where it is looked at, as in the second pass)
             my outer_inference = self;
             self->fixing = true;
-            arg->type = ty_check_expr(me, arg->expr, rest_arg_contextual(me, shape, args, i, from));
+            arg->type = ty_check_expr_in_const(me, arg->expr, rest_arg_contextual(me, shape, args, i, from), is_const);
             self->fixing = false;
             my outer_inference = nullptr;
         }
