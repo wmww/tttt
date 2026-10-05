@@ -1689,7 +1689,7 @@ static IndexInfo const* generic_write_index_info(Checker* me, PropertyExpr const
 // OrQualifiedName takes no index info for an assignment to a generic object, checkElementAccess's
 // AccessFlags.NoIndexSignatures leaves only a number one. The index signature that would have been used, else null
 IndexInfo const* ty_generic_write_index_info(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
-    if (!access->assignment_target || access->private_class) return nullptr;
+    if (!access->assignment_target || property_private_class(access)) return nullptr;
     if (object->kind == TY_TYPE_PARAM ? object->param.state->is_this : !ty_is_generic_object(me, object)) return nullptr;
     key = ty_regular(me, key);
     if (key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) && access->form == PROPERTY_EXPR_BRACKET) {
@@ -2137,8 +2137,8 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
         if (same) refs->len = 1;
     }
     // A class's own readonly properties can be assigned through `this` in its constructor (not in functions in there)
-    if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && access->in_constructor_of &&
-        !(refs->props[0]->flags & PROP_ACCESSOR) && refs->props[0]->parent == access->in_constructor_of
+    if (refs->len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && property_context(access)->in_constructor_of &&
+        !(refs->props[0]->flags & PROP_ACCESSOR) && refs->props[0]->parent == property_context(access)->in_constructor_of
     ) {
         return false;
     }
@@ -3088,7 +3088,7 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     Expr const* object = access ? &access->expr : nullptr;
     bool self_type = object && (is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
         (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));
-    FunctionImpl const* function = access ? access->containing_function : nullptr;
+    FunctionImpl const* function = access ? property_context(access)->containing_function : nullptr;
     char const* at = function ? span_start_ptr(function->member_name) : nullptr;
     for (u32 i = 0; self_type && at && i < prop->decl->decl_span_count; i++) {
         if (at >= span_start_ptr(prop->decl->decl_spans[i]) && at < span_end_ptr(prop->decl->decl_spans[i])) return;
@@ -3165,6 +3165,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
 // initializer or a static block, where x isn't initialized yet (TS2729). Any property declared later in the file
 // counts, class members have more rules
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
+    PropertyContext const* site = property_context(access);
     while (prop->target) prop = prop->target;
     if (!span_valid(prop->decl->name_span) || prop->decl->name_span.source != access->prop.outer_span.source) return;
     // A JavaScript assignment declaration (`this.x = v` declares x from where it starts)
@@ -3192,23 +3193,23 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     Span declaration = item ? item->span : parameter ? parameter->span : prop->decl->name_span;
     char const* declared_at = span_start_ptr(declaration);
     char const* used_at = span_start_ptr(access->expr.outer_span);
-    bool same_class = class_decl && access->enclosing_class == class_decl;
+    bool same_class = class_decl && site->enclosing_class == class_decl;
     bool this_access = access->expr.tag == EXPR_IDENTIFIER && access->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS;
     bool initialized = is_field && (item->field.value.tag != EXPR_IMPLICIT_ANY || *span_end_ptr(item->field.name_span) == '!');
     bool within_declaration = span_contains(declaration, used_at);
     // isUsedInFunctionOrInstanceProperty, from where the reads can be
     bool is_instance_field = is_field && !item->field.is_static;
     bool deferred = false;
-    switch (access->initializer_context) {
+    switch (site->initializer_context) {
         case INITIALIZER_INSTANCE_FIELD: deferred = !is_instance_field || !same_class; break;
         case INITIALIZER_STATIC_FIELD:
-            deferred = (item && item->tag == CLASS_ITEM_METHOD) || (is_field && same_class && access->initializer_field &&
-                initialized_in_static_blocks(class_decl, access->prop.inner_span.sv, span_start_ptr(access->initializer_field->span)));
+            deferred = (item && item->tag == CLASS_ITEM_METHOD) || (is_field && same_class && site->initializer_field &&
+                initialized_in_static_blocks(class_decl, access->prop.inner_span.sv, span_start_ptr(site->initializer_field->span)));
             break;
         case INITIALIZER_STATIC_BLOCK: deferred = declared_at < used_at; break;
     }
     bool fine;
-    if (access->initializer_context == INITIALIZER_MEMBER_NAME) {
+    if (site->initializer_context == INITIALIZER_MEMBER_NAME) {
         // A method's or accessor's name is deferred (a function), unless it is in the field it reads
         // (isPropertyImmediatelyReferencedWithinDeclaration: no Block of a function in between)
         fine = !(is_field && within_declaration);
@@ -3217,8 +3218,8 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
     } else if (deferred) {
         // With standard class fields the fields of the class are defined in order, the parameter properties after them
         fine = !(emit_standard && (is_field || parameter) &&
-            (within_declaration || (access->initializer_field && same_class) ||
-                access->initializer_context == INITIALIZER_STATIC_BLOCK) &&
+            (within_declaration || (site->initializer_field && same_class) ||
+                site->initializer_context == INITIALIZER_STATIC_BLOCK) &&
             span_end_ptr(access->prop.outer_span) <= span_end_ptr(declaration));
     } else {
         fine = false;
@@ -3233,6 +3234,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
 // The class half of tsc's checkPropertyNotUsedBeforeDeclaration: `N.C` of a class a namespace exports, read (not in
 // a type) before the class is declared, unless the read is deferred (in a function, an instance field initializer)
 static void check_class_used_before_declaration(PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
+    PropertyContext const* site = property_context(access);
     while (prop->target) prop = prop->target;
     Symbol const* symbol = prop->decl->symbol;
     ClassDecl const* class_decl = symbol ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
@@ -3242,8 +3244,8 @@ static void check_class_used_before_declaration(PropertyExpr const* access, Prop
     if (!span_valid(used) || class_decl->full_span.source != used.source || !used.source || used.source->is_declaration) return;
     char const* declared_at = span_start_ptr(class_decl->full_span);
     if (declared_at <= span_start_ptr(used)) return;
-    if (access->containing_function && !span_contains(access->containing_function->full_span, declared_at)) return;
-    if (access->initializer_context == INITIALIZER_INSTANCE_FIELD) return;
+    if (site->containing_function && !span_contains(site->containing_function->full_span, declared_at)) return;
+    if (site->initializer_context == INITIALIZER_INSTANCE_FIELD) return;
     Error* error = error_ctx_error_d(errs, used, 2449, "Class '", used, "' used before its declaration.");
     error_add_related_d(error, class_decl->name, 2728, "'", used, "' is declared here.");
 }
@@ -3275,6 +3277,7 @@ void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access
 }
 
 void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
+    PropertyContext const* site = property_context(access);
     // `typeof globalThis` has no properties for block scoped variables (TS2339 there, see check_access()). Its own
     // `globalThis` is readonly (tsc's globalThisSymbol has CheckFlags.Readonly)
     if (is_global_this(object) && access->assignment_target && access->form == PROPERTY_EXPR_DOT &&
@@ -3313,7 +3316,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     if (unused_enabled()) {
         for (u32 i = 0; i < refs.len; i++) mark_member_referenced(me, refs.props[i], access);
     }
-    if (access->initializer_context && refs.len == 1 && !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
+    if (site->initializer_context && refs.len == 1 && !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
         check_used_before_initialization(me, access, refs.props[0], errs);
     }
     if (refs.len == 1 && access->form == PROPERTY_EXPR_DOT) check_class_used_before_declaration(access, refs.props[0], errs);
@@ -3321,12 +3324,12 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     if (access->form == PROPERTY_EXPR_DOT) {
         bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);
         for (u32 i = 0; i < refs.len; i++) {
-            AccessSite site = {
-                .enclosing_class = access->enclosing_class, .containing_function = access->containing_function,
-                .this_parameter = access->this_parameter, .this_function = access->this_function,
-                .initializer_context = access->initializer_context,
+            AccessSite access_site = {
+                .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
+                .this_parameter = site->this_parameter, .this_function = site->this_function,
+                .initializer_context = site->initializer_context,
             };
-            if (!check_accessibility(me, &site, access->prop.outer_span, is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
+            if (!check_accessibility(me, &access_site, access->prop.outer_span, is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
                 access->assignment_target, refs.props[i], refs.objects[i], is_super, errs)
             ) {
                 break;
@@ -3466,11 +3469,12 @@ void ty_check_in_expression(Checker* me, Expr const* left_expr, Expr const* righ
 
 // tsc's checkPropertyAccessExpressionOrQualifiedName for a PrivateIdentifier, and checkPrivateIdentifierPropertyAccess
 bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty const* object, ErrorCtx* errs) {
+    PropertyContext const* site = property_context(access);
     Span name = access->prop.inner_span;
     if (access->form != PROPERTY_EXPR_DOT || access->prop.tag != EXPR_LITERAL || !span_valid(name) || name.sv.buf[0] != '#') {
         return false;
     }
-    ClassDecl const* lexical = access->private_class;
+    ClassDecl const* lexical = property_private_class(access);
     ClassItem const* lexical_item = lexical ? class_decl_find_private_name(lexical, name.sv) : nullptr;
     if (access->assignment_target && lexical_item && lexical_item->tag == CLASS_ITEM_METHOD &&
         lexical_item->method.accessor == CLASS_ACCESSOR_NONE
@@ -3480,7 +3484,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     }
     if (object->flags & TYF_ANY) {
         if (lexical) return true;
-        if (!access->enclosing_class) {
+        if (!site->enclosing_class) {
             error_ctx_error_d(errs, name, 18016, "Private identifiers are not allowed outside class bodies.");
         } else {
             error_ctx_error_d(errs, name, 2339, "Property '", name, "' does not exist on type 'any'.");
@@ -3489,7 +3493,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     }
     // unknown is TS18046 (check_access()), after which the object is the error type: a name no class around declares
     // doesn't exist on 'any' (tsc's checkPropertyAccessExpressionOrQualifiedName)
-    if ((object->flags & TYF_UNKNOWN) && compiler_options()->strict_null_checks && !lexical && access->enclosing_class) {
+    if ((object->flags & TYF_UNKNOWN) && compiler_options()->strict_null_checks && !lexical && site->enclosing_class) {
         error_ctx_error_d(errs, name, 2339, "Property '", name, "' does not exist on type 'any'.");
         return false;
     }
@@ -3519,7 +3523,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
     }
     if (!other) {
         // (In a plain JavaScript file the TS2339 that follows isn't reported, this is)
-        if (access->enclosing_class && name.source && name.source->plain_js) {
+        if (site->enclosing_class && name.source && name.source->plain_js) {
             error_ctx_grammar_error_d(errs, name, 1111, "Private field '", name, "' must be declared in an enclosing class.");
         }
         return false;

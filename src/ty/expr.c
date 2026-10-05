@@ -1716,7 +1716,7 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
 // flow container that declares it (tsc's getControlFlowContainer), where it's undefined until assigned
 static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* access) {
     if (!my binder->has_assignment_flow_containers) return false;
-    if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span) || access->private_class) return false;
+    if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span) || property_private_class(access)) return false;
     Ty const* object = ty_expr_type(me, &access->expr);
     if (object->kind == TY_UNION || (object->flags & (TYF_ANY | TYF_ERROR))) return false;
     Ty const* apparent = ty_apparent_type(me, object);
@@ -1725,7 +1725,7 @@ static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* acce
     Symbol const* symbol = prop && prop->decl ? prop->decl->symbol : nullptr;
     if (!symbol || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
-    return decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->flow_container && decl->flow_container == access->flow_container;
+    return decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->flow_container && decl->flow_container == property_context(access)->flow_container;
 }
 
 // tsc's getFlowTypeOfAccessExpression with assumeUninitialized: `this.x` in the constructor of the class that declares
@@ -1748,14 +1748,14 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
         error_ctx_error_d(errs, access->prop.inner_span, 2565, "Property '", access->prop.inner_span, "' is used before being assigned.");
         return;
     }
-    if (!options->strict_property_initialization || !access->in_constructor_of) return;
+    if (!options->strict_property_initialization || !property_context(access)->in_constructor_of) return;
     if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword != KEYWORD_IDENTIFIER_THIS ||
-        object->identifier.this_kind != THIS_CLASS_INSTANCE || object->identifier.target != access->in_constructor_of
+        object->identifier.this_kind != THIS_CLASS_INSTANCE || object->identifier.target != property_context(access)->in_constructor_of
     ) {
         return;
     }
     if (access->form != PROPERTY_EXPR_DOT || !span_valid(access->prop.inner_span)) return;
-    ClassDecl const* class_decl = symbol_find_node(access->in_constructor_of, SYMBOL_DECL_CLASS);
+    ClassDecl const* class_decl = symbol_find_node(property_context(access)->in_constructor_of, SYMBOL_DECL_CLASS);
     if (!class_decl || class_decl->is_ambient) return;
     ClassItem const* field = class_decl_find_member(class_decl, access->prop.inner_span.sv, false);
     if (!field || field->tag != CLASS_ITEM_FIELD || field->field.value.tag != EXPR_IMPLICIT_ANY || field->field.is_abstract ||
@@ -3941,7 +3941,7 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     if (!file || !file->is_js) return nullptr;
     Symbol const* class_symbol = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE) {
-        if (!access->in_constructor_of) return nullptr;
+        if (!property_context(access)->in_constructor_of) return nullptr;
         class_symbol = this->target;
     } else if (this->this_kind == THIS_ANY && this->this_function) {
         class_symbol = ty_js_constructor_class(this->this_function);
@@ -4316,13 +4316,13 @@ static bool has_numeric_property_names(Checker* me, Ty const* type) {
 // tsc's isForInVariableForNumericPropertyNames: `k` of `for (const k in xs)` where xs has only a number index
 // signature (an array) indexes as a number, in the loop's body
 static bool is_for_in_numeric_variable(Checker* me, PropertyExpr const* access) {
-    ForEachLoopStatement const* loop = access->for_in_loop;
+    ForEachLoopStatement const* loop = property_for_in_loop(access);
     return loop && has_numeric_property_names(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
 }
 
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
-    if (access->private_class && access->private_class->symbol) {
-        return ty_prop_name_literal(me, ty_private_name(me, access->private_class->symbol, access->prop.inner_span.sv));
+    if (property_private_class(access) && property_private_class(access)->symbol) {
+        return ty_prop_name_literal(me, ty_private_name(me, property_private_class(access)->symbol, access->prop.inner_span.sv));
     }
     // (A `#x` no class around declares names nothing, not even what an index signature has)
     Span name = access->prop.inner_span;

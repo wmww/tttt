@@ -200,6 +200,8 @@ typedef struct FlowBuilder {
     struct Expr const** yields;
     u32 yield_count;
     u32 yield_cap;
+    // The PropertyContext the last property access walked got (in arena): the next one in the same place shares it
+    struct PropertyContext const* property_context;
     FlowDumpEntry* dump; // TTTT_DUMP_FLOW: everything that happened, in order
     u32 dump_count;
     u32 dump_cap;
@@ -235,6 +237,8 @@ void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, 
 // Prints the container's graph if TTTT_DUMP_FLOW is set
 void flow_builder_finish(FlowBuilder* me, csview name, Span span);
 void flow_builder_reference_dump(FlowBuilder* me, Span name);
+// A PropertyContext equal to `context` that lives as long as the arena: the last one made if it is the same
+struct PropertyContext const* flow_builder_property_context(FlowBuilder* me, struct PropertyContext const* context);
 // What references store: null in unreachable code, like tsc
 static inline FlowNode* flow_builder_reference(FlowBuilder* me, Span name) {
     if (flow_dump_enabled()) flow_builder_reference_dump(me, name);

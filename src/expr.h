@@ -514,35 +514,14 @@ typedef struct UnaryOpExpr {
 
 // Property
 
-typedef struct PropertyExpr {
-    Expr expr;
-    Expr prop;
-    enum {
-        PROPERTY_EXPR_DOT,
-        PROPERTY_EXPR_BRACKET,
-    } form;
-    bool optional_chain;
-    // An access, call or chain-continuing `!` has it as its object (unparenthesized): if it's part of an optional chain,
-    // not the chain's end (tsc's !isOutermostOptionalChain). Set by the parser
-    bool continues_chain;
-    bool constraint_position; // Like IdentifierExpr.constraint_position
-    // Part of the entity name of a `typeof a.b` type (tsc's QualifiedName): also sees a namespace's type-only exports
-    bool qualified_name;
-    uint8_t assignment_target; // FlowAssignmentKind
-    bool compound_like_target; // Like IdentifierExpr.compound_like_target
-    bool method_call; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
-    // `M.x = v` declaring an export of a CommonJS module through an alias of it (`const M = module.exports`), set by the
-    // declare step: a declaration, not an assignment to what x may alias (like `exports.x = v`)
-    bool commonjs_export_alias;
-    FlowNode* flow; // Like IdentifierExpr.flow
-    // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others), and the class
-    // whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
+// Where a property access is, for what the checker asks about the place (accessibility, initialization order...): the
+// same for every access in the same walk context, so the resolve walk shares one between them (FlowBuilder's
+// property_context cache, in its arena)
+typedef struct PropertyContext {
+    // The innermost class it is in (member accessibility, see ClassDecl.outer_class for the others)
     ClassDecl const* enclosing_class;
-    // `a.#x`: the innermost class around it that declares `#x`, whose `#x` it names (null if none does)
-    ClassDecl const* private_class;
+    // The class whose constructor is the function it is directly in (where `this.x = ` may write a readonly x)
     Symbol const* in_constructor_of;
-    // JavaScript: the member an assignment to this access declares (`this.x = v`, `ns.a = v`), set by the resolve walk
-    Symbol const* declares;
     // What `this` is where it is, if not a class: a `this` parameter, or a function with a contextual `this` (a
     // protected member is accessible when that is a derived class, tsc's getEnclosingClassFromThisParameter)
     Symbol const* this_parameter;
@@ -550,13 +529,57 @@ typedef struct PropertyExpr {
     FunctionImpl const* containing_function; // The innermost function it is in, if any
     void const* flow_container; // FlowBuilder.container
     // `this.x`/`C.x` evaluated with the class (see FlowBuilder.initializer_context): InitializerContext, and the field
-    // whose initializer it is in
-    uint8_t initializer_context;
+    // whose initializer it is in. Only for a dot access whose object isn't an access itself
     struct ClassItem const* initializer_field;
-    // `xs[k]` in the body of a `for (k in ys)` (the innermost such loop, ys being xs or not): see
-    // ty_access_key_type()
-    struct ForEachLoopStatement const* for_in_loop;
+    uint8_t initializer_context;
+} PropertyContext;
+
+typedef struct PropertyExpr {
+    Expr expr;
+    Expr prop;
+    uint8_t form; // PROPERTY_EXPR_DOT, PROPERTY_EXPR_BRACKET
+    uint8_t assignment_target; // FlowAssignmentKind
+    bool optional_chain : 1;
+    // An access, call or chain-continuing `!` has it as its object (unparenthesized): if it's part of an optional chain,
+    // not the chain's end (tsc's !isOutermostOptionalChain). Set by the parser
+    bool continues_chain : 1;
+    bool constraint_position : 1; // Like IdentifierExpr.constraint_position
+    // Part of the entity name of a `typeof a.b` type (tsc's QualifiedName): also sees a namespace's type-only exports
+    bool qualified_name : 1;
+    bool compound_like_target : 1; // Like IdentifierExpr.compound_like_target
+    bool method_call : 1; // The callee of a call or new (tsc's isMethodAccessForCall): the object widens
+    // `M.x = v` declaring an export of a CommonJS module through an alias of it (`const M = module.exports`), set by the
+    // declare step: a declaration, not an assignment to what x may alias (like `exports.x = v`)
+    bool commonjs_export_alias : 1;
+    FlowNode* flow; // Like IdentifierExpr.flow
+    // Set by the resolve walk (null before), see PropertyContext
+    PropertyContext const* context;
+    // JavaScript: the member an assignment to this access declares (`this.x = v`, `ns.a = v`), set by the resolve walk
+    Symbol const* declares;
+    union {
+        // PROPERTY_EXPR_DOT: `a.#x`: the innermost class around it that declares `#x`, whose `#x` it names (null if none
+        // does). Read it with property_private_class()
+        ClassDecl const* private_class_;
+        // PROPERTY_EXPR_BRACKET: `xs[k]` in the body of a `for (k in ys)` (the innermost such loop, ys being xs or not):
+        // see ty_access_key_type()
+        struct ForEachLoopStatement const* for_in_loop_;
+    };
 } PropertyExpr;
+
+enum { PROPERTY_EXPR_DOT, PROPERTY_EXPR_BRACKET };
+
+static inline ClassDecl const* property_private_class(PropertyExpr const* me) {
+    return my form == PROPERTY_EXPR_DOT ? my private_class_ : nullptr;
+}
+
+static inline struct ForEachLoopStatement const* property_for_in_loop(PropertyExpr const* me) {
+    return my form == PROPERTY_EXPR_BRACKET ? my for_in_loop_ : nullptr;
+}
+
+static inline PropertyContext const* property_context(PropertyExpr const* me) {
+    static PropertyContext const none = {0};
+    return my context ? my context : &none;
+}
 
 // Where a member is read, for its accessibility (private/protected, abstract in a constructor): see PropertyExpr's
 // fields of the same names. A destructuring pattern or assignment has one when it is in a class or has a `this`

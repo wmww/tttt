@@ -624,7 +624,7 @@ static bool is_constant_entity_name(Checker* me, Expr const* key) {
 // The name an access goes by: `a.b`, `a["b"]`, `a[0]`, `a[c]` for a `const c` of a literal type
 static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     Expr const* key = &access->prop;
-    if (access->private_class) return ty_literal_name(me, ty_access_key_type(me, access));
+    if (property_private_class(access)) return ty_literal_name(me, ty_access_key_type(me, access));
     if (key->tag == EXPR_LITERAL) {
         if (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER) return nullptr;
     } else if (key->tag == EXPR_IDENTIFIER) {
@@ -2140,7 +2140,7 @@ static bool is_matching_constructor_reference(FlowQuery* q, Expr const* expr) {
     expr = skip_reference_wrappers(expr);
     if (expr->tag != EXPR_PROPERTY) return false;
     PropertyExpr const* access = expr->property;
-    if (access->private_class) return false;
+    if (property_private_class(access)) return false;
     Expr const* key = &access->prop;
     bool named = (access->form != PROPERTY_EXPR_BRACKET || (key->tag == EXPR_LITERAL && key->literal.tag == VALUE_STRING)) &&
         access_name(me, access) == my atom_constructor;

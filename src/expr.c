@@ -1832,27 +1832,28 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             flow_length_access(me);
             my property->assignment_target = assignment_target;
             my property->compound_like_target = compound_like_target;
-            my property->enclosing_class = scope_enclosing_class(names);
+            {
+                PropertyContext context = { .enclosing_class = scope_enclosing_class(names) };
+                ThisRef this_ref = scope_get_this(names, false);
+                if (this_ref.kind == THIS_PARAMETER) context.this_parameter = this_ref.symbol;
+                if (this_ref.kind == THIS_ANY) context.this_function = this_ref.function;
+                context.in_constructor_of = flow->constructor_of;
+                if (my property->form == PROPERTY_EXPR_DOT && my property->expr.tag != EXPR_PROPERTY) {
+                    context.initializer_context = flow->initializer_context;
+                    context.initializer_field = flow->initializer_field;
+                }
+                context.containing_function = names->function;
+                context.flow_container = flow->container;
+                my property->context = flow_builder_property_context(flow, &context);
+            }
             if (my property->form == PROPERTY_EXPR_DOT && my property->prop.tag == EXPR_LITERAL &&
                 span_valid(my property->prop.inner_span) && my property->prop.inner_span.sv.buf[0] == '#'
             ) {
                 csview name = my property->prop.inner_span.sv;
-                ClassDecl const* c = my property->enclosing_class;
+                ClassDecl const* c = my property->context->enclosing_class;
                 while (c && !class_decl_find_private_name(c, name)) c = c->outer_class;
-                my property->private_class = c;
+                my property->private_class_ = c;
             }
-            {
-                ThisRef this_ref = scope_get_this(names, false);
-                if (this_ref.kind == THIS_PARAMETER) my property->this_parameter = this_ref.symbol;
-                if (this_ref.kind == THIS_ANY) my property->this_function = this_ref.function;
-            }
-            my property->in_constructor_of = flow->constructor_of;
-            if (my property->form == PROPERTY_EXPR_DOT && my property->expr.tag != EXPR_PROPERTY) {
-                my property->initializer_context = flow->initializer_context;
-                my property->initializer_field = flow->initializer_field;
-            }
-            my property->containing_function = names->function;
-            my property->flow_container = flow->container;
             if (my property->declares && my property->form == PROPERTY_EXPR_DOT) {
                 // (The declaration this assignment made: tsc's getControlFlowContainer of a valueDeclaration)
                 Symbol* declared = (Symbol*)my property->declares;
@@ -1882,7 +1883,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (my property->form == PROPERTY_EXPR_BRACKET && my property->prop.tag == EXPR_IDENTIFIER &&
                 my property->prop.identifier.target
             ) {
-                my property->for_in_loop = scope_for_in_loop_of(names, my property->prop.identifier.target);
+                my property->for_in_loop_ = scope_for_in_loop_of(names, my property->prop.identifier.target);
             }
             break;
 

@@ -515,6 +515,21 @@ static void dump_node(FlowNode const* node) {
     println("");
 }
 
+PropertyContext const* flow_builder_property_context(FlowBuilder* me, PropertyContext const* context) {
+    PropertyContext const* last = my property_context;
+    if (last && last->enclosing_class == context->enclosing_class && last->in_constructor_of == context->in_constructor_of &&
+        last->this_parameter == context->this_parameter && last->this_function == context->this_function &&
+        last->containing_function == context->containing_function && last->flow_container == context->flow_container &&
+        last->initializer_field == context->initializer_field && last->initializer_context == context->initializer_context
+    ) {
+        return last;
+    }
+    PropertyContext* ret = arena_new(my arena, PropertyContext);
+    *ret = *context;
+    my property_context = ret;
+    return ret;
+}
+
 void flow_builder_reference_dump(FlowBuilder* me, Span name) {
     if (flow_dump_enabled() && span_valid(name)) dump_record(me, my dead ? &flow_unreachable : my current, name);
 }
