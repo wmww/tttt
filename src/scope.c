@@ -3375,6 +3375,9 @@ static void merge_augmentations(Binder* me) {
     // (Which entries wait is decided before anything merges: a merge can make a name an own export of the module)
     bool** late_entries = calloc(my augmentation_count ? my augmentation_count : 1, sizeof(bool*));
     panic_if(!late_entries, "out of memory");
+    // (Those that can't merge, TS2671/TS2649: tsc's mergeModuleAugmentation leaves them symbols of their own)
+    bool* unmerged = calloc(my augmentation_count ? my augmentation_count : 1, sizeof(bool));
+    panic_if(!unmerged, "out of memory");
     for (int pass = 0; pass < 2; pass++) {
         for (u32 i = 0; i < my augmentation_count; i++) {
             NamespaceDecl* decl = my augmentations[i];
@@ -3393,6 +3396,7 @@ static void merge_augmentations(Binder* me) {
                         error_ctx_error_d(errs, decl->module_ref->span, 2671, "Cannot augment module '",
                             decl->module_ref->path, "' because it resolves to a non-module entity.");
                     }
+                    unmerged[i] = !assigned->is_placeholder;
                     continue;
                 }
                 if (assigned->binder != me) continue; // TODO: a namespace of the shared lib program
@@ -3408,6 +3412,7 @@ static void merge_augmentations(Binder* me) {
                         error_ctx_error_d(errs, decl->module_ref->span, 2649, "Cannot augment module '", assigned->name,
                             "' with value exports because it resolves to a non-module entity.");
                     }
+                    unmerged[i] = true;
                     continue;
                 }
                 module = assigned;
@@ -3436,6 +3441,12 @@ static void merge_augmentations(Binder* me) {
     // Every block of an augmentation sees the module's exports, and `declare module "m"` is the module
     for (u32 i = 0; i < my augmentation_count; i++) {
         NamespaceDecl* decl = my augmentations[i];
+        if (unmerged[i]) {
+            symbol_add_decl(decl->symbol, (SymbolDecl){
+                .kind = SYMBOL_DECL_NAMESPACE, .node = decl, .name = decl->name, .full = decl->full_span,
+            });
+            continue;
+        }
         Symbol* module = augmented_module(me, decl);
         Symbol* assigned = module_export_equals(module);
         if (assigned && assigned != module && !assigned->is_placeholder && assigned->flags & SYMBOL_NAMESPACE &&
@@ -3451,6 +3462,7 @@ static void merge_augmentations(Binder* me) {
         // (The name's first augmentation is what tsc clones, the pattern merges into it, then the others)
         if (module->decl_count == 1) add_pattern_declarations(module, augmented_pattern(me, module));
     }
+    free(unmerged);
 }
 
 bool symbol_is_augmented_export_equals(Symbol const* me) {

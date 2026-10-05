@@ -1982,23 +1982,23 @@ const baselines = {
     },
     'augmentExportEquals1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentExportEquals1_1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentExportEquals2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentExportEquals2_1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'augmentExportEquals3': {
         errors: true,
@@ -2037,7 +2037,7 @@ const baselines = {
     },
     'augmentExportEquals7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'augmentedClassWithPrototypePropertyOnModule': {
