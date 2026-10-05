@@ -2376,6 +2376,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_RETURN_EXPR:
+            if (ctx.function && !ctx.function->ret_explicit && !ctx.constructed_class && !ctx.in_setter) {
+                ty_function_return_type(current_checker, ctx.function);
+            }
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
             if (ctx.in_setter) {

@@ -22873,7 +22873,7 @@ const baselines = {
     'narrowingInCaseClauseAfterCaseClauseWithReturn': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingIntersection': {
         errors: true,

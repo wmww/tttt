@@ -138,6 +138,12 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
 - `check_with()` (ty/expr.c) computes an expression with a contextual type outside the LazyType, so no cycle detection
   (`let [x = x] = []` is stopped by the pattern's names being on the resolution stack, plan 39; other contextual
   self-references can still overflow the stack).
+- Mutually recursive object literal getters through generic calls (probe test/probes/triage/getter_cycle.ts, zod's
+  getter-schema shape with toy types): tsc reports TS7022 on all three variables and TS7023 on both getters, tttt
+  nothing, and types the cycle differently (`variantA` any where tsc has `Schema<{ kind: "a"; readonly child: any }>`).
+  Where the cycle is entered differs: tsc defers the getter bodies, and the getter's return type is asked for while
+  `tree`'s initializer resolves `variantA`'s type. Not caused by the deferral/checkReturnStatement work (base fails it
+  identically); worth a TTTT_DEBUG_CYCLE look.
 - selfReferentialDefaultNoStackOverflow wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
 
 ## Classes and declarations
