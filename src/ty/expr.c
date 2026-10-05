@@ -2055,6 +2055,46 @@ static bool expando_target_is_annotated(PropertyExpr const* access) {
     return binding && !binding->parent && binding->has_explicit_type;
 }
 
+// What the target of `a = v` (or `||=`, `&&=`, `??=`) gives v as its contextual type, given the target's type (tsc's
+// getContextualTypeForBinaryOperand), past the CommonJS and JavaScript container declarations check_binary() handles
+static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
+    Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
+    // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
+    // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
+    if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && binary->right.inner_span.source &&
+        binary->right.inner_span.source->is_js && binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_IDENTIFIER
+    ) {
+        assigned_context = left;
+    }
+    // (An any target is a context too, which a `yield` records as what its generator is sent)
+    if (!assigned_context && binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) {
+        assigned_context = left;
+    }
+    // `a.b = v` or `this.b = v` that declares b (an expando): v's type is what b is, so it gives v no context
+    // unless b is declared with a type, or `a` is (tsc's getContextualTypeForAssignmentDeclaration)
+    if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_PROPERTY && binary->left.property->declares &&
+        !binary->jsdoc_type && !expando_target_is_annotated(binary->left.property)
+    ) {
+        assigned_context = nullptr;
+    }
+    if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
+        (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS
+    ) {
+        // An object pattern's type is a pattern (tsc's checkObjectLiteral: `result.pattern = node`), unless a
+        // spread or computed name leaves its properties open
+        bool open = false;
+        for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
+        if (!open) assigned_context = ty_pattern_clone(me, left);
+    }
+    return assigned_context;
+}
+
+Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment) {
+    if (assignment->op == BINARY_OP_EQUAL && is_commonjs_declaration(assignment)) return commonjs_declaration_context(assignment);
+    if (assignment->op == BINARY_OP_EQUAL && is_js_container_declaration(assignment)) return nullptr;
+    return assignment_value_context(me, assignment, ty_expr_type(me, &assignment->left));
+}
+
 static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx ctx) {
     check_left_spine(me, binary, ctx);
     Ty const* left;
@@ -2084,34 +2124,7 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
         case BINARY_OP_EH_EH_EQUAL:
             // The target contextually types what is assigned to it (tsc's getContextualTypeForBinaryOperand)
             left = ty_expr_type(me, &binary->left);
-            Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
-            // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
-            // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
-            if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && binary->right.inner_span.source &&
-                binary->right.inner_span.source->is_js && binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_IDENTIFIER
-            ) {
-                assigned_context = left;
-            }
-            // (An any target is a context too, which a `yield` records as what its generator is sent)
-            if (!assigned_context && binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) {
-                assigned_context = left;
-            }
-            // `a.b = v` or `this.b = v` that declares b (an expando): v's type is what b is, so it gives v no context
-            // unless b is declared with a type, or `a` is (tsc's getContextualTypeForAssignmentDeclaration)
-            if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_PROPERTY && binary->left.property->declares &&
-                !binary->jsdoc_type && !expando_target_is_annotated(binary->left.property)
-            ) {
-                assigned_context = nullptr;
-            }
-            if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
-                (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS
-            ) {
-                // An object pattern's type is a pattern (tsc's checkObjectLiteral: `result.pattern = node`), unless a
-                // spread or computed name leaves its properties open
-                bool open = false;
-                for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
-                if (!open) assigned_context = ty_pattern_clone(me, left);
-            }
+            Ty const* assigned_context = assignment_value_context(me, binary, left);
             right = ty_check_expr(me, &binary->right, assigned_context);
             // `{} = v` is v without null and undefined, the error type if nothing is left (tsc's
             // checkObjectLiteralAssignment returns checkNonNullType's)

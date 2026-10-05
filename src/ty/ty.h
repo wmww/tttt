@@ -17,6 +17,7 @@ typedef struct ObjectExprItem ObjectExprItem;
 typedef struct Expr Expr;
 typedef struct CallExpr CallExpr;
 typedef struct PropertyExpr PropertyExpr;
+typedef struct BinaryOpExpr BinaryOpExpr;
 typedef struct Checker Checker;
 typedef struct Prop Prop;
 struct ObjectLiteralProp;
@@ -1469,6 +1470,9 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
 Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access); // What `x.y`/`x[y]` looks up (`#y`: the class's)
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
+// The contextual type of the value of `a = v` (null for none): what its target gives it (tsc's
+// getContextualTypeForBinaryOperand and getContextualTypeForAssignmentDeclaration)
+Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment);
 // Every reference to a variable, parameter, function, class... gets its type here (plan 03: narrowing goes here)
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier);
 // What a declaration without type annotation makes of its initializer's type (tsc's getWidenedType, plus
@@ -1671,6 +1675,9 @@ bool ty_extends_array(Checker* me, Ty const* ty); // Assignable to `readonly any
 Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, Ty const* initial, FlowNode const* flow);
 // The type of an expression for the flow engine: never through an unfinished memo
 Ty const* ty_flow_expr_type(Checker* me, Expr const* expr);
+// The same for the value of an assignment, checked with the contextual type its target gives it (tsc's
+// getTypeOfExpression finds it up the tree): what the value is doesn't depend on whether its statement was checked yet
+Ty const* ty_flow_assigned_value_type(Checker* me, BinaryOpExpr const* assignment);
 // TS2454: a variable that is read where it may not have been assigned yet
 typedef enum IdentifierFlowIssue {
     IDENTIFIER_FLOW_OK,

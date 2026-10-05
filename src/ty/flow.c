@@ -816,7 +816,18 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
     return signature_return_type(me, sig);
 }
 
+static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr const* assignment);
+
 Ty const* ty_flow_expr_type(Checker* me, Expr const* expr) {
+    return flow_expr_type_in(me, expr, nullptr);
+}
+
+Ty const* ty_flow_assigned_value_type(Checker* me, BinaryOpExpr const* assignment) {
+    return flow_expr_type_in(me, &assignment->right, assignment);
+}
+
+// assignment: expr is its value, checked with the contextual type its target gives
+static Ty const* flow_expr_type_in(Checker* me, Expr const* expr, BinaryOpExpr const* assignment) {
     Ty const* quick = ty_quick_expr_type(me, expr, true);
     if (quick) return quick;
     LazyType* lazy = (LazyType*)&expr->lazy_type;
@@ -828,11 +839,13 @@ Ty const* ty_flow_expr_type(Checker* me, Expr const* expr) {
     // memo: nobody gave this evaluation a contextual type). Without it a chain of `x = x + x` doubles at every link
     // While a loop is in progress the cache is only good for the walk of one back edge (flow_expr_generation)
     bool complete = my flow_loop_count == my flow_loop_start;
-    u64 key[3] = { KEY_FLOW_EXPR, (u64)(uintptr_t)expr, complete ? 0 : my flow_expr_generation };
+    // (The low bit: with the assignment's context, Expr being aligned)
+    u64 key[3] = { KEY_FLOW_EXPR, (u64)(uintptr_t)expr | (assignment != nullptr), complete ? 0 : my flow_expr_generation };
     Ty const* cached = intern_get(&my links, key, 3);
     if (cached) return cached;
     my flow_uncached++;
-    Ty const* ret = ty_compute_expr_without_context(me, expr);
+    Ty const* contextual = assignment ? ty_assigned_value_context(me, assignment) : nullptr;
+    Ty const* ret = contextual ? ty_check_expr(me, expr, contextual) : ty_compute_expr_without_context(me, expr);
     my flow_uncached--;
     *intern_slot(me, &my links, key, 3) = ret;
     return ret;
@@ -987,6 +1000,9 @@ static Ty const* initial_or_assigned_type(FlowQuery* q, FlowAssign const* assign
             if (assignment->op == BINARY_OP_EQUAL && ty_expr_is_context_sensitive(&assignment->right)) {
                 return ty_expr_type(me, assign->assignment);
             }
+            // The rest are checked with the context their target gives them too, like in the walk, unless the target
+            // is auto-typed (its type is what's being worked out: it gives no context)
+            if (assignment->op == BINARY_OP_EQUAL && !is_auto(me, q->declared)) return ty_flow_assigned_value_type(me, assignment);
             return ty_flow_expr_type(me, &assignment->right);
         }
         case FLOW_ASSIGN_FOR_EACH:
