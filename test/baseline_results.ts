@@ -211,7 +211,7 @@ const baselines = {
         types: true,
     },
     'TransportStream': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -107,6 +107,9 @@ typedef struct ParserShared {
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
+    // Where tsc's NonTextFileMarkerTrivia starts (a U+FFFD, TS1490): a token to the end of the file, which the
+    // statement list that gets there says isn't a statement (TS1128). Null if none or once said
+    char const* binary_marker;
     // Parsing the type arguments of `import<...>`: TS1326 replaces their own grammar errors (TS1099)
     bool import_type_args;
     // The type member being parsed can't be a mapped type's `[K in T]` (tsc's isStartOfMappedType looks only at a type
@@ -1151,6 +1154,7 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
                     const char* file_start = cstr_str(&parent->shared->source->contents);
                     parse_error_inner(parent, span_make(parent->shared->source, file_start, file_start), 1490,
                         cstr_lit("File appears to be binary."), true);
+                    if (!parent->shared->binary_marker) parent->shared->binary_marker = parent->pos;
                     parent->pos += strlen(parent->pos);
                     break;
                 }
@@ -12292,6 +12296,12 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             sh->saw_top_level_await |= outer_saw_await;
         }
         hop_whitespace(&p); // TODO: is this needed?
+    }
+    if (p.shared->binary_marker && !*p.pos) {
+        char const* marker = p.shared->binary_marker;
+        p.shared->binary_marker = nullptr;
+        // (Not TS1127 for its first character: the scanner made the whole marker one token)
+        parse_error_in_literal(&p, span_make(p.shared->source, marker, p.pos), 1128, "Declaration or statement expected.");
     }
     list_leave(&p, saved_context);
     shrink_list(vec_statement, ret);
