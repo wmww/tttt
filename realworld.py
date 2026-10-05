@@ -10,6 +10,8 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
 """
 import argparse, collections, os, re, resource, subprocess, sys, time
 
+ROOT = os.path.dirname(os.path.abspath(__file__))
+
 # The corpora besides tsc's compiler (plan 17): modern, type-heavy code, clean under tsc 5.8, fetched by
 # thirdparty/ensure-corpora.sh
 CORPORA = {
@@ -57,11 +59,22 @@ def main():
     ap.add_argument('--mem-gb', type=int, default=12)
     args = ap.parse_args()
 
+    cwd = ROOT
     if args.options is None:
         # Through its real path: in a worktree thirdparty/corpora is a symlink, and a project reached through one
-        # loads its own files twice (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too)
+        # loads its own files twice (webpack's node_modules/webpack -> .. realpaths to the other copy; tsc too). Run
+        # from the tree the link leads into, so paths print short (thirdparty/corpora/...) rather than as ../../home/...
         flag = '-b ' if args.corpus in BUILD_CORPORA else '-p '
-        args.options = flag + os.path.relpath(os.path.realpath(CORPORA[args.corpus]))
+        real = os.path.realpath(os.path.join(ROOT, CORPORA[args.corpus]))
+        parts = CORPORA[args.corpus].split('/')
+        for i in range(1, len(parts) + 1):
+            prefix = '/'.join(parts[:i])
+            if os.path.islink(os.path.join(ROOT, prefix)):
+                target = os.path.realpath(os.path.join(ROOT, prefix))
+                if target.endswith('/' + prefix):
+                    cwd = target[:-len(prefix) - 1]
+                break
+        args.options = flag + os.path.relpath(real, cwd)
         if args.corpus not in ('tsc', 'tsc-src'):
             subprocess.run(['thirdparty/ensure-corpora.sh'], check=True)
     if not args.no_build:
@@ -69,8 +82,8 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run(['./release/tttt', '-q', '--keep-going', '--all-errors', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                              timeout=args.timeout,
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--all-errors', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                              timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
         out = proc.stdout
