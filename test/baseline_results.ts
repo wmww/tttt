@@ -66011,7 +66011,7 @@ const baselines = {
         types: false,
     },
     'instantiationExpressions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

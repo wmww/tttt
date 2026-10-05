@@ -929,17 +929,29 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, span_between(vec_spanned_type_at(&my params, 0)->span, vec_spanned_type_back(&my params)->span),
             2635, "Type '", error_type, "' has no signatures for which the type argument list is applicable.");
     }
-    // (Only the signatures that take the type arguments have their constraints checked: getInstantiatedSignatures)
+    // (Only the signatures that take the type arguments have their constraints checked, each of them, the first
+    // argument that doesn't fit: getInstantiatedSignatures -> checkTypeArguments)
     if (!sig || !sig->type_params.len || (!fits && !my heritage)) return;
-    for (u32 i = 0; i < sig->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
-        Ty const* constraint = ty_param_constraint(checker, sig->type_params.data[i]);
-        if (!constraint || ty_type_argument_satisfies_constraint(checker, sig->type_params, &my params, i)) continue;
-        SpannedType const* arg = vec_spanned_type_at(&my params, i);
-        // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo)
-        Ty const* arg_type = ty_of_node(&arg->type);
-        cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
-            constraint, "'.");
-        ty_report_unassignable_with_head(checker, arg_type, constraint, 2344, head, arg->span, errs);
+    u32 total = members->call_count + members->construct_count;
+    for (u32 s = 0; s < (fits ? total : 1); s++) {
+        Signature const* each = !fits ? sig : s < members->call_count ? members->call[s] : members->construct[s - members->call_count];
+        signature_resolve(checker, each);
+        u32 min = 0;
+        for (u32 j = 0; j < each->type_params.len; j++) {
+            if (!ty_param_default(checker, each->type_params.data[j])) min = j + 1;
+        }
+        if (fits && (!each->type_params.len || written < min || written > each->type_params.len)) continue;
+        for (u32 i = 0; i < each->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
+            Ty const* constraint = ty_param_constraint(checker, each->type_params.data[i]);
+            if (!constraint || ty_type_argument_satisfies_constraint(checker, each->type_params, &my params, i)) continue;
+            SpannedType const* arg = vec_spanned_type_at(&my params, i);
+            // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo)
+            Ty const* arg_type = ty_of_node(&arg->type);
+            cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
+                constraint, "'.");
+            ty_report_unassignable_with_head(checker, arg_type, constraint, 2344, head, arg->span, errs);
+            break;
+        }
     }
 }
 
