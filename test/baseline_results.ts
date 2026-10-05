@@ -36496,12 +36496,12 @@ const baselines = {
         types: true,
     },
     'privateNameInInExpression(target=es2022)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'privateNameInInExpression(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -39021,7 +39021,7 @@ const baselines = {
         types: true,
     },
     'awaitAndYield': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

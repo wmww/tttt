@@ -634,6 +634,13 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
 
 // If statements
 
+// `for (#x in o)` in a class: tsc's checkGrammarPrivateIdentifierExpression has nothing against that private name
+static bool for_in_private_variable(ForEachLoopStatement const* me) {
+    Expr const* variable = &my variable.expr;
+    return my keyword == FOR_EACH_LOOP_IN && variable->tag == EXPR_PRIVATE_NAME && !expr_is_perenthisized(variable) &&
+        variable->private_name->enclosing_class;
+}
+
 zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     switch (my keyword) {
         case FOR_EACH_LOOP_OF: return c_zv("of");
@@ -2431,7 +2438,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     break;
 
                 case FOR_EACH_LOOP_EXPR:
-                    expr_typecheck(&my for_each_loop->variable.expr, errs);
+                    if (!for_in_private_variable(my for_each_loop)) expr_typecheck(&my for_each_loop->variable.expr, errs);
                     if (!my for_each_loop->variable.expr.assignment_pattern) {
                         bool in = my for_each_loop->keyword == FOR_EACH_LOOP_IN;
                         // tsc's checkReferenceExpression (for-in: only if the keys fit, see TS2405 below)
