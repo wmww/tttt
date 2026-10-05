@@ -8,14 +8,20 @@ checker's arena size and type count. Memory: `valgrind --tool=massif` sees mallo
 (to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
 `/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
 
-## Regressions of todo entry 6 (2026-10-04), for the next perf session
-- **vue +3.4%** (7.840 -> 8.105 G) from 9444083d (`requires_optional_properties()`: only an unwidened object literal
-  is exempt from a weak target's optional properties, as in tsc). Correct per tsc, but subtype reductions that used to
-  collapse `{}`-like widened literals now keep both members; the extra cost is spread over instantiation and property
-  lookups. Find which unions grew (TTTT_DEBUG_RELATE on vue's dts-test) and whether tsc has a cache tttt lacks there.
-- **react +3.7%** (1.634 -> 1.695 G) from a4aa6c6b (the distributive constraint of a conditional type whose check type
-  is a generic union/intersection, `T & {}`); 54770b41 recovered part. `base_constraint()` has no per-type memo, tsc's
-  getResolvedBaseConstraint caches (triage.md).
+## Leftovers of the 2026-10-05 perf session (todo entry 8)
+- **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
+  now (1.695 -> 1.682 G). The rest is first computations: ~120k instructions each through `ty_simplified` of nested
+  indexed accesses (react-hook-form's Path chains). Reading the memo at depth > 0 too gave 1.648 but made the display
+  of `Compute<A[K]>` (computedTypesKeyofNoIndexSignatureType) expand without end: something in
+  `display_mapped` -> `expand_generic_homomorphic` -> `ty_apparent_type` relies on the depth cutoff of base
+  constraints to stop. tsc caches every base constraint with a circularity stack instead of a depth cutoff; porting
+  that (plan 39's stack) would allow the all-depth memo.
+- **vue** (+3.4% from 9444083d): mostly inherent. Widened component-option literals are no longer subtypes of vue's
+  weak options types, so ~630 multi-overload calls (`h(Comp, ...)` in vue's tests) fail tsc's subtype round and redo
+  every overload in the assignable round, as tsc does. 7e159aa6 took a quarter back (arguments checked and related one
+  at a time, tsc's getSignatureApplicabilityError). The rest is re-inference per overload round; only cheaper
+  inference/argument checking in general would help (e.g. reusing a non-context-sensitive argument's type across
+  candidates, beyond tsc, careful with freshness and contextual literal types).
 
 ## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
 Measure with `./instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
@@ -42,27 +48,31 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (the weak side now: every corpus is faster than single-threaded tsgo, several use more memory)
-- **Arena by call site**: `./arenasites.sh -p <corpus>` (a `-DTTTT_ARENA_SITES` build in /tmp). zod after the
-  `Prop`/`PropDecl` split (09-28, 431 -> 298 MB): instantiated `Prop`s (80 bytes, `instantiate_members`) 86 MB, types
-  52 MB (instantiated anonymous types 19, references 10), `intern_slot` keys 24, `builder_finish`'s member arrays 36,
-  instantiated `Signature`s (192 bytes, same split possible: `instantiate_members`' second site) 14, scopes/symbols of
-  name resolution ~38. Next steps if memory matters again: `Signature` split; `Prop` to 56 bytes (`write_type` into a
-  side table, `mapped_type` into `PropDecl`, `type_state` a byte); instantiating props lazily per name (tsc doesn't). Plan 42 measured (10-05): only 38% (drizzle), 18% (zod), 27%
-  (valibot) of instantiated Props ever get their type asked; a ~48-byte instantiated Prop (fields that follow `target`
-  dropped) is the cheap win. **drizzle's peak is cross-checker duplication**: `--checkers 1` 896 MB (tsgo 1 thread
-  1054), 4 checkers 1725 MB (tsgo multi-threaded 1869) with 1.66M types between them vs 683k for one; other corpora
-  grow 3-20% with K. Lever: file-to-checker affinity (plan 36 "Later") or shared lib/global types.
-- **Type counts are not the problem**: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k
-  on valibot (tttt 385k). The old "3.5x on deep-partial.test.ts" was the variance bug below, fixed.
-- **The AST**: after the parser's shrink_to_fit (09-28), webpack's parse heap is ~198 MB live plus ~100 MB of malloc
-  per-block overhead: millions of small `c_new` nodes. Node arenas (per file) would take the overhead and most of the
-  malloc time (`_int_malloc` is ~9% of parsing), but every `*_drop` of the AST and every backtracking path frees
-  nodes: the parser would need to stop freeing (failed attempts leak into the arena, bounded by the fail cache).
-  Struct sizes: `Expr` 144 (two 24-byte `Span`s), `PropertyExpr` 368 (7 checker/binder pointers), `BinaryOpExpr`
-  312, `Statement` 272, `FunctionArg` 568, `InterfaceMember` 536. A `Span` could be 12 bytes (u32 file-relative
-  offset + length, the source from the file being checked).
+## Memory (measurements.md "Perf and memory session" has the table: below tsgo everywhere but nest and webpack)
+- **Arena by call site and interned keys by kind**: `./arenasites.sh -p <corpus>`. drizzle at one checker (10-05, 495
+  MB arena): types 88 MB (136 bytes each), interned keys ~60 MB (KEY_ANONYMOUS_INSTANCE 15, KEY_CONDITIONAL 13 (node
+  pointers and mapper pairs per branch), KEY_CONDITIONAL_INSTANCE 9), instantiated `Prop`s 68 MB (56 bytes),
+  `ty_list_copy` 65 MB (union/intersection/reference member lists: the key holds the same ids again), scopes/symbols
+  of name resolution ~50, `builder_finish` member arrays 44, `expand_mapped` 24.
+- Next steps if memory matters again: a ~40-byte instantiated Prop (no `decl`/`parent`, plan 42); `Signature`'s
+  declaration-only fields (two Spans, class_instance, declared_by: 80 bytes) behind a pointer like PropDecl; Ty's
+  `anonymous` member could be 88 bytes but `declared` is 96 (the union's size); an interned list whose key *is* its
+  member ids (a u32 id array in the type, pointers looked up) would drop `ty_list_copy`'s duplicate.
+- **Duplication across checkers**: files are dealt in contiguous runs (deal_files(), 10-05): drizzle 1688 -> 1337
+  MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
+  balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
+  lib/global types between checkers would take the rest.
+- **The AST is now the biggest gap**: nest (254 MB at K1 vs tsgo 212) and webpack (396 vs 303) are parse + name
+  resolution heavy (webpack: 217 MB resident after parsing, 285 after names, checker arena 78 MB). Millions of small
+  `c_new` nodes (~100 MB of malloc overhead on webpack, 09-28), `Span` is 24 bytes (`SourceFile*` + csview) and appears
+  twice in `Expr` (144 bytes), `PropertyExpr` 368 (7 checker/binder pointers), `BinaryOpExpr` 312, `Statement` 272,
+  `FunctionArg` 568, `InterfaceMember` 536. Levers: per-file node arenas (the parser frees on backtracking: it would
+  have to stop, failed attempts leak into the arena, bounded by the fail cache); a 16-byte Span (pointer + u32 length
+  + u32 file index, `.sv` through an accessor: ~1000+ uses) or 8 bytes (u32 offset + u32 length, the file from
+  context); moving checker/binder pointers out of AST nodes into side tables. Plan-sized: needs a planning session.
 - Name resolution adds ~60 MB on webpack (scopes 248 B, symbols 192 B).
+- Type counts are not the problem: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k on
+  valibot (tttt 385k).
 
 ## Time
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's

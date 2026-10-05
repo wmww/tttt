@@ -10,6 +10,50 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Perf and memory session (2026-10-05, todo entry 8)
+Suite 12728 -> 12728, 0 lost; corpora unchanged (webpack 6, xstate 8, drizzle 6, zod-root 55, rest 0); checkerdiff
+and threadcheck identical. Callgrind, session start (02ca5d29) -> end: tsc 4.712 -> 4.699, type-fest 3.213 -> 3.213,
+valibot 5.018 -> 4.992, react 1.695 -> 1.687 (base_constraint() memo), nest 1.274 -> 1.275, webpack 3.912 -> 3.909,
+zod 4.479 -> 4.471, xstate 2.769 -> 2.747, drizzle 13.335 -> 13.214 (-0.9%: shorter interned keys), vue 8.105 ->
+8.027 (arguments checked one at a time in overload resolution). **Peak RSS** (best-of-3 runs, `--checkers 1
+--threads 1` = K1 vs tsgo `--singleThreaded`; the default K=4 vs multi-threaded tsgo; tsgo from the bench below):
+| corpus | tttt K1 start -> end | tsgo 1 thread | tttt K4 start -> end | tsgo |
+|---|---|---|---|---|
+| tsc | 387 -> 385 | 537 | 433 -> 422 | 610 |
+| type-fest | 522 -> 488 | 789 | 541 -> 499 | 793 |
+| valibot | 445 -> 421 | 595 | 515 -> 479 | 806 |
+| react | 243 -> 241 | 311 | 320 -> 304 | 543 |
+| nest | 255 -> 254 | **212** | 272 -> 270 | 246 |
+| webpack | 408 -> 396 | **303** | 468 -> 444 | 492 |
+| zod | 578 -> 538 | 1004 | 698 -> 622 | 1426 |
+| xstate | 331 -> 314 | 361 | 394 -> 379 | 472 |
+| drizzle | 873 -> 833 | 1073 | **1688 -> 1253** | 1881 |
+| vue | 599 -> 576 | 670 | 680 -> 650 | 866 |
+Where it came from: contiguous runs of files per checker instead of round robin (K=4 only; drizzle -25%), `Prop` 80 ->
+56 bytes, `Signature` 200 -> 176, `Ty` 152 -> 136, mapper-pair keys two ids per word. nest and webpack, the two above
+tsgo, are parse + name resolution (webpack at K1: 217 MB resident after parsing, 285 after names, checker arena 78
+MB): the AST (perf_leads.md "Memory").
+
+`./bench.sh --runs 3` at session start (02ca5d29 + the base_constraint memo, round robin; quiet machine), best wall /
+peak RSS, tttt at its defaults:
+| corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
+|---|---|---|---|---|
+| synthetic (1077 x 200, 3.11 M lines) | **4.45 s** / 5297 MB | 43.9 s (aborted) / 4294 | 11.14 s / 6690 | 13.91 s / 4286 |
+| tsc `src/compiler` | **0.43 s** / 435 MB | 6.73 s / 595 | 1.33 s / 610 | 1.86 s / 537 |
+| type-fest | **0.24 s** / 539 MB | 4.72 s / 1022 | 1.76 s / 793 | 2.14 s / 789 |
+| valibot | **0.33 s** / 513 MB | 7.93 s / 806 | 1.48 s / 806 | 2.15 s / 595 |
+| react | **0.17 s** / 320 MB | 3.30 s / 498 | 0.91 s / 543 | 0.81 s / 311 |
+| nest | **0.15 s** / 273 MB | 2.25 s / 400 | 0.38 s / 246 | 0.45 s / 212 |
+| webpack | **0.35 s** / 470 MB | 7.64 s / 733 | 0.58 s / 492 | 0.53 s / 303 |
+| zod | **0.38 s** / 701 MB | 9.61 s / 1302 | 2.44 s / 1426 | 3.34 s / 1004 |
+| xstate | **0.23 s** / 394 MB | 5.25 s / 602 | 0.88 s / 472 | 1.15 s / 361 |
+| drizzle | **1.09 s** / 1686 MB | 11.25 s / 1456 | 3.26 s / 1881 | 3.56 s / 1073 |
+| vue | **0.56 s** / 680 MB | 10.11 s / 918 | 1.77 s / 866 | 2.58 s / 670 |
+| `-b` tsc `src` (14 configs) | **1.33 s** / 822 MB | 13.55 s / 744 | 2.32 s / 842 | 3.44 s / 578 |
+Like-for-like now: tsc does declaration diagnostics on nest, drizzle, valibot and the compiler corpus, and so does
+tttt (plan 40). tttt is 1.5x (webpack) to 7.3x (type-fest) faster than multi-threaded tsgo, 2.6-10x than its
+single thread (`-b` 1.7x / 2.6x). tsgo exits 1 on valibot, webpack, xstate, drizzle, vue and `-b` (TS 7 differences).
+
 ## Todo entry 6: plan 40 stage 3, plan 41 stage 3 (2026-10-04)
 Suite 12712 -> 12728, 0 lost (TS2742 +14, tsc-src fixes +2). Corpora: **tsc-src 12 -> 0**, new corpus
 **typescript-eslint** (`-b` at its root solution, 38 projects) 66 -> **0**; webpack 6, xstate 8, drizzle 6, zod-root
@@ -124,27 +168,7 @@ rather than by reverting: two-member unions, intersections by members, assignmen
 flow's atoms, the override check's quadratic name atomizing, inherited members by hash, instantiated props_by_name
 from the source's order, template patterns prefiltered by their first/last text.
 
-`./bench.sh --runs 3` on a quiet machine (load < 1), best wall / peak RSS, tttt at its defaults (4 checkers, 4
-threads). The synthetic corpus grew (1065 tests x 200, 3.08 M lines; was 987 / 2.70 M): one file of it (t256, a
-512-way return union of arrays: O(n^2) subtype reduction, 12 ms per copy where tsgo takes 22, tsc 30) is a quarter of
-the work, so one checker takes 3.2 s and the others 0.85. tsc 5.8 aborted (exit 134) on it.
-| corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
-|---|---|---|---|---|
-| synthetic | **4.77 s** / 5014 MB | 47.9 s (aborted) / 4286 MB | 11.32 s / 6716 MB | 14.09 s / 4207 MB |
-| tsc `src/compiler` | **0.46 s** / 421 MB | 7.45 s / 590 MB | 1.25 s / 430 MB | 1.71 s / 355 MB |
-| type-fest | **0.28 s** / 529 MB | 5.37 s / 1022 MB | 1.96 s / 771 MB | 2.33 s / 773 MB |
-| valibot | **0.38 s** / 518 MB | 8.97 s / 884 MB | 1.61 s / 832 MB | 2.41 s / 594 MB |
-| react | **0.18 s** / 323 MB | 3.73 s / 502 MB | 1.05 s / 536 MB | 0.93 s / 318 MB |
-| nest | **0.16 s** / 266 MB | 2.59 s / 401 MB | 0.44 s / 250 MB | 0.51 s / 208 MB |
-| webpack | **0.38 s** / 457 MB | 8.73 s / 725 MB | 0.69 s / 475 MB | 0.60 s / 307 MB |
-| zod | **0.41 s** / 701 MB | 10.76 s / 1304 MB | 2.91 s / 1363 MB | 3.68 s / 956 MB |
-| xstate | **0.28 s** / 389 MB | 5.88 s / 601 MB | 0.99 s / 474 MB | 1.28 s / 352 MB |
-| drizzle | **1.33 s** / 1817 MB | 12.63 s / 1448 MB | 3.72 s / 1869 MB | 3.96 s / 1054 MB |
-| vue | **0.61 s** / 681 MB | 11.28 s / 953 MB | 1.90 s / 857 MB | 2.87 s / 685 MB |
-tttt phases (load files / resolve / typecheck ms): tsc 68 / 100 / 296, type-fest 10 / 10 / 254, valibot 16 / 42 /
-297, react 13 / 48 / 90, nest 43 / 63 / 24, webpack 61 / 89 / 197, zod 25 / 69 / 292, xstate 11 / 40 / 192, drizzle
-57 / 74 / 1201, vue 48 / 89 / 447. tttt is faster than multi-threaded tsgo everywhere, 2.8-11x; memory is above
-single-threaded tsgo's on most (drizzle 1.8 GB vs 1.05).
+(Its bench table is replaced by the 2026-10-05 one above.)
 
 ## Corpus session (2026-09-29, seventh window's todo entry 1, end of session)
 Two corpora pinned, both 0 under tsc 5.8: drizzle (1567 files incl. deps and libs, 577 of its own, 93k lines) and vue

@@ -28,12 +28,11 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    stages (prototypes in `plans/42_prototypes/`, each 0 lost): reverse mapped types +1, reduced intersections +2,
    mapped info / re-entry +2ish, optional barrier stage. tsc resolves re-entered calls again (plan 38's premise was
    wrong). Not the memory fix: drizzle is 896 MB at one checker (tsgo 1 thread 1054), 1.7 GB at four (tsgo 1.87).
-8. **Perf and memory**: first the two regressions of entry 6 (react: base_constraint() memo, triage; vue: 9444083d's
-   wider unions, perf_leads.md), then a quiet `./bench.sh` run, now like-for-like on nest/drizzle/valibot/tsc (declaration
-   diagnostics exist after entry 2: say so in measurements.md), `-b` on tsc-src vs `tsc -b`; profile what the window
-   added; peak RSS like-for-like (K=1 vs tsgo `--singleThreaded`, K=4 vs tsgo; drizzle's 4-checker peak is cross-checker
-   duplication: try file-to-checker affinity, plan 36 "Later"), then the compact instantiated Prop (62-82% are never
-   typed) and the `Signature` split (`bugs/perf_leads.md` Memory).
+8. Done (2026-10-05, one session + one sub-agent, 7 commits): base_constraint() memo (react 1.695 -> 1.687 G),
+   vue's regression explained (tsc-inherent overload rounds) and a quarter back (8.105 -> 8.027), bench like-for-like
+   (measurements.md), checkers get contiguous runs of files (drizzle K=4 1688 -> 1253 MB), Prop 56 / Signature 176 /
+   Ty 136 bytes, packed interned keys. Below tsgo's peak RSS everywhere except nest/webpack (the AST: perf_leads.md
+   "Memory", needs a plan). Suite and corpora unchanged.
 9. **Plan 42 stages 1 and 2** (lazy reverse mapped types, lazy intersection reduction): both have 0-lost
    prototypes that apply to 02ca5d29 (`plans/42_prototypes/stage1_*.patch`, `stage2_*.patch`); finish the items the
    plan lists, run the checks the prototypes skipped, one commit per stage. If one runs long, stage 2 goes after the

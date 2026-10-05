@@ -159,6 +159,9 @@ Numbers: `measurements.md` "Perf". Memory: peak RSS +2..+47% at K=4 (react worst
   300 -> 504, valibot 546 -> 648. Bytes are a poor cost proxy (JS vs declarations), and scattering a directory's files
   over the checkers duplicates the types they share; round robin by program order keeps neighbours apart too, but
   evenly. A cost model (per-file check time of a previous run, or type counts) would be the next thing to try.
+  **Done differently (2026-10-05)**: `deal_files()` cuts program order into 2 runs of equal bytes per checker, dealt
+  round robin: neighbours share a checker (drizzle 1688 -> 1337 MB at K=4) at round robin's walls or better. One run
+  each saves more (1277 MB; valibot's total checker time -28%) but balances worse; a cost model is still the next step.
 
 ## Audit of shared state in the check phase (2026-09-28, subagent)
 - Races: the shared `ErrorCtx` (sorted `vec_error_insert_n` in `error_ctx_append_error`, also read by

@@ -340,6 +340,10 @@ src` finds the code-side markers; every significant one has an entry here.
   message building in `if (report)` branches is predicted unlikely and doesn't eat the budget; rare relation paths
   go out of line as `[[gnu::noinline, gnu::cold]]` (`source_indexes_related()`). Check `-fopt-info-inline-missed`
   for "inline-unit-growth limit reached" when an innocent change shows up in `./instrcount.sh`.
+- `base_constraint()` cuts off at depth 8 instead of tsc's circularity stack, so its memo (KEY_BASE_CONSTRAINT) only
+  holds depth-0 answers: a deeper call may have been cut. Reading the memo at depth > 0 made the display of
+  `Compute<A[K]>` (computedTypesKeyofNoIndexSignatureType) expand without end, so some display path
+  (`display_mapped` -> `expand_generic_homomorphic` -> `ty_apparent_type`) relies on the cutoff to stop. perf_leads.md.
 - `base_constraint()` of an indexed access builds the access of the constraints even where it isn't valid (`T[P]` with
   `T extends object`, `P extends keyof T`), where tsc's getBaseConstraintOfType has none (getIndexedAccessTypeOrUndefined).
   Making it null changed xstate (a spurious TS2344 on `NonNullable<TStateValue[K]>`), so only
