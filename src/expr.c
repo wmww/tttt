@@ -483,15 +483,19 @@ static bool directly_in_constructor(Scope const* names) {
 
 // tsc's resolveNameHelper: a module can't use the value of a UMD global (`export as namespace Foo` of a declaration
 // file) without an import, unless allowUmdGlobalAccess
+static void check_umd_global_symbol_use(Symbol const* symbol, Span at, Scope const* names, ErrorCtx* errs);
 static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
-    Symbol const* symbol = my symbol;
+    check_umd_global_symbol_use(my symbol, identifier_expr_name(me), names, errs);
+}
+
+static void check_umd_global_symbol_use(Symbol const* symbol, Span at, Scope const* names, ErrorCtx* errs) {
     if (!symbol || !symbol->decl_count || !names->file || !names->file->is_module) return;
     if (compiler_options()->allow_umd_global_access) return;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_ALIAS || !decl->node || ((PortItem const*)decl->node)->tag != PORT_EXPORT_AS_NAMESPACE) return;
     }
-    error_ctx_error_d(errs, identifier_expr_name(me), 2686, "'", identifier_expr_name(me), "' refers to a UMD global, but the current file is a module. ",
+    error_ctx_error_d(errs, at, 2686, "'", symbol->name, "' refers to a UMD global, but the current file is a module. ",
         "Consider adding an import instead.");
 }
 
@@ -1496,10 +1500,12 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
     JsxKind jsx = compiler_options()->jsx;
     u32 meaning = jsx == JSX_PRESERVE || jsx == JSX_REACT_NATIVE ? SYMBOL_VALUE & ~(u32)SYMBOL_ENUM : SYMBOL_VALUE;
     Symbol* found = scope_resolve(names, name, meaning);
+    Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
     if (found) {
         unused_mark_referenced(names, found, SYMBOL_VALUE);
+        // (The factory is a name like any other: tsc's resolveName)
+        if (jsx == JSX_REACT) check_umd_global_symbol_use(found, at, names, errs);
     } else if (jsx == JSX_REACT) {
-        Span at = fragment || !el->tag_name.inner_span.sv.size ? el->opening_span : el->tag_name.inner_span;
         // (tsc's resolveName: a misspelling is said to be one instead)
         if (!scope_report_misspelled(names, at, name, meaning, errs)) {
             error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");

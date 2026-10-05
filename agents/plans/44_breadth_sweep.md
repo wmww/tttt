@@ -83,8 +83,6 @@ one commit each, `./sweep.py` before/after.
 - **Methods of an object literal against a union with an index signature member get no contextual parameter types**
   (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
-- **JSX factory from a UMD global gets no TS2686** (mdx 69; D/jsxumd): `jsx_reference_factory()` (expr.c) should call
-  `check_umd_global_use()`.
 - **Literal-keyof inference object is indexable** (rrdtool; D/literalKeyof.ts): `empty_object_from_string_literals()`
   (infer.c) builds an anonymous type that `has_inferable_index` accepts; tsc's has no symbol, so no inferable index.
   The wider "every anonymous type has an inferable index" rule is a hacks.md entry to file.
