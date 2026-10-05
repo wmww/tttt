@@ -36,6 +36,8 @@ SKIP = {
         "TS6305 (-p reads referenced sources, never outputs)",
     r"^tsc/projectReferencesConfig/redirects-to-the-output-dts-file|importing-const-enum-from-referenced-project-with-preserveConstEnums-and-verbatimModuleSyntax":
         "a stale prebuilt output (tttt reads sources)",
+    r"^tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file":
+        "TS6377 (two projects writing one .tsbuildinfo; tttt writes no build info)",
 }
 
 # Flags dropped from the command (output only), and flags with a value

@@ -16,6 +16,11 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   when one needs it.
 - Still in the "spurious diagnostics" bucket, not investigated in depth: contravariantOnlyInferenceFromAnnotatedFunction,
   mappedTypeRecursiveInference2.
+- `infer_rest_variadic`/`check_rest_arg` keep an argument's type from whichever overload candidate typed it first
+  (`if (arg->type) continue`), though its contextual type is the candidate's rest element; tsc re-checks per candidate.
+  Clearing the non-spread rest arguments' types at the top of infer_rest_variadic changed nothing anywhere (suite,
+  corpora, instructions) and no probe observes it (`q<T extends ["a"]>(n: number, ...a: T)` before `q<T extends
+  string[]>(s: string, ...a: T)` passes). Look here if overloads with differing rest types ever disagree with tsc.
 - Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
 - promiseTry (spurious TS2578): `Promise.try(cb, ...args)` with `U extends unknown[]` inferred from both the callback's
   parameters and the rest arguments gets no TS2554 arity error.
