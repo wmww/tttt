@@ -1389,7 +1389,13 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_EXPORT_AS_NAMESPACE: {
             // A global alias of the module (UMD; a module using its value is TS2686, check_umd_global_use()). The
             // checks are tsc's bindNamespaceExportDeclaration()
-            if (span_valid(item->modifiers)) error_ctx_error_d(my binder->errs, item->modifiers, 1184, "Modifiers cannot appear here.");
+            if (span_valid(item->modifiers)) { // (at the whole declaration)
+                Span whole = span_with_semicolon(item->full_span);
+                if (span_start_ptr(item->modifiers) < span_start_ptr(whole)) {
+                    whole = span_make(whole.source, span_start_ptr(item->modifiers), span_end_ptr(whole));
+                }
+                error_ctx_error_d(my binder->errs, whole, 1184, "Modifiers cannot appear here.");
+            }
             if (item->not_top_level) {
                 error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
                 return;

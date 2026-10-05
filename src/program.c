@@ -755,7 +755,10 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
 
         case STATEMENT_IMPORT_EXPORT: {
             PortStatement* port = statement->import_export;
-            if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && !port->jsdoc) {
+            // (`export as namespace` is no indicator: tsc's isAnExternalModuleIndicatorNode)
+            if ((port->main.tag != PORT_IMPORT_ALIAS || port->main.export_import) && port->main.tag != PORT_EXPORT_AS_NAMESPACE &&
+                !port->jsdoc
+            ) {
                 source->is_module = true;
                 if (!span_valid(source->module_indicator)) source->module_indicator = statement->span;
             }
