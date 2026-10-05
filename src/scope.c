@@ -3520,22 +3520,35 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
     }
 }
 
-void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
-    Binder* binder = my binder;
+static bool report_misspelled_counted(
+    Scope const* me, Span at, csview name, u32 meaning, bool namespace, bool may_suggest, ErrorCtx* errs
+);
+
+// `may_suggest`: within tsc's maximumSuggestionCount, counted already
+static void report_not_found_counted(Scope const* me, Span name, u32 meaning, bool shorthand, bool may_suggest, ErrorCtx* errs) {
     // A global of a later lib is said to be so rather than misspelled
     char const* lib = lib_feature_of_global(name.sv);
     if (lib) {
-        binder->suggestion_count++;
         error_cannot_find_name(errs, name, lib, shorthand);
         return;
     }
-    if (scope_report_misspelled(me, name, name.sv, meaning, errs)) return;
+    if (report_misspelled_counted(me, name, name.sv, meaning, false, may_suggest, errs)) return;
     error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
+void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
+    report_not_found_counted(me, name, meaning, shorthand, my binder->suggestion_count++ < 10, errs);
+}
+
 static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs) {
+    return report_misspelled_counted(me, at, name, meaning, namespace, my binder->suggestion_count++ < 10, errs);
+}
+
+static bool report_misspelled_counted(
+    Scope const* me, Span at, csview name, u32 meaning, bool namespace, bool may_suggest, ErrorCtx* errs
+) {
     Suggestion suggestion = {0};
-    if (my binder->suggestion_count++ >= 10 || !scope_suggest(me, name, meaning, &suggestion)) return false;
+    if (!may_suggest || !scope_suggest(me, name, meaning, &suggestion)) return false;
     Error* error = namespace ?
         error_ctx_error_d(errs, at, 2833, "Cannot find namespace '", name, "'. Did you mean '", suggestion.name, "'?") :
         error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
@@ -3560,6 +3573,9 @@ typedef struct PendingNotFound {
     Scope const* scope;
     Span name;
     bool shorthand;
+    // Its place among tsc's suggestions is where it was found missing (tsc's addLazyDiagnostic callbacks run in order)
+    bool may_suggest;
+    bool uncounted; // Counted when reported (see scope_report_value_not_found)
     ErrorCtx* errs;
 } PendingNotFound;
 
@@ -3581,7 +3597,15 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
         binder->pending_not_found = realloc(binder->pending_not_found, sizeof(PendingNotFound) * binder->pending_not_found_cap);
         panic_if(!binder->pending_not_found, "out of memory");
     }
-    binder->pending_not_found[binder->pending_not_found_count++] = (PendingNotFound){ me, name, shorthand, errs };
+    // tsc doesn't count what checkAndReportErrorForMissingPrefix reports: a member of a class around it, which needs
+    // types to tell. Counted now unless a class around it declares a member of that name (then when reported)
+    bool maybe_member = false;
+    for (Scope const* scope = me; scope && !maybe_member; scope = scope->parent) {
+        ClassDecl const* class_decl = scope_rare(scope)->this_ref.class_decl;
+        maybe_member = class_decl && (class_decl_find_member(class_decl, name.sv, true) || class_decl_find_member(class_decl, name.sv, false));
+    }
+    binder->pending_not_found[binder->pending_not_found_count++] =
+        (PendingNotFound){ me, name, shorthand, maybe_member || binder->suggestion_count++ < 10, maybe_member, errs };
 }
 
 // tsc's checkAndReportErrorForMissingPrefix: from the `this` container (a class member, or a function in one) out, a
@@ -3619,7 +3643,8 @@ void scope_report_missing_prefixes(Binder* me) {
         if (field) {
             scope_report_invalid_initializer_reference(field, pending->name, pending->errs);
         } else {
-            scope_report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, pending->errs);
+            bool may_suggest = pending->uncounted ? my suggestion_count++ < 10 : pending->may_suggest;
+            report_not_found_counted(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, may_suggest, pending->errs);
         }
     }
     free(my pending_not_found);
