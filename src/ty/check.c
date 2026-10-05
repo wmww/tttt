@@ -256,10 +256,17 @@ static bool elaborate_element(
         error = error_ctx_error_d(errs, item->error_span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
             "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
         c_drop(cstr, &source_str, &target_str);
-    } else error = item->message_code ?
-        report_unassignable_with_head(me, specific, target_prop, item->message_code, cstr_from_sv(item->message), false,
-            item->error_span, errs) :
-        report_unassignable(me, head, specific, target_prop, item->error_span, errs);
+    } else {
+        // (An optional target property's type is shown without the missing type: tsc's removeMissingType)
+        if (compiler_options()->exact_optional_property_types && item->name) {
+            FoundProp found = ty_find_prop(me, target, item->name);
+            if (found.found && (found.flags & PROP_OPTIONAL)) target_prop = ty_remove_missing(me, target_prop, true);
+        }
+        error = item->message_code ?
+            report_unassignable_with_head(me, specific, target_prop, item->message_code, cstr_from_sv(item->message), false,
+                item->error_span, errs) :
+            report_unassignable(me, head, specific, target_prop, item->error_span, errs);
+    }
     if (!error) return true;
     // Where the expected type comes from
     Prop const* declared = item->name ? target_prop_of(me, target, item->name) : nullptr;
@@ -436,6 +443,13 @@ static bool elaborate_jsx_children(Checker* me, JsxElement const* element, Ty co
             if (specific != child_type && ((specific->flags & TYF_ANY) ||
                 ty_is_related(me, specific, element_target, TY_RELATION_ASSIGNABLE))) {
                 specific = child_type;
+            }
+            // (An optional element's type is shown without the missing type: tsc's removeMissingType)
+            if (compiler_options()->exact_optional_property_types && !(tuple_like->flags & TYF_NEVER)) {
+                char digits[16];
+                snprintf(digits, sizeof(digits), "%u", index - 1);
+                FoundProp found = ty_find_prop(me, tuple_like, checker_atom(me, csview_from(digits)));
+                if (found.found && (found.flags & PROP_OPTIONAL)) element_target = ty_remove_missing(me, element_target, true);
             }
             if (text) {
                 report_unassignable_with_head(me, specific, element_target, 2747, cstr_clone(text_message), false, child->span, errs);

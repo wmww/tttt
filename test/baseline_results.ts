@@ -19866,7 +19866,7 @@ const baselines = {
         types: true,
     },
     'jsxChildrenWrongType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
