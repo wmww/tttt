@@ -1278,7 +1278,21 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             "'. Did you mean '", atom_sv(suggestion->name), "'?");
         Prop const* declared = suggestion;
         while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
-        if (error && declared->decl->decl_span_count) {
+        // (A union's property has a declaration only if every member's is the same one: tsc's
+        // createUnionOrIntersectionProperty with hasNonUniformValueDeclaration)
+        bool uniform = true;
+        if (object->kind == TY_UNION) {
+            Prop const* root = suggestion;
+            while (root->target) root = root->target;
+            for (u32 i = 0; i < object->composite.types.len && uniform; i++) {
+                Ty const* part = object->composite.types.data[i];
+                if (part->flags & TYF_NULLABLE) continue;
+                Prop const* other = ty_get_prop(me, ty_apparent_type(me, part), suggestion->name);
+                while (other && other->target) other = other->target;
+                uniform = other && other->decl == root->decl;
+            }
+        }
+        if (error && uniform && declared->decl->decl_span_count) {
             // (tsc's error span of the declaration: its name)
             Span name_span = ty_prop_decl_span(suggestion);
             Span at = span_contains_span(declared->decl->decl_spans[0], name_span) ? name_span : declared->decl->decl_spans[0];

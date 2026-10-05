@@ -32076,7 +32076,7 @@ const baselines = {
         types: true,
     },
     'unionPropertyExistence': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
