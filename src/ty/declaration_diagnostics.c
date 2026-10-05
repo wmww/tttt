@@ -1108,7 +1108,7 @@ static void type_of_accessor(Walk* me, Accessors pair, bool of_setter, Place pla
 // tsc's isOptionalParameter: `?`, or an initializer with no required parameter after it
 static bool is_optional_parameter(FunctionImpl const* fn, FunctionArg const* arg) {
     if (arg->explicit_optional) return true;
-    if (arg->initializer.value.tag == EXPR_IMPLICIT_ANY) return false;
+    if (initialized_binding_value(&arg->initializer)->tag == EXPR_IMPLICIT_ANY) return false;
     bool after = false;
     for_each (i, vec_function_arg, &fn->args) {
         if (i == arg) {
@@ -1116,7 +1116,7 @@ static bool is_optional_parameter(FunctionImpl const* fn, FunctionArg const* arg
             continue;
         }
         if (!after) continue;
-        bool initialized = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        bool initialized = initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY;
         if (!i->explicit_optional && !initialized && !i->rest) return false;
     }
     return true;
@@ -1129,7 +1129,7 @@ static bool is_parameter_property(FunctionArg const* arg) { return arg->is_param
 static bool requires_adding_undefined(Walk* me, FunctionImpl const* fn, FunctionArg const* arg, bool in_function) {
     if (!my strict_null_checks) return false;
     bool optional = is_optional_parameter(fn, arg);
-    bool initialized = arg->initializer.value.tag != EXPR_IMPLICIT_ANY;
+    bool initialized = initialized_binding_value(&arg->initializer)->tag != EXPR_IMPLICIT_ANY;
     bool required_initialized = !optional && initialized && (!is_parameter_property(arg) || in_function);
     bool optional_property = optional && !initialized && is_parameter_property(arg);
     if (!required_initialized && !optional_property) return false;
@@ -1156,7 +1156,7 @@ static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const*
         return; // (getThisParameter: not part of the parameter list)
     }
     Binding const* binding = &arg->initializer.binding;
-    Expr const* init = &arg->initializer.value;
+    Expr const* init = initialized_binding_value(&arg->initializer);
     bool add_undefined = requires_adding_undefined(me, fn, arg, in_function);
     Near near = parameter_near(arg);
     bool failed = true;
@@ -1545,7 +1545,7 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
     bool outer = fallback_begin(me);
     check_variable_type(me, decl, is_const);
     // (A literal const is written with its initializer)
-    bool literal = is_const && decl->value.tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol);
+    bool literal = is_const && initialized_binding_value(decl)->tag != EXPR_IMPLICIT_ANY && is_literal_const(me, binding->symbol);
     if (literal) my fell_back = false;
     fallback_end(me, outer, binding->symbol ? ty_type_of_symbol(my checker, binding->symbol) : nullptr);
     emit_leave(me, saved);
@@ -1554,7 +1554,7 @@ static void check_variable(Walk* me, InitializedBinding const* decl, bool is_con
 // typeFromVariable
 static void check_variable_type(Walk* me, InitializedBinding const* decl, bool is_const) {
     Binding const* binding = &decl->binding;
-    Expr const* init = &decl->value;
+    Expr const* init = initialized_binding_value(decl);
     if (binding->tag != BINDING_IDENTIFIER) {
         bool empty = (binding->tag == BINDING_ARRAY && !vec_binding_size(&binding->array)) ||
             (binding->tag == BINDING_OBJECT && !vec_object_binding_item_size(&binding->object));

@@ -167,7 +167,7 @@ static bool parameters_see_body(FunctionImpl const* me) {
     if (compiler_options()->target < SCRIPT_TARGET_ES2015) return false; // (They see them anyway)
     for_each (i, vec_function_arg, &my args) {
         if (binding_requires_scope_change(&i->initializer.binding, false)) return true;
-        if (expr_requires_scope_change(&i->initializer.value)) return true;
+        if (expr_requires_scope_change(initialized_binding_value(&i->initializer))) return true;
     }
     return false;
 }
@@ -264,7 +264,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (i->initializer.binding.tag == BINDING_IDENTIFIER && !span_valid(my arrow_span) &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
-            if (!i->initializer.binding.has_explicit_type && !i->jsdoc_this) i->initializer.this_of = me;
+            if (!i->initializer.binding.has_explicit_type && !i->jsdoc_this) initialized_binding_rare_mut(&i->initializer)->this_of = me;
             function_scope->this_ref = (ThisRef){
                 .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol, .type_boundary = this_is_any,
                 // (A JavaScript `@this {T}`: `this.x = v` still declares x, see scope_add_this_property())
@@ -305,7 +305,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
     if (my jsdoc_signature_type) {
         type_lookup_names(my jsdoc_signature_type, names, errs);
-        for_each (i, vec_function_arg, &my args) i->initializer.jsdoc_typed_by = me;
+        for_each (i, vec_function_arg, &my args) initialized_binding_rare_mut(&i->initializer)->jsdoc_typed_by = me;
     }
     if (my predicate) {
         TypePredicateNode* predicate = my predicate;
@@ -400,8 +400,9 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
         if (!i->initializer.binding.has_explicit_type) {
-            i->initializer.getter = getter;
-            i->initializer.getter_key = key;
+            InitializedBindingRare* rare = initialized_binding_rare_mut(&i->initializer);
+            rare->getter = getter;
+            rare->getter_key = key;
         }
         else if (!getter->ret_explicit) getter->setter_type = &i->initializer.binding.explicit_type;
         return;
@@ -412,7 +413,7 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
 static bool function_impl_check_grammar_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     bool seen_optional = false;
     for_each (i, vec_function_arg, &my args) {
-        bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        bool has_initializer = initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY;
         Span name = i->initializer.binding.content_span;
         if (i->rest) {
             if (i_index != vec_function_arg_size(&my args) - 1) {
@@ -473,7 +474,7 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
         error_ctx_grammar_error_d(errs, value->question_span, 1051, "A 'set' accessor cannot have an optional parameter.");
         return true;
     }
-    if (value->initializer.value.tag != EXPR_IMPLICIT_ANY) {
+    if (initialized_binding_value(&value->initializer)->tag != EXPR_IMPLICIT_ANY) {
         error_ctx_grammar_error_d(errs, value->initializer.binding.content_span, 1052,
             "A 'set' accessor parameter cannot have an initializer.");
         return true;
@@ -571,7 +572,7 @@ static void function_impl_check_use_strict_parameters(FunctionImpl const* me, Er
     if (!directive) return;
     bool any = false;
     for_each (i, vec_function_arg, &my args) {
-        bool simple = !i->rest && i->initializer.value.tag == EXPR_IMPLICIT_ANY &&
+        bool simple = !i->rest && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY &&
             i->initializer.binding.tag == BINDING_IDENTIFIER;
         if (simple) continue;
         Error* e = error_ctx_error_d(errs, i->span, 1346, "This parameter is not allowed with 'use strict' directive.");
@@ -583,7 +584,7 @@ static void function_impl_check_use_strict_parameters(FunctionImpl const* me, Er
         "'use strict' directive cannot be used with non-simple parameter list.");
     bool first_one = true;
     for_each (i, vec_function_arg, &my args) {
-        bool simple = !i->rest && i->initializer.value.tag == EXPR_IMPLICIT_ANY &&
+        bool simple = !i->rest && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY &&
             i->initializer.binding.tag == BINDING_IDENTIFIER;
         if (simple) continue;
         if (first_one) error_add_related_d(e, i->span, 1348, "Non-simple parameter declared here.");
@@ -635,7 +636,7 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     }
 
     for_each (i, vec_function_arg, &my args) {
-        bool has_initializer = i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+        bool has_initializer = initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY;
         bool is_pattern = i->initializer.binding.tag == BINDING_ARRAY || i->initializer.binding.tag == BINDING_OBJECT;
         if (i->is_parameter_property && is_pattern) {
             // (tsc's checkGrammarModifiers)
@@ -869,7 +870,7 @@ static void function_check_circular_return(FunctionImpl const* me, ErrorCtx* err
 void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCtx* errs) {
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
     for_each (i, vec_function_arg, &my args) {
-        if (i->initializer.binding.has_explicit_type || i->initializer.value.tag != EXPR_IMPLICIT_ANY) continue;
+        if (i->initializer.binding.has_explicit_type || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) continue;
         if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
         if (initialized_binding_getter(&i->initializer) || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
         if (i->name_is_type && my is_type && !my is_constructor) {
@@ -924,7 +925,7 @@ static u32 jsdoc_required_params(FunctionImpl const* me) {
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;
         if (i->jsdoc_this || (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this"))) continue;
-        if (i->rest || i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY) break;
+        if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) break;
         count++;
     }
     return count;
@@ -948,11 +949,11 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         // (The type of a JSDoc `@this {T}` isn't checked: tsc's checkJSDocThisTag only looks at its host)
         if (i->jsdoc_this) continue;
         initialized_binding_typecheck_parameter(&i->initializer, i->span, errs);
-        if (i->initializer.binding.tag == BINDING_ARRAY && i->initializer.value.tag != EXPR_IMPLICIT_ANY &&
+        if (i->initializer.binding.tag == BINDING_ARRAY && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY &&
             !i->initializer.binding.has_explicit_type
         ) {
             binding_add_padded_implicit_any_errors(&i->initializer.binding,
-                ty_expr_type(current_checker, &i->initializer.value), errs);
+                ty_expr_type(current_checker, initialized_binding_value(&i->initializer)), errs);
         }
     }
 

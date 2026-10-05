@@ -439,6 +439,7 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret);
 static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js);
 static bool parse_initialization(Parser* parent, ExprCtx ctx, Expr* ret);
 static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, Expr* ret);
+static Expr* parse_initialization_boxed(Parser* parent, ExprCtx ctx);
 
 // tsc's isNamedEvaluationSource(): `value` gets its name from where it is (`x = class {}`). An anonymous class there
 // is named by the emitter at runtime (ClassDecl.named_evaluation)
@@ -2613,7 +2614,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
     u32 index = 0;
     while (*p.pos && *p.pos != ')') {
         Anchor arg_start = anchor(&p);
-        FunctionArg arg = { .initializer.value = expr_implicit_any(span_from_pos(&p)) };
+        FunctionArg arg = {0};
         Span name = span_null;
         bool is_new = false;
         Parser word = parser(&p);
@@ -4238,7 +4239,7 @@ static u32 jsdoc_required_param_count(FunctionImpl const* function) {
     for_each (i, vec_function_arg, &function->args) {
         Binding const* binding = &i->initializer.binding;
         if (!i_index && binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
-        if (i->rest || i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY ||
+        if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY ||
             (binding->has_explicit_type && binding->explicit_type.jsdoc_optional)
         ) {
             break;
@@ -4284,7 +4285,6 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         span_equals(own_first->initializer.binding.content_span, "this");
     if (signature_this && !has_this && !span_valid(function->arrow_span) && signature_this->initializer.binding.has_explicit_type) {
         FunctionArg arg = {
-            .initializer.value = expr_implicit_any(signature_this->initializer.binding.content_span),
             .jsdoc_this = true,
         };
         arg.initializer.binding = (Binding){
@@ -4320,7 +4320,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         binding->has_explicit_type = true;
         from->initializer.binding.has_explicit_type = false;
         from->initializer.binding.explicit_type = (TypeNode){0};
-        if (from->explicit_optional && i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
+        if (from->explicit_optional && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
     }
     if (!function->ret_explicit && signature->ret_explicit && !function->is_constructor) {
         function->ret = signature->ret;
@@ -4616,7 +4616,6 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     if (this_tag && !has_this && !function->is_constructor) {
         // (No declaration span: tsc's this-parameter symbol of a JSDoc tag has no declaration, `Symbol(this)`)
         FunctionArg arg = {
-            .initializer.value = expr_implicit_any(this_tag->tag_name),
             .jsdoc_this = true,
         };
         arg.initializer.binding = (Binding){
@@ -4665,7 +4664,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         binding->has_explicit_type = true;
         if (binding->explicit_type.jsdoc_optional || bracketed) {
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
-            if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
+            if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
         }
         i->jsdoc_variadic = variadic && !i->rest;
         if (variadic && i->rest) {
@@ -4733,7 +4732,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             continue;
         }
         if (tag->kind != JSDOC_TAG_PARAM || !span_valid(tag->name) || memchr(tag->name.sv.buf, '.', (size_t)tag->name.sv.size)) continue;
-        FunctionArg arg = { .initializer.value = expr_implicit_any(tag->name), .span = jsdoc_tag_decl_span(tag) };
+        FunctionArg arg = { .span = jsdoc_tag_decl_span(tag) };
         bool array;
         TypeNode type;
         bool has_children = false;
@@ -5885,15 +5884,15 @@ static bool parse_function_args_inner(
                     vec_jsdoc_tag_drop(&tags);
                 }
 
-                parse_initialization_or_set_to_default(&p, expr_ctx_null, &initializer.value);
-                if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(&initializer.value, false);
+                initializer.value = parse_initialization_boxed(&p, expr_ctx_null);
+                if (initializer.binding.tag == BINDING_IDENTIFIER && !rest) mark_named_evaluation(initialized_binding_value(&initializer), false);
                 hop_whitespace(&p);
 
                 // tsc's skipParameterStart: only a name or pattern that parses without errors counts. In a type
                 // (isUnambiguouslyStartOfFunctionType) a `,`, `?` or `=` after it commits too
                 if (vec_function_arg_is_empty(&ret->args) && p.shared->errors_attempted == errors_before_param &&
                     (initializer.binding.has_explicit_type || (parse_type_return_syntax && !rest &&
-                        (explicit_optional || initializer.value.tag != EXPR_IMPLICIT_ANY || initializer.value.missing ||
+                        (explicit_optional || initialized_binding_value(&initializer)->tag != EXPR_IMPLICIT_ANY || initialized_binding_value(&initializer)->missing ||
                             *p.pos == ',')))
                 ) {
                     is_definitely_function = true;
@@ -11189,6 +11188,12 @@ static bool parse_initialization_or_set_to_default(Parser* parent, ExprCtx ctx, 
     }
 }
 
+// An initializer (owned), null if there's no `=`
+static Expr* parse_initialization_boxed(Parser* parent, ExprCtx ctx) {
+    Expr value;
+    return parse_initialization(parent, ctx, &value) ? c_new(Expr, value) : nullptr;
+}
+
 // ECMAScript's reserved words: never a binding identifier (strict mode ones are, with a grammar error)
 static bool is_reserved_word(csview word) {
 #define WORD_IS(lit) (word.size == sizeof(lit) - 1 && memcmp(word.buf, lit, sizeof(lit) - 1) == 0)
@@ -11234,7 +11239,7 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
 // `const { a, b: c } = require("m")` and `const a = require("m").a` (`.x.a`) declare aliases, like imports
 static void note_require_declaration(InitializedBinding* initializer) {
     if (initializer->binding.has_explicit_type) return;
-    Expr* value = &initializer->value;
+    Expr* value = initialized_binding_value(initializer);
     Span accessed = span_null;
     // (`require("m").a.b` too: the alias is of b, looked up in the module, tsc's getCommonJSPropertyAccess)
     // (`require("m")?.a` too: tsc's getLeftmostAccessExpression goes through optional chains)
@@ -11257,7 +11262,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
     if (binding->tag != BINDING_IDENTIFIER && (binding->tag != BINDING_OBJECT || !vec_object_binding_item_size(&binding->object))) return;
     ((Expr*)value)->call->callable.identifier.require_call = 2;
     if (binding->tag == BINDING_IDENTIFIER) {
-        initializer->require_ports = c_new(PortItem, {
+        initialized_binding_rare_mut(initializer)->require_ports = c_new(PortItem, {
             .tag = span_valid(accessed) ? PORT_IMPORT_SPECIFIC : PORT_IMPORT_GATHER,
             .decl_name = binding->content_span,
             .full_span = binding->content_span,
@@ -11266,15 +11271,15 @@ static void note_require_declaration(InitializedBinding* initializer) {
             .value_only = span_valid(accessed),
             .module_ref = ref,
         });
-        initializer->require_port_count = 1;
+        initializer->rare->require_port_count = 1;
         return;
     }
     u32 count = (u32)vec_object_binding_item_size(&binding->object);
-    initializer->require_ports = calloc(count, sizeof(PortItem));
-    initializer->require_port_count = count;
+    initialized_binding_rare_mut(initializer)->require_ports = calloc(count, sizeof(PortItem));
+    initializer->rare->require_port_count = count;
     for_each (i, vec_object_binding_item, &binding->object) {
         Span name = i->target.content_span;
-        initializer->require_ports[i_index] = (PortItem){
+        initializer->rare->require_ports[i_index] = (PortItem){
             .tag = PORT_IMPORT_SPECIFIC,
             .decl_name = name,
             .full_span = span_start_ptr(i->source_span) < span_start_ptr(name) ? span_between(i->source_span, name) : name,
@@ -11296,7 +11301,7 @@ static bool is_exports_alias_name(Parser const* p, Expr const* e) {
 // `const M = module.exports` at the top level (see ParserShared.exports_aliases)
 static void note_exports_alias(Parser* p, InitializedBinding const* initializer) {
     if (p->shared->function_depth || initializer->binding.tag != BINDING_IDENTIFIER) return;
-    Expr const* value = &initializer->value;
+    Expr const* value = initialized_binding_value(initializer);
     bool alias = expr_is_module_exports(value) || is_exports_alias_name(p, value) || (value->tag == EXPR_IDENTIFIER &&
         !value->identifier.keyword && !expr_is_perenthisized(value) && span_equals(value->identifier.name, "exports"));
     if (!alias) return;
@@ -11422,7 +11427,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             hop_whitespace(&p);
         }
 
-        bool initialized = parse_initialization_or_set_to_default(&p, ctx, &initializer.value);
+        initializer.value = parse_initialization_boxed(&p, ctx);
+        bool initialized = initializer.value;
         // tsc's checkGrammarVariableDeclaration (after its TS1155 for a `const` without an initializer)
         if (span_valid(definite)) {
             bool const_like = ret->keyword != VAR_INIT_VAR && ret->keyword != VAR_INIT_LET;
@@ -11439,8 +11445,8 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
         if (initialized) {
             if (initializer.binding.tag == BINDING_IDENTIFIER) {
-                mark_named_evaluation(&initializer.value, false);
-                mark_assigned_name(&initializer.value, initializer.binding.content_span);
+                mark_named_evaluation(initializer.value, false);
+                mark_assigned_name(initializer.value, initializer.binding.content_span);
             }
             end_of_initialization = p.pos;
             hop_whitespace(&p);
@@ -12799,12 +12805,12 @@ static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, Init
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_SATISFIES);
     // (Not an empty object literal: that's a JavaScript container, whose type isn't the initializer's, tsc's
     // getJSContainerObjectType)
-    if (!tag || initializer->value.tag == EXPR_IMPLICIT_ANY ||
-        (initializer->value.tag == EXPR_OBJECT && !initializer->value.object.size)
+    if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY ||
+        (initialized_binding_value(initializer)->tag == EXPR_OBJECT && !initialized_binding_value(initializer)->object.size)
     ) {
         return;
     }
-    Expr* value = &initializer->value;
+    Expr* value = initialized_binding_value(initializer);
     if (value->tag == EXPR_AS_TYPE && value->as_type->is_jsdoc && value->as_type->is_satisfies) {
         jsdoc_error(p, tag->tag_name, 1223, "'satisfies' tag already specified.");
         return;
@@ -12830,7 +12836,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 // declarations (getSingleVariableOfVariableStatement is the first, which is always there): each
                 // function gets the tags (their types go to the first)
                 for_each (i, vec_initialized_binding, list) {
-                    FunctionImpl* function = jsdoc_function_of(&i->value);
+                    FunctionImpl* function = jsdoc_function_of(initialized_binding_value(i));
                     if (function) jsdoc_apply_function(p, &tags, function);
                 }
                 break;
@@ -12847,7 +12853,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 }
                 TypeNode type = jsdoc_take_type(enum_tag, nullptr);
                 type.from_jsdoc = false;
-                if (initializer->value.tag == EXPR_OBJECT) initializer->value.jsdoc_enum_literal = true;
+                if (initialized_binding_value(initializer)->tag == EXPR_OBJECT) initialized_binding_value(initializer)->jsdoc_enum_literal = true;
                 p->shared->jsdoc_enum = c_new(Statement, (Statement){
                     .tag = STATEMENT_DECL_TYPE,
                     .decl.type = {
@@ -12860,23 +12866,23 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 });
             }
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
-            if (initializer->binding.has_explicit_type && initializer->require_port_count) {
+            if (initializer->binding.has_explicit_type && initialized_binding_rare(initializer)->require_port_count) {
                 // `/** @type {T} */ const x = require("m")` is a variable, whose initializer is checked against T
                 // (tsc's bindVariableDeclarationOrBindingElement: isVariableDeclarationInitializedToBareOrAccessedRequire
                 // doesn't apply with a type tag)
-                for (u32 i = 0; i < initializer->require_port_count; i++) port_item_drop(&initializer->require_ports[i]);
-                free(initializer->require_ports);
-                initializer->require_ports = nullptr;
-                initializer->require_port_count = 0;
-                Expr* call = &initializer->value;
+                for (u32 i = 0; i < initializer->rare->require_port_count; i++) port_item_drop(&initializer->rare->require_ports[i]);
+                free(initializer->rare->require_ports);
+                initializer->rare->require_ports = nullptr;
+                initializer->rare->require_port_count = 0;
+                Expr* call = initialized_binding_value(initializer);
                 while (call->tag == EXPR_PROPERTY) call = &call->property->expr;
                 if (call->tag == EXPR_CALL && call->call->callable.tag == EXPR_IDENTIFIER) {
                     call->call->callable.identifier.require_call = true;
                 }
             }
             jsdoc_apply_satisfies_initializer(p, &tags, initializer);
-            FunctionImpl* function = jsdoc_function_of(&initializer->value);
-            if (!function && initializer->value.tag != EXPR_CLASS_DECL && !p->shared->jsdoc_enum) {
+            FunctionImpl* function = jsdoc_function_of(initialized_binding_value(initializer));
+            if (!function && initialized_binding_value(initializer)->tag != EXPR_CLASS_DECL && !p->shared->jsdoc_enum) {
                 // `@template T` here declares T in the enclosing scope: tsc's host for it is a signature, and there is
                 // none (getHostSignatureFromJSDoc), so bindTypeParameter declares it in the container
                 bool alias = false, templates = false;
@@ -12905,7 +12911,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 function->jsdoc_host_type = &initializer->binding.explicit_type;
             }
             if (function) jsdoc_apply_function(p, &tags, function);
-            if (initializer->value.tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initializer->value.class_decl);
+            if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl);
         }   break;
         case STATEMENT_DECL_FUNCTION: {
             // (tsc's checkJSDocAugmentsTag)

@@ -233,9 +233,9 @@ static void display_binding(Display d, Binding const* me) {
 
 static void display_initialized_binding(Display d, InitializedBinding const* me) {
     display_binding(d, &my binding);
-    if (my value.tag != EXPR_IMPLICIT_ANY) {
+    if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY) {
         display_lit(d, " = ");
-        display_expr(d, &my value);
+        display_expr(d, initialized_binding_value(me));
     }
 }
 

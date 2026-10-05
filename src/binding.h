@@ -93,10 +93,17 @@ void object_binding_item_drop(ObjectBindingItem* me);
 
 typedef struct InitializedBinding {
     Binding binding;
-    Expr value;
+    // Owned, null when there is no initializer (a missing one, `x = ;`, is an EXPR_IMPLICIT_ANY with `missing`): read it
+    // through initialized_binding_value()
+    Expr* value;
     bool abstract_literals;
     bool is_rest_parameter; // `...x`: without an annotation it's any[]
     LazyType lazy_type;
+    struct InitializedBindingRare* rare; // Owned, null if none of its fields is set: read through initialized_binding_rare()
+} InitializedBinding;
+
+// What few InitializedBindings have
+typedef struct InitializedBindingRare {
     // The unannotated parameter of a setter: the getter of the same property, whose return type it has
     struct FunctionImpl const* getter;
     // Their computed name (`set [k](v)`), if any: they are one property only if its type is a literal or unique symbol
@@ -111,9 +118,21 @@ typedef struct InitializedBinding {
     // aliases like imports (tsc's isVariableDeclarationInitializedToBareOrAccessedRequire), one per name (owned)
     struct PortItem* require_ports;
     u32 require_port_count;
-} InitializedBinding;
+} InitializedBindingRare;
 
 void initialized_binding_drop(InitializedBinding* me);
+// What an absent initializer reads as: an EXPR_IMPLICIT_ANY without a span whose type is any (read only)
+extern const Expr initialized_binding_no_value;
+extern const InitializedBindingRare initialized_binding_no_rare;
+static inline InitializedBindingRare const* initialized_binding_rare(InitializedBinding const* me) {
+    return me->rare ? me->rare : &initialized_binding_no_rare;
+}
+// Allocates them if needed
+InitializedBindingRare* initialized_binding_rare_mut(InitializedBinding* me);
+// The initializer, else initialized_binding_no_value
+static inline Expr* initialized_binding_value(InitializedBinding const* me) {
+    return me->value ? me->value : (Expr*)&initialized_binding_no_value;
+}
 void unique_symbol_decl_mark(UniqueSymbolDecl decl, TypeNode* annotation, Expr* initializer);
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props);
 void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, ErrorCtx* errs);

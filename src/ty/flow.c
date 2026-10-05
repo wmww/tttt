@@ -937,7 +937,7 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
 static InitializedBinding const* root_initializer(Binding const* root) {
     if (root->parent || !root->source || root->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
     InitializedBinding const* initialized = c_container_of(root->source, InitializedBinding, lazy_type);
-    return initialized->value.tag == EXPR_IMPLICIT_ANY ? nullptr : initialized;
+    return initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized;
 }
 
 // What a declaration assigns to a binding (tsc's getInitialType): the root's initializer, and an element of an
@@ -953,12 +953,12 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     if (!binding->parent) {
         InitializedBinding const* initialized = root_initializer(binding);
         if (!initialized) return ty_binding_assigned_type(me, binding);
-        if (binding->has_explicit_type && ty_expr_is_context_sensitive(&initialized->value)) {
+        if (binding->has_explicit_type && ty_expr_is_context_sensitive(initialized_binding_value(initialized))) {
             // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below)
             Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
-            return ty_check_expr(me, &initialized->value, annotated);
+            return ty_check_expr(me, initialized_binding_value(initialized), annotated);
         }
-        return ty_flow_expr_type(me, &initialized->value);
+        return ty_flow_expr_type(me, initialized_binding_value(initialized));
     }
     Binding const* parent = binding->parent;
     Binding const* root = parent;
@@ -1043,7 +1043,7 @@ static bool is_expando_function_declaration(Binding const* binding) {
     bool js = binding->content_span.source && binding->content_span.source->is_js;
     if (!js && !symbol->is_const) return false;
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    return initialized->value.tag == EXPR_FUNCTION && !expr_is_perenthisized(&initialized->value);
+    return initialized_binding_value(initialized)->tag == EXPR_FUNCTION && !expr_is_perenthisized(initialized_binding_value(initialized));
 }
 
 static bool assign_is_compound(FlowAssign const* assign) {
@@ -1068,7 +1068,7 @@ static bool is_empty_array_assignment(FlowAssign const* assign) {
     } else if (assign->kind == FLOW_ASSIGN_DECLARATION && assign->binding && assign->binding->tag == BINDING_IDENTIFIER &&
         assign->binding->source && assign->binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
     ) {
-        right = &c_container_of(assign->binding->source, InitializedBinding, lazy_type)->value;
+        right = initialized_binding_value(c_container_of(assign->binding->source, InitializedBinding, lazy_type));
     }
     return right && right->tag == EXPR_ARRAY && !vec_expr_size(&right->array);
 }
@@ -1556,7 +1556,7 @@ static Expr const* aliased_access(Expr const* expr) {
         return nullptr;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    return initialized->value.tag == EXPR_PROPERTY ? &initialized->value : nullptr;
+    return initialized_binding_value(initialized)->tag == EXPR_PROPERTY ? initialized_binding_value(initialized) : nullptr;
 }
 
 bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name) {
@@ -1578,7 +1578,7 @@ static bool parameter_index(FunctionImpl const* function, Symbol const* symbol, 
         if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
         if (binding->tag == BINDING_IDENTIFIER && binding->symbol == symbol) {
             *index = at;
-            return !i->rest && i->initializer.value.tag == EXPR_IMPLICIT_ANY;
+            return !i->rest && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY;
         }
         at++;
     }
@@ -1614,7 +1614,7 @@ static Atom const* destructured_alias_name(FlowQuery* q, Expr const* expr) {
     ObjectBindingItem const* item = binding->parent_item;
     if (!item || item->computed_key || item->source.tag != VALUE_STRING) return nullptr;
     InitializedBinding const* initialized = c_container_of(pattern->source, InitializedBinding, lazy_type);
-    Expr const* init = &initialized->value;
+    Expr const* init = initialized_binding_value(initialized);
     if (init->tag != EXPR_IDENTIFIER && init->tag != EXPR_PROPERTY) return nullptr;
     if (!is_matching_reference(me, q->reference, init)) return nullptr;
     return checker_atom(me, cstr_sv(&item->source.string));
@@ -2395,12 +2395,12 @@ static Expr const* aliased_condition(FlowQuery* q, Expr const* condition) {
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
     // (A pattern pseudo reference is constant: ty_destructured_narrowed_type() only asks for one that is)
-    if (initialized->value.tag == EXPR_IMPLICIT_ANY ||
+    if (initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY ||
         (!q->pattern && !q->parameters_of && !is_constant_reference(q->me, q->reference))
     ) {
         return nullptr;
     }
-    return &initialized->value;
+    return initialized_binding_value(initialized);
 }
 
 static Ty const* narrow_type(FlowQuery* q, Ty const* type, Expr const* expr, bool assume_true, bool nullish) {
@@ -2861,7 +2861,7 @@ static bool never_initialized(Symbol const* symbol) {
     if (!binding || binding->parent || binding->definitely_assigned || !binding->source) return false;
     if (binding->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return false;
     InitializedBinding const* declaration = c_container_of(binding->source, InitializedBinding, lazy_type);
-    return declaration->value.tag == EXPR_IMPLICIT_ANY;
+    return initialized_binding_value(declaration)->tag == EXPR_IMPLICIT_ANY;
 }
 
 // Whether narrowing of the reference survives the function boundary: a function expression sees the narrowed type

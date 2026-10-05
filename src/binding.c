@@ -382,7 +382,7 @@ static Ty const* parameter_element_before_widening(Binding const* me) {
     ) {
         return nullptr;
     }
-    Expr const* initializer = &c_container_of(pattern, InitializedBinding, binding)->value;
+    Expr const* initializer = initialized_binding_value(c_container_of(pattern, InitializedBinding, binding));
     if (initializer->tag == EXPR_IMPLICIT_ANY) return nullptr;
     Checker* checker = current_checker;
     Ty const* object = ty_expr_type(checker, initializer);
@@ -581,18 +581,33 @@ void object_binding_item_drop(ObjectBindingItem* me) {
     binding_drop(&my target);
 }
 
+const Expr initialized_binding_no_value = { .tag = EXPR_IMPLICIT_ANY, .lazy_type.tag = LAZY_TYPE_EVALUATED };
+
+const InitializedBindingRare initialized_binding_no_rare = {0};
+
+InitializedBindingRare* initialized_binding_rare_mut(InitializedBinding* me) {
+    if (!my rare) my rare = c_new(InitializedBindingRare, {0});
+    return my rare;
+}
+
 void initialized_binding_drop(InitializedBinding* me) {
-    for (u32 i = 0; i < my require_port_count; i++) port_item_drop(&my require_ports[i]);
-    free(my require_ports);
+    if (my rare) {
+        for (u32 i = 0; i < my rare->require_port_count; i++) port_item_drop(&my rare->require_ports[i]);
+        free(my rare->require_ports);
+        free(my rare);
+    }
     binding_drop(&my binding);
-    expr_drop(&my value);
+    if (my value) {
+        expr_drop(my value);
+        free(my value);
+    }
     lazy_type_drop(&my lazy_type);
 }
 
 void initialized_binding_add_names(InitializedBinding* me, Scope* scope, BindingAddNamesProps props) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_INITIALIZED_BINDING);
     my abstract_literals = props.abstract_literals;
-    if (!my require_port_count) {
+    if (!initialized_binding_rare(me)->require_port_count) {
         binding_add_names(&my binding, &my lazy_type, scope, props);
         return;
     }
@@ -601,16 +616,16 @@ void initialized_binding_add_names(InitializedBinding* me, Scope* scope, Binding
     // locals: two `const X = require()` in different blocks are TS2300, microsoft/TypeScript#41697)
     while (scope->parent && !scope_is_var_container(scope)) scope = scope->parent;
     my binding.source = &my lazy_type;
-    for (u32 i = 0; i < my require_port_count; i++) my require_ports[i].export_import = props.exported;
+    for (u32 i = 0; i < initialized_binding_rare(me)->require_port_count; i++) initialized_binding_rare(me)->require_ports[i].export_import = props.exported;
     if (my binding.tag == BINDING_IDENTIFIER) {
-        scope_add_port(scope, &my require_ports[0]);
-        my binding.symbol = my require_ports[0].symbol;
+        scope_add_port(scope, &initialized_binding_rare(me)->require_ports[0]);
+        my binding.symbol = initialized_binding_rare(me)->require_ports[0].symbol;
         return;
     }
     for_each (i, vec_object_binding_item, &my binding.object) {
         i->target.parent = &my binding;
         i->target.parent_item = i;
-        PortItem* port = &my require_ports[i_index];
+        PortItem* port = &initialized_binding_rare(me)->require_ports[i_index];
         scope_add_port(scope, port);
         i->target.symbol = port->symbol;
     }
@@ -626,26 +641,26 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && my binding.symbol->is_const) {
         unique_symbol_decl_mark(
             (UniqueSymbolDecl){ .key = my binding.symbol, .owner = my binding.symbol },
-            &my binding.explicit_type, &my value
+            &my binding.explicit_type, initialized_binding_value(me)
         );
     }
-    if (my require_port_count) module_ref_report(my require_ports[0].module_ref, names, errs);
+    if (initialized_binding_rare(me)->require_port_count) module_ref_report(initialized_binding_rare(me)->require_ports[0].module_ref, names, errs);
     InitializedBinding const* outer = names->flow->initializing;
     names->flow->initializing = me;
     binding_lookup_names(&my binding, names, errs);
     names->flow->contextual_depth += my binding.has_explicit_type;
-    if (my binding.tag == BINDING_IDENTIFIER && my value.tag == EXPR_FUNCTION && !span_valid(my value.function->arrow_span) &&
+    if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION && !span_valid(initialized_binding_value(me)->function->arrow_span) &&
         names->file && names->file->is_js
     ) {
-        my value.function->class_symbol = my binding.symbol;
-        scope_mark_jsdoc_class(names->binder, my binding.symbol, my value.function);
+        initialized_binding_value(me)->function->class_symbol = my binding.symbol;
+        scope_mark_jsdoc_class(names->binder, my binding.symbol, initialized_binding_value(me)->function);
     }
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
-    if (my binding.tag == BINDING_IDENTIFIER && my value.tag == EXPR_FUNCTION) my value.function->variable_name = my binding.content_span;
-    expr_lookup_names(&my value, names, errs);
+    if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION) initialized_binding_value(me)->function->variable_name = my binding.content_span;
+    if (my value) expr_lookup_names(my value, names, errs);
     names->flow->contextual_depth -= my binding.has_explicit_type;
     names->flow->initializing = outer;
-    if (my value.tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
+    if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
 }
 
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
@@ -656,7 +671,7 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->parameter_function_scope = names->parent; // `names` is the parameter list's own scope
     binding_lookup_names(&my binding, names, errs);
     flow->contextual_depth += my binding.has_explicit_type;
-    expr_lookup_names_initializer(&my value, names, errs);
+    if (my value) expr_lookup_names_initializer(my value, names, errs);
     flow->contextual_depth -= my binding.has_explicit_type;
     flow->parameter_initializing = saved;
     flow->parameter_function_scope = saved_scope;
@@ -678,7 +693,7 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
         // Else what a pattern implies (tsc's getContextualTypeForInitializerExpression): `[1, "a"]` is a tuple there
         contextual = ty_binding_pattern_type(checker, &my binding, true);
     }
-    return ty_check_expr(checker, &my value, contextual);
+    return ty_check_expr(checker, initialized_binding_value(me), contextual);
 }
 
 // `let x;`, `let x = null` and `let x = []` under noImplicitAny (or in a JavaScript file): the type comes from what is
@@ -697,37 +712,37 @@ static Ty const* auto_type(InitializedBinding const* me) {
     ) {
         return nullptr;
     }
-    bool auto_any = my value.tag == EXPR_IMPLICIT_ANY ? !initialized_binding_getter(me) :
-        my value.tag == EXPR_LITERAL && (my value.literal.tag == VALUE_NULL || my value.literal.tag == VALUE_UNDEFINED);
+    bool auto_any = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? !initialized_binding_getter(me) :
+        initialized_binding_value(me)->tag == EXPR_LITERAL && (initialized_binding_value(me)->literal.tag == VALUE_NULL || initialized_binding_value(me)->literal.tag == VALUE_UNDEFINED);
     if (auto_any) return symbol->is_const ? nullptr : ty_intrinsic(current_checker, TY_AUTO);
-    if (my value.tag == EXPR_ARRAY && !vec_expr_size(&my value.array)) return ty_auto_array(current_checker);
+    if (initialized_binding_value(me)->tag == EXPR_ARRAY && !vec_expr_size(&initialized_binding_value(me)->array)) return ty_auto_array(current_checker);
     return nullptr;
 }
 
 FunctionImpl const* initialized_binding_getter(InitializedBinding const* me) {
-    if (!my getter) return nullptr;
-    Expr const* key = my getter_key;
-    if (!key || key->tag == EXPR_LITERAL) return my getter;
+    if (!initialized_binding_rare(me)->getter) return nullptr;
+    Expr const* key = initialized_binding_rare(me)->getter_key;
+    if (!key || key->tag == EXPR_LITERAL) return initialized_binding_rare(me)->getter;
     Ty const* type = ty_expr_type(current_checker, (Expr*)key);
-    return type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL) ? my getter : nullptr;
+    return type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL) ? initialized_binding_rare(me)->getter : nullptr;
 }
 
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Checker* checker = current_checker;
-    FunctionImpl const* getter = my value.tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type ?
+    FunctionImpl const* getter = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type ?
         initialized_binding_getter(me) : nullptr;
     if (getter) return ty_function_return_type(checker, getter);
     if (!my binding.has_explicit_type) {
         // A parameter of a function expression gets its type from the contextual signature, initializer or not
-        if (my jsdoc_typed_by) ty_function_apply_jsdoc_type(checker, my jsdoc_typed_by, me);
+        if (initialized_binding_rare(me)->jsdoc_typed_by) ty_function_apply_jsdoc_type(checker, initialized_binding_rare(me)->jsdoc_typed_by, me);
         Ty const* contextual = ty_contextual_parameter_type(checker, me);
         if (contextual) return contextual;
-        if (my is_rest_parameter && my value.tag == EXPR_IMPLICIT_ANY && my binding.tag == BINDING_IDENTIFIER) {
+        if (my is_rest_parameter && initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY && my binding.tag == BINDING_IDENTIFIER) {
             return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
         }
         // An unannotated pattern without a default takes what the pattern implies (tsc's getWidenedTypeForVariableLikeDeclaration),
         // a rest parameter's too (`...{ a, b }`, `...[x, y]`)
-        if (my value.tag == EXPR_IMPLICIT_ANY && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
+        if (initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY && (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY)) {
             return ty_binding_pattern_type(checker, &my binding, false);
         }
     }
@@ -735,7 +750,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     if (auto_typed) return auto_typed;
     // A call of a single non-generic signature has its type without its arguments being checked (tsc's
     // checkDeclarationInitializer): `const r = f(x)` doesn't depend on x, which may depend on r through a loop
-    Ty const* ret = ty_quick_expr_type(checker, &my value, false);
+    Ty const* ret = ty_quick_expr_type(checker, initialized_binding_value(me), false);
     if (!ret) ret = initialized_binding_check_value(me);
     if (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY) ret = ty_pad_initializer_type(checker, ret, &my binding);
     Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;
@@ -797,12 +812,12 @@ bool binding_report_widening_errors_in_type(Ty const* ty, ErrorCtx* errs) {
 static void report_errors_from_widening(InitializedBinding* me, Span parameter, ErrorCtx* errs) {
     Checker* checker = current_checker;
     if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
-    if (my binding.has_explicit_type || my value.tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
+    if (my binding.has_explicit_type || initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
     if (auto_type(me) || my is_rest_parameter) return;
     Symbol const* symbol = my binding.symbol;
     if (!symbol) return;
     if (symbol->is_parameter && ty_contextual_parameter_type(checker, me)) return;
-    Ty const* ty = ty_expr_type(checker, &my value);
+    Ty const* ty = ty_expr_type(checker, initialized_binding_value(me));
     if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
     if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));
@@ -814,7 +829,7 @@ static void report_errors_from_widening(InitializedBinding* me, Span parameter, 
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
-    if (my require_port_count) return;
+    if (initialized_binding_rare(me)->require_port_count) return;
     // tsc's checkSourceElement of the VariableDeclaration: what goes wrong deep inside is reported at its name, and
     // checkVariableLikeDeclaration asks for the variable's type first, which takes a call's return type without
     // checking the call (getQuickTypeOfExpression): an instantiation limit it runs into is the declaration's (TS2589)
@@ -822,12 +837,12 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(checker, my binding.content_span);
     // (The annotation is walked first, which makes the types of the literals in it: tsc's checkVariableLikeDeclaration)
     if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
-    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && my value.tag == EXPR_CALL) {
+    if (my binding.tag == BINDING_IDENTIFIER && my binding.symbol && initialized_binding_value(me)->tag == EXPR_CALL) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     initialized_binding_check_value(me);
-    expr_typecheck(&my value, errs);
-    Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
+    expr_typecheck(initialized_binding_value(me), errs);
+    Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
     binding_typecheck_at(&my binding, initializer, span_null, initializer, true, errs);
     report_errors_from_widening(me, span_null, errs);
     ty_leave_node(checker, saved);
@@ -836,8 +851,8 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
     if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
     initialized_binding_check_value(me);
-    expr_typecheck(&my value, errs);
-    Expr const* initializer = my value.tag == EXPR_IMPLICIT_ANY ? nullptr : &my value;
+    expr_typecheck(initialized_binding_value(me), errs);
+    Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
     binding_typecheck_at(&my binding, initializer, span, initializer, true, errs);
     report_errors_from_widening(me, span, errs);
     if (!initializer || my binding.has_explicit_type) return;

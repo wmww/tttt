@@ -31,7 +31,7 @@ static bool walk_binding(Binding const* me, AstExprVisit visit, void* arg) {
 }
 
 static bool walk_initialized_binding(InitializedBinding const* me, AstExprVisit visit, void* arg) {
-    return walk_binding(&my binding, visit, arg) || ast_walk_expr(&my value, visit, arg);
+    return walk_binding(&my binding, visit, arg) || ast_walk_expr(initialized_binding_value(me), visit, arg);
 }
 
 static bool walk_variables(VariableStatement const* me, AstExprVisit visit, void* arg) {

@@ -505,7 +505,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             } else if (first->kind == SYMBOL_DECL_VARIABLE) {
                 Binding const* binding = first->node;
                 if (!binding->parent && binding->tag == BINDING_IDENTIFIER) {
-                    init = expando_initializer(&((InitializedBinding*)binding)->value, binding->content_span, true);
+                    init = expando_initializer(initialized_binding_value(((InitializedBinding*)binding)), binding->content_span, true);
                 }
             }
         }
@@ -819,7 +819,7 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     for_each (i, vec_function_arg, &function->args) {
         if (i->initializer.binding.has_explicit_type) collect_free_params(me, &i->initializer.binding.explicit_type, out);
         // Not syntax: the type of an expression, which could be about any type parameter in scope
-        if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) out->unknown = true;
+        if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) out->unknown = true;
     }
     if (function->has_body && !function->ret_explicit) out->unknown = true;
     collect_free_params(me, &function->ret, out);
@@ -1145,7 +1145,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = decl->node;
             if (!binding->parent && binding->tag == BINDING_IDENTIFIER && !binding->has_explicit_type &&
-                is_js_container(symbol, &((InitializedBinding const*)binding)->value, binding->content_span)
+                is_js_container(symbol, initialized_binding_value(((InitializedBinding const*)binding)), binding->content_span)
             ) {
                 return ty_namespace_type(me, symbol);
             }
@@ -1969,7 +1969,7 @@ static Expr const* synthetic_element_access(Checker* me, Binding const* binding,
     } else {
         if (!parent->source || parent->source->tag != LAZY_TYPE_INITIALIZED_BINDING) return nullptr;
         InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
-        object = &initialized->value;
+        object = initialized_binding_value(initialized);
         *flow = object->tag == EXPR_IDENTIFIER ? object->identifier.flow :
             object->tag == EXPR_PROPERTY ? object->property->flow : nullptr;
         if (!*flow) return nullptr;
@@ -2519,8 +2519,8 @@ static Ty const* binding_element_context(Checker* me, Binding const* element) {
     Binding const* pattern = element->parent;
     Ty const* parent_type = binding_declared_context(me, pattern);
     InitializedBinding const* initialized = pattern->parent ? nullptr : root_initialized(pattern);
-    if (!parent_type && initialized && initialized->value.tag != EXPR_IMPLICIT_ANY) {
-        parent_type = ty_pad_initializer_type(me, ty_expr_type(me, &initialized->value), pattern);
+    if (!parent_type && initialized && initialized_binding_value(initialized)->tag != EXPR_IMPLICIT_ANY) {
+        parent_type = ty_pad_initializer_type(me, ty_expr_type(me, initialized_binding_value(initialized)), pattern);
     }
     if (!parent_type) return nullptr;
     if (pattern->tag == BINDING_ARRAY) {
@@ -2583,7 +2583,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         bool any_parent = (object->flags & TYF_ANY) != 0;
         if (any_parent && !parent->parent && parent->source && parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
             InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
-            if (initialized->value.tag != EXPR_IMPLICIT_ANY && (ty_expr_type(me, &initialized->value)->flags & TYF_NULLABLE)) {
+            if (initialized_binding_value(initialized)->tag != EXPR_IMPLICIT_ANY && (ty_expr_type(me, initialized_binding_value(initialized))->flags & TYF_NULLABLE)) {
                 any_parent = false;
             }
         }
@@ -2614,8 +2614,8 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     } else if (compiler_options()->strict_null_checks && !parent->parent && !parent->has_explicit_type &&
         !(object->flags & (TYF_ANY | TYF_TYPE_PARAM)) && ty_can_be_nullish(me, object) && ty_non_nullable(me, object) != object &&
         (!binding_is_parameter(parent) || (!parent->ambient &&
-            c_container_of(parent, InitializedBinding, binding)->value.tag != EXPR_IMPLICIT_ANY &&
-            ty_can_be_nullish(me, ty_expr_type(me, &c_container_of(parent, InitializedBinding, binding)->value))))
+            initialized_binding_value(c_container_of(parent, InitializedBinding, binding))->tag != EXPR_IMPLICIT_ANY &&
+            ty_can_be_nullish(me, ty_expr_type(me, initialized_binding_value(c_container_of(parent, InitializedBinding, binding))))))
     ) {
         // `const { s } = t` with t possibly undefined: the property of the whole type, which undefined lacks (TS2339 by
         // binding_typecheck(), tsc's getBindingElementTypeFromParentType keeps undefined when the initializer has it)

@@ -284,7 +284,7 @@ static Result MUST_USE engine_eval_js_func(Engine* me, JsFuncValue const* func, 
             if (value.tag == VALUE_UNDEFINED) {
                 TRY_CATCH(
                     default_value,
-                    engine_eval_expr(me, &arg->initializer.value),
+                    engine_eval_expr(me, initialized_binding_value(&arg->initializer)),
                     res_err,
                 {
                     vec_stack_frame_pop(&my stack);
@@ -523,7 +523,7 @@ static Result MUST_USE engine_run_statement(Engine* me, Statement const* stateme
         case STATEMENT_DECL_VARIABLE: {
             // TODO: respect keyword (let, const, var)
             for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-                TRY_THROW(value, engine_eval_expr(me, &i->value));
+                TRY_THROW(value, engine_eval_expr(me, initialized_binding_value(i)));
                 TRY_THROW_DROP(engine_run_binding(me, &i->binding, value));
             }
             return result_ok_undefined;

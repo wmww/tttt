@@ -1897,7 +1897,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         TyDisplay param_d = reused_if(d, false);
         // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
         // typeFromParameter -> typeFromExpression), unless something may type it contextually
-        Expr const* initializer = param->decl ? &param->decl->initializer.value : nullptr;
+        Expr const* initializer = param->decl ? initialized_binding_value(&param->decl->initializer) : nullptr;
         if (reusable && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER && initializer &&
             initializer->tag == EXPR_FUNCTION && !initializer->function->syntactically_contextual &&
             ty_without_undefined(me, param->type) == ty_expr_type(me, initializer)

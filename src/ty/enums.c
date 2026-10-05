@@ -110,7 +110,7 @@ static EnumValue const_variable_value(Checker* me, Symbol const* symbol, Span us
         return enum_value_unknown;
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
-    EnumValue ret = evaluate(me, &initialized->value, depth);
+    EnumValue ret = evaluate(me, initialized_binding_value(initialized), depth);
     // (From another file it isn't written here: tsc's evaluateEntityNameExpression)
     if (symbol->name_span.source != use.source) ret.syntactic_string = false;
     return ret;

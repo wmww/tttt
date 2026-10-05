@@ -187,7 +187,7 @@ static bool function_is_thisless(FunctionImpl const* function) {
     for_each (i, vec_function_arg, &function->args) {
         InitializedBinding const* binding = &i->initializer;
         if (!binding_is_thisless(binding->binding.has_explicit_type, &binding->binding.explicit_type,
-                binding->value.tag != EXPR_IMPLICIT_ANY)) {
+                initialized_binding_value(binding)->tag != EXPR_IMPLICIT_ANY)) {
             return false;
         }
     }
@@ -1203,7 +1203,7 @@ static void builder_add_class_items(
                         prop->decl->lazy = &arg->initializer.lazy_type;
                     }
                     prop->thisless = binding_is_thisless(binding->has_explicit_type, &binding->explicit_type,
-                        arg->initializer.value.tag != EXPR_IMPLICIT_ANY);
+                        initialized_binding_value(&arg->initializer)->tag != EXPR_IMPLICIT_ANY);
                     if (arg->explicit_optional) prop->flags |= PROP_OPTIONAL;
                     if (arg->is_readonly_property) prop->flags |= PROP_READONLY;
                     builder_push(builder, props, prop);
@@ -3192,7 +3192,7 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
     if (variable) {
         Binding const* binding = variable->node;
         if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
-        value = &((InitializedBinding const*)binding)->value;
+        value = initialized_binding_value(((InitializedBinding const*)binding));
     } else if (assignment) {
         value = assignment->node;
         // (`ns.F = ns.F || function () {}`)
@@ -3307,7 +3307,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
             param->rest = i->rest;
             param->decl = i;
-            param->optional = i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY;
+            param->optional = i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
             // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
             // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's

@@ -4437,7 +4437,7 @@ IdentifierExpr const* expr_this_or_alias(Expr const* me) {
     if (my identifier.keyword || !my identifier.target) return nullptr;
     Binding const* binding = symbol_find_node(my identifier.target, SYMBOL_DECL_VARIABLE);
     if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-    Expr const* init = &((InitializedBinding const*)binding)->value;
+    Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
     bool is_this = init->tag == EXPR_IDENTIFIER && init->identifier.keyword == KEYWORD_IDENTIFIER_THIS && !expr_is_perenthisized(init);
     return is_this ? &init->identifier : nullptr;
 }

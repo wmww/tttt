@@ -560,14 +560,14 @@ void initialized_binding_compile_test_info(
     BaselineTestCase* ctx
 ) {
     binding_compile_test_info(&my binding, ctx);
-    if (my value.tag != EXPR_IMPLICIT_ANY || my value.missing || my value.missing_decorators) {
+    if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY || initialized_binding_value(me)->missing || initialized_binding_value(me)->missing_decorators) {
         Expr const* literal = ctx->variable_literal;
         Span literal_name = ctx->variable_literal_name;
-        if (my value.tag == EXPR_OBJECT && my binding.tag == BINDING_IDENTIFIER) {
-            ctx->variable_literal = &my value;
+        if (initialized_binding_value(me)->tag == EXPR_OBJECT && my binding.tag == BINDING_IDENTIFIER) {
+            ctx->variable_literal = initialized_binding_value(me);
             ctx->variable_literal_name = my binding.content_span;
         }
-        expr_compile_test_info(&my value, ctx);
+        expr_compile_test_info(initialized_binding_value(me), ctx);
         ctx->variable_literal = literal;
         ctx->variable_literal_name = literal_name;
     }
@@ -1008,7 +1008,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                     type_compile_test_info(&i->initializer.binding.explicit_type, ctx);
                 }
                 // (An initializer is an error here, TS2371, but still an expression)
-                if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) expr_compile_test_info(&i->initializer.value, ctx);
+                if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) expr_compile_test_info(initialized_binding_value(&i->initializer), ctx);
             }
             if (my callable->function->predicate) {
                 type_predicate_compile_test_info(my callable->function->predicate, ctx);
@@ -1300,7 +1300,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
 
 void variable_statement_compile_test_info(VariableStatement const* me, BaselineTestCase* ctx) {
     for_each (i, vec_initialized_binding, &my initializers) {
-        Expr const* value = &i->value;
+        Expr const* value = initialized_binding_value(i);
         if (i->binding.has_explicit_type && i->binding.explicit_type.from_jsdoc && value->tag != EXPR_IMPLICIT_ANY &&
             (value->tag == EXPR_AS_TYPE && value->as_type->is_jsdoc ? value->as_type->is_satisfies &&
                 !span_eq(value->outer_span, value->as_type->expr.outer_span) : !span_eq(value->outer_span, value->inner_span))
@@ -1890,7 +1890,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         // A JavaScript constructor function's class: declared by the function (a function expression's own symbol
         // to tsc, named like the variable)
         SymbolDecl const* variable = symbol_find_decl(js_class, SYMBOL_DECL_VARIABLE);
-        Expr const* init = variable ? &((InitializedBinding const*)variable->node)->value : nullptr;
+        Expr const* init = variable ? initialized_binding_value(((InitializedBinding const*)variable->node)) : nullptr;
         // (A function expression assigned to a property, `exports.F = function () {}`, is declared by itself)
         bool own = my this_function->class_symbol == js_class && my this_function->is_expression;
         // (Assigned to a property, `ns.F = function () {}`, the class is the function expression, named by itself or

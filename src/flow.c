@@ -321,7 +321,7 @@ static bool may_evolve(Expr const* object) {
     ) {
         return false;
     }
-    Expr const* value = &c_container_of(binding->source, InitializedBinding, lazy_type)->value;
+    Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
     switch (value->tag) {
         case EXPR_IMPLICIT_ANY: return true;
         case EXPR_LITERAL: return value->literal.tag == VALUE_NULL || value->literal.tag == VALUE_UNDEFINED;

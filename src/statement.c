@@ -106,7 +106,7 @@ static void variable_statement_check_let_names(VariableStatement const* me, Init
 
 // `/** @enum {T} */ const E = { a: v }`: every member's value is checked against T (tsc's checkObjectLiteral)
 static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* errs) {
-    if (my binding.tag != BINDING_IDENTIFIER || !my binding.symbol || my value.tag != EXPR_OBJECT) return;
+    if (my binding.tag != BINDING_IDENTIFIER || !my binding.symbol || initialized_binding_value(me)->tag != EXPR_OBJECT) return;
     SourceFile const* file = my binding.content_span.source;
     if (!file || !file->is_js) return;
     Symbol const* symbol = my binding.symbol;
@@ -118,7 +118,7 @@ static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* er
     if (!enum_decl) return;
     // (The alias's type, which names it: lowering the node on its own first would give the alias an unnamed type)
     Ty const* type = ty_declared_type_of(current_checker, symbol);
-    for_each (i, vec_object_expr_item, &my value.object) {
+    for_each (i, vec_object_expr_item, &initialized_binding_value(me)->object) {
         if (i->tag != OBJECT_ITEM_PROPERTY || i->jsdoc_type) continue;
         ty_check_assignable_expr(current_checker, expr_get_type(&i->value), type, i->span, &i->value, errs);
     }
@@ -160,12 +160,12 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
         if (check_marker) binding_check_es_module_marker(&i->binding, errs);
         // An ambient variable without a type has nothing for control flow to type it by
         if (declared && compiler_options()->no_implicit_any && i->binding.tag == BINDING_IDENTIFIER &&
-            !i->binding.has_explicit_type && i->value.tag == EXPR_IMPLICIT_ANY
+            !i->binding.has_explicit_type && initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY
         ) {
             error_ctx_error_d(errs, i->binding.content_span, 7005, "Variable '", i->binding.content_span,
                 "' implicitly has an 'any' type.");
         }
-        if (i->value.tag == EXPR_IMPLICIT_ANY && !declared &&
+        if (initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY && !declared &&
             (i->binding.tag == BINDING_ARRAY || i->binding.tag == BINDING_OBJECT) &&
             my keyword != VAR_INIT_USING && my keyword != VAR_INIT_AWAIT_USING // (TS1492 instead, variable_statement_check_using())
         ) {
@@ -176,21 +176,21 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
                 binding_add_implicit_any_type_errors(&i->binding, span_null, errs);
             }
         } else if (variable_statement_is_const(me) &&
-            i->value.tag == EXPR_IMPLICIT_ANY &&
+            initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY &&
             !declared
         ) {
             error_ctx_grammar_error_d(errs, i->binding.content_span, 1155,
                 "'", variable_statement_keyword_str(me), "' declarations must be initialized.");
         } else if (declared &&
-            i->value.tag != EXPR_IMPLICIT_ANY
+            initialized_binding_value(i)->tag != EXPR_IMPLICIT_ANY
         ) {
             if (i->binding.has_explicit_type || !variable_statement_is_const(me)) {
-                error_ctx_error_d(errs, i->value.outer_span, 1039,
+                error_ctx_error_d(errs, initialized_binding_value(i)->outer_span, 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
-                bool valid = expr_is_ambient_const_initializer(&i->value);
+                bool valid = expr_is_ambient_const_initializer(initialized_binding_value(i));
                 if (!valid) {
-                    error_ctx_error_d(errs, i->value.outer_span, 1254,
+                    error_ctx_error_d(errs, initialized_binding_value(i)->outer_span, 1254,
                         "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
                 if (valid) variable_statement_check_let_names(me, i, errs);
@@ -200,11 +200,11 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
         }
         initialized_binding_typecheck(i, errs);
         variable_check_jsdoc_enum(i, errs);
-        if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && i->value.tag != EXPR_IMPLICIT_ANY) {
+        if ((my keyword == VAR_INIT_USING || my keyword == VAR_INIT_AWAIT_USING) && initialized_binding_value(i)->tag != EXPR_IMPLICIT_ANY) {
             // tsc widens it first: no excess property checks
-            Ty const* type = ty_widened_objects(current_checker, expr_get_type(&i->value));
+            Ty const* type = ty_widened_objects(current_checker, expr_get_type(initialized_binding_value(i)));
             ty_check_using_initializer(current_checker, type, my keyword == VAR_INIT_AWAIT_USING,
-                i->value.outer_span, errs);
+                initialized_binding_value(i)->outer_span, errs);
         }
     }
 }
@@ -811,7 +811,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         // Error added by parser
     } else {
         InitializedBinding* initializer = initializers->data;
-        if (initializer->value.tag != EXPR_IMPLICIT_ANY) {
+        if (initialized_binding_value(initializer)->tag != EXPR_IMPLICIT_ANY) {
             error_ctx_error_d(
                 scope->errs,
                 initializer->binding.content_span,
@@ -1089,7 +1089,7 @@ static bool statement_is_executable(Statement const* me) {
         case STATEMENT_DECL_VARIABLE:
             if (my decl.variable.keyword != VAR_INIT_VAR) return true;
             for_each (i, vec_initialized_binding, &my decl.variable.initializers) {
-                if (i->value.tag == EXPR_IMPLICIT_ANY) return false; // `var x;` may declare a variable used above
+                if (initialized_binding_value(i)->tag == EXPR_IMPLICIT_ANY) return false; // `var x;` may declare a variable used above
             }
             return true;
         default:
@@ -1460,7 +1460,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     flow->initializing = i;
                     binding_lookup_names(&i->binding, loop_scope, errs);
                     flow->initializing = outer_initializing;
-                    expr_lookup_names(&i->value, loop_scope, errs);
+                    if (i->value) expr_lookup_names(i->value, loop_scope, errs);
                     if (loop->keyword == FOR_EACH_LOOP_IN && i->binding.tag == BINDING_IDENTIFIER) {
                         // (The loop too: `for (const k in ref)` acts as a non-null on ref, see type_at_flow_assignment())
                         flow_assign(loop_scope->flow, (FlowAssign){ .kind = FLOW_ASSIGN_DECLARATION, .binding = &i->binding, .for_each = loop });

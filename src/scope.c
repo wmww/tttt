@@ -1589,7 +1589,7 @@ static bool is_exports_alias(Scope* module, Expr const* e) {
         Symbol const* symbol = symbol_table_get(&module->locals, node->identifier.name.sv);
         Binding const* binding = symbol ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
         if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER) continue;
-        Expr const* init = &((InitializedBinding const*)binding)->value;
+        Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
         if (init->tag == EXPR_IMPLICIT_ANY || tail + 3 > c_arraylen(queue)) continue;
         queue[tail++] = init;
         if (init->tag == EXPR_BINARY_OP && init->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(init)) {
@@ -1698,7 +1698,7 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
         case STATEMENT_DECL_VARIABLE:
             // `var npm = module.exports = f`
             for_each (i, vec_initialized_binding, &statement->decl.variable.initializers) {
-                Expr* assignment = &i->value;
+                Expr* assignment = initialized_binding_value(i);
                 Symbol* export_equals = module->container->exports ? symbol_table_get(module->container->exports, c_sv("export=")) : nullptr;
                 while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL &&
                     !expr_is_perenthisized(assignment)
@@ -1709,8 +1709,8 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
                 // `var m = module.exports = v`: the `export=` it declares first is named m (tsc's
                 // getNameOfSymbolAsWritten: a declaration whose parent is a variable declaration)
                 Symbol* declared = module->container->exports ? symbol_table_get(module->container->exports, c_sv("export=")) : nullptr;
-                if (!export_equals && declared && i->binding.tag == BINDING_IDENTIFIER && i->value.tag == EXPR_BINARY_OP &&
-                    expr_is_module_exports(&i->value.binary_op->left)
+                if (!export_equals && declared && i->binding.tag == BINDING_IDENTIFIER && initialized_binding_value(i)->tag == EXPR_BINARY_OP &&
+                    expr_is_module_exports(&initialized_binding_value(i)->binary_op->left)
                 ) {
                     declared->name_span = i->binding.content_span;
                 }
@@ -3707,7 +3707,7 @@ FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl) {
         case SYMBOL_DECL_VARIABLE: {
             Binding const* binding = decl->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-            value = &((InitializedBinding const*)binding)->value;
+            value = initialized_binding_value(((InitializedBinding const*)binding));
         }   break;
         case SYMBOL_DECL_ASSIGNMENT: value = decl->node; break;
         default: return nullptr;
@@ -3879,7 +3879,7 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
             // (In TypeScript only a const is: tsc's isVarConstLike in getExpandoSymbol)
             if (!js && !found->is_const) return false;
             InitializedBinding* initialized = (InitializedBinding*)binding;
-            Expr* init = expando_initializer(&initialized->value, binding->content_span, js);
+            Expr* init = expando_initializer(initialized_binding_value(initialized), binding->content_span, js);
             if (!init) return false;
             // (An annotated variable has the type it says, but its initializer gets the members all the same)
             *init_ret = init;
@@ -4003,7 +4003,7 @@ void binder_link_global_expandos(Binder* me) {
             if (decl->kind == SYMBOL_DECL_VARIABLE) {
                 Binding const* binding = decl->node;
                 if (binding->parent || binding->tag != BINDING_IDENTIFIER) break;
-                init = expando_initializer(&((InitializedBinding*)binding)->value, binding->content_span, true);
+                init = expando_initializer(initialized_binding_value(((InitializedBinding*)binding)), binding->content_span, true);
             } else if (decl->kind == SYMBOL_DECL_ASSIGNMENT) {
                 init = expando_initializer((Expr*)decl->node, span_null, true);
             } else if (decl->kind == SYMBOL_DECL_EXPANDO) {
@@ -4353,7 +4353,7 @@ void scope_add_expandos(Scope* me, Block const* block) {
         }
         // `var a = f.x = {}` (not at the top level: the assignment's parent is the declaration)
         if (i->tag == STATEMENT_DECL_VARIABLE) {
-            for_each (j, vec_initialized_binding, &i->decl.variable.initializers) add_expando_chain(me, &j->value, false);
+            for_each (j, vec_initialized_binding, &i->decl.variable.initializers) add_expando_chain(me, initialized_binding_value(j), false);
         }
     }
 }
@@ -4371,7 +4371,7 @@ static Symbol* js_constructor_symbol(Symbol* symbol) {
         if (decl->kind == SYMBOL_DECL_VARIABLE) {
             Binding const* binding = decl->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
-            Expr const* init = &((InitializedBinding const*)binding)->value;
+            Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
             return init->tag == EXPR_FUNCTION && !span_valid(init->function->arrow_span) ? symbol : nullptr;
         }
         // `ns.F = function () {}`

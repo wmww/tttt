@@ -837,7 +837,7 @@ static bool is_arity_smaller(Checker* me, Signature const* sig, FunctionImpl con
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;
         index++;
-        if (i->rest || i->explicit_optional || i->initializer.value.tag != EXPR_IMPLICIT_ANY) break;
+        if (i->rest || i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) break;
         required = index;
     }
     for (u32 i = 0; i < sig->param_count; i++) {
@@ -1002,7 +1002,7 @@ bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern) {
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
     u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)parameter };
     Ty const* ret = intern_get(&my links, key, 2);
-    if (!ret && parameter->this_of) ret = ty_contextual_this_type(me, parameter->this_of);
+    if (!ret && initialized_binding_rare(parameter)->this_of) ret = ty_contextual_this_type(me, initialized_binding_rare(parameter)->this_of);
     return ret;
 }
 
@@ -1206,11 +1206,11 @@ static void assign_contextual_signature_as(
         ) {
             type = ty_array(me, type, false);
         }
-        if (i->initializer.value.tag != EXPR_IMPLICIT_ANY) {
+        if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
             // An initializer that doesn't fit the contextual type but is wider than it wins (tsc's
             // assignContextualParameterTypes): `(max = 3) => {}` against `(max: 1 | 2) => void` takes a number
             // (Checked with that contextual type: tsc's checkDeclarationInitializer, getContextuallyTypedParameterType)
-            Ty const* initializer = ty_check_expr(me, &i->initializer.value, type);
+            Ty const* initializer = ty_check_expr(me, initialized_binding_value(&i->initializer), type);
             if (!ty_is_related(me, initializer, type, TY_RELATION_ASSIGNABLE)) {
                 Ty const* widened = ty_widened_for_declaration(me, initializer, true);
                 if (ty_is_related(me, type, widened, TY_RELATION_ASSIGNABLE)) type = widened;
@@ -1541,9 +1541,9 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
     }
     InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
     // (Not from inside the default itself: `(x: number | undefined = x > 0 ? x : 0)`)
-    LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized->value.lazy_type);
+    LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized_binding_value(initialized)->lazy_type);
     bool in_flight = memo && memo->evaluation_started && !memo->done;
-    Ty const* value = initialized->value.tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, &initialized->value);
+    Ty const* value = initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, initialized_binding_value(initialized));
     // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
     if (value && !includes_undefined(value) && !(value->flags & TYF_VOID)) {
         return ty_without_undefined(me, type);
@@ -3178,7 +3178,7 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
     for_each (i, vec_function_arg, &accessor->args) {
         Binding const* binding = &i->initializer.binding;
         if (binding->tag == BINDING_IDENTIFIER && span_equals(binding->content_span, "this")) continue;
-        if (!binding->has_explicit_type && !i->initializer.getter) return any_type(me);
+        if (!binding->has_explicit_type && !initialized_binding_rare(&i->initializer)->getter) return any_type(me);
         break;
     }
     signature_resolve(me, sig);
@@ -3749,7 +3749,7 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
             Ty const* arg_type = arg->expr ? ty_expr_type(me, arg->expr) :
                 arg->spread ? ty_reference_args(me, arg->type).data[0] : arg->type;
             type = ty_widened_for_declaration(me, arg_type, true);
-        } else if (i->initializer.value.tag == EXPR_IMPLICIT_ANY) {
+        } else if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) {
             type = ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_UNDEFINED : TY_ANY);
         }
         if (!type) continue;
