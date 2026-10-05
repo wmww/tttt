@@ -5921,6 +5921,9 @@ static bool parse_function_args_inner(
 
                 initializer.is_rest_parameter = rest;
                 Span arg_span = span_from(arg_start);
+                // (A parameter the list's recovery ends at its next token doesn't take the whitespace before it:
+                // `(a {`)
+                while (arg_span.sv.size && strchr(" \t\r\n", arg_span.sv.buf[arg_span.sv.size - 1])) arg_span.sv.size--;
                 VecExpr* boxed_decorators = nullptr;
                 if (vec_expr_size(&decorators)) boxed_decorators = c_new(VecExpr, decorators);
                 else vec_expr_drop(&decorators);
