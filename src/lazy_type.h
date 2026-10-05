@@ -55,7 +55,8 @@ struct Ty const* lazy_type_evaluate(LazyType* me);
 
 // The memo if there is one already (without evaluating or allocating anything), otherwise null
 static inline LazyMemo* lazy_type_state_peek(LazyType* me) {
-    if (!current_lazy_slots) return nullptr;
+    // (slot 0 isn't one: lazy_type_evaluate() refuses it, rather than share one memo between everything unbound)
+    if (!current_lazy_slots || !my slot) return nullptr;
     LazyMemo** dir = current_lazy_slots->top[my slot >> (LAZY_PAGE_BITS + LAZY_DIR_BITS)];
     if (!dir) return nullptr;
     LazyMemo* page = dir[(my slot >> LAZY_PAGE_BITS) & ((1 << LAZY_DIR_BITS) - 1)];

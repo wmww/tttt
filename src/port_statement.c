@@ -131,6 +131,10 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) expr_lookup_names(i, scope, nullptr);
+    // (the values of `with { type: "json" }` are expressions like any other: checkImportAttribute checks them)
+    if (my attributes) {
+        for_each (i, vec_import_attribute, &my attributes->elements) expr_lookup_names(&i->value, scope, errs);
+    }
     if (my wrong_context) return;
     // `export { x }` of a local `let`: it may be assigned from anywhere, closures don't see its narrowing (tsc's
     // markNodeAssignments of an ExportSpecifier)
@@ -282,6 +286,17 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     if (my in_ambient_module && my module_ref && !my jsdoc && module_name_is_relative(cstr_sv(&my target_path))) {
         error_ctx_error_d(errs, span_with_semicolon(span), 2439, "Import or export declaration in an ambient module "
             "declaration cannot reference module through relative module name.");
+    } else if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
+        // (a string literal: not a template, which isStringLiteral isn't)
+        for_each (i, vec_import_attribute, &my attributes->elements) {
+            Expr const* value = &i->value;
+            if (is_string_literal(value) && value->outer_span.sv.size && value->outer_span.sv.buf[0] != '`') continue;
+            if (my attributes->is_assert) {
+                error_ctx_error_d(errs, value->outer_span, 2837, "Import assertion values must be string literal expressions.");
+            } else {
+                error_ctx_error_d(errs, value->outer_span, 2858, "Import attribute values must be string literal expressions.");
+            }
+        }
     }
     // tsc's checkImportEqualsDeclaration: `import x = require()` can't be emitted as an ES module (by the module
     // option, whatever the file's format)
@@ -367,6 +382,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     ImportAttributes const* node = my attributes;
     if (!node) return;
     ty_check_import_attributes(current_checker, node, errs);
+    for_each (i, vec_import_attribute, &node->elements) expr_typecheck(&i->value, errs);
     bool type_only = my main.type_only; // tsc's isExclusivelyTypeOnlyImportOrExport
     ImportResolutionOverride override = import_attributes_resolution_mode(node, type_only ? errs : nullptr);
     if (type_only && override) return;

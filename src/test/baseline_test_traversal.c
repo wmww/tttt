@@ -1285,8 +1285,14 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
     // `with { type: "json" }`: the keys written as identifiers are errorType (tsc resolves them as nothing)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) {
-            if (!span_valid(i->name) || i->name.sv.buf[0] == '"' || i->name.sv.buf[0] == '\'') continue;
-            baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ERROR));
+            if (span_valid(i->name) && i->name.sv.buf[0] != '"' && i->name.sv.buf[0] != '\'') {
+                baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ERROR));
+            }
+            // (a string, number or bigint literal there is no expression to tsc's isExpressionNode: no line)
+            Expr* value = &i->value;
+            bool literal = value->tag == EXPR_LITERAL && (value->literal.tag == VALUE_STRING ||
+                value->literal.tag == VALUE_NUMBER || value->literal.tag == VALUE_BIGINT);
+            if (!literal) expr_compile_test_info(value, ctx);
         }
     }
 }
