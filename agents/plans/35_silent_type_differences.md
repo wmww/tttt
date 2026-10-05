@@ -220,3 +220,24 @@ widened objects for written/called properties, Unicode trivia in Decl positions.
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
 inference rule that shows up here should be checked on zod and valibot (inference-heavy) for instruction counts too.
+
+## Left by fan-out agent C of 2026-10-05
+Missing/extra lines and JS tests. What remains, by mechanism (test names are examples):
+- **Recovery shapes tttt's parser doesn't build**: `import { * } from` (tsc: a block `{ <missing> * <missing> }`,
+  es6ImportNamedImportParsingError), `function a4([while, for, public])` (destructuringParameterDeclaration6),
+  `<this.#prop />` (a property access whose private name becomes a missing identifier, privateNameJsx). Initializers
+  of interface/type literal properties and index signature parameters (`bar: number = 5`) are dropped by the parser:
+  tsc keeps and types them (errorOnInitializerIn{Interface,ObjectTypeLiteral}Property, indexSignatureWithInitializer1;
+  needs an `Expr*` on InterfaceMember, resolved/checked/walked).
+- **CommonJS entity-name aliases**: `exports.x = a.b` is an alias in tsc (isAliasableExpression), its type errorType
+  when `a.b` doesn't resolve as an entity name (resolveNameWithNamspace); tttt binds a property. Same family:
+  moduleExportDuplicateAlias{,2,3} (a property + alias symbol whose type is the alias's), lateBoundAssignmentDeclarationSupport6.
+- `typeof import("./a").f<T>` (instantiation expression on an import type, typeofImportInstantiationExpression); `fx<>`
+  (empty type argument list) has no node; `type B = BoxFunc<string>` of `typeof boxify<T>` keeps the alias name in tsc
+  (instantiationExpressions' last line).
+- `import { f } from "./a.js"` where f's JSDoc names a typedef of a.js: tsc reuses `MyType` unqualified
+  (jsdocPropertyTagInvalid), tttt qualifies `import("/a").MyType`.
+- `function toString() {}` in a JS script prints `typeof toString` in tsc, tttt its structure merged with something
+  (inexistentPropertyInsideToStringType). callbackTag4: reuse of a `@this {{...}}` type literal's members.
+- The other line-missing tests of the list were really display/accessibility (the queue's "reuse needs accessibility"
+  item): recursiveConditionalCrash1-3, deepKeysIndexing, inlineMappedTypeModifierDeclarationEmit...
