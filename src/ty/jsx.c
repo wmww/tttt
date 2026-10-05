@@ -257,13 +257,20 @@ static bool is_string_literal(Ty const* ty) {
 static void check_string_literal_tag(Checker* me, JsxElement const* element, Ty const* tag_type, ErrorCtx* errs) {
     TyList names = tag_type->kind == TY_UNION ? tag_type->composite.types : (TyList){ .data = &tag_type, .len = 1 };
     TyBuf all = {0};
+    bool missing = false;
     for (u32 i = 0; i < names.len; i++) {
         csview name = atom_sv(names.data[i]->literal.string);
         JsxIntrinsic intrinsic = ty_jsx_intrinsic_named(me, element, name);
         if (intrinsic.elements && !intrinsic.props) {
             error_ctx_error_d(errs, element->opening_span, 2339, "Property '", name, "' does not exist on type 'JSX.IntrinsicElements'.");
+            missing = true;
         }
         if (intrinsic.props) ty_buf_push(&all, intrinsic.props);
+    }
+    // (That name has no fake signature, nor does the union then: tsc's resolveJsxOpeningLikeElement finds none)
+    if (missing) {
+        error_ctx_error_d(errs, element->tag_name.inner_span, 2604, "JSX element type '", element->tag_name.inner_span,
+            "' does not have any construct or call signatures.");
     }
     if (all.len == names.len && all.len) {
         Ty const* each = all.len == 1 ? all.data[0] : ty_intersection(me, all.data, all.len, nullptr, (TyList){0});

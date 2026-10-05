@@ -53226,7 +53226,7 @@ const baselines = {
         types: true,
     },
     'tsxDynamicTagName3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
