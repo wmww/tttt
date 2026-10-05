@@ -3085,6 +3085,16 @@ static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, E
             for (u32 i = 0; i < ty->composite.types.len; i++) check_await_operand(me, ty->composite.types.data[i], at, depth + 1, errs);
             return;
         }
+        // (Most operands: a primitive, or the global Promise/PromiseLike of something, like awaited_type_in())
+        if (primitive_or_never(ty)) return;
+        if (ty->kind == TY_REFERENCE && ty->reference.target->declared.symbol && !ty->reference.target->declared.symbol->parent) {
+            csview name = ty->reference.target->declared.symbol->name;
+            TyList args = ty_reference_args(me, ty);
+            if (args.len == 1 && args.data[0] != ty && (csview_equals(name, "Promise") || csview_equals(name, "PromiseLike"))) {
+                ty = args.data[0];
+                continue;
+            }
+        }
         Ty const* promised = promised_type_of(me, ty);
         if (promised) {
             if (promised == ty) return;
