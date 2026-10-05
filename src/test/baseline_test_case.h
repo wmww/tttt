@@ -124,6 +124,9 @@ typedef struct BaselineTestCase {
     Span jsdoc_paren_span;
     struct Ty const* jsdoc_paren_type;
     bool error_type; // The types line being added is the error type (see LineNumberedStr.error_type)
+    // ... and an unresolved name, which prints as written (tsc reuses the reference) unless the intrinsic name is
+    // printed (no errors): `error`
+    bool unresolved_type;
     // In the body of a `with`: tsc's getTypeOfNode and getSymbolAtLocation answer nothing there, every types line is
     // the error type and there are no symbols lines
     bool in_with;

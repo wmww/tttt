@@ -51618,7 +51618,7 @@ const baselines = {
     'jsDeclarationsJSDocRedirectedLookups': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsJson': {
         errors: true,

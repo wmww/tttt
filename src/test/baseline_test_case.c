@@ -25,6 +25,7 @@ typedef struct LineNumberedStr {
     isize_t any_underline_at;
     // ... and it's the error type: then it prints its intrinsic name, `error`
     bool error_type;
+    u32 error_text_len; // The length of what it prints otherwise: `any`, an unresolved name
 } LineNumberedStr;
 
 static void line_numbered_str_drop(LineNumberedStr* me) {
@@ -34,7 +35,7 @@ static void line_numbered_str_drop(LineNumberedStr* me) {
 // A types line of `any` as tsc's harness prints it without errors: the intrinsic name, no underline
 static void append_without_any_underline(cstr* target, LineNumberedStr const* line) {
     if (line->error_type) {
-        cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at - 3));
+        cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at - line->error_text_len));
         cstr_append_lit(target, "error");
     } else {
         cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at));
@@ -1665,7 +1666,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     } else {
         cstr_resize(&underline, cstr_size(&underline) + rendered.size, '^');
     }
-    isize_t any_underline_at = my any_keeps_underline || !csview_equals(rendered, "any") ? 0 : cstr_size(&target);
+    isize_t any_underline_at = my any_keeps_underline || (!csview_equals(rendered, "any") && !my unresolved_type) ? 0 : cstr_size(&target);
     bool error_type = my error_type && any_underline_at;
     my any_keeps_underline = false; // Only the node itself, not what's parenthesized in it
     cstr_append_lit(&target, "\r\n");
@@ -1677,6 +1678,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
         .str = target,
         .any_underline_at = any_underline_at,
         .error_type = error_type,
+        .error_text_len = (u32)rendered.size,
     });
     if (!base_case) {
         outer_span.sv.buf++;
@@ -1713,8 +1715,10 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
     }, type);
     free(param_names.given);
     my error_type = (type->flags & TYF_ERROR) != 0;
+    my unresolved_type = my error_type && type->kind == TY_INTRINSIC && type != ty_intrinsic(current_checker, TY_ERROR);
     add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
     my error_type = false;
+    my unresolved_type = false;
     c_drop(cstr, &rendered, &underline);
 }
 
