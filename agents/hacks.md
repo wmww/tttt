@@ -242,13 +242,12 @@ src` finds the code-side markers; every significant one has an entry here.
 - Old type world leftovers: `owned_symbol` + `symbol_ref` on `GenericItem`/`InferredType`/mapped keys,
   `key.expr.owned` + `ref` on interface members; `LAZY_TYPE_FUNCTION` memoises the already interned
   `ty_function_type()`.
-- `ty_binding_assigned_type`: not memoised; a default replaces only an all-undefined element (tsc: undefined removed
-  first). tsc unions the element with the default (subtype reduction) and widens after; tttt widens the default first,
-  then reduces, except that a fresh object literal default is reduced fresh and widened in place (`[{ flag } = {}]`):
-  other defaults whose freshness matters to the reduction would still differ. `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop `[x = x]`,
-  see `ty_binding_type`); `binding_element_implied_type` runs
-  defaults under `flow_uncached`. `binding_element_context` includes index signatures (tsc's getTypeOfPropertyOfType
-  doesn't).
+- `ty_binding_assigned_type` (not memoised): tsc unions the undefined-stripped element with the default (subtype
+  reduction) and widens after; tttt widens the default first, then reduces, except that a fresh object literal default
+  is reduced fresh and widened in place (`[{ flag } = {}]`): other defaults whose freshness matters to the reduction
+  would still differ. `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop
+  `[x = x]`, see `ty_binding_type`); `binding_element_implied_type` runs defaults under `flow_uncached` (with
+  `include_pattern`). `binding_element_context` includes index signatures (tsc's getTypeOfPropertyOfType doesn't).
 - Array pattern rest (`ty_binding_type`): the parent type is widened, so "any parent is any" peeks at the root
   initializer's expression type.
 - TS7031 from widening a parameter pattern's element (`parameter_element_before_widening`, binding.c): tttt widens
@@ -257,90 +256,89 @@ src` finds the code-side markers; every significant one has an entry here.
 - `binding_add_padded_implicit_any_errors` (TS7031) only for unannotated parameters and nested defaults;
   `binding_rest_elements` loses `readonly`; `binding_add_names` doesn't widen literals of exported bindings.
 - AST written by walks: `FunctionImpl.constructed_class` in `class_decl_lookup_names` (also TS1093),
-  `FunctionImpl.private_ambient` by `class_decl_typecheck` just before checking the member.
+  `FunctionImpl.private_ambient` in `class_members_lookup_names`.
 - `field_type_from_assignments()`: the first real `this.x =` stands in for tsc's synthetic flow reference; `declare
   x;` doesn't take the base property's type.
 - `expr_requires_scope_change()` (TS2373): hand-written expression walk without JSX; there's no generic visitor.
-- `generic_params_expr_typecheck`: constraints checked against the first signature only.
-- `ty_function_return_type`: a return type asked for while inferred is `any`, no TS7023.
-- `lower` TYPE_TYPEOF: `typeof x` is the narrowed type, not the declared one (lower.c TODO).
+- `generic_params_expr_typecheck`: constraints checked against the first signature whose arity fits, not all.
+- `lower` TYPE_TYPEOF: `typeof x` is the narrowed type, not the declared one (lower.c TODO; unverified that this
+  differs from tsc).
 - `ty_merged_value_type`: a second `Ty` next to the unmerged one (`ty_static_type_of`, what static `this` sees).
-- TS1254 (`variable_statement_typecheck`): any identifier/property access counts as a literal enum reference.
+- TS1254 (`expr_is_ambient_const_initializer()`): any identifier/property access counts as a literal enum reference.
 - Optional parameters: `T` in the signature, `| undefined` added at use (`value_entry_type()`,
   `ty_optional_param_type()`); tsc shows it in the signature too.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
-- `Checker.overload_failure_inference` (`overload_failure_candidate()`, read in `check_expr_ctx()`'s generic-mode
-  skip): a nested generic call returning a function that is already resolved keeps its type instead of being skipped
-  (silent never), as tsc's getResolvedSignature cache makes SkipGenericFunctions do, but only in an overload failure's
-  fallback inference. Everywhere (tsc's behaviour) costs effect +15 and react +2: tttt resolves nested calls before an
-  outer call's first pass where tsc hasn't yet. xstate's `setup().extend({ guards: { ..., bad: not('x') } })`.
-- `infer_from_object_types()`, a generic mapped target `{ [P in C]: T[P] }`: the source goes to T as if homomorphic
-  unless C is a conditional (Omit's `Exclude<keyof T, X>`, where tsc infers nothing). A union with literal keys
-  (`"a" | Exclude<keyof T, X>`) still takes that path, standing in for tsc's inference from the properties those keys
-  give (complicatedIndexesOfIntersectionsAreInferencable); tsc's inferToMappedType returns false for it.
-- `first_unfit_skipped_literal()` (`resolve_with_signatures`): tsc's SkipContextSensitive round still relates a
-  context-sensitive object/array literal argument or JSX attributes (its sensitive functions as anyFunctionType) to
-  the parameter; tttt skips the whole argument in that round, and does the literal check only for non-generic overloads of a call with
-  several, against a parameter type without type variables. Doing it for every candidate (generic ones against the
-  skip-round instantiation) broke typeInferenceWithExcessProperties & co. and vue (47 -> 443): checking the literal
-  with another contextual type leaves memos of its members behind. Real fix: side-effect-free speculative checks
-  (not resolve-once, which only covers calls: plan 38 "Stage 3").
-- Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): tsc's
-  pickLongestCandidateSignature candidate is used only when it was checked (among `unfit`), else the last unfit one;
-  the "no candidate got checked" branches (union of every candidate's inferred return) aren't tsc's at all.
-- `infer_from_objects()`, the homomorphic `T[K]` shortcut: Pick's K gets the source's keys only outside return-type
-  inference. tsc infers them there too, but then tttt's return mapper (`return_inference_mapper()`) makes K2 of
-  twiceNestedKeyofIndexInference `never` (its constraint `keyof T[K1]` with `K1 = keyof State`) and the argument
-  `'b'` widens; tsc's return mapper evidently differs there, not investigated.
+- `Checker.overload_failure_inference` (set by `overload_failure_candidate()`, read in `check_with()`'s generic-mode
+  skip, expr.c HACK): a nested generic call returning a function that is already resolved keeps its type instead of
+  being skipped (silent never), as tsc's getResolvedSignature cache makes SkipGenericFunctions do, but only in an
+  overload failure's fallback inference. Doing it everywhere (tsc's behaviour) regresses effect and react: tttt
+  resolves nested calls before an outer call's first pass where tsc hasn't yet.
+- `infer_from_objects()`, a generic mapped target `{ [P in C]: T[P] }` (the homomorphic `T[K]` shortcut, standing in
+  for reverse mapping): the source goes to T as if homomorphic unless C is a conditional (Omit's
+  `Exclude<keyof T, X>`, where tsc infers nothing), intersection-limited or a deferred `keyof X` whose X isn't
+  inferred. A union with literal keys (`"a" | Exclude<keyof T, X>`) still takes that path, standing in for tsc's
+  inference from the properties those keys give (complicatedIndexesOfIntersectionsAreInferencable). Pick's K gets the
+  source's keys only outside return-type inference: there tttt's `return_inference_mapper()` would make K2 of
+  twiceNestedKeyofIndexInference `never` (tsc's return mapper evidently differs). `infer_to_mapped()` finding nothing
+  returns (tsc goes per property; neutral).
+- Skip-sensitive rounds: `first_unfit_skipped_literal()` (`resolve_with_signatures`, HACK): tsc's SkipContextSensitive
+  round still relates a context-sensitive object/array literal argument or JSX attributes (its sensitive functions as
+  anyFunctionType) to the parameter; tttt skips the whole argument in that round, and does the literal check only for
+  non-generic overloads of a call with several, against a parameter type without type variables. Doing it for every
+  candidate broke typeInferenceWithExcessProperties & co. and vue: checking the literal with another contextual type
+  leaves memos of its members behind. Real fix: side-effect-free speculative checks. `return_only_type()` gives
+  generators anyFunctionType; `first_unfit_argument` skips such arguments in the first overload round.
+- Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): with explicit type
+  arguments, fitting arity and no candidate checked, the result is the union of every candidate's inferred return
+  (not tsc's).
 - `KEY_CONTEXT_RETURN` is rewritten per check (`set_contextual_return()`); `ExprCtx.sig_contextual` only where
   `may_want_signature()`.
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`): a failed
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
-- Return mapper (`infer_type_arguments`, HACK): the contextual inference through the outer return mapper fills only
-  type parameters without candidates (using it for all: tsc-exact on tests, valibot +9%). Non-sensitive function
-  arguments get their parameter type fully instantiated, others top level (`instantiate_instantiable`). A pattern's
-  return mapper drops inferred `any` (tsc's nonInferrableAnyType) and rest patterns give none; `ty_pattern_unclone`
-  copies the pattern type per call. Nested literals instantiate context only in `check_for_mutable_location()`.
+- Return mapper (`infer_type_arguments`, call.c HACKs): the contextual inference through the outer return mapper fills
+  only type parameters without candidates (using it for all: tsc-exact on tests, but valibot's arguments' contextual
+  types turn generic, +9%). Non-sensitive function arguments get their parameter type fully instantiated, others top
+  level (`instantiate_instantiable`). A pattern's return mapper drops inferred `any` (tsc's nonInferrableAnyType) and
+  rest patterns give none; `ty_pattern_unclone` copies the pattern type per call. Nested literals instantiate context
+  only in `check_for_mutable_location()`.
 - `Inference.circularity`: `visited` records no priorities, so a pair is circular only while still on the stack.
 - Reverse mapped types of arrays/tuples are eager like tsc's, but still cut at depth 4 (`Checker.reverse_mapped_depth`,
   HACK: tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42
   stage 1). Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's
-  instantiateReverseMappedType. Four priorities only.
-  `infer_from_objects()`'s homomorphic shortcut stands in for reverse mapping, skipped for a deferred `keyof X` whose X
-  isn't inferred (stricter gates lost three tests); `infer_to_mapped()` finding nothing returns (tsc goes per
-  property; neutral). `inference_call_result()`: combined covariant candidates literal-reduced (tsc: subtype-reduced).
-- Skip-sensitive first pass: `return_only_type()` gives generators anyFunctionType; `first_unfit_argument` skips such
-  arguments in the first overload round; isPartiallyInferableType only as a priority. Intra-expression sites
-  (`ty_add_intra_expression_site()`): not for JSX attributes; `context_is_tuple_like()` misses call spreads.
+  instantiateReverseMappedType. Inference priorities lack SpeculativeTuple, NoConstraints, AlwaysStrict.
+  `inference_call_result()`: combined covariant candidates literal-reduced (tsc: subtype-reduced).
+- Intra-expression sites (`ty_add_intra_expression_site()`): not for JSX attributes; `context_is_tuple_like()` misses
+  call spreads.
 - JSDoc type parameters (`meets_jsdoc_node_in()` in `assignment_mentions()`): fixing only, "in scope" by source
   position; tsc instantiates every JSDoc node for its outer type parameters (triage).
-- `const` type parameters: no mapped/conditional/variadic cases; nested array literals found by syntax
-  (`add_nested_array_literals`) plus `Inference.array_literals` (ty_internal.h HACK) because interned tuples can't carry
-  ObjectFlags.ArrayLiteral; `...args: T` gets `T[i]` context only when const.
+- `const` type parameters: nested array literals found by syntax (`add_nested_array_literals`) plus
+  `Inference.array_literals` (ty_internal.h HACK) because interned tuples can't carry ObjectFlags.ArrayLiteral.
 - `clone_type_params`: fresh type parameters only when bounded or the mapper brings type variables; else shared.
-- `ty_union_signatures` not cached; `resolve_call` falls back per member when one has no signatures (TS2348 for tsc's
-  TS2349). `reorder_candidates`: literal overloads first, no merged-group order.
+- `ty_union_signatures` not cached; `resolve_call` still falls back per member for `super`, tagged templates,
+  decorators and JSX when one has no signatures.
 - `super(...)` (`resolve_into`): heritage type arguments passed as explicit, inferred when unwritten (tsc: defaults).
   `resolve_super` walks scopes; `check_before_super` only when the nearest function scope is the constructor.
-- `report_arity`: too few arguments at the callee's `inner_span`; generic rest arity ignores spreads/candidates.
 - `tagged_template_call()` (HACK): a stand-in CallExpr with a shallow copy of the tag as callee
   (`CallInfo.tagged_template`); a TaggedTemplate node or argument-list abstraction would avoid it.
 - `signature_resolve`: function expressions take the contextual signature's type parameters only if resolved after
   the context was assigned.
 - `ty_check_decorator`: signature rebuilt per check (each decorator is checked once, so harmless so far).
-- Generators: no next type from `yield` use; `ty_generator_context` filters only unions. function.c HACK: a
-  non-iterable `yield*` prints its type while the return type is in progress, making `yield* foo` in `foo` any.
-- `missing_property_type()` (ty/expr.c HACK, `Checker.print_probe`): tsc prints the object type of a TS2339 while
-  checking, which can find an inferred return type in progress (`this.x` in an object literal method). tttt reports it
-  later (ty/check.c), so evaluation prints the type too while something is being resolved; a return type found in
-  progress then gets TS7023 but keeps its type (tsc's errors checker makes it any but prints it syntactically, its
-  types baseline comes from a checker that never prints). A signature that saw it isn't memoized. Errors reported
-  during evaluation (one pass, like tsc) would remove it.
-- Async: `Promise`/`PromiseLike` by name (no thenables). `ty_awaited()` wraps generics in `Awaited<T>`, but generators
-  use `ty_awaited_no_alias()` and async returns `ty_awaited_returned()` (call.c HACKs) because tttt can't relate
-  `Awaited<T>` to T through the conditional's default constraint; once it can, use ty_awaited() everywhere.
+- Generators: no next type from `yield` use; `ty_generator_context` filters only unions.
+- Printing while resolving, to imitate tsc's eager error messages: `missing_property_type()` (ty/expr.c HACK,
+  `Checker.print_probe`): tsc prints the object type of a TS2339 while checking, which can find an inferred return
+  type in progress (`this.x` in an object literal method). tttt reports it later (ty/check.c), so evaluation prints the
+  type too while something is being resolved; a return type found in progress then gets TS7023 but keeps its type
+  (tsc's errors checker makes it any). A signature that saw it isn't memoized. function.c HACK: a non-iterable
+  `yield*` prints its type while the return type is in progress, making `yield* foo` in `foo` any. Errors reported
+  during evaluation (one pass, like tsc) would remove both.
+- `missing_property_type` (HACK) also decides the type of a failed access: errorType under conditions approximating
+  check.c's reporting (object type, not `typeof globalThis`, no unresolved base, not JS; unchecked JS's "declared in
+  another global file" by the object name's file). tsc: errorType exactly when it reports.
+- Async: `ty_awaited()` wraps generics in `Awaited<T>`, but generators use `ty_awaited_no_alias()` and async returns
+  `ty_awaited_returned()` (call.c HACKs) because tttt can't relate `Awaited<T>` to T through the conditional's default
+  constraint; once it can, use ty_awaited() everywhere.
 - Contextual `this` (`ty_contextual_this_type`): literal context/parent remembered at check
   (`KEY_LITERAL_CONTEXT`/`KEY_LITERAL_PARENT`, last wins); `ThisType<T>` by name, instantiated with
   `ty_instantiate_fixing()`.
@@ -350,38 +348,34 @@ src` finds the code-side markers; every significant one has an entry here.
   `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
   `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and
   destructuring defaults don't. Union order depends on who asks first.
-- `KEY_CONTEXT_NONE` / `ty_late_contextual_return` (expr.c): tsc's ContextChecked is set at a function's first check
-  even without a contextual signature, and getReturnTypeFromBody reads the context when the return type is computed
-  (resolvingSignature while the call resolves, its resolvedSignature after). tttt marks only functions that aren't
-  context sensitive (marking those too broke ~50 sweep packages, xstate +20, vscode +7: tttt checks them where tsc
-  skips them or with other contextual types), and applies the late context only when it is the function's own type
-  (a self context keeps a returned literal; any other contextual signature would be inferred eagerly, circular for
-  compositeContextualSignature).
+- `KEY_CONTEXT_NONE` / `ty_late_contextual_return` (expr.c HACK): tsc's ContextChecked is set at a function's first
+  check even without a contextual signature, and getReturnTypeFromBody reads the context when the return type is
+  computed. tttt marks only functions that aren't context sensitive (marking those too regressed the sweep, xstate and
+  vscode: tttt checks them where tsc skips them or with other contextual types), and applies the late context only
+  when it is the function's own type (a self context keeps a returned literal; any other contextual signature would be
+  inferred eagerly, circular for compositeContextualSignature).
 - `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_DONE`), from the first usable context; generic
   contextual signatures aren't instantiated. `KEY_CONTEXT_PARAM_PATTERN` marks pattern fallbacks for the symbols
   traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check; an earlier return type misses it.
 - Apparent contextual types: `intersection_prop_context` intersects per-member answers (tsc: the intersection's
-  apparent type once, distributing over union constraints); `get_prop_context`/`contextual_signature` take apparent
-  types at use; `apparent_contextual_type` maps only for `this` in literals. `context_map` drops `unknown` parts when
-  others contribute (tsc: noReductions). Contextual union members are reduced (`string | "a"` is `string`).
-  `discriminate_by_object_members` skips optional properties a literal omits.
+  apparent type once, distributing over union constraints; only union/intersection constraints go through
+  `context_map`); `get_prop_context`/`contextual_signature` take apparent types at use. `context_map` drops `unknown`
+  parts when others contribute (tsc: noReductions).
 - Excess properties (`has_excess_properties`): a generic mapped target knows the lower bound of its constraint's keys
   (`generic_mapped_knows()`, a partial tsc's resolveMappedTypeMembers: no intersection/conditional lower bounds, no
   keyofStringsOnly); no nested re-check for intersection targets; `discriminated_union_target` has no key-property map.
-- Destructuring assignments (`assignment_target_typecheck`): object rest unchecked; for-of destructuring (statement.c
-  HACK) relates the regular element type (tsc: per property); array literal targets are arrays, not tuples.
-- `missing_property_type` (HACK): a failed access is errorType under conditions approximating check.c's reporting
-  (object type, not `typeof globalThis`, no unresolved base, not JS; unchecked JS's "declared in another global file" by
-  the object name's file). tsc: errorType exactly when it reports.
+- Destructuring assignments (`assignment_target_typecheck`): for-of destructuring (statement.c HACK) relates the
+  widened element type (tsc: per property, so no excess property checks); array literal targets are arrays, not
+  tuples.
 - Expandos on functions are checked against existing members; `is_container_declaration()` approximates
   isAssignmentDeclaration for `ns.a = {}`.
-- `check_array`: tuples only from tuple-like context, patterns or `as const`. Bigints are doubles (`Value.bigint`).
-  `satisfies` doesn't narrow. Literal ids follow tsc only where made in the same order (`1 | 0` vs `0 | 1`).
-- `ty_apply_type_arguments` (instantiation expressions): ill-fitting signatures kept; `instantiate_anonymous`
-  (instantiate.c HACK) skips object types that also mention the parameters; display is the expanded object.
+- `check_array`: tuples only from tuple-like context, patterns or `as const`. Literal ids follow tsc only where made in
+  the same order (`1 | 0` vs `0 | 1`).
+- `ty_apply_type_arguments` (instantiation expressions): the display is the expanded object.
 - `ty_access` skips nullish union members silently (TS18047/18048 come from `check_access`). `member_refs()` (check.c)
   duplicates `access()`'s walk to get `Prop`s without creating types.
-- `PropertyExpr`'s four resolve-walk pointers cost 32 bytes per access; a `Scope const*` would do.
+- `PropertyExpr` keeps four pointer-sized resolve-walk fields (`flow`, `context`, `declares`, a
+  `private_class_`/`for_in_loop_` union): 32 bytes per access.
 - JSX: `jsx_signatures_of` types unknown intrinsic tags as error (tsc: TS2339); the head rule (`ty_jsx_skips_head` via
   `Checker.jsx_element`) only inside `ty_check_jsx_element`; attribute types skip the regular object literal state.
 - `assignment_value_context` (HACK): `TYF_BINDING_PATTERN` is both tsc's object literal `pattern` and
