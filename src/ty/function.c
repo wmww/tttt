@@ -13,12 +13,16 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
     u64 key[2] = { KEY_FUNCTION, (u64)(uintptr_t)function };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
-    // A function body can mention every type parameter in scope, if there are any
-    Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    // A function body can mention every type parameter in scope, if there are any. Where none encloses it (nor a
+    // class), instantiating its type is the identity (tsc's getObjectTypeInstantiation: getOuterTypeParameters is
+    // empty): an object literal with methods inferred for a type parameter isn't copied by every instantiation that
+    // reads it back (the copies relate structurally, asking for the methods' return types too early)
+    bool closed = function->no_outer_type_params || function->no_enclosing_type_params;
+    Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (closed ? 0 : TYF_COULD_CONTAIN_TYPE_VARIABLES));
     ret->anonymous.function = function;
     ret->anonymous.ctx = function_lower_ctx;
     ret->anonymous.ctx.method = function->is_method;
-    ret->anonymous.free_params_unknown = !function->no_outer_type_params;
+    ret->anonymous.free_params_unknown = !closed;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
