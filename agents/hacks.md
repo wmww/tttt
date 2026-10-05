@@ -318,6 +318,12 @@ src` finds the code-side markers; every significant one has an entry here.
 - `ty_check_decorator`: signature rebuilt per check (each decorator is checked once, so harmless so far).
 - Generators: no next type from `yield` use; `ty_generator_context` filters only unions. function.c HACK: a
   non-iterable `yield*` prints its type while the return type is in progress, making `yield* foo` in `foo` any.
+- `missing_property_type()` (ty/expr.c HACK, `Checker.print_probe`): tsc prints the object type of a TS2339 while
+  checking, which can find an inferred return type in progress (`this.x` in an object literal method). tttt reports it
+  later (ty/check.c), so evaluation prints the type too while something is being resolved; a return type found in
+  progress then gets TS7023 but keeps its type (tsc's errors checker makes it any but prints it syntactically, its
+  types baseline comes from a checker that never prints). A signature that saw it isn't memoized. Errors reported
+  during evaluation (one pass, like tsc) would remove it.
 - Async: `Promise`/`PromiseLike` by name (no thenables). `ty_awaited()` wraps generics in `Awaited<T>`, but generators
   use `ty_awaited_no_alias()` and async returns `ty_awaited_returned()` (call.c HACKs) because tttt can't relate
   `Awaited<T>` to T through the conditional's default constraint; once it can, use ty_awaited() everywhere.

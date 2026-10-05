@@ -28,6 +28,7 @@ typedef struct FunctionReturn {
     LazyState state;
     bool circular; // Asked for while being inferred
     bool reevaluating; // Asked for again from below a call's barrier, see function_return_type()
+    bool printed_circular; // Found in progress by Checker.print_probe: TS7023, but the type stays
     // An async function's body returns no value and there's no Promise value (TS2705), not said yet: only a request
     // for the type that tsc would make says it (see ty_function_return_circular())
     bool promise_missing;
@@ -287,7 +288,7 @@ bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     return_type_speculative = outer;
     u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
     FunctionReturn const* memo = intern_get(&my links, key, 2);
-    return memo && memo->circular;
+    return memo && (memo->circular || memo->printed_circular);
 }
 
 Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
@@ -316,6 +317,11 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             report_promise_missing(me, function, memo);
             return memo->type;
         case LAZY_STATE_IN_FLIGHT:
+            if (my print_probe) {
+                memo->printed_circular = true;
+                my print_probe_hits++;
+                return ty_intrinsic(me, TY_CIRCULAR);
+            }
             // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, once, and the inner
             // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner())
             if (!memo->reevaluating && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) {

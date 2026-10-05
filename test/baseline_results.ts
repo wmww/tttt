@@ -306,7 +306,7 @@ const baselines = {
         types: true,
     },
     'accessorInferredReturnTypeErrorInReturnStatement': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -3331,7 +3331,7 @@ const baselines = {
         types: true,
     },
     'checkingObjectWithThisInNamePositionNoCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -47986,7 +47986,7 @@ const baselines = {
         types: false,
     },
     'thisInObjectLiterals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
