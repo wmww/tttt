@@ -5625,6 +5625,9 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
 
     VecEnumCase cases = vec_enum_case_init();
     u32 saved_context = list_enter(&p, PARSING_ENUM_MEMBERS);
+    // (tsc's parseEnumDeclaration: the members are outside the yield and await contexts)
+    bool outer_async = p.shared->in_async, outer_generator = p.shared->in_generator;
+    p.shared->in_async = p.shared->in_generator = false;
     if (!has_body) p.pos = before_body;
     while (has_body && *p.pos && *p.pos != '}') {
         Tok t = tok_peek(&p);
@@ -5709,6 +5712,8 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
         hop_whitespace(&p);
     }
     list_leave(&p, saved_context);
+    p.shared->in_async = outer_async;
+    p.shared->in_generator = outer_generator;
 
     if (has_body) expect_char(&p, '}');
 
