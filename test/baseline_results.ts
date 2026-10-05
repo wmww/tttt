@@ -67613,12 +67613,12 @@ const baselines = {
     'uniqueSymbols': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uniqueSymbolsDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uniqueSymbolsDeclarationsErrors': {
         errors: true,

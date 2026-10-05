@@ -741,6 +741,12 @@ src` finds the code-side markers; every significant one has an entry here.
   `--keep-going` unvalidated.
 
 ## Display and baselines (`ty_display.c`, `symbol_chain.c`, `baseline_test_case.c`)
+- `TyDisplay.decl_literal` / `annotates_name_at()`: tsc reuses a `unique symbol` annotation only inside the enclosing
+  declaration (the printed node's parent); the types baseline has no parent node, so "the literal is the annotation of
+  the name at `at`" is decided from the source text between them (only `?`/`:`).
+- `maps_merged_type_param()` (signatures of a merged generic interface have fresh anonymous types) misses an
+  interface merged with a lib one: the type parameter Ty is the lib symbol's, whose redirect isn't the program's
+  merged symbol (promisePermutations x3).
 - `span_from_type_keyword` (`expr.c`): TS1376/TS1377's related span of a type-only default import or specifier is
   found by scanning the source text back from the name for `type`; PortItem has no span of the whole specifier.
 - `symbol_chain.c` (getSymbolChain) sees only scopes the traversal tracks (`BaselineTestCase.enclosing`), so

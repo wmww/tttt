@@ -2242,7 +2242,26 @@ static bool reverse_placeholder(TyDisplay d, Prop const* prop) {
     return depth == 3;
 }
 
+// Whether a type literal is the annotation of the declaration whose name is at `at`: only `?` and `:` between them
+static bool annotates_name_at(Span at, Span literal) {
+    if (!span_valid(at) || !span_valid(literal) || at.source != literal.source) return false;
+    char const* i = span_end_ptr(at);
+    char const* end = span_start_ptr(literal);
+    if (i > end) return false;
+    bool colon = false;
+    for (; i < end; i++) {
+        if (*i == ':' && !colon) colon = true;
+        else if (*i != ' ' && *i != '\t' && *i != '\r' && *i != '\n' && *i != '?') return false;
+    }
+    return colon;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
+    if (d.underline && d.enclosing && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
+        ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
+    ) {
+        d.decl_literal = ty->anonymous.node->interface.span;
+    }
     Members const* members = ty_members(me, ty);
     if (members->mapped) {
         display_mapped(me, d, members->mapped);
@@ -2471,6 +2490,12 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         }
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
         else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
+        else if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL && d.underline && d.enclosing && span_valid(d.decl_literal) &&
+            span_contains_span(d.decl_literal, annotation->unique_symbol.member) && (type->flags & TYF_UNIQUE_ES_SYMBOL)
+        ) {
+            // (tsc's canReuseTypeNode: a `unique symbol` inside the enclosing declaration)
+            display_node(me, d, annotation);
+        }
         else if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, type, optional)) display_node(me, d, annotation);
         else display_annotated(me, type_d, annotation, shown, optional);
         out_lit(d, "; ");

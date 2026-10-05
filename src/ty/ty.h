@@ -2124,6 +2124,9 @@ typedef struct TyDisplay {
     // The signature printed is one of several of an object type, one of which mentions what its instantiation maps:
     // tsc instantiated them all (getObjectTypeInstantiation looks at every declaration of the symbol)
     bool sibling_mentions_mapped;
+    // The type literal being printed is the annotation of the declaration whose name is `at` (tsc's enclosing
+    // declaration is the printed node's parent): a `unique symbol` written inside it can be reused
+    Span decl_literal;
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;
