@@ -388,6 +388,11 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
 
 // The first push reserves room for 4, and these elements are big (a parameter is ~570 bytes): lists of one or two were
 // most of the AST's memory. A finished list gives back what it doesn't use
+// Most lists have one element: the first push reserves room for exactly one (the vec's own first push reserves 4)
+#define list_push(vec_kind, vec, ...) do { \
+        if (!(vec)->capacity) vec_kind##_reserve(vec, 1); \
+        vec_kind##_push(vec, __VA_ARGS__); \
+    } while (0)
 #define shrink_list(vec_kind, vec) do { \
         if ((vec)->size && (vec)->size < (vec)->capacity) vec_kind##_shrink_to_fit(vec); \
     } while (0)
@@ -2321,7 +2326,7 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
     while (*p.pos && *p.pos != '>') {
         GenericItem item;
         if (parse_generic_decl_item(&p, owner, &item)) {
-            vec_generic_item_push(&ret->items, item);
+            list_push(vec_generic_item, &ret->items, item);
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
             parse_error(&p, span_from_token(&p), 1110, "Type expected.");
@@ -2351,6 +2356,7 @@ static bool parse_generic_decl(Parser* parent, TypeParamOwner owner, Generic* re
     }
 
     expect_char(&p, '>');
+    shrink_list(vec_generic_item, &ret->items);
 
     return parse_success(&p);
 }
@@ -2371,10 +2377,10 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         TypeNode t;
         Anchor type_a = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &t)) {
-            vec_spanned_type_push(ret, spanned_type(span_from(type_a), t));
+            list_push(vec_spanned_type, ret, spanned_type(span_from(type_a), t));
             hop_whitespace(&p);
         } else if (*p.pos == ',') {
-            vec_spanned_type_push(ret, spanned_type(span_from_pos(&p), (TypeNode){
+            list_push(vec_spanned_type, ret, spanned_type(span_from_pos(&p), (TypeNode){
                 .tag = TYPE_ANY,
                 .any.unkown_symbol_span = span_from_pos(&p),
             }));
@@ -2406,6 +2412,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked)) {
         parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
+    shrink_list(vec_spanned_type, ret);
 
     return parse_success(&p);
 
@@ -2654,7 +2661,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
                 .explicit_type = type,
             };
             arg.span = span_from(arg_start);
-            vec_function_arg_push(&function.args, arg);
+            list_push(vec_function_arg, &function.args, arg);
         }
         index++;
         hop_whitespace(&p);
@@ -3235,6 +3242,7 @@ static bool parse_type(Parser* parent, TypePrecedence min_precedence, TypeNode* 
     bool disallow_conditional = parent->shared->disallow_conditional;
     bool parsed = parse_type_inner(parent, min_precedence, ret);
     parent->shared->disallow_conditional = disallow_conditional;
+    if (parsed && (ret->tag == TYPE_UNION || ret->tag == TYPE_INTERSECTION)) shrink_list(vec_type, &ret->composite);
     return parsed;
 }
 
@@ -4377,7 +4385,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         // (A bracketed property is optional like `foo?: T`, which adds optionality to its type)
         bool optional = tag->bracketed || type.jsdoc_optional;
         Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
-        vec_interface_member_push(&members, interface_member_make(
+        list_push(vec_interface_member, &members, interface_member_make(
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type
         ));
     }
@@ -4454,7 +4462,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
         if (i->kind != JSDOC_TAG_IMPLEMENTS || !i->has_type || i->earlier) continue;
         Span span;
         TypeNode type = jsdoc_take_type(i, &span);
-        vec_spanned_type_push(&class_decl->implements, spanned_type(span, type));
+        list_push(vec_spanned_type, &class_decl->implements, spanned_type(span, type));
     }
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY || class_decl->extends.tag == EXPR_GENERIC_PARAMS) return;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
@@ -4570,7 +4578,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
                 Generic* generic = &type.callable->function->generic;
                 for_each (t, vec_jsdoc_tag, tags) {
                     if (t->kind != JSDOC_TAG_TEMPLATE || t->earlier || !span_valid(t->name)) continue;
-                    vec_generic_item_push(&generic->items, (GenericItem){
+                    list_push(vec_generic_item, &generic->items, (GenericItem){
                         .name = t->name, .full_span = t->name, .jsdoc = true, .jsdoc_shared = true,
                     });
                 }
@@ -4751,7 +4759,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
             .has_explicit_type = true,
             .explicit_type = type,
         };
-        vec_function_arg_push(&function.args, arg);
+        list_push(vec_function_arg, &function.args, arg);
     }
     Span span = jsdoc_tag_decl_span(callback);
     function.args_span = span;
@@ -4796,7 +4804,7 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
             item.fallback_explicit = true;
             i->has_default = false;
         }
-        vec_generic_item_push(&ret.items, item);
+        list_push(vec_generic_item, &ret.items, item);
     }
     return ret;
 }
@@ -5140,7 +5148,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                             );
                             member.setter_first = typed_setter;
                             member.setter_param = setter_param;
-                            vec_interface_member_push(&members, member);
+                            list_push(vec_interface_member, &members, member);
                         }
                         break;
                     }
@@ -5158,12 +5166,12 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                     );
                     check(member.key.tag == INTERFACE_KEY_NAME);
                     member.key.name_is_member_function = true;
-                    vec_interface_member_push(&members, member);
+                    list_push(vec_interface_member, &members, member);
                     item.method.func = (FunctionImpl){0};
                 }   break;
 
                 case CLASS_ITEM_FIELD:
-                    vec_interface_member_push(&members, interface_member_make(
+                    list_push(vec_interface_member, &members, interface_member_make(
                         item.span,
                         nullptr,
                         item.field.is_readonly,
@@ -5177,7 +5185,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                     break;
 
                 case CLASS_ITEM_INTERFACE_MEMBER:
-                    vec_interface_member_push(&members, item.interface_memeber);
+                    list_push(vec_interface_member, &members, item.interface_memeber);
                     item.interface_memeber = (InterfaceMember){0};
                     break;
 
@@ -5352,7 +5360,7 @@ static void parse_heritage_element(Parser* p, HeritageClauses* h, bool is_extend
                 parse_success(&tp);
                 expr_drop(&e);
                 if (checked) {
-                    vec_spanned_type_push(&h->types, spanned_type(span, t));
+                    list_push(vec_spanned_type, &h->types, spanned_type(span, t));
                 } else {
                     vec_type_push(&h->unchecked_types, t);
                 }
@@ -5889,7 +5897,7 @@ static bool parse_function_args_inner(
                 }
 
                 initializer.is_rest_parameter = rest;
-                vec_function_arg_push(&ret->args, (FunctionArg){
+                list_push(vec_function_arg, &ret->args, (FunctionArg){
                     .span = span_from(arg_start),
                     .rest_span = rest_span,
                     .initializer = initializer,
@@ -6121,7 +6129,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
             .tag = BINDING_IDENTIFIER,
             .content_span = lone_arg_name,
         };
-        vec_function_arg_push(&ret->args, (FunctionArg){
+        list_push(vec_function_arg, &ret->args, (FunctionArg){
             .span = lone_arg_name,
             .initializer.binding = binding
         });
@@ -6193,10 +6201,11 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
             p.pos = span_end_ptr(ret->arrow_span);
         }
         ret->body = (Block){0};
-        vec_statement_push(&ret->body.statements, (Statement){
+        list_push(vec_statement, &ret->body.statements, (Statement){
             .tag = STATEMENT_RETURN_EXPR,
             .expr = expr,
         });
+        shrink_list(vec_statement, &ret->body.statements);
         ret->expression_body = true;
     }
 
@@ -6798,7 +6807,7 @@ static bool parse_object(Parser* parent, ObjectExpr* ret) {
             if (list_abort_or_skip(&p, PARSING_OBJECT_LITERAL_MEMBERS)) break;
             continue;
         }
-        vec_object_expr_item_push(ret, item);
+        list_push(vec_object_expr_item, ret, item);
         hop_whitespace(&p);
         if (hop_char(&p, ',') || !*p.pos || *p.pos == '}') {
             hop_whitespace(&p);
@@ -6861,7 +6870,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
             }
             expect_expr(&p, expr_ctx_null, &expr);
         }
-        vec_expr_push(ret, expr);
+        list_push(vec_expr, ret, expr);
         hop_whitespace(&p);
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
@@ -6876,6 +6885,7 @@ static bool parse_array(Parser* parent, VecExpr* ret) {
 
     // (A missing `]` is at the next token's full start: the literal ends with its last token)
     if (!expect_closing(&p, ']', open)) unhop_trivia(&p);
+    shrink_list(vec_expr, ret);
 
     return parse_success(&p);
 }
@@ -7803,7 +7813,7 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
                 item.constructor.func.is_abstract_constructor = true;
             }
         }
-        vec_class_item_push(&ret->items, item);
+        list_push(vec_class_item, &ret->items, item);
         hop_whitespace(&p);
 
         if (!*p.pos || *p.pos == '}') {
@@ -7845,7 +7855,7 @@ static bool parse_call_args(Parser* parent, VecExpr* args) {
             expect_expr(&p, expr_ctx_null, &arg);
         }
         if (arg.tag == EXPR_SPREAD && arg.spread->tag == EXPR_ARRAY) arg.spread->spread_into_call = true;
-        vec_expr_push(args, arg);
+        list_push(vec_expr, args, arg);
         hop_whitespace(&p);
         if (hop_char(&p, ',')) {
             hop_whitespace(&p);
@@ -9115,7 +9125,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             // Committed from the `${` on: a missing expression is one
             Expr expr;
             if (expect_expr(&p, expr_ctx_null, &expr)) parse_comma_ops_right_side(&p, &expr);
-            vec_expr_push(&substitutions, expr);
+            list_push(vec_expr, &substitutions, expr);
             hop_whitespace(&p);
             if (!expect_char(&p, '}')) {
                 missing_tail = true;
@@ -9142,6 +9152,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
         parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
     }
 
+    shrink_list(vec_expr, &substitutions);
+    if (texts) shrink_list(vec_cstr, texts);
     *ret = substitutions;
     return parse_success(&p);
 }
@@ -9706,7 +9718,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                     parse_error(&p, jsx_span_from_token(&p), 1110, "Type expected.");
                     break;
                 }
-                vec_spanned_type_push(&el->type_args, spanned_type(span_from(type_a), t));
+                list_push(vec_spanned_type, &el->type_args, spanned_type(span_from(type_a), t));
                 hop_whitespace(&p);
                 Anchor comma_a = anchor(&p);
                 if (!hop_char(&p, ',')) {
@@ -10353,7 +10365,7 @@ static void parse_source_directives(Parser* parent, VecStatement* ret) {
             seen_amd_module = true;
         }
         if (is_directive) {
-            vec_statement_push(ret, (Statement){
+            list_push(vec_statement, ret, (Statement){
                 .tag = STATEMENT_SOURCE_DIRECTIVE,
                 .source_directive = c_new(SourceDirectiveStatement, directive),
             });
@@ -10456,7 +10468,7 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
             }
 
             item.full_span = span_make(p.shared->source, a.start, end);
-            vec_port_item_push(&ret->items, item);
+            list_push(vec_port_item, &ret->items, item);
         } else {
             hop_token(&p);
         }
@@ -10471,6 +10483,7 @@ static bool parse_import_item_list(Parser* parent, bool is_import, PortStatement
     }
     list_leave(&p, saved_context);
     expect_char(&p, '}');
+    shrink_list(vec_port_item, &ret->items);
 
     return parse_success(&p);
 }
@@ -10769,7 +10782,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 expect_identifier(&p, &item.decl_name);
                 item.full_span = span_from(gather);
                 statement.items = vec_port_item_init();
-                vec_port_item_push(&statement.items, item);
+                list_push(vec_port_item, &statement.items, item);
             } else if (!parse_import_item_list(&p, true, &statement)) {
                 statement.items = vec_port_item_init();
                 expected_token_error(&p, "{");
@@ -11439,7 +11452,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
             note_require_declaration(&initializer);
             note_exports_alias(&p, &initializer);
         }
-        vec_initialized_binding_push(&ret->initializers, initializer);
+        list_push(vec_initialized_binding, &ret->initializers, initializer);
 
         if (*p.pos == ';' ||
             *p.pos == '}' ||
@@ -11517,13 +11530,13 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
             if (vec_expr_is_empty(&conditions)) {
                 return parse_fail(&p);
             } else if (expect_statement(&p, false, &statement)) {
-                vec_statement_push(&statements, statement);
+                list_push(vec_statement, &statements, statement);
                 break;
             }
         }
 
-        vec_expr_push(&conditions, condition);
-        vec_statement_push(&statements, statement);
+        list_push(vec_expr, &conditions, condition);
+        list_push(vec_statement, &statements, statement);
 
         // `if (a) b; else c;`: the `;` that ends the arm's statement doesn't end the if (statement terminators are
         // otherwise left to parse_append_statement_sequence())
@@ -11540,6 +11553,8 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
         hop_whitespace(&p);
     }
 
+    shrink_list(vec_expr, &conditions);
+    shrink_list(vec_statement, &statements);
     *ret = (IfStatement){
         .conditions = conditions,
         .statements = statements,
@@ -12037,7 +12052,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             // tsc's EmptyStatement
             statement = statement_noop;
             statement.span = span_make(p.shared->source, p.pos, p.pos + 1);
-            vec_statement_push(ret, statement);
+            list_push(vec_statement, ret, statement);
             p.pos++;
         } else if (
             (!statement_start_needs_check(&p) || list_is_element(&p, ctx, tok_peek(&p))) &&
@@ -12045,9 +12060,9 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
         ) {
             // (Its index: the JSDoc declarations that follow it are pushed after it)
             isize statement_index = vec_statement_size(ret);
-            vec_statement_push(ret, statement);
+            list_push(vec_statement, ret, statement);
             if (p.shared->jsdoc_enum) {
-                vec_statement_push(ret, *p.shared->jsdoc_enum);
+                list_push(vec_statement, ret, *p.shared->jsdoc_enum);
                 free(p.shared->jsdoc_enum);
                 p.shared->jsdoc_enum = nullptr;
             }
