@@ -186,6 +186,37 @@ Mechanisms found but not fixed (types-semantics tail):
 - Single-member enum (typeArgumentInferenceWithObjectLiteral): `enum E1 { X }` makes E1 the regular E1.X literal;
   tsc ends with the fresh E1.X for `x` in `f1({ w: x => x, r: () => E1.X }, E1.X)` (prints `E1.X`).
 
+## Left by fan-out agent D of 2026-10-05 (symbols component)
+Done: 13 commits, see git log (pattern-root circularity, static member + namespace type merges, heritage entity names,
+widened objects for written/called properties, Unicode trivia in Decl positions...). Left, by mechanism:
+- **JS `this.x = v` in an object literal's method or accessor** declares x on the literal (tsc's bindThisPropertyAssignment
+  with the literal as containingClass): neither the binder nor the harness models it (checkObjectDefineProperty,
+  constructorTagOnObjectLiteralMethod, objectPropertyAsClass, thisInObjectJs, functionExpressionNames,
+  checkExportsObjectAssignProperty/PrototypeProperty). The biggest cluster left; do it in the binder (scope.c's
+  add_this_property) with a member table on the object literal.
+- **Spread keeps the property symbol** unless readonly-ness changes (tsc's getSpreadSymbol), and widening keeps it when
+  the type doesn't change (getWidenedProperty): spreadMethods, spreadExpressionContextualTypeWithNamespace,
+  nodeModulesTypesVersionPackageExports x3 (the readonly const of a synthetic-default spread *is* cloned: bare name).
+  Tried `.reuse = prop` in spread_props_of + widen copies: 25 type regressions (display of reused props loses
+  `asserted`, widening of function types differs). Needs PropDecl-level identity (`spread_of`) for the harness instead.
+- **Duplicate declarations make separate symbols** (tsc's declareSymbol on a conflict): the binder/checker merges them,
+  the harness shows one: moduleAugmentationDisallowedExtensions, moduleAugmentationWithNonExistentNamedImport,
+  importEqualsError45874, augmentExportEquals*, moduleAugmentationDuringSyntheticDefaultCheck. And the converse,
+  merges tsc does that tttt doesn't show: defaultNamedExportWithType1/3 + importElisionExportNonExportAndDefault (the
+  local of `export const Foo` merged with `type Foo` in locals: `export default Foo` resolves to that local),
+  genericDefaults (merged interfaces share one type parameter symbol: interface type parameters go in the members table),
+  duplicateVarsAcrossFileBoundaries, objectBindingPatternKeywordIdentifiers02/04, jsxParsingErrorImmediateSpreadInAttributeValue.
+- **UMD globals** (`export as namespace N`): tsc sets the global only if absent, then a script's declaration merges into
+  the resolved module (noCrashUMDMergedWithGlobalValue): the alias line shows only itself.
+- mappedTypeConstraints: f2's `obj.b` of `Pick<T | U, keyof (T | U)>` gets both declarations alone, one when f3
+  (`Pick<T & U, ...>`) follows: some memo shared between the two mapped types (order dependent).
+- isolatedDeclarationLazySymbols: `foo[o["a.b"]] = v` adds a declaration to foo (isDynamicName) but no member
+  (not late bindable); tttt binds only entity-name keys. Adding the declaration alone needs care (expando-ness).
+- reexportMissingDefault5: `export { default as Foo } from "./b"` (synthetic default) prints `default` where tsc says
+  `"b"`; symbol_text finds an alias named default. aliasesInSystemModule1/2: `import cls = alias.Class` of an
+  unresolved module: tsc prints `Class : Symbol(alias)` (unknown-symbol artifact). declarationFileNoCrashOnExtraExportModifier:
+  `export { Sub }` inside `declare namespace exports` (merged with `export = exports` class) is `exports.Sub`.
+
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
 inference rule that shows up here should be checked on zod and valibot (inference-heavy) for instruction counts too.
