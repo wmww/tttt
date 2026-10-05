@@ -2202,6 +2202,18 @@ static u32 function_check_flag_agreement(
 // tsc's checkFunctionOrMethodDeclaration checks the flags of the function's local symbol once, and those of its export
 // symbol (across the blocks of a namespace) too
 static void function_check_flag_agreements(FunctionImpl const* me, Symbol const* symbol, ErrorCtx* errs) {
+    // (The common case, a lone implementation: only a declaration in the block's other table could disagree with it)
+    if (symbol->decl_count == 1 && my has_body) {
+        Scope const* block = symbol->decls[0].block;
+        if (!block || (block->kind != SCOPE_MODULE && block->kind != SCOPE_NAMESPACE) || !block->container ||
+            !block->container->exports
+        ) {
+            return;
+        }
+        Symbol const* other = symbol->parent == block->container ? symbol_table_get(&block->locals, symbol->name) :
+            symbol_table_get(block->container->exports, symbol->name);
+        if (!other || other == symbol) return;
+    }
     SymbolDecl const* decls[64];
     bool exported[64];
     SymbolDecl const* reported[64];
