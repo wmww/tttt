@@ -1938,7 +1938,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
 
 // `this_only`: the mapper only says what `this` is, so members that can't mention it are shared rather than
 // instantiated (tsc's createInstantiatedSymbolTable with mappingThisOnly)
-static MappedInfo const* instantiate_mapped_info(Checker* me, MappedInfo const* source, TyMapper const* mapper) {
+MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* source, TyMapper const* mapper) {
     MappedInfo* mapped = arena_new(&my arena, MappedInfo);
     *mapped = *source;
     mapped->constraint = ty_instantiate(me, mapped->constraint, mapper);
@@ -1999,11 +1999,11 @@ static Members const* instantiate_members(
         info.value = ty_instantiate(me, info.value, mapper);
         builder_push(&builder, index, info);
     }
-    if (source->mapped) builder.mapped = instantiate_mapped_info(me, source->mapped, mapper);
+    if (source->mapped) builder.mapped = ty_mapped_info_instantiate(me, source->mapped, mapper);
     for (u32 i = 0; i < source->base_count; i++) builder_add_inherited(me, &builder, ty_instantiate(me, source->bases[i], mapper));
     if (!source->base_count) builder.same_names = source;
     Members* ret = (Members*)builder_finish(me, &builder);
-    if (source->expanded_from) ret->expanded_from = instantiate_mapped_info(me, source->expanded_from, mapper);
+    if (source->expanded_from) ret->expanded_from = ty_mapped_info_instantiate(me, source->expanded_from, mapper);
     return ret;
 }
 
@@ -2639,6 +2639,80 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
 
 static Members const* resolve_intersection_members(Checker* me, Ty const* ty);
 
+// tsc's resolveReverseMappedTypeMembers: the source's properties, whose types are inferred on first use (prop_type()),
+// and its string index signature's, inferred right away
+static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) {
+    ReverseMapped const* reverse = ty->anonymous.reverse;
+    MappedInfo const* mapped = reverse->mapped;
+    ObjectLiteralProp* props;
+    u32 count = ty_reverse_mapped_source_props(me, reverse->source, &props);
+    MembersBuilder builder = {0};
+    // tsc's getLimitedConstraint: with `keyof T & X` for the keys, only the properties X has a key for
+    Ty const* limited = nullptr;
+    Ty const* constraint = mapped->constraint;
+    Ty const* origin = constraint->kind == TY_UNION ? constraint->composite.origin : constraint;
+    if (origin && origin->kind == TY_INTERSECTION) {
+        Ty const* keyof = ty_keyof(me, reverse->operand);
+        Ty const* rest[16];
+        u32 rest_count = 0;
+        for (u32 i = 0; i < origin->composite.types.len && rest_count < 16; i++) {
+            if (origin->composite.types.data[i] != keyof) rest[rest_count++] = origin->composite.types.data[i];
+        }
+        limited = ty_intersection(me, rest, rest_count, nullptr, (TyList){0});
+        if (limited->flags & TYF_NEVER) limited = nullptr;
+    }
+    for (u32 i = 0; i < count; i++) {
+        u32 flags = props[i].flags & (PROP_OPTIONAL | PROP_READONLY);
+        if (mapped->optional > 0) flags &= ~(u32)PROP_OPTIONAL; // `?` in the mapped type: T's property needn't be
+        if (mapped->readonly > 0) flags &= ~(u32)PROP_READONLY;
+        // (The source property's type as tsc's getTypeOfSymbol has it: an optional one's with undefined)
+        Ty const* source_type = props[i].type;
+        if ((props[i].flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+            source_type = ty_union(me, (Ty const*[]){ source_type, ty_undefined_or_missing(me) }, 2, nullptr, (TyList){0});
+        }
+        Prop* prop = prop_new_declared(me);
+        prop->name = props[i].name;
+        prop->flags = flags;
+        prop->type_state = LAZY_STATE_NOT_STARTED;
+        prop->decl->name_span = props[i].name_span;
+        prop->decl->name_is_value = props[i].name_is_value;
+        prop->decl->name_form = props[i].name_form;
+        prop->decl->name_type = props[i].name_type;
+        // (Numeric and unique symbol keys too: tsc's getLiteralTypeFromProperty with StringOrNumberLiteralOrUnique)
+        if (limited && !ty_is_related(me, ty_prop_key_literal(me, prop), limited, TY_RELATION_ASSIGNABLE)) continue;
+        // (Its own key is the name's string literal, `1` too: tsc's reverse mapped symbol has no valueDeclaration)
+        prop->decl->name_is_value = false;
+        prop->decl->asserted = props[i].asserted;
+        prop->decl->reverse_of = reverse;
+        prop->decl->reverse_source = source_type;
+        prop->decl->reverse_declared = props[i].type;
+        prop_add_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
+        builder_push(&builder, props, prop);
+    }
+    free(props);
+    Members const* source_members = ty_members(me, reverse->source);
+    for (u32 i = 0; i < source_members->index_count; i++) {
+        IndexInfo info = source_members->index[i];
+        if (!(info.key->flags & TYF_STRING)) continue;
+        info.value = ty_reverse_mapped_member_type(me, reverse, info.value);
+        info.param_name = nullptr;
+        info.components = nullptr;
+        info.component_count = 0;
+        builder_push(&builder, index, info);
+    }
+    return builder_finish(me, &builder);
+}
+
+Ty const* ty_reverse_mapped_object(Checker* me, ReverseMapped const* reverse) {
+    Ty* fresh = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT | (reverse->source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES));
+    fresh->anonymous.ctx = (LowerCtx){ .generic = true };
+    fresh->anonymous.free_params_unknown = true;
+    fresh->anonymous.reverse = reverse;
+    fresh->anonymous.is_reverse = true;
+    fresh->anonymous.state = arena_new(&my arena, TyObjectState);
+    return fresh;
+}
+
 static Members const* resolve_members(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) return resolve_intersection_members(me, ty);
     return expand_mapped(me, ty, resolve_members_inner(me, ty));
@@ -2668,11 +2742,12 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
         }
 
         case TY_ANONYMOUS: {
+            if (ty->anonymous.is_reverse) return resolve_reverse_mapped_members(me, ty);
             if (ty->anonymous.target) {
                 return resolve_instantiated_members(me, ty->anonymous.target, ty->anonymous.mapper, ty->anonymous.applies_type_args);
             }
             MembersBuilder builder = {0};
-            if (ty->anonymous.merged_value) {
+            if (ty->anonymous.merged_value && !ty->anonymous.is_reverse) {
                 builder_add_merged_value(me, &builder, ty->anonymous.merged_value);
             } else if (ty->anonymous.function) {
                 FunctionImpl const* function = ty->anonymous.function;
@@ -2971,6 +3046,12 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = lazy_type_get((LazyType*)prop->decl->lazy);
     } else if (prop->decl->template_of) {
         type = ty_mapped_template(me, prop->decl->template_of);
+    } else if (prop->decl->reverse_of) {
+        ReverseMapped const* reverse = prop->decl->reverse_of;
+        type = ty_reverse_mapped_member_type(me, reverse, prop->decl->reverse_source);
+        // (Declared by the source's declarations: the types baseline reuses their annotation where it still says the
+        // same, tsc's serializeTypeForDeclaration)
+        if (type != prop->decl->reverse_declared) prop->decl->asserted = nullptr;
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }

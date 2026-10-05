@@ -20947,7 +20947,7 @@ const baselines = {
     },
     'mappedTypeRecursiveInference': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'mappedTypeRecursiveInference2': {
@@ -27848,7 +27848,7 @@ const baselines = {
     'reverseMappedTypeRecursiveInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedUnionInference': {
         errors: true,

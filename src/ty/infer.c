@@ -471,7 +471,7 @@ static bool is_empty_tuple(Ty const* ty) {
 
 // What a property of type `source` says about `T[K]` in the template of `{ [K in keyof T]: Template }` (tsc's
 // inferReverseMappedType): the template is inferred to with `T[K]` as the one type variable
-static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+Ty const* ty_reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
     Ty const* indexed = ty_indexed(me, operand, mapped->type_param);
     Inference inf;
     inference_init(&inf, (TyList){ .data = &indexed, .len = 1 });
@@ -490,6 +490,49 @@ static Ty const* reverse_mapped_prop_type(Checker* me, Ty const* source, MappedI
 // The T for which `{ [K in keyof T]: Template }` would be `source` (tsc's createReverseMappedType), eagerly. Null if
 // the source isn't an object with properties or a string index
 static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);
+
+// A mapped type that is an instantiation of another one with its `keyof P` operand P replaced says the same about the
+// source as that one does about P, with the other type parameters mapped the same: what tsc gets to by
+// replaceIndexedAccess in resolveReverseMappedTypeMembers. That's what makes a recursive mapped type's reverse mapped
+// types the same type at every level, `Deep<T>`'s `{ [K in keyof T]: Deep<T[K]> }` inferred to from `interface A { a: A }`
+static void reverse_mapped_canonical(Checker* me, MappedInfo const** mapped, Ty const** operand) {
+    for (;;) {
+        MappedInfo const* root = (*mapped)->template_from;
+        if (!root || root->constraint->kind != TY_KEYOF || root->constraint->keyof.operand->kind != TY_TYPE_PARAM) return;
+        Ty const* param = root->constraint->keyof.operand;
+        TyMapper const* mapper = (*mapped)->template_mapper;
+        bool found = false, others = false;
+        for (u32 i = 0; i < mapper->len; i++) {
+            if (mapper->sources[i] == param) {
+                if (mapper->targets[i] != *operand) return;
+                found = true;
+            } else {
+                others |= mapper->targets[i] != mapper->sources[i];
+            }
+        }
+        if (!found) return;
+        *operand = param;
+        if (others) {
+            *mapped = ty_mapped_info_instantiate(me, root, ty_mapper_without(me, mapper, (TyList){ .data = &param, .len = 1 }));
+            return;
+        }
+        *mapped = root;
+    }
+}
+
+// The type of a member of a reverse mapped type whose source member has type `source`. Of one for `T[K]`, nested in one
+// for T, inferred like the outer one's are (tsc's replaceIndexedAccess in resolveReverseMappedTypeMembers, for
+// properties only): that's what ends a recursive mapped type's nesting
+Ty const* ty_reverse_mapped_member_type(Checker* me, ReverseMapped const* reverse, Ty const* source) {
+    MappedInfo const* mapped = reverse->mapped;
+    Ty const* operand = reverse->operand;
+    if (operand->kind == TY_INDEXED && operand->indexed.object->kind == TY_TYPE_PARAM &&
+        operand->indexed.index->kind == TY_TYPE_PARAM
+    ) {
+        reverse_mapped_canonical(me, &mapped, &operand);
+    }
+    return ty_reverse_mapped_prop_type(me, source, mapped, operand);
+}
 
 // Cached like tsc's reverseHomomorphicMappedCache: `keyof T & ("a" | "b" | ...)` as the constraint asks for the same
 // one once per member (tsc's createComputedCompilerOptions, 135 of them). Only at the top level, where the depth
@@ -510,7 +553,7 @@ static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, Mapped
     if (source->kind != TY_REFERENCE) return source;
     TyList args = ty_reference_args(me, source);
     if (ty_is_array(me, source)) {
-        Ty const* element = reverse_mapped_prop_type(me, args.data[0], mapped, operand);
+        Ty const* element = ty_reverse_mapped_prop_type(me, args.data[0], mapped, operand);
         return ty_array(me, element, source->reference.target == my readonly_array_target);
     }
     TupleShape const* shape = ty_tuple_shape(source);
@@ -522,10 +565,10 @@ static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, Mapped
         Ty const* element = args.data[i];
         if ((shape->flags[i] & TUPLE_ELEMENT_REST) && ty_is_array(me, element)) {
             // A rest element is held as its array: it's the element type that is reverse mapped (tsc's getElementTypes)
-            Ty const* reversed = reverse_mapped_prop_type(me, ty_reference_args(me, element).data[0], mapped, operand);
+            Ty const* reversed = ty_reverse_mapped_prop_type(me, ty_reference_args(me, element).data[0], mapped, operand);
             elements[i] = ty_array(me, reversed, element->reference.target == my readonly_array_target);
         } else {
-            elements[i] = reverse_mapped_prop_type(me, element, mapped, operand);
+            elements[i] = ty_reverse_mapped_prop_type(me, element, mapped, operand);
         }
         // (`?` in the mapped type: T's element needn't be optional)
         flags[i] = mapped->optional > 0 ? shape->flags[i] & ~(unsigned)TUPLE_ELEMENT_OPTIONAL : shape->flags[i];
@@ -559,7 +602,7 @@ static bool is_partially_inferable(Checker* me, Ty const* ty, u32 depth) {
 
 // The properties of what's reverse mapped (tsc's getPropertiesOfType): an object's own, an intersection's those of all
 // of its members, each name once, of the type and with the modifiers the intersection has for it. malloc'd
-static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralProp** out) {
+u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralProp** out) {
     *out = nullptr;
     if (source->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, source);
@@ -578,7 +621,7 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
                 .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
                 .name_span = prop->decl->name_span, .decl_spans = prop->decl->decl_spans,
                 .decl_span_count = prop->decl->decl_span_count, .name_is_value = prop->decl->name_is_value,
-                .asserted = annotation,
+                .asserted = annotation, .name_type = prop->decl->name_type,
             };
         }
         return members->prop_count;
@@ -603,6 +646,7 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
             (*out)[count++] = (ObjectLiteralProp){
                 .name = name, .flags = found.flags, .type = found.type,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
+                .name_type = found.prop ? found.prop->decl->name_type : nullptr,
                 .name_span = found.prop ? found.prop->decl->name_span : span_null,
                 .decl_spans = found.prop ? found.prop->decl->decl_spans : nullptr,
                 .decl_span_count = found.prop ? found.prop->decl->decl_span_count : 0,
@@ -614,9 +658,9 @@ static u32 reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLite
 
 static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
     // (tsc's createReverseMappedType takes any object type, an intersection too)
-    if (!(source->flags & TYF_OBJECT) && (source->kind != TY_INTERSECTION || ty_is_generic_object(me, source))) return nullptr;
+    if (!(source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION) return nullptr;
     ObjectLiteralProp* source_props;
-    u32 source_prop_count = reverse_mapped_source_props(me, source, &source_props);
+    u32 source_prop_count = ty_reverse_mapped_source_props(me, source, &source_props);
     // Reverse mappable: a string index signature, or properties and partially inferable (tsc's createReverseMappedType)
     if (!ty_applicable_index_info(me, source, ty_intrinsic(me, TY_STRING)) &&
         (!source_prop_count || !is_partially_inferable(me, source, 0))
@@ -632,44 +676,15 @@ static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, Map
         my reverse_mapped_depth--;
         return ret;
     }
-    Members const* members = ty_members(me, source);
-    IndexInfo string_index = {0};
-    bool has_string_index = false;
-    for (u32 i = 0; i < members->index_count; i++) {
-        if (members->index[i].key->flags & TYF_STRING) {
-            string_index = members->index[i];
-            has_string_index = true;
-        }
-    }
-    // A recursive mapped type (`{ [K in keyof V]: Foo<V[K]> }`) reverse maps its property types again, all the way
-    // down: tsc's reverse mapped types resolve their members lazily, these are built right away and cut off
-    if ((!source_prop_count && !has_string_index) || my reverse_mapped_depth >= 4) {
-        free(source_props);
-        return nullptr;
-    }
-    my reverse_mapped_depth++;
-    for (u32 i = 0; i < source_prop_count; i++) {
-        ObjectLiteralProp* prop = &source_props[i];
-        u32 flags = prop->flags & (PROP_OPTIONAL | PROP_READONLY);
-        if (mapped->optional > 0) flags &= ~(u32)PROP_OPTIONAL; // `?` in the mapped type: T's property needn't be
-        if (mapped->readonly > 0) flags &= ~(u32)PROP_READONLY;
-        // (The source property's type as tsc's getTypeOfSymbol has it: an optional one's with undefined)
-        Ty const* source_type = prop->type;
-        Ty const* declared_type = prop->type;
-        if ((prop->flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
-            source_type = ty_union(me, (Ty const*[]){ source_type, ty_undefined_or_missing(me) }, 2, nullptr, (TyList){0});
-        }
-        prop->flags = flags;
-        prop->type = reverse_mapped_prop_type(me, source_type, mapped, operand);
-        // (Declared by the source's declarations: the types baseline reuses their annotation where it still says the
-        // same, tsc's serializeTypeForDeclaration)
-        if (prop->type != declared_type) prop->asserted = nullptr;
-    }
-    if (has_string_index) string_index.value = reverse_mapped_prop_type(me, string_index.value, mapped, operand);
-    Ty const* ret = ty_object_literal(me, source_props, source_prop_count, &string_index, has_string_index ? 1 : 0, OBJECT_SYNTHETIC);
     free(source_props);
-    my reverse_mapped_depth--;
-    return ret;
+    bool has_string_index = false;
+    Members const* members = ty_members(me, source);
+    for (u32 i = 0; i < members->index_count; i++) has_string_index |= (members->index[i].key->flags & TYF_STRING) != 0;
+    if (!source_prop_count && !has_string_index) return nullptr;
+    // An object: a type whose members are the sources, each property's type inferred when it is asked for
+    ReverseMapped* reverse = arena_new(&my arena, ReverseMapped);
+    *reverse = (ReverseMapped){ .source = source, .mapped = mapped, .operand = operand };
+    return ty_reverse_mapped_object(me, reverse);
 }
 
 // tsc's inferToMappedType: `{ [K in keyof T]: X }` infers T by reverse mapping the source, `{ [P in K]: X }` infers
@@ -938,7 +953,10 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         // it, and the mapped type has no properties to infer from either. A union with literal keys, like
         // `"a" | Exclude<keyof T, X>`, does have properties, which this stands in for)
         bool keys_inferable = constraint->kind != TY_CONDITIONAL;
-        if (template && keys_inferable && !keyof_blocked && template->kind == TY_INDEXED &&
+        // (Not for a limited constraint, `keyof T & X`: the reverse mapped type has only X's keys)
+        bool limited = constraint->kind == TY_INTERSECTION ||
+            (constraint->kind == TY_UNION && constraint->composite.origin && constraint->composite.origin->kind == TY_INTERSECTION);
+        if (template && keys_inferable && !keyof_blocked && !limited && template->kind == TY_INDEXED &&
             template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
             ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))
         ) {

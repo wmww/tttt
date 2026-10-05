@@ -1,5 +1,5 @@
 # Plan 42: where tttt is eager and tsc is lazy
-Planned 2026-10-05 (todo entry 7, one session with three prototype sub-agents). Prototypes in `42_prototypes/`, all
+Planned 2026-10-05 (todo entry 7, one session with three prototype sub-agents). Prototypes in `42_prototypes/` (those left), all
 applying to 02ca5d29.
 
 ## Decision: go, as four small independent stages. No shared groundwork, no big port
@@ -23,30 +23,14 @@ That isn't what the prototypes found:
 Rule from here (vision.md's "stop patching" still holds): a fix that needs one of these sites to be lazy is done by
 doing the stage, not another workaround.
 
-## Stage 1: lazy reverse mapped types (~1 session). Prototype `stage1_reverse_mapped.patch`
-Measured: suite +1 (reverseMappedTypeRecursiveInference), mappedTypeRecursiveInference +symbols, 0 lost; every corpus
-unchanged; threadcheck identical (valibot, zod, xstate, drizzle); callgrind valibot +0.06%, zod -0.3%, xstate +0.1%,
-drizzle +0.2%, type-fest 0.
-- A `TY_ANONYMOUS` flavour: `Ty.anonymous.reverse` -> `ReverseMapped {source, mapped, operand}`
-  (`ty_reverse_mapped_object()`), cached by the existing `KEY_REVERSE_MAPPED` (tsc's reverseHomomorphicMappedCache).
-  `resolve_reverse_mapped_members()` (tsc's resolveReverseMappedTypeMembers) makes one Prop per source property with
-  the modifiers adjusted and its type unresolved (new `PropDecl` source: `reverse_of`/`reverse_source`/
-  `reverse_declared`); `prop_type()` resolves it via `ty_reverse_mapped_member_type()` (getTypeOfReverseMappedSymbol)
-  under the existing in-flight state and RESOLVING_PROP push. String index value inferred eagerly (tsc too).
-  getLimitedConstraint for `keyof T & X` keys.
-- Recursion ends by tsc's replaceIndexedAccess (`ty_reverse_mapped_canonical()`): a reverse type whose operand is
-  `T[K]` infers against the root mapped type. Without it mappedTypeRecursiveInference ran 17 s.
-- Display is required work: tsc's shouldUsePlaceholderForProperty (`TyDisplay.reverse_stack`, nested reverse props
-  print `any`), the index value prints `any`, reverse types skip the "anonymous inside itself prints any" rule (OOM on
-  the XMLHttpRequest test without it).
-- Also in the patch: generic intersection sources (`T & {...}`, the type_core.md bug; probe
-  `stage1_generic_intersection_probe.ts`); the `T[K]` homomorphic shortcut in `infer_from_objects` skipped for limited
-  constraints; an intersection property is readonly only if every member's is (createUnionOrIntersectionProperty).
-- To finish: numeric/symbol keys in the limited constraint (the prototype builds string literal keys only); the
-  canonical form bails when the mapper maps other parameters too; instantiation of a generic reverse type goes
-  through `{target, mapper}`, not instantiateReverseMappedType (fine unless a test says otherwise). Arrays/tuples stay
-  eager like tsc's, still with `reverse_mapped_depth` there (tsc's reverseMappedSourceStack/isDeeplyNestedType needs a
-  mapped-type `Ty`; leave it, note it in hacks.md).
+## Stage 1: lazy reverse mapped types. Done 2026-10-05
+Suite 12728 -> 12729 (+reverseMappedTypeRecursiveInference, +mappedTypeRecursiveInference symbols), 0 lost; every
+corpus byte-identical, threadcheck/checkerdiff identical, callgrind within 0.1%. Object reverse mapped types are a
+`TY_ANONYMOUS` flavour (`anonymous.is_reverse`, `ty_reverse_of()`; the pointer shares `merged_value`'s slot to keep
+`Ty` at 136 bytes) whose members resolve in `resolve_reverse_mapped_members()` and whose property types are inferred in
+`prop_type()`. Limited constraints (`keyof T & X`) take numeric/unique symbol keys; the reverse property's own key is
+its name's string (tsc's reverse symbol has no valueDeclaration). The canonical `T[K]` -> T form instantiates the root
+when other parameters are mapped too. Probes in `test/probes/plan42/`. Arrays/tuples stay eager (hacks.md).
 - Follow-up (0.5 session, optional): delete the `infer_from_objects` homomorphic shortcut entirely (tsc always
   builds the reverse type): costs complicatedIndexesOfIntersectionsAreInferencable and twiceNestedKeyofIndexInference
   in the prototype; fix those first. mappedTypeInferenceErrors (`bar: unknown`) stays unexplained: needs an

@@ -366,7 +366,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
 // table type from a columns literal) was made again too: drizzle's query builders ran into TS2589 on those copies
 static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper const* mapper) {
     if (!target->anonymous.free_params_unknown || target->anonymous.node || target->anonymous.function ||
-        target->anonymous.overload_count || target->anonymous.merged_value || target->anonymous.applies_type_args) {
+        target->anonymous.overload_count || (target->anonymous.merged_value && !target->anonymous.is_reverse) || target->anonymous.applies_type_args) {
         return false;
     }
     TyObjectState const* state = target->anonymous.state;

@@ -266,7 +266,10 @@ src` finds the code-side markers; every significant one has an entry here.
   return mapper drops inferred `any` (tsc's nonInferrableAnyType) and rest patterns give none; `ty_pattern_unclone`
   copies the pattern type per call. Nested literals instantiate context only in `check_for_mutable_location()`.
 - `Inference.circularity`: `visited` records no priorities, so a pair is circular only while still on the stack.
-- Reverse mapped types are eager (`Checker.reverse_mapped_depth`, HACK; tsc lazy), four priorities only.
+- Reverse mapped types of arrays/tuples are eager like tsc's, but still cut at depth 4 (`Checker.reverse_mapped_depth`,
+  HACK: tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42
+  stage 1). Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's
+  instantiateReverseMappedType. Four priorities only.
   `infer_from_objects()`'s homomorphic shortcut stands in for reverse mapping, skipped for a deferred `keyof X` whose X
   isn't inferred (stricter gates lost three tests); `infer_to_mapped()` finding nothing returns (tsc goes per
   property; neutral). `inference_call_result()`: combined covariant candidates literal-reduced (tsc: subtype-reduced).

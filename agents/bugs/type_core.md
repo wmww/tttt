@@ -16,10 +16,7 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   when one needs it.
 - Still in the "spurious diagnostics" bucket, not investigated in depth: contravariantOnlyInferenceFromAnnotatedFunction,
   mappedTypeRecursiveInference2.
-- `unknown` where tsc infers a type: mappedTypeRecursiveInference.
-- Reverse mapped types (plan 08) are eager (arrays/tuples included), cut at depth 4 (`reverse_mapped_type`); tsc's
-  are lazy. Plan 37 measured: cut 6 changes nothing in 385 mapped/infer tests, 12 hangs the suite; only
-  reverseMappedTypeRecursiveInference plausibly needs laziness. Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
+- Contextual types from a generic mapped type substitute the whole constraint for K, not the property's key.
 - promiseTry (spurious TS2578): `Promise.try(cb, ...args)` with `U extends unknown[]` inferred from both the callback's
   parameters and the rest arguments gets no TS2554 arity error.
 - contextuallyTypedOptionalProperty(exactOptionalPropertyTypes=true): `T` inferred from `match(y => y > 0)` for an
@@ -38,7 +35,6 @@ Property's TS18048, below under Inference), inferring `T` from `Partial<T>` make
   the contextual return (`KEY_CONTEXT_RETURN`). Same root as the two bullets above (defaults leaking, eager return
   types) and as `k3(y => () => ...)` being `boolean` where tsc fixes T without candidates (`unknown`): a plan-sized
   port of leaf-wise contextual instantiation, together with plan 37's "fixing without candidates".
-- Reverse mapped types refuse generic intersection sources (`T & {...}`), which tsc accepts (tttt's are eager).
 - Laziness artifacts of tsc's inference (triage 2026-09-29, both need lazy return/member types to reproduce):
   genericCallWithGenericSignatureArguments3's `(n: Object) => 1` keeps its literal because tsc resolves the inner
   arrow's return type only after U's first candidate is that arrow's own function type: its contextual signature is

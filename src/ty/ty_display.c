@@ -2050,6 +2050,28 @@ static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
     return false;
 }
 
+static MappedInfo const* mapped_root(MappedInfo const* mapped) {
+    while (mapped->template_from) mapped = mapped->template_from;
+    return mapped;
+}
+
+// tsc's shouldUsePlaceholderForProperty: a reverse mapped property prints as `any` (the elided information placeholder)
+// inside itself, inside one whose source property's type isn't an anonymous object type, and three deep in the same
+// mapped type
+static bool reverse_placeholder(TyDisplay d, Prop const* prop) {
+    if (!d.reverse_stack) return false;
+    for (TyDisplayReverse const* i = d.reverse_stack; i; i = i->outer) {
+        if (i->prop == prop) return true;
+    }
+    if (d.reverse_stack->prop->decl->reverse_source->kind != TY_ANONYMOUS) return true;
+    MappedInfo const* root = mapped_root(prop->decl->reverse_of->mapped);
+    u32 depth = 0;
+    for (TyDisplayReverse const* i = d.reverse_stack; i && depth < 3; i = i->outer, depth++) {
+        if (mapped_root(i->prop->decl->reverse_of->mapped) != root) return false;
+    }
+    return depth == 3;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     Members const* members = ty_members(me, ty);
     if (members->mapped) {
@@ -2130,16 +2152,27 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, ": ");
         ty_display(me, d, info->key);
         out_lit(d, "]: ");
-        ty_display(me, d, info->value);
+        // (A reverse mapped type's is the elided information placeholder: tsc's createTypeNodeFromObjectType)
+        if (ty_reverse_of(ty)) out_lit(d, "any");
+        else ty_display(me, d, info->value);
         out_lit(d, "; ");
     }
+    TyDisplay outer_d = d;
+    TyDisplayReverse reverse_frame;
     for (u32 i = 0; i < members->prop_count; i++) {
+        d = outer_d;
         Prop const* prop = members->props[i];
         if (d.tracker) {
             if (d.tracker->truncated) break;
             if (track_property(me, d, prop)) continue;
         }
-        Ty const* type = prop_type(me, prop);
+        bool reverse_prop = prop->decl->reverse_of != nullptr;
+        bool placeholder = reverse_prop && reverse_placeholder(d, prop);
+        Ty const* type = placeholder ? ty_intrinsic(me, TY_ANY) : prop_type(me, prop);
+        if (reverse_prop && !placeholder) {
+            reverse_frame = (TyDisplayReverse){ .prop = prop, .outer = d.reverse_stack };
+            d.reverse_stack = &reverse_frame;
+        }
         // (A property that is a function of a namespace, as a spread copies it: tsc prints a property whose symbol is a
         // Function or Method as methods)
         Prop const* declared = prop;
@@ -2212,7 +2245,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             origin = prop->decl->mapped_from;
             while (origin->target) origin = origin->target;
         }
-        TypeNode const* annotation = prop->decl->asserted;
+        TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted;
         if (origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function && !origin->decl->overload_count &&
             !origin->decl->symbol
         ) {
@@ -2617,7 +2650,9 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         case TY_ANONYMOUS: {
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
-            for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+            // (Not a reverse mapped type, which has no symbol: its properties have placeholders of their own, see
+            // reverse_placeholder())
+            for (TyDisplayVisit const* i = ty_reverse_of(ty) ? nullptr : d.visiting; i; i = i->outer) {
                 if (i->ty != ty) continue;
                 // (A function declared in a file or namespace prints as `typeof f` instead: tsc's
                 // shouldWriteTypeOfFunctionSymbol)
@@ -2657,7 +2692,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             // A function a CommonJS module exports with the module's other exports merged in (tsc's
             // getCommonJsExportEquals clone, a ValueModule too)
-            Symbol const* exported = ty->anonymous.merged_value ? ty->anonymous.merged_value->merged_export_equals_of : nullptr;
+            Symbol const* exported = ty->anonymous.merged_value && !ty->anonymous.is_reverse ? ty->anonymous.merged_value->merged_export_equals_of : nullptr;
             // (the function's own type too: tsc's clone is its merged symbol, recordMergedSymbol)
             if (!exported && ty->anonymous.function && !ty->anonymous.target) exported = export_equals_clone_of(ty->anonymous.function->symbol);
             if (exported && (exported->flags & SYMBOL_FUNCTION) && span_valid(exported->name_span)) {

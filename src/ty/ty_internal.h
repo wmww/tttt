@@ -338,5 +338,6 @@ TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper 
 TyMapper const* ty_mapper_with(Checker* me, TyMapper const* mapper, Ty const* source, Ty const* target); // instantiate.c
 // The mapper without the mappings of params (which the instantiated type binds itself)
 TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList params); // instantiate.c
+MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* source, TyMapper const* mapper); // members.c
 // tsc's isTypeDerivedFrom(): what `instanceof` goes by, the classes something is made of rather than its shape
 bool ty_is_type_derived_from(Checker* me, Ty const* source, Ty const* target); // flow.c

@@ -19,6 +19,7 @@ typedef struct CallExpr CallExpr;
 typedef struct PropertyExpr PropertyExpr;
 typedef struct Checker Checker;
 typedef struct Prop Prop;
+struct ObjectLiteralProp;
 typedef struct Signature Signature;
 typedef struct Members Members;
 typedef struct TyMapper TyMapper;
@@ -311,7 +312,12 @@ struct Ty {
             // The type of a function declaration/expression, method, accessor or constructor: one signature, read
             // straight off the FunctionImpl (the return type is inferred from its body if it isn't annotated)
             FunctionImpl const* function;
-            Symbol const* merged_value; // Function overloads, see ty_merged_value_type()
+            union {
+                Symbol const* merged_value; // Function overloads, see ty_merged_value_type(). Unless `is_reverse`
+                // is_reverse: a reverse mapped type (tsc's ReverseMappedType, ty_reverse_mapped_object()): members
+                // resolved on first use, each property's type inferred when asked for. Read through ty_reverse_of()
+                struct ReverseMapped const* reverse;
+            };
             FunctionImpl const* const* overloads; // If set, the type of an overloaded method: its signatures
             u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
@@ -334,6 +340,7 @@ struct Ty {
             bool regular;
             bool jsx_attributes; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
             bool js_literal; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
+            bool is_reverse; // `reverse` is set, not `merged_value`
             TyObjectState* state;
         } anonymous;
         struct {
@@ -489,6 +496,11 @@ typedef struct PropDecl {
     // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
     // declarations), whose annotation is reused when it says the same
     struct Prop const* mapped_from;
+    // A property of a reverse mapped type: its type is inferred from `reverse_source` (the source property's type) on
+    // first use (tsc's getTypeOfReverseMappedSymbol). `reverse_declared` is the source property's declared type
+    struct ReverseMapped const* reverse_of;
+    Ty const* reverse_source;
+    Ty const* reverse_declared;
 } PropDecl;
 
 extern PropDecl const ty_prop_decl_none;
@@ -614,6 +626,22 @@ typedef struct MappedInfo {
     signed char optional;
 } MappedInfo;
 Ty const* ty_mapped_template(Checker* me, MappedInfo const* mapped);
+
+// The T for which `{ [K in keyof operand]: template }` (`mapped`) would be `source` (tsc's ReverseMappedType)
+typedef struct ReverseMapped {
+    Ty const* source;
+    MappedInfo const* mapped;
+    Ty const* operand;
+} ReverseMapped;
+Ty const* ty_reverse_mapped_object(Checker* me, ReverseMapped const* reverse);
+static inline ReverseMapped const* ty_reverse_of(Ty const* ty) {
+    return ty->kind == TY_ANONYMOUS && ty->anonymous.is_reverse ? ty->anonymous.reverse : nullptr;
+}
+Ty const* ty_reverse_mapped_member_type(Checker* me, ReverseMapped const* reverse, Ty const* source);
+// (infer.c) What a property of type `source` says about `operand[K]` (tsc's inferReverseMappedType)
+Ty const* ty_reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand);
+// (infer.c) The properties of a reverse mapped type's source, malloc'd, types as declared
+u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, struct ObjectLiteralProp** out);
 Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped, TyMapper const* mapper);
 
 struct Members {
@@ -1892,6 +1920,12 @@ typedef struct TyDisplayVisit {
     struct TyDisplayVisit const* outer;
 } TyDisplayVisit;
 
+// The reverse mapped properties being printed further up (tsc's context.reverseMappedStack), innermost first
+typedef struct TyDisplayReverse {
+    Prop const* prop;
+    struct TyDisplayReverse const* outer;
+} TyDisplayReverse;
+
 // tsc's GenerateNamesForShadowedTypeParams (the types baseline): a type parameter whose name another one printed in
 // the same scope already has, or that names another type parameter in scope where the type is printed, prints as
 // `T_1`, `T_2`... (typeParameterToName)
@@ -1936,6 +1970,7 @@ typedef struct TyDisplay {
     cstr* target;
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
+    TyDisplayReverse const* reverse_stack;
     // Literal types inside object types that came from expressions print as their primitive: tsc widens the
     // properties of an object literal when it types it, the legacy checker only when it reports. HACK
     bool widen_literals;
