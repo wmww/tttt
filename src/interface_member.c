@@ -78,7 +78,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         }   break;
 
         case INTERFACE_KEY_MAPPED:
-            type_lookup_names(&my key.mapped->in_type, names, errs);
+            // (The constraint is in the key parameter's scope too: `{ [P in P]: X }` is circular, TS2313)
             names = scope_new(names, SCOPE_BLOCK);
             scope_init_declaration(names, &my key.mapped->owned_symbol, (DeclProps){
                 .name = my key.mapped->type_name,
@@ -87,6 +87,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
                 .node = me,
             });
             my key.mapped->symbol_ref = my key.mapped->owned_symbol;
+            type_lookup_names(&my key.mapped->in_type, names, errs);
             // The `as` clause sees the key parameter
             type_lookup_names(&my key.mapped->as_type, names, errs);
             break;
