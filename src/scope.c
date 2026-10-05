@@ -932,6 +932,14 @@ static Symbol* declare_symbol(
             symbol_table_insert(table, &binder->arena, existing->name, hash, existing);
         }
     }
+    // A function's type parameters and the types its body declares share a declaration space (tsc: the function's
+    // locals); tttt keeps the type parameters in the scope around the function's
+    if (!existing && scope->kind == SCOPE_FUNCTION && (excludes & SYMBOL_TYPE_PARAMETER) && scope->parent &&
+        scope->parent->generics && scope->parent->generics->generic && table == &scope->locals
+    ) {
+        Symbol* param = symbol_table_get_own(&scope->parent->locals, name, hash);
+        if (param && (param->flags & SYMBOL_TYPE_PARAMETER)) report_conflicts(binder->errs, param, name_span, includes, false, (csview){0});
+    }
     if (existing && table == &binder->globals && umd_global_conflict(scope, existing, includes, excludes)) {
         report_conflicts(scope->binder->errs, existing, name_span, includes, true, (csview){0});
         Symbol* ret = binder_new_symbol(binder, name, includes);
