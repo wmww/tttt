@@ -133,6 +133,16 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   realworld.py now passes the real path, but some relation between the two copies' structurally-identical types
   runs away in tttt; a callgrind of that run would show which (probably the relation budget/recursion identity).
 
+- **A big union against an intersection containing it: ~1 M instructions per check** (vue, found 2026-10-05 when
+  65fe6860, tsc's inferFromAnnotatedParameters for nested functions, cost vue +0.45%: correct, tsc does the same
+  inference). `inference_call_result_fallback` relates babel's ~250-member `Node` union to `Node & { scopeIds?:
+  Set<string> }` (walker callbacks `enter(node: Node, ...)` in compiler-sfc's definePropsDestructure.ts) 4 times at
+  ~1 M each. tsc relates a source to each intersection member (Node to Node is identity, then the weak-type /
+  optional-property member); tttt probably distributes the union source over the intersection target member by member.
+  Measure with `TTTT_DEBUG_RELATE_NESTED=1` on a probe and compare with tsc's structure (relation.ts
+  structuredTypeRelatedTo: target intersection first, `eachTypeRelatedToType` only when the source union can't be
+  related as a whole).
+
 ## Base constraints of expect-type's conditional constraints
 In valibot's `*.test-d.ts`, `ty_base_constraint` of expect-type's `Expected` (constrained by
 `StrictEqualUsingTSInternalIdenticalToOperator<Input, Expected> extends true ? unknown : MismatchInfo<...>`) took

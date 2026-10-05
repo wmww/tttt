@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Errors-tail fan-out (2026-10-05, tenth window's todo entry 6, f93bac3f)
+Callgrind K1 (`./instrcount.sh`), session start dfde5fbc -> end: tsc 4.602 -> 4.632 G (+0.65%), type-fest 3.226 ->
+3.236 (+0.31%), valibot 5.043 -> 5.067 (+0.48%), react 1.648 -> 1.664 (+0.97%), nest 1.230 -> 1.241 (+0.89%), webpack
+3.820 -> 3.865 (+1.18%), zod 4.447 -> 4.479 (+0.72%), xstate 2.880 -> 2.894 (+0.49%), drizzle 13.343 -> 13.368
+(+0.19%), vue 8.107 -> 8.200 (+1.15%, of which +0.45% is 65fe6860: tsc's inference from annotated parameters of nested
+functions, kept; perf_leads.md "A big union against an intersection"), effect 10.974 -> 11.038 (+0.58%), vscode
+32.926 -> 33.241 G (+0.96%). ~190 commits of new checks and fixes (suite 12768 -> 12932, sweep 8016 -> 8072); six
+regressions of +0.1-0.6% were bisected and fixed; what's left is spread thinly (eg tsc's checkTypeParameter on
+@types/node's defaults: webpack has no skipLibCheck, +0.16%).
+
 ## VS Code corpus pinned (2026-10-05, ninth window's todo entry 5)
 VS Code's `src/` (1.39M lines, 4.5k files + node_modules types): the scale benchmark, in bench.sh. Idle machine, best
 of 2-3 (`/usr/bin/time`, wall s / peak RSS MB):
