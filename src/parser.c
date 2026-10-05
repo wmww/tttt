@@ -3109,6 +3109,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     if (has_path) {
         rare.import_ref = add_module_ref(&p, path, path_span);
         rare.import_ref->resolution_override = import_attributes_resolution_mode(rare.import_attributes, nullptr);
+        rare.import_ref->import_type = true;
     } else {
         cstr_drop(&path);
     }
@@ -11075,6 +11076,7 @@ done:
         statement.main.module_ref = statement.module_ref;
         if (statement.main.type_only) {
             statement.module_ref->resolution_override = import_attributes_resolution_mode(statement.attributes, nullptr);
+            statement.module_ref->type_only_import = span_equals(statement.keyword_span, "import");
         }
         for_each (i, vec_port_item, &statement.items) {
             i->module_ref = statement.module_ref;

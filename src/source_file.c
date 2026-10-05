@@ -1,4 +1,5 @@
 #include "source_file.h"
+#include "import_attributes.h"
 #include "module_resolution.h"
 #include "error.h"
 #include "string_helpers.h"
@@ -324,13 +325,18 @@ void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* er
     CompilerOptions const* options = compiler_options();
     SourceFile const* from = my span.source;
     bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
+    // (A `resolution-mode` attribute of a type-only import or an import type lets it import across formats: tsc's
+    // hasResolutionModeOverride)
     if ((options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18) && sync_import &&
-        my file && my file->is_esm && my file->is_module
+        my file && my file->is_esm && my file->is_module && my resolution_override == IMPORT_RESOLUTION_DEFAULT
     ) {
         if (my syntax == MODULE_REF_REQUIRE) {
             error_ctx_error_d(errs, at, 1471,
                 "Module '", my path, "' cannot be imported using this construct. The specifier only resolves to an "
                 "ES module, which cannot be imported with 'require'. Use an ECMAScript import instead.");
+        } else if (my type_only_import || my import_type) {
+            error_ctx_error_d(errs, at, my type_only_import ? 1541 : 1542, my type_only_import ? "Type-only import" : "Type import",
+                " of an ECMAScript module from a CommonJS module must have a 'resolution-mode' attribute.");
         } else {
             Error* error = error_ctx_error_d(errs, at, 1479,
                 "The current file is a CommonJS module whose imports will produce 'require' calls; however, the "
