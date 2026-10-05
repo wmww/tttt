@@ -3566,7 +3566,7 @@ const baselines = {
         types: true,
     },
     'classExpressionWithDecorator1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31146,9 +31146,9 @@ const baselines = {
         types: true,
     },
     'typeInterfaceDeclarationsInBlockStatements1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeLiteralCallback': {
         errors: true,

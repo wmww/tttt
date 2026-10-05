@@ -471,8 +471,10 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     if (vec_expr_size(&my decorators)) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope_rare_mut(scope)->decorator_of = me;
+        // (A class expression can't have legacy decorators: TS1206, and tsc's checkDecorators never looks at them)
+        bool invalid = compiler_options()->experimental_decorators && my is_expression;
         for_each (i, vec_expr, &my decorators) {
-            expr_lookup_names(i, scope, errs);
+            expr_lookup_names(i, scope, invalid ? nullptr : errs);
         }
     }
 
@@ -1738,6 +1740,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         );
     }
 
+    if (compiler_options()->experimental_decorators && my is_expression && vec_expr_size(&my decorators)) {
+        Span at = decorator_span(vec_expr_at(&my decorators, 0));
+        at.sv.size = 1;
+        error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
+    }
     for_each (i, vec_expr, &my decorators) {
         if (!(compiler_options()->experimental_decorators && my is_expression)) {
             ty_check_decorator(current_checker, i, (DecoratorSite){ .class_decl = me, .param_index = -1, .at = decorator_span(i) }, errs);
