@@ -162,6 +162,8 @@ first check. Also `readonly ಠ_ಠ` (a modifier before a non-ASCII name).
 
 **Determinism**: 7 of the 63 differed between `--checkers 1` and 4 at one point; gone by 2026-10-05 (13 left, K=2/3/4/7
 identical modulo quoted text, `./checkerdiff.py`): the inference fixes since removed whatever was order-dependent.
+**Determinism**: at 63 left, 7 differed between `--checkers 1` and 4; at 9 left (2026-10-05, third pass) none do
+(`./checkerdiff.py effect`: identical, K=4 twice identical). The differing ones were among those fixed since.
 
 2026-10-05, second pass (63 -> 31, probes in `test/probes/plan19/effect/`, one commit each): a generic call as an
 argument infers from the raw parameter type, not one instantiated with the outer call's return mapper (Cause.test 8,
@@ -196,9 +198,20 @@ inference (return mapper, return type computed then): `M.tag("A", () => "a")` un
 returns into `Ret` = `"a" | "b"` (Match 887/888, probe `variadic_rest_function_return_mapper.ts`).
 
 Left, by cause (not reduced unless said):
-- **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses: dtslint TaggedClass 6, TaggedError 31,
-  TaggedRequest 28 (Schema tagged classes without the Self type argument should be an error), Schema.ts 9010,
-  fiberRuntime 1397.
+- **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses.
+  - dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28: tsc reports TS2310 + TS2506 on `class _A extends
+    Schema.TaggedClass<_A>()("A", {...}, [undefined, undefined, { pretty: () => (x) => ... }])`: resolving _A's base
+    constructor type checks the base expression, whose annotations relate `x: _A` structurally (getUnmatchedProperty
+    -> resolveBaseTypesOfClass while it is on the type resolution stack). tttt's TS2506 is structural
+    (ty_has_base_type in class_heritage_typecheck) and its base expression isn't checked inside a base-type
+    resolution, so the cycle isn't seen. Needs tsc's pushTypeResolution(ResolvedBaseConstructorType) modelled.
+  - fiberRuntime 1397: tsc's TS2590 (`this[(cur as Primitive)._op](cur)`: the union call's parameter intersection is
+    a cross product of 100000+). intersect_unions() (checker.c) already makes it the error type silently; reporting
+    it there (ty_error_at_current_node) fixes this but adds TS2590 to 3 suite tests (JSX intrinsic element
+    intersections, reactTagNameComponentWithPropsNoOOM*, errorInfoForRelatedIndexTypesNoConstraintElaboration) where
+    tttt intersects more than tsc (also: tsc halves at >= 4 members, tttt at >= 3).
+  - Schema.ts 9010: tsc's TS2322 at `arbitrary: (arb) => ...` overridden by `...typeAnnotations` in `declare(...)`'s
+    annotations (the property is the union of both); not reduced.
 - Tests: query 51 (`promise(() => new Promise((r) => r(0)))` as zipRight's `that`: the function argument's
   contextual type is fully instantiated with the return mapper (infer_type_arguments' first pass), so `new Promise`
   infers T = zipRight's uninferred A2 as a return-type candidate; tsc's getContextualType is raw there and only its
