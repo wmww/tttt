@@ -628,8 +628,10 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             return ty_for_in_key_type(checker, iterable);
 
         case FOR_EACH_LOOP_OF:
-            return ty_widened_nullable(checker, ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
-                expr_outer_span(&my iterable), nullptr));
+            // (tsc's widenTypeForVariableLikeDeclaration: getWidenedType, so the elements of an array literal aren't
+            // fresh object literals in the variable)
+            return ty_widened_for_declaration(checker, ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF :
+                ITERATION_FOR_OF, iterable, expr_outer_span(&my iterable), nullptr), false);
     }
     impossible;
 }
