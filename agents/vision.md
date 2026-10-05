@@ -14,7 +14,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   zod-root at tsc's level. **The pinned corpora have stopped finding bugs**: every one is at or near 0.
 - **Perf**: callgrind flat over the window (within +1% everywhere) while two whole features landed. 1.5-7x faster
   than multi-threaded tsgo, `-b` on TypeScript's `src` 1.3 s vs tsgo 2.3 s / tsc 13.6 s. **Memory** below tsgo's
-  peak RSS everywhere except nest and webpack at one checker (the AST: plan 43).
+  peak RSS everywhere, at one checker and at the default (plan 43's AST/binder diet: -20 to -42% on every corpus).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, tsc's inference flow (lazy fixing, contextual instantiation, intra-expression sites,
@@ -46,7 +46,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   Second data point (same day): the **breadth sweep** (plan 44, `./sweep.py`) checks all 8208 DefinitelyTyped
   packages against tsc 5.8 in two minutes; 97% match exactly, and the rest is a long list of distinct bugs, missing
   checks included (DT's 10k `@ts-expect-error`s). It is the third oracle: run it after every checker change.
-- **Finish what's planned before planning more mechanisms**: plan 42 stages 3-4, plan 43 (AST memory), then parallel
+- **Finish what's planned before planning more mechanisms**: plan 42 stages 3-4 and plan 43 (AST memory) done; then parallel
   name resolution (the serial phase left; the `-b` lever and a wall-time lever everywhere).
 - **Decided: the symbols harness's rebuilt member identity is an acceptable harness cost** (triage item from the
   fan-out of 10-04). It is display-only, and tttt's lazy `Prop`s already give the checker what tsc's property symbols

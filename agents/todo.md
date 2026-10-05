@@ -13,8 +13,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 3. Done: plan 44 stage 1, the breadth sweep (`./sweep.py`: all 8208 DefinitelyTyped packages in 2 minutes against
    tsc 5.8's cached diagnostics). 7969 match exactly, 1 crash, 2 packages slower than tsc; a symlink resolution bug
    fixed on the way (drizzle 6 -> 4). Root causes with repros in plan 44 "Open root causes".
-4. **Execution: plan 43** (AST and binder memory; nest <= 200 MB, webpack <= 300 MB at one checker). As many stages
-   as fit in one session, and the rest stays in the plan.
+4. Done: plan 43 (AST and binder memory) in one session with four sub-agents: K1 peak RSS nest 243 -> 142 MB,
+   webpack 394 -> 253 (targets 200/300), every corpus -20 to -42% and below tsgo; instructions lower everywhere (nest
+   -3.4%); outputs byte-identical. Leftover levers in perf_leads.md "Memory"; `./memtrack.sh` is the tool.
 5. **Corpus: pin a large application for scale** (a real app of several hundred thousand lines or more, e.g. VS
    Code's `src` if its types install reproducibly, or a big monorepo app). It's the perf showcase against tsgo and
    finds a different kind of false error than the libraries. Add it to bench.sh. Same treatment as entry 2.

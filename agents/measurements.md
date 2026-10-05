@@ -10,6 +10,33 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## AST and binder memory (2026-10-05, plan 43, ninth window's todo entry 4)
+Four Opus sub-agents (declaration structs, expressions/statements, binder, then the checker's tables) plus exact-size
+parser lists. Suite 12759 -> 12759, 0 lost; every corpus byte-identical at K=1 and K=4 (threadcheck identical,
+checkerdiff as before: effect's 7 known), `./scenarios.py` 215/3 as before, the sweep unchanged (7969 match, 1 crash)
+and 456 -> 376 s of tttt time. **Peak RSS** (MB, best of 3, `/usr/bin/time`; K1 = `--checkers 1 --threads 1` vs tsgo
+`--singleThreaded`, K4 = tttt's default vs multi-threaded tsgo; tsgo from the 10-05 bench below):
+| corpus | tttt K1 start -> end | tsgo 1 thread | tttt K4 start -> end | tsgo |
+|---|---|---|---|---|
+| tsc | 383 -> 242 | 537 | 419 -> 276 | 610 |
+| type-fest | 509 -> 380 | 789 | 521 -> 391 | 793 |
+| valibot | 421 -> 328 | 595 | 476 -> 373 | 806 |
+| react | 231 -> 149 | 311 | 290 -> 200 | 543 |
+| nest | 243 -> **142** | 212 | 260 -> 152 | 246 |
+| webpack | 394 -> **253** | 303 | 436 -> 294 | 492 |
+| zod | 537 -> 409 | 1004 | 620 -> 479 | 1426 |
+| xstate | 316 -> 230 | 361 | 376 -> 285 | 472 |
+| drizzle | 830 -> 657 | 1073 | 1242 -> 1026 | 1881 |
+| vue | 573 -> 416 | 670 | 643 -> 474 | 866 |
+| effect | 1058 -> 736 | - | 1167 -> 831 | - |
+Callgrind (`./instrcount.sh`) c6572d83 -> end: tsc 4.736 -> 4.695, type-fest 3.227 -> 3.219, valibot 5.002 -> 4.983,
+react 1.685 -> 1.639, nest 1.274 -> 1.231, webpack 3.899 -> 3.846, zod 4.478 -> 4.421, xstate 2.879 -> 2.851, drizzle
+13.330 -> 13.288, vue 8.120 -> 8.058, effect 11.064 -> 10.988 G. The exact-size lists alone cost +0.7% on nest (+0.2%
+webpack); the smaller nodes paid it back (fewer bytes moved). nest's live malloc heap after name resolution 172 ->
+88 MB, all-zero words 66% -> 45% (`./memtrack.sh`). Biggest single wins: `InterfaceMember` 584 -> 176 bytes,
+`FunctionImpl` 744 -> 296, `Expr` 144 -> 88, `Scope` 296 -> 136, `PropertyExpr` 400 -> 216, intern entries 24 -> 16
+(drizzle -30 MB), a `Ty` allocated by its kind's variant (type-fest -39 MB).
+
 ## Breadth sweep (2026-10-05, plan 44 stage 1; `./sweep.py`)
 DefinitelyTyped ac3977d8, 8208 packages (8665 minus the generated gapi.client.*), 6968 clean under tsc 5.8. tttt
 matches tsc's (file, line, code) set exactly on **7969**; spurious only 123, missing only 105, both 10, **crash 1**
@@ -43,24 +70,9 @@ Suite 12728 -> 12728, 0 lost; corpora unchanged (webpack 6, xstate 8, drizzle 6,
 and threadcheck identical. Callgrind, session start (02ca5d29) -> end: tsc 4.712 -> 4.699, type-fest 3.213 -> 3.213,
 valibot 5.018 -> 4.992, react 1.695 -> 1.687 (base_constraint() memo), nest 1.274 -> 1.275, webpack 3.912 -> 3.909,
 zod 4.479 -> 4.471, xstate 2.769 -> 2.747, drizzle 13.335 -> 13.214 (-0.9%: shorter interned keys), vue 8.105 ->
-8.027 (arguments checked one at a time in overload resolution). **Peak RSS** (best-of-3 runs, `--checkers 1
---threads 1` = K1 vs tsgo `--singleThreaded`; the default K=4 vs multi-threaded tsgo; tsgo from the bench below):
-| corpus | tttt K1 start -> end | tsgo 1 thread | tttt K4 start -> end | tsgo |
-|---|---|---|---|---|
-| tsc | 387 -> 385 | 537 | 433 -> 422 | 610 |
-| type-fest | 522 -> 488 | 789 | 541 -> 499 | 793 |
-| valibot | 445 -> 421 | 595 | 515 -> 479 | 806 |
-| react | 243 -> 241 | 311 | 320 -> 304 | 543 |
-| nest | 255 -> 254 | **212** | 272 -> 270 | 246 |
-| webpack | 408 -> 396 | **303** | 468 -> 444 | 492 |
-| zod | 578 -> 538 | 1004 | 698 -> 622 | 1426 |
-| xstate | 331 -> 314 | 361 | 394 -> 379 | 472 |
-| drizzle | 873 -> 833 | 1073 | **1688 -> 1253** | 1881 |
-| vue | 599 -> 576 | 670 | 680 -> 650 | 866 |
-Where it came from: contiguous runs of files per checker instead of round robin (K=4 only; drizzle -25%), `Prop` 80 ->
-56 bytes, `Signature` 200 -> 176, `Ty` 152 -> 136, mapper-pair keys two ids per word. nest and webpack, the two above
-tsgo, are parse + name resolution (webpack at K1: 217 MB resident after parsing, 285 after names, checker arena 78
-MB): the AST (perf_leads.md "Memory").
+8.027 (arguments checked one at a time in overload resolution). Peak RSS of that session: contiguous runs of files
+per checker instead of round robin (drizzle K=4 -25%), `Prop` 80 -> 56 bytes, `Signature` 200 -> 176, `Ty` 152 ->
+136; superseded by plan 43's table above.
 
 `./bench.sh --runs 3` at session start (02ca5d29 + the base_constraint memo, round robin; quiet machine), best wall /
 peak RSS, tttt at its defaults:

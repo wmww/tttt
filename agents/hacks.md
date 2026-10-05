@@ -10,7 +10,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - `shrink_list()`/`list_push()` (`parser.c`): finished parser lists give back their slack (a realloc), and their pushes
   reserve one element on the first push (most lists have one) where the vec's own push reserves 4. Costs ~0.7% of
   nest's instructions (two-element lists grow 1 -> 6 and shrink); per-file node arenas with lists built in a scratch
-  stack and copied out exact would make it free (plan 43 lever 7, a parser time lever). PERF notes: `CallExpr`
+  stack and copied out exact would make it free (perf_leads.md "Memory": node arenas, a parser time lever). PERF notes: `CallExpr`
   argument types recomputed per use, `Value.object` refcount churn.
 - `identifier_expr_name()` (`expr.h`): an `IdentifierExpr` has no name of its own, it reads its `Expr`'s inner_span
   through `offsetof` (an IdentifierExpr only ever lives inside an Expr: never copy one out on its own). Its rare
