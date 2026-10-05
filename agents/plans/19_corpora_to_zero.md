@@ -97,9 +97,15 @@ fallback inference skipped nested generic calls that were already resolved; HACK
   against `MachineConfig<...>`. Instrumented tsc (getInferredType, both rounds): TConfig has **no candidate at all**
   and falls back to the constraint; minimal repro `setup({ delays: { short: 10, long: 1000 } }).createMachine({ states:
   { a: { entry: [raise({ type: 'GO' }, { delay: 'long' })] }, c: { after: { long: 'd', nonexistent: 'd' } } } })`.
-  So the config literal is non-inferrable for tsc, presumably through the raise() call (a generic function returning a
-  function: SkipGenericFunctions in the first round, ObjectFlags.NonInferrableType propagating up the literal); why it
-  stays so in the Normal round is the open question. tttt infers TConfig from the literal.
+  Why: raise() is a generic function returning a function, so the SkipGenericFunctions round types it silentNever
+  (ObjectFlags.NonInferrableType, which propagates up the literal: no inference to the naked TConfig), TConfig is its
+  constraint, and chooseOverload's applicability check in that same mode fails on the excess property before the
+  Normal round that would infer from the whole literal ever runs. tttt does its literal's nested generic calls in one
+  go (infer_type_arguments' second pass re-checks the literal with them instantiated, no applicability check in
+  between): this is plan 38 "Not done" item 6 (SkipGenericFunctions for generic functions nested in literal arguments).
+  Standalone repro: `type AF<T> = { (x: T): void; _t?: T }; declare function raise<T>(t: T): AF<T>; declare function
+  cm<const C extends { states?: Record<string, { entry?: readonly AF<any>[]; after?: { long?: string } }> }>(c: C): C;
+  cm({ states: { a: { entry: [raise(1)] }, c: { after: { long: 'd', nonexistent: 'd' } } } })` (tsc: TS2353).
 
 ### drizzle (0; 693 at pinning)
 Pinned 2026-09-29 (seventh window, todo entry 1): drizzle-orm at 15454dbe, the package's src and type-tests through
