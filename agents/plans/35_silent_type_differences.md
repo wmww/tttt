@@ -155,6 +155,37 @@ What the agents left, roughly by size (their test names are examples):
       late-bound expando for `f[Symbol.iterator] = ...` in a TS file), typeGuardRedundancy (tsc keeps both signatures
       of `x.substr | x.toFixed` in a conditional's subtype reduction), fakeInfinity2/3 (`() => Infinity`, not the alias).
 
+## Left by fan-out agent A of 2026-10-05
+Mechanisms found but not fixed (types-semantics tail):
+- **Merged generic interface members aren't node-reused** (es2018ObjectAssign, usePromiseFinally, likely
+  useRegexpGroups/doYouNeedToChangeYourTargetLibraryES2016Plus): `p.finally` of `Promise<number>` prints
+  `(onfinally?: () => void)`, not the written `(() => void) | undefined | null`; a local generic interface declared
+  twice behaves the same, once it doesn't (probe: `interface Q<T> { fin(cb?: (() => void) | undefined | null): Q<T> }`
+  plus `interface Q<T> { x: T }`). tsc's reason not found (canReuseTypeNodeAnnotation looked equal); instrument tsc.
+- **Contextual type of a `yield` is only known top-down** (generatorReturnTypeInference(NonStrict) g311): a generator
+  function *expression*'s TNext from `const y: string = yield` needs the statement checked before its return type is
+  inferred; tsc asks getContextualType(yield) bottom-up. Checking the body first risks circularities.
+- **Static side resolution lowers the base's type arguments first** (cloduleGenericOnSelfMember,
+  classDeclarationShouldBeOutOfScopeInComputedNames probably): `class S extends B<typeof S.Base>` reads `S.Base`
+  through S's static members, which members.c builds after class_base() lowered the type arguments -> cycle -> any.
+  tsc publishes the static members (exports + base constructor props) before default construct signatures.
+- **Default `{}` of a nested pattern padded with the pattern's implied types** (destructuringParameterDeclaration10
+  strict=false, third function): `{ a: { json = [] } = {} }` contextually typed: the `{}` gets `json?: undefined[]`
+  (not widened, widenTypeInferredFromInitializer is literal-only), which subtype-reduces into string[]. tttt ends with
+  any[] | string[]; making binding_element_implied_type literal-only as a contextual type wasn't enough (the element's
+  own type in ty_binding_element_type widens the default fully before the union).
+- **Spread of a union with a generic member** (spreadInvalidArgumentType o8): `{ ...(T | {a: number}) }` is
+  `T | { a: number }` (getSpreadType maps over the union, a generic member stays itself); tttt spreads T's constraint.
+- **Narrowable references during inference** (intersectionSatisfiesConstraint, voidReturnIndexUnionInference,
+  mappedTypeIndexedAccessConstraint, narrowingTypeofUndefined2): constraint substitution of generics with union
+  constraints differs where the contextual type is a call's resolved parameter; needs a tsc trace.
+- **Enum member names are source text** (enumIdentifierLiterals `1.0` -> "1", enumWithUnicodeEscape1): EnumCase.name
+  is a Span; tsc uses the numeric literal's canonical text and the cooked string.
+- `export { undefined }` (reExportUndefined1): tsc resolves it to undefinedSymbol (type undefined); tttt's alias has
+  no target. sliceResultCast: tsc keeps two identical-looking `slice` signatures of two tuple types (this-instantiated).
+- Single-member enum (typeArgumentInferenceWithObjectLiteral): `enum E1 { X }` makes E1 the regular E1.X literal;
+  tsc ends with the fresh E1.X for `x` in `f1({ w: x => x, r: () => E1.X }, E1.X)` (prints `E1.X`).
+
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
 inference rule that shows up here should be checked on zod and valibot (inference-heavy) for instruction counts too.
