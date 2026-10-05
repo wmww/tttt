@@ -104,6 +104,7 @@ typedef struct Program {
     Checker* checker; // Created by program_make_current(), checks the first share of the files
     Checker** checkers; // malloc'd, checker_count of them once typechecked: checker and the others
     u32 checker_count;
+    u32* file_shares; // malloc'd: the checker of each checked file of source_files_ordered (see share_of())
     u32 requested_checkers; // program_set_checkers()
     // program_declaration_diagnostics_cli(): earlier phases reported something
     bool declaration_diagnostics_cli, declaration_diagnostics_earlier;
@@ -212,6 +213,7 @@ static void program_drop(Program* me) {
     load_pool_destroy(my pool);
     // First, its memos point into the AST and the scopes
     for (u32 i = 1; i < my checker_count; i++) checker_drop(my checkers[i]);
+    free(my file_shares);
     free(my checkers);
     checker_drop(my checker);
     drop_source_files(me);
@@ -2304,6 +2306,11 @@ Checker* program_checker_at(Program const* me, u32 index) {
     return my checkers[index];
 }
 
+// Which checker checks the index-th checked file
+static u32 share_of(Program const* me, u32 index) {
+    return my file_shares[index];
+}
+
 // The checker that checked a file in program_typecheck() (the first one for a file nobody checked). Expression types
 // are only complete in the checker that walked the file: one that didn't would type an expression without the
 // contextual type its parent gives it (see "Expressions" in documentation.md)
@@ -2313,7 +2320,7 @@ Checker* program_checker_of(Program const* me, SourceFile const* file) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile const* source = *i;
         if (source->is_stdlib || !source_file_is_checked(source)) continue;
-        if (source == file) return my checkers[index % my checker_count];
+        if (source == file) return my checkers[share_of(me, index)];
         index++;
     }
     return my checker;
@@ -2370,7 +2377,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     u32 index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_stdlib || !source_file_is_checked(source) || index++ % count != c) continue;
+        if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
         checker->file_order = index - 1;
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
@@ -2379,7 +2386,7 @@ static void check_share(Program* me, u32 c, u32 count) {
     index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
-        if (source->is_stdlib || !source_file_is_checked(source) || index++ % count != c) continue;
+        if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
         if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
     }
@@ -2395,6 +2402,35 @@ static void check_share(Program* me, u32 c, u32 count) {
     checker_make_current(nullptr);
     timespec_get(&end, TIME_UTC);
     checker->check_ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+}
+
+// Deals the checked files to the checkers: which checker checks a file depends only on the file list, so the output
+// depends only on the checker count. Neighbours in program order (a file, then what it imports) share most of their
+// types, and each checker instantiates what its files use again: the files are cut into 2 runs of about equal size
+// per checker, dealt round robin. One run each makes the least duplication (drizzle's peak 1688 -> 1277 MB at 4
+// checkers) but balances worse (valibot's test files sit together, type-fest's biggest file takes its neighbours);
+// two keep most of it (1337 MB) at round robin's wall times or better. Bytes are the cost proxy
+static void deal_files(Program* me) {
+    enum { RUNS_PER_CHECKER = 2 };
+    u32 total = 0;
+    u64 bytes = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if ((*i)->is_stdlib || !source_file_is_checked(*i)) continue;
+        total++;
+        bytes += cstr_size(&(*i)->contents);
+    }
+    free(my file_shares);
+    my file_shares = c_new_n(u32, total ? total : 1);
+    u64 runs = (u64)my checker_count * RUNS_PER_CHECKER;
+    u32 index = 0;
+    u64 before = 0;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if ((*i)->is_stdlib || !source_file_is_checked(*i)) continue;
+        u64 size = cstr_size(&(*i)->contents);
+        // (A file belongs to the run its middle byte falls in)
+        my file_shares[index++] = (u32)((before + size / 2) * runs / (bytes ? bytes : 1) % my checker_count);
+        before += size;
+    }
 }
 
 static void check_shares_run(CheckShares* me) {
@@ -2417,9 +2453,8 @@ void program_typecheck(Program* me) {
 
     scope_report_missing_prefixes(my binder);
     program_report_missing_global_types(me);
-    // The files are dealt to the checkers round robin: which checker checks a file depends only on the file list, so
-    // the output depends only on the checker count. Each reports into its own ErrorCtx; nothing may write to the
-    // program's or make symbols meanwhile (they run on threads of their own)
+    // Each checker reports into its own ErrorCtx; nothing may write to the program's or make symbols meanwhile (they
+    // run on threads of their own)
     u32 count = my requested_checkers ? my requested_checkers : 1;
     my checkers = c_new_n(Checker*, count);
     my checker_count = count;
@@ -2434,6 +2469,7 @@ void program_typecheck(Program* me) {
         my checkers[c] = c ? checker_new(me) : my checker;
         my checkers[c]->errs = &checker_errs[c];
     }
+    deal_files(me);
     CheckShares shares = { .program = me, .count = count };
     u32 threads = my threads ? my threads : 1;
     if (threads > count) threads = count;

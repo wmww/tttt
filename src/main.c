@@ -641,7 +641,7 @@ int main(int argc, const char** argv) {
                 "  --no-lib      don't load the standard library\n"
                 "  --keep-going  typecheck even after parse or name errors\n"
                 "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
-                "  --checkers K  check with K checkers (default 4): the files are dealt to them round robin. Only the\n"
+                "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
                 "                order of union members in messages depends on K\n"
                 "  --threads N   run the checkers on N threads (default: the number of cores, at most 4)\n"
                 "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
