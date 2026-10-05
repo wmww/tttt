@@ -138,7 +138,6 @@ fails types in both configurations.
 - Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
   generic method type parameters (`Outer<string>.Outer.m<U>.In`).
-- Duplicate class/interface members show as separate symbols (tsc: one merged symbol).
 - multipleDeclarations (JS): `F.prototype.m = function` next to `this.m = v` is two symbols in tsc, one member here.
 
 ## Narrowing and flow

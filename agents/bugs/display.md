@@ -1,7 +1,8 @@
 # Display bugs (types/symbols baselines)
 What tttt prints differently from tsc, where the underlying type is right (or nearly). `./displaydiff.py` ranks the
 mechanisms across the suite (`other` is mostly type-core bugs the types baseline shows first); these are the known
-rules. Plan 21 (closed) did the bulk. Re-probed 2026-09-27 (triage) unless noted.
+rules. Plan 21 (closed) did the bulk. Named tests were checked failing on 2026-10-05 (suite 13098); probe files
+(`*.ts` without a test name) weren't re-run.
 
 ## Aliases
 - `shows_alias()` (ty_display.c) hides type aliases declared in a block/function body when printing for a place.
@@ -11,17 +12,14 @@ getIndexedAccessType): a type gets a *new* alias name only when it is the body o
 Foo<...>`) and that body instantiation created it: an object type (not a homomorphic mapped type over a non-union), a
 union made by distributing a conditional or an indexed access, a deferred conditional/indexed access. A deferred
 conditional keeps its root alias; a resolved one is whatever its branch is. Both halves are in `lower.c` (the
-`renames` logic of TYPE_IDENTIFIER) and `instantiate.c` (TY_CONDITIONAL, `ty_realias`). Fixed in triage 2026-09-27:
-distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`), homomorphic `Prettify<X> =
-{...} & {}`, and (not an alias) the order of a generic spread (`{ a } & T & { b }`). Still wrong (probes in `test/probes/plan19/valibot/`):
+`renames` logic of TYPE_IDENTIFIER) and `instantiate.c` (TY_CONDITIONAL, `ty_realias`). Still wrong (probes in
+`test/probes/plan19/valibot/`):
 - keyof_enum_object.ts: `type V = EnumValues<typeof specialEnum>` (a mapped type indexed by `keyof`, resolving to all
   the enum's members) prints `V`, tsc `specialEnum`. Probably: a union that is exactly an enum's members is the enum
   type in tsc (same interned union), and the alias doesn't win.
 - symbol_key_string_index.ts: `E[K[number] & string]` stays deferred where tsc resolves it to the property type.
   Evaluation, not display.
 - optional_mapped_index_signature.ts: an error message prints `C` (alias) where tsc prints the structure.
-- typeVariableConstraintIntersections: T01..T73 print the alias where tsc prints the reduced type (tsc reduces `K &
-  "c"` by K's constraint, getReducedType; that is the real bug, `bugs/type_core.md`).
 - An imported alias (`import { Simplify } from ...; type X = Simplify<A>`): tsc passes the import's target alias as
   the new alias (getTypeFromTypeAliasReference's `resolveTypeReferenceName(node, SymbolFlags.Alias)` branch). Not
   looked at in tttt.
@@ -37,20 +35,20 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - **union_signatures_with_intersection.ts**: union member order and `(A | B) & C` vs `(A & C) | (B & C)` of signature
   types; `T & readonly [...]` where tsc prints T's constraint.
 - **Numeric-named properties**: tsc prints a property declared with a numeric literal name as written (`1.1`,
-  `9.671406556917009e+24`) and a string-literal one quoted (`{ "1": string }`); the suite's cases pass now. A computed negative number name prints
-  `[-1]` (computedPropertyNamesDeclarationEmit6): `Prop.name_is_value` doesn't tell a number name from a string one.
-- The same for object literals: `{ "0": 0 }` prints `{ 0: number; }`, tsc `{ "0": number; }` (probe: `var m:
+  `9.671406556917009e+24`) and a string-literal one quoted (`{ "1": string }`); the suite's cases pass.
+  `Prop.name_is_value` doesn't tell a number name from a string one, which shows in object literals:
+  `{ "0": 0 }` prints `{ 0: number; }`, tsc `{ "0": number; }` (probe: `var m:
   MyMap<number> = { "0": 0 }`, types baseline).
 - `{ 2n: 1 }` is `{ 2: number }` here, `{}` in tsc (plus TS1539, `bugs/missing_checks.md`).
-- `this` of the contextual signature in a function expression's type (`data : (this: Readonly<...> & Instance) =>
-  ...`): json.stringify.
 - tttt instantiates member signatures of generic classes/interfaces that can't reference the mapped type parameters;
   tsc keeps them (getObjectTypeInstantiation filters with isTypeParameterPossiblyReferenced). Display compensates
-  (`mentions_mapped()`, hacks.md); doing it in `instantiate.c` would be correct and cheaper. Measure on valibot/type-fest.
+  (`mentions_mapped()`, hacks.md); doing it in `instantiate.c` would be correct and cheaper. Measure on
+  valibot/type-fest.
 
 - **Order dependence of `Array<T>` vs `T[]`**: an annotation's display depended on when the global Array type was
   first built (moot since plan 37 D builds Array at checker start), but the mechanism is still there for other global
-  generics: if `X<T>` vs another spelling flips with `-f` vs a full run or with `--checkers`, find what the printer keys on.
+  generics: if `X<T>` vs another spelling flips with `-f` vs a full run or with `--checkers`, find what the printer
+  keys on.
 
 - tsc's type writer re-checks every expression it prints (getTypeOfExpression -> checkExpression, uncached), so the
   object literal types in an expression's printed type are newer than everything the main check made: `true ? {} : 1`
@@ -63,7 +61,6 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   tsc there but is in a reduced probe; cause not found.
 - A conditional type as a constraint prints parenthesized: `<Expected extends (Extends<A, Expected>) extends true ?
   ...>`, tsc without the parentheses (expect-type).
-- reactDefaultPropsInferenceSuccess: the TS6500 related info prints `keyof Props` where tsc prints `"when" | "error"`.
 
 - **Type creation order is union order.** tsc sorts union members by type id, so tttt has to make types in tsc's order.
   Known rules now ported: the class check makes the class's value type first, type parameters are made in
@@ -76,22 +73,15 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - enumAssignmentCompat6 (passes errors): in f.ts, a function-local `enum DiagnosticCategory` shadows the file's exported
   one; tsc prints the exported one as `import("f").DiagnosticCategory` in the types baseline (not accessible by name
   there), tttt as `DiagnosticCategory`.
-- **`import("…")` specifiers**: resolved (2026-09-29). The +6 underline is a file that an import reached before the
-  harness's root list did (tsc then names it by its absolute `/.src/` path, which the harness strips from the text but
-  not the underline): `SourceFile.loaded_by_import`. The reuse gaps of a renamed `import("m").A` shift with it.
-  Still: tsc prefers a package entry/`index` that re-exports the symbol and non-relative paths:
-  declarationEmitForGlobalishSpecifierSymlink2, symbolLinkDeclarationEmitModuleNames(RootDir),
-  bundledDtsLateExportRenaming, declarationEmitTopLevelNodeFromCrossFile2, declarationsForInferredTypeFromOtherFile.
+- **`import("…")` specifiers**: tsc prefers a package entry/`index` that re-exports the symbol and non-relative
+  paths: declarationEmitTopLevelNodeFromCrossFile2, declarationsForInferredTypeFromOtherFile (types).
 - **`import * as ns` of a CommonJS file from an ES module file (node16+)** is a clone of the module in tsc
   (resolveESModuleSymbol, cloneTypeAsModuleType): its type is `typeof ns` by that alias, and the symbol chain doesn't
   name the module through it (`typeof m26` via `import m26 = require`, not an earlier `import * as
-  m4`). tttt's namespace import is the module itself. Tried making the chain skip such imports
-  (symbol_chain.c candidate_list): the import lines then print `typeof import("index")`, since the type itself must
-  be a per-alias clone. (The *PackageExports*/*PatternExports* chains were a circular alias, fixed; see plan 35
-  queue item 2 for what's left.)
-  be a per-alias clone (a symbols-only skip, gated on `!yield_module`, lost 25 node16 tests: tsc does name things
-  through some of those clones). Left: nodeModulesTypesVersionPackageExports x3 (`mod.x` from an ES module file is
-  bare `x` in tsc). The *PackageExports* `cjs`/`mjs` chains were circular aliases (TS2303), now unknown like tsc's.
+  m4`). tttt's namespace import is the module itself (hacks.md `namespace_import_is_clone()`). Making the chain skip
+  such imports isn't enough: the type itself must be a per-alias clone (tsc names things through some of those clones).
+  Left: nodeModulesTypesVersionPackageExports x3 (`mod.x` from an ES module file is bare `x` in tsc); plan 35 queue
+  item 2.
 
 - JS corpus leftovers (probes in `test/probes/plan19/webpack/`): a `require("m").X` alias that resolves to nothing
   prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
@@ -108,18 +98,14 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
 - **Augmentation of an `export =` module merges into the export= target** in tsc (mergeModuleAugmentation resolves
   the module through resolveExternalModuleSymbol first): `declare module "foo" { namespace M {} var M; export = M }`
   then `module "foo" {}` elsewhere adds a declaration to M, not to "foo". tttt merges into the module symbol
-  (binder_link). Affects the symbols of module_augmentUninstantiatedModule, augmentExportEquals1/1_1/2_1,
-  importEqualsError45874, moduleAugmentationDisallowedExtensions, moduleAugmentationWithNonExistentNamedImport,
-  noCrashUMDMergedWithGlobalValue, moduleAugmentationDuringSyntheticDefaultCheck; probably also what members an
-  augmented `export =` module (express-style typings) has: check before changing the binder.
+  (binder_link). Most tests that showed it pass now (augmentExportEquals*, module_augmentUninstantiatedModule):
+  re-check whether the merge itself changed. Still failing symbols: importEqualsError45874,
+  moduleAugmentationWithNonExistentNamedImport, moduleAugmentationDuringSyntheticDefaultCheck.
 - Test files with mixed line endings: tsc's harness splits by `\r\n` when the file has one (splitContentByNewlines),
   so a bare `\n` line stays inside a line and leading "empty" lines survive (genericArray0: line numbers off by one).
   Porting the split in load_test_source() lost 21 tests (directives and rendering of such files): needs the
   renderer to follow too.
-- JSON module default (`ns.default : Symbol("package")`, nodeModulesResolveJsonModule x3) and `typeof undefined` of
-  a local class named `undefined` (undefinedTypeAssignment4): small, not done.
-- An augmentation of an `export =` module (`declare module "./file1" {}`): tsc's symbol at its name prints
-  `Symbol("./file1", ...)`, tttt names it through an alias in scope (`Symbol(x, ...)`): augmentExportEquals4-6.
+- `typeof undefined` of a local class named `undefined` (undefinedTypeAssignment4): small, not done.
 - A module's own exports reached through an alias of the module (`import * as self from "./self"`) are named
   `self.x` at their declarations (baseline_test_case_module_alias_text): functions, variables, type aliases,
   classes and interfaces ask (namespaces and enum members use their full chain). An `export default class C`
@@ -134,35 +120,24 @@ distributed conditionals (`Awaited<string | undefined>`, `keyof Omit<any, "a">`)
   Also there: `this` of a ThisType marker prints no Symbol line (probes in plan19/vue/).
 - `Pick<T, "a">` with T generic: the mapped property expanded from the key's lower bound has no declaration
   (`p.a : Symbol(a)`, tsc `Symbol(a, Decl(...))` from T's constraint).
-- Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests.
+- Duplicate class/interface members show as separate symbols (tsc: one merged symbol): the TS2687 tests (members
+  aren't binder symbols, hacks.md).
 - **Spread doesn't keep the property's identity**: tsc's getSpreadSymbol returns the same symbol when readonly-ness
   doesn't change, so `{ ...x }.a` with `x: N.A` shows `Symbol(N.A.a)` and reuse carets in the types baseline; tttt
   `Symbol(a)`. Setting `.reuse` in `spread_props_of` (ty/expr.c) did it but lost 14 tests: `spread_into`, excess
   property checks and JSX spread attributes read the builder's other fields (and object literal widening may rebuild
   the properties).
-- A union property's symbol lists every member's declarations in tsc (`(A[] | B[]).filter` is `Symbol(Array.filter,
-  Decl x4)`, tttt x2: unionOfArraysFilterCall).
-- A local type merged with an exported value of the same name lists both declarations (importElisionExportNonExportAndDefault).
-- Leftovers of the 2026-10-04 fan-out (fan-s1, symbols "name" bucket), each one test or a known mechanism:
-  - Spread identity (above): spreadMethods, spreadExpressionContextualTypeWithNamespace (`{ ...ns }.f` is `ns.f`).
-  - A static member and a namespace's export of the same name are one symbol (class statics are the class
-    symbol's exports in tsc): exportDefaultProperty2, exportEqualsProperty2 (`static B` + `namespace C { interface
-    B }`), declarationEmitLocalClassHasRequiredDeclare.
-  - Late-bound computed members merge with the written member of the same name, named and ordered like it
-    (`[c0]` with c0 = "1" after `1:` is `T0[1]`, Decls in binding order): dynamicNamesErrors.
-  - Expando declarations inside nested expressions (`(Foo.x = 1)`, `if (Foo.y = 1)`) aren't declarations of Foo
-    here (expandoFunctionNestedAssigments*), nor expandos of a `var` initialized with a function expression in TS
-    (typeFromPropertyAssignment29).
-  - `typeof import("./a").A.foo`: `foo` resolves to A (should be the static property): importTypeTypeofClassStaticLookup.
-  - A setter without `this` parameter takes its getter's (and vice versa): tsc's getSignatureFromDeclaration /
-    getAccessorThisParameter. tttt's this_ref is decided at lookup, before the other accessor's parameter symbol
-    exists when the setter comes first: thisTypeInAccessors (types too).
-  - Two test units with the same file name: tsc's vfs keeps the last content, both units print with their own text
-    and the one file's symbols (moduleResolutionWithExtensions).
-  - Union member order of instantiated anonymous types (discriminateWithDivergentAccessors1's Decl order), plan 21.
-  - `export { globalThis as global }` inside `declare global` gives globalThis a declaration (globalThisGlobalExportAsGlobal,
-    globalThisDeclarationEmit3).
-  - JSON module default (`ns.default : Symbol("package")`, nodeModulesResolveJsonModule x3): the default export of a
-    JSON module is the module symbol itself.
-  - The node16 `cjs`/`mjs` chains (nodeModules*PackageExports): fixed (circular alias); the clone part is plan 35
-    queue item 2.
+- Leftovers of the 2026-10-04 fan-out (fan-s1, symbols "name" bucket), each one test or a known mechanism: - Spread
+  identity (above): spreadExpressionContextualTypeWithNamespace (`{ ...ns }.f` is `ns.f`). - Late-bound computed
+  members merge with the written member of the same name, named and ordered like it (`[c0]` with c0 = "1" after `1:`
+  is `T0[1]`, Decls in binding order): dynamicNamesErrors. - Expando declarations inside nested expressions (`(Foo.x =
+  1)`, `if (Foo.y = 1)`) aren't declarations of Foo here (expandoFunctionNestedAssigments*), nor expandos of a `var`
+  initialized with a function expression in TS (typeFromPropertyAssignment29). - `typeof import("./a").A.foo`: `foo`
+  resolves to A (should be the static property): importTypeTypeofClassStaticLookup. - A setter without `this`
+  parameter takes its getter's (and vice versa): tsc's getSignatureFromDeclaration / getAccessorThisParameter. tttt's
+  this_ref is decided at lookup, before the other accessor's parameter symbol exists when the setter comes first:
+  thisTypeInAccessors (types too). - Two test units with the same file name: tsc's vfs keeps the last content, both
+  units print with their own text and the one file's symbols (moduleResolutionWithExtensions). - Union member order of
+  instantiated anonymous types (discriminateWithDivergentAccessors1's Decl order), plan 21. - `export { globalThis as
+  global }` inside `declare global` gives globalThis a declaration (globalThisGlobalExportAsGlobal,
+  globalThisDeclarationEmit3).
