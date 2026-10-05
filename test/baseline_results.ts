@@ -67636,8 +67636,8 @@ const baselines = {
         types: true,
     },
     'uniqueSymbolsErrors': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'uniqueSymbolsPropertyNames': {

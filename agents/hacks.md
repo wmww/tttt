@@ -49,6 +49,9 @@ src` finds the code-side markers; every significant one has an entry here.
   node first needs them (tsc pays once): a TS2589 near the 5M limit could depend on `--checkers`.
 
 ## Parser
+- `unique symbol` placement (TS1335, `parse_type` primary and `parse_binding_type_ex`): checked by the parser
+  through `unique_allowed_at`, not on the tree like tsc's checkGrammarTypeOperatorNode, and never in JSDoc, where
+  tsc goes to the tag's host (a variable or property declaration allows it).
 - Strings are UTF-8: a lone surrogate escape becomes U+FFFD (`append_code_point()`), so all lone surrogates are one
   string and `"\u{D83D}\u{DE00}"` isn't the emoji. `regex_check_literal()` works in UTF-16 to port tsc's scanner; a
   position between surrogates is the 3rd UTF-8 byte (`utf8_byte_utf16_units()`). A NUL byte ends the file

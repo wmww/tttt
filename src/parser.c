@@ -107,6 +107,13 @@ typedef struct ParserShared {
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
+    // tsc's checkGrammarTypeOperatorNode: a `unique symbol` is only allowed as the whole annotation of a variable, a
+    // class property or a property signature. unique_annotation_next: the next parse_binding_type_ex() is such an
+    // annotation; unique_allowed_at: where its type starts (parentheses moving it in), unique_allowed_span: the
+    // `unique symbol` found there, which must turn out to be the whole type
+    bool unique_annotation_next;
+    char const* unique_allowed_at;
+    Span unique_allowed_span;
     // Where tsc's NonTextFileMarkerTrivia starts (a U+FFFD, TS1490): a token to the end of the file, which the
     // statement list that gets there says isn't a statement (TS1128). Null if none or once said
     char const* binary_marker;
@@ -3191,6 +3198,14 @@ static bool import_keyword_not_expr(Parser* parent) {
     return !tok_is(next, "(") && !tok_is(next, ".") && !tok_is(next, "<");
 }
 
+// `unique` followed by a word on its line: the type operator (tsc's parseTypeOperatorOrHigher), not a type name
+static bool unique_operator_follows(Parser* p) {
+    Tok t = tok_peek(p);
+    if (!tok_is(t, "unique")) return false;
+    Tok next = tok_next(p, t);
+    return !next.newline_before && tok_is_word(next) && *next.start != '#';
+}
+
 static bool parse_unique_symbol_type(Parser* parent) {
     Parser p = parser(parent);
 
@@ -3387,6 +3402,22 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_inferred(c_new(InferredType, parsed.inferred));
     } else if (c == 'u' && parse_unique_symbol_type(&p)) {
         *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
+        if (value_anchor.start == p.shared->unique_allowed_at) {
+            p.shared->unique_allowed_span = span_from(value_anchor);
+        } else if (!p.shared->in_jsdoc) { // (A JSDoc tag's host decides, see hacks.md)
+            grammar_error(&p, span_from(value_anchor), 1335, "'unique symbol' types are not allowed here.");
+        }
+    } else if (c == 'u' && unique_operator_follows(&p)) {
+        // `unique T` for a T that isn't `symbol`: tsc's TypeOperator, whose grammar check says 'symbol' expected at T;
+        // the type is any
+        hop_start_if_ends_on_word_break(&p, "unique");
+        hop_whitespace(&p);
+        Anchor operand_a = anchor(&p);
+        TypeNode operand;
+        expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &operand);
+        grammar_error(&p, span_from(operand_a), 1005, "'symbol' expected.");
+        type_drop(&operand);
+        *ret = type_any;
     } else if (word && parse_identifier_type(&p, &parsed.identifier)) {
         parsed.identifier.jsdoc = p.shared->in_jsdoc;
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
@@ -3394,6 +3425,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_tuple(parsed.tuple_elements, false);
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
+        if (value_anchor.start == p.shared->unique_allowed_at) p.shared->unique_allowed_at = p.pos;
         expect_type(&p, TYPE_PRECEDENCE_NULL, ret);
         hop_whitespace(&p);
         expect_char(&p, ')');
@@ -7691,7 +7723,15 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             };
 
             Binding binding = { .content_span = name_span }; // (Only for the file of the type's span)
-            if (parse_binding_type_ex(&p, &binding, !is_type)) {
+            p.shared->unique_annotation_next = true;
+            bool has_type = parse_binding_type_ex(&p, &binding, !is_type);
+            p.shared->unique_annotation_next = false;
+            if (has_type && is_type && binding.explicit_type.tag == TYPE_UNIQUE_SYMBOL && !modifiers.includes[MODIFIER_READONLY]) {
+                // (tsc's checkGrammarTypeOperatorNode for a PropertySignature; a class property's is TS1331)
+                grammar_error(&p, name_span, 1330, "A property of an interface or type literal whose type is a 'unique "
+                    "symbol' type must be 'readonly'.");
+            }
+            if (has_type) {
                 ret->field.explicit_type = binding.explicit_type;
                 ret->field.explicit_type_span = binding_explicit_type_span(&binding);
                 ret->field.has_explicit_type = binding.has_explicit_type;
@@ -11361,7 +11401,18 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) 
 
     intptr_t mark = error_mark(parent);
     TypeNode type;
+    char const* outer_allowed_at = parent->shared->unique_allowed_at;
+    Span outer_allowed_span = parent->shared->unique_allowed_span;
+    parent->shared->unique_allowed_at = parent->shared->unique_annotation_next ? parent->pos : nullptr;
+    parent->shared->unique_allowed_span = span_null;
+    parent->shared->unique_annotation_next = false;
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
+    // (`unique symbol[]`: where it was allowed, but not the whole type)
+    if (span_valid(parent->shared->unique_allowed_span) && type.tag != TYPE_UNIQUE_SYMBOL) {
+        grammar_error(parent, parent->shared->unique_allowed_span, 1335, "'unique symbol' types are not allowed here.");
+    }
+    parent->shared->unique_allowed_at = outer_allowed_at;
+    parent->shared->unique_allowed_span = outer_allowed_span;
     ret->has_explicit_type = true;
     ret->explicit_type = type;
     binding_set_explicit_type_span(ret, span_from(a));
@@ -11639,8 +11690,22 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         }
 
         bool typed = false;
-        if (parse_binding_type_or_set_to_default(&p, &initializer.binding)) {
+        p.shared->unique_annotation_next = true;
+        bool has_type = parse_binding_type_or_set_to_default(&p, &initializer.binding);
+        p.shared->unique_annotation_next = false;
+        if (has_type) {
             typed = true;
+            if (initializer.binding.explicit_type.tag == TYPE_UNIQUE_SYMBOL) {
+                // (tsc's checkGrammarTypeOperatorNode for a VariableDeclaration)
+                Span node = binding_explicit_type_span(&initializer.binding);
+                if (initializer.binding.tag != BINDING_IDENTIFIER) {
+                    grammar_error(&p, node, 1333, "'unique symbol' types may not be used on a variable declaration with a binding name.");
+                } else if (in_for) {
+                    grammar_error(&p, node, 1334, "'unique symbol' types are only allowed on variables in a variable statement.");
+                } else if (ret->keyword != VAR_INIT_CONST && ret->keyword != VAR_INIT_AWAIT_USING) {
+                    grammar_error(&p, initializer.binding.content_span, 1332, "A variable whose type is a 'unique symbol' type must be 'const'.");
+                }
+            }
             end_of_initialization = p.pos;
             hop_whitespace(&p);
         }
