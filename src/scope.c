@@ -15,6 +15,8 @@
 #include "enum_decl.h"
 #include "unused.h"
 
+static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs);
+
 // Symbol tables
 
 #define SYMBOL_TABLE_SCAN_MAX 8
@@ -2190,8 +2192,11 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             Symbol const* other = scope_resolve(my alias->scope, first.sv, SYMBOL_VALUE | SYMBOL_TYPE);
             if (other == me) other = nullptr;
             if (!other) {
-                // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace meaning)
-                error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
+                // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace meaning, with a spelling suggestion,
+                // whose candidates' aliases are resolved: an alias in flight is TS2303 then)
+                if (!report_misspelled(my alias->scope, first, first.sv, SYMBOL_NAMESPACE, true, errs)) {
+                    error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
+                }
             } else if (symbol_resolved_flags(other) & SYMBOL_TYPE) {
                 error_ctx_error_d(errs, first, 2702, "'", first, "' only refers to a type, but is being used as a namespace here.");
             } else {
@@ -3419,7 +3424,10 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, csview name
         // (Keyword types like `unknown` are no symbols in tsc)
         bool builtin = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN;
         bool fits = !symbol->is_placeholder && !builtin && candidate.size && candidate.buf[0] != '"' && candidate.buf[0] != '\'' &&
-            ((symbol->flags & meaning) || ((symbol->flags & SYMBOL_ALIAS) && (symbol_resolved_flags(symbol) & meaning)));
+            ((symbol->flags & meaning) || ((symbol->flags & SYMBOL_ALIAS) &&
+                // (Not an alias in flight itself: tsc's tryResolveAlias)
+                symbol->alias->state != ALIAS_IN_FLIGHT && symbol->alias->state != ALIAS_CIRCULAR &&
+                (symbol_resolved_flags(symbol) & meaning)));
         names[extra + i] = fits ? candidate : (csview){0};
     }
     isize best = spelling_suggestion(name, names, count + extra);
@@ -3507,10 +3515,12 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorth
     error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
-bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs) {
+static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs) {
     Suggestion suggestion = {0};
     if (my binder->suggestion_count++ >= 10 || !scope_suggest(me, name, meaning, &suggestion)) return false;
-    Error* error = error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
+    Error* error = namespace ?
+        error_ctx_error_d(errs, at, 2833, "Cannot find namespace '", name, "'. Did you mean '", suggestion.name, "'?") :
+        error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
     Symbol const* symbol = suggestion.export_local ? nullptr : suggestion.symbol;
     for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
         if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
@@ -3518,6 +3528,10 @@ bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning,
         break;
     }
     return true;
+}
+
+bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs) {
+    return report_misspelled(me, at, name, meaning, false, errs);
 }
 
 typedef struct PendingNotFound {
@@ -3644,8 +3658,9 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
         if (scope->container && scope->container->is_module && scope->container->exports) {
             // `A` of `export default class A` (tsc's resolveName)
             Symbol* found = symbol_table_lookup(scope->container->exports, c_sv("default"), symbol_name_hash(c_sv("default")));
-            if (found && found->is_default_export && symbol_has_meaning(found, meaning) &&
-                csview_equals_sv(symbol_default_export_local_name(found), name)
+            // (The name first: the meaning of an alias resolves it, which may be what is being resolved)
+            if (found && found->is_default_export && csview_equals_sv(symbol_default_export_local_name(found), name) &&
+                symbol_has_meaning(found, meaning)
             ) {
                 return found;
             }

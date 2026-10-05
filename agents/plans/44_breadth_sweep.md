@@ -74,9 +74,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **material-ui +TS2303 x2082** (3 packages; A/matui): in `scope_resolve` (scope.c) the module's `default` export check
-  runs `symbol_has_meaning` before the cheap name comparison, resolving the alias being resolved. Swap the operands
-  (tried in a worktree: all 2082 gone; suite not run).
 - **lib aliases, -TS2307 in 9 packages** (graphql-*, optics-agent, indy-sdk): `--lib esnext.asynciterable` /
   `esnext.bigint` abort ("lib file not found") so nothing is checked. Port tsc's `libEntries` aliases
   (commandLineParser.ts) in `compiler_options_lib_files()`, and report TS6046 for unknown names instead of aborting.
