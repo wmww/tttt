@@ -48203,7 +48203,7 @@ const baselines = {
     'typeGuardRedundancy': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardTautologicalConsistiency': {
         errors: true,
@@ -67601,9 +67601,9 @@ const baselines = {
         types: true,
     },
     'unionTypeReduction2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unionTypeWithIndexSignature': {
         errors: true,

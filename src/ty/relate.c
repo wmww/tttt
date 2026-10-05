@@ -1693,7 +1693,15 @@ static Ternary compare_signatures(
         Ty const* source_type = rest_index ? rest_or_any_type_at(me, source, i) : param_type_at(me, source, i);
         Ty const* target_type = rest_index ? rest_or_any_type_at(me, target, i) : param_type_at(me, target, i);
         if (!source_type || !target_type) break;
-        if (source_type == target_type) continue;
+        // (With strict arity an optional source parameter against a required one fails even of the same type: tsc's
+        // `sourceType !== targetType || checkMode & StrictArity`)
+        bool arity_check = st->relation == TY_RELATION_STRICT_SUBTYPE && i >= min_argument_count(me, source) &&
+            i < min_argument_count(me, target);
+        if (source_type == target_type && !arity_check) continue;
+        if (arity_check) {
+            // `(x?: T) => void` isn't a strict subtype of `(x: T | undefined) => void`, the other way around it is
+            if (is_related_to(me, st, source_type, target_type, false)) return TERNARY_FALSE;
+        }
         // Two callbacks: their parameters are output positions, so only the signatures are compared, the other way
         // around (tsc's compareSignaturesRelated). A Promise<T> that uses T in callbacks only is covariant in T
         Signature const* source_callback = callback ? nullptr : callback_signature(me, source, i, source_type);
