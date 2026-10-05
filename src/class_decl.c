@@ -338,6 +338,7 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
         .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol, .class_decl = me
     };
     this_scope->strict = true;
+    this_scope->class_strict = true;
 
     u32 local_count = 0;
     Span const* locals = static_members ? nullptr : constructor_locals(me, &names->binder->arena, &local_count);
@@ -472,6 +473,11 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     my outer_class = scope_enclosing_class(names);
     unused_register(names, UNUSED_CLASS, me, span_null);
     my outer_generics = names->generics;
+    if (!names->class_strict || !names->strict) {
+        // (The type parameters, heritage clauses and body are strict code of the class)
+        names = scope_new(names, SCOPE_BLOCK);
+        names->strict = names->class_strict = true;
+    }
     names = scope_new_generic_merged(names, &my generic, my symbol, me, class_decl_display_name(me), errs);
 
     for_each (i, vec_class_item, &my items) {

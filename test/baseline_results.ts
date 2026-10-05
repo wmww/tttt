@@ -316,7 +316,7 @@ const baselines = {
         types: true,
     },
     'accessorWithInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -7036,7 +7036,7 @@ const baselines = {
         types: true,
     },
     'convertKeywordsYes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29206,7 +29206,7 @@ const baselines = {
         types: true,
     },
     'strictModeReservedWord': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29216,7 +29216,7 @@ const baselines = {
         types: true,
     },
     'strictModeReservedWordInClassDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -34626,7 +34626,7 @@ const baselines = {
         types: true,
     },
     'classAbstractAccessor': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55996,7 +55996,7 @@ const baselines = {
         types: true,
     },
     'parserGetAccessorWithTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56006,7 +56006,7 @@ const baselines = {
         types: true,
     },
     'parserSetAccessorWithTypeParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57601,7 +57601,7 @@ const baselines = {
         types: true,
     },
     'parserMemberAccessorDeclaration16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

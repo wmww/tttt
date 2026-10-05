@@ -369,6 +369,7 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->flow = parent->flow;
     ret->file = parent->file;
     ret->strict = parent->strict;
+    ret->class_strict = parent->class_strict;
     ret->generics = parent->generics;
     if (kind == SCOPE_BLOCK) ret->function = parent->function;
     return ret;
@@ -398,6 +399,7 @@ void scope_reparent(Scope* me, Scope* parent) {
     my flow = parent->flow;
     my file = parent->file;
     my strict = parent->strict;
+    my class_strict = parent->class_strict;
     my generics = parent->generics;
     if (my kind == SCOPE_BLOCK) my function = parent->function;
 }
@@ -417,18 +419,33 @@ bool block_has_use_strict(Block const* block) {
 
 // 2: in a class, 1: in a module (which says why the code is strict), else 0
 static int strict_reason(Scope const* me) {
+    if (my class_strict) return 2;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         if (scope_rare(scope)->this_ref.class_decl) return 2;
     }
     return my file && my file->is_module ? 1 : 0;
 }
 
-void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
-    if (my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+static bool is_future_reserved_word(Span name) {
     static char const* const reserved[] = { "implements", "interface", "let", "package", "private", "protected", "public",
         "static", "yield" };
-    bool is_reserved = false;
-    for (u32 i = 0; i < c_arraylen(reserved) && !is_reserved; i++) is_reserved = csview_equals(name.sv, reserved[i]);
+    for (u32 i = 0; i < c_arraylen(reserved); i++) if (csview_equals(name.sv, reserved[i])) return true;
+    return false;
+}
+
+void scope_check_strict_class_name(Scope const* me, Span name) {
+    if (my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+    if (!is_future_reserved_word(name)) {
+        scope_check_strict_identifier(me, name, false);
+        return;
+    }
+    error_ctx_error_d(my binder->errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+        "Class definitions are automatically in strict mode.");
+}
+
+void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
+    if (my ambient || !span_valid(name) || !name.source || name.source->has_parse_errors) return;
+    bool is_reserved = is_future_reserved_word(name);
     if (!my strict || !is_reserved) {
         // (tsc's checkContextualIdentifier: `await` and `yield` where they are operators)
         // (Not in types: the parser has no await or yield context there)
@@ -1015,7 +1032,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         props.kind == SYMBOL_DECL_ENUM || props.kind == SYMBOL_DECL_NAMESPACE || props.kind == SYMBOL_DECL_INTERFACE ||
         props.kind == SYMBOL_DECL_TYPE_ALIAS || props.kind == SYMBOL_DECL_TYPE_PARAMETER
     ) {
-        scope_check_strict_identifier(me, props.name, false);
+        if (props.kind == SYMBOL_DECL_CLASS) scope_check_strict_class_name(me, props.name);
+        else scope_check_strict_identifier(me, props.name, false);
     }
     // (Parameters and function names only outside ambient contexts, like tsc's bindParameter)
     if ((props.kind == SYMBOL_DECL_VARIABLE && !(props.is_parameter && me->ambient)) ||

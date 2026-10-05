@@ -499,6 +499,9 @@ typedef struct Scope {
     bool jsdoc_parameter_type;
     // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
     bool strict;
+    // In a class (its type parameters, heritage clauses and body): strict because of it (tsc's getContainingClass in
+    // getStrictModeIdentifierMessage)
+    bool class_strict;
     bool with_body; // The body of a `with` statement: bound, never checked (tsc's checker skips it)
     // A static field of a class with legacy decorators: no `this` in its initializer (TS2816)
     bool decorated_static_field;
@@ -654,6 +657,8 @@ void binder_check_export_star_conflicts(Binder* me, ErrorCtx* errs);
 bool block_has_use_strict(struct Block const* block);
 // tsc's checkStrictModeIdentifier: in strict mode code the future reserved words aren't names (TS1212/TS1213/TS1214)
 void scope_check_strict_identifier(Scope const* me, Span name, bool in_type);
+/// The name of a class declaration declared in me: strict code of the class
+void scope_check_strict_class_name(Scope const* me, Span name);
 // tsc's checkStrictModeEvalOrArguments: `eval` and `arguments` can't be declared or assigned in strict mode code
 void scope_check_strict_eval_or_arguments(Scope const* me, Span name);
 // tsc's checkStrictModeFunctionDeclaration: below ES2015, no function declarations in the blocks of strict mode code
