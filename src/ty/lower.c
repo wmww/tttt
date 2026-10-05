@@ -2319,7 +2319,7 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
 Ty const* ty_pattern_clone(Checker* me, Ty const* ty) {
     Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
     u32 id = ret->id;
-    *ret = *ty;
+    memcpy(ret, ty, ty_size_of_kind((TyKind)ty->kind));
     ret->id = id;
     ret->flags |= TYF_BINDING_PATTERN;
     return ret;
@@ -2328,7 +2328,7 @@ Ty const* ty_pattern_clone(Checker* me, Ty const* ty) {
 Ty const* ty_pattern_unclone(Checker* me, Ty const* ty) {
     Ty* ret = ty_alloc(me, (TyKind)ty->kind, ty->flags);
     u32 id = ret->id;
-    *ret = *ty;
+    memcpy(ret, ty, ty_size_of_kind((TyKind)ty->kind));
     ret->id = id;
     ret->flags &= ~(u32)TYF_BINDING_PATTERN;
     return ret;

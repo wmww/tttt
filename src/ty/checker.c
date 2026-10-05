@@ -237,11 +237,43 @@ Atom const* checker_atom(Checker* me, csview sv) {
 #ifdef TTTT_ARENA_SITES
 __attribute__((noinline))
 #endif
+#define TY_VARIANT_END(field) ((offsetof(Ty, field) + sizeof(((Ty*)0)->field) + 7) & ~(size_t)7)
+static uint8_t const ty_kind_sizes[] = {
+    [TY_INTRINSIC] = TY_VARIANT_END(intrinsic),
+    [TY_LITERAL] = TY_VARIANT_END(literal),
+    [TY_TYPE_PARAM] = TY_VARIANT_END(param),
+    [TY_DECLARED] = TY_VARIANT_END(declared),
+    [TY_REFERENCE] = TY_VARIANT_END(reference),
+    [TY_ANONYMOUS] = TY_VARIANT_END(anonymous),
+    [TY_UNION] = TY_VARIANT_END(composite),
+    [TY_INTERSECTION] = TY_VARIANT_END(composite),
+    [TY_KEYOF] = TY_VARIANT_END(keyof),
+    [TY_INDEXED] = TY_VARIANT_END(indexed),
+    [TY_CONDITIONAL] = TY_VARIANT_END(conditional),
+    [TY_SUBSTITUTION] = TY_VARIANT_END(substitution),
+    [TY_TEMPLATE_LITERAL] = TY_VARIANT_END(template_literal),
+    [TY_STRING_MAPPING] = TY_VARIANT_END(string_mapping),
+    [TY_EVOLVING_ARRAY] = TY_VARIANT_END(evolving_array),
+};
+#undef TY_VARIANT_END
+static_assert(c_arraylen(ty_kind_sizes) == TY_EVOLVING_ARRAY + 1);
+
+size_t ty_size_of_kind(TyKind kind) {
+    check(kind < c_arraylen(ty_kind_sizes) && ty_kind_sizes[kind]);
+    return ty_kind_sizes[kind];
+}
+
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
 #ifdef TTTT_ARENA_SITES
-    arena_site_count(1, __builtin_return_address(0), sizeof(Ty));
+    arena_site_count(1, __builtin_return_address(0), ty_size_of_kind(kind));
 #endif
+#ifdef TTTT_TY_POISON
+    // (Debugging: what reads past the kind's variant reads garbage)
     Ty* ret = arena_new(&my arena, Ty);
+    memset((char*)ret + ty_size_of_kind(kind), 0xa5, sizeof(Ty) - ty_size_of_kind(kind));
+#else
+    Ty* ret = arena_alloc(&my arena, ty_size_of_kind(kind));
+#endif
     ret->id = my next_type_id++;
     ret->kind = kind;
     ret->flags = flags;
@@ -627,7 +659,7 @@ typedef struct {
 } OriginSpec;
 
 static Ty const* make_origin(Checker* me, OriginSpec const* spec) {
-    Ty* ret = arena_new(&my arena, Ty);
+    Ty* ret = arena_alloc(&my arena, ty_size_of_kind(spec->kind));
     ret->kind = spec->kind;
     if (spec->kind == TY_KEYOF) {
         ret->keyof.operand = spec->types[0];

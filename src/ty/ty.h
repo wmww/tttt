@@ -404,6 +404,10 @@ struct Ty {
 // (Hundreds of thousands per checker; the union is as big as `declared`)
 static_assert(sizeof(Ty) == 136);
 
+// How many bytes of a Ty of the kind are there: ty_alloc() allocates only the header and the kind's variant, so a Ty
+// is never copied whole (ty_copy())
+size_t ty_size_of_kind(TyKind kind);
+
 struct TyCondBranch {
     Ty const* type; // null until lowered if `node` or `source` is set
     TypeNode const* node;
