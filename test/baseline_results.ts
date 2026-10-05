@@ -30378,7 +30378,7 @@ const baselines = {
     'thisInObjectJs': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'thisInOuterClassBody': {
         errors: true,

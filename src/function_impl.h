@@ -145,6 +145,9 @@ typedef struct FunctionImplRare {
     // JavaScript: class_symbol is the function expression's own (made by its `this.x = v`, tsc's symbol of the function
     // expression, named by getAssignedName): a class whose `this` is still what the context says
     bool own_class_symbol;
+    // A parenthesized property value `a: (function () {})`: this_literal says whose property it is, but tsc's
+    // getContainingObjectLiteral doesn't see through the parentheses (no contextual `this`)
+    bool this_literal_parenthesized;
     // JavaScript: the name an anonymous function expression is called by where it is written (tsc's getAssignedName:
     // the variable, property or binding element it is directly the value of, the left of `=`), see mark_assigned_name()
     Span assigned_name;

@@ -1166,7 +1166,7 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // (tsc's getContextualThisParameterType: the containing literal or assigned object with noImplicitThis, or in JS)
     bool in_js = function->full_span.source && function->full_span.source->is_js;
     if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
-    if (function_impl_rare(function)->this_literal) {
+    if (function_impl_rare(function)->this_literal && !function_impl_rare(function)->this_literal_parenthesized) {
         Expr const* literal = function_impl_rare(function)->this_literal;
         u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)literal };
         Ty const* contextual = intern_get(&my links, context_key, 2);

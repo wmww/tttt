@@ -2169,7 +2169,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // (`a: () => {}` is named by the property: tsc's getAssignedName)
                     else if (!expr_is_perenthisized(&i->value)) function_impl_set_variable_name(i->value.function, i->name_span);
                     // tsc's getContainingObjectLiteral: methods, accessors, `a: function () {}` (not arrows)
-                    if (!function_impl_is_arrow(i->value.function)) function_impl_rare_mut(i->value.function)->this_literal = me;
+                    if (!function_impl_is_arrow(i->value.function)) {
+                        function_impl_rare_mut(i->value.function)->this_literal = me;
+                        if (expr_is_perenthisized(&i->value)) function_impl_rare_mut(i->value.function)->this_literal_parenthesized = true;
+                    }
                 }
                 // (A computed name pairs when late bound, an entity name or a literal, by its text like a class's)
                 Expr const* own_key = i->computed_key;
