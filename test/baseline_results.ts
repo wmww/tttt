@@ -63908,7 +63908,7 @@ const baselines = {
     'literalTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'literalTypes3': {
         errors: true,
@@ -66593,7 +66593,7 @@ const baselines = {
     'equalityWithtNullishCoalescingAssignment(strict=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'independentPropertyVariance': {
         errors: true,

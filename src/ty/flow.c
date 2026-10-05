@@ -1109,9 +1109,8 @@ static bool type_at_flow_assignment(FlowQuery* q, FlowNode const* flow, FlowType
             *out = (FlowType){ assigned, false };
             return true;
         }
-        if (assign->kind == FLOW_ASSIGN_EXPR && assign->assignment->binary_op->op != BINARY_OP_EQUAL) {
-            declared = base_type_of_literal(me, declared); // `x ||= e`
-        } else if (assign->kind == FLOW_ASSIGN_EXPR) {
+        // (`x ||= e` is a definite assignment, not a compound one: tsc's getAssignmentTargetKind)
+        if (assign->kind == FLOW_ASSIGN_EXPR && assign->assignment->binary_op->op == BINARY_OP_EQUAL) {
             // `x = x + 1` (tsc's isInCompoundLikeAssignment)
             Expr const* left = &assign->assignment->binary_op->left;
             bool compound_like = (left->tag == EXPR_IDENTIFIER && left->identifier.compound_like_target) ||
