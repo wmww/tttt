@@ -468,9 +468,9 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     // (isModuleAugmentationExternal) are at the top level of a module or directly in an ambient module of a script,
     // an ambient module can also be at the top level of a script, not a global augmentation
     bool invalid_global = false, nested_ambient_module = false;
+    bool in_script_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container &&
+        scope->container->is_module && scope->parent && scope->parent->kind == SCOPE_SCRIPT;
     if (my is_global || my is_ambient_module) {
-        bool in_script_ambient_module = scope->kind == SCOPE_NAMESPACE && scope->container &&
-            scope->container->is_module && scope->parent && scope->parent->kind == SCOPE_SCRIPT;
         if (my is_global && (scope->kind == SCOPE_SCRIPT || (scope->kind != SCOPE_MODULE && !in_script_ambient_module))) {
             error_ctx_error_d(errs, my name, 2669, "Augmentations for the global scope can only be directly nested "
                 "in external modules or ambient module declarations.");
@@ -497,7 +497,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             // binder_link() merges into that module once aliases can be resolved (an augmented name may be an alias
             // of the module, the declarations then go to its target)
             Symbol* module = nullptr;
-            bool augmentation = scope->kind == SCOPE_MODULE;
+            // (Directly in an ambient module of a script too: tsc's isModuleAugmentationExternal)
+            bool augmentation = scope->kind == SCOPE_MODULE || in_script_ambient_module;
             if (augmentation && !my is_shorthand) {
                 module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
                 module->name_span = my name;

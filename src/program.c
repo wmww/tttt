@@ -457,7 +457,8 @@ static cstr program_path_for_message(Program const* me, csview absolute) {
 static bool source_declares_ambient_module(SourceFile const* source, csview name) {
     for (u32 i = 0; i < source->module_ref_count; i++) {
         ModuleRef const* ref = source->module_refs[i];
-        if (ref->is_declaration && csview_equals_sv(cstr_sv(&ref->path), name)) return true;
+        // (Not an augmentation inside an ambient module: that names a file)
+        if (ref->is_declaration && !ref->nested_in_ambient_module && csview_equals_sv(cstr_sv(&ref->path), name)) return true;
     }
     return false;
 }
@@ -1179,12 +1180,12 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
         ModuleRef* ref = source_file->module_refs[i];
         // `declare module "./a" {}` in a module augments a file. In a script it declares an ambient module, and so
         // does a name that finds no file
-        if (ref->is_declaration && !source_file->is_module) continue;
+        if (ref->is_declaration && !source_file->is_module && !ref->nested_in_ambient_module) continue;
         if (ref->ambient_only) continue;
         if (my options.no_resolve) continue; // program_resolve_names(), once every root is loaded
         // A name the file declares an ambient module for is that module, not a file (tsc's resolveToOwnAmbientModule):
         // `import * as React from "react"` inside react16.d.ts's `declare module "react/jsx-runtime"`
-        if (!source_file->is_module && source_declares_ambient_module(source_file, cstr_sv(&ref->path))) continue;
+        if (!source_file->is_module && !ref->nested_in_ambient_module && source_declares_ambient_module(source_file, cstr_sv(&ref->path))) continue;
         program_load_module_ref(me, source_file, ref);
     }
 
@@ -2207,7 +2208,7 @@ void program_resolve_names(Program* me) {
             SourceFile* source = *i;
             for (u32 j = 0; j < source->module_ref_count; j++) {
                 ModuleRef* ref = source->module_refs[j];
-                if ((!ref->is_declaration || source->is_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
+                if ((!ref->is_declaration || source->is_module || ref->nested_in_ambient_module) && !ref->ambient_only) program_load_module_ref(me, source, ref);
             }
         }
     }

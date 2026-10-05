@@ -32,6 +32,9 @@ typedef struct ModuleRef {
     Span span; // Of the string literal
     // `declare module "m" {}`: an ambient module (script) or an augmentation (module), not an import
     bool is_declaration;
+    // `module "a" {}` directly in `declare module "D" {}` of a script: an augmentation of the file "a" resolves to
+    // (tsc's isModuleAugmentationExternal), so it is resolved like an import
+    bool nested_in_ambient_module;
     // Never resolved to a file, only an ambient module (or pattern) can be it: the implicit jsx-runtime import of a script
     bool ambient_only;
     ModuleRefSyntax syntax;

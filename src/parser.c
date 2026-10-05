@@ -12703,6 +12703,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
                 ret->name = span_from(name_anchor);
                 ret->module_ref = add_module_ref(&p, cstr_move(&val.string), ret->name);
                 ret->module_ref->is_declaration = true;
+                ret->module_ref->nested_in_ambient_module = p.shared->ambient_module_depth > 0;
                 value_drop(&val);
                 hop_whitespace(&p);
                 bool outer_in_namespace = p.shared->in_namespace_body;

@@ -21781,14 +21781,14 @@ const baselines = {
         types: true,
     },
     'moduleAugmentationsImports3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleAugmentationsImports4': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'moduleClassArrayCodeGenTest': {
         errors: true,
@@ -22482,8 +22482,8 @@ const baselines = {
     },
     'module_augmentUninstantiatedModule': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'module_augmentUninstantiatedModule2': {
         errors: true,
@@ -25933,7 +25933,7 @@ const baselines = {
     'privacyGloImportParseErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyGloInterface': {
         errors: true,
