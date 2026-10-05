@@ -1866,13 +1866,29 @@ void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty co
     cstr_drop(&object_str);
 }
 
+// tsc's checkIndexedAccessIndexType for an index a generic object rejects: a private or protected member is TS4105
+// rather than TS2536 (the first member of the apparent type that has it decides)
+static void report_invalid_generic_index(Checker* me, Ty const* object, Ty const* index, Span span, ErrorCtx* errs) {
+    if (ty_is_generic_object(me, object) && (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string) {
+        Ty const* apparent = ty_apparent_type(me, object);
+        TyList parts = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+        Prop const* prop = nullptr;
+        for (u32 i = 0; i < parts.len && !prop; i++) prop = ty_property_of_type(me, parts.data[i], index->literal.string);
+        if (prop && (prop->flags & (PROP_PRIVATE | PROP_PROTECTED))) {
+            error_ctx_error_d(errs, span, 4105, "Private or protected member '", atom_sv(index->literal.string),
+                "' cannot be accessed on a type parameter.");
+            return;
+        }
+    }
+    cstr index_str = ty_to_cstr(me, index), object_str = ty_to_cstr(me, object);
+    error_ctx_error_d(errs, span, 2536, "Type '", index_str, "' cannot be used to index type '", object_str, "'.");
+    c_drop(cstr, &index_str, &object_str);
+}
+
 void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     Ty const* invalid = ty_invalid_generic_element_access(me, access, object);
     if (!invalid) return;
-    cstr index_str = ty_to_cstr(me, invalid->indexed.index);
-    cstr object_str = ty_to_cstr(me, invalid->indexed.object);
-    error_ctx_error_d(errs, span, 2536, "Type '", index_str, "' cannot be used to index type '", object_str, "'.");
-    c_drop(cstr, &index_str, &object_str);
+    report_invalid_generic_index(me, invalid->indexed.object, invalid->indexed.index, span, errs);
 }
 
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
@@ -1884,9 +1900,7 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
         // tsc's checkIndexedAccessIndexType on the deferred type, reported on the whole `O[K]`
         Ty const* indexed = ty_indexed(me, object, index);
         if (indexed->kind != TY_INDEXED || ty_indexed_access_index_ok(me, indexed)) return;
-        cstr index_str = ty_to_cstr(me, index), object_str = ty_to_cstr(me, object);
-        error_ctx_error_d(errs, span, 2536, "Type '", index_str, "' cannot be used to index type '", object_str, "'.");
-        c_drop(cstr, &index_str, &object_str);
+        report_invalid_generic_index(me, object, index, span, errs);
         return;
     }
     Ty const* apparent = (object->flags & (TYF_ANY | TYF_NEVER)) ? object : ty_apparent_type(me, object);

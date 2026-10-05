@@ -17071,7 +17071,7 @@ const baselines = {
         types: true,
     },
     'indexedAccessPrivateMemberOfGenericConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
