@@ -2417,7 +2417,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
 
     // (tsc's checkGrammarTypeArguments)
     if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked) && !p.shared->import_type_args) {
-        parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
+        grammar_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
     shrink_list(vec_spanned_type, ret);
 
