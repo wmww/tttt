@@ -215,6 +215,16 @@ static void out_module_import(TyDisplay d, Symbol const* module) {
     } else {
         out(d, name);
     }
+    // An ES module named from a file of the other format under node16/nodenext resolution says how to resolve it
+    // (tsc's symbolToTypeNode: the resolution-mode import attribute)
+    ModuleResolutionKind resolution = compiler_options()->module_resolution;
+    SourceFile const* target = module->module ? module->module->file : nullptr;
+    SourceFile const* context = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
+    if ((resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) && target && context &&
+        target->has_format && target->is_esm && !(context->has_format && context->is_esm)
+    ) {
+        out_lit(d, ", { with: { \"resolution-mode\": \"import\" } }");
+    }
     out_lit(d, ")");
     cstr_drop(&module_name);
 }

@@ -49868,12 +49868,12 @@ const baselines = {
     'typeOnlyESMImportFromCJS(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeOnlyESMImportFromCJS(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeQuery': {
         errors: true,
