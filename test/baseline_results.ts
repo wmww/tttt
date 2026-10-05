@@ -18996,12 +18996,12 @@ const baselines = {
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

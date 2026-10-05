@@ -495,6 +495,38 @@ static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, E
         "Consider adding an import instead.");
 }
 
+// tsc's resolveNameHelper under isolatedModules (the option itself, not verbatimModuleSyntax's, which reports the
+// import already): a global value found past an import of the same name in a module, which only brings a type or
+// namespace, would be shadowed once the import is gone (TS2866 at the import)
+static void check_isolated_global_shadow(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->is_set[COMPILER_OPTION_isolated_modules] || !options->isolated_modules) return;
+    if (!names->file || !names->file->is_module || !(names->flow && !names->flow->in_type_query)) return;
+    Symbol const* symbol = my symbol;
+    csview name = identifier_expr_name(me).sv;
+    if (!symbol || symbol_table_get(&names->binder->globals, name) != symbol) return;
+    Scope const* module = names;
+    while (module && module->kind != SCOPE_MODULE) module = module->parent;
+    Symbol const* local = module ? symbol_table_get(&module->locals, name) : nullptr;
+    if (!local || !(local->flags & SYMBOL_ALIAS) || !(symbol_resolved_flags(local) & ~SYMBOL_VALUE)) return;
+    for (u32 i = 0; i < local->decl_count; i++) {
+        SymbolDecl const* decl = &local->decls[i];
+        PortItem const* item = decl->kind == SYMBOL_DECL_ALIAS ? decl->node : nullptr;
+        if (!item || item->jsdoc) continue;
+        if (item->tag != PORT_IMPORT_DEFAULT && item->tag != PORT_IMPORT_GATHER && item->tag != PORT_IMPORT_SPECIFIC &&
+            item->tag != PORT_IMPORT_ALIAS
+        ) {
+            continue;
+        }
+        if (item->type_only || item->type_modifier) return;
+        Span at = item->tag == PORT_IMPORT_SPECIFIC && span_valid(item->source_name) ? span_between(item->source_name, item->decl_name) :
+            item->decl_name;
+        error_ctx_error_d(errs, at, 2866, "Import '", identifier_expr_name(me), "' conflicts with global value used in this file, "
+            "so must be declared with a type-only import when 'isolatedModules' is enabled.");
+        return;
+    }
+}
+
 // tsc's resolveNameHelper at an enum: a member of the enum declared in another file, unqualified, under isolatedModules
 static void check_isolated_enum_member(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
@@ -638,6 +670,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_parameter_reference(me, names, errs);
         check_umd_global_use(me, names, errs);
         check_isolated_enum_member(me, names, errs);
+        check_isolated_global_shadow(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->container_start != my target->flow_start;
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
