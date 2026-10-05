@@ -2075,8 +2075,52 @@ static bool expando_target_is_annotated(PropertyExpr const* access) {
 
 // What the target of `a = v` (or `||=`, `&&=`, `??=`) gives v as its contextual type, given the target's type (tsc's
 // getContextualTypeForBinaryOperand), past the CommonJS and JavaScript container declarations check_binary() handles
+// tsc's isBindableStaticNameExpression(expr, excludeThisKeyword=true): a name, or accesses of names and literals of one
+static bool is_bindable_static_name(Expr const* expr) {
+    if (expr_is_perenthisized(expr)) return false;
+    if (expr->tag == EXPR_IDENTIFIER) return !expr->identifier.keyword;
+    if (expr->tag != EXPR_PROPERTY) return false;
+    if (expr->property->form == PROPERTY_EXPR_BRACKET) {
+        Expr const* key = &expr->property->prop;
+        if (key->tag != EXPR_LITERAL || (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER)) return false;
+    } else if (expr->property->prop.tag != EXPR_IDENTIFIER) {
+        return false; // (`a.#x`)
+    }
+    return is_bindable_static_name(&expr->property->expr);
+}
+
+// `this.b = v`, or `x.b = v` where x isn't a dotted name (or another operator than `=`): when b is a property declared
+// with a type annotation (in a class or a type literal/interface), that annotation is v's contextual type, rather than
+// the type of `a.b` (tsc's getContextualTypeForAssignmentDeclaration, for AssignmentDeclarationKind.None and
+// ThisProperty). Unlike the target's type, it doesn't hold the undefined of an optional property. Null otherwise
+static Ty const* annotated_property_context(Checker* me, BinaryOpExpr const* binary) {
+    PropertyExpr const* access = binary->left.property;
+    // (`a.b = v` is AssignmentDeclarationKind.Property: the type of `a.b`)
+    if (binary->op == BINARY_OP_EQUAL && is_bindable_static_name(&access->expr)) return nullptr;
+    Ty const* object = ty_expr_type(me, &access->expr);
+    if (object->flags & TYF_ANY) return nullptr;
+    object = ty_apparent_type(me, object);
+    // (A union's or intersection's property is a synthetic one, left to the target's type)
+    if (!(object->flags & TYF_OBJECT) || object->kind == TY_UNION || object->kind == TY_INTERSECTION) return nullptr;
+    Atom const* name = ty_literal_name(me, ty_access_key_type(me, access));
+    if (!name) return nullptr;
+    Prop const* prop = ty_find_prop(me, object, name).prop;
+    if (!prop || (prop->flags & (PROP_METHOD | PROP_GETTER | PROP_SETTER))) return nullptr;
+    Prop const* declared = prop;
+    while (declared->target && !declared->mapped) declared = declared->target;
+    if (declared->target || !declared->decl->node || declared->decl->parameter_property) return nullptr;
+    return prop_type(me, prop);
+}
+
 static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binary, Ty const* left) {
     Ty const* assigned_context = left->flags & TYF_ANY ? nullptr : left;
+    // (Only an optional property's type differs from its annotation's: don't look further for others)
+    if (assigned_context && binary->left.tag == EXPR_PROPERTY && compiler_options()->strict_null_checks &&
+        ty_can_be_undefined(me, assigned_context)
+    ) {
+        Ty const* annotated = annotated_property_context(me, binary);
+        if (annotated) assigned_context = annotated;
+    }
     // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
     // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
     if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && binary->right.inner_span.source &&
