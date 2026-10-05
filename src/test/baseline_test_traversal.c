@@ -1639,12 +1639,18 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             Ty const* type = optional_member_type(class_item_get_type(me), my field.is_optional);
             // (Joined into a symbol something else made first: that symbol's type. A static `prototype` property joins
             // the class's own prototype symbol, which the binder makes first: the instance type)
-            bool prototype = my field.is_static && !my field.computed_key && cstr_equals(&my field.name_string, "prototype");
-            if ((first != me || prototype) && ctx->class_symbol) {
+            // (A computed `[k]` whose literal type is "prototype" too)
+            Atom const* name = checker_atom(current_checker, cstr_sv(&my field.name_string));
+            if (my field.is_static && my field.computed_key) {
+                bool is_number = false;
+                name = ty_property_name_of_key(current_checker, ty_expr_type(current_checker, my field.computed_key), &is_number);
+            }
+            bool prototype = my field.is_static && name && csview_equals(atom_sv(name), "prototype");
+            if ((first != me || prototype) && ctx->class_symbol && name) {
                 Checker* checker = current_checker;
                 Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
-                Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my field.name_string)));
+                Prop const* prop = ty_get_prop(checker, owner, name);
                 if (prop) type = prop_type(checker, prop);
             }
             baseline_test_case_add_type(ctx, my field.name_span, type);

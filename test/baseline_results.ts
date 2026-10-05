@@ -37618,12 +37618,12 @@ const baselines = {
     'staticPropertyNameConflicts(usedefineforclassfields=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticPropertyNameConflicts(usedefineforclassfields=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'staticPropertyNameConflictsInAmbientContext': {
         errors: true,
