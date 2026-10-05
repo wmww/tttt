@@ -420,6 +420,19 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
             if (has_void && (source->flags & TYF_UNDEFINED)) dropped[i] = true;
             continue;
         }
+        if (source->kind == TY_TYPE_PARAM) {
+            // A type parameter constrained to a union is a subtype of the rest of the members as a whole, not of one of
+            // them (`T extends A | B` next to A and B)
+            Ty const* constraint = ty_base_constraint(me, source);
+            if (constraint && constraint->kind == TY_UNION) {
+                TyBuf rest = {0};
+                for (u32 j = 0; j < members.len; j++) if (j != i && !dropped[j]) ty_buf_push(&rest, members.data[j]);
+                Ty const* others = ty_union(me, rest.data, rest.len, nullptr, (TyList){0});
+                ty_buf_drop(&rest);
+                dropped[i] = ty_is_related(me, source, others, TY_RELATION_STRICT_SUBTYPE);
+                continue;
+            }
+        }
         Prop const* key = nullptr;
         Ty const* key_type = nullptr;
         // (tsc: of objects, intersections and type variables, conditional types and substitutions, whose properties are

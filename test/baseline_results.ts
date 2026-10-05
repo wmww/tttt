@@ -29473,7 +29473,7 @@ const baselines = {
     'subtypeReductionUnionConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'subtypeRelationForNever': {
         errors: true,
