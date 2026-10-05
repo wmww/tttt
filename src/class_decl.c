@@ -2018,7 +2018,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             }   break;
 
             case CLASS_ITEM_INTERFACE_MEMBER:
-                interface_member_typecheck(&i->interface_memeber, true, errs);
+                interface_member_typecheck(&i->interface_memeber, true, false, errs);
                 break;
 
             case CLASS_ITEM_STATIC_BLOCK:

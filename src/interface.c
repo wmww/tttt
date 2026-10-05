@@ -42,7 +42,7 @@ static void interface_check_overload_optionality(Interface const* me, ErrorCtx* 
 
 void interface_typecheck(Interface const* me, ErrorCtx* errs) {
     for_each (i, vec_interface_member, &my members) {
-        interface_member_typecheck(i, false, errs);
+        interface_member_typecheck(i, false, my type_literal, errs);
     }
     interface_check_overload_optionality(me, errs);
 }

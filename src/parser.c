@@ -5249,6 +5249,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
     *ret = (Interface) {
         .members = members,
         .parsed = true,
+        .type_literal = !is_declaration,
         .span = span_from(a),
     };
     return parse_success(&p);
@@ -5965,7 +5966,8 @@ static bool parse_function_args_inner(
                     bool closes = *after.pos == ')';
                     parse_fail(&after);
                     // tsc's checkGrammarParameterList: checkGrammarForDisallowedTrailingComma after a rest parameter
-                    if (rest && closes && *comma.sv.buf == ',') {
+                    // (Allowed in ambient declarations, GH#23070)
+                    if (rest && closes && *comma.sv.buf == ',' && !p.shared->in_ambient) {
                         parse_error(&p, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
                     }
                 }

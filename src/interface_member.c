@@ -135,7 +135,7 @@ static void interface_member_check_implicit_any(InterfaceMember const* me, Error
     }
 }
 
-void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx* errs) {
+void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_type_literal, ErrorCtx* errs) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME:
             // tsc's checkPropertySignature, checkMethodDeclaration
@@ -196,6 +196,9 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                         error_ctx_grammar_error_d(errs, my key.span, 1166,
                             "A computed property name in a class property declaration must have a simple literal type or a 'unique symbol' type.");
                     }
+                } else if (in_type_literal) {
+                    error_ctx_grammar_error_d(errs, my key.span, 1170,
+                        "A computed property name in a type literal must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 } else {
                     error_ctx_grammar_error_d(errs, my key.span, 1169,
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
