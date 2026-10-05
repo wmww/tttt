@@ -316,6 +316,47 @@ static csview declaration_extension(csview path) {
     return (csview){0};
 }
 
+// node16 and node18 can't `require()` an ES module (nodenext can): TS1471/TS1479 at `at` (the specifier, or the
+// first JSX element of a file whose runtime module it is)
+void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* from = my span.source;
+    bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
+    if ((options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18) && sync_import &&
+        my file && my file->is_esm && my file->is_module
+    ) {
+        if (my syntax == MODULE_REF_REQUIRE) {
+            error_ctx_error_d(errs, at, 1471,
+                "Module '", my path, "' cannot be imported using this construct. The specifier only resolves to an "
+                "ES module, which cannot be imported with 'require'. Use an ECMAScript import instead.");
+        } else {
+            Error* error = error_ctx_error_d(errs, at, 1479,
+                "The current file is a CommonJS module whose imports will produce 'require' calls; however, the "
+                "referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a "
+                "dynamic 'import(\"", my path, "\")' call instead.");
+            // What would make this file an ES module, when its extension leaves that open
+            csview name = cstr_sv(&from->canonical_path);
+            // (tsc's tryGetExtensionFromPath(): a .d.ts is none of these)
+            bool ts = csview_ends_with(name, ".ts") && !csview_ends_with(name, ".d.ts");
+            bool js = csview_ends_with(name, ".js");
+            if (error && (ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) {
+                const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
+                cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
+                bool add_field = cstr_size(&from->package_json) && !from->package_has_type;
+                // (Only the package.json message has a comma before its "or")
+                if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, add_field ? "', or " : "' or ");
+                if (add_field) {
+                    cstr_append_d(&hint, DEFAULT_DISPLAY,
+                        "add the field `\"type\": \"module\"` to '", from->package_json, "'.");
+                } else {
+                    cstr_append_lit(&hint, "create a local package.json file with `{ \"type\": \"module\" }`.");
+                }
+                error_sub_error_s(error, span_null, 1479, hint);
+            }
+        }
+    }
+}
+
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
@@ -341,42 +382,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
     }
     bool allowed = options->allow_importing_ts_extensions || options->rewrite_relative_import_extensions ||
         (my span.source && my span.source->is_declaration);
-    // node16 and node18 can't `require()` an ES module (nodenext can)
-    SourceFile const* from = my span.source;
-    bool sync_import = my syntax == MODULE_REF_REQUIRE || (my syntax == MODULE_REF_IMPORT && from && !from->is_esm);
-    if ((options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18) && sync_import &&
-        my file && my file->is_esm && my file->is_module
-    ) {
-        if (my syntax == MODULE_REF_REQUIRE) {
-            error_ctx_error_d(errs, my span, 1471,
-                "Module '", my path, "' cannot be imported using this construct. The specifier only resolves to an "
-                "ES module, which cannot be imported with 'require'. Use an ECMAScript import instead.");
-        } else {
-            Error* error = error_ctx_error_d(errs, my span, 1479,
-                "The current file is a CommonJS module whose imports will produce 'require' calls; however, the "
-                "referenced file is an ECMAScript module and cannot be imported with 'require'. Consider writing a "
-                "dynamic 'import(\"", my path, "\")' call instead.");
-            // What would make this file an ES module, when its extension leaves that open
-            csview name = cstr_sv(&from->canonical_path);
-            // (tsc's tryGetExtensionFromPath(): a .d.ts is none of these)
-            bool ts = csview_ends_with(name, ".ts") && !csview_ends_with(name, ".d.ts");
-            bool js = csview_ends_with(name, ".js");
-            if (error && (ts || js || csview_ends_with(name, ".tsx") || csview_ends_with(name, ".jsx"))) {
-                const char* rename = ts ? ".mts" : js ? ".mjs" : nullptr;
-                cstr hint = cstr_lit("To convert this file to an ECMAScript module, ");
-                bool add_field = cstr_size(&from->package_json) && !from->package_has_type;
-                // (Only the package.json message has a comma before its "or")
-                if (rename) cstr_append_d(&hint, DEFAULT_DISPLAY, "change its file extension to '", rename, add_field ? "', or " : "' or ");
-                if (add_field) {
-                    cstr_append_d(&hint, DEFAULT_DISPLAY,
-                        "add the field `\"type\": \"module\"` to '", from->package_json, "'.");
-                } else {
-                    cstr_append_lit(&hint, "create a local package.json file with `{ \"type\": \"module\" }`.");
-                }
-                error_sub_error_s(error, span_null, 1479, hint);
-            }
-        }
-    }
+    module_ref_report_require_of_esm(me, my span, errs);
     // (Not for a type-only import or export, or an import type: tsc's resolveExternalModule)
     if (my used_ts_extension && !allowed && !type_only && my file && !dts.size) {
         isize dot = cstr_size(&my path);

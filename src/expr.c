@@ -1383,8 +1383,13 @@ static Symbol* jsx_runtime_module(Span at, Scope* names, ErrorCtx* errs) {
     ModuleRef* ref = names->file ? names->file->jsx_runtime_ref : nullptr;
     if (!ref) return nullptr;
     Symbol* module = binder_module_of_ref(names->binder, ref);
-    if (module || ref->jsx_runtime_reported) return module;
+    if (ref->jsx_runtime_reported) return module;
     ref->jsx_runtime_reported = true;
+    if (module) {
+        // (tsc's resolveExternalModule, with the element as the error node)
+        module_ref_report_require_of_esm(ref, at, errs);
+        return module;
+    }
     if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return nullptr; // TODO: TS7016 for a JavaScript module
     if (compiler_options()->module_resolution == MODULE_RESOLUTION_CLASSIC) {
         error_ctx_error_d(errs, at, 2792, "Cannot find module '", ref->path, "'. Did you mean to set the "

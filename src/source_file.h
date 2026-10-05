@@ -56,7 +56,7 @@ typedef struct ModuleRef {
     cstr alternate_result;
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
     Symbol* module; // Memo of binder_module_of_ref()
-    bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: that it can't be found was said (once per file, like tsc)
+    bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: what there is to say about it was said (once per file, like tsc)
     AliasState module_state;
 } ModuleRef;
 
@@ -237,6 +237,8 @@ static inline cstr module_ref_file_message_path(ModuleRef const* me) {
 // What there is to say about a module name that did find its file (TS5097)
 // type_only: of an `import type`/`export type` declaration (no TS2846 for naming a .d.ts)
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, struct ErrorCtx* errs);
+// TS1471/TS1479: a CommonJS use of an ES module under node16/node18, reported at `at`
+void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct ErrorCtx* errs);
 
 // The diagnostic for a module name that led to no module (neither a file nor an ambient module): TS2307 and its
 // flavours, by what module resolution found instead
