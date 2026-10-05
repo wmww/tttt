@@ -206,6 +206,8 @@ static bool binding_is_thisless(bool has_type, TypeNode const* type, bool has_in
 // tsc's isThislessFunctionLikeDeclaration
 static bool function_is_thisless(FunctionImpl const* function) {
     if (!function->is_constructor && !(function->ret_explicit && type_node_is_thisless(&function->ret))) return false;
+    // (A type predicate is a return type node that isn't one of those: `x is this`)
+    if (function->predicate) return false;
     for_each (i, vec_function_arg, &function->args) {
         InitializedBinding const* binding = &i->initializer;
         if (!binding_is_thisless(binding->binding.has_explicit_type, &binding->binding.explicit_type,
