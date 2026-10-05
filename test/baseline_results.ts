@@ -1431,9 +1431,9 @@ const baselines = {
         types: true,
     },
     'asiAbstract': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'asiAmbientFunctionDeclaration': {
         errors: true,
@@ -34751,9 +34751,9 @@ const baselines = {
         types: true,
     },
     'classAbstractSingleLineDecl': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'classAbstractSuperCalls': {
         errors: true,

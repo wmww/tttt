@@ -7771,9 +7771,18 @@ static bool parse_class_decl(Parser* parent, bool abstract, ClassDecl* ret) {
     ignore parse_decorators(&p, &decorators);
 
     bool is_abstract = abstract;
-    if (hop_start_if_ends_on_word_break(&p, "abstract")) {
-        hop_whitespace(&p);
-        is_abstract = true;
+    // (A modifier only with what follows on its line: `abstract` then a newline is an expression statement)
+    Parser abstract_p = parser(&p);
+    if (hop_start_if_ends_on_word_break(&abstract_p, "abstract")) {
+        hop_whitespace(&abstract_p);
+        if (abstract_p.whitespace != WHITESPACE_NEWLINE) {
+            parse_success(&abstract_p);
+            is_abstract = true;
+        } else {
+            parse_fail(&abstract_p);
+        }
+    } else {
+        parse_fail(&abstract_p);
     }
 
     if (!hop_start_if_ends_on_word_break(&p, "class")) {
