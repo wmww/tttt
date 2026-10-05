@@ -1326,6 +1326,7 @@ void ty_check_overloads_compatible(
     Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
     Span const* names, u32 count, ErrorCtx* errs
 );
+// A contextual signature of a union: `base` returning what any of `composites` returns, with `base`'s `this`
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count);
 bool ty_type_params_identical(Checker* me, TyList source, TyList target);
 bool ty_is_discriminant_property(Checker* me, Ty const* type, Atom const* name); // flow.c

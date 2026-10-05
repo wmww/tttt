@@ -2001,7 +2001,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // A function expression's `this` from its contextual signature is that signature's parameter (tsc's
         // assignContextualParameterTypes: createSymbolWithType(context.thisParameter)), whose annotation is reused
         Signature const* contextual = function && !binding && reusable ? ty_function_assigned_contextual_signature(me, function) : nullptr;
-        while (contextual && contextual->target && !contextual->function) contextual = contextual->target;
+        while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
         FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
         FunctionArg const* context_this = context_function && vec_function_arg_size(&context_function->args) ?
             vec_function_arg_at(&context_function->args, 0) : nullptr;

@@ -6517,8 +6517,14 @@ bool ty_signatures_identical(Checker* me, Signature const* source, Signature con
     return signatures_identical(me, source, target, partial, ignore_return);
 }
 
+// The contextual signature of a union (tsc's getContextualSignature): `base`'s `this` as it is, not the intersection
+// of every member's (that is getUnionSignatures' doing, createUnionSignature clones the first's)
 Signature const* ty_union_signature(Checker* me, Signature const* base, Signature* const* composites, u32 count) {
-    return union_signature(me, base, composites, count);
+    Signature* ret = union_signature(me, base, composites, count);
+    ret->this_type = base->this_type;
+    // (Whose `this` parameter that is: the clone's thisParameter is the base's symbol)
+    ret->declared_by = base->declared_by ? base->declared_by : base;
+    return ret;
 }
 
 bool ty_type_params_identical(Checker* me, TyList source, TyList target) {
