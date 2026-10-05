@@ -1536,8 +1536,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 expr_lookup_names(&my expr, names, &ignored);
                 error_ctx_drop(&ignored);
             }
+            // (unreachable or not: tsc's checkAndAggregateReturnExpressionTypes goes by forEachReturnStatement)
+            if (statement_is_bare_return(me)) flow->has_bare_return = true;
             if (!flow->dead) {
-                if (statement_is_bare_return(me)) flow->has_bare_return = true;
                 flow->has_explicit_return = true;
                 if (flow->return_target) flow_add_antecedent(flow, flow->return_target, flow->current);
                 flow->current = &flow_unreachable;

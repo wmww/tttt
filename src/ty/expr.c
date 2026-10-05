@@ -341,6 +341,10 @@ static bool is_unit_for_reduction(Ty const* ty) {
     return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
 }
 
+bool ty_is_unit(Ty const* ty) {
+    return is_unit_for_reduction(ty);
+}
+
 // An instance type of a class (tsc's ObjectFlags.Class on getTargetType())
 static bool is_class_instance(Ty const* ty) {
     if (ty->kind == TY_REFERENCE) ty = ty->reference.target;
@@ -3136,7 +3140,12 @@ Ty const* ty_object_literal_accessor_type(Checker* me, FunctionImpl const* acces
     Signature const* sig = single_call_signature(me, ty_function_type(me, accessor));
     if (!sig) return any_type(me);
     // (An annotated getter's type is as written: `get s(): typeof S` stays the unique symbol)
-    if (getter) return accessor->ret_explicit ? signature_return_type(me, sig) : widen_literals(me, signature_return_type(me, sig));
+    // (Without one, tsc's getReturnTypeFromBody widens a unit type only, no contextual type for an accessor: a union of
+    // literals stays)
+    if (getter) {
+        Ty const* ret = signature_return_type(me, sig);
+        return accessor->ret_explicit || !ty_is_unit(ret) ? ret : widen_literals(me, ret);
+    }
     // A setter without a getter: its parameter's annotation, else any (tsc's getTypeOfAccessors, whatever the context
     // or an initializer would make of the parameter)
     for_each (i, vec_function_arg, &accessor->args) {

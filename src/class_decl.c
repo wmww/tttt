@@ -149,7 +149,9 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
     Signature const* sig = members->call[0];
     signature_resolve(checker, sig);
     if (my method.accessor == CLASS_ACCESSOR_GET) {
-        return ty_widened_for_declaration(checker, signature_return_type(checker, sig), true);
+        // (A unit type only, like tsc's getReturnTypeFromBody without a contextual type: a union of literals stays)
+        Ty const* ret = signature_return_type(checker, sig);
+        return ty_widened_for_declaration(checker, ret, ty_is_unit(ret));
     }
     // A setter without a getter: its parameter's annotation, else any (tsc's getTypeOfAccessors; not what an
     // initializer or a rest parameter would make of it)

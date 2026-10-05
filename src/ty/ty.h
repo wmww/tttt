@@ -1474,6 +1474,8 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
 // What a declaration without type annotation makes of its initializer's type (tsc's getWidenedType, plus
 // getWidenedLiteralType if `literals`: mutable locations)
 Ty const* ty_widened_for_declaration(Checker* me, Ty const* ty, bool literals);
+// tsc's isUnitType: one literal, enum member, unique symbol, null or undefined (not a union of them)
+bool ty_is_unit(Ty const* ty);
 // An inferred return type: literal types widen unless the contextual return type has room for them
 Ty const* ty_widened_return_type(Checker* me, Ty const* ty, Ty const* contextual);
 Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len);

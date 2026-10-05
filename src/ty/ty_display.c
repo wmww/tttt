@@ -1547,14 +1547,15 @@ static bool statements_have_return(VecStatement const* statements) {
 static bool block_has_return(Block const* block) { return statements_have_return(&block->statements); }
 
 // tsc's typeFromSingleReturnExpression(): the expression of a function's only `return`, when that is directly in its
-// body (or an arrow function's expression body), null otherwise
+// body (or an arrow function's expression body), null otherwise. A bare `return;` before it doesn't count (tsc keeps
+// looking while it has no candidate: `return; return 1;` is `1`'s), after it there's none
 static Expr const* single_return_expr(FunctionImpl const* function) {
     if (!function->has_body || function->is_generator) return nullptr;
     Expr const* found = nullptr;
     for_each (i, vec_statement, &function->body.statements) {
         if (i->tag == STATEMENT_RETURN_EXPR) {
-            if (found || i->expr.tag == EXPR_IMPLICIT_ANY) return nullptr;
-            found = &i->expr;
+            if (found) return nullptr;
+            if (!statement_is_bare_return(i)) found = &i->expr;
         } else if (statements_have_return(&(VecStatement){ .data = (Statement*)i, .size = 1 })) {
             return nullptr;
         }
@@ -1578,6 +1579,36 @@ static FunctionImpl const* single_return_function(Checker* me, FunctionImpl cons
     Expr const* expr = single_return_expr(function);
     if (!expr || expr->tag != EXPR_FUNCTION || expr->function->syntactically_contextual) return nullptr;
     return ty_expr_type(me, expr) == ret ? expr->function : nullptr;
+}
+
+// A function without a return annotation whose only return is a number, string, boolean or bigint literal prints its
+// keyword (tsc's typeFromExpression of a primitive literal). Only observable where the checker's type is another:
+// `return; return 1;` under strictNullChecks is `1 | undefined` to the checker, `number` to the printer
+static Ty const* single_return_keyword(Checker* me, FunctionImpl const* function, Ty const* ret) {
+    // (tsc's FunctionFlags.AsyncGenerator test is a mask; in a call or an annotated initializer it's isContextuallyTyped)
+    if (function->is_async || function->syntactically_contextual) return nullptr;
+    Expr const* expr = single_return_expr(function);
+    if (!expr || expr->tag != EXPR_LITERAL) return nullptr;
+    Ty const* keyword = nullptr;
+    switch (expr->literal.tag) {
+        case VALUE_NUMBER: keyword = ty_intrinsic(me, TY_NUMBER); break;
+        case VALUE_STRING: keyword = ty_intrinsic(me, TY_STRING); break;
+        case VALUE_BOOLEAN: keyword = ty_intrinsic(me, TY_BOOLEAN); break;
+        case VALUE_BIGINT: keyword = ty_intrinsic(me, TY_BIGINT); break;
+        case VALUE_NULL:
+            if (!compiler_options()->strict_null_checks) return nullptr;
+            keyword = ty_intrinsic(me, TY_NULL);
+            break;
+        default: return nullptr;
+    }
+    // (the checker's type is that literal, widened or not, maybe with undefined)
+    TyList parts = ret->kind == TY_UNION ? ret->composite.types : (TyList){ .data = &ret, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = parts.data[i];
+        if (part->flags & TYF_UNDEFINED) continue;
+        if (ty_base_type_of_literal(me, part) != keyword) return nullptr;
+    }
+    return keyword;
 }
 
 static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable) {
@@ -1919,7 +1950,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         return;
     }
     TyDisplay ret_d = reused_if(d, false);
-    if (reusable && !ret_annotation && !function->ret_explicit && !root->class_instance) ret_d.syntactic_function = single_return_function(me, function, ret);
+    if (reusable && !ret_annotation && !function->ret_explicit && !root->class_instance) {
+        ret_d.syntactic_function = single_return_function(me, function, ret);
+        Ty const* keyword = single_return_keyword(me, function, ret);
+        if (keyword) ret = keyword;
+    }
     display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }
 

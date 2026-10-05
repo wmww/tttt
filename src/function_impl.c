@@ -174,6 +174,8 @@ static bool parameters_see_body(FunctionImpl const* me) {
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
+    // (a declaration or method too: what it returns is in the same context)
+    if (names->flow && names->flow->contextual_depth) my syntactically_contextual = true;
     my ambient = names->ambient;
     if (my is_async) {
         my promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);

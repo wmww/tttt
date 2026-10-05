@@ -2111,7 +2111,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
         case EXPR_JSX_ATTRIBUTES:
+            // (what is in an element's braces is contextually typed to tsc's isContextuallyTyped: JsxExpression)
+            flow->contextual_depth++;
             jsx_lookup_names(me, names, errs);
+            flow->contextual_depth--;
             break;
     }
     if (my tag == EXPR_CALL && !my call->uses_new) flow->contextual_depth--;
