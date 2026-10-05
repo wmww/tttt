@@ -4,9 +4,9 @@ Numbers are in `measurements.md`; this is what to try next. Profile with callgri
 has no debug info: for line-level annotation (`callgrind_annotate --auto=yes`) build a copy with
 `meson setup /tmp/relg --buildtype release -Dc_args=-g` (same code, same instruction counts). Compare
 instruction counts across sessions, not wall times. `--time` prints the resident set after each phase and the
-checker's arena size and type count. Memory: `valgrind --tool=massif` sees malloc only; the checker arena is mmap'd
-(to attribute arena bytes, count `__builtin_return_address(0)` per call site in `arena_alloc` and `addr2line` the
-`/tmp/relg` binary run under `setarch -R`, as the 09-28 perf session did).
+checker's arena size and type count. Memory: `./memtrack.sh -p DIR` for the malloc heap (live blocks per phase by
+allocating function; massif's extra-heap estimate is wrong for glibc), `./arenasites.sh -p DIR` for the mmapped binder
+and checker arenas by call site.
 
 ## Leftovers of the 2026-10-05 perf session (todo entry 8)
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
@@ -48,7 +48,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
 - **webpack** (3.7 G, +12% over f0dd10eb): flat profile; the growth is the JS features added since (expandos,
   CommonJS, JSDoc), not one regression.
 
-## Memory (measurements.md "Perf and memory session" has the table: below tsgo everywhere but nest and webpack)
+## Memory (measurements.md "AST and binder memory" has the table: below tsgo everywhere at one checker)
 - **Arena by call site and interned keys by kind**: `./arenasites.sh -p <corpus>`. drizzle at one checker (10-05, 495
   MB arena): types 88 MB (136 bytes each), interned keys ~60 MB (KEY_ANONYMOUS_INSTANCE 15, KEY_CONDITIONAL 13 (node
   pointers and mapper pairs per branch), KEY_CONDITIONAL_INSTANCE 9), instantiated `Prop`s 68 MB (56 bytes),
@@ -62,11 +62,19 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   MB at K=4. One run per checker would be 1277 MB and cut valibot's *total* checker time 28% (837 -> 600 ms), but
   balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
   lib/global types between checkers would take the rest.
-- **The AST is now the biggest gap** (nest, webpack above tsgo): plan 43 (`agents/plans/43_ast_memory.md`) measured
-  it. Malloc overhead is ~3%, not the ~100 MB massif suggested (its extra-heap estimate is wrong for glibc), so node
-  arenas are a time lever (malloc is ~12% of nest's instructions), not a memory one. Two thirds of the AST's words are
-  zero: unions sized by rare variants, optional children inline, JSDoc/checker fields in every node, `Expr`'s two
-  spans, list slack. The binder arena adds ~60 MB (`Scope` 296 B, `Symbol` 224 B). Ranked levers and staging there.
+- **AST and binder diet done** (plan 43, 2026-10-05; numbers in measurements.md): every corpus is below tsgo's peak
+  RSS at one checker now. Tools: `./memtrack.sh -p DIR` (live malloc heap per phase by allocating function, with the
+  share of all-zero words and Spans: 66% zero before, 45% after) and `./arenasites.sh`. The pattern that worked: rare
+  fields behind one owned side struct (`*_rare()` reads a shared all-null static, `*_rare_mut()` allocates on first
+  write), absent optional children as null pointers, spans of one file packed as u32 offsets, bools as bit fields,
+  walk-only scopes popped off the binder arena (hacks.md has the rules each relies on). Levers left, each a few MB:
+  `Span` 24 -> 16 (pointer + u32 length + u32 file index: ~650 `.sv` uses; shrinks every node, `Prop`, `Signature`,
+  `SymbolDecl`), `ModuleRef` 184 bytes (three failure-only strings), `ObjectExprItem` 224, `TypeNode` 72 (literal
+  `Value` + span is the biggest variant; TypeNodes are copied by value everywhere, so a box needs an owner audit), the
+  function parameter scope as a flag on the function scope (~4 MB on webpack, walks depend on meeting it),
+  `LazyMemo` 24 bytes per AST node slot (~10 MB on webpack, dense pages). Node arenas (lever 7) stay a parser *time*
+  lever: malloc/free/realloc are ~12% of nest's instructions, and `list_push`/`shrink_list` cost ~0.7% that lists
+  built in a scratch stack and copied out exact would take back.
 - Type counts are not the problem: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k on
   valibot (tttt 385k).
 
