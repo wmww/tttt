@@ -696,8 +696,8 @@ static void js_syntax_function(Parser* me, FunctionImpl const* function, bool ty
         Span span = span_between(vec_generic_item_front(items)->full_span, vec_generic_item_back(items)->full_span);
         js_syntax_error(me, span, 8004, "Type parameter declarations can only be used in TypeScript files.");
     }
-    if (function->ret_explicit && span_valid(function->ret_span)) {
-        js_syntax_error(me, function->ret_span, 8010, "Type annotations can only be used in TypeScript files.");
+    if (function->ret_explicit && span_valid(function_impl_ret_span(function))) {
+        js_syntax_error(me, function_impl_ret_span(function), 8010, "Type annotations can only be used in TypeScript files.");
     }
 }
 
@@ -2680,7 +2680,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
         vec_function_arg_drop(&function.args);
         return parse_fail(&p);
     }
-    function.args_span = span_from(args_start);
+    function_impl_set_args_span(&function, span_from(args_start));
     Parser colon = parser(&p);
     hop_whitespace(&colon);
     if (hop_char(&colon, ':')) {
@@ -2693,7 +2693,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
                 type_drop(&written);
             } else {
                 function.ret = written;
-                function.ret_span = span_from(ret_a);
+                function_impl_set_ret_span(&function, span_from(ret_a));
                 function.ret_explicit = true;
             }
             parse_success(&colon);
@@ -4286,7 +4286,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
     FunctionArg const* own_first = vec_function_arg_size(&function->args) ? function->args.data : nullptr;
     bool has_this = own_first && own_first->initializer.binding.tag == BINDING_IDENTIFIER &&
         span_equals(own_first->initializer.binding.content_span, "this");
-    if (signature_this && !has_this && !span_valid(function->arrow_span) && signature_this->initializer.binding.has_explicit_type) {
+    if (signature_this && !has_this && !function_impl_is_arrow(function) && signature_this->initializer.binding.has_explicit_type) {
         FunctionArg arg = {
             .jsdoc_this = true,
         };
@@ -4328,7 +4328,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
     if (!function->ret_explicit && signature->ret_explicit && !function->is_constructor) {
         function->ret = signature->ret;
         function->ret.from_jsdoc = true;
-        function->ret_span = signature->ret_span; // (tsc's getJSDocReturnType: the signature's return type node)
+        function_impl_set_ret_span(function, function_impl_ret_span(signature)); // (tsc's getJSDocReturnType: the signature's return type node)
         function->ret_explicit = true;
         signature->ret_explicit = false;
         signature->ret = (TypeNode){0};
@@ -4596,7 +4596,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     jsdoc_apply_template(p, tags, &function->generic, false);
     for_each (i, vec_jsdoc_tag, tags) {
         function->jsdoc_typed |= (i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_TYPE) && !i->nested && !i->earlier;
-        function->jsdoc_class |= i->kind == JSDOC_TAG_CLASS && !i->nested && !i->earlier && !span_valid(function->arrow_span);
+        function->jsdoc_class |= i->kind == JSDOC_TAG_CLASS && !i->nested && !i->earlier && !function_impl_is_arrow(function);
     }
     // `@this {T}`: the function's `this` parameter (tsc's getJSDocThisTag in getSignatureFromDeclaration and
     // getTypeForThisExpressionFromJSDoc). Not of an arrow function, which has no `this` of its own
@@ -4609,7 +4609,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             break;
         }
     }
-    if (this_tag && span_valid(function->arrow_span)) {
+    if (this_tag && function_impl_is_arrow(function)) {
         jsdoc_error(p, this_tag->tag_name, 2730, "An arrow function cannot have a 'this' parameter.");
     }
     FunctionArg const* first = vec_function_arg_size(&function->args) ? function->args.data : nullptr;
@@ -4696,7 +4696,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     // A getter's `@type` is the property's, its return type (tsc's getAnnotatedAccessorType; a setter's isn't looked at)
     JsDocTag* type_tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (type_tag && function->accessor == 1 && !function->ret_explicit) {
-        function->ret = jsdoc_take_type(type_tag, &function->ret_span);
+        Span ret_span;
+        function->ret = jsdoc_take_type(type_tag, &ret_span);
+        function_impl_set_ret_span(function, ret_span);
         function->ret_explicit = true;
         type_tag = nullptr;
     }
@@ -4710,7 +4712,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     if (!function->ret_explicit && !function->is_constructor) {
         JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
         if (tag) {
-            function->ret = jsdoc_take_type(tag, &function->ret_span);
+            Span ret_span;
+            function->ret = jsdoc_take_type(tag, &ret_span);
+            function_impl_set_ret_span(function, ret_span);
             function->ret_explicit = true;
             if (tag->predicate && !function->predicate) {
                 function->predicate = tag->predicate;
@@ -4727,7 +4731,9 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
         JsDocTag* tag = &children[i];
         if (tag->kind == JSDOC_TAG_RETURNS) {
             if (tag->has_type && !function.ret_explicit) {
-                function.ret = jsdoc_take_type(tag, &function.ret_span);
+                Span ret_span;
+                function.ret = jsdoc_take_type(tag, &ret_span);
+                function_impl_set_ret_span(&function, ret_span);
                 function.ret.from_jsdoc = false;
                 function.ret_explicit = true;
                 if (tag->predicate) {
@@ -4770,7 +4776,7 @@ static TypeNode jsdoc_callback_type(JsDocTag* callback, JsDocTag* children, isiz
         list_push(vec_function_arg, &function.args, arg);
     }
     Span span = jsdoc_tag_decl_span(callback);
-    function.args_span = span;
+    function_impl_set_args_span(&function, span);
     function.full_span = span;
     return function_impl_into_type(function);
 }
@@ -5162,7 +5168,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         break;
                     }
                     // (What a method signature is reported at, like a class method: its name)
-                    item.method.func.member_name = item.method.name_span;
+                    function_impl_set_member_name(&item.method.func, item.method.name_span);
                     InterfaceMember member = interface_member_make(
                         item.span,
                         nullptr,
@@ -5959,7 +5965,7 @@ static bool parse_function_args_inner(
         goto drop_and_fail;
     }
 
-    ret->args_span = span_from(args_start);
+    function_impl_set_args_span(ret, span_from(args_start));
 
     if (parse_type_return_syntax) {
         hop_whitespace(&p);
@@ -5988,10 +5994,10 @@ static bool parse_function_args_inner(
         hop_whitespace(&p);
         Anchor ret_a = anchor(&p);
         if (parse_type_predicate(&p, ret)) {
-            ret->ret_span = span_from(ret_a);
+            function_impl_set_ret_span(ret, span_from(ret_a));
             ret->ret_explicit = true;
         } else if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
-            ret->ret_span = span_from(ret_a);
+            function_impl_set_ret_span(ret, span_from(ret_a));
             ret->ret_explicit = true;
         } else if (unambiguous_function_type ||
             (is_definitely_function && (parse_type_return_syntax ? *args_start.start == '(' : commit_on_paren))
@@ -6000,7 +6006,7 @@ static bool parse_function_args_inner(
             // list was (a definite arrow function, a declaration): its return type is missing (tsc's
             // parseTypeOrTypePredicate reports it; a missing type reference, an explicit any)
             expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret);
-            ret->ret_span = span_from_pos(&p);
+            function_impl_set_ret_span(ret, span_from_pos(&p));
             ret->ret_explicit = true;
         } else {
             goto drop_and_fail;
@@ -6137,7 +6143,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     } else if (parse_identifier(&p, &lone_arg_name)) {
         *ret = (FunctionImpl){0};
 
-        ret->args_span = lone_arg_name;
+        function_impl_set_args_span(ret, lone_arg_name);
         Binding binding = {
             .tag = BINDING_IDENTIFIER,
             .content_span = lone_arg_name,
@@ -6168,7 +6174,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
             return parse_fail(&p);
         }
     }
-    ret->arrow_span = span_from(arrow_a);
+    function_impl_set_arrow_span(ret, span_from(arrow_a));
     if (source_is_mts_or_cts(&p) && vec_generic_item_size(&ret->generic.items) == 1) {
         // tsc's checkGrammarArrowFunction: `<T>() =>` is reserved there, `<T,>` and `<T extends X>` aren't
         GenericItem const* item = vec_generic_item_at(&ret->generic.items, 0);
@@ -6187,12 +6193,12 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
     hop_whitespace(&p);
 
     Tok body_start = tok_peek(&p);
-    if (ret->arrow_span.sv.size == 0 && *p.pos != '{') {
+    if (function_impl_arrow_span(ret).sv.size == 0 && *p.pos != '{') {
         // No `=>`: the body is a missing identifier (tsc's parseParenthesizedArrowFunctionExpression), what follows
         // continues the arrow function (`(x: any).props`)
         parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
         Expr expr = expr_implicit_any(span_from_pos(&p));
-        p.pos = span_end_ptr(ret->arrow_span);
+        p.pos = span_end_ptr(function_impl_arrow_span(ret));
         ret->body = (Block){0};
         vec_statement_push(&ret->body.statements, (Statement){ .tag = STATEMENT_RETURN_EXPR, .expr = expr });
         ret->expression_body = true;
@@ -6211,7 +6217,7 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
         Expr expr;
         const char* body_pos = p.pos;
         if (!expect_expr(&p, ctx, &expr) && p.pos == body_pos) {
-            p.pos = span_end_ptr(ret->arrow_span);
+            p.pos = span_end_ptr(function_impl_arrow_span(ret));
         }
         ret->body = (Block){0};
         list_push(vec_statement, &ret->body.statements, (Statement){
@@ -6256,7 +6262,7 @@ static void signature_arrow_return_type(Parser* parent, FunctionImpl* func) {
     if (parse_type(&p, TYPE_PRECEDENCE_NULL, &type)) {
         type_drop(&func->ret);
         func->ret = type;
-        func->ret_span = span_from(ret_a);
+        function_impl_set_ret_span(func, span_from(ret_a));
         func->ret_explicit = true;
     }
     parse_success(&p);
@@ -6468,13 +6474,13 @@ static bool parse_non_arrow_function_inner(Parser* parent, FunctionFlags flags, 
     if (flags.committed && *p.pos != '(' && *p.pos != '<') {
         expected_token_error(&p, "(");
         *ret = (FunctionImpl){0};
-        ret->args_span = span_from_pos(&p);
+        function_impl_set_args_span(ret, span_from_pos(&p));
         if (*p.pos == ':') {
             p.pos++;
             hop_whitespace(&p);
             Anchor ret_a = anchor(&p);
             if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret->ret)) {
-                ret->ret_span = span_from(ret_a);
+                function_impl_set_ret_span(ret, span_from(ret_a));
                 ret->ret_explicit = true;
             }
         }
@@ -7496,8 +7502,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             check_modifiers(&p, &modifiers, modified);
             if (is_type && func.has_body) {
                 // (The body: from the `{` after the parameters and the return type to the end)
-                char const* at = span_valid(func.ret_span) && span_end_ptr(func.ret_span) > span_end_ptr(func.args_span) ?
-                    span_end_ptr(func.ret_span) : span_end_ptr(func.args_span);
+                char const* at = span_valid(function_impl_ret_span(&func)) && span_end_ptr(function_impl_ret_span(&func)) > span_end_ptr(function_impl_args_span(&func)) ?
+                    span_end_ptr(function_impl_ret_span(&func)) : span_end_ptr(function_impl_args_span(&func));
                 while (at < p.pos && *at != '{') at++;
                 parse_error(&p, span_make(p.shared->source, at, p.pos), 1183, "An implementation cannot be declared in ambient contexts.");
             }
@@ -10131,7 +10137,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
 
 static bool expr_ends_with_arrow(Expr const* e) {
     while (!expr_is_perenthisized(e)) {
-        if (e->tag == EXPR_FUNCTION) return span_valid(e->function->arrow_span);
+        if (e->tag == EXPR_FUNCTION) return function_impl_is_arrow(e->function);
         if (e->tag == EXPR_BINARY_OP && binary_op_is_assignment(e->binary_op->op)) {
             e = &e->binary_op->right;
         } else if (e->tag == EXPR_TERNARY) {

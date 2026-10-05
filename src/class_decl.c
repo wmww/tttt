@@ -237,7 +237,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
             my method.func.is_method = !my method.accessor;
             my method.func.accessor = (uint8_t)my method.accessor;
-            my method.func.member_name = my method.name_span;
+            function_impl_set_member_name(&me->method.func, my method.name_span);
             function_impl_lookup_names(&my method.func, false, names, errs);
             break;
 
@@ -478,7 +478,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                 // (tsc's checkGrammarConstructorTypeAnnotation: grammarErrorOnNode)
                 error_ctx_grammar_error_d(
                     errs,
-                    i->constructor.func.ret_span,
+                    function_impl_ret_span(&i->constructor.func),
                     1093,
                     "Type annotation cannot appear on a constructor declaration."
                 );

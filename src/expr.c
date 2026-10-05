@@ -141,8 +141,8 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
         }
         if (scope->kind == SCOPE_FUNCTION && scope->function) {
             FunctionImpl const* function = scope->function;
-            if (span_valid(function->arrow_span) && !is_call) continue;
-            bool member = span_valid(function->member_name) || function->accessor;
+            if (function_impl_is_arrow(function) && !is_call) continue;
+            bool member = span_valid(function_impl_member_name(function)) || function->accessor;
             if (is_call) {
                 legal = function->is_constructor;
             } else if (member && function->is_expression) {
@@ -322,7 +322,7 @@ static bool scope_has_arguments(Scope const* scope) {
         // (Not a signature: tsc's resolveName gives `arguments` to function declarations and expressions, methods,
         // constructors and accessors only)
         if (scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
-            (arrows || !span_valid(scope->function->arrow_span))
+            (arrows || !function_impl_is_arrow(scope->function))
         ) {
             return true;
         }
@@ -359,7 +359,7 @@ static void note_arguments_reference(Scope const* names) {
     for (Scope const* scope = names; scope; scope = scope->parent) {
         if (scope->parameters) return;
         if (scope->kind == SCOPE_FUNCTION) {
-            if (scope->function && !span_valid(scope->function->arrow_span)) scope->function->uses_arguments = true;
+            if (scope->function && !function_impl_is_arrow(scope->function)) scope->function->uses_arguments = true;
             return;
         }
     }
@@ -512,7 +512,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             check_before_super(me, names, 17009, "'this'", errs);
             // tsc's checkThisInStaticClassFieldInitializerInDecoratedClass: up to the this container (through arrows)
             for (Scope const* scope = names; scope && !scope_rare(scope)->this_ref.kind; scope = scope->parent) {
-                if (scope->kind == SCOPE_FUNCTION && !(scope->function && span_valid(scope->function->arrow_span))) break;
+                if (scope->kind == SCOPE_FUNCTION && !(scope->function && function_impl_is_arrow(scope->function))) break;
                 if (!scope->decorated_static_field) continue;
                 error_ctx_error_d(errs, identifier_expr_name(me), 2816, "Cannot use 'this' in a static property initializer of a decorated class.");
                 break;
@@ -534,7 +534,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 if (file->kind == SCOPE_SCRIPT) {
                     my this_kind = THIS_GLOBAL;
                     for (Scope const* scope = names; scope && scope != file; scope = scope->parent) {
-                        if (scope->kind == SCOPE_FUNCTION && scope->function && span_valid(scope->function->arrow_span)) {
+                        if (scope->kind == SCOPE_FUNCTION && scope->function && function_impl_is_arrow(scope->function)) {
                             my this_through_arrow = true;
                         }
                     }
@@ -550,14 +550,14 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             // constructor (the class), a function declaration or a function expression
             Scope const* scope = names;
             while (scope && scope->kind != SCOPE_STATIC_BLOCK &&
-                !(scope->kind == SCOPE_FUNCTION && scope->function && !span_valid(scope->function->arrow_span))
+                !(scope->kind == SCOPE_FUNCTION && scope->function && !function_impl_is_arrow(scope->function))
             ) {
                 scope = scope->parent;
             }
             FunctionImpl const* function = scope && scope->kind == SCOPE_FUNCTION ? scope->function : nullptr;
             if (function && function->is_constructor) {
                 my target = function_impl_rare(function)->constructed_class;
-            } else if (function && !function->is_method && !function->accessor && !span_valid(function->member_name)) {
+            } else if (function && !function->is_method && !function->accessor && !span_valid(function_impl_member_name(function))) {
                 my target = function->symbol;
                 my this_function_ = function;
             } else {
@@ -628,7 +628,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         note_arguments_reference(names);
         FunctionImpl const* container = names->function;
         if (compiler_options()->target < SCRIPT_TARGET_ES2015 && container) {
-            if (span_valid(container->arrow_span)) {
+            if (function_impl_is_arrow(container)) {
                 error_ctx_error_d(errs, identifier_expr_name(me), 2496, "The 'arguments' object cannot be referenced in an arrow function in ES5. "
                     "Consider using a standard function expression.");
             } else if (container->is_async) {
@@ -1681,7 +1681,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 my binary_op->access_site = scope_access_site(names);
             }
             // `o.m = function () {}` (or `??=` & co.): `this` in there may be `o`
-            if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !span_valid(right->function->arrow_span) &&
+            if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !function_impl_is_arrow(right->function) &&
                 left->tag == EXPR_PROPERTY
             ) {
                 function_impl_rare_mut(right->function)->this_assigned_object = &left->property->expr;
@@ -1943,7 +1943,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     for_each (i, vec_object_expr_item, &descriptor->object) {
                         if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || i->value.tag != EXPR_FUNCTION) continue;
                         if (!span_equals(i->name_span, "value") && !span_equals(i->name_span, "get") && !span_equals(i->name_span, "set")) continue;
-                        if (span_valid(i->value.function->arrow_span)) continue;
+                        if (function_impl_is_arrow(i->value.function)) continue;
                         function_impl_rare_mut(i->value.function)->prototype_of = constructor;
                     }
                 }
@@ -2006,7 +2006,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 function_impl_add_names(my function, name_scope, DECL_EXPORTED_NO, false, false);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;
-            function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !span_valid(my function->arrow_span), name_scope, errs);
+            function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !function_impl_is_arrow(me->function), name_scope, errs);
         }   break;
 
         case EXPR_OBJECT:
@@ -2036,11 +2036,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 }
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;
-                    if (i->tag != OBJECT_ITEM_PROPERTY) i->value.function->member_name = i->name_span;
+                    if (i->tag != OBJECT_ITEM_PROPERTY) function_impl_set_member_name(i->value.function, i->name_span);
                     // (`a: () => {}` is named by the property: tsc's getAssignedName)
-                    else if (!expr_is_perenthisized(&i->value)) i->value.function->variable_name = i->name_span;
+                    else if (!expr_is_perenthisized(&i->value)) function_impl_set_variable_name(i->value.function, i->name_span);
                     // tsc's getContainingObjectLiteral: methods, accessors, `a: function () {}` (not arrows)
-                    if (!span_valid(i->value.function->arrow_span)) function_impl_rare_mut(i->value.function)->this_literal = me;
+                    if (!function_impl_is_arrow(i->value.function)) function_impl_rare_mut(i->value.function)->this_literal = me;
                 }
                 // (A computed name pairs when late bound, an entity name or a literal, by its text like a class's)
                 Expr const* own_key = i->computed_key;
@@ -2489,11 +2489,11 @@ static Span node_error_span(Expr const* me) {
             return my as_type->is_satisfies ? my as_type->keyword_span : span;
         case EXPR_FUNCTION: {
             FunctionImpl const* function = my function;
-            if (span_valid(function->arrow_span)) {
+            if (function_impl_is_arrow(function)) {
                 // Only the first line of a block body that spans several
                 char const* end = span_end_ptr(span);
                 if (function->expression_body) return span;
-                char const* line_end = span_end_ptr(function->arrow_span);
+                char const* line_end = span_end_ptr(function_impl_arrow_span(function));
                 while (line_end < end && *line_end != '\n' && *line_end != '\r') line_end++;
                 return line_end < end ? span_make(span.source, start, line_end) : span;
             }
@@ -3259,7 +3259,7 @@ static bool is_literal_expression_of_object(Expr const* me) {
     if (!span_eq(my inner_span, expr_outer_span(me))) return false;
     switch (my tag) {
         case EXPR_OBJECT: case EXPR_ARRAY: case EXPR_REGEX: case EXPR_CLASS_DECL: return true;
-        case EXPR_FUNCTION: return !span_valid(my function->arrow_span);
+        case EXPR_FUNCTION: return !function_impl_is_arrow(me->function);
         default: return false;
     }
 }

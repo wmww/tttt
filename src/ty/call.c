@@ -614,7 +614,7 @@ static bool meets_jsdoc_node_in(Checker* me, Ty const* type, FunctionImpl const*
     Ty const* target = type->anonymous.target ? type->anonymous.target : type;
     TypeNode const* node = target->kind == TY_ANONYMOUS ? target->anonymous.node : nullptr;
     if (!node || !target->anonymous.jsdoc_references_all) return false;
-    Span span = node->tag == TYPE_CALLABLE ? node->callable->function->args_span : node->interface.span;
+    Span span = node->tag == TYPE_CALLABLE ? function_impl_args_span(node->callable->function) : node->interface.span;
     Span first = vec_generic_item_at(&host->generic.items, 0)->full_span;
     return span.source == host->full_span.source && span.sv.buf >= first.sv.buf &&
         span.sv.buf + span.sv.size <= host->full_span.sv.buf + host->full_span.sv.size;
@@ -1600,7 +1600,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     check_args(me, &shape, args, false);
     free(shape.types);
     if (!fits) return;
-    Span at = span_valid(impl->name) ? impl->name : span_valid(impl->member_name) ? impl->member_name : impl->full_span;
+    Span at = span_valid(impl->name) ? impl->name : span_valid(function_impl_member_name(impl)) ? function_impl_member_name(impl) : impl->full_span;
     error_add_related_s(error, at, 2793, cstr_lit(
         "The call would have succeeded against this implementation, but implementation signatures of overloads are not "
         "externally visible."));
@@ -1610,7 +1610,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
 static Span signature_decl_span(Signature const* sig) {
     while (sig->target) sig = sig->target;
     if (sig->function && !sig->function->is_type && span_valid(sig->function->name)) return sig->function->name;
-    if (sig->function && span_valid(sig->function->member_name)) return sig->function->member_name; // A method signature
+    if (sig->function && span_valid(function_impl_member_name(sig->function))) return function_impl_member_name(sig->function); // A method signature
     if (span_valid(sig->name_span)) return sig->name_span;
     return sig->decl_span;
 }

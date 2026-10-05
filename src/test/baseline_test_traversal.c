@@ -2061,7 +2061,7 @@ static void new_target_function_symbol(IdentifierExpr const* me, Span span, Base
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = vec_span_single(function->full_span),
         .span = span,
-        .text = span_valid(function->variable_name) ? cstr_from_sv(function->variable_name.sv) : cstr_lit("(Anonymous function)"),
+        .text = span_valid(function_impl_variable_name(function)) ? cstr_from_sv(function_impl_variable_name(function).sv) : cstr_lit("(Anonymous function)"),
     });
 }
 

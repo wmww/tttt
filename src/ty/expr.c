@@ -1253,7 +1253,7 @@ static bool has_context_sensitive_params(FunctionImpl const* function) {
         if (!i->initializer.binding.has_explicit_type) return true;
     }
     // A function expression's `this` is contextually typed too, unless it declares one
-    if (!span_valid(function->arrow_span)) {
+    if (!function_impl_is_arrow(function)) {
         FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
         if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(first->initializer.binding.content_span, "this"))

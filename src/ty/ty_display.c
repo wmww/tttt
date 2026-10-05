@@ -2704,11 +2704,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 // (and a static method as `typeof C.m`)
                 FunctionImpl const* method = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function : nullptr;
                 Symbol const* owner = method ? function_impl_rare(method)->static_method_of : nullptr;
-                if (owner && span_valid(owner->name_span) && span_valid(method->member_name)) {
+                if (owner && span_valid(owner->name_span) && span_valid(function_impl_member_name(method))) {
                     out_lit(d, "typeof ");
                     out_symbol_name(me, d, owner, SYMBOL_VALUE);
                     out_lit(d, ".");
-                    out(d, method->member_name.sv);
+                    out(d, function_impl_member_name(method).sv);
                     return;
                 }
                 // (and a type alias's type literal by the alias: tsc's getTypeAliasForTypeLiteral)

@@ -758,7 +758,7 @@ static bool generator_fits(Checker* me, Ty const* ret, bool async) {
 void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, ErrorCtx* errs) {
     Ty const* ret = ty_from_node(me, &generator->ret, (LowerCtx){ .generic = true });
     if (ret->flags & TYF_VOID) {
-        error_ctx_error_d(errs, generator->ret_span, 2505, "A generator cannot have a 'void' type annotation.");
+        error_ctx_error_d(errs, function_impl_ret_span(generator), 2505, "A generator cannot have a 'void' type annotation.");
         return;
     }
     if (ret->flags & (TYF_ANY | TYF_ERROR)) return;
@@ -767,7 +767,7 @@ void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, E
     Ty const* yield_type = types ? types->yield_type : ty_intrinsic(me, TY_ANY);
     Ty const* return_type = types ? types->return_type : yield_type;
     Ty const* next_type = types ? types->next_type : ty_intrinsic(me, TY_UNKNOWN_);
-    ty_check_assignable(me, ty_generator_type(me, async, yield_type, return_type, next_type), ret, generator->ret_span, errs);
+    ty_check_assignable(me, ty_generator_type(me, async, yield_type, return_type, next_type), ret, function_impl_ret_span(generator), errs);
 }
 
 // What a `return` in an annotated async function or generator is checked against (tsc's unwrapReturnType), null if

@@ -1534,7 +1534,7 @@ static Expr const* defaulted_initializer(Expr const* value);
 
 static void set_function_class_symbol(Expr* value, Symbol* symbol) {
     value = (Expr*)defaulted_initializer(value);
-    if (value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span) || function_impl_rare(value->function)->class_symbol) return;
+    if (value->tag != EXPR_FUNCTION || function_impl_is_arrow(value->function) || function_impl_rare(value->function)->class_symbol) return;
     SourceFile const* file = value->inner_span.source;
     if (file && file->is_js) function_impl_rare_mut(value->function)->class_symbol = symbol;
     if (file && file->is_js && symbol) scope_mark_jsdoc_class(symbol->binder, symbol, value->function);
@@ -3614,7 +3614,7 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
         }
         if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
         if (arguments && scope->kind == SCOPE_FUNCTION && scope->function && !scope->function->is_type &&
-            (arrows_have_arguments || !span_valid(scope->function->arrow_span))
+            (arrows_have_arguments || !function_impl_is_arrow(scope->function))
         ) {
             // A function's own `arguments` hides outer declarations (tsc's resolveNameHelper returns argumentsSymbol):
             // no symbol, see IdentifierExpr.is_arguments
@@ -3742,7 +3742,7 @@ FunctionImpl const* symbol_decl_js_function(SymbolDecl const* decl) {
         default: return nullptr;
     }
     value = defaulted_initializer(value);
-    return value->tag == EXPR_FUNCTION && !span_valid(value->function->arrow_span) ? value->function : nullptr;
+    return value->tag == EXPR_FUNCTION && !function_impl_is_arrow(value->function) ? value->function : nullptr;
 }
 
 Generic const* symbol_type_generic(Symbol const* me) {
@@ -4139,7 +4139,7 @@ static void add_prototype_property(
         declare_assignment_member(me, &symbol_rare_mut(found)->members, found, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
         return;
     }
-    if (init && (init->tag != EXPR_FUNCTION || span_valid(init->function->arrow_span))) return;
+    if (init && (init->tag != EXPR_FUNCTION || function_impl_is_arrow(init->function))) return;
     if (!init && !(host->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS))) return;
     if (init) function_impl_rare_mut(init->function)->class_symbol = host;
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
@@ -4325,7 +4325,7 @@ static bool this_is_global_script(Scope* me, Scope** arrow) {
     *arrow = nullptr;
     if (!my file || !my file->is_js) return false;
     Scope* scope = me;
-    while (scope && ((scope->kind == SCOPE_BLOCK && !scope->function) || (scope->function && span_valid(scope->function->arrow_span)))) {
+    while (scope && ((scope->kind == SCOPE_BLOCK && !scope->function) || (scope->function && function_impl_is_arrow(scope->function)))) {
         if (scope->kind == SCOPE_FUNCTION && !*arrow) *arrow = scope;
         scope = scope->parent;
     }
@@ -4401,7 +4401,7 @@ static Symbol* js_constructor_symbol(Symbol* symbol) {
             Binding const* binding = decl->node;
             if (binding->parent || binding->tag != BINDING_IDENTIFIER) return nullptr;
             Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
-            return init->tag == EXPR_FUNCTION && !span_valid(init->function->arrow_span) ? symbol : nullptr;
+            return init->tag == EXPR_FUNCTION && !function_impl_is_arrow(init->function) ? symbol : nullptr;
         }
         // `ns.F = function () {}`
         if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return symbol_decl_js_function(decl) ? symbol : nullptr;
@@ -4525,7 +4525,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
     // The function `this` belongs to (arrow functions have their container's)
     FunctionImpl const* function = nullptr;
     for (Scope const* scope = me; scope && !function; scope = scope->parent) {
-        if (scope->kind == SCOPE_FUNCTION && scope->function && !span_valid(scope->function->arrow_span)) function = scope->function;
+        if (scope->kind == SCOPE_FUNCTION && scope->function && !function_impl_is_arrow(scope->function)) function = scope->function;
         if (scope->kind == SCOPE_STATIC_BLOCK || scope->kind == SCOPE_MODULE || scope->kind == SCOPE_SCRIPT) break;
     }
     switch (this->this_kind) {

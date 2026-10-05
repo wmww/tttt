@@ -2869,7 +2869,7 @@ static bool never_initialized(Symbol const* symbol) {
 static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl const* function) {
     Expr const* reference = skip_reference_wrappers(q->reference);
     if (reference->tag != EXPR_IDENTIFIER) return false;
-    if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return span_valid(function->arrow_span);
+    if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return function_impl_is_arrow(function);
     Symbol const* symbol = q->symbol;
     if (!symbol || symbol->flow_start == start) return false;
     // (Not a `const x = []`: what a closure sees of it is `any[]`, whatever is pushed after, tsc's checkIdentifier)

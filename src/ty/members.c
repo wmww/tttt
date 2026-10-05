@@ -3202,7 +3202,7 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
             value = &value->binary_op->right;
         }
     }
-    if (!value || value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span)) return false;
+    if (!value || value->tag != EXPR_FUNCTION || function_impl_is_arrow(value->function)) return false;
     SourceFile const* file = value->inner_span.source;
     if (!file || !file->is_js) return false;
     *name = span_valid(value->function->name) ? value->function->name.sv : ty_symbol_display_name(symbol).sv;
@@ -3210,7 +3210,7 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
 }
 
 Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
-    if (function->is_type || span_valid(function->arrow_span) || function_impl_rare(function)->this_literal) return nullptr;
+    if (function->is_type || function_impl_is_arrow(function) || function_impl_rare(function)->this_literal) return nullptr;
     // (A named function expression tagged `@class` that isn't assigned to anything is a class of its own name)
     Symbol const* symbol = function_impl_rare(function)->class_symbol ? function_impl_rare(function)->class_symbol :
         function->is_expression && !function->jsdoc_class ? nullptr : function->symbol;
@@ -3420,9 +3420,9 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
         ret = ty_intrinsic(me, TY_ANY);
         FunctionImpl const* function = sig->function;
         if (!sig->target && function && !function->accessor && (function->is_type || function->ret_explicit) &&
-            span_valid(function->ret_span)
+            span_valid(function_impl_ret_span(function))
         ) {
-            ty_error_at(me, function->ret_span, 2577, cstr_from("Return type annotation circularly references itself."));
+            ty_error_at(me, function_impl_ret_span(function), 2577, cstr_from("Return type annotation circularly references itself."));
         }
     }
     sig->ret = ret;

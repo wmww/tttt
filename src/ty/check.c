@@ -172,7 +172,7 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
         FunctionImpl const* function = ty->anonymous.node->callable->function;
         // (A JSDoc `function(...)` type has no symbol in tsc)
         if (function->jsdoc_type && !function->jsdoc_callback) return (Span){0};
-        return span_valid(function->member_name) ? function->member_name : function->full_span;
+        return span_valid(function_impl_member_name(function)) ? function_impl_member_name(function) : function->full_span;
     }
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_INTERFACE) return ty->anonymous.node->interface.span;
     FunctionImpl const* function = ty->anonymous.function;
@@ -487,7 +487,7 @@ static bool elaborate_jsx_attributes(Checker* me, Expr const* expr, Ty const* so
 
 static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
     FunctionImpl const* function = expr->function;
-    if (!span_valid(function->arrow_span) || !function->expression_body) return false;
+    if (!function_impl_is_arrow(function) || !function->expression_body) return false;
     for_each (i, vec_function_arg, &function->args) {
         if (i->initializer.binding.has_explicit_type) return false;
     }
@@ -543,11 +543,11 @@ void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function,
     if (!function->is_async || function->is_generator) return;
     // (Or the written return type of a JSDoc `@type` signature: tsc's getEffectiveReturnTypeNode)
     FunctionImpl const* tag = function->ret_explicit ? nullptr : function_impl_jsdoc_tag_signature(function);
-    if (!function->ret_explicit && !(tag && tag->ret_explicit && span_valid(tag->ret_span))) return;
+    if (!function->ret_explicit && !(tag && tag->ret_explicit && span_valid(function_impl_ret_span(tag)))) return;
     if (compiler_options()->target < SCRIPT_TARGET_ES2015) return;
     Ty const* ret = tag ? ty_jsdoc_tag_return_type(me, function) : ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
     if (!ret) return;
-    Span ret_span = tag ? tag->ret_span : function->ret_span;
+    Span ret_span = tag ? function_impl_ret_span(tag) : function_impl_ret_span(function);
     if (ret->flags & TYF_ERROR) return;
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
@@ -627,7 +627,7 @@ static bool check_assignable(
     // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
     while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
     // An arrow function whose block body spans lines is reported on its first line (tsc's getErrorSpanForArrowFunction)
-    if (expr && expr->tag == EXPR_FUNCTION && span_valid(expr->function->arrow_span) && span_eq(span, expr_outer_span(expr)) &&
+    if (expr && expr->tag == EXPR_FUNCTION && function_impl_is_arrow(expr->function) && span_eq(span, expr_outer_span(expr)) &&
         !expr_is_perenthisized(expr)
     ) {
         span = function_error_span(expr->function);
@@ -3089,7 +3089,7 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     bool self_type = object && (is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
         (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));
     FunctionImpl const* function = access ? property_context(access)->containing_function : nullptr;
-    char const* at = function ? span_start_ptr(function->member_name) : nullptr;
+    char const* at = function ? span_start_ptr(function_impl_member_name(function)) : nullptr;
     for (u32 i = 0; self_type && at && i < prop->decl->decl_span_count; i++) {
         if (at >= span_start_ptr(prop->decl->decl_spans[i]) && at < span_end_ptr(prop->decl->decl_spans[i])) return;
     }

@@ -48,6 +48,21 @@ void function_impl_drop(FunctionImpl* me) {
 
 const FunctionImplRare function_impl_no_rare = {0};
 
+Span function_impl_span_get(FunctionImpl const* me, FunctionSpan span) {
+    if (!span.start) return span_null;
+    return (Span){ .source = my span_source, .sv = { source_file_start(my span_source) + span.start - 1, span.length } };
+}
+
+void function_impl_span_set(FunctionImpl* me, FunctionSpan* field, Span span) {
+    if (!span_valid(span)) {
+        *field = (FunctionSpan){0};
+        return;
+    }
+    if (!my span_source) my span_source = span.source;
+    panic_if(span.source != my span_source, "a function's spans in different files");
+    *field = (FunctionSpan){ (u32)(span.sv.buf - source_file_start(span.source)) + 1, (u32)span.sv.size };
+}
+
 FunctionImplRare* function_impl_rare_mut(FunctionImpl* me) {
     if (!my rare) my rare = c_new(FunctionImplRare, {0});
     return my rare;
@@ -211,7 +226,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     // A control flow container. tsc: bindContainer()
     my is_expression = kind == FUNCTION_IS_EXPRESSION;
-    my no_outer_type_params = !names->generics && !my is_expression && !my is_method && !span_valid(my member_name) &&
+    my no_outer_type_params = !names->generics && !my is_expression && !my is_method && !span_valid(function_impl_member_name(me)) &&
         !(my full_span.source && my full_span.source->is_js);
     my no_enclosing_type_params = !names->generics && !(my full_span.source && my full_span.source->is_js) &&
         !scope_enclosing_class(names);
@@ -238,8 +253,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (my has_body) flow.current = flow_new_start(&flow, me, continues);
     }
     // (A JavaScript function may be a constructor function: `this.x = v` has its type at the end of it too)
-    bool js_constructor_candidate = names->file && names->file->is_js && !span_valid(my arrow_span) && !my is_method &&
-        !my accessor && !span_valid(my member_name);
+    bool js_constructor_candidate = names->file && names->file->is_js && !function_impl_is_arrow(me) && !my is_method &&
+        !my accessor && !span_valid(function_impl_member_name(me));
     if (is_iife || ((my is_constructor || js_constructor_candidate) && my has_body)) flow.return_target = flow_new_branch_label(&flow);
     // The body of a function with a written return type in a referenced project's source is never looked at: the
     // file isn't checked, and nothing outside the body sees into it (tsc -b reads the project's `.d.ts`, which has no
@@ -251,10 +266,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     Scope* type_params_scope = nullptr;
     if (!generic_empty(&my generic)) {
         Span owner = span_valid(my name) ? my name :
-            span_valid(my member_name) ? my member_name : span_valid(my variable_name) ? my variable_name :
+            span_valid(function_impl_member_name(me)) ? function_impl_member_name(me) : span_valid(function_impl_variable_name(me)) ? function_impl_variable_name(me) :
             sv_make_span(c_sv("(Anonymous function)"));
         // (A class method is named through its class, an object literal's isn't)
-        ClassDecl const* method_of = span_valid(my member_name) && !my is_expression ? scope_enclosing_class(names) : nullptr;
+        ClassDecl const* method_of = span_valid(function_impl_member_name(me)) && !my is_expression ? scope_enclosing_class(names) : nullptr;
         names = scope_new_generic(names, &my generic, owner, method_of ? class_decl_display_name(method_of) : span_null, errs);
         type_params_scope = names;
     }
@@ -277,7 +292,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             .full = i->span,
         });
         // (An arrow function's `this` stays the outer one, whatever parameter it declares: tsc's getThisContainer)
-        if (i->initializer.binding.tag == BINDING_IDENTIFIER && !span_valid(my arrow_span) &&
+        if (i->initializer.binding.tag == BINDING_IDENTIFIER && !function_impl_is_arrow(me) &&
             span_equals(i->initializer.binding.content_span, "this")
         ) {
             if (!i->initializer.binding.has_explicit_type && !i->jsdoc_this) initialized_binding_rare_mut(&i->initializer)->this_of = me;
@@ -475,15 +490,15 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
     bool has_this = count == expected + 1 && is_this_parameter(vec_function_arg_at(&my args, 0));
     if (count != expected && !has_this) {
         if (is_getter) {
-            error_ctx_grammar_error_d(errs, my member_name, 1054, "A 'get' accessor cannot have parameters.");
+            error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1054, "A 'get' accessor cannot have parameters.");
         } else {
-            error_ctx_grammar_error_d(errs, my member_name, 1049, "A 'set' accessor must have exactly one parameter.");
+            error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1049, "A 'set' accessor must have exactly one parameter.");
         }
         return true;
     }
     if (is_getter) return false;
     if (my ret_explicit && !my ret.from_jsdoc) { // (a JSDoc `@returns {void}` is fine)
-        error_ctx_grammar_error_d(errs, my member_name, 1095, "A 'set' accessor cannot have a return type annotation.");
+        error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1095, "A 'set' accessor cannot have a return type annotation.");
         return true;
     }
     FunctionArg const* value = vec_function_arg_at(&my args, has_this ? 1 : 0);
@@ -644,7 +659,7 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     generic_typecheck(&my generic, true, errs);
     function_impl_check_use_strict_parameters(me, errs);
     bool grammar_error = function_impl_check_grammar_parameters(me, errs);
-    if (!grammar_error && my accessor && span_valid(my member_name)) {
+    if (!grammar_error && my accessor && span_valid(function_impl_member_name(me))) {
         grammar_error = function_impl_check_grammar_accessor(me, errs);
     }
     if (!grammar_error && span_valid(function_impl_rare(me)->asterisk)) {
@@ -678,7 +693,7 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             // (tsc's checkParameter; a `@this` tag's parameter is checked by the parser)
             if (i_index != 0) error_ctx_error_d(errs, i->span, 2680, "A 'this' parameter must be the first parameter.");
             if (my is_constructor) error_ctx_error_d(errs, i->span, 2681, "A constructor cannot have a 'this' parameter.");
-            if (span_valid(my arrow_span) && !is_type) {
+            if (function_impl_is_arrow(me) && !is_type) {
                 error_ctx_error_d(errs, i->span, 2730, "An arrow function cannot have a 'this' parameter.");
             }
             if (my accessor) {
@@ -776,8 +791,8 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     if (ty_function_end_reachability(checker, me) != FLOW_REACH_YES) return;
 
     // What tsc reports a function-like node at: its name, the head of an arrow function, else its first token
-    Span name = span_valid(my name) ? my name : my member_name;
-    Span at = my ret_explicit ? my ret_span : function_error_span(me);
+    Span name = span_valid(my name) ? my name : function_impl_member_name(me);
+    Span at = my ret_explicit ? function_impl_ret_span(me) : function_error_span(me);
 
     if (my accessor == 1 && !my has_explicit_return) {
         if (span_valid(name)) error_ctx_error_d(errs, name, 2378, "A 'get' accessor must return a value.");
@@ -799,7 +814,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         type = ty_jsdoc_tag_return_type(checker, me);
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
         FunctionImpl const* signature = function_impl_jsdoc_tag_signature(me);
-        if (signature && signature->ret_explicit && span_valid(signature->ret_span)) at = signature->ret_span;
+        if (signature && signature->ret_explicit && span_valid(function_impl_ret_span(signature))) at = function_impl_ret_span(signature);
     }
     if (type && type->flags & TYF_NEVER) {
         error_ctx_error_d(errs, at, 2534, "A function returning 'never' cannot have a reachable end point.");
@@ -822,14 +837,14 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
 
 Span function_error_span(FunctionImpl const* me) {
     if (span_valid(my name)) return my name;
-    if (span_valid(my member_name)) return my member_name;
-    if (span_valid(my arrow_span)) {
+    if (span_valid(function_impl_member_name(me))) return function_impl_member_name(me);
+    if (function_impl_is_arrow(me)) {
         // tsc's getErrorSpanForArrowFunction: a block body that spans lines (from right after the `=>`) makes it the
         // line of the `=>`
         Span ret = my full_span;
         if (!my expression_body) {
             char const* end = span_end_ptr(ret);
-            char const* line_end = span_end_ptr(my arrow_span);
+            char const* line_end = span_end_ptr(function_impl_arrow_span(me));
             while (line_end < end && *line_end != '\n' && *line_end != '\r') line_end++;
             if (line_end < end) ret.sv.size = line_end - ret.sv.buf;
         }
@@ -877,7 +892,7 @@ void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, 
 static void function_check_circular_return(FunctionImpl const* me, ErrorCtx* errs) {
     if (!compiler_options()->no_implicit_any || !my has_body || my ret_explicit || function_impl_rare(me)->jsdoc_signature_type) return;
     if (!ty_function_return_circular(current_checker, me)) return;
-    Span name = span_valid(my name) ? my name : span_valid(my member_name) ? my member_name : my variable_name;
+    Span name = span_valid(my name) ? my name : span_valid(function_impl_member_name(me)) ? function_impl_member_name(me) : function_impl_variable_name(me);
     if (span_valid(name)) {
         error_ctx_error_d(errs, name, 7023, "'", name, "' implicitly has return type 'any' because it does not have a return "
             "type annotation and is referenced directly or indirectly in one of its return expressions.");
@@ -922,7 +937,7 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
     if (my is_expression && !ty_function_widening_reportable(checker, me)) return;
     if (binding_report_widening_errors_in_type(unwidened, errs)) return;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty_widened_objects(checker, unwidened)));
-    Span name = span_valid(my name) ? my name : my member_name;
+    Span name = span_valid(my name) ? my name : function_impl_member_name(me);
     if (my is_generator && span_valid(name)) {
         // (Of a generator: its yield type, tsc's WideningKind.GeneratorYield)
         error_ctx_error_d(errs, name, 7055, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
@@ -960,7 +975,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(me, false, errs);
     // (The parameter decorators of a class member are the class's to check: they are calls with synthetic arguments,
     // which is what gives them their contextual type)
-    bool class_member = !my is_expression && (span_valid(my member_name) || function_impl_rare(me)->constructed_class);
+    bool class_member = !my is_expression && (span_valid(function_impl_member_name(me)) || function_impl_rare(me)->constructed_class);
     for_each (i, vec_function_arg, &my args) {
         if (!class_member) {
             for_each (decorator, vec_expr, function_arg_decorators(i)) {
@@ -1038,7 +1053,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     }
 
     if (my newline_before_arrow) {
-        error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
+        error_ctx_error_d(errs, function_impl_arrow_span(me), 1200, "Line terminator not permitted before arrow.");
     }
 
     // A function expression's body is checked after the statements of its file (tsc's checkNodeDeferred): its
@@ -1061,8 +1076,8 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // tsc's checkGrammarStatementInAmbientContext for the body, which then covers the statements directly in it
     if (my ambient && my has_body && !my expression_body && my full_span.source && !my full_span.source->has_parse_errors) {
         // (The body's `{`: the first after the parameters and the return type)
-        char const* at = span_valid(my ret_span) && span_end_ptr(my ret_span) > span_end_ptr(my args_span) ?
-            span_end_ptr(my ret_span) : span_end_ptr(my args_span);
+        char const* at = span_valid(function_impl_ret_span(me)) && span_end_ptr(function_impl_ret_span(me)) > span_end_ptr(function_impl_args_span(me)) ?
+            span_end_ptr(function_impl_ret_span(me)) : span_end_ptr(function_impl_args_span(me));
         char const* end = span_end_ptr(my full_span);
         while (at && at < end && *at != '{') at++;
         Span body = at && at < end ? block_first_token(span_make(my full_span.source, at, end)) : span_null;

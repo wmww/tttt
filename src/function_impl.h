@@ -147,25 +147,33 @@ typedef struct FunctionImplRare {
     u32 jsdoc_overload_count;
 } FunctionImplRare;
 
+// A span in the file of the function (FunctionImpl.span_source): offset + 1 (0: invalid) and length
+typedef struct FunctionSpan {
+    u32 start;
+    u32 length;
+} FunctionSpan;
+
 typedef struct FunctionImpl {
     Span name;
     Span full_span;
     Generic generic;
     VecFunctionArg args;
-    Span args_span;
-    Span ret_span;
+    // The file of the FunctionSpans, set with the first of them: read them through function_impl_args_span() and co
+    SourceFile const* span_source;
+    FunctionSpan args_span_at;
+    FunctionSpan ret_span_at;
+    FunctionSpan arrow_span_at;
+    FunctionSpan member_name_at; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
+    FunctionSpan variable_name_at; // A function expression or arrow function that initializes a variable: its name (display)
     TypeNode ret;
     TypePredicateNode* predicate; // Usually null
     FunctionImplRare* rare; // Owned, null if none of its fields is set
     LazyType lazy_type;
     Symbol* symbol;
-    Span arrow_span;
     Block body; // Initialized to empty block if has_body is false
     // Control flow (flow.h), set by the resolve walk
     FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
     FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
-    Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
-    Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
     uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     bool ret_explicit : 1;
     bool is_constructor : 1;
@@ -222,6 +230,20 @@ typedef struct FunctionImpl {
     // baseline doesn't type its single returned expression syntactically
     bool syntactically_contextual : 1;
 } FunctionImpl;
+
+Span function_impl_span_get(FunctionImpl const* me, FunctionSpan span);
+void function_impl_span_set(FunctionImpl* me, FunctionSpan* field, Span span);
+#define FUNCTION_SPAN_ACCESSORS(name, field) \
+    static inline Span function_impl_##name(FunctionImpl const* me) { return function_impl_span_get(me, me->field); } \
+    static inline void function_impl_set_##name(FunctionImpl* me, Span span) { function_impl_span_set(me, &me->field, span); }
+FUNCTION_SPAN_ACCESSORS(args_span, args_span_at)
+FUNCTION_SPAN_ACCESSORS(ret_span, ret_span_at)
+FUNCTION_SPAN_ACCESSORS(arrow_span, arrow_span_at)
+FUNCTION_SPAN_ACCESSORS(member_name, member_name_at)
+FUNCTION_SPAN_ACCESSORS(variable_name, variable_name_at)
+#undef FUNCTION_SPAN_ACCESSORS
+// An arrow function (it has a `=>`)
+static inline bool function_impl_is_arrow(FunctionImpl const* me) { return me->arrow_span_at.start; }
 
 extern const FunctionImplRare function_impl_no_rare;
 static inline FunctionImplRare const* function_impl_rare(FunctionImpl const* me) {
