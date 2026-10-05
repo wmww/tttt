@@ -34816,7 +34816,7 @@ const baselines = {
         types: true,
     },
     'classExtendingClassLikeType': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

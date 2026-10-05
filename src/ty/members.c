@@ -1843,6 +1843,38 @@ Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl) {
     return class_base(me, class_decl, ctx, &base, &base_decl) ? base : nullptr;
 }
 
+// tsc's checkClassLikeDeclaration for a base that isn't a class: the construct signatures that take the written type
+// arguments must all return the base instance type (else TS2510). JavaScript constructor functions don't count
+bool ty_class_base_constructors_differ(Checker* me, ClassDecl const* class_decl, Ty const* base) {
+    Expr const* extends = class_decl->jsdoc_base ? class_decl->jsdoc_base : &class_decl->extends;
+    VecSpannedType const* written_args = nullptr;
+    if (extends->tag == EXPR_GENERIC_PARAMS) {
+        written_args = &extends->generic_params->params;
+        extends = &extends->generic_params->expr;
+    }
+    if (extends->tag == EXPR_IMPLICIT_ANY) return false;
+    Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
+    if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    if (constructor->kind == TY_DECLARED && constructor->declared.symbol && (constructor->declared.symbol->flags & SYMBOL_CLASS)) return false;
+    Members const* members = ty_members(me, constructor);
+    if (members->construct_count < 2) return false;
+    Ty const* declared = class_decl->symbol ? ty_declared_type_of(me, class_decl->symbol) : nullptr;
+    LowerCtx ctx = { .generic = declared && declared->kind == TY_DECLARED &&
+        (declared->declared.type_params.len || declared->declared.this_param) };
+    for (u32 i = 0; i < members->construct_count; i++) {
+        Signature const* sig = members->construct[i];
+        TyMapper const* mapper;
+        if (!base_signature_type_args(me, sig, written_args, ctx, &mapper)) continue;
+        Signature const* root = sig;
+        while (root && !root->function && root->target) root = root->target;
+        if (root && root->function && root->function->full_span.source && root->function->full_span.source->is_js) continue;
+        Ty const* constructed = signature_return_type(me, sig);
+        if (mapper) constructed = ty_instantiate(me, constructed, mapper);
+        if (!ty_is_related(me, constructed, base, TY_RELATION_IDENTITY)) return true;
+    }
+    return false;
+}
+
 // The base a class's `extends` expression constructs when it is an intersection that is never (TS2509, tsc's
 // resolveBaseTypesOfClass with elaborateNeverIntersection). Null otherwise
 Ty const* ty_class_never_base(Checker* me, ClassDecl const* class_decl) {

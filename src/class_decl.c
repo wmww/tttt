@@ -1153,6 +1153,10 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     class_check_mixin(me, errs);
     class_check_base_accessibility(me, errs);
     class_check_override_modifiers(me, base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? base : nullptr, errs);
+    if (base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_class_base_constructors_differ(checker, me, base)) {
+        Expr const* extends = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
+        error_ctx_error_d(errs, expr_outer_span(extends), 2510, "Base constructors must all have the same return type.");
+    }
     if (base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         class_check_member_overrides(me, declared, base, errs);
         bool fits = ty_check_heritage(checker, type_with_this, ty_with_this_arg(checker, base, this_param), members, count,
