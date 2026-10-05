@@ -15237,7 +15237,7 @@ const baselines = {
     },
     'genericRecursiveImplicitConstructorErrors2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericRecursiveImplicitConstructorErrors3': {

@@ -1338,6 +1338,24 @@ static const char* skip_back_to_marker(const char* file_start, const char* from,
     }
     return from;
 }
+// The byte length of the non-ASCII whitespace or line break (tsc's isWhiteSpaceLike) that ends at `end`, 0 if none
+static u32 unicode_space_before(const char* file_start, const char* end) {
+    for (u32 len = 2; len <= 3; len++) {
+        if (end - len < file_start) return 0;
+        const unsigned char* c = (const unsigned char*)end - len;
+        u32 cp = len == 2 ? ((c[0] & 0x1Fu) << 6) | (c[1] & 0x3Fu) :
+            ((c[0] & 0x0Fu) << 12) | ((c[1] & 0x3Fu) << 6) | (c[2] & 0x3Fu);
+        bool lead = len == 2 ? (c[0] & 0xE0) == 0xC0 : (c[0] & 0xF0) == 0xE0;
+        if (!lead) continue;
+        if (cp == 0xA0 || cp == 0x85 || cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200B) || cp == 0x2028 || cp == 0x2029 ||
+            cp == 0x202F || cp == 0x205F || cp == 0x3000 || cp == 0xFEFF
+        ) {
+            return len;
+        }
+    }
+    return 0;
+}
+
 
 static void append_decl(cstr* target, Span span) {
     if (!span_valid(span) || !span.source) {
@@ -1379,6 +1397,8 @@ static void append_decl(cstr* target, Span span) {
             case '\t':
             case '\n':
             case '\r':
+            case '\v':
+            case '\f':
                 start--;
                 break;
 
@@ -1414,6 +1434,12 @@ static void append_decl(cstr* target, Span span) {
                 // fallthrough
 
             default: other: {
+                // (Non-ASCII whitespace is trivia too)
+                u32 space = unicode_space_before(file_start, start);
+                if (space) {
+                    start -= space;
+                    break;
+                }
                 keep_going = false;
                 // Skip line comments, going backwards: the comment starts at the first `//` of the line (`///x`)
                 const char* line_start = start - 1;
