@@ -44,7 +44,18 @@ static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const
     return symbol && symbol->decl_count ? symbol : decl;
 }
 
-static inline VecSpan declaration_get_spans(Symbol const* me) {
+// (Not inlined: the expression walk recurses deeply, binderBinaryExpressionStress)
+__attribute__((noinline)) static VecSpan declaration_get_spans(Symbol const* me) {
+    // A file's module that declarations merged into (a script's merging into a UMD global, `export as namespace`):
+    // declared by the file first, like tsc's clone of the module symbol
+    if (me && me->is_module && me->module && me->module->file && me->decl_count) {
+        VecSpan ret = vec_span_init();
+        vec_span_push(&ret, (Span){ .source = me->module->file, .sv = csview_from_n(source_file_start(me->module->file), 0) });
+        VecSpan own = baseline_symbol_declaration_spans(me);
+        for_each (i, vec_span, &own) vec_span_push(&ret, *i);
+        vec_span_drop(&own);
+        return ret;
+    }
     // A type a class's namespace exports is one symbol with the class's static member of its name (see
     // builder_add_class_static_side)
     if (me && me->parent && (me->parent->flags & SYMBOL_CLASS) && !(me->flags & SYMBOL_VALUE) && me->decl_count) {
@@ -938,6 +949,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (my identifier->intrinsic_keyword) break; // (Nor `type T = intrinsic`: a keyword)
             // (An alias of an anonymous class, `import C = require()` of `export = class {}`, is shown)
             if (my identifier->target && !span_valid(my identifier->target->name_span) &&
+                !(my identifier->target->is_module && my identifier->target->module->file && my identifier->target->decl_count) &&
                 !(my identifier->symbol && my identifier->symbol != my identifier->target &&
                     my identifier->symbol->flags & SYMBOL_ALIAS && span_valid(my identifier->symbol->name_span))
             ) {
@@ -2005,7 +2017,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             vec_span_push(&decls, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
             file_name = file_module_text(ctx, my symbol);
         }
-        VecSpan own = declaration_get_spans(my symbol);
+        VecSpan own = file ? baseline_symbol_declaration_spans(my symbol) : declaration_get_spans(my symbol);
         for_each (i, vec_span, &own) vec_span_push(&decls, *i);
         vec_span_drop(&own);
         // An ambient module's name is its string in double quotes

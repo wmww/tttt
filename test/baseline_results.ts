@@ -23397,7 +23397,7 @@ const baselines = {
     },
     'noCrashUMDMergedWithGlobalValue': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'noCrashWithVerbatimModuleSyntaxAndImportsNotUsedAsValues': {

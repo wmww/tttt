@@ -3622,11 +3622,17 @@ static void merge_into_umd_globals(Binder* me) {
         if (target->flags & excluded_flags(flags)) continue; // TODO: tsc's conflict report against the target
         ErrorCtx* errs = global->alias->scope->binder->errs;
         target->flags |= flags;
+        u32 kept = 0;
         for (u32 d = 0; d < global->decl_count; d++) {
-            if (global->decls[d].kind == SYMBOL_DECL_ALIAS) continue;
+            if (global->decls[d].kind == SYMBOL_DECL_ALIAS) {
+                global->decls[kept++] = global->decls[d];
+                continue;
+            }
             symbol_add_decl(target, global->decls[d]);
             retarget_decl(&global->decls[d], target);
         }
+        // (The alias is declared by `export as namespace` alone: what merged went into the target)
+        global->decl_count = kept;
         if (global->exports) {
             symbol_ensure_exports(target);
             u32 count;
