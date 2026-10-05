@@ -250,7 +250,6 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
             cap += elements.len;
             shape.types = realloc(shape.types, sizeof(Ty const*) * cap);
             panic_if(!shape.types, "out of memory");
-            bool counting_required = shape.min == shape.count;
             for (u32 j = 0; j < elements.len; j++) {
                 if (tuple->flags[j] & TUPLE_ELEMENT_REST) {
                     // A trailing array is the element type of the arguments left; a variadic element (`[...M, P]`) or
@@ -266,8 +265,9 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
                 }
                 bool optional = (tuple->flags[j] & TUPLE_ELEMENT_OPTIONAL) != 0;
                 shape.types[shape.count++] = optional ? ty_optional_param_type(me, elements.data[j]) : elements.data[j];
-                if (optional) counting_required = false;
-                if (counting_required) shape.min++;
+                // A required element makes the optional parameters before it required (tsc's getMinArgumentCount:
+                // the parameters before the rest one, plus the tuple's minLength)
+                if (!optional) shape.min = shape.count;
             }
         } else if (ty_is_array(me, type) || (type->flags & TYF_ANY)) {
             shape.rest_element = ty_rest_element_type(me, type);
