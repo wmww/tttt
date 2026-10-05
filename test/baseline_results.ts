@@ -406,9 +406,9 @@ const baselines = {
         types: true,
     },
     'aliasInstantiationExpressionGenericIntersectionNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'aliasInstantiationExpressionGenericIntersectionNoCrash2': {
         errors: true,
@@ -1878,7 +1878,7 @@ const baselines = {
     'assignmentToInstantiationExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'assignmentToObject': {
         errors: true,
@@ -16693,7 +16693,7 @@ const baselines = {
     'importTypeTypeofClassStaticLookup': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'importTypeWithUnparenthesizedGenericFunctionParsed': {
         errors: true,
@@ -16713,7 +16713,7 @@ const baselines = {
     'importUsedInGenericImportResolves': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importWithTrailingSlash': {
         errors: true,
@@ -18006,9 +18006,9 @@ const baselines = {
         types: true,
     },
     'instantiationExpressionErrorNoCrash': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intTypeCheck': {
         errors: true,
@@ -54223,17 +54223,17 @@ const baselines = {
     'resolutionModeImportType1(moduleresolution=bundler)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolutionModeImportType1(moduleresolution=classic)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolutionModeImportType1(moduleresolution=node10)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolutionModeTripleSlash1': {
         errors: true,
@@ -66008,7 +66008,7 @@ const baselines = {
     'instantiationExpressionErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instantiationExpressions': {
         errors: true,

@@ -3690,22 +3690,26 @@ bool as_type_is_const(AsTypeExpr const* as_type) {
         !identifier_type_namespace_count(type->identifier);
 }
 
-// `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures. Returns the
-// type itself if the mapper isn't about any of them
+// Whether an instantiation expression keeps a signature (tsc's getInstantiatedSignatures: generic, with the right
+// number of type arguments): the type arguments are mapped to the type parameters of exactly those
+static bool applies_to_signature(Signature const* sig, TyMapper const* mapper) {
+    if (!sig->type_params.len) return false;
+    for (u32 k = 0; k < mapper->len; k++) {
+        if (mapper->sources[k] == sig->type_params.data[0]) return true;
+    }
+    return false;
+}
+
+bool ty_instantiation_keeps_signature(Checker* me, Signature const* sig, TyMapper const* mapper) {
+    signature_resolve(me, sig);
+    return applies_to_signature(sig, mapper);
+}
+
+// `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures, the others
+// dropped (`instantiate_members()`). Returns the type itself if it has no signatures
 Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper const* mapper) {
     Members const* members = ty_members(me, ty);
-    bool relevant = false;
-    for (u32 pass = 0; pass < 2 && !relevant; pass++) {
-        u32 sig_count = pass ? members->construct_count : members->call_count;
-        Signature* const* sigs = pass ? members->construct : members->call;
-        for (u32 i = 0; i < sig_count && !relevant; i++) {
-            signature_resolve(me, sigs[i]);
-            for (u32 j = 0; j < sigs[i]->type_params.len; j++) {
-                for (u32 k = 0; k < mapper->len; k++) relevant |= mapper->sources[k] == sigs[i]->type_params.data[j];
-            }
-        }
-    }
-    if (!relevant) return ty;
+    if (!members->call_count && !members->construct_count) return ty;
     u32 count = 3 + mapper->len * 2;
     u64* key = malloc(sizeof(u64) * count);
     key[0] = KEY_ANONYMOUS_INSTANCE;
@@ -3732,8 +3736,31 @@ Ty const* ty_apply_type_arguments_mapper(Checker* me, Ty const* ty, TyMapper con
     return ret;
 }
 
-Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
-    Members const* members = ty_members(me, ty_apparent_type(me, ty));
+// tsc's getInstantiationExpressionType: object types get their applicable signatures instantiated, unions and
+// intersections each member, a type parameter its constraint's
+static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList args, u32 depth) {
+    if (depth > 8) return ty;
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+        u32 len = ty->composite.types.len;
+        Ty const** parts = malloc(sizeof(Ty const*) * (len ? len : 1));
+        bool changed = false;
+        for (u32 i = 0; i < len; i++) {
+            parts[i] = apply_type_arguments_part(me, ty->composite.types.data[i], args, depth + 1);
+            changed |= parts[i] != ty->composite.types.data[i];
+        }
+        Ty const* ret = !changed ? ty : ty->kind == TY_UNION ?
+            ty_union(me, parts, len, nullptr, (TyList){0}) : ty_intersection(me, parts, len, nullptr, (TyList){0});
+        free(parts);
+        return ret;
+    }
+    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        Ty const* constraint = ty_base_constraint(me, ty);
+        if (!constraint || constraint == ty) return ty;
+        Ty const* instantiated = apply_type_arguments_part(me, constraint, args, depth + 1);
+        return instantiated != constraint ? instantiated : ty;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return ty;
+    Members const* members = ty_members(me, ty);
     Ty const* sources[64];
     Ty const* targets[64];
     u32 len = 0;
@@ -3743,8 +3770,14 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
         for (u32 i = 0; i < sig_count; i++) {
             signature_resolve(me, sigs[i]);
             TyList params = sigs[i]->type_params;
-            if (!params.len || params.len < args.len) continue;
-            for (u32 j = 0; j < params.len && len < c_arraylen(sources); j++) {
+            // (tsc's hasCorrectTypeArgumentArity)
+            u32 min = 0;
+            for (u32 j = 0; j < params.len; j++) {
+                if (!ty_param_default(me, params.data[j])) min = j + 1;
+            }
+            if (!params.len || args.len < min || args.len > params.len) continue;
+            if (len + params.len > c_arraylen(sources)) continue;
+            for (u32 j = 0; j < params.len; j++) {
                 bool seen = false;
                 for (u32 k = 0; k < len; k++) seen |= sources[k] == params.data[j];
                 if (seen) continue;
@@ -3755,9 +3788,13 @@ Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
             }
         }
     }
-    if (!len) return ty;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     return ty_apply_type_arguments_mapper(me, ty, mapper);
+}
+
+Ty const* ty_apply_type_arguments(Checker* me, Ty const* ty, TyList args) {
+    if (ty->flags & TYF_ANY) return ty;
+    return apply_type_arguments_part(me, ty, args, 0);
 }
 
 Ty const* ty_optional_expression_type(Checker* me, Ty const* object, bool is_root, bool* optional) {
@@ -4312,6 +4349,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_GENERIC_PARAMS: {
             // An instantiation expression. As the callee of a call it never gets here, see check_call()
             GenericParamsExpr const* generic = expr->generic_params;
+            // (A class's `extends B<T>` is a type reference's type arguments, what the class's base constructor type
+            // and super calls make of them: tsc's getBaseConstructorTypeOfClass checks the expression alone)
+            if (generic->heritage) return ty_expr_type(me, &generic->expr);
             Ty const* args[32];
             u32 len = 0;
             for_each (i, vec_spanned_type, &generic->params) {

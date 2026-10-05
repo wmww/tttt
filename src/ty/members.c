@@ -2179,6 +2179,8 @@ static Members const* instantiate_members(
         u32 count = pass ? source->construct_count : source->call_count;
         Signature* const* sigs = pass ? source->construct : source->call;
         for (u32 i = 0; i < count; i++) {
+            // (An instantiation expression drops the signatures its type arguments don't apply to)
+            if (applies_type_args && !ty_instantiation_keeps_signature(me, sigs[i], mapper)) continue;
             Signature* sig = arena_new(&my arena, Signature);
             *sig = (Signature){
                 .flags = sigs[i]->flags, .target = sigs[i], .mapper = mapper, .drops_mapped_type_params = applies_type_args,
