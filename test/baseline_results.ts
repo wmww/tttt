@@ -50216,12 +50216,12 @@ const baselines = {
         types: true,
     },
     'generatorReturnTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'generatorReturnTypeInferenceNonStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

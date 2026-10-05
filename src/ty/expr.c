@@ -107,7 +107,9 @@ static bool kind_uses_context(Expr const* expr) {
         case EXPR_JSX_ATTRIBUTES:
             return true;
         case EXPR_UNARY_OP:
-            return expr->unary_op->op == UNARY_OP_RIGHT_BANG || expr->unary_op->op == UNARY_OP_AWAIT;
+            // (A `yield`'s contextual type decides TS7057: one first evaluated without it is checked again with it)
+            return expr->unary_op->op == UNARY_OP_RIGHT_BANG || expr->unary_op->op == UNARY_OP_AWAIT ||
+                expr->unary_op->op == UNARY_OP_YIELD;
         case EXPR_BINARY_OP:
             switch (expr->binary_op->op) {
                 case BINARY_OP_OR_OR:
