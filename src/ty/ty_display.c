@@ -695,7 +695,18 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
     Ty const* unique = ty_unique_symbol_of_name(me, name);
     if (unique) {
         out_lit(d, "[");
-        out_unique_symbol_name(me, d, unique->literal.unique);
+        // A computed name is an expression (tsc's symbolToExpression): a chain that would start at a module isn't
+        // yielded, the variable prints by its bare name
+        UniqueSymbolDecl const* decl = unique->literal.unique;
+        if (d.enclosing && !d.tracker && decl->owner && !span_valid(decl->member)) {
+            SymbolChain chain = symbol_chain_at(d.enclosing, decl->owner, SYMBOL_VALUE, true);
+            if (chain.len && chain.items[0]->is_module) {
+                out(d, ty_symbol_display_name(decl->owner).sv);
+                out_lit(d, "]");
+                return;
+            }
+        }
+        out_unique_symbol_name(me, d, decl);
         out_lit(d, "]");
         return;
     }

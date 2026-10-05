@@ -8333,7 +8333,7 @@ const baselines = {
     'declarationEmitMappedTypeTemplateTypeofSymbol': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMergedAliasWithConst': {
         errors: true,
@@ -8573,7 +8573,7 @@ const baselines = {
     'declarationEmitReadonlyComputedProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRecursiveConditionalAliasPreserved': {
         errors: true,
