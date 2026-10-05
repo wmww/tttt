@@ -10536,7 +10536,7 @@ const baselines = {
         types: true,
     },
     'dynamicImportTrailingComma': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50246,7 +50246,7 @@ const baselines = {
         types: true,
     },
     'importAssertion1(module=commonjs)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50296,7 +50296,7 @@ const baselines = {
         types: true,
     },
     'importAttributes1(module=commonjs)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60136,14 +60136,14 @@ const baselines = {
         types: true,
     },
     'constructorNameInAccessor': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'constructorNameInGenerator': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'constructorNameInObjectLiteralAccessor': {
         errors: true,
@@ -65751,7 +65751,7 @@ const baselines = {
         types: true,
     },
     'optionalTupleElements1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

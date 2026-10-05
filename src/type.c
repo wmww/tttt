@@ -484,16 +484,43 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             for_each (i, vec_tuple_element, &my tuple.elements) {
                 type_typecheck(&i->type, errs);
             }
-            // tsc's checkTupleType: a variadic element (`...T`, T no array type syntactically) must be array-like
+            // tsc's checkTupleType: a variadic element (`...T`, T no array type syntactically) must be array-like; a
+            // rest element (`...T[]`, `...[...T[]]`) can't follow another nor be followed by an optional one, and a
+            // required element can't follow an optional one (grammar errors). The first error ends the walk
+            bool seen_optional = false, seen_rest = false;
             for_each (i, vec_tuple_element, &my tuple.elements) {
-                if (!i->rest || !span_valid(i->span) || i->type.tag == TYPE_ARRAY) continue;
-                if (i->type.tag == TYPE_TUPLE) continue;
-                Ty const* type = ty_of_node(&i->type);
-                // HACK: only type parameters of the generic types (a mapped type over T[K] can be array-like by its
-                // constraint, which tttt's relation doesn't see)
-                if (type->kind != TY_TYPE_PARAM && ty_is_generic_type(current_checker, type)) continue;
-                if (!ty_extends_array(current_checker, type)) {
-                    error_ctx_error_d(errs, i->span, 2574, "A rest element type must be an array type.");
+                if (!span_valid(i->span)) continue;
+                bool is_rest = false;
+                if (i->rest && i->type.tag == TYPE_ARRAY) {
+                    is_rest = true;
+                } else if (i->rest) {
+                    Ty const* type = ty_of_node(&i->type);
+                    // HACK: only type parameters of the generic types (a mapped type over T[K] can be array-like by its
+                    // constraint, which tttt's relation doesn't see)
+                    bool skip = i->type.tag == TYPE_TUPLE || (type->kind != TY_TYPE_PARAM && ty_is_generic_type(current_checker, type));
+                    if (!skip && !ty_extends_array(current_checker, type)) {
+                        error_ctx_error_d(errs, i->span, 2574, "A rest element type must be an array type.");
+                        break;
+                    }
+                    TupleShape const* shape = ty_tuple_shape(type);
+                    bool tuple_rest = false;
+                    for (u32 k = 0; shape && k < shape->arity && !tuple_rest; k++) tuple_rest = shape->flags[k] & TUPLE_ELEMENT_REST;
+                    is_rest = ty_is_array(current_checker, type) || tuple_rest;
+                }
+                if (is_rest) {
+                    if (seen_rest) {
+                        error_ctx_grammar_error_d(errs, i->span, 1265, "A rest element cannot follow another rest element.");
+                        break;
+                    }
+                    seen_rest = true;
+                } else if (i->optional) {
+                    if (seen_rest) {
+                        error_ctx_grammar_error_d(errs, i->span, 1266, "An optional element cannot follow a rest element.");
+                        break;
+                    }
+                    seen_optional = true;
+                } else if (!i->rest && seen_optional) {
+                    error_ctx_grammar_error_d(errs, i->span, 1257, "A required element cannot follow an optional element.");
                     break;
                 }
             }
