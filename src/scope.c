@@ -1556,6 +1556,9 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
                 "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
                 "another module format instead.");
         }
+    } else if (export_equals && my file && !my file->is_json && module_kind == MODULE_KIND_SYSTEM && !my ambient) {
+        error_ctx_grammar_error_d(my binder->errs, statement, 1218,
+            "Export assignment is not supported when '--module' flag is 'system'.");
     }
     // (Not an augmentation: tsc skips those)
     if (my kind == SCOPE_NAMESPACE && my file && !my file->is_module && my container->module) {
