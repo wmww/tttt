@@ -3748,6 +3748,8 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 Ty const* part = types.data[i];
                 Ty const* base = part->kind == TY_TYPE_PARAM || (part->flags & (TYF_DEFERRED | TYF_UNION | TYF_INTERSECTION)) ?
                     base_constraint(me, part, depth + 1) : part;
+                // (A nested union or intersection without type variables to replace has none of its own: itself)
+                if (!base && (part->kind == TY_UNION || part->kind == TY_INTERSECTION) && !(part->flags & TYF_DEFERRED)) base = part;
                 if (base != part) different = true;
                 if (base) ty_buf_push(&bases, base);
             }
