@@ -49,7 +49,11 @@ static void prop_copy_into(Checker* me, Prop* to, Prop const* from) {
     }
 }
 
+static TyObjectState* object_state(Ty const* ty);
+
 typedef struct MembersBuilder {
+    // builder_add_interface(): 0 every member, 1 all but the index signatures, 2 only those (see resolve_declared_members())
+    uint8_t index_pass;
     Prop** props;
     u32 props_count, props_cap;
     Signature** call;
@@ -474,12 +478,16 @@ static void builder_add_interface(
 ) {
     bool computed[3] = {0}, readonly[3] = { true, true, true };
     for_each (i, vec_interface_member, &interface->members) {
-        builder_add_interface_member(me, builder, i, ctx, parent);
+        bool is_index = i->key.tag == INTERFACE_KEY_INDEX;
+        if (builder->index_pass == 1 && is_index) continue;
+        if (builder->index_pass != 2 || is_index) builder_add_interface_member(me, builder, i, ctx, parent);
+        if (builder->index_pass == 1) continue;
         u32 kind = interface_computed_index_kind(me, i);
         if (!kind) continue;
         computed[kind >> 4] = true;
         readonly[kind >> 4] &= i->readonly;
     }
+    if (builder->index_pass == 1) return; // (The computed names' index signatures with the others)
     // A member named by an expression of type string, number or symbol makes an index signature for that key of every
     // member (tsc's getIndexInfosOfIndexSymbol with hasLateBindableIndexSignature, see builder_add_computed_index_infos())
     static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
@@ -1950,7 +1958,17 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     switch (ty->declared.kind) {
         case TY_DECLARED_INTERFACE:
         case TY_DECLARED_CLASS_INSTANCE: {
-            // Own members of every merged declaration first, then what their bases add
+            // Own members of every merged declaration first, then what their bases add. The index signatures of
+            // interfaces after the properties, which are visible meanwhile: tsc's resolveDeclaredMembers sets
+            // declaredProperties before it lowers the index infos, so a `keyof C` in C's index signature sees them
+            bool index_signatures = false;
+            for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count && !index_signatures; node++) {
+                if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+                for_each (i, vec_interface_member, &((InterfaceDecl const*)node->node)->type.interface.members) {
+                    index_signatures |= i->key.tag == INTERFACE_KEY_INDEX;
+                }
+            }
+            builder.index_pass = index_signatures ? 1 : 0;
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->node;
@@ -1961,6 +1979,23 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 } else if (node->kind == SYMBOL_DECL_CLASS) {
                     builder_add_class_items(me, &builder, node->node, false, ctx, decl);
                 }
+            }
+            if (index_signatures) {
+                TyObjectState* state = object_state(ty);
+                if (state && state->members_state == LAZY_STATE_IN_FLIGHT) {
+                    Members* partial = arena_new(&my arena, Members);
+                    Prop** props = arena_new_n(&my arena, Prop*, builder.props_count ? builder.props_count : 1);
+                    memcpy(props, builder.props, sizeof(Prop*) * builder.props_count);
+                    partial->props = props;
+                    partial->prop_count = builder.props_count;
+                    state->members = partial;
+                }
+                builder.index_pass = 2;
+                for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+                    if (node->kind != SYMBOL_DECL_INTERFACE) continue;
+                    builder_add_interface(me, &builder, &((InterfaceDecl const*)node->node)->type.interface, ctx, decl);
+                }
+                builder.index_pass = 0;
             }
             builder_late_bound_last(&builder, 0);
             builder_add_assignment_members(me, &builder, decl);
@@ -2837,7 +2872,6 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
 }
 
 static Members const* resolve_intersection_members(Checker* me, Ty const* ty);
-static TyObjectState* object_state(Ty const* ty);
 
 // tsc's resolveReverseMappedTypeMembers: the source's properties, whose types are inferred on first use (prop_type()),
 // and its string index signature's, inferred right away
@@ -3141,6 +3175,8 @@ Members const* ty_members(Checker* me, Ty const* ty) {
             return state->members;
 
         case LAZY_STATE_IN_FLIGHT:
+            // An interface's properties while its index signatures are lowered (see resolve_declared_members())
+            if (state->members) return state->members;
             // Only a type whose own members depend on its own members gets here (`interface A extends A`)
             members_reentered(me, ty);
             return &empty_members;

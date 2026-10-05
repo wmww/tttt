@@ -97,9 +97,6 @@ one commit each, `./sweep.py` before/after.
 - **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
 - **Construct signatures compared bivariantly under strictFunctionTypes** (react, react-redux; D/ctorOverloads.ts):
   relate.c exempts every SIGNATURE_CONSTRUCT target; tsc only class `constructor` declarations. Expect suite movement.
-- **jsonld +TS2411** (9 packages; B/jsonld2.ts): tsc publishes an interface's declared properties before resolving its
-  index signatures, so a re-entrant `keyof C` sees the properties; tttt's in-flight members are empty. Publish partial
-  Members before lowering index signatures. 50-100 lines.
 - **Generic rest `[...AX, ...A]` implied arity** (call-bind; C/arity.ts): infer_to_tuple's "two variadic elements"
   TODO (tsc ~26690) plus impliedArity. ~60 lines.
 - **Rest `TArgs` inferred from the callback's own parameters** (immediate, macrotask, node; D/restTArgs.ts): tsc drops
