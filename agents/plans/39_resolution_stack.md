@@ -60,8 +60,8 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    ImmediateBaseConstraint)` is pushed, and getTypeFromMappedTypeNode resolves the key constraint eagerly. Moving
    `declared_param_constraint()`'s lowering under the walk's push (ty_param_constraint walking first) made
    mappedTypeWithAny report TS2313 twice: tttt resolves members eagerly while lowering (`homomorphic_variable` ->
-   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. **Plan 42 stage 3** lands it (prototyped, 0 lost). Y's cycle also goes through the eager intersection
-   reduction (tsc: getReducedType in getBaseTypes), which runs under a barrier in tttt.
+   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. **Plan 42 stage 3** lands it (prototyped, 0 lost).
+   circularBaseTypes' `Y` TS2310 came with plan 42 stage 2 (interface bases reduced, getReducedType in getBaseTypes).
 3. **Accessors / object literal methods** (old item 5): TS7023 tsc reports while printing a type whose return type is
    in flight (thisInObjectLiterals and friends). Untouched. The mechanism: checking a return expression prints a type
    in an error message (or relates structurally in an assertion) that needs the function's own return type, which is
@@ -70,8 +70,6 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    checkingObjectWithThisInNamePositionNoCrash, trivialSubtypeReductionNoStructuralCheck.
 4. thisConditionalOnMethodReturnOfGenericInstance (spurious TS2417) is unchanged by the signature push; not
    investigated further.
-5. `ty_node_reaches_alias_in_flight`/`members_judgeable` stay: they keep the eager intersection reduction from caching
-   prop types lowered against an alias in flight, which a barrier doesn't prevent.
 
 ## Validation (every stage)
 The tests above; `./fasttest.sh --summary` 0 lost; `./realworld.py` on every corpus unchanged (tsc, type-fest,

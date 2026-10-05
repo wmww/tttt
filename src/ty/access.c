@@ -212,6 +212,8 @@ static bool reads_own_prop(Checker* me, Ty const* member, Ty const* index) {
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool include_undefined = (flags & ACCESS_INCLUDE_UNDEFINED) != 0;
     if (depth > 16) return nullptr;
+    // (tsc's getIndexedAccessTypeOrUndefined: the object reduced)
+    if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) object = ty_reduced(me, object);
     if (index->kind == TY_UNION && !(index->flags & TYF_BOOLEAN)) {
         Ty const** parts = malloc(sizeof(Ty const*) * index->composite.types.len);
         Ty const* ret = nullptr;

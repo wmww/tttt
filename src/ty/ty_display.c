@@ -2454,6 +2454,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, ">");
         return;
     }
+    // (A union or intersection prints reduced: tsc's typeToTypeNodeHelper without NoTypeReduction)
+    if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
     if (d.depth > MAX_DISPLAY_DEPTH * 4) {

@@ -266,6 +266,8 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         Ty const* constraint = ty_base_constraint(checker, object);
         if (constraint) object = constraint;
     }
+    // (tsc's getPropertyOfType reduces: an intersection that is never has none)
+    if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) object = ty_reduced(checker, object);
     if (object->kind == TY_UNION || object->kind == TY_INTERSECTION) {
         bool intersection = object->kind == TY_INTERSECTION;
         PropSymbolInfo inner = { .declarations = vec_span_init(), .strict_union = info->strict_union,

@@ -1387,6 +1387,8 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
     for (u32 i = 0; i < type->composite.types.len; i++) {
         Ty const* member = type->composite.types.data[i];
         if (member->flags & (TYF_NULLABLE | TYF_VOID)) continue;
+        // (A member that is never has no properties: tsc's createUnionOrIntersectionProperty through getPropertyOfType)
+        if (ty_reduced(me, member)->flags & TYF_NEVER) continue;
         Ty const* prop = prop_type_by_name(me, member, name);
         if (!prop) continue;
         if (!first) first = prop;

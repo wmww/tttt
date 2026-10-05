@@ -1100,6 +1100,17 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
             null_base = true;
         }
     }
+    if (!base && my extends.tag != EXPR_IMPLICIT_ANY) {
+        Ty const* never_base = ty_class_never_base(checker, me);
+        unsigned code;
+        cstr why;
+        if (never_base && ty_never_intersection_elaboration(checker, never_base, &code, &why)) {
+            Expr const* extends = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
+            Error* error = error_ctx_error_d(errs, extends->outer_span, 2509, "Base constructor return type 'never' is not an "
+                "object type or intersection of object types with statically known members.");
+            if (error) error_sub_error_s(error, (Span){0}, code, why); else cstr_drop(&why);
+        }
+    }
     class_check_mixin(me, errs);
     class_check_base_accessibility(me, errs);
     class_check_override_modifiers(me, base && (base->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? base : nullptr, errs);

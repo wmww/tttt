@@ -113,7 +113,7 @@ enum {
     KEY_EVOLVING_ARRAY, // element type id -> the evolving array type of it (flow.c)
     KEY_FLOW_LOOP,      // (loop label FlowNode, reference key id) -> Ty at the top of the loop
     KEY_SYNTHETIC_ACCESS, // Binding (an element of an object pattern) -> Expr `init.name`, see destructured_flow_type()
-    KEY_DISCRIMINANT_CONFLICT, // (intersection member ids) -> 1 + whether they have conflicting discriminants
+    KEY_REDUCED_UNION, // union type id -> ty_reduced() of it
     KEY_SIGNATURE_INSTANCE, // (Signature, type argument ids) -> ty_signature_instantiation()
     KEY_SIGNATURE_TYPE, // Signature -> ty_signature_type()
     KEY_CONTEXT_FREE, // FunctionImpl -> its return-only type (tsc's links.contextFreeType, return_only_type())

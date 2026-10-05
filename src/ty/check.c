@@ -182,6 +182,8 @@ static bool in_lib(Span span) { return !span_valid(span) || !span.source || span
 
 // The property a target has for a name (tsc's getPropertyOfType): of a union, only if every member has it
 static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* name) {
+    target = ty_reduced(me, target); // (tsc's getPropertyOfType)
+    if (target->flags & TYF_NEVER) return nullptr;
     if (target->kind != TY_UNION && target->kind != TY_INTERSECTION) return ty_get_prop(me, ty_apparent_type(me, target), name);
     // (tsc's union or intersection property has the declarations of all of them: the first one declared)
     Prop const* first = nullptr;
@@ -1282,6 +1284,12 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     } else {
         error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
     }
+    // Why it is never (tsc's reportNonexistentProperty with elaborateNeverIntersection)
+    unsigned never_code;
+    cstr never_message;
+    if (error && ty_never_intersection_elaboration(me, object, &never_code, &never_message)) {
+        error_sub_error_s(error, (Span){0}, never_code, never_message);
+    }
     // (Not of an enum: a primitive, tsc's reportNonexistentProperty)
     if (error && !destructured && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN) && !ty_is_enum_union(object)) {
         // Which member it is that lacks it
@@ -1510,7 +1518,7 @@ static void check_access(
 
     if (!error_if_not_found) return;
     // `never` has no properties (tsc: only the silent never of inference passes is any-like)
-    if (object->flags & TYF_NEVER) {
+    if (ty_reduced(me, object)->flags & TYF_NEVER) {
         report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
@@ -2036,6 +2044,7 @@ typedef struct MemberRefs {
 // property tsc makes of them is readonly (a union's if any of them is, an intersection's if all are). -1: none
 static int member_refs(Checker* me, Ty const* object, Atom const* name, MemberRefs* out, u32 depth) {
     if (depth > 8) return -1;
+    object = ty_reduced(me, object); // (tsc's getPropertyOfType: an intersection that is never has none)
     // Members first: the apparent type of an intersection with type parameters is a new type
     if (object->kind != TY_UNION && object->kind != TY_INTERSECTION) object = ty_apparent_type(me, object);
     if ((object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) || object->kind == TY_INTERSECTION) {

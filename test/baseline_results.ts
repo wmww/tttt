@@ -18551,9 +18551,9 @@ const baselines = {
         types: true,
     },
     'intersectionWithConflictingPrivates': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionWithConstructSignaturePrototypeResult': {
         errors: true,
@@ -48311,7 +48311,7 @@ const baselines = {
         types: true,
     },
     'typeGuardsWithInstanceOf': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

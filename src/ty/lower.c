@@ -1742,55 +1742,6 @@ bool ty_tuple_node_has_variadic(TypeNode const* node) {
 
 // Deferred references, see Ty.reference.deferred
 
-// Whether lowering the node right now would run into a type alias that is being resolved, also through the bodies of
-// aliases that aren't resolved yet, which lowering the node would resolve. Object types aren't looked into, their
-// members are lazy anyway. `budget` bounds the walk (aliases that aren't resolved yet can name each other)
-static bool node_reaches_alias_in_flight_through(Checker* me, TypeNode const* node, u32* budget) {
-    if (!*budget) return false;
-    --*budget;
-    switch (node->tag) {
-        case TYPE_IDENTIFIER: {
-            Symbol const* decl = canonical(me, node->identifier->target);
-            if (decl && decl->flags & SYMBOL_TYPE_ALIAS) {
-                u64 key[2] = { KEY_SYMBOL_LINKS, (u64)(uintptr_t)decl };
-                SymbolLinks const* links = intern_get(&my links, key, 2);
-                if (links && links->declared_state == LAZY_STATE_IN_FLIGHT) return true;
-                if (!links || links->declared_state == LAZY_STATE_NOT_STARTED) {
-                    for (u32 i = 0; i < decl->decl_count; i++) {
-                        if (decl->decls[i].kind != SYMBOL_DECL_TYPE_ALIAS) continue;
-                        TypeDecl const* type_decl = decl->decls[i].node;
-                        if (node_reaches_alias_in_flight_through(me, &type_decl->type, budget)) return true;
-                    }
-                }
-            }
-            for_each (i, vec_spanned_type, &node->identifier->generic_params) {
-                if (node_reaches_alias_in_flight_through(me, &i->type, budget)) return true;
-            }
-            return false;
-        }
-        case TYPE_ARRAY: return node_reaches_alias_in_flight_through(me, node->array.element, budget);
-        case TYPE_JSDOC: return node_reaches_alias_in_flight_through(me, &node->jsdoc->type, budget);
-        case TYPE_PREDICATE: return false;
-        case TYPE_TUPLE:
-            for_each (i, vec_tuple_element, &node->tuple.elements) {
-                if (node_reaches_alias_in_flight_through(me, &i->type, budget)) return true;
-            }
-            return false;
-        case TYPE_UNION:
-        case TYPE_INTERSECTION:
-            for_each (i, vec_type, &node->composite) {
-                if (node_reaches_alias_in_flight_through(me, i, budget)) return true;
-            }
-            return false;
-        default: return false;
-    }
-}
-
-bool ty_node_reaches_alias_in_flight(Checker* me, TypeNode const* node) {
-    u32 budget = 64;
-    return node_reaches_alias_in_flight_through(me, node, &budget);
-}
-
 // Whether lowering the node could resolve a type alias, going by the syntax alone (tsc's mayResolveTypeAlias): what
 // makes a reference inside an alias body deferred
 static bool may_resolve_type_alias(Checker* me, TypeNode const* node) {

@@ -33,9 +33,8 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    (measurements.md), checkers get contiguous runs of files (drizzle K=4 1688 -> 1253 MB), Prop 56 / Signature 176 /
    Ty 136 bytes, packed interned keys. Below tsgo's peak RSS everywhere except nest/webpack (the AST: perf_leads.md
    "Memory", needs a plan). Suite and corpora unchanged.
-9. **Plan 42 stages 1 and 2** (lazy reverse mapped types, lazy intersection reduction): both have 0-lost
-   prototypes that apply to 02ca5d29 (`plans/42_prototypes/stage1_*.patch`, `stage2_*.patch`); finish the items the
-   plan lists, run the checks the prototypes skipped, one commit per stage. If one runs long, stage 2 goes after the
-   insights entry. (The errors/JS fan-out moves to the next window.)
+9. Done (2026-10-05, one session, 2 commits): plan 42 stages 1 and 2, suite 12728 -> 12731, 0 lost, every corpus
+   byte-identical; callgrind up to +1.0% (vue; drizzle/xstate +0.7%) from stage 2's reductions in is_related_to.
+   Stage 2's `reduction_forces_members` HACK turned out unneeded and is gone. Stages 3-4 remain in the plan.
 10. **Triage.**
 11. **Insights.**

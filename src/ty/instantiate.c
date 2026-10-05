@@ -268,6 +268,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (root != ty && !may_map_specially(me, inner, mapper, 0)) return nullptr;
     Ty const* list = ty_instantiate(me, inner, mapper);
     if (list == variable) return nullptr;
+    if (list->kind == TY_UNION || list->kind == TY_INTERSECTION) list = ty_reduced(me, list); // (tsc's instantiateMappedType)
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
     // (The empty tuple is its tuple target, not a reference)
     TupleShape const* empty = list->kind == TY_DECLARED ? ty_tuple_shape(list) : nullptr;
@@ -631,6 +632,8 @@ static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMap
     if (root->conditional.distributive && root->conditional.check->kind == TY_TYPE_PARAM &&
         check_type != root->conditional.check
     ) {
+        // (The distribution type is reduced, tsc's getConditionalTypeInstantiation)
+        if ((check_type->kind == TY_UNION || check_type->kind == TY_INTERSECTION)) check_type = ty_reduced(me, check_type);
         // Distribution: the whole conditional type is instantiated once per member, with the check type
         // parameter mapped to that member everywhere
         if (check_type->flags & TYF_NEVER) return check_type;

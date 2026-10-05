@@ -216,6 +216,7 @@ typedef struct LowerCtx {
 typedef struct TyObjectState {
     LazyState members_state;
     uint8_t base_state; // LazyState of equivalent_base
+    uint8_t reduced_state; // Intersections: whether ty_reduced() is never (REDUCED_*, checker.c)
     Members const* members;
     Ty const* equivalent_base; // See ty_non_augmenting_base()
 } TyObjectState;
@@ -753,6 +754,9 @@ enum {
     // A union with both undefined and null among its members, which is_unknown_like_union() (relate.c) then looks at
     // more closely. Only read on the union itself
     TYX_UNDEFINED_AND_NULL = 4,
+    // A union with an intersection among its members that may reduce to never (tsc's ObjectFlags.ContainsIntersections):
+    // ty_reduced() looks at it. Only read on the union itself
+    TYX_CONTAINS_INTERSECTIONS = 8,
 };
 
 typedef enum TyIntrinsic {
@@ -1004,6 +1008,19 @@ Ty const* ty_union(Checker* me, Ty const* const* types, u32 len, Symbol const* a
 Ty const* ty_union_unreduced(Checker* me, Ty const* const* types, u32 len);
 Ty const* ty_union_filtered(Checker* me, Ty const* of, Ty const* const* kept, u32 len);
 Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
+// tsc's getReducedType (checker.c): the common answers inline
+enum { REDUCED_NOT_STARTED, REDUCED_IN_FLIGHT, REDUCED_ITSELF, REDUCED_NEVER };
+Ty const* ty_reduced_slow(Checker* me, Ty const* ty);
+static inline Ty const* ty_reduced(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) {
+        if (!ty->composite.state || ty->composite.state->reduced_state == REDUCED_ITSELF) return ty;
+    } else if (ty->kind != TY_UNION || !(ty->xflags & TYX_CONTAINS_INTERSECTIONS)) {
+        return ty;
+    }
+    return ty_reduced_slow(me, ty);
+}
+Ty const* ty_class_never_base(Checker* me, struct ClassDecl const* class_decl);
+bool ty_never_intersection_elaboration(Checker* me, Ty const* ty, unsigned* ts_code, cstr* message);
 // The same without dropping a `{}` next to a primitive: a written `string & {}` (tsc's NoSupertypeReduction)
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args);
 Ty const* ty_type_param(Checker* me, Symbol const* decl);
@@ -1172,9 +1189,6 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple);
-// Whether lowering the node now would run into a type alias that is being resolved, through aliases it would
-// resolve on the way (not looking into object types)
-bool ty_node_reaches_alias_in_flight(Checker* me, TypeNode const* node);
 // The type of parameter i (a rest parameter stands for every position from its own on), null if there's none
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i);
 // How many parameters a signature has, a rest tuple of fixed length counted as its elements (tsc's getParameterCount)
@@ -2010,6 +2024,7 @@ typedef struct TyDisplay {
     // The parameters of the signatures being printed (innermost first): the fake scope tsc's enterNewScope makes for a
     // signature, where a reused `typeof x` must still mean the same (see name_accessible())
     struct TyDisplayParams const* printed_params;
+    bool no_reduction; // tsc's NoTypeReduction: an intersection that is never prints as the intersection
 } TyDisplay;
 typedef struct TyDisplayParams {
     struct SigParam const* params;

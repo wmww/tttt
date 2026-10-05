@@ -1091,7 +1091,13 @@ static Ty const* apparent_type_of_mapped(Checker* me, Ty const* ty) {
     return ty_instantiate(me, ty, mapper);
 }
 
-static Ty const* apparent_type(Checker* me, Ty const* ty) {
+static Ty const* apparent_type_inner(Checker* me, Ty const* ty);
+// tsc's getReducedApparentType
+static inline Ty const* apparent_type(Checker* me, Ty const* ty) {
+    return ty_reduced(me, apparent_type_inner(me, ty_reduced(me, ty)));
+}
+
+static Ty const* apparent_type_inner(Checker* me, Ty const* ty) {
     if (ty->kind == TY_ANONYMOUS) return apparent_type_of_mapped(me, ty);
     if (ty->kind == TY_TYPE_PARAM) {
         // Through the constraint, which sees the type parameter as its `this` (`this.x` inside a class is `this`'s
@@ -1233,6 +1239,7 @@ static FoundProp find_prop(Checker* me, Ty const* ty, Atom const* name, u32 dept
 static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 depth, bool skip_augment) {
     FoundProp ret = {0};
     if (depth > 8) return ret;
+    if (ty->kind == TY_INTERSECTION && ty_reduced(me, ty) != ty) return ret; // (tsc's getReducedApparentType)
     if (ty->kind == TY_INTERSECTION) {
         // The property of an intersection is a type of its own (tsc makes a synthetic symbol per name as well)
         u64 key[2] = { ty->id << 1 | skip_augment, (u64)(uintptr_t)name };
@@ -5750,6 +5757,11 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    // (And reduced: getNormalizedType's getReducedType)
+    Ty const* unreduced_target = target;
+    if (source->kind == TY_UNION || source->kind == TY_INTERSECTION) source = ty_reduced(me, source);
+    if (target->kind == TY_UNION || target->kind == TY_INTERSECTION) target = ty_reduced(me, target);
+    if (source == target) return TERNARY_TRUE;
     // Unions of the same members (differing in alias or origin only)
     if (source->kind == TY_UNION && target->kind == TY_UNION &&
         source->composite.types.len == target->composite.types.len &&
@@ -5833,7 +5845,15 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     }
     // (tsc's reportErrorResults: JSX attributes against `IntrinsicAttributes & P` get no head, unlike an excess
     // property above)
-    if (!result && report && !ty_jsx_skips_head(me, source, target)) report_relation_error(me, st, source, report_target, top);
+    if (!result && report && !ty_jsx_skips_head(me, source, target)) {
+        // Why the target is never (tsc's reportErrorResults with elaborateNeverIntersection)
+        unsigned code;
+        cstr message;
+        if (unreduced_target != target && ty_never_intersection_elaboration(me, unreduced_target, &code, &message)) {
+            report_line(st, code, message);
+        }
+        report_relation_error(me, st, source, report_target, top);
+    }
     return result;
 }
 
@@ -5880,6 +5900,8 @@ static bool check_related(
     st->fresh_union = report_into ? fresh_union : nullptr;
     st->alias_fallback_source = st->alias_fallback_target = nullptr;
     if (source == target) return true;
+    // (Unreduced, like tsc's isTypeRelatedTo: `any` is assignable to an intersection that is never, which
+    // is_related_to() reduces first and finds it isn't)
     if (relation != TY_RELATION_IDENTITY && !st->reporting && is_simple_related(me, st, source, target)) return true;
     if (relation != TY_RELATION_IDENTITY && !st->reporting && !is_structured(source) && !is_structured(target)) {
         // Nothing to look into (narrowing asks this about every member of big literal unions): see is_related_to()

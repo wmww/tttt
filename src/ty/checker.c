@@ -642,6 +642,18 @@ static Ty const* intern_composite_origin(
             flags |= TYF_BOOLEAN;
         }
         if (kind == TY_UNION && (member_flags & TYF_UNDEFINED) && (member_flags & TYF_NULL)) xflags |= TYX_UNDEFINED_AND_NULL;
+        if (kind == TY_UNION) {
+            // (Only intersections that may reduce: two object members without type variables, see never_reduced_prop())
+            for (u32 i = 0; i < len && !(xflags & TYX_CONTAINS_INTERSECTIONS); i++) {
+                if (types[i]->kind != TY_INTERSECTION) continue;
+                u32 objects = 0;
+                TyList parts = types[i]->composite.types;
+                for (u32 j = 0; j < parts.len; j++) {
+                    objects += (parts.data[j]->flags & TYF_OBJECT) && !(parts.data[j]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+                }
+                if (objects >= 2) xflags |= TYX_CONTAINS_INTERSECTIONS;
+            }
+        }
         Ty* ret = ty_alloc(me, kind, flags);
         ret->xflags = xflags;
         ret->alias = alias;
@@ -1014,33 +1026,6 @@ static bool is_literal_like(Ty const* t) {
     return t->kind == TY_LITERAL || (t->kind == TY_INTRINSIC && (t->flags & TYF_NULLABLE));
 }
 
-static bool prop_judgeable(Checker* me, Prop const* prop) {
-    while (prop->type_state == LAZY_STATE_NOT_STARTED && prop->target) prop = prop->target;
-    if (prop->type_state == LAZY_STATE_IN_FLIGHT) return false;
-    if (prop->type_state == LAZY_STATE_DONE || !prop->decl->node || prop->decl->lazy || prop->decl->function || prop->decl->overload_count || prop->decl->symbol) {
-        return true;
-    }
-    return !ty_node_reaches_alias_in_flight(me, prop->decl->node);
-}
-
-// Whether resolving the members of a type literal would lower an index signature (they're lowered eagerly, see hacks.md)
-// or a mapped type's template that reaches an alias being resolved, or the arguments of a deferred reference that do
-static bool members_judgeable(Checker* me, Ty const* ty) {
-    // A deferred reference's arguments may need the alias being resolved (`type T = T[] & { x: string }`)
-    if (ty->kind == TY_REFERENCE && ty->reference.deferred && ty->reference.deferred->state != LAZY_STATE_DONE) {
-        return !ty_node_reaches_alias_in_flight(me, ty->reference.deferred->node);
-    }
-    Ty const* root = ty;
-    while (root->kind == TY_ANONYMOUS && root->anonymous.target && !root->anonymous.applies_type_args) root = root->anonymous.target;
-    if (root->kind != TY_ANONYMOUS || !root->anonymous.node || root->anonymous.node->tag != TYPE_INTERFACE) return true;
-    for_each (i, vec_interface_member, &root->anonymous.node->interface.members) {
-        // (A mapped type over non-literal keys is an index signature too)
-        bool index = i->key.tag == INTERFACE_KEY_INDEX || i->key.tag == INTERFACE_KEY_MAPPED;
-        if (index && ty_node_reaches_alias_in_flight(me, &i->type)) return false;
-    }
-    return true;
-}
-
 static Prop const* root_declaration(Prop const* prop) {
     while (prop->target) prop = prop->target;
     return prop;
@@ -1051,7 +1036,7 @@ static Prop const* root_declaration(Prop const* prop) {
 static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* const* types, u32 i, u32 len) {
     for (u32 j = i + 1; j < len; j++) {
         Ty const* b = types[j];
-        if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !members_judgeable(me, b)) continue;
+        if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
         Prop const* other = ty_get_prop(me, b, prop->name);
         if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && root_declaration(prop) != root_declaration(other)) {
             return true;
@@ -1060,71 +1045,97 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
     return false;
 }
 
-// Object types that both have a required property whose types are disjoint, one of them a literal (`{ kind: "a" }
-// & { kind: "b" }`): the intersection is never (tsc's isDiscriminantWithNeverType, via getReducedType). Remembered
-// per member list, since it looks at every property
-static bool has_conflicting_discriminants(Checker* me, Ty const* const* types, u32 len) {
+// Why an intersection of object types is never (tsc's isNeverReducedProperty over getPropertiesOfUnionOrIntersectionType):
+// a required property whose types are disjoint, one of them a literal (`{ kind: "a" } & { kind: "b" }`,
+// isDiscriminantWithNeverType), or one declared separately by two members, privately by one (isConflictingPrivateProperty).
+// Null if it isn't; `*private_conflict` says which
+static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
         if ((types[i]->flags & TYF_OBJECT) && !(types[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) objects++;
     }
-    if (objects < 2 || len > 30) return false;
-    u64 key[32] = { KEY_DISCRIMINANT_CONFLICT };
-    for (u32 i = 0; i < len; i++) key[1 + i] = types[i]->id;
-    void const** slot = intern_slot(me, &my links, key, 1 + len);
-    if (*slot) return (uintptr_t)*slot == 2;
-    *slot = (void const*)1; // (While working it out: no conflict)
-    bool conflict = false;
-    // HACK: tsc reduces lazily (getReducedType), this runs when the intersection is made, which can be while one of
-    // the properties or an alias it names is being lowered (`type B = X & { e: A }; type A = I | B`): that property
-    // can't be judged yet, and its type mustn't be asked for (it would be the error type for good)
-    bool skipped = false;
-    for (u32 i = 0; i < len && !conflict; i++) {
+    if (objects < 2) return nullptr;
+    Atom const* private_name = nullptr;
+    for (u32 i = 0; i < len; i++) {
         Ty const* a = types[i];
         if (!(a->flags & TYF_OBJECT) || (a->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
-        if (!members_judgeable(me, a)) {
-            skipped = true;
-            continue;
-        }
         Members const* members = ty_members(me, a);
-        for (u32 p = 0; p < members->prop_count && !conflict; p++) {
+        for (u32 p = 0; p < members->prop_count; p++) {
             Prop const* prop = members->props[p];
-            conflict = has_conflicting_private(me, prop, types, i, len);
+            if (!private_name && has_conflicting_private(me, prop, types, i, len)) private_name = prop->name;
             if (prop->flags & PROP_OPTIONAL) continue;
-            if (!prop_judgeable(me, prop)) {
-                skipped = true;
-                continue;
-            }
-            Ty const* a_type = prop_type(me, prop);
-            for (u32 j = i + 1; j < len && !conflict; j++) {
+            Ty const* a_type = nullptr;
+            for (u32 j = i + 1; j < len; j++) {
                 Ty const* b = types[j];
                 if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
-                if (!members_judgeable(me, b)) {
-                    skipped = true;
-                    continue;
-                }
                 Prop const* other = ty_get_prop(me, b, prop->name);
                 if (!other || (other->flags & PROP_OPTIONAL)) continue;
-                if (!prop_judgeable(me, other)) {
-                    skipped = true;
-                    continue;
-                }
+                if (!a_type) a_type = prop_type(me, prop);
                 Ty const* b_type = prop_type(me, other);
                 if (!is_literal_like(a_type) && !is_literal_like(b_type)) continue;
                 // (Not when one of them is never: tsc's isDiscriminantWithNeverType, CheckFlags.HasNeverType)
                 if ((a_type->flags | b_type->flags) & TYF_NEVER) continue;
                 Ty const* both[2] = { a_type, b_type };
-                conflict = (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) != 0;
+                if (ty_intersection(me, both, 2, nullptr, (TyList){0})->flags & TYF_NEVER) {
+                    *private_conflict = false;
+                    return prop->name;
+                }
             }
         }
     }
-    // (The slot may have moved while the members were resolved)
-    if (skipped && !conflict) {
-        *intern_slot(me, &my links, key, 1 + len) = nullptr; // Asked again once the property is done
-        return false;
+    *private_conflict = private_name != nullptr;
+    return private_name;
+}
+
+// tsc's getReducedType: an intersection of object types whose properties conflict is never, a union of such
+// intersections lacks them (getReducedUnionType). Asked where tsc asks it (property lookup through the apparent type,
+// relations, keyof, inference, printing...), not when the intersection is made
+Ty const* ty_reduced_slow(Checker* me, Ty const* ty) {
+    if (ty->kind == TY_INTERSECTION) {
+        TyObjectState* state = ty->composite.state;
+        if (!state) return ty; // (A union's origin)
+        if (state->reduced_state == REDUCED_NOT_STARTED) {
+            state->reduced_state = REDUCED_IN_FLIGHT;
+            bool private_conflict;
+            bool never = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict) != nullptr;
+            state->reduced_state = never ? REDUCED_NEVER : REDUCED_ITSELF;
+        }
+        return state->reduced_state == REDUCED_NEVER ? my intrinsics[TY_NEVER] : ty;
     }
-    *intern_slot(me, &my links, key, 1 + len) = (void const*)(uintptr_t)(conflict ? 2 : 1);
-    return conflict;
+    if (ty->kind != TY_UNION || !(ty->xflags & TYX_CONTAINS_INTERSECTIONS)) return ty;
+    u64 key[2] = { KEY_REDUCED_UNION, ty->id };
+    void const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached;
+    TyList types = ty->composite.types;
+    Ty const* stack_buf[32];
+    Ty const** reduced = types.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * types.len);
+    panic_if(!reduced, "out of memory");
+    bool changed = false;
+    for (u32 i = 0; i < types.len; i++) {
+        reduced[i] = ty_reduced(me, types.data[i]);
+        changed |= reduced[i] != types.data[i];
+    }
+    Ty const* ret = changed ? ty_union(me, reduced, types.len, nullptr, (TyList){0}) : ty;
+    if (reduced != stack_buf) free(reduced);
+    *intern_slot(me, &my links, key, 2) = ret;
+    if (ret != ty && ret->kind == TY_UNION) *intern_slot(me, &my links, (u64[]){ KEY_REDUCED_UNION, ret->id }, 2) = ret;
+    return ret;
+}
+
+// tsc's elaborateNeverIntersection: why `ty` is never, the intersection printed unreduced. False if it isn't one
+bool ty_never_intersection_elaboration(Checker* me, Ty const* ty, unsigned* ts_code, cstr* message) {
+    if (ty->kind != TY_INTERSECTION || ty_reduced(me, ty) == ty) return false;
+    bool private_conflict;
+    Atom const* name = never_reduced_prop(me, ty->composite.types.data, ty->composite.types.len, &private_conflict);
+    if (!name) return false;
+    cstr ty_str = cstr_null;
+    ty_display(me, (TyDisplay){ .target = &ty_str, .no_reduction = true }, ty);
+    cstr name_str = ty_prop_name_cstr(me, name);
+    *ts_code = private_conflict ? 18032 : 18031;
+    *message = cstr_d("The intersection '", ty_str, "' was reduced to 'never' because property '", name_str,
+        private_conflict ? "' exists in multiple constituents and is private in some." : "' has conflicting types in some constituents.");
+    c_drop(cstr, &ty_str, &name_str);
+    return true;
 }
 
 // The templates and mappings of an intersection with the string literal `literal` go if the literal is one of theirs,
@@ -1425,7 +1436,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         for (u32 j = 0; j < buf.len; j++) if (buf.data[j]->kind == TY_UNION) combos *= buf.data[j]->composite.types.len;
         TyBuf results = {0};
         TyBuf parts = {0};
-        bool any_intersection = false, reduced_later = false;
+        bool any_intersection = false;
         for (u32 i = 0; i < combos; i++) {
             parts.len = 0;
             for (u32 j = 0; j < buf.len; j++) ty_buf_push(&parts, buf.data[j]);
@@ -1438,20 +1449,13 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
                 n /= l;
             }
             Ty const* r = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
-            if (r->flags & TYF_NEVER) {
-                // (Objects whose discriminants conflict: tsc reduces those only later, getReducedType, into a union of
-                // its own without the origin)
-                bool objects = true;
-                for (u32 j = 0; j < parts.len && objects; j++) objects = (parts.data[j]->flags & TYF_OBJECT) != 0;
-                reduced_later |= objects;
-                continue;
-            }
+            if (r->flags & TYF_NEVER) continue;
             any_intersection |= r->kind == TY_INTERSECTION;
             ty_buf_push(&results, r);
         }
         ty_buf_drop(&parts);
         OriginSpec spec = { TY_INTERSECTION, buf.data, buf.len };
-        bool use_origin = any_intersection && !reduced_later &&
+        bool use_origin = any_intersection &&
             constituent_count_of(results.data, results.len) > constituent_count_of(buf.data, buf.len);
         ret = results.len == 0 ? my intrinsics[TY_NEVER] :
             union_with_origin(me, results.data, results.len, alias, alias_args, use_origin ? &spec : nullptr);
@@ -1535,14 +1539,6 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             ret = my intrinsics[empty_objects ? TY_NEVER : includes & TYF_UNDEFINED ? TY_UNDEFINED : TY_NULL];
             ty_buf_drop(&buf);
             return ret;
-        }
-        if (!is_never && out >= 2) {
-            // (tsc asks this lazily, not while what the intersection is part of is being resolved: a cycle found by
-            // asking early is only this question's, like a call's in resolve_call())
-            u32 start = my resolving_start;
-            my resolving_start = my resolving_len;
-            if (has_conflicting_discriminants(me, buf.data, out)) is_never = true;
-            my resolving_start = start;
         }
         if (is_never) {
             ret = my intrinsics[TY_NEVER];
@@ -2173,6 +2169,7 @@ static Ty const* keyof_keyof(Checker* me) {
 }
 
 Ty const* ty_keyof(Checker* me, Ty const* operand) {
+    if (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION) operand = ty_reduced(me, operand); // (tsc's getIndexType)
     if (ty_is_no_infer(operand)) return ty_no_infer(me, ty_keyof(me, operand->substitution.base));
     if (operand->flags & TYF_ANY) {
         Ty const* all[3] = { my intrinsics[TY_STRING], my intrinsics[TY_NUMBER], my intrinsics[TY_ES_SYMBOL] };

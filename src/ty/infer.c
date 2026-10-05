@@ -1378,6 +1378,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     } else if (target->kind == TY_TEMPLATE_LITERAL) {
         infer_to_template(me, inf, source, target);
     } else if (target->flags & TYF_OBJECT) {
+        if (source->kind == TY_INTERSECTION) source = ty_reduced(me, source); // (tsc's inferFromTypes)
         if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
             Ty const* apparent = ty_apparent_type(me, source);
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) source = apparent;

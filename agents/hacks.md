@@ -447,13 +447,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - A bare `C`/`this` inside generic `C` isn't its own instantiation (lower.c TODO).
 - Enums (`ty_resolve_enum`, `evaluate`): no `const` object property accesses; other files' `const`s count as constant;
   ambient non-const members auto-increment (tsc: computed).
-- `has_conflicting_discriminants` (checker.c HACK): intersections reduce to never when made, not lazily; in-flight
-  props (`ty_node_reaches_alias_in_flight`, `members_judgeable`) are skipped and the answer not remembered though the
-  intersection is interned. It runs as its own region of the resolution stack (`resolving_start`, plan 39): a cycle its
-  eager questions find mustn't mark what is being resolved around it (it made arktype's mapped `sequence` TS2615).
-  The cross product of an intersection of unions compensates (`reduced_later` in ty_intersection): an object
-  combination that came out never drops the origin, as tsc's later getReducedType would (discriminatedUnionTypes2).
-  Real fix: a lazy reduced view.
+- `never_reduced_prop` (checker.c HACK): ty_reduced() (tsc's getReducedType, lazy since plan 42 stage 2) doesn't judge
+  members flagged `TYF_COULD_CONTAIN_TYPE_VARIABLES` (tsc's isNeverReducedProperty looks at every member); judging them
+  cost valibot +29% in the prototype: find why tsc doesn't pay that before trying again. `check_related`'s fast path
+  runs on the unreduced types like tsc's isTypeRelatedTo (`any` is assignable to an intersection that is never),
+  is_related_to() then reduces both sides.
 - `resolve_call` (call.c HACK): every resolution of a call starts a new region of the resolution stack; tsc's only
   the first (a nested one gets `resolvingSignature` and sees the whole stack). Since resolve-once (plan 38 stage 3) the
   only other resolutions are in-flight re-entries; skipping the barrier for those is -1 (implicitAnyFromCircularInference's

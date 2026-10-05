@@ -599,6 +599,7 @@ bool ty_base_constructors_fit(Checker* me, Ty const* constructor, u32 count, boo
 // Unlike tsc, not `any`: a class extending `any` has no base as far as class_base() goes
 static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {
     if (depth > 16) return false;
+    if (depth == 0) ty = ty_reduced(me, ty); // (tsc's resolveBaseTypesOfClass: getReducedType of the base)
     if (ty->flags & TYF_ANY) return false;
     if (ty->kind == TY_TYPE_PARAM) {
         Ty const* constraint = ty_param_constraint(me, ty);
@@ -661,7 +662,10 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
             constructed = signature_return_type(me, members->construct[i]);
             if (mapper) constructed = ty_instantiate(me, constructed, mapper);
         }
-        if (!constructed || !is_valid_base_type(me, constructed, 0)) return false;
+        if (!constructed || !is_valid_base_type(me, constructed, 0)) {
+            if (constructed) *instance = constructed; // (For ty_class_never_base())
+            return false;
+        }
         *instance = constructed;
         *base_decl = nullptr;
         return true;
@@ -1762,6 +1766,18 @@ Ty const* ty_class_base_instance(Checker* me, ClassDecl const* class_decl) {
     return class_base(me, class_decl, ctx, &base, &base_decl) ? base : nullptr;
 }
 
+// The base a class's `extends` expression constructs when it is an intersection that is never (TS2509, tsc's
+// resolveBaseTypesOfClass with elaborateNeverIntersection). Null otherwise
+Ty const* ty_class_never_base(Checker* me, ClassDecl const* class_decl) {
+    Ty const* base = nullptr;
+    Symbol const* base_decl = nullptr;
+    Ty const* declared = class_decl->symbol ? ty_declared_type_of(me, class_decl->symbol) : nullptr;
+    LowerCtx ctx = { .generic = declared && declared->kind == TY_DECLARED &&
+        (declared->declared.type_params.len || declared->declared.this_param) };
+    if (class_base(me, class_decl, ctx, &base, &base_decl) || !base) return nullptr;
+    return base->kind == TY_INTERSECTION && (ty_reduced(me, base)->flags & TYF_NEVER) ? base : nullptr;
+}
+
 Atom const* ty_member_name(Checker* me, cstr const* name_string, Expr const* computed_key) {
     if (!computed_key) return checker_atom(me, cstr_sv(name_string));
     bool is_number = false;
@@ -1845,7 +1861,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 } else if (node->kind == SYMBOL_DECL_INTERFACE) {
                     InterfaceDecl const* interface_decl = node->node;
                     for_each (extends, vec_spanned_type, &interface_decl->extends) {
-                        Ty const* base = ty_from_node(me, &extends->type, ctx);
+                        // (Reduced: tsc's resolveBaseTypesOfInterface, getReducedType, which can find a cycle)
+                        Ty const* base = ty_reduced(me, ty_from_node(me, &extends->type, ctx));
                         // An object type, a type parameter constrained to one or an intersection of them (tsc's
                         // isValidBaseType)
                         if (base == ty) continue;

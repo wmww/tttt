@@ -36,30 +36,17 @@ when other parameters are mapped too. Probes in `test/probes/plan42/`. Arrays/tu
   in the prototype; fix those first. mappedTypeInferenceErrors (`bar: unknown`) stays unexplained: needs an
   instrumented tsc run (memory note "instrument a tsc copy").
 
-## Stage 2: lazy intersection reduction (~1 session). Prototype `stage2_reduced_intersections.patch`
-Measured: suite +2 (intersectionWithConflictingPrivates, typeGuardsWithInstanceOf), 0 lost; corpora unchanged,
-zod-root byte-identical; callgrind zod -0.8%, valibot +0.2%, drizzle +0.4%, tsc +0.65%, vue +1.1%. Not run:
-threadcheck/checkerdiff (run them).
-- Intersections stay `TY_INTERSECTION` when made. `ty_reduced()` (tsc's getReducedType): never-or-itself memoized in
-  a `TyObjectState.reduced_state` byte; unions map their members (`KEY_REDUCED_UNION`), only when flagged
-  `TYX_CONTAINS_INTERSECTIONS`. Inline fast path in ty.h. `never_reduced_prop()` replaces
-  `has_conflicting_discriminants` and reads a property's type only when a second constituent has it.
-- Asked at tsc's sites: display (unless `TyDisplay.no_reduction`), `is_related_to` both sides and `check_related`'s
-  fast path (failure adds the TS18031/18032 elaboration "The intersection 'A & B' was reduced to 'never' because..."),
-  `apparent_type`, `find_prop_in`, `access()`, `ty_keyof`, infer.c's object targets, conditional distribution,
-  `instantiate_mapped_over_list`, property access on never (TS2339 with the elaboration), `member_refs`,
-  `target_prop_of`, flow's `is_discriminant_property`, the harness's `collect_prop_symbol`, class bases
-  (`ty_class_never_base()`: TS2509) and interface bases under the RESOLVING_BASES push.
-- Deleted: the barrier, `members_judgeable`, `prop_judgeable`, `ty_node_reaches_alias_in_flight`, `reduced_later`.
-  Three hacks.md entries go (has_conflicting_discriminants, plan 39 stage 3 item 5, the barrier).
-- Kept (HACKs to record): members with `TYF_COULD_CONTAIN_TYPE_VARIABLES` still aren't judged (judging them like tsc
-  cost valibot **+29%**: understand why tsc doesn't pay that before trying again); `reduction_forces_members()` gates
-  the `instantiate_mapped_over_list` site (reducing there made zod's recursive getters TS2615 on `pipe`). The
-  sub-agent blamed eager mapped members, but mapped props' types *are* lazy (`expand_mapped`); find what actually
-  asks the in-flight getter (TTTT_DEBUG_CYCLE) before building anything for it.
-- Risk to check: `check_related` reducing before its fast path makes `any` vs a never intersection false where tsc's
-  isTypeRelatedTo says true; other `flags & TYF_NEVER` tests on unreduced intersections (grep them).
-- circularBaseTypes' `Y` TS2310 comes out (plan 39 stage 3 item 2's Y); its `K` needs stage 3.
+## Stage 2: lazy intersection reduction. Done 2026-10-05
+Suite 12729 -> 12731 (+intersectionWithConflictingPrivates, +typeGuardsWithInstanceOf, circularBaseTypes' `Y`
+TS2310), 0 lost; every corpus byte-identical (zod-root too), threadcheck/checkerdiff identical; callgrind vue +1.0%,
+drizzle +0.7%, xstate +0.7%, tsc +0.6%, valibot +0.3% (is_related_to's two reductions on a hot path: same call counts,
+more instructions each). `ty_reduced()` (tsc's getReducedType) as the prototype had it, asked at tsc's sites; the
+barrier, `members_judgeable`, `prop_judgeable`, `ty_node_reaches_alias_in_flight`, `reduced_later` are gone. Changes
+from the prototype: `check_related`'s fast path relates the *unreduced* types like tsc's isTypeRelatedTo (the
+prototype made `any` not assignable to a never intersection, which tsc accepts: probe
+`test/probes/plan42/any_to_never_intersection.ts`), and `reduction_forces_members()` is deleted: reducing in
+`instantiate_mapped_over_list` unconditionally is 0 lost with every corpus identical (zod's TS2615 no longer
+reproduces). Kept: members with type variables aren't judged (hacks.md `never_reduced_prop`).
 
 ## Stage 3: mapped info without expansion, quick types, re-entry semantics (~1 session). Prototype `stage3_reentry.patch`
 The prototype is behind environment variables (`getenv("TTTT_...")`, marked PROTOTYPE): land the default branches,
