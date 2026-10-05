@@ -893,7 +893,8 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         c_drop(cstr, &source_str, &target_str);
     }
     // (tsc's reportErrorResults: about the global Object type as a source, unless the target is a primitive)
-    if (!wrapper_case && source == global_type(me, GLOBAL_OBJECT)) {
+    bool object_line = !wrapper_case && source == global_type(me, GLOBAL_OBJECT);
+    if (object_line) {
         report_line(st, 2696, cstr_from("The 'Object' type is assignable to very few other types. Did you mean to use the 'any' type instead?"));
     }
     // A readonly array or tuple where a mutable one is wanted says so instead of the head (tsc's reportErrorResults
@@ -912,6 +913,12 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
             c_drop(cstr, &source_str, &target_str);
             suppress = true;
         }
+    }
+    if (suppress && object_line) {
+        // (tsc's reportError of that line flushed the incompatible steps first, so the head it then skips is never
+        // reported: lastSkippedInfo waits for a stack that stays empty)
+        report_missing_constraint(me, st, source, target);
+        return;
     }
     if (suppress) {
         if (!top || !pending) {
