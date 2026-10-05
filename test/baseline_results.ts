@@ -65026,7 +65026,7 @@ const baselines = {
         types: true,
     },
     'genericRestParameters1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
