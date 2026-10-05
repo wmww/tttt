@@ -277,7 +277,7 @@ src` finds the code-side markers; every significant one has an entry here.
   (`"a" | Exclude<keyof T, X>`) still takes that path, standing in for tsc's inference from the properties those keys
   give (complicatedIndexesOfIntersectionsAreInferencable); tsc's inferToMappedType returns false for it.
 - `first_unfit_skipped_literal()` (`resolve_with_signatures`): tsc's SkipContextSensitive round still relates a
-  context-sensitive object/array literal argument (its sensitive functions as anyFunctionType) to the parameter; tttt
+  context-sensitive object/array literal argument (or JSX attributes) (its sensitive functions as anyFunctionType) to the parameter; tttt
   skips the whole argument in that round, and does the literal check only for non-generic overloads of a call with
   several, against a parameter type without type variables. Doing it for every candidate (generic ones against the
   skip-round instantiation) broke typeInferenceWithExcessProperties & co. and vue (47 -> 443): checking the literal

@@ -1353,7 +1353,7 @@ static i32 check_args_until_unfit(
     return unfit_missing_rest(me, shape, args, relation, arg_type, param_type);
 }
 
-// tsc's CheckMode.SkipContextSensitive checks a context-sensitive object or array literal argument too, its
+// tsc's CheckMode.SkipContextSensitive checks a context-sensitive object or array literal argument (or JSX attributes) too, its
 // context-sensitive functions as anyFunctionType: `{ start(c) {} }` doesn't fit a parameter that requires `type`, so
 // that overload isn't the one whose contextual types the functions get. Whether they fit (else -1 as in
 // first_unfit_argument()). HACK: only for the non-generic overloads of a call with several, see hacks.md
@@ -1361,7 +1361,7 @@ static i32 first_unfit_skipped_literal(Checker* me, ParamShape const* shape, Arg
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
         if (!arg->context_sensitive || arg->spread || arg->part_of_spread) continue;
-        if (arg->expr->tag != EXPR_OBJECT && arg->expr->tag != EXPR_ARRAY) continue;
+        if (arg->expr->tag != EXPR_OBJECT && arg->expr->tag != EXPR_ARRAY && arg->expr->tag != EXPR_JSX_ATTRIBUTES) continue;
         Ty const* target = i < shape->count ? shape->types[i] : shape->rest_element;
         if (!target || (target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
         Ty const* source = ty_check_expr_skipping_sensitive(me, arg->expr, target, false);
