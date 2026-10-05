@@ -2431,6 +2431,11 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     // member's, so a union of two interfaces gets the plain name like tsc's synthetic symbol
     Checker* checker = current_checker;
     Ty const* object = ty_expr_type(checker, &my property->expr);
+    // (Widened for an assignment target or a method call, like the checker's access: tsc's resolvedSymbol. The
+    // literal of an element access is looked up in the expression's type as it is)
+    if ((my property->method_call || my property->assignment_target) && my property->form == PROPERTY_EXPR_DOT) {
+        object = ty_widened_objects(checker, ty_widened_nullable(checker, object));
+    }
     Ty const* key = ty_access_key_type(checker, my property);
     // (`o["a"]`: tsc's getSymbolAtLocation of the literal is getPropertyOfType of the object's type, which has none
     // when a member like `undefined` doesn't have it: `o?.["a"]`)
