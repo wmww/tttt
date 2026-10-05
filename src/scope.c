@@ -3172,12 +3172,10 @@ static bool augmentation_entry_needs_resolving(Symbol const* module, csview name
 // The module an augmentation adds to (the module symbol itself, not its `export =`)
 static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
     ModuleRef* ref = decl->module_ref;
-    Symbol* ret = nullptr;
-    if (ref->file) ret = ref->file->scope ? ref->file->scope->container : nullptr;
-    if (!ret) {
-        ret = binder_module_of_ref(me, ref);
-        if (ret && ret->is_module && !ret->module->file && memchr(ret->name.buf, '*', (size_t)ret->name.size)) ret = nullptr;
-    }
+    // (An ambient module of the name first, then the file: tsc's resolveExternalModule)
+    Symbol* ret = binder_module_of_ref(me, ref);
+    if (ret && ret->is_module && !ret->module->file && memchr(ret->name.buf, '*', (size_t)ret->name.size)) ret = nullptr;
+    if (!ret && ref->file) ret = ref->file->scope ? ref->file->scope->container : nullptr;
     // (Nobody declares it, TS2664: it becomes an ambient module all the same)
     if (!ret) ret = binder_ambient_module(me, cstr_sv(&ref->path), decl->name);
     return ret;
