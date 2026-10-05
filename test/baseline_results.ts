@@ -30611,9 +30611,9 @@ const baselines = {
         types: true,
     },
     'trivialSubtypeReductionNoStructuralCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'trivialSubtypeReductionNoStructuralCheck2': {
         errors: true,

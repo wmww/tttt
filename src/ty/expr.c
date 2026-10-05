@@ -411,8 +411,12 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
         }
         Prop const* key = nullptr;
         Ty const* key_type = nullptr;
-        if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
-            Members const* m = ty_members(me, source);
+        // (tsc: of objects, intersections and type variables, conditional types and substitutions, whose properties are
+        // their apparent type's)
+        Ty const* keyed = source->flags & (TYF_OBJECT | TYF_INTERSECTION) ? source :
+            (source->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && source->kind != TY_KEYOF ? ty_apparent_type(me, source) : nullptr;
+        if (keyed && (keyed->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+            Members const* m = ty_members(me, keyed);
             for (u32 k = 0; k < m->prop_count && !key; k++) {
                 Ty const* t = prop_type(me, m->props[k]);
                 if (is_unit_for_reduction(t)) {
@@ -433,7 +437,9 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
                 }
             }
             count++;
-            if (key && (target->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+            if (key && ((target->flags & (TYF_OBJECT | TYF_INTERSECTION)) ||
+                ((target->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && target->kind != TY_KEYOF))
+            ) {
                 Ty const* t = ty_prop_type_of(me, target, key->name);
                 if (t && is_unit_for_reduction(t) && ty_regular(me, t) != key_type) continue;
             }
@@ -4265,9 +4271,14 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .contextual = ctx.contextual, .is_const = true }));
             }
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
-            // The type of `e as T` doesn't depend on e, which is checked when the statement walk gets there (tsc defers
-            // it too): `const data = get(id) as Data` in a loop that assigns id from data isn't circular
-            if (!as_type->is_satisfies) return type;
+            // The type of `e as T` doesn't depend on e, but checking it checks e right away (tsc's checkAssertionWorker:
+            // only the comparison is deferred). A declaration's initializer and control flow don't check it
+            // (ty_quick_expr_type(), tsc's getQuickTypeOfExpression): `const data = get(id) as Data` in a loop that
+            // assigns id from data isn't circular
+            if (!as_type->is_satisfies) {
+                if (!my flow_uncached) ty_check_expr(me, &as_type->expr, type);
+                return type;
+            }
             Ty const* checked = ty_check_expr(me, &as_type->expr, type);
             return type->flags & TYF_ERROR ? type : checked; // (tsc's checkSatisfiesExpressionWorker)
         }

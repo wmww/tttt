@@ -789,6 +789,10 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
         Ty const* quick = ty_quick_expr_type(me, &expr->unary_op->expr, in_flow);
         return quick ? ty_awaited(me, quick) : nullptr;
     }
+    // (A type assertion is its type, its operand unchecked)
+    if (expr->tag == EXPR_AS_TYPE && !expr->as_type->is_satisfies && !as_type_is_const(expr->as_type)) {
+        return ty_from_node(me, &expr->as_type->type, (LowerCtx){ .generic = true });
+    }
     if (expr->tag != EXPR_CALL) return nullptr;
     CallExpr const* call = expr->call;
     if (call->uses_new || call->is_extends || call->callable.tag == EXPR_GENERIC_PARAMS || in_optional_chain(expr)) {
