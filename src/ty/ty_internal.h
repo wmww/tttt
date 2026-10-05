@@ -354,3 +354,5 @@ TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList pa
 MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* source, TyMapper const* mapper); // members.c
 // tsc's isTypeDerivedFrom(): what `instanceof` goes by, the classes something is made of rather than its shape
 bool ty_is_type_derived_from(Checker* me, Ty const* source, Ty const* target); // flow.c
+// tsc's isMutableArrayOrTuple: an Array<T> or a tuple that isn't readonly
+bool ty_is_mutable_array_or_tuple(Checker* me, Ty const* ty);

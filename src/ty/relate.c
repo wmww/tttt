@@ -3918,6 +3918,8 @@ static Ternary target_each_related(Checker* me, RelationState* st, Ty const* sou
     return result;
 }
 
+bool ty_is_mutable_array_or_tuple(Checker* me, Ty const* ty) { return is_mutable_array_or_tuple(me, ty); }
+
 static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty) {
     if (ty->kind == TY_REFERENCE && ty->reference.target == my array_target) return true;
     if (is_empty_tuple(ty)) return !ty->declared.tuple->readonly;

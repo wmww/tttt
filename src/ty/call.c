@@ -388,6 +388,15 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
     ) {
         return ty_intrinsic(me, TY_ANY);
     }
+    // A lone spread of a generic array-like whose constraint is a mutable array or tuple: that type itself (tsc's
+    // getSpreadArgumentType, getMutableArrayOrTupleType), `f10(...u)` with U extends string[] infers U
+    if (arity == 1 && args->data[from].spread && args->data[from].variadic && !readonly && !args->data[from].tuple_name) {
+        Ty const* variadic = args->data[from].variadic;
+        Ty const* constraint = variadic->kind == TY_TYPE_PARAM || (variadic->flags & TYF_DEFERRED) ? ty_base_constraint(me, variadic) : variadic;
+        // (Not a tuple constraint yet: the arity check then reads the instantiated rest parameter as V's fixed
+        // elements and reports TS2556 for `f10(...v)`, V extends [number, number])
+        if (constraint && ty_is_mutable_array_or_tuple(me, constraint) && !ty_tuple_shape(constraint)) return variadic;
+    }
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
     Atom const** names = nullptr;
