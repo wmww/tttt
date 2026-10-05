@@ -7635,7 +7635,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         check_modifiers(&p, &modifiers, (ModifiedNode){ .kind = MODIFIED_CLASS_STATIC_BLOCK, .parent = MODIFIED_IN_CLASS });
         ret->tag = CLASS_ITEM_STATIC_BLOCK;
     } else if (span_valid(name_span)) {
-        if (span_valid(name_span) && cstr_is_empty(&name_string)) {
+        // (Not for `""`, a string literal whose value is empty)
+        if (span_valid(name_span) && cstr_is_empty(&name_string) && !name_is_value) {
             name_string = cstr_from_span(name_span);
         }
 
