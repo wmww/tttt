@@ -456,11 +456,14 @@ static Ty const* filter_type(Checker* me, Ty const* ty, TyFilterFn keep, void co
 static Ty const* map_type(Checker* me, Ty const* ty, TyMapFn map, void const* arg) {
     if (ty->flags & TYF_NEVER) return ty;
     if (ty->kind != TY_UNION) return map(me, ty, arg);
-    TyList members = ty->composite.types;
+    // (Over what it was built as, named unions mapped as a whole: one that maps to itself keeps its name, tsc's mapType)
+    Ty const* origin = ty->composite.origin;
+    bool by_origin = origin && origin->kind == TY_UNION;
+    TyList members = by_origin ? origin->composite.types : ty->composite.types;
     TyBuf mapped = {0};
     bool changed = false;
     for (u32 i = 0; i < members.len; i++) {
-        Ty const* t = map(me, members.data[i], arg);
+        Ty const* t = by_origin && members.data[i]->kind == TY_UNION ? map_type(me, members.data[i], map, arg) : map(me, members.data[i], arg);
         changed |= t != members.data[i];
         ty_buf_push(&mapped, t);
     }

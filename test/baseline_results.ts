@@ -32158,7 +32158,7 @@ const baselines = {
     'unionWithIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uniqueSymbolAllowsIndexInObjectWithIndexSignature': {
         errors: true,
