@@ -227,7 +227,11 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);
         ty_check_property_modifiers(current_checker, my symbol, nullptr, nullptr, errs);
     }
-    if (first_checked == me) {
+    // (tsc's checkTypeForDuplicateIndexSignatures runs for the symbol's first declaration: not at all when that is a
+    // lib's and lib files aren't checked)
+    SymbolDecl const* first_decl = my symbol && my symbol->decl_count ? &my symbol->decls[0] : nullptr;
+    bool first_is_lib = first_decl && first_decl->name.source && first_decl->name.source->is_stdlib;
+    if (first_checked == me && (!first_is_lib || lib_files_checked())) {
         InterfaceMember const* indexes[32];
         u32 index_count = 0;
         for (u32 d = 0; d < my symbol->decl_count; d++) {

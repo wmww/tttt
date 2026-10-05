@@ -555,6 +555,10 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         if (end == c_NPOS) break;
         config = csview_slice(config, end + 1, INTPTR_MAX);
     }
+    // (tsc's harness skips checking the default lib unless a test says otherwise)
+    if (!program_options(my program)->is_set[COMPILER_OPTION_skip_default_lib_check]) {
+        ignore compiler_options_set(program_options(my program), c_sv("skipdefaultlibcheck"), c_sv("true"));
+    }
     compiler_options_resolve(program_options(my program));
     cstr_take(&my lib_list, no_default_lib ? cstr_null : compiler_options_lib_files(program_options(my program)));
     for (csview rest = cstr_sv(&referenced_libs); rest.size && cstr_size(&my lib_list);) {
@@ -608,10 +612,20 @@ static void format_error_tree(
         unsigned col = span_col_index(error->span);
         const char* filename = error->span.source ? error_file_name(error->span.source) : "(nil)";
 
-        cstr_append_d(
-            global_target, DEFAULT_DISPLAY,
-            filename, "(", line + 1, ",", col + 1, "): ", error_category_name(error), " TS", error->ts_code, ": "
-        );
+        if (error->span.source && error->span.source->is_stdlib) {
+            // (tsc's harness: a lib file's errors without a position)
+            csview name = basename_of(cstr_sv(&error->span.source->canonical_path));
+            cstr_append_d(
+                global_target, DEFAULT_DISPLAY,
+                csview_starts_with(name, "lib.") ? "" : "lib.", name, "(--,--): ", error_category_name(error), " TS",
+                error->ts_code, ": "
+            );
+        } else {
+            cstr_append_d(
+                global_target, DEFAULT_DISPLAY,
+                filename, "(", line + 1, ",", col + 1, "): ", error_category_name(error), " TS", error->ts_code, ": "
+            );
+        }
     }
 
     if (indent_level > 0 && error->detached) {
@@ -675,11 +689,19 @@ static void process_errors(BaselineTestCase* me) {
 
     SourceFile const* current_source = nullptr;
     BaselineTestFile* current_test_file = nullptr;
+    // A lib file's errors (a user declaration conflicting with one there) are only listed, after the others
+    cstr lib_errors = cstr_null;
 
     for_each (error, vec_error, &my error_ctx->errors) {
         if (!span_valid(error->span)) {
             // A diagnostic without a file: listed before the first file
             format_error_tree(&my formatted_errors, &my formatted_global_errors, error, error, nullptr, 0);
+            continue;
+        }
+        if (error->span.source && error->span.source->is_stdlib) {
+            cstr discarded = cstr_null;
+            format_error_tree(&lib_errors, &discarded, error, error, error->span.source, 0);
+            cstr_drop(&discarded);
             continue;
         }
 
@@ -733,6 +755,8 @@ static void process_errors(BaselineTestCase* me) {
         }
         current_test_file->error_count++;
     }
+    cstr_append_s(&my formatted_errors, lib_errors);
+    cstr_drop(&lib_errors);
 }
 
 static bool path_is_script(csview path) {

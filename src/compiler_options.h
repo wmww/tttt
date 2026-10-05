@@ -251,3 +251,9 @@ static inline CompilerOptions const* compiler_options() {
     panic_if(!compiler_options_private, "global CompilerOptions unset");
     return compiler_options_private;
 }
+
+// Whether the default lib's files are checked (tsc reports what it says about them then: the lib side of a conflict
+// with a user declaration). tsc's harness sets skipDefaultLibCheck unless a test says otherwise
+static inline bool lib_files_checked() {
+    return !compiler_options()->skip_default_lib_check && !compiler_options()->skip_lib_check;
+}

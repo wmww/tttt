@@ -641,26 +641,27 @@ bool scope_has_function(Scope const* me) {
 // Declaring
 
 // `display`: the name to say when it isn't the declaration's text (tsc's getDisplayName: `export=`)
-static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display) {
-    if (!span_valid(at) || !at.source || at.source->is_stdlib) return nullptr;
+// `lib_too`: a lib file's declaration is reported as well (conflicting with a user file's)
+static Error* report_conflict_named(ErrorCtx* errs, Span at, unsigned code, csview display, bool lib_too) {
+    if (!span_valid(at) || !at.source || (at.source->is_stdlib && !lib_too)) return nullptr;
     // Once per declaration: a later conflict adds to the error that's there (tsc's lookupOrIssueError)
     Error* existing = error_ctx_find(errs, at, code == 2567 || code == 2451 ? code : 2300);
     if (existing) return existing;
     // (A missing name is tsc's "__missing", shown as "(Missing)")
     csview name = display.size ? display : at.sv.size ? at.sv : c_sv("(Missing)");
+    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = at.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
     switch (code) {
         case 2567:
-            return error_ctx_error_d(errs, at, 2567,
-                "Enum declarations can only merge with namespace or other enum declarations.");
+            return report(errs, at, 2567, cstr_d("Enum declarations can only merge with namespace or other enum declarations."));
         case 2451:
-            return error_ctx_error_d(errs, at, 2451, "Cannot redeclare block-scoped variable '", name, "'.");
+            return report(errs, at, 2451, cstr_d("Cannot redeclare block-scoped variable '", name, "'."));
         default:
-            return error_ctx_error_d(errs, at, 2300, "Duplicate identifier '", name, "'.");
+            return report(errs, at, 2300, cstr_d("Duplicate identifier '", name, "'."));
     }
 }
 
 static Error* report_conflict(ErrorCtx* errs, Span at, unsigned code) {
-    return report_conflict_named(errs, at, code, (csview){0});
+    return report_conflict_named(errs, at, code, (csview){0}, false);
 }
 
 // tsc's addDuplicateDeclarationError: the checker's merges (across files) point each error at the other side's
@@ -744,11 +745,14 @@ static void report_conflicts(
     for (u32 i = 0; i < existing->decl_count; i++) {
         Span at = existing->decls[i].name;
         if (!same_file && at.source && at.source->plain_js) continue;
-        Error* error = report_conflict_named(errs, at, code, display);
+        // (tsc reports both sides of a conflict, a lib file's too when lib files are checked: the harness lists those
+        // without a position)
+        bool lib_too = name.source && !name.source->is_stdlib && lib_files_checked();
+        Error* error = report_conflict_named(errs, at, code, display, lib_too);
         if (related) add_duplicate_related(error, at, name);
     }
     if (!same_file && name.source && name.source->plain_js) return;
-    Error* error = report_conflict_named(errs, name, code, display);
+    Error* error = report_conflict_named(errs, name, code, display, false);
     for (u32 i = 0; related && i < existing->decl_count; i++) {
         add_duplicate_related(error, name, existing->decls[i].name);
     }

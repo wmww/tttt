@@ -2469,8 +2469,14 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
         for (u32 j = 0; j < entry_count; j++) {
             if (entries[j].key != entries[i].key) continue;
             Span at = span_valid(entries[j].member->declaration) ? entries[j].member->declaration : entries[j].member->key.span;
-            // (A lib's declarations aren't checked)
-            if (!at.source || at.source->is_stdlib) continue;
+            // (A lib's declarations are only checked when lib files are)
+            if (!at.source) continue;
+            if (at.source->is_stdlib) {
+                if (lib_files_checked()) {
+                    error_ctx_lib_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
+                }
+                continue;
+            }
             error_ctx_error_d(errs, span_with_member_separator(at), 2374, "Duplicate index signature for type '", key_str, "'.");
         }
         cstr_drop(&key_str);

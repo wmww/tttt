@@ -110,6 +110,11 @@ Error* error_ctx_find(ErrorCtx* me, Span span, unsigned ts_code);
 void error_ctx_remove_unchecked(ErrorCtx* me);
 #define error_ctx_error_d(me, span, ts_code, ...) \
     error_ctx_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+/// An error that may be in a lib file (error_ctx_error_s drops those): the lib side of a conflict with a user file's
+/// declaration, which tsc reports too
+Error* error_ctx_lib_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
+#define error_ctx_lib_error_d(me, span, ts_code, ...) \
+    error_ctx_lib_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
 /// A grammar error the checker finds (tsc's grammarErrorOnNode): not reported in a file with parse errors
 Error* error_ctx_grammar_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message);
 #define error_ctx_grammar_error_d(me, span, ts_code, ...) \

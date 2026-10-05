@@ -674,6 +674,13 @@ Error* error_ctx_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message
     });
 }
 
+Error* error_ctx_lib_error_s(ErrorCtx* me, Span span, unsigned ts_code, cstr message) {
+    if (!me || !span_valid(span) || !span.source) {
+        cstr_drop(&message);
+        return nullptr;
+    }
+    return error_ctx_append_error(me, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = my phase });
+}
 
 char const* error_category_name(Error const* error) {
     if (error->suggestion) return "suggestion";
