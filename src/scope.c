@@ -2898,14 +2898,44 @@ Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning) {
     return nullptr;
 }
 
+static PortItem const* type_only_declaration_at(Symbol const* me, int depth);
+
 PortItem const* symbol_type_only_declaration(Symbol const* me) {
-    for (int depth = 0; me && depth < ALIAS_CHAIN_MAX; depth++) {
-        if (!(my flags & SYMBOL_ALIAS) || !my alias || !my alias->item) return nullptr;
+    return type_only_declaration_at(me, 0);
+}
+
+static PortItem const* type_only_declaration_at(Symbol const* me, int depth) {
+    for (; me && depth < ALIAS_CHAIN_MAX; depth++) {
+        if (!(my flags & SYMBOL_ALIAS) || !my alias) return nullptr;
+        if (!my alias->item) {
+            // `export = x` / `export default x`: what the name finds (tsc's getTargetOfExportAssignment marks it)
+            if (my alias->class_expr || my alias->entity || !my alias->scope || !span_valid(my alias->name)) return nullptr;
+            Symbol const* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
+            if (found == me) return nullptr;
+            me = found;
+            continue;
+        }
         symbol_resolve_alias((Symbol*)me); // (what sets source_symbol)
         PortItem const* item = my alias->item;
         if (item->type_only) return item;
         if (my alias->type_only_star) return my alias->type_only_star;
-        me = item->source_symbol;
+        if (item->tag == PORT_IMPORT_ALIAS) {
+            // `import A = a.B`: type-only if a part of the name came through a type-only declaration (tsc marks the
+            // alias while resolving the entity name)
+            for_each (i, vec_symbol_cptr, &item->alias_path_symbols) {
+                PortItem const* found = type_only_declaration_at(*i, depth + 1);
+                if (found) return found;
+            }
+            return nullptr;
+        }
+        Symbol const* next = item->source_symbol;
+        if (!next && item->module_ref && (item->tag == PORT_IMPORT_GATHER || item->tag == PORT_IMPORT_DEFAULT)) {
+            // A namespace, require or synthetic default import of a module with `export =`: what that names (tsc's
+            // markSymbolOfAliasDeclarationIfTypeOnly with the export= target)
+            Symbol* module = binder_module_of_ref(my binder, item->module_ref);
+            next = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
+        }
+        me = next;
         if (me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
     }
     return nullptr;

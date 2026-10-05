@@ -273,6 +273,19 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             cstr_drop(&name);
         }
     }
+    // tsc's checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol: `import A = a.B` through a type-only import
+    // or export, at the name
+    PortItem const* alias_type_only = my main.tag == PORT_IMPORT_ALIAS && !my main.type_only && !my jsdoc && my main.symbol &&
+        !vec_span_is_empty(&my main.alias_path) && symbol_resolve_alias(my main.symbol) ?
+        symbol_type_only_declaration(my main.symbol) : nullptr;
+    if (alias_type_only) {
+        bool exported = port_item_is_export(alias_type_only);
+        Span first = *vec_span_front(&my main.alias_path), last = *vec_span_back(&my main.alias_path);
+        Error* error = error_ctx_error_d(errs, span_make(first.source, span_start_ptr(first), span_end_ptr(last)),
+            exported ? 1379 : 1380, "An import alias cannot reference a declaration that was ",
+            exported ? "exported using 'export type'." : "imported using 'import type'.");
+        port_item_add_type_only_related(error, alias_type_only, port_item_name(alias_type_only->decl_name));
+    }
     // (tsc's checkImportEqualsDeclaration)
     if (compiler_options()->erasable_syntax_only && !ambient && !my jsdoc && (my main.tag == PORT_IMPORT_ALIAS || my is_import_require)) {
         error_ctx_error_d(errs, span_with_semicolon(span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");

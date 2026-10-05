@@ -49606,9 +49606,9 @@ const baselines = {
         types: true,
     },
     'exportDefault': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNamespace1': {
         errors: true,
@@ -49741,7 +49741,7 @@ const baselines = {
         types: true,
     },
     'importEquals1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49751,7 +49751,7 @@ const baselines = {
         types: true,
     },
     'importEquals3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
