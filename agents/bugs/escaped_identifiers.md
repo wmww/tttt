@@ -1,6 +1,6 @@
 # Escaped identifiers: what's left
 
-Names with unicode escapes (`a`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`
+Names with unicode escapes (`\u0061`, `a\u{62}`) resolve by their cooked value (2026-09-29): `name_cooked()`
 (`span.h`) decodes a view of a registered file's text (files with a `\u`, registered by `parse_file()`, cooked
 strings cached per file until it's dropped), and it's applied where names become keys: symbol tables (hash, lookup,
 insert), `checker_atom()`, `ty_string_literal()`, and the identifier comparisons that decide meaning (`name_equals()`:
@@ -16,5 +16,3 @@ Left:
 - unicodeEscapesInNames02(target=es5): errors need tsc's `TS-1` pre/post-emit count mismatch line (not
   reproducible); types print `this.𐊧` for a property access whose name is an invalid character (tsc's node text
   includes it, ours is empty).
-- unicodeEscapesInJsxtags: symbols list the merged global `JSX` namespace's declarations file-first, tsc lists
-  react.d.ts (a `@libFiles` file) first. Declaration order across files, not escapes.
