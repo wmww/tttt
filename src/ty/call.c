@@ -310,7 +310,9 @@ static bool waits_for_sensitive(Arg const* arg) {
 // `skip_sensitive`: leave out the context-sensitive arguments, which a contextual type would type for good (tsc's
 // CheckMode.SkipContextSensitive, while it's not known yet which overload they'll be checked against)
 static bool skipped_arg(Arg const* arg, bool skip_sensitive, bool skip_generic_functions) {
-    return (skip_sensitive && waits_for_sensitive(arg)) || (skip_generic_functions && arg->generic_function);
+    // (A literal with a generic function in it too: under tsc's SkipGenericFunctions the function is anyFunctionType)
+    return (skip_sensitive && waits_for_sensitive(arg)) ||
+        (skip_generic_functions && (arg->generic_function || arg->nested_generic));
 }
 
 static void check_args_from(
@@ -1854,7 +1856,9 @@ static Resolution resolve_with_signatures(
             if (sig->type_params.len && !info->type_arg_nodes) {
                 // (A call of a generic function that returns a function is left out too: tsc's resolveCallExpression
                 // under SkipGenericFunctions)
-                for (u32 a = 0; a < args->len; a++) skipped_generic |= args->data[a].generic_function || args->data[a].generic_call;
+                for (u32 a = 0; a < args->len; a++) {
+                    skipped_generic |= args->data[a].generic_function || args->data[a].generic_call || args->data[a].nested_generic;
+                }
             }
             if (info->type_arg_nodes && candidate.mapper &&
                 !check_type_argument_constraints(me, sig, candidate.mapper, info, nullptr)
