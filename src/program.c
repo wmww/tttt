@@ -253,6 +253,12 @@ SourceFile const* program_set_config_file(Program* me, csview path) {
     my config_source->is_json = true;
     my config_source->is_config = true;
     my config_source->unchecked = true;
+    // tsc's parseJsonText: the config's syntax errors (TS1005 & co) are its parsing diagnostics, reported whatever
+    // else is wrong (they stop nothing); what json_parse() recovers of a broken config is still what's read
+    bool own_options = !compiler_options_private;
+    if (own_options) set_compiler_options(&my options);
+    parse_file(my config_source, my errs);
+    if (own_options) clear_compiler_options();
     if (!json_parse(cstr_sv(&my config_source->contents), &my config_json)) my config_json = (JsonValue){0};
     return my config_source;
 }

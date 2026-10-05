@@ -159,15 +159,31 @@ static_failable apply_compiler_options(Options const* opts, Output* out, csview 
     if (config.size) {
         if (!opts->quiet) out_println(out, color_good, "Project ", config, color_normal);
         // Files on the command line replace the config's
-        try (tsconfig_load(fs, config, options, nullptr)) bubble;
+        TsconfigDiagnostics diagnostics = {0};
+        try (tsconfig_load_diagnosed(fs, config, options, nullptr, &diagnostics)) cleanup {
+            tsconfig_diagnostics_drop(&diagnostics);
+        }
         libs_decided = options->target_set || cstr_size(&options->lib);
         // (Where the diagnostics about the options go, named like the files: relative to the working directory)
         cstr cwd = cstr_null;
-        try (fs_get_cwd(fs, &cwd)) bubble;
+        try (fs_get_cwd(fs, &cwd)) cleanup {
+            tsconfig_diagnostics_drop(&diagnostics);
+        }
         cstr relative = relative_path_of(cstr_sv(&cwd), config);
         program_set_config_file(program, cstr_sv(&relative));
-        cstr_drop(&relative);
-        cstr_drop(&cwd);
+        // The config parsing diagnostics of its `extends` (at the name in this config, else without a location)
+        cstr absolute = absolute_path_of(cstr_sv(&cwd), config);
+        for (u32 i = 0; i < diagnostics.count; i++) {
+            TsconfigDiagnostic* d = &diagnostics.items[i];
+            // (One in a config it extends has no location: the program doesn't have a file for that one)
+            Error* error = cstr_eq(&d->config, &absolute) ?
+                program_config_error(program, d->start, d->end, d->code, d->message) :
+                error_ctx_global_error_s(program_errors(program), d->code, d->message);
+            error->phase = ERROR_PHASE_PARSE;
+            d->message = cstr_null;
+        }
+        tsconfig_diagnostics_drop(&diagnostics);
+        c_drop(cstr, &absolute, &relative, &cwd);
     } else {
         ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
     }
@@ -351,7 +367,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
 
     if (!opts->no_lib) {
         if (!opts->quiet) out_println(out, color_good, "Loading libraries...", color_normal);
+        // (What's been reported so far, the config's syntax errors, is kept aside from the libraries' errors)
+        VecError earlier = errs->errors;
+        errs->errors = (VecError){0};
         try (load_stdlib(program)) cleanup {
+            vec_error_drop(&earlier);
             destroy_program(program, errs, last);
         }
 
@@ -361,6 +381,8 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             //print_error_ctx(errs);
             error_ctx_clear(errs);
         }
+        vec_error_drop(&errs->errors);
+        errs->errors = earlier;
     }
     phase_done(opts, out, "load+parse libs", &last_time);
     if (config.size) verify_references(program, projects, project, true);

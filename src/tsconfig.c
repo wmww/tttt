@@ -26,7 +26,29 @@ typedef struct ConfigLoad {
     // Every config stays alive until the end: files/include/exclude point into them
     JsonValue* documents[32];
     isize document_count;
+    TsconfigDiagnostics* diagnostics; // Null: not wanted
 } ConfigLoad;
+
+static void config_diagnostic(ConfigLoad* me, unsigned code, cstr message, csview config, u32 start, u32 end) {
+    if (!my diagnostics) {
+        cstr_drop(&message);
+        return;
+    }
+    TsconfigDiagnostics* d = my diagnostics;
+    d->items = realloc(d->items, sizeof(TsconfigDiagnostic) * (size_t)(d->count + 1));
+    d->items[d->count++] = (TsconfigDiagnostic){
+        .code = code, .message = message, .config = cstr_from_sv(config), .start = start, .end = end,
+    };
+}
+
+void tsconfig_diagnostics_drop(TsconfigDiagnostics* me) {
+    for (u32 i = 0; i < my count; i++) {
+        cstr_drop(&my items[i].message);
+        cstr_drop(&my items[i].config);
+    }
+    free(my items);
+    *me = (TsconfigDiagnostics){0};
+}
 
 static cstr path_join(csview dir, csview rest) {
     if (rest.size && rest.buf[0] == '/') return absolute_path_of(c_sv("/"), rest);
@@ -182,7 +204,12 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
     bool is_path = name.size && (name.buf[0] == '/' || name.buf[0] == '.');
     if (is_path) {
         cstr base = path_join(dir, name);
-        if (!csview_ends_with(name, ".json")) {
+        // (A `.json` is what's read whether it's there or not: TS5083 then, like tsc's getExtendsConfigPath)
+        if (csview_ends_with(name, ".json")) {
+            *out = base;
+            return true;
+        }
+        {
             cstr with_extension = cstr_d(base, ".json");
             if (fs_is_reg_file(my fs, cstr_sv(&with_extension))) {
                 cstr_drop(&base);
@@ -298,12 +325,19 @@ static_failable load_config(ConfigLoad* me, csview path) {
         return err_d(path, ": too many levels of 'extends' (a cycle?)");
     }
     cstr contents = cstr_null;
-    try (fs_read_file(my fs, path, &contents)) bubble;
+    FailableResult read = fs_read_file(my fs, path, &contents);
+    if (read.error) {
+        // A config it extends that can't be read: TS5083, and the rest goes on without it
+        if (!my depth) return read;
+        failable_result_drop(&read);
+        config_diagnostic(me, 5083, cstr_d("Cannot read file '", path, "'."), c_sv(""), 0, 0);
+        return ok;
+    }
     JsonValue* document = c_new(JsonValue, {0});
     my documents[my document_count++] = document;
-    bool parsed = json_parse(cstr_sv(&contents), document);
+    // (Syntax errors are recovered from: the program reports them, see program_set_config_file())
+    ignore json_parse(cstr_sv(&contents), document);
     cstr_drop(&contents);
-    if (!parsed) return err_d(path, ": not valid JSON");
 
     cstr dir = cstr_from_sv(parent_of(path));
     // What is extended first, so that this config overrides it
@@ -313,8 +347,14 @@ static_failable load_config(ConfigLoad* me, csview path) {
         if (name->tag != JSON_STRING) continue;
         cstr base = cstr_null;
         if (!resolve_extends(me, cstr_sv(&dir), cstr_sv(&name->string), &base)) {
-            cstr_drop(&dir);
-            return err_d(path, ": file '", name->string, "' not found");
+            // tsc's TS6053 at the name (TS18051 for an empty one), and the rest goes on without it
+            if (!cstr_size(&name->string)) {
+                config_diagnostic(me, 18051, cstr_lit("Compiler option 'extends' cannot be given an empty string."),
+                    path, name->start, name->end);
+            } else {
+                config_diagnostic(me, 6053, cstr_d("File '", name->string, "' not found."), path, name->start, name->end);
+            }
+            continue;
         }
         follow_links(me, &base);
         my depth++;
@@ -651,7 +691,13 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
 }
 
 failable tsconfig_load(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files) {
-    ConfigLoad load = { .fs = fs, .options = options };
+    return tsconfig_load_diagnosed(fs, path, options, root_files, nullptr);
+}
+
+failable tsconfig_load_diagnosed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
+    TsconfigDiagnostics* diagnostics
+) {
+    ConfigLoad load = { .fs = fs, .options = options, .diagnostics = diagnostics };
     try (fs_get_cwd(fs, &load.cwd)) bubble;
     cstr absolute = absolute_path_of(cstr_sv(&load.cwd), path);
     if (fs_is_directory(fs, cstr_sv(&absolute))) cstr_append_lit(&absolute, "/tsconfig.json");

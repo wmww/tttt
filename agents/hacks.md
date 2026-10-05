@@ -649,6 +649,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `-b`'s `--build-jobs` default (`build()`, main.c) is 2 at 4 threads, picked by one corpus (tsc-src, best of 3: J=1 1.74 s /
   540 MB, J=2 1.32 s / 785 MB, J=3 1.35 s / 930 MB, J=4 1.19 s / 1.2 GB): a memory-aware scheduler would size by
   projects' file counts.
+- Config syntax (`json.c`'s recovery, `program_set_config_file()`): the config's syntax errors come from parsing it
+  as a JSON source file with tttt's parser, while what's read comes from `json_parse()`, whose recovery (missing
+  commas/colons, unquoted keys, unterminated strings and containers, non-values dropped) only approximates what tsc's
+  parseJsonText recovers. Not reported: syntax errors in configs it extends (no SourceFile for them), tokens after
+  the root value (tsc's TS1012 + TS5092), TS5092 for a non-object root.
 - Message paths (`source_file_set_message_cwd()`, `path_for_message()`): the CLI sets a process-wide working directory
   once so message text names files absolutely like tsc's CLI (module names, TS2306, TS6053, resolved paths); unset, the
   harness's display paths are used. A global rather than per program because messages are built where no `Program` is

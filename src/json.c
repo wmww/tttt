@@ -51,15 +51,16 @@ static void append_utf8(cstr* out, unsigned code) {
     cstr_append_n(out, buf, len);
 }
 
-static bool parse_string(JsonParser* me, cstr* out) {
+// An unterminated string (at a line break or the end) is what it has so far, like tsc's scanner's
+static void parse_string(JsonParser* me, cstr* out) {
     char quote = *my at; // tsc's config parser takes single quotes too
     my at++;
     *out = cstr_null;
     while (my at < my end && *my at != quote) {
-        if (*my at == '\n') break;
+        if (*my at == '\n' || *my at == '\r') return;
         if (*my at != '\\') {
             const char* run = my at;
-            while (my at < my end && *my at != quote && *my at != '\\' && *my at != '\n') my at++;
+            while (my at < my end && *my at != quote && *my at != '\\' && *my at != '\n' && *my at != '\r') my at++;
             cstr_append_n(out, run, my at - run);
             continue;
         }
@@ -86,27 +87,30 @@ static bool parse_string(JsonParser* me, cstr* out) {
             default: cstr_append_n(out, &c, 1); break;
         }
     }
-    if (my at >= my end || *my at != quote) {
-        cstr_drop(out);
-        *out = cstr_null;
-        return false;
-    }
-    my at++;
-    return true;
+    if (my at < my end) my at++;
+}
+
+static bool is_word_char(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_' || c == '$' ||
+        (unsigned char)c >= 0x80;
 }
 
 static bool parse_value(JsonParser* me, JsonValue* out);
 
+// Recovers from what isn't JSON the way tsc's parseJsonText does, as far as what is read goes (the config's syntax
+// errors come from parsing it as a TypeScript JSON file): missing commas and colons, unquoted keys, an unterminated
+// container (ends with the text, or at another container's closing bracket), a value that isn't one (dropped)
 static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
     isize cap = 0;
     my at++;
     while (true) {
         skip_trivia(me);
-        if (my at >= my end) return false;
+        if (my at >= my end) return true;
         if (*my at == (is_object ? '}' : ']')) {
             my at++;
             return true;
         }
+        if (*my at == (is_object ? ']' : '}')) return true; // (The enclosing container's)
         if (*my at == ',') { // Also forgives `[,]`, which nobody writes
             my at++;
             continue;
@@ -119,29 +123,49 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
                 out->items = realloc(out->items, sizeof(JsonValue) * (size_t)cap);
             }
         }
+        const char* before = my at;
         if (is_object) {
-            if (*my at != '"' && *my at != '\'') return false;
             JsonMember* member = &out->members[out->count];
             *member = (JsonMember){ .key_start = (u32)(my at - my text) };
-            bool key = parse_string(me, &member->key);
+            if (*my at == '"' || *my at == '\'') {
+                parse_string(me, &member->key);
+            } else if (is_word_char(*my at)) {
+                const char* word = my at;
+                while (my at < my end && is_word_char(*my at)) my at++;
+                member->key = cstr_from_sv((csview){ word, my at - word });
+            } else {
+                my at++; // (Not a property)
+                continue;
+            }
             member->key_end = (u32)(my at - my text);
-            if (!key) return false;
             out->count++; // From here on json_drop() owns it
             skip_trivia(me);
-            if (my at >= my end || *my at != ':') return false;
-            my at++;
-            if (!parse_value(me, &member->value)) return false;
+            if (my at < my end && *my at == ':') my at++;
+            if (!parse_value(me, &member->value)) {
+                // A property without a value isn't one
+                out->count--;
+                cstr_drop(&member->key);
+                json_drop(&member->value);
+                if (my at == before) my at++;
+            }
         } else {
             out->items[out->count] = (JsonValue){0};
             out->count++;
-            if (!parse_value(me, &out->items[out->count - 1])) return false;
+            if (!parse_value(me, &out->items[out->count - 1])) {
+                json_drop(&out->items[--out->count]);
+                if (my at == before) my at++;
+            }
         }
     }
 }
 
 static bool parse_literal(JsonParser* me, const char* word) {
     isize len = (isize)strlen(word);
-    if (my end - my at < len || memcmp(my at, word, (size_t)len)) return false;
+    if (my end - my at < len || memcmp(my at, word, (size_t)len) || (my end - my at > len && is_word_char(my at[len]))) {
+        // Not a value: a word is skipped whole
+        while (my at < my end && is_word_char(*my at)) my at++;
+        return false;
+    }
     my at += len;
     return true;
 }
@@ -173,7 +197,8 @@ static bool parse_value_at(JsonParser* me, JsonValue* out) {
         case '"':
         case '\'':
             out->tag = JSON_STRING;
-            return parse_string(me, &out->string);
+            parse_string(me, &out->string);
+            return true;
         case 't':
             out->tag = JSON_BOOL;
             out->boolean = true;
@@ -190,7 +215,11 @@ static bool parse_value_at(JsonParser* me, JsonValue* out) {
                 (my at[len] >= '0' && my at[len] <= '9') || my at[len] == '-' || my at[len] == '+' ||
                 my at[len] == '.' || my at[len] == 'e' || my at[len] == 'E'
             )) len++;
-            if (!len) return false;
+            if (!len) {
+                // Not a value: a word is skipped whole
+                while (my at < my end && is_word_char(*my at)) my at++;
+                return false;
+            }
             memcpy(buf, my at, (size_t)len);
             buf[len] = 0;
             out->tag = JSON_NUMBER;

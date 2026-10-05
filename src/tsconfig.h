@@ -14,6 +14,24 @@
 // directory by directory, files before subdirectories, both sorted)
 failable tsconfig_load(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files);
 
+// What's wrong with an `extends` (tsc's config parsing diagnostics: reported, and the config goes on without it): TS5083
+// for a config that can't be read (no location, config empty), TS6053/TS18051 at the name in `config` (absolute path;
+// start/end byte offsets of the string in its text)
+typedef struct TsconfigDiagnostic {
+    unsigned code;
+    cstr message;
+    cstr config;
+    u32 start, end;
+} TsconfigDiagnostic;
+typedef struct TsconfigDiagnostics {
+    TsconfigDiagnostic* items;
+    u32 count;
+} TsconfigDiagnostics;
+void tsconfig_diagnostics_drop(TsconfigDiagnostics* me);
+// tsconfig_load(), appending the diagnostics of `extends` to diagnostics
+failable tsconfig_load_diagnosed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
+    TsconfigDiagnostics* diagnostics);
+
 // The nearest tsconfig.json in directory or above it, null if there is none
 cstr tsconfig_find(Fs const* fs, csview directory);
 

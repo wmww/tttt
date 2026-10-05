@@ -38,7 +38,8 @@ struct JsonMember {
     JsonValue value;
 };
 
-// False if text isn't JSON (what was read so far is dropped, *out is a null value)
+// False if text has no JSON value at all (*out is a null value then). What isn't JSON in it is recovered from like tsc's
+// parseJsonText does (see parse_container())
 bool json_parse(csview text, JsonValue* out);
 void json_drop(JsonValue* me);
 
