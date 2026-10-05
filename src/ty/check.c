@@ -2076,7 +2076,8 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     // (Written to, the object is widened: no longer an object literal. tsc's isObjectLiteralType)
     bool object_literal = ty_is_fresh_object(object) && !access->assignment_target;
     // The rest of what check_access() lets through or reports itself
-    object = ty_non_nullable(me, object);
+    // (Only what may be null or undefined loses it, tsc's checkNonNullType: a generic whose constraint is any stays itself)
+    object = ty_non_nullable_if_needed(me, object);
     if (object->flags & (TYF_ANY | TYF_NEVER | TYF_UNKNOWN | TYF_DEFERRED)) return;
     if (object->kind == TY_TYPE_PARAM && !ty_param_constraint(me, object)) {
         if (!compiler_options()->strict_null_checks) return; // TODO: `{}`
