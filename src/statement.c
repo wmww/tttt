@@ -2525,6 +2525,13 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 error_ctx_error_d(errs, span_with_semicolon(my span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
             }
             expr_typecheck_export_assignment(&my expr, errs);
+            // (`undefined` is an identifier to tsc's isEntityNameExpression)
+            if (ctx.ambient && !expr_is_entity_name(&my expr) &&
+                !(my expr.tag == EXPR_LITERAL && my expr.literal.tag == VALUE_UNDEFINED && span_equals(my expr.inner_span, "undefined"))
+            ) {
+                error_ctx_grammar_error_d(errs, expr_outer_span(&my expr), 2714, "The expression of an export assignment must be "
+                    "an identifier or qualified name in an ambient context.");
+            }
             break;
 
         case STATEMENT_RETURN_EXPR:

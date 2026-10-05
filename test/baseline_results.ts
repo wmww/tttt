@@ -681,7 +681,7 @@ const baselines = {
         types: true,
     },
     'ambientExportDefaultErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
