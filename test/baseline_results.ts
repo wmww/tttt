@@ -35321,13 +35321,13 @@ const baselines = {
         types: true,
     },
     'classStaticBlock26(target=es2022)': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'classStaticBlock26(target=esnext)': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'classStaticBlock27': {

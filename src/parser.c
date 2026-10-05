@@ -5663,8 +5663,8 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     VecEnumCase cases = vec_enum_case_init();
     u32 saved_context = list_enter(&p, PARSING_ENUM_MEMBERS);
     // (tsc's parseEnumDeclaration: the members are outside the yield and await contexts)
-    bool outer_async = p.shared->in_async, outer_generator = p.shared->in_generator;
-    p.shared->in_async = p.shared->in_generator = false;
+    bool outer_async = p.shared->in_async, outer_generator = p.shared->in_generator, outer_static_block = p.shared->in_static_block;
+    p.shared->in_async = p.shared->in_generator = p.shared->in_static_block = false;
     if (!has_body) p.pos = before_body;
     while (has_body && *p.pos && *p.pos != '}') {
         Tok t = tok_peek(&p);
@@ -5751,6 +5751,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
     list_leave(&p, saved_context);
     p.shared->in_async = outer_async;
     p.shared->in_generator = outer_generator;
+    p.shared->in_static_block = outer_static_block;
 
     if (has_body) expect_char(&p, '}');
 
@@ -6188,7 +6189,9 @@ static Tristate arrow_function_tristate(Parser* p) {
         }
         if (!tok_is_identifier(second) && !tok_is(second, "this")) return TRISTATE_FALSE;
         // (tsc's isIdentifier(): not `yield` in a generator or `await` in an async function)
-        if ((p->shared->in_generator && tok_is(second, "yield")) || (p->shared->in_async && tok_is(second, "await"))) {
+        if ((p->shared->in_generator && tok_is(second, "yield")) ||
+            ((p->shared->in_async || p->shared->in_static_block) && tok_is(second, "await"))
+        ) {
             return TRISTATE_FALSE;
         }
         if (tok_is(third, ":")) return TRISTATE_TRUE;
