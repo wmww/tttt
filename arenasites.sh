@@ -1,5 +1,5 @@
 #!/bin/bash
-# Where the checker's arena memory goes: bytes by allocating call site (with inlined callers), and types (152 bytes
+# Where the checker's arena memory goes: bytes by allocating call site (with inlined callers), and types (136 bytes
 # each, also counted in the first list under ty_alloc) by the code that makes them.
 #   ./arenasites.sh -p thirdparty/corpora/zod/packages/zod/tsconfig.test.json [--top N]
 # Builds a -g release copy with -DTTTT_ARENA_SITES in /tmp/tttt-arenasites (same code otherwise) and runs it with one
@@ -26,3 +26,18 @@ for kind in arena-site type-site; do
         addr2line -f -s -i -e $B/tttt "$(printf '0x%x' $((0x$BASE + off)))" | paste -s -d' ' | cut -c1-140
     done
 done
+echo "== interned keys (MB, entries, average words, kind)"
+echo "$OUT" | awk '$1 == "key-kind" { print $2, $3, $4 }' | python3 -c '
+import re, sys
+body = open("src/ty/ty_internal.h").read()
+body = body[body.index("KEY_LITERAL = 1"):]
+names, i = {}, 0
+for line in body[:body.index("}")].split("\n"):
+    m = re.match(r"\s*(KEY_\w+)", line)
+    if m:
+        i = 1 if m.group(1) == "KEY_LITERAL" else i + 1
+        names[i] = m.group(1)
+rows = sorted((int(b), int(c), int(k)) for k, b, c in (l.split() for l in sys.stdin))[::-1]
+for b, c, k in rows[:'$TOP']:
+    print(f"{b / 1048576:7.1f}  {c:9}  {b / c / 8 - 1:5.1f}  {names.get(k, k)}")
+'

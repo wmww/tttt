@@ -138,6 +138,8 @@ TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root); // 
 
 // Doesn't insert, unlike intern_slot()
 void const* intern_get(InternTable const* table, u64 const* words, u32 count);
+// Two type ids as one key word: keys made of mapper pairs are most of the interned key bytes
+static inline u64 ty_id_pair(Ty const* a, Ty const* b) { return (u64)a->id << 32 | b->id; }
 
 // alias_of: the deferred reference this is an instantiation of, if it goes by an alias name (null otherwise)
 Ty const* ty_deferred_reference(

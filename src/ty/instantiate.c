@@ -503,14 +503,11 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
     Ty const* ret = target;
     if (len) {
         u64 stack_key[64];
-        u32 count = 2 + len * 2;
+        u32 count = 2 + len;
         u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
         key[0] = KEY_ANONYMOUS_INSTANCE;
         key[1] = target->id;
-        for (u32 i = 0; i < len; i++) {
-            key[2 + i * 2] = sources[i]->id;
-            key[3 + i * 2] = targets[i]->id;
-        }
+        for (u32 i = 0; i < len; i++) key[2 + i] = ty_id_pair(sources[i], targets[i]);
         ret = intern_get(&my types, key, count);
         if (!ret) {
             TyMapper const* composed = ty_mapper_new(
@@ -667,7 +664,9 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     u32 len = outer->params.len;
     u64 stack_key[34];
     Ty const* stack_targets[32];
-    u64* key = len + 2 <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * (len + 2));
+    // (Two target ids per word)
+    u32 key_len = 2 + (len + 1) / 2;
+    u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
     Ty const** targets = len <= c_arraylen(stack_targets) ? stack_targets : malloc(sizeof(Ty const*) * len);
     key[0] = KEY_CONDITIONAL_INSTANCE;
     key[1] = root->id;
@@ -676,10 +675,11 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         // What the parameter maps to through this conditional type's mapper and then the new one: no need to compose
         // the two, which would instantiate every one of the first's targets
         targets[i] = ty_instantiate(me, ty_instantiate(me, outer->params.data[i], ty->conditional.mapper), mapper);
-        key[2 + i] = targets[i]->id;
+        if (i % 2) key[2 + i / 2] |= (u64)targets[i]->id << 32;
+        else key[2 + i / 2] = targets[i]->id;
         mapped += targets[i] != outer->params.data[i];
     }
-    Ty const* const* cached = intern_get(&my types, key, len + 2);
+    Ty const* const* cached = intern_get(&my types, key, key_len);
     // (One cut short by the limits is only good until the instantiation count starts over)
     if (cached && (uintptr_t)cached[2]) {
         // One cut short by the limits stays what it is, like tsc's (root.instantiations keeps the errorType): reported
@@ -714,7 +714,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
         entry[0] = ret;
         entry[1] = (Ty const*)(uintptr_t)*distributed;
         entry[2] = (Ty const*)(uintptr_t)(cut_short ? (uintptr_t)my instantiation_epoch + 1 : 0);
-        *intern_slot(me, &my types, key, len + 2) = entry;
+        *intern_slot(me, &my types, key, key_len) = entry;
     }
     if (key != stack_key) free(key);
     if (targets != stack_targets) free(targets);

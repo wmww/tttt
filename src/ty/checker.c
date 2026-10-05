@@ -34,7 +34,13 @@ static void arena_site_count(u32 table, void* site, size_t size) {
     arena_site_bytes[table][h] += size;
 }
 
+// Interned key bytes and entries by the key's first word (its KEY_* kind)
+static u64 key_kind_bytes[256], key_kind_count[256];
+
 void arena_sites_print(void) {
+    for (u32 kind = 0; kind < 256; kind++) {
+        if (key_kind_count[kind]) eprintln("key-kind ", kind, " ", key_kind_bytes[kind], " ", key_kind_count[kind]);
+    }
     for (u32 table = 0; table < 2; table++) {
         for (u32 i = 0; i < ARENA_SITES; i++) {
             if (!arena_sites[table][i]) continue;
@@ -140,6 +146,10 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     InternEntry* entry = intern_find(table, hash, words, count);
     if (!entry->hash) {
         u64* key = arena_new_n(&my arena, u64, count + 1);
+#ifdef TTTT_ARENA_SITES
+        key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (count + 1);
+        key_kind_count[count ? words[0] & 255 : 0]++;
+#endif
         key[0] = count;
         memcpy(key + 1, words, sizeof(u64) * count);
         entry->hash = hash;
@@ -2578,7 +2588,7 @@ Ty const* ty_cond_branch_type(Checker* me, TyCondBranch* branch) {
 
 static u32 cond_branch_key_len(TyCondBranch const* branch) {
     if (!branch->node && !branch->source) return 2;
-    return 2 + (branch->mapper ? branch->mapper->len * 2 : 0);
+    return 2 + (branch->mapper ? branch->mapper->len : 0);
 }
 
 static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
@@ -2591,8 +2601,7 @@ static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
     key[count++] = branch->node ? (u64)(uintptr_t)branch->node : (u64)(uintptr_t)branch->source;
     key[count++] = branch->mapper ? branch->mapper->len : 0;
     for (u32 i = 0; branch->mapper && i < branch->mapper->len; i++) {
-        key[count++] = branch->mapper->sources[i]->id;
-        key[count++] = branch->mapper->targets[i]->id;
+        key[count++] = ty_id_pair(branch->mapper->sources[i], branch->mapper->targets[i]);
     }
     return count;
 }
@@ -2606,15 +2615,13 @@ Ty const* ty_conditional(
     Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false, mapper);
     if (resolved) return resolved;
     u64 stack_key[64];
-    u32 key_len = 5 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);
+    u32 key_len = 3 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);
     u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
     panic_if(!key, "out of memory");
     key[0] = KEY_CONDITIONAL;
-    key[1] = check_type->id;
-    key[2] = extends->id;
-    key[3] = distributive;
-    key[4] = root ? root->id : 0;
-    u32 count = 5;
+    key[1] = ty_id_pair(check_type, extends);
+    key[2] = (u64)(root ? root->id : 0) << 1 | distributive;
+    u32 count = 3;
     count += cond_branch_key(key + count, if_true);
     count += cond_branch_key(key + count, if_false);
     u32 flags = check_type->flags | extends->flags | TYF_COULD_CONTAIN_TYPE_VARIABLES;
