@@ -49051,19 +49051,19 @@ const baselines = {
         types: true,
     },
     'exportNonInitializedVariablesInIfThenStatementNoCrash1(module=commonjs)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNonInitializedVariablesInIfThenStatementNoCrash1(module=esnext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNonInitializedVariablesInIfThenStatementNoCrash1(module=system)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportNonInitializedVariablesSystem': {
         errors: true,

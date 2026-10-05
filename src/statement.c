@@ -1217,6 +1217,10 @@ static Scope* branch_names_scope(Statement const* branch, Scope* names) {
         case STATEMENT_DECL_TYPE:
         case STATEMENT_DECL_INTERFACE:
             return names;
+        case STATEMENT_DECL_VARIABLE:
+            // `if (a) const x = 1;` (TS1156) declares x where the `if` is: an `if` isn't a block scope container to tsc's
+            // binder
+            return names;
         default:
             return scope_new(names, SCOPE_BLOCK);
     }
@@ -2621,7 +2625,8 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             ) {
                 ty_check_emit_helpers(current_checker, my decl.variable.span, EMIT_HELPER_DISPOSABLE, errs);
             }
-            if (body && my decl.variable.keyword != VAR_INIT_VAR) {
+            // (Not after an illegal modifier, `if (a) export const x = 1;`: tsc's checkVariableStatement stops at TS1184)
+            if (body && my decl.variable.keyword != VAR_INIT_VAR && !my decl.props.exported && !span_valid(my decl.props.declare_keyword)) {
                 // tsc's checkGrammarForDisallowedBlockScopedVariableStatement()
                 error_ctx_grammar_error_d(errs, span_with_semicolon(my span), 1156,
                     "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");
