@@ -12708,7 +12708,7 @@ const baselines = {
     'exportDeclarationInInternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportDeclarationWithModuleSpecifierNameOnNextLine1': {
         errors: true,
@@ -47983,7 +47983,7 @@ const baselines = {
     'thisInInvalidContextsExternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisInObjectLiterals': {
         errors: true,
@@ -49108,7 +49108,7 @@ const baselines = {
     'importNonStringLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTsBeforeDTs': {
         errors: true,
@@ -49128,17 +49128,17 @@ const baselines = {
     'invalidSyntaxNamespaceImportWithAMD': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidSyntaxNamespaceImportWithCommonjs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidSyntaxNamespaceImportWithSystem': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleResolutionWithExtensions': {
         errors: true,
@@ -49928,7 +49928,7 @@ const baselines = {
     'umd-errors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd1': {
         errors: true,
@@ -51518,7 +51518,7 @@ const baselines = {
     'jsDeclarationsExportFormsErr': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportSpecifierNonlocal': {
         errors: true,

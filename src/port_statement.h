@@ -111,7 +111,9 @@ typedef struct PortStatement {
         // a compile error
     cstr target_path; // Path of the module to import from
     Span target_path_span; // Span of the path string
-    Span missing_specifier; // A missing module specifier expression (`import` then a reserved word), for the baselines
+    // A module specifier tsc's types baseline shows as any: a missing expression (`import` then a reserved word), or
+    // a name (`from Aaa`, `require(x)`: an identifier outside an expression context, errorType)
+    Span missing_specifier;
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none
     bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)

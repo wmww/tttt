@@ -1206,7 +1206,12 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         case PORT_REEXPORT_GATHER:
         case PORT_EXPORT_AS_NAMESPACE: // (the global alias of the module)
             // Null when the scope refused the import, eg `import a = require("b")` inside an ambient module
-            if (my main.symbol) port_item_add_alias(&my main, ctx, my main.type_only);
+            if (my main.symbol) {
+                port_item_add_alias(&my main, ctx, my main.type_only);
+            } else if (my main.tag == PORT_EXPORT_AS_NAMESPACE) {
+                // (Not in a module, TS1314/TS1316: tsc's binder doesn't declare it, its name is errorType)
+                baseline_test_case_add_type(ctx, my main.decl_name, ty_intrinsic(current_checker, TY_ERROR));
+            }
             break;
 
         case PORT_IMPORT_ALIAS:
@@ -2881,12 +2886,13 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                 if (expr_outer_span(&my expr).sv.size) expr_compile_test_info(&my expr, ctx);
                 break;
             }
-            // A number or string literal is no expression to tsc's type writer under an export assignment
-            // (isInExpressionContext), a template or `-1` is
-            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_LITERAL &&
+            // A number or string literal or `this` is no expression to tsc's type writer under an export assignment
+            // (isInExpressionContext), a template, `-1` or anything parenthesized is
+            if (my tag == STATEMENT_EXPORT_DEFAULT_EXPR && !expr_is_perenthisized(&my expr) && ((my expr.tag == EXPR_LITERAL &&
                 (my expr.literal.tag == VALUE_NUMBER || my expr.literal.tag == VALUE_STRING ||
                     my expr.literal.tag == VALUE_BIGINT) &&
-                csview_size(my expr.inner_span.sv) && !strchr("-+", my expr.inner_span.sv.buf[0])
+                csview_size(my expr.inner_span.sv) && !strchr("-+", my expr.inner_span.sv.buf[0])) ||
+                (my expr.tag == EXPR_IDENTIFIER && my expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS))
             ) {
                 break;
             }

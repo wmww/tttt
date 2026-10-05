@@ -10839,6 +10839,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                 Expr skipped;
                 if (parse_expr(&require_p, expr_ctx_null, &skipped)) {
                     parse_error(&require_p, expr_outer_span(&skipped), 1141, "String literal expected.");
+                    if (skipped.tag == EXPR_IDENTIFIER) statement->missing_specifier = skipped.inner_span;
                     expr_drop(&skipped);
                 } else {
                     parse_error(&require_p, span_from_token(&require_p), 1141, "String literal expected.");
@@ -11145,6 +11146,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         } else if (path_expr.tag == EXPR_IMPLICIT_ANY) {
             statement.missing_specifier = path_expr.inner_span;
         } else {
+            if (path_expr.tag == EXPR_IDENTIFIER) statement.missing_specifier = path_expr.inner_span;
             // The checker's (tsc's checkExternalImportOrExportDeclaration: any specifier that isn't missing, a
             // missing operand's binary expression `* }` included)
             add_error_to_parser(&p, (Error){
