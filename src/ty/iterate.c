@@ -659,7 +659,31 @@ static void report_iterator_methods(Checker* me, Ty const* iterable, bool async,
     }
 }
 
+// What the consumer sends must fit the parameter of the iterator's `next` (tsc's getIteratedTypeOrElementType with
+// checkAssignability): for-of, spread and destructuring send undefined, yield* what its generator is sent
+static void check_sent_type(Checker* me, u32 use, Ty const* sent, Ty const* next, Span span, ErrorCtx* errs) {
+    if (!sent || !next || ty_is_related(me, sent, next, TY_RELATION_ASSIGNABLE)) return;
+    char const* what = use & ITERATION_FOR_OF_FLAG ? "for-of" : use & ITERATION_SPREAD_FLAG ? "array spread" :
+        use & ITERATION_DESTRUCTURING_FLAG ? "array destructuring" : nullptr;
+    if (!what && !(use & ITERATION_YIELD_STAR_FLAG)) return;
+    cstr sent_str, next_str;
+    ty_report_pair_cstr(me, sent, next, &sent_str, &next_str);
+    cstr head = what ?
+        cstr_d("Cannot iterate value because the 'next' method of its iterator expects type '", next_str, "', but ", what,
+            " will always send '", sent_str, "'.") :
+        cstr_d("Cannot delegate iteration to value because the 'next' method of its iterator expects type '", next_str,
+            "', but the containing generator will always send '", sent_str, "'.");
+    unsigned code = use & ITERATION_FOR_OF_FLAG ? 2763 : use & ITERATION_SPREAD_FLAG ? 2764 :
+        use & ITERATION_DESTRUCTURING_FLAG ? 2765 : 2766;
+    ty_report_unassignable_with_head(me, sent, next, code, head, span, errs);
+    c_drop(cstr, &sent_str, &next_str);
+}
+
 Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
+    return ty_iterated_type_sending(me, use, input, ty_intrinsic(me, TY_UNDEFINED), span, errs);
+}
+
+Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty const* sent, Span span, ErrorCtx* errs) {
     if (input->flags & TYF_ANY) return input;
     bool async = (use & ITERATION_ALLOWS_ASYNC) != 0;
     if (input == ty_intrinsic(me, TY_NEVER)) {
@@ -673,6 +697,7 @@ Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* input, Span span, Err
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
         if (!types && uplevel && errs) report_not_iterable(me, use, input, span, errs);
         if (types && errs) report_iterator_methods(me, input, async, span, errs);
+        if (types && errs) check_sent_type(me, use, sent, types->next_type, span, errs);
         if (types) return types->yield_type;
         if (uplevel) return ty_intrinsic(me, TY_ANY);
     }

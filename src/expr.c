@@ -3248,7 +3248,14 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? expr_outer_span(me) : expr_outer_span(&yield->expr);
     if (yield->op == UNARY_OP_YIELD_STAR) {
         u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
-        yielded = ty_iterated_type(checker, use, ty_expr_type(checker, &yield->expr), span, errs);
+        // (What the generator is sent, by its annotation: tsc's checkYieldExpression, signatureNextType)
+        Ty const* sent = nullptr;
+        if (generator->ret_explicit) {
+            TyIterationTypes const* own = ty_generator_return_iteration_types(checker,
+                ty_from_node(checker, &generator->ret, (LowerCtx){ .generic = true }), async);
+            sent = own ? own->next_type : nullptr;
+        }
+        yielded = ty_iterated_type_sending(checker, use, ty_expr_type(checker, &yield->expr), sent, span, errs);
     } else {
         yielded = yield->expr.tag == EXPR_IMPLICIT_ANY ? ty_intrinsic(checker, TY_UNDEFINED) : ty_expr_type(checker, &yield->expr);
     }

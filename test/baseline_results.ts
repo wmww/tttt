@@ -50166,7 +50166,7 @@ const baselines = {
         types: true,
     },
     'generatorAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
