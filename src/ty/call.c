@@ -329,12 +329,13 @@ static bool first_pass_typed_arg(Arg const* arg, bool skip_sensitive, bool skip_
 }
 
 // A context-sensitive function left out is still tsc's anyFunctionType, which fits whatever has signatures, but not a
-// parameter whose type the skipping inference made `never` or a primitive: letrec's `T extends Record<string, unknown>
-// ? LetrecTypedBuilder<T> : never` with T unknown so far isn't the overload. The type it doesn't fit, else null
+// parameter whose type the skipping inference made `never` or a primitive (letrec's `T extends Record<string, unknown>
+// ? LetrecTypedBuilder<T> : never` with T unknown so far isn't the overload), nor one with required properties
+// (d3's `cross(a, b, (x, y) => ...)` isn't `cross(...iterables: Iterable<T>[])`). The type it doesn't fit, else null
 static Ty const* skipped_function_unfit(Checker* me, ParamShape const* shape, Arg const* arg, u32 i, TyRelation relation) {
     if (!arg->context_sensitive || arg->expr->tag != EXPR_FUNCTION || arg->spread || arg->part_of_spread) return nullptr;
     Ty const* target = i < shape->count ? shape->types[i] : shape->rest_element;
-    if (!target || (target->flags & TYF_OBJECT)) return nullptr; // (signatures, or tsc's anyFunctionType fits it anyway)
+    if (!target) return nullptr;
     return ty_is_related(me, ty_any_function_type(me), target, relation) ? nullptr : target;
 }
 

@@ -162,8 +162,6 @@ first check. Also `readonly ಠ_ಠ` (a modifier before a non-ASCII name).
 
 **Determinism**: 7 of the 63 differed between `--checkers 1` and 4 at one point; gone by 2026-10-05 (13 left, K=2/3/4/7
 identical modulo quoted text, `./checkerdiff.py`): the inference fixes since removed whatever was order-dependent.
-**Determinism**: at 63 left, 7 differed between `--checkers 1` and 4; at 9 left (2026-10-05, third pass) none do
-(`./checkerdiff.py effect`: identical, K=4 twice identical). The differing ones were among those fixed since.
 
 2026-10-05, second pass (63 -> 31, probes in `test/probes/plan19/effect/`, one commit each): a generic call as an
 argument infers from the raw parameter type, not one instantiated with the outer call's return mapper (Cause.test 8,
