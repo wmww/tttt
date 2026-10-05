@@ -94,9 +94,18 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     if (compiler_options()->erasable_syntax_only && !my ambient) { // (tsc's checkEnumDeclarationWorker)
         error_ctx_error_d(errs, my name, 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
     }
+    bool previous_number = true; // (The first member's automatic value is 0)
     for_each (i, vec_enum_case, &my cases) {
         if (!i->name_is_value && i->name.sv.size && i->name.sv.buf[0] == '#') { // tsc's checkEnumMember
             error_ctx_error_d(errs, i->name, 18024, "An enum member cannot be named with a private identifier.");
+        }
+        // (tsc's computeEnumMemberValue: a member without initializer after one whose value isn't a number. Members
+        // with an initializer set previous_number once their type is known, below)
+        bool auto_number = previous_number;
+        previous_number = false;
+        if (i->value.tag == EXPR_IMPLICIT_ANY && (!my ambient || my is_const)) {
+            if (!auto_number) error_ctx_error_d(errs, i->full_name, 1061, "Enum member must have initializer.");
+            previous_number = auto_number && !i->computed_name;
         }
         current_checker->enum_member_initializer = &i->value;
         expr_typecheck(&i->value, errs);
@@ -115,6 +124,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
         ty_check_enum_initializer_references(current_checker, i, &i->value, errs);
         Ty const* member = ty_declared_type_of(current_checker, i->symbol);
+        previous_number = member->flags & TYF_NUMBER_LITERAL;
         Span at = expr_outer_span(&i->value);
         if (member->flags & TYF_NUMBER_LITERAL) {
             double value = member->literal.value.number;
