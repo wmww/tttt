@@ -45,5 +45,7 @@ missing_checks.md "Module and import checks", type_core.md "Circularity" (getter
 - (2026-10-05 fan-out) The symbols harness's expression walk is near the stack limit on binderBinaryExpressionStress:
   inlining a bigger `declaration_get_spans()` segfaulted the release suite (now `noinline`). Make the walk iterative
   over binary-expression left spines, as the checker presumably does.
+- `./scenarios.py`: 3 tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file* fail (missing
+  TS6377 at src/main/tsconfig.json:6); already failing at dfde5fbc.
 - (2026-10-05 fan-out) react +0.8% instructions over the session from four small commits (a29ce0b2, 84b12f2b,
   8619aacb, 5b06210a; measurements.md). Check whether the first two are real work on a hot path.

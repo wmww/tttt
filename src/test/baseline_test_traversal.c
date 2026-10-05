@@ -2657,6 +2657,62 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     }
 }
 
+static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx);
+
+static void drop_symbol_overrides_to(BaselineTestCase* ctx, u32 count) {
+    while (ctx->symbol_override_count > count) {
+        ctx->symbol_override_count--;
+        cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
+        vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
+    }
+}
+
+// A binary expression and its operands. Iterative over the left spine (`a + b + c + ...`, thousands deep in
+// binderBinaryExpressionStress): each left operand that is a binary expression again shows itself and is descended
+// into, then the right operands are walked on the way back up, in the order recursion would have
+static void binary_op_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    typedef struct { Expr* node; u32 overrides; } SpineEntry;
+    SpineEntry local[64];
+    SpineEntry* spine = local;
+    isize count = 0, capacity = c_arraylen(local);
+    for (Expr* node = me;;) {
+        BinaryOpExpr* binary = node->binary_op;
+        if (count == capacity) {
+            capacity *= 2;
+            SpineEntry* grown = malloc((size_t)capacity * sizeof(SpineEntry));
+            memcpy(grown, spine, (size_t)count * sizeof(SpineEntry));
+            if (spine != local) free(spine);
+            spine = grown;
+        }
+        spine[count++] = (SpineEntry){ node, ctx->symbol_override_count };
+        if (binary_commonjs_declaration(binary, nullptr)) commonjs_symbol_overrides(&binary->left, ctx);
+        if (binary->op == BINARY_OP_EQUAL && binary->left.inner_span.source && binary->left.inner_span.source->is_js) {
+            prototype_symbol_overrides(&binary->left, ctx);
+            this_property_symbol_overrides(&binary->left, ctx);
+            nested_expando_symbol_overrides(&binary->left, ctx);
+        }
+        ctx->private_name_in_left = binary->op == BINARY_OP_IN && binary->left.tag == EXPR_PRIVATE_NAME &&
+            !expr_is_perenthisized(&binary->left); // (`(#x) in v` is an error, no PrivateIdentifier to tsc)
+        Expr* left = &binary->left;
+        if (left->tag != EXPR_BINARY_OP) {
+            expr_compile_test_info(left, ctx);
+            break;
+        }
+        if (!expr_compile_test_info_head(left, ctx)) break;
+        node = left;
+    }
+    while (count > 0) {
+        SpineEntry entry = spine[--count];
+        BinaryOpExpr* binary = entry.node->binary_op;
+        ctx->private_name_in_left = false;
+        drop_symbol_overrides_to(ctx, entry.overrides);
+        if (binary_commonjs_declaration(binary, nullptr)) commonjs_undefined_override(binary, ctx);
+        expr_compile_test_info(&binary->right, ctx);
+        drop_symbol_overrides_to(ctx, entry.overrides);
+    }
+    if (spine != local) free(spine);
+}
+
 void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY:
@@ -2707,33 +2763,9 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             }
             break;
 
-        case EXPR_BINARY_OP: {
-            u32 overrides = ctx->symbol_override_count;
-            if (binary_commonjs_declaration(my binary_op, nullptr)) commonjs_symbol_overrides(&my binary_op->left, ctx);
-            if (my binary_op->op == BINARY_OP_EQUAL && my binary_op->left.inner_span.source &&
-                my binary_op->left.inner_span.source->is_js
-            ) {
-                prototype_symbol_overrides(&my binary_op->left, ctx);
-                this_property_symbol_overrides(&my binary_op->left, ctx);
-                nested_expando_symbol_overrides(&my binary_op->left, ctx);
-            }
-            ctx->private_name_in_left = my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
-                !expr_is_perenthisized(&my binary_op->left); // (`(#x) in v` is an error, no PrivateIdentifier to tsc)
-            expr_compile_test_info(&my binary_op->left, ctx);
-            ctx->private_name_in_left = false;
-            while (ctx->symbol_override_count > overrides) {
-                ctx->symbol_override_count--;
-                cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
-                vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
-            }
-            if (binary_commonjs_declaration(my binary_op, nullptr)) commonjs_undefined_override(my binary_op, ctx);
-            expr_compile_test_info(&my binary_op->right, ctx);
-            while (ctx->symbol_override_count > overrides) {
-                ctx->symbol_override_count--;
-                cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
-                vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
-            }
-        }   break;
+        case EXPR_BINARY_OP:
+            binary_op_compile_test_info(me, ctx);
+            break;
 
         case EXPR_UNARY_OP:
             if (my unary_op->op != UNARY_OP_YIELD || my unary_op->expr.tag != EXPR_IMPLICIT_ANY) { // Not a bare `yield`
@@ -3019,10 +3051,11 @@ static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     else expr_compile_test_info(me, ctx);
 }
 
-void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+// What an expression shows itself (its type), before its operands: false if it has nothing else to show
+static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
     if (my tag == EXPR_IMPLICIT_ANY && my missing_decorators) { // (tsc's MissingDeclaration: no expression of its own)
         for_each (i, vec_expr, my missing_decorators) expr_compile_test_info(i, ctx);
-        return;
+        return false;
     }
     if (my tag == EXPR_IMPLICIT_ANY && my missing && !my inner_span.sv.size && !my paren_before && span_valid(my inner_span)) {
         // A missing identifier is at the full start of the next token: the harness shows it where the token starts
@@ -3030,7 +3063,7 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         at = skip_trivia_forward(at);
         baseline_test_case_add_type_recursive(ctx, span_make(my inner_span.source, at, at), span_make(my inner_span.source, at, at),
             ty_regular(current_checker, expr_get_type(me)));
-        return;
+        return false;
     }
     if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {
         // `null` itself has no line, `(null)` does
@@ -3069,8 +3102,11 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         // tsc prints an expression's regular type (getRegularTypeOfExpression)
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, ty_regular(current_checker, expr_get_type(me)));
     }
+    return true;
+}
 
-    expr_compile_test_info_inner(me, ctx);
+void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
+    if (expr_compile_test_info_head(me, ctx)) expr_compile_test_info_inner(me, ctx);
 }
 
 void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
