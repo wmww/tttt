@@ -38951,7 +38951,7 @@ const baselines = {
         types: true,
     },
     'importCallExpressionWithTypeArgument': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -63716,9 +63716,9 @@ const baselines = {
         types: true,
     },
     'importWithTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commonTypeIntersection': {
         errors: true,

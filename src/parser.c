@@ -107,6 +107,8 @@ typedef struct ParserShared {
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
+    // Parsing the type arguments of `import<...>`: TS1326 replaces their own grammar errors (TS1099)
+    bool import_type_args;
     // The type member being parsed can't be a mapped type's `[K in T]` (tsc's isStartOfMappedType looks only at a type
     // literal's first member): it's a property named by an `in` expression
     bool no_mapped_member;
@@ -2414,7 +2416,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     }
 
     // (tsc's checkGrammarTypeArguments)
-    if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked)) {
+    if (vec_spanned_type_is_empty(ret) && !(p.shared->in_jsdoc && p.shared->jsdoc_unchecked) && !p.shared->import_type_args) {
         parse_error(&p, span_from(a), 1099, "Type argument list cannot be empty.");
     }
     shrink_list(vec_spanned_type, ret);
@@ -3145,6 +3147,11 @@ static bool parse_import_keyword_expr(Parser* parent, Expr* ret) {
     if (*ahead.pos == '.') {
         parse_fail(&ahead);
         p.shared->saw_import_meta = true;
+        return parse_success(&p);
+    }
+    if (*ahead.pos == '<') {
+        // `import<T>(...)`, `import<T>`: type arguments, which the checker rejects (TS1326, tsc's parseCallExpressionRest)
+        parse_fail(&ahead);
         return parse_success(&p);
     }
     if (!hop_char(&ahead, '(')) {
@@ -9029,9 +9036,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     Parser generic_p = parser(&p);
     // Never in JavaScript files, to avoid the ambiguity with `<` and `>` (tsc's parseTypeArgumentsInExpression)
     // (A `typeof` type's type arguments are on its line: tsc's parseTypeQuery)
-    if (c == '<' && !p.shared->source->is_js && !(ctx.entity_name && hit_newline) &&
-        parse_generic_params(&generic_p, true, &parsed.generic_params)
-    ) {
+    bool outer_import_type_args = p.shared->import_type_args;
+    p.shared->import_type_args = left_and_ret->tag == EXPR_IDENTIFIER && left_and_ret->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
+    bool type_args = c == '<' && !p.shared->source->is_js && !(ctx.entity_name && hit_newline) &&
+        parse_generic_params(&generic_p, true, &parsed.generic_params);
+    p.shared->import_type_args = outer_import_type_args;
+    if (type_args) {
         bool success = false;
         // (A decorator's type arguments are an expression's: `@g<T> class C {}` is `@g` and `<T> class C {}`)
         if (ctx.reject_operators && !ctx.decorator) {
@@ -9057,7 +9067,9 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
         if (success) {
             parse_success(&generic_p);
-            if (vec_spanned_type_size(&parsed.generic_params)) {
+            // (`import<>()` keeps its empty list: TS1326, where an empty list is otherwise only TS1099)
+            bool import_keyword = left_and_ret->tag == EXPR_IDENTIFIER && left_and_ret->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
+            if (vec_spanned_type_size(&parsed.generic_params) || import_keyword) {
                 *left_and_ret = expr_generic_params(
                     span_from(a),
                     c_new(GenericParamsExpr, {

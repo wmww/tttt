@@ -2910,6 +2910,11 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
             "'commonjs', 'amd', 'system', 'umd', 'node16', 'node18', or 'nodenext'.");
         return;
     }
+    if (my call->callable.tag == EXPR_GENERIC_PARAMS) {
+        error_ctx_grammar_error_d(errs, my inner_span, 1326, "This use of 'import' is invalid. 'import()' calls can be "
+            "written, but they must have parentheses and cannot have type arguments.");
+        return;
+    }
     VecExpr const* args = &my call->args;
     isize count = vec_expr_size(args);
     bool node = module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT;
@@ -4090,7 +4095,17 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             ty_check_property_used_before_assigned(current_checker, me, errs);
         }   break;
 
-        case EXPR_GENERIC_PARAMS: generic_params_expr_typecheck(my generic_params, errs); break;
+        case EXPR_GENERIC_PARAMS: {
+            Expr const* inner = &my generic_params->expr;
+            if (inner->tag == EXPR_IDENTIFIER && inner->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
+                // `import<T>` (tsc's checkGrammarExpressionWithTypeArguments: at the whole expression, which is all)
+                Span whole = span_make(my inner_span.source, span_start_ptr(inner->inner_span), span_end_ptr(my inner_span));
+                error_ctx_grammar_error_d(errs, whole, 1326, "This use of 'import' is invalid. 'import()' calls can be "
+                    "written, but they must have parentheses and cannot have type arguments.");
+                break;
+            }
+            generic_params_expr_typecheck(my generic_params, errs);
+        }   break;
 
         case EXPR_AS_TYPE:
             if (as_type_is_const_assertion(my as_type) && !is_valid_const_assertion_argument(&my as_type->expr)) {
