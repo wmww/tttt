@@ -195,7 +195,7 @@ static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo cons
     if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
     if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return nullptr;
-    MappedInfo const* mapped = ty_members(me, root)->mapped;
+    MappedInfo const* mapped = ty_mapped_info_unexpanded(me, root);
     // (tsc's getHomomorphicTypeVariable looks at the lowered constraint: a `keyof T` substituted in a true branch of
     // `keyof T extends ...` isn't homomorphic, but a type parameter substituted in a true branch is still the one)
     // It's the lowered constraint's operand, not the modifiers type: `keyof (T & Required<T>)` lowers to `keyof T`

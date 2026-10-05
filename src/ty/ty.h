@@ -219,6 +219,7 @@ typedef struct TyObjectState {
     uint8_t base_state; // LazyState of equivalent_base
     uint8_t reduced_state; // Intersections: whether ty_reduced() is never (REDUCED_*, checker.c)
     Members const* members;
+    Members const* unexpanded; // resolve_members_inner()'s result before expand_mapped(), see ty_mapped_info_unexpanded()
     Ty const* equivalent_base; // See ty_non_augmenting_base()
 } TyObjectState;
 
@@ -1081,6 +1082,8 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
 TupleShape const* ty_tuple_shape(Ty const* ty);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
+// A mapped type's declaration (key, constraint, modifiers type) without expanding its members
+struct MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty);
 Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand);
 // template.c: template literal types and string mappings (tsc's getTemplateLiteralType, getStringMappingType)
 Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* const* types, u32 len);

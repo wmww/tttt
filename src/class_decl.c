@@ -128,7 +128,11 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
         Ty const* assigned = field_type_from_assignments(checker, me);
         if (assigned) return assigned;
     }
-    Ty const* ret = ty_widened_for_declaration(checker, ty_expr_type(checker, &my field.value), !my field.is_readonly);
+    // A call of a single non-generic signature has its type without the call being resolved (tsc's
+    // checkDeclarationInitializer, as for variables: initialized_binding_evaluate_type())
+    Ty const* value = ty_quick_expr_type(checker, &my field.value, false);
+    if (!value) value = ty_expr_type(checker, &my field.value);
+    Ty const* ret = ty_widened_for_declaration(checker, value, !my field.is_readonly);
     // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
     if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != me) ret = ty_intrinsic(checker, TY_ES_SYMBOL);
     return ret;

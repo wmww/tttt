@@ -453,8 +453,12 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                 Ty const* keys = ty_of_node(as ? &mapped->key.mapped.as_type : &mapped->key.mapped.in_type);
                 Checker* checker = current_checker;
                 Ty const* all[3] = { ty_intrinsic(checker, TY_STRING), ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_ES_SYMBOL) };
-                ty_check_assignable(checker, keys, ty_union(checker, all, 3, nullptr, (TyList){0}),
-                    as ? mapped->key.mapped.as_type_span : mapped->key.mapped.in_type_span, errs);
+                // (A circular key constraint is the error type: tsc's getConstraintTypeFromMappedType)
+                if (as || !mapped->key.mapped.symbol_ref ||
+                    !ty_param_constraint_is_circular(checker, ty_type_param(checker, mapped->key.mapped.symbol_ref))) {
+                    ty_check_assignable(checker, keys, ty_union(checker, all, 3, nullptr, (TyList){0}),
+                        as ? mapped->key.mapped.as_type_span : mapped->key.mapped.in_type_span, errs);
+                }
             }
             {
                 VecInterfaceMember const* list = &my interface.members;

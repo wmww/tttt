@@ -3042,6 +3042,16 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             if (!alias && !vec_interface_member_size(&node->interface.members) && !node->interface.jsdoc_literal) {
                 return ty_empty_type_literal(me);
             }
+            // tsc's getTypeFromMappedTypeNode resolves the key's constraint eagerly (its circularity is found under
+            // whatever is being resolved, an alias's declaration for one)
+            if (vec_interface_member_size(&node->interface.members) == 1) {
+                InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
+                if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped.symbol_ref) {
+                    Ty const* ret = ty_anonymous_from_node(me, node, ctx, alias, alias_args);
+                    ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped.symbol_ref));
+                    return ret;
+                }
+            }
             return ty_anonymous_from_node(me, node, ctx, alias, alias_args);
 
         case TYPE_CALLABLE:

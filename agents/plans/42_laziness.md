@@ -48,25 +48,22 @@ prototype made `any` not assignable to a never intersection, which tsc accepts: 
 `instantiate_mapped_over_list` unconditionally is 0 lost with every corpus identical (zod's TS2615 no longer
 reproduces). Kept: members with type variables aren't judged (hacks.md `never_reduced_prop`).
 
-## Stage 3: mapped info without expansion, quick types, re-entry semantics (~1 session). Prototype `stage3_reentry.patch`
-The prototype is behind environment variables (`getenv("TTTT_...")`, marked PROTOTYPE): land the default branches,
-delete the switches. Measured with the default ("barrier on every resolution", as HEAD): 0 lost, +underscoreTest1,
-+incorrectRecursiveMappedTypeConstraint symbols/types, recursiveMappedTypes' six TS2456/TS2313 (test still fails on
-lines 21, 73, 79); tsc/zod/type-fest/vue 0, xstate 8 (compare the file:line set, not the count). Not run:
-instrcount, threadcheck, zod-root.
-- `ty_mapped_info_unexpanded()`: a mapped type's `MappedInfo` before expansion, used by `homomorphic_variable()` and
-  `ty_keyof()` of a mapped type (tsc's getHomomorphicTypeVariable / getIndexTypeForMappedType read the declaration
-  only). With it, plan 39 stage 3 item 2 lands: `declared_param_constraint()` lowers under the walk's push, and
-  tsc's eager key-constraint check of getTypeFromMappedTypeNode runs at every mapped node in `lower()`;
-  mappedTypeWithAny stays passing.
-- Quick type for class field initializers (tsc's getQuickTypeOfExpression in checkDeclarationInitializer:
-  `class_item_field_evaluate_type` lacks what variables have): implicitAnyFromCircularInference's `s = foo(this)`.
-- A function argument's return type isn't asked again while in flight (tsc's ContextChecked: once per node), and a
-  declaration re-entered below a barrier evaluates again, keeping the inner result (res1/res3 of
-  circularReferenceInReturnType).
-- Plan 38 "not done 1" and plan 39 "Stage 3" 1 get rewritten with the corrected premise (table in the session's
-  commit message / this plan): tsc resolves re-entered calls again; resolvingSignature only reaches callers through
-  SkipGenericFunctions (silentNeverType) and argument contextual types while in flight.
+## Stage 3: mapped info without expansion, quick types, re-entry semantics. Done 2026-10-05
+Suite 12753 -> 12755 (+underscoreTest1, +incorrectRecursiveMappedTypeConstraint; recursiveMappedTypes' TS2456/TS2313
+come, the test still fails on lines 21, 73, 79), 0 lost; every corpus byte-identical to the previous build (zod-root,
+tsc-src and typescript-eslint `-b` too), threadcheck/checkerdiff identical, callgrind within +0.3% (zod). The
+prototype's default branches landed, its switches are gone:
+- `ty_mapped_info_unexpanded()` (members.c): a mapped type's `MappedInfo` before `expand_mapped()`, read by
+  `homomorphic_variable()` and `ty_keyof()` of a generic mapped type (tsc's getHomomorphicTypeVariable /
+  getIndexTypeForMappedType). With it `ty_param_constraint()` walks the base constraint (lowering under the push)
+  before reading the declared one, and `lower_node()` resolves every mapped node's key constraint eagerly (tsc's
+  getTypeFromMappedTypeNode; the prototype's default did it only under an alias's push, every node is +1 test). The
+  key check of a mapped type skips a circular key constraint (tsc's getConstraintTypeFromMappedType: errorType).
+- `class_item_field_evaluate_type` takes `ty_quick_expr_type()` first, like variables (tsc's getQuickTypeOfExpression).
+- `infer_type_arguments` doesn't ask a function argument's return type while it's in flight (tsc's ContextChecked),
+  and a declaration LazyType re-entered below a call's barrier evaluates again once, keeping the inner result
+  (`LazyMemo.reevaluating`).
+- Plan 38 "not done 1" and plan 39 "Stage 3" 1 carry the corrected premise (tsc resolves re-entered calls again).
 
 ## Stage 4 (optional, 1-2 sessions): the first-resolution-only barrier and return types after resolution
 - **Return type read while the call is in flight** (3 tests: simpleRecursionWithBaseCase1's fn5,

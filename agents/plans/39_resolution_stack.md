@@ -60,7 +60,8 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    ImmediateBaseConstraint)` is pushed, and getTypeFromMappedTypeNode resolves the key constraint eagerly. Moving
    `declared_param_constraint()`'s lowering under the walk's push (ty_param_constraint walking first) made
    mappedTypeWithAny report TS2313 twice: tttt resolves members eagerly while lowering (`homomorphic_variable` ->
-   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. **Plan 42 stage 3** lands it (prototyped, 0 lost).
+   `ty_members` in instantiation, `ty_keyof`) where tsc doesn't. **Done by plan 42 stage 3** (2026-10-05:
+   `ty_mapped_info_unexpanded()`; incorrectRecursiveMappedTypeConstraint passes, recursiveMappedTypes' TS2313s).
    circularBaseTypes' `Y` TS2310 came with plan 42 stage 2 (interface bases reduced, getReducedType in getBaseTypes).
 3. **Accessors / object literal methods** (old item 5): TS7023 tsc reports while printing a type whose return type is
    in flight (thisInObjectLiterals and friends). Untouched. The mechanism: checking a return expression prints a type

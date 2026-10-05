@@ -1013,7 +1013,9 @@ static TyMapper const* infer_type_arguments(
         // (Only with a contextual signature, like tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod: without
         // one, it waits for the check against the instantiated parameter, whose context may be the function itself)
         if (arg->expr->tag == EXPR_FUNCTION && !arg->spread && !arg->part_of_spread &&
-            ty_function_assigned_contextual_signature(me, arg->expr->function)
+            ty_function_assigned_contextual_signature(me, arg->expr->function) &&
+            // Not again while it's in flight further up (tsc's ContextChecked: once per node)
+            !ty_function_return_in_flight(me, arg->expr->function)
         ) {
             ty_argument_return_type(me, arg->expr->function);
         }
@@ -2638,7 +2640,8 @@ static Ty const* call_return_type(
     u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
     CallResolution* resolution = (CallResolution*)intern_get(&my links, key, 2);
     if (resolution && !resolution->in_flight) return resolution->ret;
-    // TODO: tsc's resolvingSignature (any) for a call resolved again while in flight costs 10 tests, plan 38
+    // A call asked for again while in flight is resolved again (tsc's getResolvedSignature: resolvingSignature only
+    // reaches SkipGenericFunctions and contextual types). tsc puts no barrier at the nested resolution (plan 42 stage 4)
     if (resolution || my flow_uncached) {
         return resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
     }

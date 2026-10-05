@@ -255,8 +255,7 @@ src` finds the code-side markers; every significant one has an entry here.
   twiceNestedKeyofIndexInference `never` (its constraint `keyof T[K1]` with `K1 = keyof State`) and the argument
   `'b'` widens; tsc's return mapper evidently differs there, not investigated.
 - `KEY_CONTEXT_RETURN` is rewritten per check (`set_contextual_return()`); `ExprCtx.sig_contextual` only where
-  `may_want_signature()`. A call re-entered while in flight is resolved again (`call_return_type()`, not remembered)
-  where tsc returns resolvingSignature (any): doing tsc's costs 10 tests (plan 38 "Stage 3" not done 1).
+  `may_want_signature()`.
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`): a failed
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
@@ -454,10 +453,10 @@ src` finds the code-side markers; every significant one has an entry here.
   runs on the unreduced types like tsc's isTypeRelatedTo (`any` is assignable to an intersection that is never),
   is_related_to() then reduces both sides.
 - `resolve_call` (call.c HACK): every resolution of a call starts a new region of the resolution stack; tsc's only
-  the first (a nested one gets `resolvingSignature` and sees the whole stack). Since resolve-once (plan 38 stage 3) the
-  only other resolutions are in-flight re-entries; skipping the barrier for those is -1 (implicitAnyFromCircularInference's
-  `s = foo(this)`), and returning any for them -10 +1. Costs `res1`'s TS7022 and circularReferenceInReturnType2's
-  `A`/`fields`.
+  the first (a call re-entered in flight is resolved again with the whole stack visible). Since resolve-once (plan 38
+  stage 3) the only other resolutions are in-flight re-entries; skipping the barrier for those is +1 in the suite but
+  zod 0 -> 6 (plan 42 stage 4: zod's recursive getters typed during `z.object()`'s resolution). Costs `res1`'s TS7022
+  and circularReferenceInReturnType2's `A`/`fields`.
 - `reduce_type_variable_intersection` (checker.c HACKs): type parameters only, not indexed accesses (valibot's
   `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint); constraints with a
   deferred type aren't reduced (cost valibot 5%, `primitive_constraint_of`). Real fix: cheaper conditional base

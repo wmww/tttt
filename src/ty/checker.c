@@ -2223,6 +2223,17 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     // (members->mapped) defer, like tsc's isGenericObjectType
     bool known_names = !ty_is_tuple(operand) || !(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
     if (!defer && (operand->flags & TYF_OBJECT) && known_names) {
+        // A generic mapped type's keys are its constraint, read from the declaration without expanding it (tsc's
+        // getIndexTypeForMappedType)
+        if (operand->kind == TY_ANONYMOUS) {
+            Ty const* root = operand->anonymous.target ? operand->anonymous.target : operand;
+            TypeNode const* node = root->anonymous.node;
+            if (node && node->tag == TYPE_INTERFACE && vec_interface_member_size(&node->interface.members) == 1 &&
+                vec_interface_member_at(&node->interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED) {
+                MappedInfo const* mapped = ty_mapped_info_unexpanded(me, operand);
+                if (mapped && !mapped->name_type && ty_is_generic_index(mapped->constraint)) return mapped->constraint;
+            }
+        }
         Members const* members = ty_members(me, operand);
         // Of a mapped type without an `as` clause, its constraint (tsc's getIndexTypeForMappedType):
         // `keyof { [P in string]: X }` is string, `keyof Pick<T, unknown>` unknown

@@ -127,7 +127,18 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     if (state->evaluation_started) {
         // Circularity is a property of declarations (that is where tsc detects and reports it): asked for again while in
         // flight, a declaration is any, and it and everything resolved since is part of the cycle (tsc's
-        // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes
+        // pushTypeResolution failing, see ty_resolving_push()). What they reach finds out when it finishes.
+        // In flight only below the barrier of a call being resolved (tsc's findResolutionCycleStartIndex from
+        // resolutionStart), it isn't a cycle: it's evaluated again, once, and the inner evaluation's result is the one
+        // remembered (tsc's getTypeOfVariableOrParameterOrProperty)
+        bool below_barrier = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION && !lazy_type_pattern_root(me) &&
+            !ty_resolving_find(current_checker, RESOLVING_DECLARATION, me);
+        if (below_barrier) {
+            if (state->reevaluating) goto circular;
+            state->reevaluating = true;
+            goto evaluate;
+        }
+        circular:
         if (my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION) {
             Binding const* pattern = lazy_type_pattern_root(me);
             if (pattern) ty_resolving_pattern_cycle(current_checker, me, pattern);
@@ -151,6 +162,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         }
     }
     state->evaluation_started = true;
+    evaluate:;
 
     // Declarations evaluate self-contained, see ty_flow_isolate()
     bool isolate = my tag != LAZY_TYPE_EXPR;

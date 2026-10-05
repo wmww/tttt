@@ -2655,6 +2655,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
 }
 
 static Members const* resolve_intersection_members(Checker* me, Ty const* ty);
+static TyObjectState* object_state(Ty const* ty);
 
 // tsc's resolveReverseMappedTypeMembers: the source's properties, whose types are inferred on first use (prop_type()),
 // and its string index signature's, inferred right away
@@ -2732,7 +2733,25 @@ Ty const* ty_reverse_mapped_object(Checker* me, ReverseMapped const* reverse) {
 
 static Members const* resolve_members(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) return resolve_intersection_members(me, ty);
+    TyObjectState* state = object_state(ty);
+    if (state && state->unexpanded) return expand_mapped(me, ty, state->unexpanded);
     return expand_mapped(me, ty, resolve_members_inner(me, ty));
+}
+
+// A mapped type's declaration (key, constraint, modifiers type) without its members, which a
+// generic homomorphic mapped type gets from its type variable's apparent type (tsc's getHomomorphicTypeVariable and
+// getIndexTypeForMappedType read the declaration only)
+MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty) {
+    TyObjectState* state = object_state(ty);
+    if (!state) return nullptr;
+    if (state->members_state == LAZY_STATE_DONE) return state->members->mapped ? state->members->mapped : state->members->expanded_from;
+    if (state->members_state == LAZY_STATE_IN_FLIGHT) return nullptr;
+    if (!state->unexpanded) {
+        state->members_state = LAZY_STATE_IN_FLIGHT;
+        state->unexpanded = resolve_members_inner(me, ty);
+        state->members_state = LAZY_STATE_NOT_STARTED;
+    }
+    return state->unexpanded->mapped;
 }
 
 static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
@@ -4079,6 +4098,11 @@ bool ty_param_constraint_is_circular(Checker* me, Ty const* param) {
 }
 
 Ty const* ty_param_constraint(Checker* me, Ty const* param) {
+    // The declared constraint is lowered under the walk's push (tsc's getResolvedBaseConstraint)
+    if (!param->param.state->circular && !param->param.state->clone_of && !param->param.state->is_this &&
+        param->param.state->constraint_state == LAZY_STATE_NOT_STARTED) {
+        ty_param_constraint_is_circular(me, param);
+    }
     Ty const* constraint = declared_param_constraint(me, param);
     if (!constraint || param->param.state->circular == 1) return constraint;
     return ty_param_constraint_is_circular(me, param) ? nullptr : constraint;
