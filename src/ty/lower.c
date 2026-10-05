@@ -2290,6 +2290,13 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
         }
         Prop const* declared = prop;
         while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
+        // (A mapped type's property is declared where the property it maps is: tsc's mapped symbol's declarations)
+        TypeNode const* annotation = prop_annotation(declared);
+        Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
+        if (!annotation && mapped_from) {
+            while (mapped_from->target) mapped_from = mapped_from->target;
+            annotation = prop_annotation(mapped_from);
+        }
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER),
@@ -2299,7 +2306,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
             .decl_spans = declared->decl->decl_spans,
             .decl_span_count = declared->decl->decl_span_count,
             .name_is_value = declared->decl->name_is_value,
-            .asserted = prop_annotation(declared),
+            .asserted = annotation,
         };
     }
     Ty const* ret = ty_object_literal(me, props, count, members->index, members->index_count, OBJECT_SYNTHETIC);

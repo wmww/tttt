@@ -65088,7 +65088,7 @@ const baselines = {
     'objectRestReadonly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementMustBeLast': {
         errors: true,
