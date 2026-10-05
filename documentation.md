@@ -217,10 +217,21 @@ the program's cwd (`program_cwd()`); `compiler_options()` is per thread.
 The parser creates an AST from the source code string, see below.
 
 ### Resolve names
-`program_resolve_names()`, three steps over all files. This is also the intended parallelism contract: declare and resolve are meant to run per file, writing only to the file's own AST and symbols, with the small sequential link step in between being the only one that touches what files share (`agents/hacks.md`, "Parallelism contract audit", lists what still breaks that: globals, ambient modules, the one binder arena).
+`program_resolve_names()`, three steps over all files. Declare and link are sequential; the resolve walk (85-90% of the phase) runs on `--threads` threads for TypeScript files (plan 45, below). The contract: a walk writes only its own file's AST and symbols (`agents/hacks.md`, "Parallelism contract", lists what is still shared and how).
 1. **Declare** (`*_add_names()`): every file gets its scope (a module also its module symbol), and the declarations of files, namespaces, enums and `declare global` blocks become symbols. Same-table conflicts are reported here.
 2. **Link** (`binder_link()`): `export *` tables are flattened and every alias is resolved, so that nothing writes to a symbol afterwards; import conflicts (TS2440) are reported.
 3. **Resolve** (`*_lookup_names()`): the deep walk. It makes the function and block scopes as it enters them (declaring their names first, so uses before the declaration resolve) and stores on every identifier the symbol it found plus the symbol that has the meaning it is used with (`target`). The same walk builds the control flow graph, so it visits statements and expressions **in evaluation order** (`for`: init, condition, body, afterthought; an IIFE's arguments before its body), see "Control flow" below.
+
+**The parallel walk** (`program_resolve_walk()`): TypeScript files are walked in any order (biggest first) by a pool,
+each into a `ResolveShard` of its own (thread-local `resolve_shard`): `binder_arena()` is the thread's arena,
+`binder_errs()` the file's `ErrorCtx` (parent: the program's, frozen meanwhile), new symbols and pending reports go to
+the shard's lists. What depends on the files walked before is *deferred* into the shard: tsc's first ten spelling
+suggestions (every not-found report, misspelling and count) and expandos (`f.x = v` in a function body) whose host
+another file can see. Then, in program order, each TypeScript file's shard is replayed and merged
+(`resolve_shard_merge()`) and each JavaScript file walked, on the main thread: JavaScript's assignment declarations
+write other files' symbols and read them back in the same walk. So are files whose class or interface shares type
+parameter symbols with an earlier declaration in another file (`binder_mark_serial_resolves()`). The order is the same
+at any thread count (the suite runs it at one); `TTTT_PARALLEL_RESOLVE=1` uses the threads even for a few files.
 
 Imported files are discovered while loading, from the parser's list of module names (`SourceFile.module_refs`; `program_handle_statement()` only follows `/// <reference>` directives and decides whether a file is a module), before any of this. Between declare and link every `ModuleRef` is resolved to its module symbol, which needs the ambient modules of all files.
 

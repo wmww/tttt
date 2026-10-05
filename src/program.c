@@ -2233,6 +2233,18 @@ static void* resolve_lane_thread(void* arg) {
     return nullptr;
 }
 
+typedef struct ResolveOrder {
+    isize size;
+    u32 index;
+} ResolveOrder;
+
+static int resolve_order_cmp(void const* a, void const* b) {
+    ResolveOrder const* x = a;
+    ResolveOrder const* y = b;
+    if (x->size != y->size) return x->size > y->size ? -1 : 1;
+    return x->index < y->index ? -1 : x->index > y->index;
+}
+
 // The resolve walk of every file (plan 45). TypeScript files are walked in any order, on --threads threads, each into a
 // ResolveShard of its own; then, in program order, each TypeScript file's shard is replayed and merged and each
 // JavaScript file walked. The order of everything that reaches the binder is the same for any thread count
@@ -2243,19 +2255,18 @@ static void program_resolve_walk(Program* me) {
     binder_mark_serial_resolves(my binder);
     lane.files = c_new_n(SourceFile*, file_count ? file_count : 1);
     lane.shard_of = c_new_n(u32, file_count ? file_count : 1);
+    // Biggest first, so that one big file doesn't start last
+    ResolveOrder* order = c_new_n(ResolveOrder, file_count ? file_count : 1);
     for (isize i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
-        if (!resolves_in_parallel(source)) continue;
-        // (Biggest first, so that one big file doesn't start last: an insertion sort by size)
-        u32 j = lane.count++;
-        while (j > 0 && cstr_size(&lane.files[j - 1]->contents) < cstr_size(&source->contents)) {
-            lane.files[j] = lane.files[j - 1];
-            lane.shard_of[j] = lane.shard_of[j - 1];
-            j--;
-        }
-        lane.files[j] = source;
-        lane.shard_of[j] = (u32)i;
+        if (resolves_in_parallel(source)) order[lane.count++] = (ResolveOrder){ cstr_size(&source->contents), (u32)i };
     }
+    qsort(order, lane.count, sizeof(ResolveOrder), resolve_order_cmp);
+    for (u32 i = 0; i < lane.count; i++) {
+        lane.files[i] = *vec_source_file_ptr_at(&my source_files_ordered, order[i].index);
+        lane.shard_of[i] = order[i].index;
+    }
+    free(order);
     atomic_init(&lane.next, 0);
     u32 threads = my threads ? my threads : 1;
     // (Few files aren't worth a thread each)

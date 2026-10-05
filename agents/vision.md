@@ -96,8 +96,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 (-> plan 04), checker state in the AST (-> per-`Checker` slots). What's left to watch:
 - **Parser**: error-recovery fidelity is essentially done (plan 27: 34 tests still differ, 2026-09-29; the framework held, no rewrite needed), unbounded recursion depth (binary chains need ~8 MB of
   stack; tsc walks them iteratively), backtracking cost.
-- **Binder**: still writes to shared tables and one arena (`hacks.md`, "Parallelism contract audit"), the one phase
-  that doesn't shard per file. JS support will add declarations from assignments; design it with that in mind.
+- **Binder**: declare and link are serial and write shared tables; the resolve walk shards per file for TypeScript
+  (plan 45: JavaScript files and merged type parameters still walk serially; `hacks.md`, "Parallelism contract"). JS support will add declarations from assignments; design it with that in mind.
 - **Threading**: checking is threaded (stage 3; nothing in the checker had to change once stage 2's audit fixes were
   in, which is evidence the "AST read-only while checking" contract holds). Any new checker-wide memo that *reports*
   must be tagged `Error.once_key`, and anything written to AST/binder state during checking is a race (the frozen

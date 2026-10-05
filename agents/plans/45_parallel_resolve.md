@@ -61,8 +61,27 @@ Each stage: `./fasttest.sh --summary` 0 lost; `baseline_tests --threads 4 --dump
 (`meson setup /tmp/tsan --buildtype release -Db_sanitize=thread -Dc_args=-g`, `TTTT_NO_REEXEC=1`) clean on the
 corpora at 4 threads; `./instrcount.sh` (single-threaded must not regress beyond ~0.5%); `--time` resolve numbers.
 
-### Stage 1: the TypeScript walk on threads
-As designed above. Expected: vscode resolve 590 -> ~200 ms at 4 threads (2 cores x SMT: maybe ~250).
+### Stage 1: the TypeScript walk on threads: **done** (2026-10-05, todo entry 7)
+As designed above, plus what the audit missed and TSan/the suite found:
+- **Merged type parameters**: `class C<T>` in a.ts and `interface C<T>` in b.ts share T's symbol, which a.ts's walk
+  makes and b.ts's walk adds to (`scope_new_generic_merged()`). Files with such a later declaration walk serially
+  (`binder_mark_serial_resolves()`): 18 files / 0.9 MB of vscode's 60 MB, 13 of webpack's TS, 13 of type-fest's.
+  Making those symbols in declare (tsc does it in its binder) would let them go parallel too.
+- **`Symbol.flow_start`** (the declaring flow container) was set by any walk of a binding and read by every walk
+  referencing the symbol (`outer_reference`): only the first declaring file's walk writes it now, and a reference to a
+  symbol first declared elsewhere is outer without reading it (tsc's answer; the old serial walk said "not outer" when
+  the referencing file came first: no test or corpus changed).
+- **`flow_unreachable`**'s flags were written by every walk (also racy under `-b` before): constant now.
+- A pre-existing **check-phase race**: `class_decl_typecheck()` wrote `FunctionImpl.private_ambient`, a bitfield
+  neighbouring what other checkers read: set in the walk now.
+- Deferred reports into the walk's two scratch `ErrorCtx`s (dropped ones) go to the shard's discarded context.
+Validation: suite 12932 unchanged; `baseline_tests --dump` byte-identical old vs new and, with
+`TTTT_PARALLEL_RESOLVE=1 --threads 4`, vs one thread; every corpus's `--all-errors` byte-identical to the old binary,
+`./threadcheck.sh` identical; TSan 0 warnings on every corpus but drizzle and effect (not run: slow) and on the whole
+suite forced parallel; sweep 8072 match, 0 crash (unchanged). Numbers (best of 3, `--time` resolve names, 4 threads,
+2 cores x SMT): **vscode 593 -> 283 ms** (walk 510 -> ~200; wall 2.47 -> 2.23 s), tsc 77 -> 39, webpack 72 -> 63
+(its JS is serial). Single-threaded callgrind: tsc +0.2%, nest +0.6%, react +0.2%, vscode +0.2% (shard bookkeeping;
+a quadratic sort of the files by size was +2.8% on nest before `qsort`).
 
 ### Stage 2: JavaScript files in the parallel lane
 Needs JS's nested assignment declarations to stop writing other files' symbols during the walk: classify each

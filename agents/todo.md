@@ -24,9 +24,10 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    medium sweep causes). Suite 12768 -> 12932, errors component failing 356 -> 150, 0 lost; sweep 8016 -> 8072 match,
    0 timeout; corpora unchanged. Callgrind +0.3..1.1% (new checks tsc also does; six regressions bisected and fixed by
    their authors). Leftovers by root cause in missing_checks.md (lists p, c, d) and plan 44.
-7. **Planning + execution: parallel name resolution** (plan 36's next step, and plan 41's `-b` lever). Write plan 45
-   from what the binder still shares (hacks.md "Parallelism contract audit"), then execute stage 1 if it fits. Threads
-   1/4 must stay byte-identical (`./threadcheck.sh`, `./checkerdiff.py`).
+7. Done: plan 45 written and stage 1 executed (the TypeScript resolve walk on --threads threads, per-file shards,
+   deferred events replayed in program order). vscode resolve 593 -> 283 ms, wall 2.47 -> 2.23 s; suite 12932 and
+   every corpus byte-identical, TSan clean, callgrind +0.1..0.6%. Stage 2 (JavaScript files) and 3 (declare/link) in
+   the plan, not scheduled.
 8. **Corpus: the sweep and effect toward 0** (entry 5's agents already took every other corpus to 0 but xstate 2).
    The sweep's ranking (`./sweep.py`, plan 44 "Open root causes": the circular/unresolved `export =` TS2497/TS2305 in
    ~65 webpack-plugin packages first, carbon-components-react's 25 s), effect's 31 (plan 19 "effect": the overload

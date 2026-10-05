@@ -188,7 +188,7 @@ Port that classification as one function over `Expr` and bind by kind:
   function's type gets a construct signature returning that instance type; `new F()` stops being TS7009, `this`
   inside it stops being TS2683.
 - **Where**: tsc binds all of this in its one binder walk. tttt's contract (documentation.md "Resolve names",
-  hacks.md "Parallelism contract audit") is declare (per file) -> link (shared) -> resolve (per file, read-only on
+  hacks.md "Parallelism contract") is declare (per file) -> link (shared) -> resolve (per file, read-only on
   symbol tables). What importers can see (CommonJS exports, top-level expandos of exported functions) must be declared
   in the **declare step**: a JS-file statement-level scan of expression statements (the file's top level and the
   blocks the hoisting walk already visits) covers the tests; nested `exports.x =` (inside `if`, IIFEs) can come

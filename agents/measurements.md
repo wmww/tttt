@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Parallel name resolution (2026-10-05, plan 45 stage 1, tenth window's todo entry 7)
+`--time` resolve names, best of 3, default threads (4 = 2 cores x SMT), load ~3: vscode 593 -> 283 ms (the walk 510
+-> ~200; declare 40 and link 28 stay serial), tsc `src/compiler` 77 -> 39, webpack 72 -> 63 (JavaScript walks
+serially). Walls, best of 3: vscode 2.47 -> 2.23 s, tsc 0.338 -> 0.307 s, `-b` tsc `src` 1.10 -> 1.08 s (its programs
+already ran on --build-jobs threads). Callgrind K1 (`./instrcount.sh`) 1507bfb8 -> end: tsc 4.632 -> 4.642 G
+(+0.22%), type-fest 3.236 -> 3.239 (+0.09%), valibot 5.067 -> 5.072 (+0.10%), react 1.664 -> 1.667 (+0.18%), nest
+1.241 -> 1.249 (+0.64%), webpack 3.865 -> 3.872 (+0.18%), zod 4.479 -> 4.488 (+0.20%), xstate 2.894 -> 2.900
+(+0.21%), drizzle 13.368 -> 13.441 (+0.55%), vue 8.200 -> 8.206 (+0.07%), effect 11.038 -> 11.056 (+0.16%), vscode
+33.241 -> 33.305 G (+0.19%): the shard bookkeeping (a shard per file, a TLS check per binder allocation), spread thin.
+
 ## Errors-tail fan-out (2026-10-05, tenth window's todo entry 6, f93bac3f)
 Callgrind K1 (`./instrcount.sh`), session start dfde5fbc -> end: tsc 4.602 -> 4.632 G (+0.65%), type-fest 3.226 ->
 3.236 (+0.31%), valibot 5.043 -> 5.067 (+0.48%), react 1.648 -> 1.664 (+0.97%), nest 1.230 -> 1.241 (+0.89%), webpack
@@ -28,7 +38,7 @@ of 2-3 (`/usr/bin/time`, wall s / peak RSS MB):
 | wall | **2.50** | 4.55 | 6.75 | 12.10 | 38.2 |
 | RSS | **2148** | 1920 | 3695 | 2896 | 3706 |
 tttt phases (K4): load+parse 399 ms (845 MB resident after it: the AST is ~40% of the peak), resolve names 590 ms
-(serial: a quarter of the wall, plan 45's lever), typecheck 1410 ms (four checkers at 1.29-1.41 s, arenas 171-215 MB).
+(serial then; 283 ms since plan 45 stage 1, see above), typecheck 1410 ms (four checkers at 1.29-1.41 s, arenas 171-215 MB).
 tsgo reports ~10 TS2300 of its own (its lib.dom has the WebGPU types @webgpu/types declares). The session's fixes
 (vscode 129 -> 0, plus effect 63 -> 31, xstate 8 -> 2, drizzle 4 -> 0, webpack 6 -> 0, sweep 7969 -> 8016 match and
 no crash; suite 12759 -> 12768, 0 lost) cost, callgrind K1 session start -> end: tsc -1.98%, type-fest +0.25%,

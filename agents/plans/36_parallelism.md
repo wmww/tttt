@@ -149,9 +149,7 @@ Numbers: `measurements.md` "Perf". Memory: peak RSS +2..+47% at K=4 (react worst
 
 ### Later (not planned yet)
 - **The import pre-scan** (stage 1 step 5), if a quiet machine shows the pool discovery-bound.
-- **Parallel name resolution** (54-89 ms serial after stage 3): per-file declare/resolve need per-file binder arenas
-  and the globals/ambient-module tables merged in link (`hacks.md` "Parallelism contract"). Plan it after stage 3
-  measures what's left.
+- **Parallel name resolution**: plan 45 (the walk of TypeScript files is parallel since 2026-10-05).
 - Better balance than whole files (tsc's checker.ts, zod's deep-partial.test.ts bound K=4 at 1.9x/1.6x): nothing
   cheap; tsgo has the same bound. **Tried and reverted** (stage 1 session): dealing by content size (biggest first to
   the checker with the fewest bytes, deterministic) instead of round robin. Typecheck phase, best of 7, loaded
