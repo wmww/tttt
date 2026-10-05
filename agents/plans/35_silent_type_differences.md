@@ -241,3 +241,48 @@ Missing/extra lines and JS tests. What remains, by mechanism (test names are exa
   (inexistentPropertyInsideToStringType). callbackTag4: reuse of a `@this {{...}}` type literal's members.
 - The other line-missing tests of the list were really display/accessibility (the queue's "reuse needs accessibility"
   item): recursiveConditionalCrash1-3, deepKeysIndexing, inlineMappedTypeModifierDeclarationEmit...
+## Left by fan-out agent B of 2026-10-05 (types display)
+Each named far enough to start from; tests are the examples still failing.
+- **Type writer re-check** (contextualTyping36, conditionalOperatorWithIdenticalBCT): tsc's getTypeOfExpression rechecks
+  each printed expression, so its object literals are newer than everything; bugs/display.md.
+- **Name literals made eagerly by contextual typing** (es2022IntlAPIs): `contextual_prop_type()` builds
+  `ty_prop_name_literal(name)` for every object literal property; tsc's getTypeOfPropertyOfContextualType only makes
+  the literal for generic mapped types or index signature lookups. Making the key lazy is a hot-path refactor of
+  get_prop_context()/intersection_prop_context(). Probe: `f({ timeZone: 'x' }); let k: 'calendar' | 'timeZone'`.
+- **Lib literals made early** (correlatedUnions: dom's `CSSMathOperator` "sum" exists before the test's "concat";
+  something lowers that alias, tsc never does). Not found.
+- **Property annotations aren't lowered by the check walk** (typeInferenceWithExcessPropertiesJsx): tsc's
+  checkPropertySignature calls getTypeOfSymbol, so `args: [] | [unknown]` in a type literal makes its tuples before a
+  later alias body; tttt lowers member annotations lazily. Lowering them in interface_member_typecheck() would need the
+  prop's own LowerCtx (ty_of_node differs, see the union comment in type_typecheck()).
+- **Interface merged with a lib interface** (promisePermutations x3): see hacks.md maps_merged_type_param().
+- **Members not instantiated** (arrayFlatNoCrashInference x2): `arr.flat` of `T[]` isn't an instantiation at all in
+  tttt (members that can't mention T are kept), but Array is merged so tsc instantiates it: `depth?: D | undefined`,
+  `this: A` not reused.
+- **tsc's `fn_1`** (inferredReturnTypeIncorrectReuse1): an instantiated method `pipe<fn extends ...>(fn: fn)` prints
+  its type parameter `fn_1` (the uninstantiated one `fn`); enterNewScope's params fake scope puts `fn` (or
+  unknownSymbol) next to it. Mechanism not pinned down.
+- **Local function symbol merges the exported overloads** (functionOverloadErrors: `export function fn1(); function
+  fn1(n: string); function fn1() {}` in a namespace is one local symbol with three declarations in tsc, see
+  statement.c function_local_symbol_decls()); overloadConsecutiveness (`m2(), m2() {}` in a class).
+- **Clones per import** (crashDeclareGlobalTypeofExport `{ default: Root; }`, verbatimModuleSyntaxRestrictionsCJS's
+  `Promise<typeof import("/decl")>` for a dynamic import where tttt names it `typeof esmy2`): queue item 2.
+- **Ambient `export =` naming** (jsxNamespacedNameNotComparedToNonMatchingIndexSignature): an augmentation of `declare
+  module "react" { export = React }` prints `typeof import("react")`, but augmentExportEquals3_1 & co print
+  `import("file1.d.ts")` for the same shape; naming by the ambient module lost those 4.
+- **Narrowing to `(A[] | [A]).every`** (arrayDestructuringInSwitch1, after the map_type origin fix): tsc keeps both
+  members' (identical-looking) `every` signature sets, tttt one.
+- **Inference**: genericRestParameters1 (`f10(...v)` with a tuple constraint gives `[...V]`, see the call.c comment on
+  param_shape(); `f11(1, ...u)` keeps `1`), isomorphicMappedTypeInference (f22/f24 infer unknown),
+  keyofAndIndexedAccess2 (union order of `window[action]`), noImplicitAnyUnionNormalizedObjectLiteral1/spreadUnion
+  (spread of a union: member order), dependentDestructuredVariablesFromNestedPatterns, arrayFrom,
+  complexRecursiveCollections (union order).
+- **Others, one each**: declarationEmitPartialReuseComputedProperty (`[-1]` of a renamed computed name has `]:` not
+  reused, an artefact), declarationEmitResolveTypesIfNotReusable (agent A's note), privacyGloFunc/privacyInterface
+  (accessibility + declaration painting, agent A's note), mergedClassWithNamespacePrototype (`typeof Foo.prototype`
+  for a namespace `prototype` merged into a class), typeAliasesDoNotMerge/multipleExportDefault3/enumAssignmentCompat6/
+  expandoFunctionBlockShadowing/exportAssignmentOfExportNamespaceWithDefault (naming from a block scope or conflicting
+  declarations, agent A's note), exportAssignmentMembersVisibleInAugmentation (augmentation into the export= target,
+  bugs/display.md), declarationEmitMappedTypeTemplateTypeofSymbol (`typeof x.Timestamp` reuse),
+  symbolDeclarationEmit12/privateNameDuplicateField (duplicate members), ramdaToolsNoInfinite2 (alias chosen),
+  typeParameterConstModifiers (queue item 6), jsxComplexSignatureHasApplicabilityError (T_1 + JSX props type).
