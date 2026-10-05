@@ -2250,8 +2250,19 @@ bool expr_check_reference_not_optional(Expr const* target, unsigned code, char c
     return false;
 }
 
+static void assignment_target_typecheck_of(
+    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, ErrorCtx* errs
+);
+
 static void assignment_target_typecheck(
     Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, ErrorCtx* errs
+) {
+    assignment_target_typecheck_of(target, source, source_expr, site, false, errs);
+}
+
+// `rest`: the target of an object rest (`{ ...target } = o`), which is said to be so (tsc's checkReferenceAssignment)
+static void assignment_target_typecheck_of(
+    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, ErrorCtx* errs
 ) {
     Checker* checker = current_checker;
     if (!expr_check_reference_not_optional(target, 2779,
@@ -2435,7 +2446,7 @@ static void assignment_target_typecheck(
                             rest = ty_object_rest_type(checker, source, (TyList){ .data = keys, .len = len });
                             free(keys);
                         }
-                        assignment_target_typecheck(&i->value, rest, nullptr, site, errs);
+                        assignment_target_typecheck_of(&i->value, rest, nullptr, site, true, errs);
                     }
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
                     // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
@@ -2461,8 +2472,13 @@ static void assignment_target_typecheck(
         default:
             break;
     }
-    error_ctx_error_d(errs, expr_outer_span(target), 2364,
-        "The left-hand side of an assignment expression must be a variable or a property access.");
+    if (object_rest) {
+        error_ctx_error_d(errs, expr_outer_span(target), 2701,
+            "The target of an object rest assignment must be a variable or a property access.");
+    } else {
+        error_ctx_error_d(errs, expr_outer_span(target), 2364,
+            "The left-hand side of an assignment expression must be a variable or a property access.");
+    }
 }
 
 // tsc's PredicateSemantics: whether an expression is truthy (or nullish) always, never or sometimes
@@ -4171,7 +4187,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 if (i->tag == OBJECT_ITEM_SPREAD) {
                     // `{ ...o }` is emitted with __assign below ES2015, `({ ...x } = o)` with __rest below ES2018
                     ScriptTarget target = compiler_options()->target;
-                    if (expr_is_destructuring_target(&i->value)) {
+                    if (my assignment_pattern || expr_is_destructuring_target(&i->value)) {
                         if (target < SCRIPT_TARGET_ES2018) ty_check_emit_helpers(current_checker, i->span, EMIT_HELPER_REST, errs);
                     } else {
                         Ty const* type = expr_get_type(&i->value);

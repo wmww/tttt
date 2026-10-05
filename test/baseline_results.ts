@@ -42281,7 +42281,7 @@ const baselines = {
         types: true,
     },
     'restPropertyWithBindingPattern': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65066,7 +65066,7 @@ const baselines = {
         types: true,
     },
     'objectRestNegative': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
