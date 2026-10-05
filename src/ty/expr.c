@@ -295,6 +295,11 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         GenericFunctionMode* mode = ctx.generic_mode;
         ctx.generic_mode = nullptr;
         if (!mode->sig && ty_calls_generic_function_returning_function(me, expr)) {
+            // (Not a call resolved already, in an overload failure's inference: tsc's resolveCallExpression only skips
+            // under SkipGenericFunctions when getResolvedSignature has nothing cached. HACK: only there, tttt resolves
+            // nested calls earlier than tsc does, and doing it in every first pass costs effect 15 and react 2)
+            Ty const* resolved = my overload_failure_inference ? ty_call_resolved_return(me, expr->call) : nullptr;
+            if (resolved) return resolved;
             mode->skipped = true;
             return ty_intrinsic(me, TY_SILENT_NEVER);
         }

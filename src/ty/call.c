@@ -1871,6 +1871,15 @@ static Candidate make_candidate(
     return make_candidate_skipping(me, sig, args, info, skip_sensitive, skip_generic, false);
 }
 
+// make_candidate() for an overload failure's fallback (tsc's inferSignatureInstantiationForOverloadFailure)
+static Candidate overload_failure_candidate(Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic) {
+    bool saved = my overload_failure_inference;
+    my overload_failure_inference = true;
+    Candidate ret = make_candidate(me, sig, args, info, skip_sensitive, skip_generic);
+    my overload_failure_inference = saved;
+    return ret;
+}
+
 static Resolution resolve_with_signatures(
     Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
     ErrorCtx* errs
@@ -2020,9 +2029,9 @@ static Resolution resolve_with_signatures(
             if (longest && longest->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
                 // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
                 // accessor)` before `spyOn(o, k)`) is still the one, inferred from the arguments
-                fallback = make_candidate(me, longest, args, info, true, true);
+                fallback = overload_failure_candidate(me, longest, args, info, true, true);
             } else if (fallback.sig->type_params.len && !info->type_arg_nodes) {
-                fallback = make_candidate(me, fallback.sig, args, info, true, true);
+                fallback = overload_failure_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
                 ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
                 check_args(me, &shape, args, false);
@@ -2064,7 +2073,7 @@ static Resolution resolve_with_signatures(
                 if (i == 0 || params > most) most = params, best = i;
             }
             if (signatures[best]->type_params.len) {
-                Candidate candidate = make_candidate(me, signatures[best], args, info, true, true);
+                Candidate candidate = overload_failure_candidate(me, signatures[best], args, info, true, true);
                 ret.ret = resolved_return_type(me, &candidate);
             } else {
                 ret.ret = signature_return_type(me, signatures[best]);
@@ -2810,6 +2819,13 @@ static Ty const* call_return_type(
         my call_errors[my call_errors_len++] = &resolution->errs;
     }
     return resolution->ret;
+}
+
+// What a call's resolution returned, if it is remembered and done (tsc's links.resolvedSignature), else null
+Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call) {
+    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
+    CallResolution const* resolution = intern_get(&my links, key, 2);
+    return resolution && !resolution->in_flight ? resolution->ret : nullptr;
 }
 
 // Reports what the call's resolution reported. One never remembered (a `class A extends B` stand-in, a call only

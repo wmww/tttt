@@ -256,6 +256,11 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_optional_param_type()`); tsc shows it in the signature too.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
+- `Checker.overload_failure_inference` (`overload_failure_candidate()`, read in `check_expr_ctx()`'s generic-mode
+  skip): a nested generic call returning a function that is already resolved keeps its type instead of being skipped
+  (silent never), as tsc's getResolvedSignature cache makes SkipGenericFunctions do, but only in an overload failure's
+  fallback inference. Everywhere (tsc's behaviour) costs effect +15 and react +2: tttt resolves nested calls before an
+  outer call's first pass where tsc hasn't yet. xstate's `setup().extend({ guards: { ..., bad: not('x') } })`.
 - `infer_from_object_types()`, a generic mapped target `{ [P in C]: T[P] }`: the source goes to T as if homomorphic
   unless C is a conditional (Omit's `Exclude<keyof T, X>`, where tsc infers nothing). A union with literal keys
   (`"a" | Exclude<keyof T, X>`) still takes that path, standing in for tsc's inference from the properties those keys

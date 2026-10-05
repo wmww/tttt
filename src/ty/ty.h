@@ -898,6 +898,9 @@ struct Checker {
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
+    // Inferring an overload failure's fallback instantiation (tsc's inferSignatureInstantiationForOverloadFailure):
+    // nested generic calls already resolved keep their types instead of being skipped (see check_expr_ctx())
+    bool overload_failure_inference;
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     bool circular_bindings; // Whether a KEY_CIRCULAR_BINDING was recorded (it's rare: most checkers skip the lookup)
     u32 instantiation_limit_hits; // How many times ty_instantiate() gave up (TS2589): whether a computation was cut short
