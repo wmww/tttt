@@ -3731,12 +3731,13 @@ static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
         ClassDecl const* class_decl = scope_rare(scope)->this_ref.class_decl;
         if (!class_decl || !class_decl->symbol) continue;
         direct = first;
-        if (ty_get_prop(checker, ty_static_type_of(checker, class_decl->symbol), atom)) {
+        // (tsc's getPropertyOfType: with the members of Function and Object)
+        if (ty_get_object_prop(checker, ty_static_type_of(checker, class_decl->symbol), atom)) {
             error_ctx_error_d(errs, name, 2662, "Cannot find name '", name, "'. Did you mean the static member '",
                 class_decl->symbol->name, ".", name, "'?");
             return true;
         }
-        if (direct && kind == THIS_CLASS_INSTANCE && ty_get_prop(checker, ty_declared_type_of(checker, class_decl->symbol), atom)) {
+        if (direct && kind == THIS_CLASS_INSTANCE && ty_get_object_prop(checker, ty_declared_type_of(checker, class_decl->symbol), atom)) {
             error_ctx_error_d(errs, name, 2663, "Cannot find name '", name, "'. Did you mean the instance member 'this.", name, "'?");
             return true;
         }

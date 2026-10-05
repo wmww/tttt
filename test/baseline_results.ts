@@ -35381,7 +35381,7 @@ const baselines = {
         types: true,
     },
     'classStaticBlock6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
