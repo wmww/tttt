@@ -1846,7 +1846,9 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool instantiated = root != sig;
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
-    if (instantiated && root->type_params.len && !this_only) {
+    // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface
+    // reference's members are instantiated with `this` as the reference), with fresh type parameters)
+    if (instantiated && root->type_params.len && (!this_only || mentions_mapped(me, sig, root))) {
         if (d.fresh_params.len) {
             Ty const** both = arena_new_n(&my arena, Ty const*, d.fresh_params.len + root->type_params.len);
             memcpy(both, d.fresh_params.data, sizeof(Ty const*) * d.fresh_params.len);

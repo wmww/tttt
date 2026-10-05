@@ -63773,7 +63773,7 @@ const baselines = {
     'intersectionThisTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionTypeAssignment': {
         errors: true,
