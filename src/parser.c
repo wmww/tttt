@@ -109,11 +109,11 @@ typedef struct ParserShared {
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
     // tsc's checkGrammarTypeOperatorNode: a `unique symbol` is only allowed as the whole annotation of a variable, a
     // class property or a property signature. unique_annotation_next: the next parse_binding_type_ex() is such an
-    // annotation; unique_allowed_at: where its type starts (parentheses moving it in), unique_allowed_span: the
-    // `unique symbol` found there, which must turn out to be the whole type
+    // annotation; unique_allowed_at: where its type starts (parentheses moving it in), unique_allowed_found: set to
+    // it when a `unique symbol` is found there, which must turn out to be the whole type
     bool unique_annotation_next;
     char const* unique_allowed_at;
-    Span unique_allowed_span;
+    char const* unique_allowed_found;
     // Where tsc's NonTextFileMarkerTrivia starts (a U+FFFD, TS1490): a token to the end of the file, which the
     // statement list that gets there says isn't a statement (TS1128). Null if none or once said
     char const* binary_marker;
@@ -3418,11 +3418,11 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     } else if (c == 'u' && parse_unique_symbol_type(&p)) {
         *ret = (TypeNode){ .tag = TYPE_UNIQUE_SYMBOL };
         if (value_anchor.start == p.shared->unique_allowed_at) {
-            p.shared->unique_allowed_span = span_from(value_anchor);
+            p.shared->unique_allowed_found = value_anchor.start;
         } else if (!p.shared->in_jsdoc) { // (A JSDoc tag's host decides, see hacks.md)
             grammar_error(&p, span_from(value_anchor), 1335, "'unique symbol' types are not allowed here.");
         }
-    } else if (c == 'u' && unique_operator_follows(&p)) {
+    } else if (c == 'u' && starts_with_followed_by_word_break(&p, "unique") && unique_operator_follows(&p)) {
         // `unique T` for a T that isn't `symbol`: tsc's TypeOperator, whose grammar check says 'symbol' expected at T;
         // the type is any
         hop_start_if_ends_on_word_break(&p, "unique");
@@ -11433,6 +11433,25 @@ static bool parse_binding_content_or_private_name(Parser* parent, Binding* ret, 
 }
 
 // `report_js`: TS8010 in JavaScript (not for a property signature)
+// The type of an annotation that may be `unique symbol` (Parser.unique_annotation_next): TS1335 unless that is the
+// whole type (`unique symbol[]` isn't)
+__attribute__((noinline)) static void expect_annotation_type(Parser* parent, char const* start, TypeNode* type) {
+    char const* outer_allowed_at = parent->shared->unique_allowed_at;
+    parent->shared->unique_allowed_at = start;
+    parent->shared->unique_allowed_found = nullptr;
+    parent->shared->unique_annotation_next = false;
+    expect_type(parent, TYPE_PRECEDENCE_NULL, type);
+    char const* found = parent->shared->unique_allowed_found;
+    parent->shared->unique_allowed_found = nullptr;
+    if (found && type->tag != TYPE_UNIQUE_SYMBOL) {
+        char const* end = found + strlen("unique");
+        while (end < parent->pos && !(end[0] == 's' && strncmp(end, "symbol", 6) == 0)) end++;
+        grammar_error(parent, span_make(parent->shared->source, found, end + strlen("symbol")), 1335,
+            "'unique symbol' types are not allowed here.");
+    }
+    parent->shared->unique_allowed_at = outer_allowed_at;
+}
+
 static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) {
     if (!hop_char(parent, ':')) {
         return false;
@@ -11443,18 +11462,14 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) 
 
     intptr_t mark = error_mark(parent);
     TypeNode type;
-    char const* outer_allowed_at = parent->shared->unique_allowed_at;
-    Span outer_allowed_span = parent->shared->unique_allowed_span;
-    parent->shared->unique_allowed_at = parent->shared->unique_annotation_next ? parent->pos : nullptr;
-    parent->shared->unique_allowed_span = span_null;
-    parent->shared->unique_annotation_next = false;
-    expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
-    // (`unique symbol[]`: where it was allowed, but not the whole type)
-    if (span_valid(parent->shared->unique_allowed_span) && type.tag != TYPE_UNIQUE_SYMBOL) {
-        grammar_error(parent, parent->shared->unique_allowed_span, 1335, "'unique symbol' types are not allowed here.");
+    // (Only what starts with `unique` or a parenthesis can be a `unique symbol` there: the sites set the flag for
+    // every annotation)
+    if (parent->shared->unique_annotation_next && (*parent->pos == 'u' || *parent->pos == '(')) {
+        expect_annotation_type(parent, a.start, &type);
+    } else {
+        parent->shared->unique_annotation_next = false; // (Not for the annotations nested in this one)
+        expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     }
-    parent->shared->unique_allowed_at = outer_allowed_at;
-    parent->shared->unique_allowed_span = outer_allowed_span;
     ret->has_explicit_type = true;
     ret->explicit_type = type;
     binding_set_explicit_type_span(ret, span_from(a));
