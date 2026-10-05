@@ -222,6 +222,9 @@ typedef struct Inference {
     // A walk was cut short since the flag was last cleared: both sides expanding, or a pair met again while it is being
     // walked (tsc's InferencePriority.Circularity). A union target then doesn't know which sources went unmatched
     bool circularity;
+    // The last mapper inference_mapper() made: it is asked for again and again with the same results while the
+    // arguments are checked (~90% of webpack's mappers were repeats), and a mapper is immutable
+    TyMapper const* last_mapper;
 } Inference;
 
 void inference_init(Inference* inf, TyList params);

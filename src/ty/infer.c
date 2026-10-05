@@ -1681,6 +1681,18 @@ typedef struct ConstraintPass {
     TyMapper const* mapper; // What the results say so far
 } ConstraintPass;
 
+// A mapper from the inference's type parameters to `results`: the last one made, if it says the same
+static TyMapper const* inference_mapper_of(Checker* me, Inference* inf, TyList params, Ty const* const* results) {
+    TyMapper const* last = inf->last_mapper;
+    if (last && last->len == params.len) {
+        bool same = true;
+        for (u32 i = 0; i < params.len && same; i++) same = last->sources[i] == params.data[i] && last->targets[i] == results[i];
+        if (same) return last;
+    }
+    inf->last_mapper = ty_mapper_new(me, params, (TyList){ .data = (Ty const**)results, .len = params.len });
+    return inf->last_mapper;
+}
+
 // The constraint check of inference_mapper() for type parameter i, after those of the others (a constraint that
 // mentions one of them is instantiated with its final result; one in progress, a circular constraint, stays as is)
 static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
@@ -1706,7 +1718,7 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
                 ty_is_related_within(me, fallback, ty_with_this_arg(me, instantiated, fallback)) :
                 ty_is_related(me, fallback, ty_with_this_arg(me, instantiated, fallback), TY_RELATION_ASSIGNABLE));
             pass->results[i] = fallback_fits ? fallback : instantiated;
-            pass->mapper = ty_mapper_new(me, params, (TyList){ .data = pass->results, .len = params.len });
+            pass->mapper = inference_mapper_of(me, pass->inf, params, pass->results);
         }
     }
     pass->state[i] = 2;
@@ -1719,9 +1731,19 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     // (Of a type predicate, its type: tsc's isTypeParameterAtTopLevelInReturnType)
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* return_type = predicate ? predicate->type : signature_return_type(me, sig);
-    Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
-    bool* inferred = calloc(params.len ? params.len : 1, sizeof(bool));
-    Ty const** fallbacks = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
+    // (Scratch: the mappers copy the results)
+    enum { SMALL = 8 };
+    Ty const* small_results[SMALL], * small_fallbacks[SMALL];
+    bool small_inferred[SMALL];
+    uint8_t small_state[SMALL];
+    bool small = params.len <= SMALL;
+    Ty const** results = small ? small_results : malloc(sizeof(Ty const*) * params.len);
+    Ty const** fallbacks = small ? small_fallbacks : malloc(sizeof(Ty const*) * params.len);
+    bool* inferred = small ? small_inferred : malloc(sizeof(bool) * params.len);
+    uint8_t* state = small ? small_state : malloc(params.len);
+    memset(inferred, 0, sizeof(bool) * params.len);
+    memset(state, 0, params.len);
+    for (u32 i = 0; i < params.len; i++) fallbacks[i] = nullptr;
     for (u32 i = 0; i < params.len; i++) {
         // tsc: literals widen unless the type parameter is at the top level of the return type and hasn't been fixed
         // (or the constraint is primitive, see inference_call_result())
@@ -1731,7 +1753,7 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
         inferred[i] = results[i] != nullptr;
         if (!results[i]) results[i] = params.data[i]; // stands for itself until the defaults are in, below
     }
-    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    TyMapper const* mapper = inference_mapper_of(me, inf, params, results);
     for (u32 i = 0; i < params.len; i++) {
         if (inferred[i]) continue;
         Ty const* fallback = ty_param_default(me, params.data[i]);
@@ -1744,18 +1766,21 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
             for (u32 j = 0; j < params.len; j++) self |= !inferred[j] && results[i] == params.data[j];
             if (self) results[i] = nothing;
         }
-        mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+        mapper = inference_mapper_of(me, inf, params, results);
     }
     // An inference that doesn't satisfy the constraint is replaced by it, and the argument check reports the rest. So
     // is a type parameter without inferences or a default (tsc's getInferredType: `!inferredType`). The constraint
     // sees the other type parameters as they end up (tsc instantiates it with the non-fixing mapper, which infers them
     // on demand): `<U extends T, T extends A>` without inferences is U = T = A
-    uint8_t* state = calloc(params.len ? params.len : 1, 1);
     ConstraintPass pass = {
         .sig = sig, .inf = inf, .results = results, .fallbacks = fallbacks, .inferred = inferred, .state = state, .mapper = mapper,
     };
     for (u32 i = 0; i < params.len; i++) constraint_pass_resolve(me, &pass, i);
-    free(state);
-    free(inferred);
+    if (!small) {
+        free(results);
+        free(fallbacks);
+        free(inferred);
+        free(state);
+    }
     return pass.mapper;
 }
