@@ -504,6 +504,13 @@ src` finds the code-side markers; every significant one has an entry here.
   tsc, so a tttt-only TS2589 (variance measurement, eager members) poisons what tsc would still compute. A cut-short
   conditional instance is re-reported only within its epoch; later hits only bump `instantiation_limit_hits`.
 
+- `expand_mapped()` (members.c): a homomorphic mapped type over `T extends A | B` gets the union's properties but
+  not its index signatures (tsc gives both): with them, valibot's `InferEntriesOutput<TEntries>` (`TEntries extends
+  ObjectEntries | ObjectEntriesAsync`) made relations evaluate `InferOutput<TEntries[string]>` with the indexed
+  access's constraint as unknown, +3.6% instructions. The real fix is probably that constraint (`T[string]` of a union
+  of index-signature objects should be the union of their values). Unions of arrays/tuples aren't expanded either
+  (tsc's apparent type of such a mapped type is an array).
+
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `source_file_check_verbatim_exports()` (TS1287) finds the `export` keyword by scanning the statement text (`export_keyword_of()`): statements don't keep their modifiers' spans. `check_alias_isolated_modules()` puts a default import's error on its name where tsc spans the whole import clause (`A, { b }`).
 - `ty_check_static_heritage()` relates to a synthetic object literal (tsc's getTypeWithoutSignatures, which keeps the

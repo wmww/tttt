@@ -2382,13 +2382,23 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     // lower bound of the key type)
     bool generic = false;
     Ty const* keyed = mapped->modifiers_type;
+    bool over_union = false;
     if (ty_is_generic_index(constraint)) {
         // (Over a T constrained to a union, `T extends A | B`, the properties of the union, which are those of the
         // lower bound of the keys `keyof (A | B)` below, with the union's modifiers)
         Ty const* keyed_apparent = mapped->keyof_constraint && keyed && keyed->kind == TY_TYPE_PARAM ?
             ty_apparent_type(me, keyed) : nullptr;
-        bool over_union = keyed_apparent && keyed_apparent->kind == TY_UNION &&
+        over_union = keyed_apparent && keyed_apparent->kind == TY_UNION &&
             !(keyed_apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+        // (Not over a union of arrays and tuples, `TItems extends A[] | readonly A[]`: such a mapped type is apparently
+        // an array (tsc's getResolvedApparentTypeOfMappedType), and the array methods as properties of the generic
+        // mapped type only make relations compare them, which cost valibot 3.6%)
+        bool lists = over_union;
+        for (u32 i = 0; lists && i < keyed_apparent->composite.types.len; i++) {
+            Ty const* part = keyed_apparent->composite.types.data[i];
+            lists = ty_is_array(me, part) || ty_is_tuple(part);
+        }
+        if (lists) over_union = false;
         if (mapped->keyof_constraint && !mapped->name_type && !over_union) return expand_generic_homomorphic(me, members);
         if (mapped->keyof_constraint && mapped->name_type) {
             // With an `as` clause, the names of the keys of the constraint of T (`[K in keyof T as `slot-${K & string}`]`
@@ -2414,6 +2424,15 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     Ty const* const* keys;
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
+    // (A union with no common keys, `T extends X | undefined`, adds nothing: the mapped type stays as it was)
+    // HACK: nor one with only index signature keys (`TEntries extends ObjectEntries | ObjectEntriesAsync`), which tsc
+    // gives an index signature: relations then evaluate its template's conditional types for `T[string]`, whose
+    // constraint this checker gets as unknown, costing valibot 3.6% (hacks.md)
+    bool literal_key = false;
+    for (u32 i = 0; i < key_count && !literal_key; i++) {
+        literal_key = (keys[i]->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL)) != 0;
+    }
+    if (over_union && !literal_key) return members;
     Ty const** member_keys = nullptr;
     // (An intersection of object types that aren't generic: TYF_COULD_CONTAIN_TYPE_VARIABLES says too little, any type
     // literal with a `typeof` in it has it)
