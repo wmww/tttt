@@ -37167,7 +37167,7 @@ const baselines = {
     },
     'autoAccessor11': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'autoAccessor2(target=es2015)': {

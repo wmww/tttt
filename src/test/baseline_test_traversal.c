@@ -1586,6 +1586,16 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 class_item_symbol_items(me, items, symbol_items, c_arraylen(symbol_items));
             VecSpan declarations = my field.computed_key || span_valid(class_item_private_name(me)) ? vec_span_init() :
                 class_prop_declarations(ctx->class_symbol, my field.is_static, cstr_sv(&my field.name_string), my span, 2);
+            // (Not those of the class's members of the name that are symbols of their own: they conflicted, TS2300)
+            for (u32 k = 0; !my field.computed_key && k < (u32)vec_span_size(&declarations);) {
+                bool other = false;
+                for_each (j, vec_class_item, items) {
+                    other |= j->symbol_first && j->symbol_first != my symbol_first && span_eq(j->span, declarations.data[k]);
+                }
+                if (other) vec_span_erase_n(&declarations, k, 1);
+                else k++;
+            }
+            if (vec_span_size(&declarations) == 1) vec_span_clear(&declarations);
             if (vec_span_is_empty(&declarations)) {
                 for (u32 k = 0; k < symbol_count; k++) vec_span_push(&declarations, symbol_items[k]->span);
                 if (!symbol_count) vec_span_push(&declarations, my span);

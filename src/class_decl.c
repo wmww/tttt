@@ -386,7 +386,7 @@ static bool member_binding(ClassItem const* item, cstr const** name, bool* is_st
     if (item->tag == CLASS_ITEM_FIELD && !item->field.computed_key) {
         *name = &item->field.name_string;
         *is_static = item->field.is_static;
-        *flags = BIND_PROPERTY;
+        *flags = item->field.is_auto_accessor ? BIND_GET | BIND_SET : BIND_PROPERTY;
         return true;
     }
     if (item->tag == CLASS_ITEM_METHOD && !item->method.computed_key) {
@@ -423,7 +423,9 @@ static void bind_member_symbols(ClassDecl* me) {
             if (j->symbol_first == first) existing |= other_flags;
         }
         if (!first) continue;
+        // (An auto-accessor is both accessors: tsc's AccessorExcludes, everything)
         u32 excludes = flags == BIND_PROPERTY ? 0 : flags == BIND_METHOD ? (u32)~BIND_METHOD :
+            flags == (BIND_GET | BIND_SET) ? (u32)~0 :
             flags == BIND_GET ? (u32)~BIND_SET : (u32)~BIND_GET;
         if (!(existing & excludes)) i->symbol_first = first;
     }
