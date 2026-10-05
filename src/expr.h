@@ -598,6 +598,7 @@ typedef struct PropertyExpr {
     // `M.x = v` declaring an export of a CommonJS module through an alias of it (`const M = module.exports`), set by the
     // declare step: a declaration, not an assignment to what x may alias (like `exports.x = v`)
     bool commonjs_export_alias : 1;
+    bool non_null_operand : 1; // The operand of `a.b!` (unparenthesized), like IdentifierExpr.non_null_operand
     FlowNode* flow; // Like IdentifierExpr.flow
     // Set by the resolve walk (null before), see PropertyContext
     PropertyContext const* context;

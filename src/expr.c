@@ -1781,6 +1781,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         if (operand->tag == EXPR_IDENTIFIER) {
                             operand->identifier.assume_initialized = true;
                             operand->identifier.non_null_operand = true;
+                        } else if (operand->tag == EXPR_PROPERTY && !operand->paren_before) {
+                            operand->property->non_null_operand = true;
                         }
                     }
                     break;

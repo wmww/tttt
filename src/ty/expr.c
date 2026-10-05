@@ -1713,6 +1713,10 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
     if (type->kind == TY_ANONYMOUS && type->anonymous.function && type->anonymous.function->is_method) return type;
     type = narrowable_type(me, access->constraint_position, type, contextual);
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
+    // tsc's getFlowTypeOfReference: the operand of a non-null assertion is never nullish (see non_null_flow_type())
+    if (access->non_null_operand && !(flow_type->flags & TYF_NEVER) && (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)) {
+        return type;
+    }
     return access->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
 }
 
