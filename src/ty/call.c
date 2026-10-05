@@ -2111,6 +2111,11 @@ static Resolution resolve_with_signatures(
             }
             ret.ret = resolved_return_type(me, &fallback);
         } else if (count == 1 && !signatures[0]->type_params.len) {
+            // (The arguments are checked against it: an arrow's parameters get its types, tsc's
+            // getContextualTypeForArgument going by the resolved failure signature)
+            ParamShape shape = call_param_shape(me, info, signatures[0], nullptr);
+            check_args(me, &shape, args, false);
+            free(shape.types);
             ret.ret = resolved_return_type(me, &(Candidate){ .sig = signatures[0] });
         } else if (info->type_arg_nodes && !type_argument_arity_ok) {
             // tsc's pickLongestCandidateSignature with getTypeArgumentsFromNodes: the first candidate that takes the
@@ -2144,12 +2149,14 @@ static Resolution resolve_with_signatures(
                 }
                 if (i == 0 || params > most) most = params, best = i;
             }
-            if (signatures[best]->type_params.len) {
-                Candidate candidate = overload_failure_candidate(me, signatures[best], args, info, true, true);
-                ret.ret = resolved_return_type(me, &candidate);
-            } else {
-                ret.ret = signature_return_type(me, signatures[best]);
-            }
+            // (The arguments are checked against it: an arrow's parameters get its types, tsc's
+            // getContextualTypeForArgument going by the resolved failure signature)
+            Candidate candidate = signatures[best]->type_params.len ?
+                overload_failure_candidate(me, signatures[best], args, info, true, true) : (Candidate){ .sig = signatures[best] };
+            ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
+            check_args(me, &shape, args, false);
+            free(shape.types);
+            ret.ret = signatures[best]->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, signatures[best]);
         } else {
             Ty const** return_types = malloc(sizeof(Ty const*) * count);
             u32 len = 0;
