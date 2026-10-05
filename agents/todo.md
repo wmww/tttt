@@ -38,5 +38,6 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    Stage 2's `reduction_forces_members` HACK turned out unneeded and is gone. Stages 3-4 remain in the plan.
 10. Done (2026-10-05, one session + five sub-agents, ~22 commits): triage drained (triage.md header). Suite 12731 ->
    12753, 0 lost; scenarios 208 -> 215; corpora unchanged; 1-vs-4-checker suite dumps byte-identical; checkReturn
-   port landed with deferred function bodies; plan 43 (AST memory, ~-100 MB on nest/webpack estimated) written.
+   port landed with deferred function bodies; plan 43 (AST memory, ~-100 MB on nest/webpack estimated) written. Callgrind vs
+   e0c48441 within +0.3% everywhere (vue 8.103 -> 8.112 G, valibot -0.3%).
 11. **Insights.**
