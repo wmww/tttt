@@ -590,10 +590,6 @@ static void display_type_inner(Display d, TypeNode const* me) {
                     display_lit(d, "...");
                 }
 
-                if (i->readonly) {
-                    display_lit(d, "readonly ");
-                }
-
                 if (span_valid(i->maybe_name)) {
                     display_span(d, i->maybe_name);
                     display_lit(d, ": ");

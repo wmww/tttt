@@ -148,7 +148,6 @@ typedef struct TupleElement {
     Span maybe_name;
     TypeNode type;
     bool rest;
-    bool readonly;
     bool optional;
 } TupleElement;
 

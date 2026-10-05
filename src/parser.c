@@ -2478,11 +2478,6 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         }
         hop_whitespace(&p);
 
-        if (hop_start_if_ends_on_word_break(&p, "readonly")) {
-            elem.readonly = true;
-        }
-        hop_whitespace(&p);
-
         // `name: T` or `name?: T`
         Parser name_p = parser(&p);
         Span name;
