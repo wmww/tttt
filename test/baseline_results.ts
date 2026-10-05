@@ -14942,7 +14942,7 @@ const baselines = {
     },
     'genericDefaults': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'genericDefaultsErrors': {

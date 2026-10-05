@@ -618,16 +618,9 @@ Scope* scope_new_generic(Scope* parent, Generic* generic, Span owner, Span owner
 }
 
 // The type parameters of an earlier declaration of `owner` (a class or interface)
-static Generic const* earlier_generic(Symbol const* owner, void const* node, u32* index) {
-    for (u32 i = 0; i < owner->decl_count; i++) {
-        SymbolDecl const* decl = &owner->decls[i];
-        if (decl->node == node) return nullptr;
-        if (decl->kind == SYMBOL_DECL_INTERFACE || decl->kind == SYMBOL_DECL_CLASS) {
-            *index = i;
-            return decl->kind == SYMBOL_DECL_INTERFACE ? &((InterfaceDecl const*)decl->node)->generic :
-                &((ClassDecl const*)decl->node)->generic;
-        }
-    }
+static Generic const* decl_generic(SymbolDecl const* decl) {
+    if (decl->kind == SYMBOL_DECL_INTERFACE) return &((InterfaceDecl const*)decl->node)->generic;
+    if (decl->kind == SYMBOL_DECL_CLASS) return &((ClassDecl const*)decl->node)->generic;
     return nullptr;
 }
 
@@ -635,24 +628,20 @@ bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* fil
     return symbol->decl_count && symbol->decls[0].full.source != file;
 }
 
+// A file with a declaration of a merged class or interface whose type parameters may be an earlier declaration's of
+// another file (scope_new_generic_merged() writes to those symbols) resolves after the others
 void binder_mark_serial_resolves(Binder* me) {
     for (u32 s = 0; s < my symbol_count; s++) {
         Symbol const* owner = my symbols[s];
         if (!(owner->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE)) || owner->decl_count < 2) continue;
-        u32 index;
-        Generic const* first = nullptr;
-        for (u32 i = 0; i < owner->decl_count; i++) {
-            SymbolDecl const* decl = &owner->decls[i];
-            if (decl->kind != SYMBOL_DECL_INTERFACE && decl->kind != SYMBOL_DECL_CLASS) continue;
-            if (!first) {
-                first = earlier_generic(owner, nullptr, &index);
-                if (generic_empty((Generic*)first)) break;
-                continue;
+        for (u32 i = 1; i < owner->decl_count; i++) {
+            Generic const* generic = decl_generic(&owner->decls[i]);
+            if (!generic || generic_empty((Generic*)generic)) continue;
+            SourceFile* file = (SourceFile*)owner->decls[i].full.source;
+            for (u32 j = 0; j < i && file && !file->resolve_serial; j++) {
+                Generic const* earlier = decl_generic(&owner->decls[j]);
+                if (earlier && !generic_empty((Generic*)earlier) && owner->decls[j].full.source != file) file->resolve_serial = true;
             }
-            Generic const* generic = decl->kind == SYMBOL_DECL_INTERFACE ? &((InterfaceDecl const*)decl->node)->generic :
-                &((ClassDecl const*)decl->node)->generic;
-            SourceFile* file = (SourceFile*)decl->full.source;
-            if (file && file != owner->decls[index].full.source && !generic_empty((Generic*)generic)) file->resolve_serial = true;
         }
     }
 }
@@ -664,17 +653,20 @@ Scope* scope_new_generic_merged(
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
     push_generics(ret, generic, owner_name);
     // Like tsc, which declares them in the members of the merged symbol: a type parameter of the same name as one of
-    // an earlier declaration is that one
-    u32 index;
-    Generic const* first = owner ? earlier_generic(owner, node, &index) : nullptr;
+    // an earlier declaration is that one (of any earlier one: `interface I {}` + `interface I<T> {}` + `interface I<T> {}`)
     for_each (i, vec_generic_item, &generic->items) {
         Symbol* shared = nullptr;
         Symbol const* shared_lib = nullptr;
-        for_each (j, vec_generic_item, first ? &first->items : &(VecGenericItem){0}) {
-            if (!j->owned_symbol || !name_equals(j->name.sv, i->name.sv)) continue;
-            // (Not one of the shared lib program: nothing is written to its symbols)
-            if (j->owned_symbol->binder == ret->binder) shared = j->owned_symbol;
-            else shared_lib = j->owned_symbol;
+        for (u32 d = 0; owner && d < owner->decl_count && !shared && !shared_lib; d++) {
+            if (owner->decls[d].node == node) break;
+            Generic const* earlier = decl_generic(&owner->decls[d]);
+            for_each (j, vec_generic_item, earlier ? &earlier->items : &(VecGenericItem){0}) {
+                if (!j->owned_symbol || !name_equals(j->name.sv, i->name.sv)) continue;
+                // (Not one of the shared lib program: nothing is written to its symbols)
+                if (j->owned_symbol->binder == ret->binder) shared = j->owned_symbol;
+                else shared_lib = j->owned_symbol;
+                break;
+            }
         }
         if (!shared || symbol_table_get(&ret->locals, i->name.sv)) {
             if (shared_lib && !symbol_table_get(&ret->locals, i->name.sv)) {
