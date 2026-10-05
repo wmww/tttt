@@ -1206,15 +1206,20 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
         for (u32 p = 0; p < members->prop_count; p++) {
             Prop const* prop = members->props[p];
             if (!private_name && has_conflicting_private(me, prop, types, i, len)) private_name = prop->name;
-            if (prop->flags & PROP_OPTIONAL) continue;
+            // (The intersection's property is required if one of them is: an optional one is that type or undefined
+            // then, `{ a: string } & Partial<{ a: never }>` is never, string & undefined)
             Ty const* a_type = nullptr;
             for (u32 j = i + 1; j < len; j++) {
                 Ty const* b = types[j];
                 if (!is_known_object_for_reduction(me, b)) continue;
                 Prop const* other = ty_get_prop(me, b, prop->name);
-                if (!other || (other->flags & PROP_OPTIONAL)) continue;
-                if (!a_type) a_type = prop_type(me, prop);
+                if (!other || (prop->flags & other->flags & PROP_OPTIONAL)) continue;
+                if (!a_type) {
+                    a_type = prop_type(me, prop);
+                    if (prop->flags & PROP_OPTIONAL) a_type = ty_optional_prop_type(me, a_type);
+                }
                 Ty const* b_type = prop_type(me, other);
+                if (other->flags & PROP_OPTIONAL) b_type = ty_optional_prop_type(me, b_type);
                 if (!is_literal_like(a_type) && !is_literal_like(b_type)) continue;
                 // (Not when one of them is never: tsc's isDiscriminantWithNeverType, CheckFlags.HasNeverType)
                 if ((a_type->flags | b_type->flags) & TYF_NEVER) continue;
