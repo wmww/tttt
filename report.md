@@ -117,3 +117,18 @@ The main concern is a pattern across several sessions. tttt computes some things
 tsc only computes them when asked. Each session that ran into this patched around it locally, so the workarounds
 are piling up. A planning session will decide whether to switch to tsc's lazy approach. That might also fix the
 other weak number: memory use is above tsgo's on most projects, even though tttt is 3-11x faster.
+
+## 2026-10-05 — insights (after the eighth window)
+Another clean window: ten sessions, all committed, nothing lost. The suite went 12354 -> 12753 of 13540 (94%). The
+two planned features landed. tttt now reports the diagnostics tsc gives libraries built with `declaration: true`, and
+it builds monorepos with project references (`tttt -b`). That covers TypeScript's own source tree (1.3 s, vs 2.3 s
+for tsgo and 13.6 s for tsc) and typescript-eslint, both with zero false errors. Speed stayed flat while these went
+in, and memory is now below tsgo's on every project except two, which have a plan.
+
+The concern this time is the oracles, not the code. Every real-world project we test on is at or near zero false
+errors, and the failing tests are spread thinly over ~190 different error codes. More of the same finds less and
+less. Each time we've added a new real project, it has turned up tens to hundreds of bugs. So the next window adds
+two more projects that exercise what the current ones don't: Effect, a library that is very heavy on generics, and
+a large application for scale. It also plans a "breadth sweep" that runs tttt over hundreds of small typed packages
+at once. The rest of the window finishes the planned work: the remaining laziness stages, memory for the two
+projects still above tsgo, and parallel name resolution.

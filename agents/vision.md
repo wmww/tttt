@@ -5,49 +5,48 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-04, insights after the seventh window)
-- **Suite 12354 / 13540** fully pass (errors 13113, symbols 13033, types 12836). +314 in the window (12040), all
-  committed, nothing lost; smaller than the sixth on purpose: four of ten sessions planned or measured. Failing
-  components: types 704, symbols 507, **errors 427** (was 810: suite checker bugs 7 took the "right codes, other text"
-  bucket 236 -> 39). Of the errors failures: 121 missing+spurious, 101 tttt reports nothing, 98 only missing, 36 only
-  spurious, 29 tttt-only; 40 have a spurious TS1xxx. Checker log_error output: none.
-- **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod, **vue 0** (pinned
-  this window, was 107); **drizzle 6** (pinned, was 693); webpack 6; xstate 12; zod-root at tsc's 55.
-- **Perf**: the +8% creep was clawed back and more (tsc corpus 5.23 -> 4.53 G instructions, react -29%, vue -17%), by
-  porting missing tsc caches, not by reverting. Resolve-once (plan 38 stage 3) took another 2-9%. `./bench.sh`
-  (09-29): faster than multi-threaded tsgo on every corpus, 2.8-11x. **Memory** is on par like-for-like (plan 42
-  planning, 10-05): drizzle 896 MB at one checker vs single-threaded tsgo's 1054, 1.7 GB at four vs multi-threaded
-  tsgo's 1.87; four checkers re-instantiate the types drizzle's files share (2.4x the types of one).
+## State (2026-10-05, insights after the eighth window)
+- **Suite 12753 / 13540** fully pass (errors 13176, symbols 13329, types 12996). +399 in the window, 0 lost. Failing
+  components: types 544, errors 364, symbols 211. The errors tail is thin and flat: 709 missing / 488 spurious
+  diagnostics over ~190 codes, no code in more than 26 tests. Checker log_error output: none.
+- **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod, vue at 0;
+  **tsc-src and typescript-eslint** (`-b`, pinned this window) 12/66 -> 0; drizzle 6, webpack 6, xstate 8 (was 12),
+  zod-root at tsc's level. **The pinned corpora have stopped finding bugs**: every one is at or near 0.
+- **Perf**: callgrind flat over the window (within +1% everywhere) while two whole features landed. 1.5-7x faster
+  than multi-threaded tsgo, `-b` on TypeScript's `src` 1.3 s vs tsgo 2.3 s / tsc 13.6 s. **Memory** below tsgo's
+  peak RSS everywhere except nest and webpack at one checker (the AST: plan 43).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, tsc's inference flow (lazy fixing, contextual instantiation, intra-expression sites,
   calls resolved once), one circularity stack (plan 39), contextual typing, conditional/mapped/indexed/template/
   substitution types, deferred references, flow graph + narrowing, module resolution + tsconfig, iteration protocol,
   generators, `this` types, mixins, decorators, the missing type, union origins, elaboration, JSX, tsc's type printer
-  and symbol chains, JSDoc + CommonJS + expandos, parallel checking and loading. ~96k lines of C.
-- **Absent or approximated tsc mechanisms**: declaration-emit diagnostics (plan 40 done 2026-10-04 bar TS7056 for
-  deep types and TS5088; module specifiers are generated for TS2742), project references (plan 41 done: read as
-  sources, tsc-src and typescript-eslint at 0 under `-b`, 1.3 s and 3.0 s vs tsc -b's 14-22 s), **laziness** at a few separate sites (reverse mapped types,
-  intersection reduction, mapped info read through expansion, return types read while a call is in flight; plan 42
-  stages 1-4, prototyped), contextual instantiation (push-down, not tsc's leaf-wise pull; type_core.md), the
-  first-resolution-only barrier (plan 42 stage 4), permissive instantiation. Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
+  and symbol chains, JSDoc + CommonJS + expandos, parallel checking and loading, **declaration diagnostics** (plan 40,
+  with module specifier generation), **project references / `-b`** (plan 41), lazy reverse mapped types and
+  intersection reduction (plan 42 stages 1-2), tsc's deferred function bodies (checkNodeDeferred, functions only).
+  ~107k lines of C.
+- **Absent or approximated tsc mechanisms**: TS7056 for deep types and TS5088; the rest of plan 42 (mapped info read
+  through expansion, return types read while a call is in flight, the first-resolution-only barrier); checkNodeDeferred
+  for class expressions, JSX and assertions; contextual instantiation (push-down, not tsc's leaf-wise pull;
+  type_core.md); permissive instantiation; member identity (members aren't Symbols; the symbols *harness* rebuilds
+  tsc's merges for display, see the decision below). Out of scope: emit (JS and `.d.ts` text), watch mode, the
+  language service.
 
-## Course correction (insights of 2026-10-04, end of the seventh window)
-- **Health is good; no redesign.** Seventh clean window. Every planned item landed: two corpora pinned and taken to
-  0/6, the perf creep reversed, plans 38 stage 3 and 39 stages 1-2 executed, all five plan-sized hacks ported, plans
-  40 and 41 written. hacks.md grew moderately (540 -> 625 lines).
-- **Execute 40 and 41 now.** They are what a real user with `declaration: true` or a monorepo hits first, and they
-  make the perf comparison honest (tsc does declaration diagnostics on four of our corpora; tttt doesn't yet). They
-  take half the window.
-- **The pattern this window: eagerness.** The leftovers of plans 38 and 39, five hacks.md entries, three type_core
-  bugs and two perf leads all end in "tttt computes X when it's made, tsc when it's asked". Each was patched locally.
-  Stop patching: plan 42 inventories the sites and decides on a port. (Planned 10-05: tttt already has tsc's lazy
-  members and property types; the sites are four independent stages of ~1 session, ~+6 tests, mostly hack deletions.
-  Not the memory fix. tsc *does* resolve re-entered calls again: plan 38's resolvingSignature premise was wrong.)
-- **The long tail moves to types and symbols.** Errors is no longer the biggest failing component; the window's
-  fan-outs point at displaydiff's buckets first.
-- **Memory gets attention**: the perf session looks at peak RSS, not only instructions. Compare like-for-like (K=1 vs
-  tsgo `--singleThreaded`, K=4 vs tsgo); drizzle's lever is cross-checker duplication, not laziness.
+## Course correction (insights of 2026-10-05, end of the eighth window)
+- **Health is good; no redesign.** Eighth clean window: all ten entries landed, 0 lost, both whole features (40, 41)
+  in, callgrind flat. src grew ~9.6k lines (most of it the two features), hacks.md 625 -> 725 lines.
+- **The oracles are running dry; widen them.** Every pinned corpus is at or near 0 and the suite tail is spread over
+  ~190 codes. Each newly pinned corpus has found tens to hundreds of false errors (drizzle 693, vue 107,
+  typescript-eslint 66), so the cheapest real-world bugs are in code we haven't run yet. This window pins new corpora
+  chosen for what the current ones don't exercise (Effect-style HKT/generator-heavy generics; a large application
+  for scale) and plans a **breadth sweep** (plan 44: hundreds of small typed packages, e.g. DefinitelyTyped, clean
+  under tsc 5.8: crashes and false errors at breadth, cheaply). Fan-outs on the suite tail continue but at one each.
+- **Finish what's planned before planning more mechanisms**: plan 42 stages 3-4, plan 43 (AST memory), then parallel
+  name resolution (the serial phase left; the `-b` lever and a wall-time lever everywhere).
+- **Decided: the symbols harness's rebuilt member identity is an acceptable harness cost** (triage item from the
+  fan-out of 10-04). It is display-only, and tttt's lazy `Prop`s already give the checker what tsc's property symbols
+  give it (lazy types, per-instantiation identity). Revisit only if a *checker* rule needs member identity that `Prop`
+  can't provide; don't make members Symbols for the baselines' sake.
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -116,7 +115,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    (checker bugs, JS, parser, types component)~~ done.
 7. ~~Two new corpora (drizzle, vue), perf claw-back, plan-sized hacks, circularity stack (39), resolve once (38
    stage 3), planning declaration diagnostics (40) and project references (41)~~ done.
-8. **Now**: executing 40 and 41 (with tsc-src and typescript-eslint as corpora), planning laziness (42), memory, the
-   types/symbols long tail.
-9. Then: laziness stages (42), parallel name resolution, the check phase's load balance and file-to-checker affinity
+8. ~~Declaration diagnostics (40), project references (41) with tsc-src and typescript-eslint, laziness planned (42)
+   and stages 1-2, memory like-for-like, the types/symbols long tail~~ done.
+9. **Now**: wider oracles (new corpora, the breadth sweep of plan 44), plan 42 stages 3-4, AST memory (43), parallel
+   name resolution, the long tail at one fan-out per component.
+10. Then: whatever the breadth sweep ranks first; the check phase's load balance and file-to-checker affinity
    (memory), a token cache / node arenas in the parser, compact instantiated Props / the `Signature` split.
