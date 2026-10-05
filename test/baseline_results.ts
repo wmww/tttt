@@ -22858,7 +22858,7 @@ const baselines = {
     'narrowingByTypeofInSwitch': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingConstrainedTypeParameter': {
         errors: true,

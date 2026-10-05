@@ -481,7 +481,8 @@ Ty const* ty_union_subtype_reduced(Checker* me, Ty const* const* types, u32 len)
         panic_if(!kept, "out of memory");
         u32 kept_len = 0;
         for (u32 i = 0; i < members.len; i++) if (!dropped[i]) kept[kept_len++] = members.data[i];
-        ret = kept_len == members.len ? flat : ty_union(me, kept, kept_len, nullptr, (TyList){0});
+        if (kept_len == members.len) ret = flat;
+        else if (!(ret = ty_named_union_of_reduced(me, types, len, kept, kept_len))) ret = ty_union(me, kept, kept_len, nullptr, (TyList){0});
         free(kept);
     }
     free(dropped);

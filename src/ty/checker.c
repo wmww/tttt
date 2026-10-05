@@ -829,6 +829,20 @@ static bool sorted_list_contains(TyList list, Ty const* t) {
     return false;
 }
 
+// tsc's getUnionType after a subtype reduction: the inputs' only named union, if it has every member left (a reduced
+// `Basic | undefined` is still Basic, though Function went for object). Null otherwise
+Ty const* ty_named_union_of_reduced(Checker* me, Ty const* const* inputs, u32 len, Ty const* const* members, u32 count) {
+    (void)me;
+    TyBuf named = {0};
+    add_named_unions(&named, inputs, len);
+    Ty const* ret = named.len == 1 ? named.data[0] : nullptr;
+    for (u32 i = 0; ret && i < count; i++) {
+        if (!sorted_list_contains(ret->composite.types, members[i])) ret = nullptr;
+    }
+    ty_buf_drop(&named);
+    return ret;
+}
+
 static void insert_by_id(TyBuf* buf, Ty const* t) {
     ty_buf_push(buf, t);
     u32 j = buf->len - 1;
