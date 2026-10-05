@@ -5316,14 +5316,67 @@ static bool has_index_for_name(Checker* me, Members const* members, Atom const* 
     return false;
 }
 
+// tsc's getLowerBoundOfKeyType: `keyof T` is the keys of T's apparent type, a type parameter stays (and names nothing)
+static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 8) return ty;
+    if (ty->kind == TY_KEYOF) return ty_keyof(me, apparent_type(me, ty->keyof.operand));
+    if (ty->kind == TY_UNION) {
+        TyBuf parts = {0};
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            ty_buf_push(&parts, lower_bound_of_key_type(me, ty->composite.types.data[i], depth + 1));
+        }
+        Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+        return ret;
+    }
+    return ty;
+}
+
+// Whether a key type of a mapped type makes a member that admits `name` (tsc's addMemberForKeyTypeWorker: a property for
+// a literal or unique symbol, an index signature for string, number, symbol, any or a pattern)
+static bool key_admits_name(Checker* me, Ty const* key, Atom const* name) {
+    if (key->kind == TY_UNION) {
+        for (u32 i = 0; i < key->composite.types.len; i++) {
+            if (key_admits_name(me, key->composite.types.data[i], name)) return true;
+        }
+        return false;
+    }
+    Atom const* literal = ty_literal_name(me, key);
+    if (literal) return literal == name;
+    if (key->flags & (TYF_ANY | TYF_STRING)) return true;
+    if (key->flags & TYF_NUMBER) return ty_is_numeric_name(name);
+    if (key->flags & TYF_ES_SYMBOL) return ty_unique_symbol_of_name(me, name) != nullptr;
+    if (key->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
+        return ty_is_related(me, ty_prop_name_literal(me, name), key, TY_RELATION_ASSIGNABLE);
+    }
+    return false;
+}
+
+// tsc's resolveMappedTypeMembers of a generic mapped type, as far as isKnownProperty asks: the keys of the lower bound
+// of its constraint (a homomorphic one's are its modifiers type's apparent keys), each through the `as` clause.
+// `Pick<S, keyof S>` with S unconstrained knows nothing, `Partial<S>` with `S extends { b: number }` knows b
+static bool generic_mapped_knows(Checker* me, MappedInfo const* mapped, Atom const* name) {
+    Ty const* keys = lower_bound_of_key_type(me, mapped->constraint, 0);
+    if (!mapped->name_type) return key_admits_name(me, keys, name);
+    TyList parts = keys->kind == TY_UNION ? keys->composite.types : (TyList){ .data = &keys, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        if (parts.data[i]->flags & TYF_NEVER) continue;
+        TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 },
+            (TyList){ .data = &parts.data[i], .len = 1 });
+        if (key_admits_name(me, ty_instantiate(me, mapped->name_type, mapper), name)) return true;
+    }
+    return false;
+}
+
 // tsc's isKnownProperty
 static bool is_known_property(Checker* me, Ty const* target, Atom const* name) {
     if (target->kind == TY_SUBSTITUTION) return is_known_property(me, target->substitution.base, name);
     if (target->flags & TYF_OBJECT) {
         Members const* members = ty_members(me, target);
-        // (A mapped type whose keys aren't known yet takes anything; one over known keys has them as properties)
+        // (One over known keys has them as properties)
         bool generic = false;
-        if (members->mapped && (mapped_info_of(me, target, &generic), generic)) return true;
+        MappedInfo const* mapped = members->mapped ? mapped_info_of(me, target, &generic) : nullptr;
+        if (mapped && generic) return generic_mapped_knows(me, mapped, name);
         if (ty_get_prop(me, target, name) || has_index_for_name(me, members, name)) return true;
     }
     if ((target->kind == TY_UNION || target->kind == TY_INTERSECTION) && is_excess_property_check_target(target)) {
