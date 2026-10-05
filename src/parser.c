@@ -3619,7 +3619,7 @@ static void parse_jsdoc_type_expression(Parser* parent, const char** pos, const 
         while (p.pos < end && *p.pos != '}' && *p.pos != ',' && !is_jsdoc_space(*p.pos)) p.pos++;
         if (tag->has_type) type_drop(&tag->type);
         tag->has_type = true;
-        tag->type = type_any;
+        tag->type = type_self_referential_error; // (The error type node)
         tag->type_span = span_from(module_start);
         hop_whitespace(&p);
         if (p.pos < end && *p.pos == '}') p.pos++;

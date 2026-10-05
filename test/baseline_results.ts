@@ -51638,7 +51638,7 @@ const baselines = {
     'jsDeclarationsModuleReferenceHasEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsMultipleExportFromMerge': {
         errors: true,
