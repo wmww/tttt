@@ -4100,6 +4100,16 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
                 break;
             }
+            // An object that may be nullish indexed by a generic key (check_access() doesn't look at those): TS18048
+            // and then its non-nullable part (tsc's checkNonNullExpression, type parameters by their constraint)
+            // (A type parameter without constraint isn't: tsc says its members are missing instead)
+            bool generic_key = my property->form == PROPERTY_EXPR_BRACKET && compiler_options()->strict_null_checks &&
+                (expr_type->kind == TY_UNION || (expr_type->kind == TY_TYPE_PARAM && ty_base_constraint(current_checker, expr_type))) &&
+                ty_is_generic_index(ty_regular(current_checker, ty_access_key_type(current_checker, my property)));
+            if (generic_key && !my property->qualified_name && ty_can_be_nullish(current_checker, expr_type)) {
+                ty_check_non_null_type(current_checker, expr_type, &my property->expr, errs);
+                expr_type = ty_non_nullable(current_checker, expr_type);
+            }
             if (my property->qualified_name && my property->prop.tag == EXPR_LITERAL &&
                 ty_namespace_type_only_prop(current_checker, expr_type, ty_literal_name(current_checker, ty_access_key_type(current_checker, my property)))
             ) {
