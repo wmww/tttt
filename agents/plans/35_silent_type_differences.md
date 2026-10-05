@@ -113,15 +113,20 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
    (functionVariableInReturnTypeAnnotation). Needs the innermost scope at the printed position (the resolve walk could
    record it per types-baseline node).
 3. **Union order / creation order**: tsc's type writer re-checks each printed expression, so its object literals are
-   newest (contextualTyping36, conditionalOperatorWithIdenticalBCT; bugs/display.md). Name literals made eagerly by
-   `contextual_prop_type()` (`ty_prop_name_literal` for every object literal property; tsc only for generic mapped
-   types or index signature lookups): es2022IntlAPIs, probe `f({ timeZone: 'x' }); let k: 'calendar' | 'timeZone'`;
-   making it lazy is a hot-path refactor of get_prop_context()/intersection_prop_context(). Lib literal made early
-   (correlatedUnions: dom's `CSSMathOperator` "sum", not found). Property annotations of type literals aren't lowered
-   by the check walk (typeInferenceWithExcessPropertiesJsx; tsc's checkPropertySignature calls getTypeOfSymbol;
-   lowering in interface_member_typecheck() needs the prop's own LowerCtx). Also keyofAndIndexedAccess2,
-   complexRecursiveCollections, noImplicitAnyUnionNormalizedObjectLiteral1, spreadUnion (spread of a union: member
-   order).
+   newest (contextualTyping36, conditionalOperatorWithIdenticalBCT; bugs/display.md). Looked at 2026-10-05: emulating
+   it as "object literals re-made by re-checking E print last" needs object literal types to know their node (a
+   harness-only side table: TY_ANONYMOUS has no origin) and only fixes conditionalOperatorWithIdenticalBCT;
+   contextualTyping36 also needs the re-check's subtype reduction (mutual subtypes keep the older). Not worth it alone.
+   Done 2026-10-05: contextual property lookups no longer make the name's literal (es2022IntlAPIs), the walk makes a
+   union's literal members and a property signature's bare literal annotation (assignmentCompatWithDiscriminatedUnion).
+   Left: literals in other nested annotation positions (`"a"[]`, tuples) are made on demand, not at the walk;
+   contextual lookups through intersections with type variables still make the literal eagerly. Lib literal made
+   early (correlatedUnions: dom's `CSSMathOperator` "sum", not found). typeInferenceWithExcessPropertiesJsx. Also
+   keyofAndIndexedAccess2 (generic intersection member order), complexRecursiveCollections, arrayFrom
+   (`ArrayLike<T> | Iterable<T>`), dependentDestructuredVariablesFromNestedPatterns (tuple references made in another
+   order), noImplicitAnyUnionNormalizedObjectLiteral1, spreadUnion (spread of a union: member order). The harness sets
+   skipDefaultLibCheck; tsc's CLI default checks the libs, which makes ~2700 string literals first (lib.dom: every
+   `keyof HTMLElementTagNameMap` etc.), so CLI messages can order unions differently from tttt: not a suite concern.
 4. **Underline/annotation reuse**: merged generic interface members aren't node-reused (useRegexpGroups,
    doYouNeedToChangeYourTargetLibraryES2016Plus: `(onfinally?: () => void)` not the written
    `(() => void) | undefined | null`; a local generic interface declared twice behaves the same; instrument tsc).

@@ -56,7 +56,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   the older stays) while the variable's own type, from the main check, keeps the object literal
   (conditionalOperatorWithIdenticalBCT, contextualTyping36). tttt checks once; emulating it would mean re-checking or
   re-sorting by "made in this expression".
-- Lib literal types made early: es2022IntlAPIs prints `"timeZone"` first (some lib member is lowered before tsc would).
 - strictFunctionTypesErrors: `typeof Foo.f1` (a static method of a non-exported class in a namespace) isn't reused by
   tsc there but is in a reduced probe; cause not found.
 - A conditional type as a constraint prints parenthesized: `<Expected extends (Extends<A, Expected>) extends true ?
