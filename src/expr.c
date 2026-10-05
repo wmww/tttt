@@ -2473,6 +2473,11 @@ static void assignment_target_typecheck_of(
                         // (Read like an expression: noUncheckedIndexedAccess's undefined)
                         element = ty_access_reading(checker, source, ty_literal(checker, &key));
                         if (!element) element = ty_access_reading(checker, source, ty_intrinsic(checker, TY_NUMBER));
+                        // (Narrowed like the reference `source[index]` would be there: tsc's getFlowTypeOfDestructuring)
+                        Expr const* reference = source_expr ? skip_outer_expressions(source_expr) : nullptr;
+                        if (element && reference && (reference->tag == EXPR_IDENTIFIER || reference->tag == EXPR_PROPERTY)) {
+                            element = ty_destructured_assignment_flow_type(checker, i, reference, key, expr_outer_span(i), element);
+                        }
                     }
                     assignment_target_typecheck(i, element, nullptr, site, errs);
                 }
