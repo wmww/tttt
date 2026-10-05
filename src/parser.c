@@ -4517,12 +4517,17 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     // `@augments A` on `class C extends B` (tsc's checkJSDocAugmentsTag)
     JsDocTag* augments = jsdoc_find_typed(tags, JSDOC_TAG_EXTENDS);
     Span extends_name = jsdoc_entity_name_last(&class_decl->extends);
-    if (augments && augments->type.tag == TYPE_IDENTIFIER && span_valid(extends_name) &&
-        !name_equals(augments->type.identifier->name.sv, extends_name.sv)
+    // (The tag is the base whenever there's a clause, tsc's getEffectiveBaseTypeNode: of any expression too,
+    // `extends err()`, which no name mismatches)
+    bool other_expression = !span_valid(extends_name) && class_decl->extends.tag != EXPR_IMPLICIT_ANY;
+    if (augments && augments->type.tag == TYPE_IDENTIFIER && (other_expression || (span_valid(extends_name) &&
+        !name_equals(augments->type.identifier->name.sv, extends_name.sv)))
     ) {
         Span name = augments->type.identifier->name;
-        jsdoc_error(p, name, 8023, "JSDoc '@", augments->tag_name.sv, " ", name.sv, "' does not match the 'extends ",
-            extends_name.sv, "' clause.");
+        if (!other_expression) {
+            jsdoc_error(p, name, 8023, "JSDoc '@", augments->tag_name.sv, " ", name.sv, "' does not match the 'extends ",
+                extends_name.sv, "' clause.");
+        }
         if (!csview_contains(name.sv, ".")) {
             if (class_decl->jsdoc_base) {
                 expr_drop(class_decl->jsdoc_base);

@@ -52033,7 +52033,7 @@ const baselines = {
     'jsdocAugments_errorInExtendsExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocAugments_nameMismatch': {
         errors: true,
