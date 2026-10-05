@@ -21276,7 +21276,7 @@ const baselines = {
         types: true,
     },
     'missingCommaInTemplateStringsArray': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24581,7 +24581,7 @@ const baselines = {
         types: true,
     },
     'omittedExpressionForOfLoop': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

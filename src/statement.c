@@ -638,6 +638,13 @@ zsview for_each_loop_statement_keyword_str(ForEachLoopStatement const* me) {
     impossible;
 }
 
+// tsc's checkRightHandSideOfForOf: checkNonNullExpression of the iterable, the error type if nothing is left
+static Ty const* for_of_iterable(Checker* checker, Expr const* iterable, Ty const* type, ErrorCtx* errs) {
+    if (type->flags & TYF_ANY) return type;
+    Ty const* non_null = ty_check_non_null_type(checker, type, iterable, errs);
+    return non_null ? non_null : ty_intrinsic(checker, TY_ERROR);
+}
+
 Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
     Checker* checker = current_checker;
     Ty const* iterable = ty_expr_type(checker, &my iterable);
@@ -650,7 +657,7 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
             // (tsc's widenTypeForVariableLikeDeclaration: getWidenedType, so the elements of an array literal aren't
             // fresh object literals in the variable)
             return ty_widened_for_declaration(checker, ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF :
-                ITERATION_FOR_OF, iterable, expr_outer_span(&my iterable), nullptr), false);
+                ITERATION_FOR_OF, for_of_iterable(checker, &my iterable, iterable, nullptr), expr_outer_span(&my iterable), nullptr), false);
     }
     impossible;
 }
@@ -660,7 +667,7 @@ Ty const* for_each_loop_statement_pattern_source_type(ForEachLoopStatement const
     Ty const* var_type = lazy_type_get((LazyType*)&my var_type);
     if (my keyword != FOR_EACH_LOOP_OF || var_type == ty_intrinsic(checker, TY_CIRCULAR)) return var_type;
     return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
-        ty_expr_type(checker, (Expr*)&my iterable), expr_outer_span(&my iterable), nullptr);
+        for_of_iterable(checker, &my iterable, ty_expr_type(checker, (Expr*)&my iterable), nullptr), expr_outer_span(&my iterable), nullptr);
 }
 
 // What `for (k in x)` takes: object types and type parameters (every member of a union, some member of an
@@ -2399,7 +2406,8 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 case FOR_EACH_LOOP_OF:
                     if (!for_of_checks_iterable(my for_each_loop)) break;
                     ty_iterated_type(checker, my for_each_loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
-                        iterable_type, expr_outer_span(&my for_each_loop->iterable), errs);
+                        for_of_iterable(checker, &my for_each_loop->iterable, iterable_type, errs),
+                        expr_outer_span(&my for_each_loop->iterable), errs);
                     break;
             }
 
