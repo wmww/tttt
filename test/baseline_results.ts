@@ -55863,7 +55863,7 @@ const baselines = {
     'parser.asyncGenerators.objectLiteralMethods.es2018': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parser.forAwait.es2018': {
         errors: true,
@@ -63533,7 +63533,7 @@ const baselines = {
     'inferTypesWithExtends1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypesWithExtends2': {
         errors: true,

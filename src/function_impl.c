@@ -1169,7 +1169,7 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
         .function = me,
         .in_setter = my accessor == 2,
     };
-    if (my ret_explicit && my is_generator) ty_check_generator_annotation(current_checker, me, errs);
+    if (my ret_explicit && my is_generator && my has_body) ty_check_generator_annotation(current_checker, me, errs);
     Ty const* outer_context = function_impl_enter_return_context(me);
     block_typecheck(&my body, ctx, errs);
     current_checker->return_context = outer_context;

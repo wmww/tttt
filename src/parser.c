@@ -6925,13 +6925,16 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         expected_token_error(&p, "(");
         func = (FunctionImpl){ .is_generator = flags.is_generator };
         if (span_valid(flags.asterisk)) function_impl_rare_mut(&func)->asterisk = flags.asterisk;
+        function_impl_set_args_span(&func, span_from_pos(&p));
         if (*p.pos == ':') {
-            // (tsc's parseReturnType still takes a return type: `async * x: 1;` is a method returning 1. Skipped:
-            // tsc doesn't check it against a generator without a body, tttt would)
+            // (tsc's parseReturnType still takes a return type: `async * x: 1;` is a method returning 1)
             p.pos++;
             hop_whitespace(&p);
-            TypeNode ret;
-            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret)) type_drop(&ret);
+            Anchor ret_a = anchor(&p);
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &func.ret)) {
+                function_impl_set_ret_span(&func, span_from(ret_a));
+                func.ret_explicit = true;
+            }
             hop_whitespace(&p);
         }
         if (parse_block(&p, false, &func.body)) func.has_body = true;
