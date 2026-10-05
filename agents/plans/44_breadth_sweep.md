@@ -81,6 +81,12 @@ one commit each, `./sweep.py` before/after.
   (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
 
+- **TS2303 on the import instead of the `export =` of a self-importing module** (koa-webpack, react-loadable;
+  `types/webpack/index.d.ts`: `import webpack = require("webpack"); export = webpack;`): which alias of the cycle
+  reports depends on which one tsc resolves first, and there it's incidental (checking koa's `DefaultState` resolves
+  the type of a property koa-webpack's augmentation merged into it; a JSX intrinsic's symbolToEntityName walks every
+  file's imports). tttt resolves aliases in program order at link, so the import comes first. Not worth chasing.
+
 ### Medium (15-100 lines)
 - **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
 - **Generic rest `[...AX, ...A]` implied arity** (call-bind; C/arity.ts): infer_to_tuple's "two variadic elements"

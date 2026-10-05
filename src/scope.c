@@ -2099,7 +2099,13 @@ Symbol* module_export_equals(Symbol* module) {
     Symbol* assigned = symbol_table_get(module->exports, c_sv("export="));
     if (!assigned) return module;
     Symbol* target = assigned->flags & SYMBOL_ALIAS ? symbol_resolve_alias(assigned) : assigned;
-    if (!target) return module;
+    if (!target) {
+        // Its `export =` is being resolved: the import that reached it back is circular, and gets tsc's
+        // unknownSymbol (resolveAlias's inner visit) like the `export =` itself will
+        Symbol* unknown = binder_new_placeholder(assigned->binder, assigned->name_span, assigned->name_span);
+        unknown->is_unresolved = true;
+        return unknown;
+    }
     // (`export = C.B` of a static B and a namespace's interface B: the alias, which has both meanings)
     if (assigned->flags & SYMBOL_ALIAS && assigned->alias->value_target) return assigned;
     if (target == module || target->is_placeholder || target->is_module || module->exports->parent ||
@@ -2999,10 +3005,11 @@ Symbol* symbol_resolve_alias(Symbol* me) {
     my alias->state = ALIAS_IN_FLIGHT;
     Symbol* target = resolve_alias_target(me);
     // (`export default x` looks its name up in a scope that has it)
-    if (my alias->state == ALIAS_CIRCULAR && my alias->item) {
-        // (Import-equals declarations are reported on the whole statement)
+    if (my alias->state == ALIAS_CIRCULAR && (my alias->item || (my decl_count && span_valid(my decls[0].full)))) {
+        // (Import-equals declarations and `export =` are reported on the whole statement)
         PortItem const* item = my alias->item;
-        Span at = item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
+        Span at = !item ? my decls[0].full :
+            item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
         error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
         // (tsc's resolveAlias: the inner visit made the target unknownSymbol, and it stays that)
         target = nullptr;
@@ -3311,8 +3318,9 @@ static void merge_augmentations(Binder* me) {
             if (export_equals) {
                 if (pass == 0) continue;
                 Symbol* assigned = module_export_equals(module);
-                if (!assigned || assigned->is_placeholder) continue;
-                if (!(assigned->flags & SYMBOL_NAMESPACE)) {
+                if (!assigned || (assigned->is_placeholder && !assigned->is_unresolved)) continue;
+                // (tsc's unknownSymbol isn't a namespace either)
+                if (!(assigned->flags & SYMBOL_NAMESPACE) || assigned->is_placeholder) {
                     // (tsc's mergeModuleAugmentation, once per augmentation symbol: at its first declaration)
                     if (!augmentation->decl_count || augmentation->decls[0].node == decl) {
                         error_ctx_error_d(errs, decl->module_ref->span, 2671, "Cannot augment module '",
