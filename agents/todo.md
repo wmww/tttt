@@ -16,17 +16,20 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 4. Done: plan 43 (AST and binder memory) in one session with four sub-agents: K1 peak RSS nest 243 -> 142 MB,
    webpack 394 -> 253 (targets 200/300), every corpus -20 to -42% and below tsgo; instructions lower everywhere (nest
    -3.4%); outputs byte-identical. Leftover levers in perf_leads.md "Memory"; `./memtrack.sh` is the tool.
-5. **Corpus: pin a large application for scale** (a real app of several hundred thousand lines or more, e.g. VS
-   Code's `src` if its types install reproducibly, or a big monorepo app). It's the perf showcase against tsgo and
-   finds a different kind of false error than the libraries. Add it to bench.sh. Same treatment as entry 2.
+5. Done: VS Code's `src` pinned (1.39M lines, tsc-clean; tttt 2.5 s / 2.1 GB vs tsgo 6.75 s / 3.7 GB, in bench.sh),
+   129 -> 0 the same session with four sub-agents, who then took effect 61 -> 31, xstate 7 -> 2, drizzle 4 -> 0,
+   webpack 6 -> 0 and the sweep 7971 -> 8016 match (react-relay crash fixed). Suite 12768, 0 lost; callgrind within
+   +1.2% (measurements.md "VS Code corpus pinned").
 6. **Fan-out: the errors tail** (four Opus sub-agents, disjoint failstats buckets: the 66 "tttt reports nothing"
    tests, the 117 missing+spurious ones, the spurious TS1xxx/syntaxstats, and missing_checks.md). 0 lost at merge.
 7. **Planning + execution: parallel name resolution** (plan 36's next step, and plan 41's `-b` lever). Write plan 45
    from what the binder still shares (hacks.md "Parallelism contract audit"), then execute stage 1 if it fits. Threads
    1/4 must stay byte-identical (`./threadcheck.sh`, `./checkerdiff.py`).
-8. **Corpus: whatever entries 2, 3 and 5 ranked first** (the sweep's: plan 44 "Open root causes", react-relay's crash
-   and carbon's 25 s first) (effect's top: return-type unions leaking a signature's own
-   type parameters, nested generic calls without contextual inference, plan 19) (sweep and corpus root causes, ahead of suite plans), toward 0.
+8. **Corpus: the sweep and effect toward 0** (entry 5's agents already took every other corpus to 0 but xstate 2).
+   The sweep's ranking (`./sweep.py`, plan 44 "Open root causes": the circular/unresolved `export =` TS2497/TS2305 in
+   ~65 webpack-plugin packages first, carbon-components-react's 25 s), effect's 31 (plan 19 "effect": the overload
+   reset typing callbacks before a generic-call argument (`tap(acquireRelease(...))`), blocking the `dual<A, B>()`
+   predicate gate), xstate's 2 (plan 19). Sweep and corpus root causes go ahead of suite plans.
 9. **Fan-out: types/symbols tail** (plan 35's queue, `./displaydiff.py --fine`, bugs/display.md), four sub-agents.
 10. **Triage.** Also: the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (725 lines: merge
    or delete entries whose code is gone).

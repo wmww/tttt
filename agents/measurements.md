@@ -10,6 +10,22 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## VS Code corpus pinned (2026-10-05, ninth window's todo entry 5)
+VS Code's `src/` (1.39M lines, 4.5k files + node_modules types): the scale benchmark, in bench.sh. Idle machine, best
+of 2-3 (`/usr/bin/time`, wall s / peak RSS MB):
+| | tttt K4 | tttt K1 | tsgo | tsgo single-threaded | tsc 5.8.2 |
+|---|---|---|---|---|---|
+| wall | **2.50** | 4.55 | 6.75 | 12.10 | 38.2 |
+| RSS | **2148** | 1920 | 3695 | 2896 | 3706 |
+tttt phases (K4): load+parse 399 ms (845 MB resident after it: the AST is ~40% of the peak), resolve names 590 ms
+(serial: a quarter of the wall, plan 45's lever), typecheck 1410 ms (four checkers at 1.29-1.41 s, arenas 171-215 MB).
+tsgo reports ~10 TS2300 of its own (its lib.dom has the WebGPU types @webgpu/types declares). The session's fixes
+(vscode 129 -> 0, plus effect 63 -> 31, xstate 8 -> 2, drizzle 4 -> 0, webpack 6 -> 0, sweep 7969 -> 8016 match and
+no crash; suite 12759 -> 12768, 0 lost) cost, callgrind K1 session start -> end: tsc -1.98%, type-fest +0.25%,
+valibot +1.18%, react +0.67%, nest +0.08%, webpack -0.57%, zod +0.59%, xstate +1.12%, drizzle +0.43%, vue +0.78%,
+effect -0.07%, vscode 32.99 G -> 32.93 G (-0.19%). Two agent commits were caught at +3.6% and +39% valibot (+4% zod)
+by mid-session instrcount + bisect and fixed by their authors (47f83d6a, 955b5c2b).
+
 ## AST and binder memory (2026-10-05, plan 43, ninth window's todo entry 4)
 Four Opus sub-agents (declaration structs, expressions/statements, binder, then the checker's tables) plus exact-size
 parser lists. Suite 12759 -> 12759, 0 lost; every corpus byte-identical at K=1 and K=4 (threadcheck identical,
