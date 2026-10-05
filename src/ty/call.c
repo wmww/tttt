@@ -933,9 +933,18 @@ static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args 
     return ty_contextual_element_type_of(me, shape->rest_variadic, i - from, args->len - from);
 }
 
-static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32 i, u32 from, bool is_const) {
+// What the return type says about the type parameters helps type it, as for the other arguments (tsc's
+// instantiateContextualType with the returnMapper): `spawn('child', { id: 'ok1' })` returning into a context that
+// knows the actors keeps 'ok1' under `...args: SpawnArguments<TActor>`. Not for a call, whose own inference reads the
+// contextual type as it is
+static void check_rest_arg(
+    Checker* me, ParamShape const* shape, Args* args, u32 i, u32 from, bool is_const, TyMapper const* return_mapper
+) {
     Arg* arg = &args->data[i];
     Ty const* contextual = rest_arg_contextual(me, shape, args, i, from);
+    if (contextual && return_mapper && arg->expr->tag != EXPR_CALL) {
+        contextual = instantiate_with_return_mapper(me, contextual, return_mapper);
+    }
     arg->type = ty_check_expr_in_const(me, arg->expr, contextual, is_const);
     if (!is_const && contextual && (arg->type->flags & TYF_FRESH_LITERAL) &&
         ty_is_literal_of_contextual_type(me, arg->type, contextual)
@@ -969,7 +978,7 @@ static void infer_rest_variadic(
                 // (A literal with such functions in it: they are left out the same way)
                 arg->type = ty_check_expr_skipping_sensitive(me, arg->expr, rest_arg_contextual(me, shape, args, i, from), is_const);
             } else {
-                check_rest_arg(me, shape, args, i, from, is_const);
+                check_rest_arg(me, shape, args, i, from, is_const, self->return_mapper);
             }
         }
         infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)),
@@ -991,7 +1000,7 @@ static void infer_rest_variadic(
         if (skip_sensitive) return;
     }
     for (u32 i = from; i < args->len; i++) {
-        if (!args->data[i].type) check_rest_arg(me, shape, args, i, from, is_const);
+        if (!args->data[i].type) check_rest_arg(me, shape, args, i, from, is_const, self->return_mapper);
     }
     if (args->len > shape->count || args->spread_index < 0) {
         infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)), shape->rest_variadic, INFER_PRIORITY_NORMAL);

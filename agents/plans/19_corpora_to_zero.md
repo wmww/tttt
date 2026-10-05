@@ -55,7 +55,7 @@ listed here before were gone by then (fixed along the way by other work). Plan 2
 mechanisms in general.
 
 
-### xstate (1)
+### xstate (0 since 2026-10-05)
 Pinned 2026-09-28 (sixth window, todo entry 1) as the inference-heavy corpus: xstate core at f210b35 (last commit
 before TypeScript 6) with its vitest tests, through our `corpora-locks/xstate.overlay/packages/core/tsconfig.corpus.json`
 (lib es2024, src + test). tsc 5.8: 0 in 5.9 s. tttt went 394 -> 61 the same session (three sub-agents + main tree):
@@ -82,12 +82,10 @@ intersection with TYF_COULD_CONTAIN_TYPE_VARIABLES, which every type literal wit
 of `(A | B) & { src: TSrc }` stays deferred until TSrc is known), setup.types 2787/2821/2822 (an overload failure's
 fallback inference skipped nested generic calls that were already resolved; HACK, hacks.md
 `overload_failure_inference`). Left, both investigated, probes in the commit messages' style below:
-- **types 870** (TS2345, `spawnChild('child', { id: 'ok1' })` in createMachine's `entry`): the argument tuple is
-  `["child", { id: string }]` in the final check, so 'ok1' was widened somewhere along the way while TActor came from
-  createMachine's return-type context. Reproduces only with the real createMachine (a stand-in `create<TActor>({ types,
-  entry: ActionFunction<..., TActor, ...> })` and spawnChild's real SpawnArguments shape pass): look at what contextual
-  type the literal gets in spawnChild's inference rounds under createMachine's `entry` (Actions<...> union) and
-  whether its widened type is the one remembered by resolve-once (plan 38 stage 3).
+- types 870: fixed 2026-10-05 (e8 agent D): a generic rest parameter's arguments (`check_rest_arg()`) were checked
+  against `SpawnArguments<..., TActor>[i]` uninstantiated, whose constraint widened 'ok1'; now instantiated with the
+  return mapper like the other arguments (tsc's instantiateContextualType). Probe `test/probes/plan19/xstate/
+  spawn_child/` (corpus-based, `tttt -p` the directory: a standalone stand-in didn't reproduce).
 - setup.types 2951: fixed 2026-10-05 (e8 agent D): a round that skips generic functions now relates a literal with a
   skipped nested generic call as its first inference pass typed it (`first_pass_typed_arg()`), and that inference
   doesn't re-check it with the calls instantiated, so a naked `const TConfig` stays at its constraint and the excess

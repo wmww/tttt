@@ -1,0 +1,1 @@
+{ "extends": "../../../../../thirdparty/corpora/xstate/packages/core/tsconfig.corpus.json", "include": [], "files": ["probe.ts"], "compilerOptions": { "types": [] } }
