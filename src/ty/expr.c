@@ -684,6 +684,13 @@ static bool array_like_with_literal_length(Checker* me, Ty const* ty) {
     return parts.len && ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE);
 }
 
+// A spread of a type variable that is array-like stays a variadic element of the tuple it's spread into: `[...self,
+// that]` with `self: A extends readonly unknown[]` is `[...A, B]` (tsc's checkArrayLiteral, isArrayLikeType, and
+// createNormalizedTupleType keeping InstantiableNonPrimitive variadic elements)
+static bool is_generic_array_like(Checker* me, Ty const* ty) {
+    return (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && ty_extends_array(me, ty);
+}
+
 static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) {
     if (!contextual || depth > 8) return false;
     if (ty_is_tuple(contextual)) return true;
@@ -3267,7 +3274,8 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
                 }
                 // (The empty tuple is the tuple target, which spreads nothing)
                 bool empty_tuple = operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_TUPLE_TARGET;
-                elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) || empty_tuple ?
+                elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) || empty_tuple ||
+                    is_generic_array_like(me, operand) ?
                     operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
             } else {
                 elements[count++] = ty_expr_type(me, i);
@@ -3482,7 +3490,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
             Ty const* operand = i->spread->tag == EXPR_ARRAY ? ty_array_literal_as_tuple(me, i->spread, nullptr) :
                 ty_expr_type(me, i->spread);
             flags[i_index] = TUPLE_ELEMENT_REST;
-            elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) ?
+            elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) || is_generic_array_like(me, operand) ?
                 operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
             continue;
         }
