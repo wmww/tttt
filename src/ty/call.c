@@ -352,7 +352,8 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
 }
 
 // The arguments from `from` on, as the tuple a variadic rest parameter receives
-static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool widen, bool readonly) {
+// `skip_sensitive`: a context-sensitive function not typed yet is anyFunctionType (tsc's SkipContextSensitive)
+static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive) {
     u32 arity = args->len > from ? args->len - from : 0;
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
@@ -367,7 +368,9 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
             flags[i] = TUPLE_ELEMENT_REST;
             elements[i] = arg->variadic ? arg->variadic : ty_array(me, arg->type, false);
         } else {
-            Ty const* type = arg->type ? arg->type : ty_expr_type(me, arg->expr);
+            Ty const* type = arg->type ? arg->type :
+                skip_sensitive && arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION ? ty_any_function_type(me) :
+                ty_expr_type(me, arg->expr);
             elements[i] = widen ? ty_widened_literal(me, type) : type;
         }
     }
@@ -378,6 +381,10 @@ static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool w
     free(elements);
     free(names);
     return ret;
+}
+
+static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool widen, bool readonly) {
+    return rest_args_tuple_skipping(me, args, from, widen, readonly, false);
 }
 
 // Type argument inference
@@ -890,7 +897,10 @@ static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32
     }
 }
 
-static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* shape, Args* args, OuterInference* self) {
+// `skip_sensitive`: the context-sensitive functions are left out (as anyFunctionType), not typed for good
+static void infer_rest_variadic(
+    Checker* me, Inference* inf, ParamShape const* shape, Args* args, OuterInference* self, bool skip_sensitive
+) {
     if (!shape->rest_variadic) return;
     u32 from = shape->count < args->len ? shape->count : args->len;
     bool is_const = ty_is_const_type_variable(me, shape->rest_variadic, 0);
@@ -917,6 +927,10 @@ static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* s
         for (u32 i = from; i < args->len; i++) {
             Arg* arg = &args->data[i];
             if (!arg->context_sensitive || arg->expr->tag != EXPR_FUNCTION) continue;
+            if (skip_sensitive) {
+                arg->type = nullptr; // (Typed against the candidate chosen without it)
+                continue;
+            }
             // (Its contextual type is instantiated where it is looked at, as in the second pass)
             my outer_inference = self;
             self->fixing = true;
@@ -924,6 +938,7 @@ static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* s
             self->fixing = false;
             my outer_inference = nullptr;
         }
+        if (skip_sensitive) return;
     }
     for (u32 i = from; i < args->len; i++) {
         if (!args->data[i].type) check_rest_arg(me, shape, args, i, from, is_const);
@@ -1115,7 +1130,7 @@ static TyMapper const* infer_type_arguments(
         bool rest_sensitive = false;
         for (u32 i = shape.count; i < args->len; i++) rest_sensitive |= args->data[i].context_sensitive || args->data[i].generic_call;
         if (!rest_sensitive) {
-            infer_rest_variadic(me, &inf, &shape, args, &self);
+            infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive);
             rest_inferred = true;
         }
     }
@@ -1179,7 +1194,7 @@ static TyMapper const* infer_type_arguments(
         my outer_inference = nullptr;
         infer_from_arg(me, &inf, &shape, args, i);
     }
-    if (!rest_inferred) infer_rest_variadic(me, &inf, &shape, args, &self);
+    if (!rest_inferred) infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive);
     free(shape.types);
     free(self.sites);
 
@@ -1229,7 +1244,7 @@ static i32 first_unfit_argument_skipping(
         } else if (shape->rest_element) {
             target = shape->rest_element;
         } else if (shape->rest_variadic) {
-            source = rest_args_tuple(me, args, i, false, false);
+            source = rest_args_tuple_skipping(me, args, i, false, false, skip_sensitive);
             target = shape->rest_variadic;
         } else {
             break;
@@ -1275,7 +1290,7 @@ static i32 check_args_until_unfit(
         if (!variadic) {
             target = i < shape->count ? shape->types[i] : shape->rest_element;
         } else {
-            source = rest_args_tuple(me, args, i, false, false);
+            source = rest_args_tuple_skipping(me, args, i, false, false, skip_sensitive);
             target = shape->rest_variadic;
         }
         if (!ty_is_related(me, source, target, relation)) {
