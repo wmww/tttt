@@ -47683,7 +47683,7 @@ const baselines = {
     'callChain.3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callChain': {
         errors: true,

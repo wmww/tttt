@@ -1023,6 +1023,16 @@ static TyMapper const* infer_type_arguments(
     } else if (contextual && !(contextual->flags & TYF_ANY)) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+            // A call at the end of an optional chain that may stop short returns undefined too, which the contextual
+            // type's undefined then matches (tsc's getOptionalCallSignature: IsOuterCallChain's getOptionalType)
+            if (info->call && !info->tagged_template && !info->jsx && !info->call->uses_new && !info->call->continues_chain) {
+                bool optional = false;
+                CallExpr const* call = info->call;
+                if (call->optional_chain || (call->callable.tag == EXPR_PROPERTY && call->callable.property->continues_chain)) {
+                    ty_optional_expression_type(me, ty_expr_type(me, &call->callable), call->optional_chain, &optional);
+                }
+                if (optional) return_type = ty_union(me, (Ty const*[]){ return_type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+            }
             // A generic function type is instantiated with its own type parameters, which can then be inferred as
             // they are instead of being erased: `const f: <A>(a: A[]) => A[] = arrayMap(x => x)` gives `x: A`
             Signature const* contextual_sig = ty_single_signature(me, contextual, false, false);
