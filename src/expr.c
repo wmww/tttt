@@ -4058,7 +4058,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 error_if_not_found,
                 &found
             );
-            if (unwidened != expr_type && error_if_not_found && error_ctx_find(&found, expr_outer_span(&my property->prop), 2339)) {
+            Span name_span = expr_outer_span(&my property->prop);
+            if (unwidened != expr_type && error_if_not_found && (error_ctx_find(&found, name_span, 2339) ||
+                error_ctx_find(&found, name_span, 2550) || error_ctx_find(&found, name_span, 2551))
+            ) {
                 error_ctx_clear(&found);
                 ty_report_no_property(current_checker, unwidened, ty_access_key_type(current_checker, my property),
                     expr_outer_span(&my property->prop), errs);

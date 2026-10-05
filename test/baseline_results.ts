@@ -10026,7 +10026,7 @@ const baselines = {
         types: true,
     },
     'doYouNeedToChangeYourTargetLibraryES2016Plus': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

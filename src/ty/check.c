@@ -1259,8 +1259,11 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     // A member a later lib adds (tsc's getSuggestedLibForNonExistentProperty)
     Ty const* apparent = ty_apparent_type(me, object);
     Ty const* apparent_declared = apparent->kind == TY_REFERENCE ? apparent->reference.target : apparent;
-    char const* lib = atom && ts_code == 2339 && !destructured && apparent_declared->kind == TY_DECLARED && apparent_declared->declared.symbol ?
-        lib_feature_of_member(apparent_declared->declared.symbol->name, atom_sv(atom)) : nullptr;
+    // (The type's symbol: a declared type's, or a namespace's or function's for its typeof)
+    Symbol const* container = apparent_declared->kind == TY_DECLARED ?
+        (apparent_declared->declared.symbol ? apparent_declared->declared.symbol : apparent_declared->declared.namespace_symbol) :
+        apparent_declared->kind == TY_ANONYMOUS && !apparent_declared->anonymous.is_reverse ? apparent_declared->anonymous.merged_value : nullptr;
+    char const* lib = atom && ts_code == 2339 && !destructured && container ? lib_feature_of_member(container->name, atom_sv(atom)) : nullptr;
     // A property of what a promise resolves to (tsc's reportNonexistentProperty with getPromisedTypeOfPromise)
     Ty const* promised = atom && ts_code == 2339 && !destructured && !static_member ? ty_promised_type(me, object) : nullptr;
     if (promised && !ty_prop_type_of(me, ty_apparent_type(me, promised), atom)) promised = nullptr;
