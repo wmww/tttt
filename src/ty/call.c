@@ -322,6 +322,16 @@ static bool skipped_arg(Arg const* arg, bool skip_sensitive, bool skip_generic_f
         (skip_generic_functions && (arg->generic_function || arg->nested_generic));
 }
 
+// A context-sensitive function left out is still tsc's anyFunctionType, which fits whatever has signatures, but not a
+// parameter whose type the skipping inference made `never` or a primitive: letrec's `T extends Record<string, unknown>
+// ? LetrecTypedBuilder<T> : never` with T unknown so far isn't the overload. The type it doesn't fit, else null
+static Ty const* skipped_function_unfit(Checker* me, ParamShape const* shape, Arg const* arg, u32 i, TyRelation relation) {
+    if (!arg->context_sensitive || arg->expr->tag != EXPR_FUNCTION || arg->spread || arg->part_of_spread) return nullptr;
+    Ty const* target = i < shape->count ? shape->types[i] : shape->rest_element;
+    if (!target || (target->flags & TYF_OBJECT)) return nullptr; // (signatures, or tsc's anyFunctionType fits it anyway)
+    return ty_is_related(me, ty_any_function_type(me), target, relation) ? nullptr : target;
+}
+
 static void check_args_from(
     Checker* me, ParamShape const* shape, Args* args, u32 from, bool skip_sensitive, bool skip_generic_functions
 ) {
@@ -1284,6 +1294,12 @@ static i32 first_unfit_argument_skipping(
         // (A generic function argument skipped by the inference is tsc's anyFunctionType, which fits)
         if (skipped_arg(arg, skip_sensitive, skip_generic_functions)) {
             if (i >= shape->count && shape->rest_variadic) break;
+            Ty const* unfit = skip_sensitive ? skipped_function_unfit(me, shape, arg, i, relation) : nullptr;
+            if (unfit) {
+                *arg_type = ty_any_function_type(me);
+                *param_type = unfit;
+                return (i32)i;
+            }
             continue;
         }
         Ty const* source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
@@ -1322,6 +1338,12 @@ static i32 check_args_until_unfit(
         Arg const* arg = &args->data[i];
         if (skipped_arg(arg, skip_sensitive, skip_generic_functions)) {
             if (i >= shape->count && shape->rest_variadic) break;
+            Ty const* unfit = skip_sensitive ? skipped_function_unfit(me, shape, arg, i, relation) : nullptr;
+            if (unfit) {
+                *arg_type = ty_any_function_type(me);
+                *param_type = unfit;
+                return (i32)i;
+            }
             continue;
         }
         bool variadic = i >= shape->count && !shape->rest_element && shape->rest_variadic;

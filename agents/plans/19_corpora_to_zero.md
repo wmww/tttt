@@ -151,7 +151,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (17; 6300 at pinning)
+### effect (15; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -193,10 +193,12 @@ its return type decided first, which tsc does at its contextual check): relating
 against DataFirst typed the returned `core.map(...)` without context (core-effect, metric, fiberRuntime: 4, probe
 `generic_arrow_predicate_poisons_return.ts`). The noImplicitAny check of `a[0]` only strips null/undefined from what
 may be nullish (tsc's checkNonNullType), so a conditional whose constraint is any stays any instead of `NonNullable<..>`
-(Schema 4596/4629: 4, probe `element_access_generic_any_constraint.ts`).
+(Schema 4596/4629: 4, probe `element_access_generic_any_constraint.ts`). A context-sensitive function skipped in the first round is tsc's
+anyFunctionType, which doesn't fit a parameter the skipping inference made `never` (fast-check's `letrec` overload on
+`T extends Record<string, unknown> ? ... : never`; Schema 9195/9373, probe `skipped_function_never_param.ts`).
 
 Left, by cause (not reduced unless said):
-- Micro 2730, Schema.ts 4110, 9195/9373 (`.FiberId.map(fiberIdDecode)` from a Union's members).
+- Micro 2730, Schema.ts 4110.
 - **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses: dtslint TaggedClass 6, TaggedError 31,
   TaggedRequest 28 (Schema tagged classes without the Self type argument should be an error), Schema.ts 9010,
   fiberRuntime 1397.
