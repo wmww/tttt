@@ -12837,7 +12837,7 @@ const baselines = {
     },
     'exportDefaultProperty2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportDefaultQualifiedNameNoError': {
@@ -13037,7 +13037,7 @@ const baselines = {
     },
     'exportEqualsProperty2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportEqualsUmd': {

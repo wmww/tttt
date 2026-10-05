@@ -27,6 +27,12 @@ static inline Symbol const* shown_declaration(Symbol const* symbol, Symbol const
 }
 
 static inline VecSpan declaration_get_spans(Symbol const* me) {
+    // A type a class's namespace exports is one symbol with the class's static member of its name (see
+    // builder_add_class_static_side)
+    if (me && me->parent && (me->parent->flags & SYMBOL_CLASS) && !(me->flags & SYMBOL_VALUE) && me->decl_count) {
+        VecSpan merged = class_prop_declarations(me->parent, true, me->name, me->decls[0].full, 2);
+        if (!vec_span_is_empty(&merged)) return merged;
+    }
     return baseline_symbol_declaration_spans(me);
 }
 
