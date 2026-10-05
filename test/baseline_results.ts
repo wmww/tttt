@@ -15901,7 +15901,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyGetAndSetAccessorWithAnyReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

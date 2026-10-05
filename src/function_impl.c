@@ -980,7 +980,8 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
 static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     if (!options->no_implicit_any || options->strict_null_checks || my ret_explicit || !my has_body) return;
-    if (my is_constructor || my accessor || my jsdoc_typed) return;
+    // (A getter too, unless its type is its setter's parameter annotation: tsc's reportImplicitAny for a GetAccessor)
+    if (my is_constructor || my accessor == 2 || (my accessor && function_impl_rare(me)->setter_type) || my jsdoc_typed) return;
     Checker* checker = current_checker;
     Ty const* unwidened = ty_function_return_before_widening(checker, me);
     if (!unwidened) return;
