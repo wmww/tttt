@@ -64108,7 +64108,7 @@ const baselines = {
     'localTypes4': {
         errors: false,
         symbols: false,
-        types: false,
+        types: true,
     },
     'localTypes5': {
         errors: true,

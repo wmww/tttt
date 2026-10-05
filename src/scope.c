@@ -3882,6 +3882,13 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
                 found = nullptr;
             }
             if (from_return_type && found && !found->is_parameter) found = nullptr;
+            // (Nor are its local types in the parameter list: tsc's resolveNameHelper, "local types not visible outside
+            // the function body")
+            if (from_parameters && found && (meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER) &&
+                !found->is_parameter
+            ) {
+                found = nullptr;
+            }
             if (found && !body_variable && symbol_has_meaning(found, meaning)) return found;
         }
         if (scope->kind == SCOPE_GLOBAL_AUGMENTATION) {
