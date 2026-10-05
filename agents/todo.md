@@ -36,5 +36,7 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 9. Done (2026-10-05, one session, 2 commits): plan 42 stages 1 and 2, suite 12728 -> 12731, 0 lost, every corpus
    byte-identical; callgrind up to +1.0% (vue; drizzle/xstate +0.7%) from stage 2's reductions in is_related_to.
    Stage 2's `reduction_forces_members` HACK turned out unneeded and is gone. Stages 3-4 remain in the plan.
-10. **Triage.**
+10. Done (2026-10-05, one session + five sub-agents, ~22 commits): triage drained (triage.md header). Suite 12731 ->
+   12753, 0 lost; scenarios 208 -> 215; corpora unchanged; 1-vs-4-checker suite dumps byte-identical; checkReturn
+   port landed with deferred function bodies; plan 43 (AST memory, ~-100 MB on nest/webpack estimated) written.
 11. **Insights.**
