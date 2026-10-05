@@ -76,6 +76,15 @@ CORPORA=(
     # packages/types/src/generated/ast-spec.ts (ast-spec's tsc -b + api-extractor rollup + copy-ast-spec.mts) and
     # packages/website/data/recent-blog-posts.json (the website's recent-blog-posts plugin)
     "typescript-eslint https://github.com/typescript-eslint/typescript-eslint.git 1bf86c9f5c799916d12079c037c79e10b29cdc9c . workspace:packages/*"
+    # Effect v3.22.2 (Oct 2026, todo entry 2 of the ninth window): the head of the v3 branch, still on TypeScript 5.8
+    # (main is Effect 4 on TypeScript 7). The core `effect` package's src, its vitest tests (through @effect/vitest's
+    # sources) and its tstyche type tests (dtslint/*.tst.ts): HKT encodings, generators as do-notation, `pipe` and
+    # dual APIs with many overloads, variance annotations, branded types, Schema. Checked through
+    # packages/effect/tsconfig.corpus.json from the overlay (upstream's tsconfig.src/test.json and dtslint's, one
+    # program, noEmit, noUnusedLocals off as in dtslint's). A pnpm workspace: the dependencies are the type
+    # dependencies of effect, @effect/vitest and the root at pnpm-lock.yaml's versions, from
+    # corpora-locks/effect.package.json; the workspace packages are linked into the root's node_modules
+    "effect https://github.com/Effect-TS/effect.git e730f59d29db5f1e312be6476a95d07bcad45788 . workspace:packages/*"
 )
 
 mkdir -p corpora
@@ -107,6 +116,7 @@ for ENTRY in "${CORPORA[@]}"; do
         (cd "$PROJECT" && npm ci --ignore-scripts --legacy-peer-deps --no-audit --no-fund > /dev/null)
         if test "${LINK#workspace:}" != "$LINK"; then
             for PACKAGE in corpora/$NAME/${LINK#workspace:}; do
+                if test ! -e "$PACKAGE/package.json"; then continue; fi
                 PACKAGE_NAME=$(node -p "require('./$PACKAGE/package.json').name")
                 rm -rf "$PROJECT/node_modules/$PACKAGE_NAME"
                 mkdir -p "$(dirname "$PROJECT/node_modules/$PACKAGE_NAME")"

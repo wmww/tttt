@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "include": ["src", "test", "dtslint"],
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true,
+    "composite": false,
+    "incremental": false,
+    "noUnusedLocals": false
+  }
+}
