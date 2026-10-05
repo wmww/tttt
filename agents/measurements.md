@@ -10,13 +10,14 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## Plan 42 stages 1-2: lazy reverse mapped types, lazy intersection reduction (2026-10-05, todo entry 9)
-Suite 12728 -> 12731, 0 lost. Every corpus byte-identical to f0fba718's build (webpack 6, drizzle 6, xstate 8,
-zod-root 58 lines, rest 0; tsc-src/typescript-eslint 0). Callgrind (`./instrcount.sh`) f0fba718 -> stage 1 -> stage 2:
-tsc 4.699 -> 4.699 -> 4.727, type-fest 3.214 -> 3.215 -> 3.225, valibot 4.991 -> 4.991 -> 5.008, react 1.687 -> 1.685
--> 1.681, nest 1.275 -> 1.275 -> 1.269, webpack 3.909 -> 3.909 -> 3.890, zod 4.471 -> 4.459 -> 4.463, xstate 2.747 ->
-2.749 -> 2.768, drizzle 13.214 -> 13.226 -> 13.321, vue 8.027 -> 8.024 -> 8.103 G. Stage 2's cost is is_related_to
-reducing both sides (same call counts, ~3% more instructions in it on vue).
+## Plan 42 (2026-10-05): stages 1-2 (todo entry 9), stages 3-4 (next window's entry 1)
+Suite 12728 -> 12731 (stages 1-2) -> 12758 (3-4), 0 lost. Every corpus byte-identical throughout (webpack 6, drizzle
+6, xstate 8, zod-root 58 lines, rest 0; tsc-src/typescript-eslint 0). Callgrind (`./instrcount.sh`) f0fba718 -> stage
+2 -> b8d36c64 -> stage 4: tsc 4.699 -> 4.727 -> 4.734 -> 4.736, type-fest 3.214 -> 3.225 -> 3.227 -> 3.226, valibot
+4.991 -> 5.008 -> 4.995 -> 5.003, react 1.687 -> 1.681 -> 1.684 -> 1.685, nest 1.275 -> 1.269 -> 1.273 -> 1.273,
+webpack 3.909 -> 3.890 -> 3.896 -> 3.898, zod 4.471 -> 4.463 -> 4.467 -> 4.477, xstate 2.747 -> 2.768 -> 2.768 ->
+2.772, drizzle 13.214 -> 13.321 -> 13.327 -> 13.332, vue 8.027 -> 8.103 -> 8.112 -> 8.120 G. Stage 2's cost is
+is_related_to reducing both sides (same call counts, ~3% more instructions in it on vue).
 
 ## Perf and memory session (2026-10-05, todo entry 8)
 Suite 12728 -> 12728, 0 lost; corpora unchanged (webpack 6, xstate 8, drizzle 6, zod-root 55, rest 0); checkerdiff

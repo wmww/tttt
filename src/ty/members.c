@@ -3430,14 +3430,26 @@ Ty const* signature_return_type(Checker* me, Signature const* const_sig) {
     return ret;
 }
 
-bool ty_signature_return_in_flight(Checker* me, Signature const* sig) {
+static bool signature_return_in_flight(Checker* me, Signature const* sig, bool above_barrier) {
     for (u32 depth = 0; sig && depth < 64; depth++) {
         if (sig->ret_state == LAZY_STATE_DONE) return false;
         if (sig->ret_state == LAZY_STATE_IN_FLIGHT) return true;
-        if (!sig->target) return sig->function && !sig->function->is_type && ty_function_return_in_flight(me, sig->function);
+        if (!sig->target) {
+            if (!sig->function || sig->function->is_type) return false;
+            return above_barrier ? ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, sig->function) :
+                ty_function_return_in_flight(me, sig->function);
+        }
         sig = sig->target;
     }
     return false;
+}
+
+bool ty_signature_return_in_flight(Checker* me, Signature const* sig) {
+    return signature_return_in_flight(me, sig, false);
+}
+
+bool ty_signature_return_resolving(Checker* me, Signature const* sig) {
+    return signature_return_in_flight(me, sig, true);
 }
 
 // Only ever from an annotation, so asking doesn't infer a return type (TODO: tsc 5.5 infers `x is T` for functions

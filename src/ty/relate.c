@@ -1694,12 +1694,12 @@ static Ternary compare_signatures(
     }
 
     // A return type that is being inferred further up the stack is any here, without making that inference circular
-    // (tsc's isResolvingReturnTypeOfSignature)
-    if (ty_signature_return_in_flight(me, target)) return result;
+    // (tsc's isResolvingReturnTypeOfSignature): a source's is still related (any isn't a subtype of string)
+    if (ty_signature_return_resolving(me, target)) return result;
     Ty const* target_return = signature_return_type(me, target);
     if (target_return->flags & (TYF_VOID | TYF_ANY)) return result;
-    if (ty_signature_return_in_flight(me, source)) return result;
-    Ty const* source_return = signature_return_type(me, source);
+    Ty const* source_return = ty_signature_return_resolving(me, source) ? ty_intrinsic(me, TY_ANY) :
+        signature_return_type(me, source);
     // A type predicate is only assignable to the same predicate (a `boolean` target takes any)
     TyPredicate const* target_predicate = signature_predicate(me, target);
     if (target_predicate) {

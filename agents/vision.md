@@ -22,11 +22,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   substitution types, deferred references, flow graph + narrowing, module resolution + tsconfig, iteration protocol,
   generators, `this` types, mixins, decorators, the missing type, union origins, elaboration, JSX, tsc's type printer
   and symbol chains, JSDoc + CommonJS + expandos, parallel checking and loading, **declaration diagnostics** (plan 40,
-  with module specifier generation), **project references / `-b`** (plan 41), lazy reverse mapped types and
-  intersection reduction (plan 42 stages 1-2), tsc's deferred function bodies (checkNodeDeferred, functions only).
+  with module specifier generation), **project references / `-b`** (plan 41), lazy reverse mapped types, intersection reduction
+  and tsc's resolution-barrier/re-entry semantics (plan 42, done), tsc's deferred function bodies (checkNodeDeferred, functions only).
   ~107k lines of C.
-- **Absent or approximated tsc mechanisms**: TS7056 for deep types and TS5088; the rest of plan 42 (mapped info read
-  through expansion, return types read while a call is in flight, the first-resolution-only barrier); checkNodeDeferred
+- **Absent or approximated tsc mechanisms**: TS7056 for deep types and TS5088; checkNodeDeferred
   for class expressions, JSX and assertions; contextual instantiation (push-down, not tsc's leaf-wise pull;
   type_core.md); permissive instantiation; member identity (members aren't Symbols; the symbols *harness* rebuilds
   tsc's merges for display, see the decision below). Out of scope: emit (JS and `.d.ts` text), watch mode, the

@@ -129,7 +129,17 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                 return found;
             }
             for (u32 i = 0; i < members->prop_count; i++) {
-                if (mentions_type_variables(me, prop_type(me, members->props[i]), walk, depth + 1)) return true;
+                // (An object literal getter whose return type is being inferred further up: unsure, asking would infer
+                // it again from below the barrier, where tsc's permissive instantiation doesn't look at properties)
+                Prop const* prop = members->props[i];
+                Prop const* root = prop;
+                while (root->type_state != LAZY_STATE_DONE && root->target && !root->mapped) root = root->target;
+                if (root->type_state != LAZY_STATE_DONE && (root->flags & PROP_GETTER) && !root->target &&
+                    !root->decl->function->ret_explicit && ty_function_return_in_flight(me, root->decl->function)
+                ) {
+                    return true;
+                }
+                if (mentions_type_variables(me, prop_type(me, prop), walk, depth + 1)) return true;
             }
             for (u32 i = 0; i < members->index_count; i++) {
                 if (mentions_type_variables(me, members->index[i].key, walk, depth + 1)) return true;

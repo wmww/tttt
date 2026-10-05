@@ -52,9 +52,8 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
 1. **Nested call resolution** (res1 in circularReferenceInReturnType, `A`/`fields` in circularReferenceInReturnType2):
    tsc finds these cycles through a nested resolution of the same call, which has no barrier and returns
    `resolvingSignature` (any) at once. Plan 38 stage 3 (resolve once) landed, so the only nested resolutions left are
-   in-flight re-entries: skipping the barrier for them is -1 (`s = foo(this)`), any for them -10 +1 (plan 38 "Stage 3"
-   not done 1). **Plan 42 stages 3-4** (2026-10-05): tsc re-enters them too; the first-resolution-only barrier
-   is +circularReferenceInReturnType but zod 0 -> 6 until zod's getters stop being typed during `z.object()`.
+   in-flight re-entries. **Done by plan 42 stage 4** (2026-10-05: first-resolution-only barrier, return types
+   re-inferred below it; both tests pass).
 2. **Constraint lowering under the push** (TS2313 in recursiveMappedTypes, incorrectRecursiveMappedTypeConstraint,
    circularBaseTypes' `K`/`Y`): tsc's getResolvedBaseConstraint lowers the declared constraint while `(K,
    ImmediateBaseConstraint)` is pushed, and getTypeFromMappedTypeNode resolves the key constraint eagerly. Moving

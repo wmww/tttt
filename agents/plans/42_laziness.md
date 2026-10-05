@@ -2,6 +2,9 @@
 Planned 2026-10-05 (todo entry 7, one session with three prototype sub-agents). Prototypes in `42_prototypes/` (those left), all
 applying to 02ca5d29.
 
+**Status 2026-10-05: all four stages done.** Left: stage 1's optional follow-up (the `infer_from_objects` shortcut),
+stage 4's eager predicate inference (no failing test), and the Memory notes (a perf session's, not this plan's).
+
 ## Decision: go, as four small independent stages. No shared groundwork, no big port
 The stub expected one root cause ("an instantiated object type whose members are resolved per name on demand").
 That isn't what the prototypes found:
@@ -65,22 +68,26 @@ prototype's default branches landed, its switches are gone:
   (`LazyMemo.reevaluating`).
 - Plan 38 "not done 1" and plan 39 "Stage 3" 1 carry the corrected premise (tsc resolves re-entered calls again).
 
-## Stage 4 (optional, 1-2 sessions): the first-resolution-only barrier and return types after resolution
-- **Return type read while the call is in flight** (3 tests: simpleRecursionWithBaseCase1's fn5,
-  types.asyncGenerators.es2018.2, witness): `resolved_return_type` takes the chosen signature's return type inside
-  the call's in-flight window; tsc asks getReturnTypeOfSignature after the call is resolved and cached. Needs the
-  chosen signature in `CallResolution` (which plan 38 "not done 2", `ty_call_effects` using getResolvedSignature,
-  wants too: do both).
-- **Barrier only on a call's first resolution** (tsc's `resolutionStart` rule; the prototype's
-  `resolving_nested_call`): +circularReferenceInReturnType, 0 lost in the suite, but **zod 0 -> 6** (4 TS7023, 2
-  TS2344): tttt types zod's recursive getters during `z.object(...)`'s resolution (`props_related_impl` typing the
-  source accessor prop; `definitely_unrelated`'s `mentions_type_variables` walk over object literals, tttt's stand-in
-  for permissive instantiation, which can't see an object literal's free type parameters: `free_params_unknown`).
-  tsc first asks a getter's type in the deferred accessor check, after every call resolved. Go only once that is
-  found and fixed; otherwise leave the every-resolution barrier (hacks.md `resolve_call`) as the documented cost.
-- Eager predicate inference during instantiation (`inference_mapper` -> `signature_predicate` ->
-  `ty_infer_type_predicate` checks a body; tsc reads predicates lazily off instantiated signatures):
-  recursiveGenericSignatureInstantiation. Small; do it whenever.
+## Stage 4: the first-resolution-only barrier, return types re-inferred below it. Done 2026-10-05
+Suite 12755 -> 12758 (+circularReferenceInReturnType, +circularReferenceInReturnType2, +witness), 0 lost; every corpus
+byte-identical, threadcheck/checkerdiff identical, callgrind within +0.25% of the session start.
+- `resolve_call` sets the barrier only for a call's first resolution (`Checker.resolving_nested_call`, set by
+  `call_return_type()` for an in-flight re-entry); the resolve_call HACK is gone. The prototype's zod 0 -> 6 didn't
+  reproduce. underscoreTest1 (`_.memoize(function (n) {... fibonacci(n - 1) ...})`) needed `set_contextual_return()`
+  not to ask a function's own return type while it's in flight (the nested resolution checks the argument against T,
+  which is the function itself).
+- An inferred return type asked from below a call's barrier is inferred again once, keeping the inner result
+  (`FunctionReturn.reevaluating`, like declarations); `compare_signatures` uses `ty_signature_return_resolving()`
+  (the stack above the barrier, tsc's isResolvingReturnTypeOfSignature) and relates a resolving source return as
+  any (not a subtype of string: overloads' subtype pass picks `(n: any) => any`, witness's fnArg2). That made zod
+  report TS7023 on two recursive getters: `definitely_unrelated`'s `mentions_type_variables` walk asked an object
+  literal getter whose return type was in flight, re-inferring it below the barrier; the walk now treats such a
+  property as unsure (hacks.md, tsc's permissive instantiation reads no properties).
+- witness's TS2403s: `check_subsequent_declaration` no longer skips a circular first declaration (tsc's is any).
+- The "return type read while the call is in flight" item needed nothing: simpleRecursionWithBaseCase1,
+  types.asyncGenerators.es2018.2 already passed, witness was the two rules above. Left: eager predicate inference
+  during instantiation (`inference_mapper` -> `signature_predicate` -> `ty_infer_type_predicate` checks a body; tsc
+  reads predicates lazily): its test, recursiveGenericSignatureInstantiation, passes now; do it if another shows up.
 
 ## Memory (the stub's question): not laziness
 drizzle, 2026-10-05 (loaded machine; RSS is still meaningful): `--checkers 1` peaks at **896 MB** (single-threaded

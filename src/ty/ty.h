@@ -1199,6 +1199,9 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol);
 void signature_resolve(Checker* me, Signature const* sig);
 Ty const* signature_return_type(Checker* me, Signature const* sig);
 bool ty_signature_return_in_flight(Checker* me, Signature const* sig); // Its return type is being inferred up the stack
+// The same, but an inferred return type in flight only counts above the barrier of a call being resolved: below it, asking
+// infers it again (tsc's isResolvingReturnTypeOfSignature, findResolutionCycleStartIndex)
+bool ty_signature_return_resolving(Checker* me, Signature const* sig);
 TyPredicate const* signature_predicate(Checker* me, Signature const* sig);
 bool signature_declared_never(Signature const* sig);
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function); // flow.c, null if none

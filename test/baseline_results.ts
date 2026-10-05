@@ -3431,9 +3431,9 @@ const baselines = {
         types: true,
     },
     'circularReferenceInReturnType2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularResolvedSignature': {
         errors: true,
@@ -67661,9 +67661,9 @@ const baselines = {
         types: false,
     },
     'witness': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typingsLookup1': {
         errors: true,

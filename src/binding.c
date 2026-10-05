@@ -279,7 +279,7 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
     Ty const* error = ty_intrinsic(checker, TY_ERROR);
     Ty const* circular = ty_intrinsic(checker, TY_CIRCULAR);
-    if (type == error || declared == error || type == circular || declared == circular ||
+    if (type == error || declared == error || declared == circular ||
         ty_is_related(checker, type, declared, TY_RELATION_IDENTITY)
     ) {
         return;

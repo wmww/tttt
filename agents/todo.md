@@ -6,9 +6,8 @@ since this file was written), the next session is insights, whatever is left her
 triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus numbers
 (`./realworld.py --corpus X` for every pinned corpus), `./instrcount.sh` and a commit.
 
-1. **Execution: plan 42 stage 3** (mapped info read through expansion / calls re-entered in flight). Delete the
-   hacks it makes unneeded. At the end, decide stage 4 (the barrier): do it in the same session if it's small, otherwise write
-   down why it waits.
+1. Done: plan 42 stages 3 and 4 (suite 12753 -> 12758, 0 lost, every corpus byte-identical, callgrind within
+   +0.3%). Plan 42 is finished; the resolve_call HACK is gone.
 2. **Corpus: pin Effect** (the `effect` core package of Effect-TS, with its type tests if it has them: HKT encodings,
    generators as do-notation, `pipe` chains with dozens of overloads, variance annotations, branded types). It must be
    clean under tsc 5.8 at a pinned commit (pick the last commit before any move to TS 6/7, like webpack/xstate). If

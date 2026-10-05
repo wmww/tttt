@@ -27,6 +27,7 @@ Ty const* ty_function_type(Checker* me, FunctionImpl const* function) {
 typedef struct FunctionReturn {
     LazyState state;
     bool circular; // Asked for while being inferred
+    bool reevaluating; // Asked for again from below a call's barrier, see function_return_type()
     // An async function's body returns no value and there's no Promise value (TS2705), not said yet: only a request
     // for the type that tsc would make says it (see ty_function_return_circular())
     bool promise_missing;
@@ -315,7 +316,12 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
             report_promise_missing(me, function, memo);
             return memo->type;
         case LAZY_STATE_IN_FLIGHT:
-            // (Whether it is circular is the stack's to say: not when asked again from under a call's barrier)
+            // Asked again from below a call's barrier, it isn't circular yet: it's inferred again, once, and the inner
+            // result is the one remembered (tsc's getReturnTypeOfSignature, like declarations: lazy_type_evaluate_inner())
+            if (!memo->reevaluating && !ty_resolving_find(me, RESOLVING_FUNCTION_RETURN, function)) {
+                memo->reevaluating = true;
+                break;
+            }
             ty_resolving_cycle(me, RESOLVING_FUNCTION_RETURN, function);
             return ty_intrinsic(me, TY_CIRCULAR);
         case LAZY_STATE_NOT_STARTED: break;
@@ -327,9 +333,13 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;
     inferred_promise_missing = false;
-    memo->type = infer_return_type(me, function);
-    memo->promise_missing = inferred_promise_missing;
+    Ty const* type = infer_return_type(me, function);
+    bool promise_missing = inferred_promise_missing;
     inferred_promise_missing = false;
+    if (memo->state != LAZY_STATE_DONE) {
+        memo->type = type;
+        memo->promise_missing = promise_missing;
+    }
     if (ty_resolving_pop(me)) memo->circular = true;
     // A return type that depends on itself is any, whatever else the body says (tsc: popTypeResolution() failing)
     if (memo->circular) memo->type = ty_intrinsic(me, TY_ANY);

@@ -432,7 +432,9 @@ src` finds the code-side markers; every significant one has an entry here.
   on `TyConditionalOuter.unknown`. `collect_free_params` gives up on `typeof`, `this`, computed keys, initializers,
   every function and merged value type. `TyMapper` is flat.
 - Substitution types: the true-branch chain is `TypeNode.flow` from the resolve walk; no `number | ${number}` mapped
-  key rule. `mentions_type_variables` treats substitutions as unsure (precision sent react-hook-form into overflows).
+  key rule. `mentions_type_variables` treats substitutions as unsure (precision sent react-hook-form into overflows),
+  and an object literal getter whose return type is in flight (asking re-infers it below a call's barrier: zod's
+  recursive getters became TS7023, plan 42 stage 4).
 - Mapped types: homomorphism (`homomorphic_variable`) needs a syntactic `[K in keyof X]`; `expand_mapped` expands once
   keys are literal unions, modifiers only for written `keyof T`; `mentions_mapped()` (ty_display.c) compensates for
   instantiating member signatures that can't mention the parameters. `instantiate_mapped_over_list`: syntactic, bails
