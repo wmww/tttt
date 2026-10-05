@@ -1966,7 +1966,12 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         } else if (ty_is_tuple(arg)) {
             TupleShape const* inner = arg->reference.target->declared.tuple;
             if (b.len + inner->arity >= 10000) {
-                // TODO: TS2799 "Type produces a tuple type that is too large to represent." (TS2800 for expressions)
+                // (tsc's createNormalizedTupleType: at the current node, a type or an expression)
+                if (my current_node.expr) {
+                    ty_error_at_current_node_d(me, 2800, "Expression produces a tuple type that is too large to represent.");
+                } else {
+                    ty_error_at_current_node_d(me, 2799, "Type produces a tuple type that is too large to represent.");
+                }
                 free(b.types);
                 free(b.flags);
                 free(b.names);
