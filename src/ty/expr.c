@@ -253,6 +253,17 @@ static bool may_want_signature(Expr const* expr) {
     }
 }
 
+// The context of an operand whose contextual type is the expression's own (a conditional's branches): before its
+// instantiation, which each operand does again (tsc's getContextualType recurses through such parents without
+// instantiating, so a call there resolves with the type as written)
+static ExprCtx passed_on_context(ExprCtx ctx) {
+    if (ctx.raw_contextual && ctx.raw_contextual != ctx.contextual) {
+        ctx.contextual = ctx.raw_contextual;
+        ctx.sig_contextual = nullptr;
+    }
+    return ctx;
+}
+
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     // (tsc's getApparentTypeOfContextualType: every node's contextual type is instantiated at its top level with what the
     // call inferring now knows. The view a contextual signature sees only where one may be asked for: instantiating
@@ -2225,15 +2236,18 @@ static Ty const* check_binary(Checker* me, BinaryOpExpr const* binary, ExprCtx c
             }
             break;
         case BINARY_OP_OR_OR:
-        case BINARY_OP_EH_EH:
-            if (binary->defaulted_expando) return ty_check_expr(me, &binary->right, ctx.contextual);
-            left = ty_check_expr(me, &binary->left, ctx.contextual);
-            right = ty_check_expr(me, &binary->right, ctx.contextual ? ctx.contextual : left);
+        case BINARY_OP_EH_EH: {
+            // (The operands' contextual type is the expression's as written, see passed_on_context())
+            Ty const* passed = passed_on_context(ctx).contextual;
+            if (binary->defaulted_expando) return ty_check_expr(me, &binary->right, passed);
+            left = ty_check_expr(me, &binary->left, passed);
+            right = ty_check_expr(me, &binary->right, ctx.contextual ? passed : left);
             break;
+        }
         case BINARY_OP_AND_AND:
         case BINARY_OP_COMMA:
             left = ty_expr_type(me, &binary->left);
-            right = ty_check_expr(me, &binary->right, ctx.contextual);
+            right = ty_check_expr(me, &binary->right, passed_on_context(ctx).contextual);
             break;
         default:
             left = ty_expr_type(me, &binary->left);
@@ -4229,8 +4243,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         {
             ty_expr_type(me, &expr->ternary->condition);
             // In source order: union members print in the order their types were made
-            Ty const* yes = check_with(me, &expr->ternary->yes, ctx);
-            Ty const* no = check_with(me, &expr->ternary->no, ctx);
+            ExprCtx branch = passed_on_context(ctx);
+            Ty const* yes = check_with(me, &expr->ternary->yes, branch);
+            Ty const* no = check_with(me, &expr->ternary->no, branch);
             return union_of_two(me, yes, no);
         }
 
