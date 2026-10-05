@@ -748,14 +748,17 @@ static Search load_using_options(State* me, csview name, int extensions, Loader 
 
 // ---- Directories and packages ----
 
-// tsc's loadFileNameFromPackageJsonField(): a file a package.json names, which may be the output of the file we want
-static bool load_package_json_field(State* me, csview candidate, int extensions, Found* out) {
+// tsc's loadFileNameFromPackageJsonField(): a file a package.json names, which may be the output of the file we want.
+// `value`: the exports/imports target as written, if it was one: a TS extension it doesn't end with came from the
+// import (resolvedUsingTsExtension)
+static bool load_package_json_field(State* me, csview candidate, csview value, int extensions, Found* out) {
     csview extension = script_extension_of(candidate);
     if ((extensions & EXT_TS && extension_is_ts_source(extension)) ||
         (extensions & EXT_DTS && csview_starts_with(extension, ".d."))
     ) {
         if (try_file(me, candidate, extension, &out->path)) {
             out->kind = kind_of_extension(extension);
+            out->used_ts_extension = value.size && !(value.size >= extension.size && memcmp(value.buf + value.size - extension.size, extension.buf, (size_t)extension.size) == 0);
             return true;
         }
     }
@@ -798,7 +801,7 @@ static bool load_directory(State* me, csview directory, PackageJson const* packa
     }
 
     if (entry.size) {
-        found = load_package_json_field(me, cstr_sv(&entry_path), extensions, out);
+        found = load_package_json_field(me, cstr_sv(&entry_path), (csview){0}, extensions, out);
         if (!found) {
             // `"main": "lib"` or `"types": "dist/index"`. Not through package.json again, and with extension probing
             // even in ESM mode
@@ -988,7 +991,7 @@ static bool try_load_input_file_for_path(
                     if (file_exists(me, cstr_sv(&input))) {
                         found = true;
                         Found loaded = {0};
-                        if (load_package_json_field(me, cstr_sv(&input), input_extensions, &loaded)) *out = loaded;
+                        if (load_package_json_field(me, cstr_sv(&input), (csview){0}, input_extensions, &loaded)) *out = loaded;
                         else found = false;
                     }
                     cstr_drop(&input);
@@ -1026,7 +1029,7 @@ static Search load_target(
             cstr relative = pattern ? replace_all_stars(text, subpath) : cstr_d(text, subpath);
             cstr path = join(package_dir, cstr_sv(&relative));
             bool found = try_load_input_file_for_path(me, cstr_sv(&path), subpath, package_dir, is_imports, extensions, out) ||
-                load_package_json_field(me, cstr_sv(&path), extensions, out);
+                load_package_json_field(me, cstr_sv(&path), text, extensions, out);
             cstr_drop(&relative);
             cstr_drop(&path);
             return found ? SEARCH_FOUND : SEARCH_CONTINUE;

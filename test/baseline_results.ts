@@ -49261,12 +49261,12 @@ const baselines = {
         types: true,
     },
     'cjsErrors(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'cjsErrors(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49311,12 +49311,12 @@ const baselines = {
         types: true,
     },
     'packageJsonImportsErrors(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'packageJsonImportsErrors(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

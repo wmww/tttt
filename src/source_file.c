@@ -359,6 +359,57 @@ void module_ref_report_require_of_esm(ModuleRef const* me, Span at, ErrorCtx* er
     }
 }
 
+// tsc's getRelativePathFromFile: `to` from the directory of `from` (both relative to the same directory), "./" first
+// unless it goes up
+static cstr relative_path_from_file(csview from, csview to) {
+    isize dir_end = from.size;
+    while (dir_end > 0 && from.buf[dir_end - 1] != '/') dir_end--;
+    csview dir = csview_slice(from, 0, dir_end); // With its trailing '/', or empty
+    // The longest common prefix that ends at a '/'
+    isize common = 0;
+    for (isize i = 0; i < dir.size && i < to.size && dir.buf[i] == to.buf[i]; i++) {
+        if (dir.buf[i] == '/') common = i + 1;
+    }
+    cstr ret = cstr_init();
+    isize ups = 0;
+    for (isize i = common; i < dir.size; i++) ups += dir.buf[i] == '/';
+    if (!ups) cstr_append(&ret, "./");
+    for (isize i = 0; i < ups; i++) cstr_append(&ret, "../");
+    cstr_append_sv(&ret, csview_slice(to, common, to.size));
+    return ret;
+}
+
+static bool has_ts_extension(csview path) {
+    return (csview_ends_with(path, ".ts") || csview_ends_with(path, ".tsx") || csview_ends_with(path, ".mts") ||
+        csview_ends_with(path, ".cts")) && !declaration_extension(path).size;
+}
+
+// tsc's resolveExternalModule under rewriteRelativeImportExtensions: what emit's rewriting of `.ts` specifiers to
+// `.js` would get wrong (not in ambient code, declaration file names, type-only imports)
+static void report_unsafe_rewrite(ModuleRef const* me, ErrorCtx* errs) {
+    SourceFile const* from = my span.source;
+    if (!from || from->is_declaration || declaration_extension(cstr_sv(&my path)).size) return;
+    csview path = cstr_sv(&my path);
+    bool relative = csview_starts_with(path, "./") || csview_starts_with(path, "../") || csview_equals(path, ".") ||
+        csview_equals(path, "..");
+    bool should_rewrite = relative && has_ts_extension(path);
+    if (!my used_ts_extension && should_rewrite) {
+        cstr relative_path = relative_path_from_file(cstr_sv(&from->canonical_path), cstr_sv(&my file->canonical_path));
+        error_ctx_error_d(errs, my span, 2876, "This relative import path is unsafe to rewrite because it looks like a file "
+            "name, but actually resolves to \"", relative_path, "\".");
+        cstr_drop(&relative_path);
+    } else if (my used_ts_extension && !should_rewrite && !my file->is_declaration &&
+        // (sourceFileMayBeEmitted: not a package's file)
+        !csview_contains(cstr_sv(&my file->canonical_path), "/node_modules/") &&
+        !csview_starts_with(cstr_sv(&my file->canonical_path), "node_modules/")
+    ) {
+        isize dot = path.size;
+        while (dot > 0 && path.buf[dot - 1] != '.' && path.buf[dot - 1] != '/') dot--;
+        error_ctx_error_d(errs, my span, 2877, "This import uses a '.", csview_slice(path, dot, path.size), "' extension to "
+            "resolve to an input TypeScript file, but will not be rewritten during emit because it is not a relative path.");
+    }
+}
+
 void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
@@ -392,5 +443,10 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
         error_ctx_error_d(errs, my span, 5097,
             "An import path can only end with a '.", csview_slice(cstr_sv(&my path), dot, cstr_size(&my path)),
             "' extension when 'allowImportingTsExtensions' is enabled.");
+    }
+    if (options->rewrite_relative_import_extensions && !type_only && my file && !dts.size &&
+        !(my used_ts_extension && !allowed)
+    ) {
+        report_unsafe_rewrite(me, errs);
     }
 }
