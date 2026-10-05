@@ -2528,8 +2528,8 @@ bool ty_is_spreadable_prop(Checker* me, Prop const* prop) {
 
 // The properties of an object type as a spread takes them (tsc's isSpreadableProperty and getSpreadSymbol): not
 // private or protected ones, nor methods of classes, and none readonly. `partial`: each one optional (tsc's
-// getAnonymousPartialType)
-static void spread_props_of(Checker* me, Ty const* object, bool partial, LiteralBuilder* out) {
+// getAnonymousPartialType). `readonly`: in a const context, every one readonly, methods too as properties
+static void spread_props_of(Checker* me, Ty const* object, bool partial, bool readonly, LiteralBuilder* out) {
     if (object->kind == TY_INTERSECTION) {
         // The properties of all of its members, each of the type the intersection has for it: every member's
         // properties are spread, then made what the intersection says (optional only if optional everywhere)
@@ -2538,7 +2538,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
             if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
             LiteralBuilder part = {0};
-            spread_props_of(me, member, partial, &part);
+            spread_props_of(me, member, partial, readonly, &part);
             for (u32 j = 0; j < part.count; j++) {
                 ObjectLiteralProp* existing = literal_builder_find(&all, part.props[j].name);
                 if (!existing) {
@@ -2586,6 +2586,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
         Ty const* type = setonly ? ty_intrinsic(me, TY_UNDEFINED) : prop_type(me, prop);
         u32 flags = prop->flags & (u32)~(PROP_READONLY | (setonly ? PROP_SETTER : 0));
         Ty const* declared_type = type;
+        if (readonly) flags = (flags & (u32)~PROP_METHOD) | PROP_READONLY; // (tsc's getSpreadSymbol makes a property)
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
@@ -2616,7 +2617,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
     // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)
     for (u32 j = 0; j < members->index_count && out->index_count < c_arraylen(out->index); j++) {
         out->index[out->index_count] = members->index[j];
-        out->index[out->index_count++].readonly = false;
+        out->index[out->index_count++].readonly = readonly;
     }
 }
 
@@ -2693,6 +2694,7 @@ typedef struct SpreadAcc {
     SpreadPart* parts; // Finished members, when a generic object was spread
     u32 part_count;
     bool any; // Something `any` was spread: the whole literal is any
+    bool readonly; // In a const context: what's spread is readonly
 } SpreadAcc;
 
 static void spread_acc_push_part(SpreadAcc* acc, SpreadPart part) {
@@ -2777,7 +2779,7 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
         // written after it are the ones both have, none)
         if (spreads_into_nothing(me, object) && !(object->flags & TYF_OBJECT)) return;
         LiteralBuilder right = { .empty_object = false };
-        spread_props_of(me, apparent, partial != nullptr, &right);
+        spread_props_of(me, apparent, partial != nullptr, acc->readonly, &right);
         spread_acc_props(me, acc, &right);
         literal_builder_drop(&right);
         return;
@@ -2791,7 +2793,7 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
             Ty const* apparent = ty_apparent_type(me, members.data[j]);
             if (!spreads_into_nothing(me, members.data[j]) && ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION)) {
                 LiteralBuilder right = {0};
-                spread_props_of(me, apparent, false, &right);
+                spread_props_of(me, apparent, false, acc->readonly, &right);
                 spread_into(me, &alt, &right);
                 literal_builder_drop(&right);
             }
@@ -3131,7 +3133,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         }
     }
     LiteralBuilder builder = {0}; // What was written since the last spread (tsc's propertiesTable)
-    SpreadAcc spread = {0};
+    SpreadAcc spread = { .readonly = ctx.is_const };
     // The implied type of an object binding pattern (`const { a = 1 } = { a: 2 }`): a property is optional where the
     // pattern's is (tsc's checkObjectLiteral, contextualTypeHasPattern)
     Ty const* pattern_context = ctx.contextual && (ctx.contextual->flags & TYF_BINDING_PATTERN) &&
@@ -3459,7 +3461,8 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             .generic_mode = ctx.generic_mode,
         };
         if (i->tag == EXPR_SPREAD) {
-            Ty const* operand = ty_expr_type(me, i->spread);
+            // (A spread of a const context is in it too: tsc's isConstContext goes up through SpreadElement)
+            Ty const* operand = ctx.is_const ? check_with(me, i->spread, (ExprCtx){ .is_const = true }) : ty_expr_type(me, i->spread);
             if (as_tuple) {
                 flags[count] = TUPLE_ELEMENT_REST;
                 if (expr->assignment_pattern && !ty_is_array(me, operand) && !ty_is_tuple(operand) && !(operand->flags & TYF_ANY) &&
@@ -4511,7 +4514,8 @@ static Ty const* check_template(Checker* me, Expr const* expr, ExprCtx ctx) {
     Ty const** types = malloc(sizeof(Ty const*) * (len ? len : 1));
     panic_if(!types, "out of memory");
     for_each (i, vec_expr, &template->substitutions) {
-        Ty const* type = ty_expr_type(me, i);
+        // (A substitution of a const context is in it too: tsc's isConstContext goes up through TemplateSpan)
+        Ty const* type = ctx.is_const ? check_with(me, i, (ExprCtx){ .is_const = true }) : ty_expr_type(me, i);
         if (!allowed) {
             // tsc's templateConstraintType
             Ty const* parts[6] = {

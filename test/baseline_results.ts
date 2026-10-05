@@ -48008,7 +48008,7 @@ const baselines = {
     'constAssertions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'duplicatePropertiesInTypeAssertions01': {
         errors: true,
