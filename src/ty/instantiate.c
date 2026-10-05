@@ -318,9 +318,13 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (!ty_is_tuple(list)) return nullptr;
     TupleShape const* shape = list->reference.target->declared.tuple;
     TyList elements = ty_reference_args(me, list);
-    if (shape->arity > 32) return nullptr;
-    Ty const* mapped_elements[32];
-    unsigned char flags[32];
+    Ty const* stack_elements[32];
+    unsigned char stack_flags[32];
+    bool small = shape->arity <= 32;
+    Ty const** mapped_elements = small ? stack_elements : malloc(sizeof(Ty const*) * shape->arity);
+    unsigned char* flags = small ? stack_flags : malloc(shape->arity);
+    panic_if(!mapped_elements || !flags, "out of memory");
+    Ty const* ret = nullptr;
     // Past the first rest element, each element maps as the element of an array of it, a variadic one as a whole
     // (tsc's instantiateMappedTupleType)
     bool past_rest = false;
@@ -335,7 +339,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
                 continue;
             }
             Ty const* array = rest ? element : ty_array(me, element, false);
-            if (!ty_is_array(me, array)) return nullptr;
+            if (!ty_is_array(me, array)) goto done;
             TyMapper const* element_mapper = ty_mapper_with(me, ty_mapper_with(me, mapper, variable, array),
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
             Ty const* mapped_element = mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), false);
@@ -363,8 +367,13 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         .names = shape->names,
     };
     Ty const* target = ty_tuple_target(me, &new_shape);
-    if (!shape->arity) return target;
-    return ty_reference(me, target, (TyList){ .data = mapped_elements, .len = shape->arity });
+    ret = !shape->arity ? target : ty_reference(me, target, (TyList){ .data = mapped_elements, .len = shape->arity });
+done:
+    if (!small) {
+        free(mapped_elements);
+        free(flags);
+    }
+    return ret;
 }
 
 // An object literal's type (ty_object_literal_of()) has its members already, and doesn't know which type parameters
