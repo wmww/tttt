@@ -157,7 +157,9 @@ Not done (each tried, measured, left):
 3. JSX elements (`ty_resolve_jsx_element`) aren't remembered per node: resolved per request as before. Untried.
 4. (Done in a follow-up commit: a call's memo in `check_with()` is no longer keyed by contextual type,
    `kind_uses_context()`; nothing changed, -0.0..0.2% instructions.)
-6. **SkipGenericFunctions for generic functions nested in literal arguments** (`Arg.nested_generic`) isn't done: leaving
+6. **SkipGenericFunctions for generic functions nested in literal arguments** (`Arg.nested_generic`) is done for the
+   applicability check only (2026-10-05: the skipping round relates the first pass's literal type, xstate setup.types
+   2951); leaving them out of the first inference round isn't: leaving
    them out of the first round lost zod's `pick([z.object, ...])` and xstate inferences, because tttt marks literals
    nested_generic where tsc has no contextual signature to skip for (`infer_type_arguments()`). tsc skips a generic
    function only where isContextSensitive-style checks find a contextual signature (checkFunctionExpressionOrObject

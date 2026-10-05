@@ -55,7 +55,7 @@ listed here before were gone by then (fixed along the way by other work). Plan 2
 mechanisms in general.
 
 
-### xstate (2)
+### xstate (1)
 Pinned 2026-09-28 (sixth window, todo entry 1) as the inference-heavy corpus: xstate core at f210b35 (last commit
 before TypeScript 6) with its vitest tests, through our `corpora-locks/xstate.overlay/packages/core/tsconfig.corpus.json`
 (lib es2024, src + test). tsc 5.8: 0 in 5.9 s. tttt went 394 -> 61 the same session (three sub-agents + main tree):
@@ -88,22 +88,12 @@ fallback inference skipped nested generic calls that were already resolved; HACK
   entry: ActionFunction<..., TActor, ...> })` and spawnChild's real SpawnArguments shape pass): look at what contextual
   type the literal gets in spawnChild's inference rounds under createMachine's `entry` (Actions<...> union) and
   whether its widened type is the one remembered by resolve-once (plan 38 stage 3).
-- **setup.types 2951** (TS2578 unused @ts-expect-error: tsc reports TS2353 `nonexistent` in `after: { long: 'd',
-  nonexistent: 'd' }`). tsc reports it only when the same createMachine config also has `entry: [raise({ type: 'GO' },
-  { delay: 'long' })]` (without it tsc is silent too): its excess-property error names the constraint's
-  `DelayedTransitions<...>`, so tsc's `const TConfig` inference failed its constraint and the fresh literal was checked
-  against `MachineConfig<...>`. Instrumented tsc (getInferredType, both rounds): TConfig has **no candidate at all**
-  and falls back to the constraint; minimal repro `setup({ delays: { short: 10, long: 1000 } }).createMachine({ states:
-  { a: { entry: [raise({ type: 'GO' }, { delay: 'long' })] }, c: { after: { long: 'd', nonexistent: 'd' } } } })`.
-  Why: raise() is a generic function returning a function, so the SkipGenericFunctions round types it silentNever
-  (ObjectFlags.NonInferrableType, which propagates up the literal: no inference to the naked TConfig), TConfig is its
-  constraint, and chooseOverload's applicability check in that same mode fails on the excess property before the
-  Normal round that would infer from the whole literal ever runs. tttt does its literal's nested generic calls in one
-  go (infer_type_arguments' second pass re-checks the literal with them instantiated, no applicability check in
-  between): this is plan 38 "Not done" item 6 (SkipGenericFunctions for generic functions nested in literal arguments).
-  Standalone repro: `type AF<T> = { (x: T): void; _t?: T }; declare function raise<T>(t: T): AF<T>; declare function
-  cm<const C extends { states?: Record<string, { entry?: readonly AF<any>[]; after?: { long?: string } }> }>(c: C): C;
-  cm({ states: { a: { entry: [raise(1)] }, c: { after: { long: 'd', nonexistent: 'd' } } } })` (tsc: TS2353).
+- setup.types 2951: fixed 2026-10-05 (e8 agent D): a round that skips generic functions now relates a literal with a
+  skipped nested generic call as its first inference pass typed it (`first_pass_typed_arg()`), and that inference
+  doesn't re-check it with the calls instantiated, so a naked `const TConfig` stays at its constraint and the excess
+  property fails the candidate like tsc's chooseOverload. Probe `test/probes/plan19/xstate/`. (The call's type in the
+  types baseline is still the inferred one, tsc's the constraint: the `overload_failure_inference` hack resolves
+  raise() for real in the failure fallback.)
 
 ### drizzle (0; 693 at pinning)
 Pinned 2026-09-29 (seventh window, todo entry 1): drizzle-orm at 15454dbe, the package's src and type-tests through

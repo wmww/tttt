@@ -317,9 +317,15 @@ static bool waits_for_sensitive(Arg const* arg) {
 // `skip_sensitive`: leave out the context-sensitive arguments, which a contextual type would type for good (tsc's
 // CheckMode.SkipContextSensitive, while it's not known yet which overload they'll be checked against)
 static bool skipped_arg(Arg const* arg, bool skip_sensitive, bool skip_generic_functions) {
-    // (A literal with a generic function in it too: under tsc's SkipGenericFunctions the function is anyFunctionType)
-    return (skip_sensitive && waits_for_sensitive(arg)) ||
-        (skip_generic_functions && (arg->generic_function || arg->nested_generic));
+    return (skip_sensitive && waits_for_sensitive(arg)) || (skip_generic_functions && arg->generic_function);
+}
+
+// A literal with a generic function call in it, in a round that skips generic functions: related as the inference's
+// first pass typed it, the calls silentNever (tsc's SkipGenericFunctions checks the literal, the calls returning
+// resolvingSignature), not checked again. Its non-inferrable type left a naked type parameter at its constraint, which
+// a literal with an excess property then doesn't fit
+static bool first_pass_typed_arg(Arg const* arg, bool skip_sensitive, bool skip_generic_functions) {
+    return skip_generic_functions && arg->nested_generic && !(skip_sensitive && waits_for_sensitive(arg));
 }
 
 // A context-sensitive function left out is still tsc's anyFunctionType, which fits whatever has signatures, but not a
@@ -336,7 +342,9 @@ static void check_args_from(
     Checker* me, ParamShape const* shape, Args* args, u32 from, bool skip_sensitive, bool skip_generic_functions
 ) {
     for (u32 i = from; i < args->len; i++) {
-        if (!skipped_arg(&args->data[i], skip_sensitive, skip_generic_functions)) check_arg(me, shape, args, i);
+        if (skipped_arg(&args->data[i], skip_sensitive, skip_generic_functions)) continue;
+        if (first_pass_typed_arg(&args->data[i], skip_sensitive, skip_generic_functions)) continue;
+        check_arg(me, shape, args, i);
     }
 }
 
@@ -1201,7 +1209,8 @@ static TyMapper const* infer_type_arguments(
             continue;
         }
         if (arg->nested_generic && !arg->context_sensitive) {
-            if (skip_generic) continue;
+            // (Under skip_generic_functions its first-pass type is what the applicability check relates)
+            if (skip_generic || skip_generic_functions) continue;
             // Again, now with the generic functions in it instantiated in context
             GenericFunctionMode mode = { .sig = sig, .inf = &inf };
             Ty const* param_type = shape_type_at(&shape, i);
@@ -1353,7 +1362,10 @@ static i32 check_args_until_unfit(
             checked = args->len;
         } else {
             for (; checked <= i; checked++) {
-                if (!skipped_arg(&args->data[checked], skip_sensitive, skip_generic_functions)) check_arg(me, shape, args, checked);
+                Arg const* a = &args->data[checked];
+                if (skipped_arg(a, skip_sensitive, skip_generic_functions)) continue;
+                if (first_pass_typed_arg(a, skip_sensitive, skip_generic_functions)) continue;
+                check_arg(me, shape, args, checked);
             }
         }
         Ty const* source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
