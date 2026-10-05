@@ -2683,7 +2683,18 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
     CallEffects none = {0};
     if (!callee || call->uses_new || call->is_extends) return none;
     Ty const* apparent = ty_apparent_type(me, callee);
-    if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) return union_call_effects(me, apparent);
+    if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+        CallEffects effects = union_call_effects(me, apparent);
+        if (effects.has_predicate || effects.returns_never) return effects;
+        // A method of a union of arrays is that of an array of their elements (getSignaturesOfType's
+        // arrayFallbackSignatures): `(A[] | B[]).every(isA)` narrows by `this is S[]`
+        u32 count = 0;
+        if (!ty_union_signatures(me, apparent->composite.types, false, &count)) {
+            Ty const* fallback = array_fallback_callee(me, call);
+            if (fallback && fallback->kind != TY_UNION) return ty_call_effects(me, fallback, call);
+        }
+        return effects;
+    }
     // (getSignaturesOfType: an intersection's are its members')
     if ((apparent->flags & TYF_ANY) || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return none;
     Members const* members = ty_members(me, apparent);
