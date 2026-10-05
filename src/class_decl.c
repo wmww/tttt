@@ -579,7 +579,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
 }
 
 // TS1166/TS1168: the key of a property or of a method overload has to be something the class can be typed by
-static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, ErrorCtx* errs) {
+// (`modifier_error`: checkGrammarModifiers reported the member, which ends its grammar checks)
+static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, bool modifier_error, ErrorCtx* errs) {
     bool field = item->tag == CLASS_ITEM_FIELD;
     Expr* key = field ? item->field.computed_key : item->method.computed_key;
     expr_typecheck(key, errs);
@@ -600,7 +601,7 @@ static void class_computed_key_typecheck(ClassDecl const* me, ClassItem* item, E
         }
     }
     if (!field && item->method.func.has_body) return; // Only overload signatures are restricted
-    if (!expr_is_non_bindable_dynamic_name(key)) return;
+    if (modifier_error || !expr_is_non_bindable_dynamic_name(key)) return;
     Span span = field ? item->field.name_span : item->method.name_span;
     if (field) {
         error_ctx_grammar_error_d(errs, span, 1166,
@@ -1975,7 +1976,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_METHOD:
-                if (i->method.computed_key) class_computed_key_typecheck(me, i, errs);
+                if (i->method.computed_key) class_computed_key_typecheck(me, i, decorators_rejected, errs);
                 i->method.func.private_ambient = class_item_private_in_ambient(me, i) || i->method.is_declare;
                 if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient &&
                     !i->method.is_declare
@@ -2010,7 +2011,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 break;
 
             case CLASS_ITEM_FIELD: {
-                if (i->field.computed_key) class_computed_key_typecheck(me, i, errs);
+                if (i->field.computed_key) class_computed_key_typecheck(me, i, decorators_rejected, errs);
                 if (i->field.has_explicit_type) type_typecheck(&i->field.explicit_type, errs);
                 // (tsc's checkPropertyDeclaration)
                 if (i->field.is_abstract && i->field.value.tag != EXPR_IMPLICIT_ANY && span_valid(i->field.name_span)) {

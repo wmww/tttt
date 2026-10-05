@@ -9176,7 +9176,7 @@ const baselines = {
         types: true,
     },
     'decoratorsOnComputedProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17981,7 +17981,7 @@ const baselines = {
         types: true,
     },
     'instantiateTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56976,12 +56976,12 @@ const baselines = {
         types: true,
     },
     'parserUnterminatedGeneric1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserUnterminatedGeneric2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
