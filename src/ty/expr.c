@@ -1626,7 +1626,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     bool assume_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
         (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID)) || !binding || binding->definitely_assigned ||
         identifier->assume_initialized ||
-        includes_undefined(type);
+        includes_undefined(type) ||
+        // A variable of another function than the one the reference is in (tsc's isOuterVariable): its initial type is
+        // the declared type, which is also what the loop caches go by
+        (identifier->outer_reference && !ty_symbol_never_initialized(symbol));
     if (issue_only && assume_initialized) return nullptr;
     // What the pattern's other elements say about the value destructured (tsc's getNarrowedTypeOfSymbol)
     if (binding && binding->parent) {

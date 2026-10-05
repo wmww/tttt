@@ -2853,7 +2853,7 @@ static FlowType type_at_loop_label(FlowQuery* q, FlowNode const* flow, FlowList 
 }
 
 // A local `let x: T;` that nothing ever assigns (tsc's isNeverInitialized): a closure doesn't get to assume it is
-static bool never_initialized(Symbol const* symbol) {
+bool ty_symbol_never_initialized(Symbol const* symbol) {
     if (!symbol || !symbol->is_local || symbol->is_const || symbol->is_definitely_assigned || !(symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE)) {
         return false;
     }
@@ -2969,7 +2969,7 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             // A variable of another container than the one the reference is in is assumed to be initialized. A
             // parameter's initial type is what it is assumed to be anyway (without the undefined its default rules out)
             bool is_outer = (q->left_container || (q->symbol && q->symbol->flow_start != flow)) &&
-                !(q->symbol && q->symbol->is_parameter) && !never_initialized(q->symbol);
+                !(q->symbol && q->symbol->is_parameter) && !ty_symbol_never_initialized(q->symbol);
             type = (FlowType){ is_outer ? q->declared : q->initial, false };
         } else if (flags & FLOW_ARRAY_MUTATION) {
             if (!type_at_array_mutation(q, flow, &type)) {

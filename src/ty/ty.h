@@ -1092,6 +1092,8 @@ Ty const* ty_readonly_array_target(Checker* me); // checker.c
 // tsc's isEvolvingArrayOperationTarget: `x` of `x.length`, `x.push(v)`, `x.unshift(v)`, `x[i] = v` with a number-like
 // i (IdentifierExpr.evolving_op). There `let x = []` is the auto array, not what it evolved to (flow.c)
 bool ty_is_evolving_array_operation_target(Checker* me, struct Expr const* reference);
+// A `let x;` that nothing ever definitely assigns (tsc's isNeverInitialized)
+bool ty_symbol_never_initialized(Symbol const* symbol);
 Ty const* ty_tuple_rest_slice(Checker* me, Ty const* source, u32 start);
 struct ImportAttributes;
 void ty_check_import_attributes(Checker* me, struct ImportAttributes const* attributes, ErrorCtx* errs);
