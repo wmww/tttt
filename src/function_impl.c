@@ -1133,6 +1133,9 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
         Span body = at && at < end ? block_first_token(span_make(my full_span.source, at, end)) : span_null;
         if (span_valid(body)) error_ctx_error_d(errs, body, 1183, "An implementation cannot be declared in ambient contexts.");
     }
+    // (A function expression's return type is asked for before its body is checked, whatever the body says: tsc's
+    // checkFunctionExpressionOrObjectLiteralMethodDeferred, where a missing Promise value is reported)
+    if (my is_expression && my has_body && !my ret_explicit && !my is_generator) ty_function_return_type(current_checker, me);
     // (A generator's return type is only asked for after its body is checked: tsc's checkFunctionOrMethodDeclaration)
     if (!my is_generator) function_check_widened_return(me, errs);
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
