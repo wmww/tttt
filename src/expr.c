@@ -685,6 +685,11 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         } else {
             error_ctx_error_d(errs, identifier_expr_name(me), 2693, "'", identifier_expr_name(me), "' only refers to a type, but is being used as a value here.");
         }
+    } else if (my call_child && span_equals(identifier_expr_name(me), "await")) {
+        // (tsc's getCannotFindNameDiagnosticForName)
+        names->binder->suggestion_count++;
+        error_ctx_error_d(errs, identifier_expr_name(me), 2311, "Cannot find name 'await'. Did you mean to write this in an "
+            "async function?");
     } else if (!my shorthand_unchecked) {
         scope_report_value_not_found(names, identifier_expr_name(me), my shorthand, errs);
     }
@@ -2001,6 +2006,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             while (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
             // (tsc's isConstraintPosition: the callee of any call, an optional one too)
             if (callee->tag == EXPR_IDENTIFIER) callee->identifier.constraint_position = true;
+            if (!my call->uses_new) {
+                if (callee->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(callee)) callee->identifier.call_child = true;
+                for_each (i, vec_expr, &my call->args) {
+                    if (i->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(i)) i->identifier.call_child = true;
+                }
+            }
             if (callee->tag == EXPR_PROPERTY) callee->property->constraint_position = true;
             if (expr_is_optional_chain(me)) {
                 expr_lookup_names_chain_flow(me, names, errs, true_target, false_target, chain_continues, nullish_condition);
