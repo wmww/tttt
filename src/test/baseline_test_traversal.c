@@ -1905,6 +1905,10 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
             baseline_test_case_add_type_node(ctx, my name, &type_any);
         } else if ((my symbol->flags & SYMBOL_VALUE) && namespace_decl_declares_value(me)) {
             baseline_test_case_add_symbol_value(ctx, my name, my symbol);
+        } else if (my is_augmentation && !(my symbol->flags & SYMBOL_VALUE)) {
+            // (An augmentation merged into an `export =` namespace without a value: getTypeOfSymbol of a namespace
+            // is errorType)
+            baseline_test_case_add_type(ctx, my name, ty_intrinsic(current_checker, TY_ERROR));
         }
     }
     block_compile_test_info(&my contents, ctx);
