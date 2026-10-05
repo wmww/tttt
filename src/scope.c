@@ -214,6 +214,14 @@ static void symbol_own_rare(Symbol* me) {
     my rare = rare;
 }
 
+// A SymbolDecl.js: always for an assignment (whose flow container the resolve walk may set), else only with a type
+static SymbolDeclJs* symbol_decl_js(Binder* binder, struct TypeNode const* jsdoc_type, bool assignment) {
+    if (!assignment && !jsdoc_type) return nullptr;
+    SymbolDeclJs* ret = arena_new(&binder->arena, SymbolDeclJs);
+    ret->jsdoc_type = jsdoc_type;
+    return ret;
+}
+
 static void symbol_ensure_exports(Symbol* me) {
     if (!my exports) my exports = arena_new(&my binder->arena, SymbolTable);
 }
@@ -1489,7 +1497,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         symbol->alias->name = expr->identifier.name;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr_outer_span(expr), .full = statement,
-            .jsdoc_type = jsdoc_type,
+            .js = symbol_decl_js(my binder, jsdoc_type, false),
         });
     } else if (entity || class_alias) {
         if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
@@ -1511,7 +1519,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     } else {
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_EXPR, .flags = SYMBOL_BLOCK_SCOPED_VARIABLE, .node = expr,
-            .name = statement, .full = statement, .jsdoc_type = jsdoc_type,
+            .name = statement, .full = statement, .js = symbol_decl_js(my binder, jsdoc_type, false),
         });
     }
 }
@@ -1578,7 +1586,7 @@ static void declare_commonjs_export(
     } else {
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value, .name = left,
-            .full = statement, .jsdoc_type = jsdoc_type,
+            .full = statement, .js = symbol_decl_js(my binder, jsdoc_type, true),
         });
         set_function_class_symbol(value, symbol);
     }
@@ -4276,7 +4284,7 @@ static void add_expando_member(
     if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
-        .name = expr_outer_span(left), .full = expr_outer_span(left), .jsdoc_type = jsdoc_type,
+        .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true),
     });
     set_function_class_symbol(value, member);
     // JavaScript `F.prototype = { ... }` makes F a class (tsc's bindPrototypeAssignment: containerIsClass)
@@ -4353,7 +4361,7 @@ static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
         left->property->declares = symbol;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = value, .name = expr_outer_span(left),
-            .full = expr_outer_span(left), .jsdoc_type = e->binary_op->jsdoc_type,
+            .full = expr_outer_span(left), .js = symbol_decl_js(my binder, e->binary_op->jsdoc_type, true),
             // (Not in a constructor: possibly undefined, tsc's getWidenedTypeForAssignmentDeclaration definedInMethod)
             .assignment = ASSIGNMENT_DECL_THIS_IN_METHOD,
         });
@@ -4419,7 +4427,7 @@ static void declare_assignment_member(
     if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
-        .name = expr_outer_span(left), .full = expr_outer_span(left), .jsdoc_type = jsdoc_type, .jsdoc_modifiers = jsdoc_modifiers,
+        .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true), .jsdoc_modifiers = jsdoc_modifiers,
     });
     // In source order, like tsc's one binder walk (`F.prototype.x = v` is declared before the walk reaches a
     // `this.x = v` above it)

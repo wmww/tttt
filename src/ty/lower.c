@@ -1161,7 +1161,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         // `export default e` (exportDefaultStripsFreshness)
         case SYMBOL_DECL_EXPR:
             // (A JSDoc `@type` on it is its type: tsc's getEffectiveTypeAnnotationNode of an ExportAssignment)
-            if (decl->jsdoc_type) return ty_of_node(decl->jsdoc_type);
+            if (symbol_decl_jsdoc_type(decl)) return ty_of_node(symbol_decl_jsdoc_type(decl));
             // A JSON file's value is widened, literals too (getTypeOfVariableOrParameterOrPropertyWorker)
             if (decl->full.source && decl->full.source->is_json) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
             return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
@@ -1365,7 +1365,7 @@ bool ty_is_constructor_declared(Symbol const* symbol) {
     bool in_constructor = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->jsdoc_type) return false;
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT || symbol_decl_jsdoc_type(decl)) return false;
         // (`/** @type {T} */ this["x"];` declares without assigning)
         Expr const* node = decl->node;
         if (node && node->tag == EXPR_PROPERTY && span_eq(expr_outer_span(node), decl->full)) return false;
@@ -1421,7 +1421,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     // getWidenedTypeForAssignmentDeclaration: an expando initializer of the value declaration is a container of its own)
     SourceFile const* first_file = symbol->decls[0].full.source;
     if (first_file && first_file->is_js && symbol->decl_count > 1 && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-        !symbol->decls[0].jsdoc_type && symbol->decls[0].assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY
+        !symbol_decl_jsdoc_type(&symbol->decls[0]) && symbol->decls[0].assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY
     ) {
         Expr* init = expando_initializer((Expr*)symbol->decls[0].node, span_null, true);
         if (init && (init->tag == EXPR_FUNCTION || init->tag == EXPR_CLASS_DECL)) {
@@ -1430,7 +1430,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration)
     for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol->decls[i].jsdoc_type) return ty_of_node(symbol->decls[i].jsdoc_type);
+        if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol_decl_jsdoc_type(&symbol->decls[i])) return ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[i]));
     }
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
@@ -1550,8 +1550,8 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         Symbol const* step = symbol;
         for (int depth = 0; step && (step->flags & SYMBOL_ALIAS) && depth < 32; depth++) {
             for (u32 i = 0; i < step->decl_count; i++) {
-                if (step->decls[i].kind == SYMBOL_DECL_ALIAS && step->decls[i].jsdoc_type) {
-                    return ty_of_node(step->decls[i].jsdoc_type);
+                if (step->decls[i].kind == SYMBOL_DECL_ALIAS && symbol_decl_jsdoc_type(&step->decls[i])) {
+                    return ty_of_node(symbol_decl_jsdoc_type(&step->decls[i]));
                 }
             }
             Symbol const* target = symbol_resolve_alias((Symbol*)step);
@@ -1569,7 +1569,7 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
     bool assignments = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT;
     if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY ||
-        symbol->decls[0].jsdoc_type)
+        symbol_decl_jsdoc_type(&symbol->decls[0]))
     ) {
         return assignment_symbol_type(me, symbol);
     }

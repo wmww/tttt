@@ -1725,7 +1725,7 @@ static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* acce
     Symbol const* symbol = prop && prop->decl ? prop->decl->symbol : nullptr;
     if (!symbol || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
-    return decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->flow_container && decl->flow_container == property_context(access)->flow_container;
+    return decl->kind == SYMBOL_DECL_ASSIGNMENT && decl->js && decl->js->flow_container && decl->js->flow_container == property_context(access)->flow_container;
 }
 
 // tsc's getFlowTypeOfAccessExpression with assumeUninitialized: `this.x` in the constructor of the class that declares
@@ -2056,12 +2056,12 @@ static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
     Symbol const* symbol = target == COMMONJS_TARGET_EXPORTS_PROPERTY ? symbol_table_get(module->exports, name.sv) :
         target == COMMONJS_TARGET_MODULE_EXPORTS ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
     if (!symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) return nullptr;
-    return symbol->decls[0].jsdoc_type ? ty_of_node(symbol->decls[0].jsdoc_type) : nullptr;
+    return symbol_decl_jsdoc_type(&symbol->decls[0]) ? ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[0])) : nullptr;
 }
 
 static bool expando_target_is_annotated(PropertyExpr const* access) {
     Symbol const* declared = access->declares;
-    if (declared->decl_count && declared->decls[0].jsdoc_type) return true;
+    if (declared->decl_count && symbol_decl_jsdoc_type(&declared->decls[0])) return true;
     if (access->expr.tag != EXPR_IDENTIFIER || access->expr.identifier.keyword) return false;
     Symbol const* parent = access->expr.identifier.target;
     if (!parent || !(parent->flags & SYMBOL_VARIABLE)) return false;

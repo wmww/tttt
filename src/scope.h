@@ -111,7 +111,7 @@ static inline Symbol* symbol_table_get(SymbolTable const* me, csview name) {
 SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count);
 
 // The AST node a declaration of a symbol was made from
-typedef enum SymbolDeclKind {
+typedef enum SymbolDeclKind : uint8_t {
     SYMBOL_DECL_NONE = 0,
     SYMBOL_DECL_VARIABLE,       // Binding: variables, parameters, destructured elements
     SYMBOL_DECL_FUNCTION,       // FunctionImpl
@@ -159,27 +159,37 @@ typedef enum JsDocModifiers {
     JSDOC_MODIFIER_OVERRIDE = 1 << 3,
 } JsDocModifiers;
 
+// What only JavaScript assignment declarations (and `export default`/`export =` with a JSDoc type) have
+typedef struct SymbolDeclJs {
+    // SYMBOL_DECL_ASSIGNMENT: the JSDoc `@type` of the assignment (`/** @type {T} */ this.x = v`), which is the
+    // declared type (tsc's getAnnotatedTypeForAssignmentDeclaration)
+    struct TypeNode const* jsdoc_type;
+    // SYMBOL_DECL_ASSIGNMENT of a dot access (`f.x = v`, `this.x = v`): the control flow container (FlowBuilder.container)
+    // the assignment is in, set by the resolve walk
+    void const* flow_container;
+} SymbolDeclJs;
+
 typedef struct SymbolDecl {
     SymbolDeclKind kind;
     AssignmentDeclKind assignment; // SYMBOL_DECL_ASSIGNMENT only
-    u32 flags; // What this declaration added to the symbol's flags
     uint8_t jsdoc_modifiers; // SYMBOL_DECL_ASSIGNMENT: JsDocModifiers
     // A `var` (or sloppy mode function) hoisted out of the nested statement it is written in: `block` is where it was
     // hoisted to, not the statement list it is in
     bool hoisted;
+    u32 flags; // What this declaration added to the symbol's flags
     void const* node;
-    // SYMBOL_DECL_ASSIGNMENT: the JSDoc `@type` of the assignment (`/** @type {T} */ this.x = v`), which is the
-    // declared type (tsc's getAnnotatedTypeForAssignmentDeclaration)
-    struct TypeNode const* jsdoc_type;
+    // Every SYMBOL_DECL_ASSIGNMENT has one, other kinds only with a JSDoc type (symbol_decl_js()). Null otherwise
+    SymbolDeclJs* js;
     Span name;
     Span full;
     // The scope (block) it was declared in, when scope_init_declaration() declared it: the symbols baseline lists a
     // block's function declarations first, see symbol_declaration_spans()
     struct Scope const* block;
-    // SYMBOL_DECL_ASSIGNMENT of a dot access (`f.x = v`, `this.x = v`): the control flow container (FlowBuilder.container)
-    // the assignment is in, set by the resolve walk
-    void const* flow_container;
 } SymbolDecl;
+
+static inline struct TypeNode const* symbol_decl_jsdoc_type(SymbolDecl const* me) {
+    return my js ? my js->jsdoc_type : nullptr;
+}
 
 typedef enum AliasState {
     ALIAS_UNRESOLVED = 0,

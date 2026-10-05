@@ -1863,7 +1863,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(expr_outer_span(me)) &&
                         decl->name.source == expr_outer_span(me).source
                     ) {
-                        decl->flow_container = flow->container;
+                        if (decl->js) decl->js->flow_container = flow->container;
                         names->binder->has_assignment_flow_containers = true;
                     }
                 }
