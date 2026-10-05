@@ -9,8 +9,9 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Suite 12753 / 13540** fully pass (errors 13176, symbols 13329, types 12996). +399 in the window, 0 lost. Failing
   components: types 544, errors 364, symbols 211. The errors tail is thin and flat: 709 missing / 488 spurious
   diagnostics over ~190 codes, no code in more than 26 tests. Checker log_error output: none.
-- **Corpora update (2026-10-05, after todo entry 5)**: every corpus at 0 except xstate 2 and effect 31; **vscode**
-  (1.39M lines) pinned and at 0; sweep 8016 / 8208 match, no crash. Suite 12768.
+- **Corpora update (2026-10-05, after todo entry 8)**: every corpus at 0 except effect 7 (three need tsc's base-type
+  resolution stack, one TS2590); **vscode** (1.39M lines) pinned and at 0; sweep **8575 / 8595** match (versioned
+  DefinitelyTyped packages included), no crash, nothing slower than tsc. Suite 12933.
 - **Corpora** (all clean under tsc 5.8): tsc `src/compiler`, valibot, react, nest, type-fest, zod, vue at 0;
   **tsc-src and typescript-eslint** (`-b`, pinned this window) 12/66 -> 0; drizzle 6, webpack 6, xstate 8 (was 12),
   zod-root at tsc's level. **The pinned corpora have stopped finding bugs**: every one is at or near 0.

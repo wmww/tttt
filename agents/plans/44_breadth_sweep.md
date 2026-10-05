@@ -35,8 +35,8 @@ missing checks too.
 wall at -j4, tttt 456 s CPU vs tsc 5314 s. Slower than tsc: carbon-components-react (25 s vs 5.9), d3-geo
 (both fixed since: intersect_unions_of_primitives was quadratic in the unions, the relation maybe stack was scanned).
 
-Latest (2026-10-05, after the Small and six of the Medium root causes): **8072 match**, spurious-only 48, missing-only
-81, both 7, crash 0, timeout 0.
+After the Small and six of the Medium root causes: 8072 match. Latest (2026-10-05, todo entry 8, with stage 3 item 1's
+versioned packages): **8575 / 8595 match**, spurious-only 18, missing-only 1, both 1, crash 0, timeout 0.
 
 ## Stage 2: drain the ranking (corpus sessions)
 Work the table top-down like plan 19 does for the corpora: a root cause that spans packages first, single-package

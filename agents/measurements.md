@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Sweep and effect toward 0 (2026-10-05, todo entry 8, four sub-agents)
+Sweep 8072 / 8208 -> **8575 / 8595** match (versioned dependencies added 387 packages: `test/sweep_links.py`, run by
+`sweep.py`), 0 crash, 0 timeout, nothing slower than tsc (carbon-components-react 25 s -> ~2 s, d3-geo 1.8 -> 0.07 s).
+Effect 31 -> 7, xstate 2 -> 0, the rest 0. Suite 12932 -> 12933, 0 lost. Every corpus identical at `--checkers` 1, 2,
+3, 4, 7 (`./checkerdiff.py`). Instructions (callgrind, `./instrcount.sh`), 223f3d18 -> f2870a70: tsc 4.642 -> 4.616,
+type-fest 3.239 -> 3.109, valibot 5.072 -> **3.866 (-23.8%)**, react 1.667 -> 1.685 (+1.1%: de52c3b4 +0.65%, the
+intersection relation skipping the source's own property; 2b57049a +0.36%, a conditional's object-vs-primitives
+shortcut; both tsc behaviour), nest 1.249 -> 1.254, webpack 3.872 -> 3.834, zod 4.488 -> 4.475, xstate 2.900 ->
+2.869, drizzle 13.441 -> 13.256, vue 8.206 -> 7.671, effect 11.056 -> **9.740 (-11.9%)**, vscode 33.305 -> 32.042.
+
 ## Inference invokeOnce for conditional targets (2026-10-05, todo entry 8, effect agent)
 Callgrind K1 (`./instrcount.sh`), 0979dc97 -> the fix: effect 11.520 -> 9.728 G (-15.6%), type-fest 3.232 -> 3.111
 (-3.7%), vue 7.828 -> 7.665 (-2.1%), valibot 3.884 -> 3.870, zod 4.488 -> 4.476, xstate 2.856 -> 2.864 (+0.3%),

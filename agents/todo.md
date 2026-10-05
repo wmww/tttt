@@ -28,12 +28,10 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    deferred events replayed in program order). vscode resolve 593 -> 283 ms, wall 2.47 -> 2.23 s; suite 12932 and
    every corpus byte-identical, TSan clean, callgrind +0.1..0.6%. Stage 2 (JavaScript files) and 3 (declare/link) in
    the plan, not scheduled.
-8. **Corpus: the sweep and effect toward 0** (entry 5's agents already took every other corpus to 0 but xstate 2).
-   The sweep's ranking (`./sweep.py`, plan 44 "Open root causes": the circular/unresolved `export =` TS2497/TS2305 in
-   ~65 webpack-plugin packages first, carbon-components-react's 25 s), effect's 31 (plan 19 "effect": the overload
-   reset typing callbacks before a generic-call argument (`tap(acquireRelease(...))`), blocking the `dual<A, B>()`
-   predicate gate), xstate's 2 (plan 19). Sweep and corpus root causes go ahead of suite plans. (Entry 6's agents already did plan 44's small causes and six
-   medium ones: what's left there is the `export =` item, four medium ones and the large ones.)
+8. Done: the sweep and effect toward 0 (four agents). Sweep 8072 / 8208 -> 8575 / 8595 match (plan 44 stage 3 item 1,
+   versioned dependencies, done on the way), nothing slower than tsc; effect 31 -> 7, xstate 2 -> 0; suite 12933, 0
+   lost; checker counts byte-identical everywhere; instructions valibot -24%, effect -12%, react +1.1% (measurements.md).
+   Left: plan 44 "Open root causes", plan 19 "effect".
 9. **Fan-out: types/symbols tail** (plan 35's queue, `./displaydiff.py --fine`, bugs/display.md), four sub-agents.
 10. **Triage.** Also: the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (725 lines: merge
    or delete entries whose code is gone).
