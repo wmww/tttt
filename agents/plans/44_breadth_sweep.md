@@ -103,7 +103,6 @@ one commit each, `./sweep.py` before/after.
 ### Large / elsewhere
 - **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md
   `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
-- Not investigated: mapbox, rangy, strophe (`declare global` namespace + UMD), prismjs (`"x/components/"` with a
 - **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
 - **mapbox**: `import * as Leaflet from "leaflet"` then `Leaflet.Map.MapOptions` (Map a class) where leaflet's UMD
   global L got mapbox's `declare global { namespace L.mapbox }` merged in: tsc says TS2724 ''L' has no exported member
