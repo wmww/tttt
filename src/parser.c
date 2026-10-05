@@ -8158,8 +8158,9 @@ static bool parse_dot_prop(Parser* parent, bool* optional_chain_ret, Expr* ret) 
     Span prop;
     Tok t = tok_peek(&p);
     if (t.newline_before && tok_is_word(t) && tok_is_word(tok_next(&p, t)) && !tok_next(&p, t).newline_before) {
-        prop = span_make(p.shared->source, after_dot, after_dot);
-        parse_error(&p, prop, 1003, "Identifier expected.");
+        parse_error(&p, span_make(p.shared->source, after_dot, after_dot), 1003, "Identifier expected.");
+        // (tsc's missing node starts at the dot's end, before trivia: it's printed where the next token is)
+        prop = span_make(p.shared->source, p.pos, p.pos);
         p.pos = at_dot.pos;
         p.whitespace = at_dot.whitespace;
         p.whitespace_end = at_dot.whitespace_end;

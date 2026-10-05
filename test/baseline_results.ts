@@ -11023,7 +11023,7 @@ const baselines = {
     'enumConflictsWithGlobalIdentifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumDecl1': {
         errors: true,
@@ -11093,7 +11093,7 @@ const baselines = {
     'enumMemberResolution': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumNegativeLiteral1': {
         errors: true,
@@ -11358,7 +11358,7 @@ const baselines = {
     'errorRecoveryWithDotFollowedByNamespaceKeyword': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorSpanForUnclosedJsxTag': {
         errors: true,
