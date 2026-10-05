@@ -1188,7 +1188,8 @@ static Ty const* apparent_type_resolve(Checker* me, Ty const* ty) {
     }
     u32 f = ty->flags;
     Ty const* global = nullptr;
-    if (ty->kind == TY_INTRINSIC || ty->kind == TY_LITERAL || (f & TYF_BOOLEAN)) {
+    // (A computed enum member, TY_LITERAL without a value: `declare enum E { A }`'s members, is NumberLike)
+    if (ty->kind == TY_INTRINSIC || (ty->kind == TY_LITERAL && !(f & TYF_ENUM)) || (f & TYF_BOOLEAN)) {
         if (f & (TYF_STRING | TYF_STRING_LITERAL)) global = global_type(me, GLOBAL_STRING);
         else if (f & (TYF_NUMBER | TYF_NUMBER_LITERAL)) global = global_type(me, GLOBAL_NUMBER);
         else if (f & (TYF_BOOLEAN | TYF_BOOLEAN_LITERAL)) global = global_type(me, GLOBAL_BOOLEAN);

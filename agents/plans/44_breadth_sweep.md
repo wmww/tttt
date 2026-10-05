@@ -83,7 +83,6 @@ one commit each, `./sweep.py` before/after.
 - **Methods of an object literal against a union with an index signature member get no contextual parameter types**
   (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
-- **`declare enum` member types lack Number's methods** (dymo-label-framework; C/2339/l): not pinned down, enums.c.
 
 ### Medium (15-100 lines)
 - **three +TS2415** (8 packages; B/three3.ts): an intersection base's merged `this`-typed member gets `this` rebound to
