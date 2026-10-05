@@ -51838,7 +51838,7 @@ const baselines = {
     'errorOnFunctionReturnType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportedAliasedEnumTag': {
         errors: true,
@@ -52333,7 +52333,7 @@ const baselines = {
     'jsdocTemplateConstructorFunction2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTemplateTag': {
         errors: true,

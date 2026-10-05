@@ -5046,12 +5046,31 @@ static Span jsdoc_namespace_assignment_name(Statement const* host) {
     return name;
 }
 
+// Whether there is nothing but whitespace and comments from `at` to `end`
+static bool only_trivia_until(const char* at, const char* end) {
+    while (at < end) {
+        if (is_js_ascii_space(*at)) {
+            at++;
+        } else if (at + 1 < end && at[0] == '/' && at[1] == '/') {
+            while (at < end && *at != '\n') at++;
+        } else if (at + 1 < end && at[0] == '/' && at[1] == '*') {
+            const char* close = strstr(at + 2, "*/");
+            if (!close) return true;
+            at = close + 2;
+        } else {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Binds the declaration tags (`@typedef`, `@callback`, `@import`) of the JSDoc comments from `from` to `to` that no
 // statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
 // declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
 // containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
 static void jsdoc_bind_comments(
-    Parser* parent, const char* from, const char* to, const char* inner_from, bool bind, bool toplevel, VecStatement* out
+    Parser* parent, const char* from, const char* to, const char* inner_from, const char* inner_to, bool bind, bool toplevel,
+    VecStatement* out
 ) {
     VecJsDocRange* comments = &parent->shared->jsdoc_comments;
     isize lo = 0, hi = comments->size;
@@ -5171,7 +5190,9 @@ static void jsdoc_bind_comments(
                     .jsdoc_twice = *after == '(',
                     // (A comment inside a statement no inner list claimed, a class member's: its typedef isn't named
                     // when printed, like a local one)
-                    .local = inner_from && range.start > inner_from,
+                    // (Not one after the statement's last token, which its span may include: its parse hopped the
+                    // trivia looking for a `;`)
+                    .local = inner_from && range.start > inner_from && !only_trivia_until(range.end, inner_to),
                 }),
                 .span = span,
             });
@@ -12454,7 +12475,8 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 p.shared->jsdoc_enum = nullptr;
             }
             if (p.shared->source->is_js) {
-                jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span), true, toplevel, ret);
+                jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span),
+                    span_end_ptr(ret->data[statement_index].span), true, toplevel, ret);
                 jsdoc_from = p.pos;
             }
             parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
@@ -12487,7 +12509,7 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     shrink_list(vec_statement, ret);
     p.shared->statement_parent = outer_parent;
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
-    if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
+    if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
 
     return parse_success(&p);
 }
@@ -13258,6 +13280,25 @@ static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, Init
     }));
 }
 
+// `var x = /** @type {T} */ v`: the initializer's JSDoc is the declaration's too (tsc's getJSDocCommentsAndTags of a
+// variable declaration adds its initializer's), so x is a T unless the declaration has a type of its own
+static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable) {
+    for_each (i, vec_initialized_binding, &variable->initializers) {
+        if (i->binding.has_explicit_type || i->binding.tag != BINDING_IDENTIFIER) continue;
+        Expr* value = initialized_binding_value(i);
+        // (Only nodes that take JSDoc (tsc's canHaveJSDoc) and not a parenthesized one, whose `@type` is a cast
+        // (ownsJSDocTag))
+        if (!value || expr_is_perenthisized(value) || (value->tag != EXPR_FUNCTION && value->tag != EXPR_CLASS_DECL &&
+            value->tag != EXPR_OBJECT && value->tag != EXPR_IDENTIFIER)
+        ) {
+            continue;
+        }
+        VecJsDocTag tags = {0};
+        if (jsdoc_before(p, span_start_ptr(expr_outer_span(value)), &tags)) jsdoc_apply_type_to_binding(&tags, &i->binding);
+        vec_jsdoc_tag_drop(&tags);
+    }
+}
+
 static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, Statement* statement) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before(p, start, &tags)) return;
@@ -13541,7 +13582,10 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
     if (ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) ret->jump_label = label;
     ret->span = span_from(a);
-    if (p.shared->source->is_js) jsdoc_apply_statement(&p, a.start, toplevel, ret);
+    if (p.shared->source->is_js) {
+        jsdoc_apply_statement(&p, a.start, toplevel, ret);
+        if (ret->tag == STATEMENT_DECL_VARIABLE) jsdoc_apply_initializer_types(&p, &ret->decl.variable);
+    }
 
     reset_fail_cache(&p);
     return parse_success(&p);
