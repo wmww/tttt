@@ -29506,9 +29506,9 @@ const baselines = {
         types: true,
     },
     'superAccess2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'superAccessCastedCall': {
         errors: true,

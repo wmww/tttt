@@ -126,6 +126,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     bool legal = false;
     // A computed member name or a member decorator is outside the member, and so outside its class
     bool in_computed_name = false, skip_class = false;
+    bool through_arrow = false; // (tsc's isInConstructorArgumentInitializer stops at a function)
     for (; scope; scope = scope->parent) {
         if (scope->no_super == NO_SUPER_LITERAL_COMPUTED_NAME) {
             in_computed_name = true;
@@ -142,7 +143,10 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
         }
         if (scope->kind == SCOPE_FUNCTION && scope->function) {
             FunctionImpl const* function = scope->function;
-            if (function_impl_is_arrow(function) && !is_call) continue;
+            if (function_impl_is_arrow(function) && !is_call) {
+                through_arrow = true;
+                continue;
+            }
             bool member = span_valid(function_impl_member_name(function)) || function->accessor;
             if (is_call) {
                 legal = function->is_constructor;
@@ -182,7 +186,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
         }
         return;
     }
-    bool in_constructor_args = scope->no_super == NO_SUPER_CONSTRUCTOR_ARGS;
+    bool in_constructor_args = !through_arrow && scope->no_super == NO_SUPER_CONSTRUCTOR_ARGS;
     while (scope && scope_rare(scope)->this_ref.kind != THIS_CLASS_INSTANCE && scope_rare(scope)->this_ref.kind != THIS_CLASS_STATIC) {
         scope = scope->parent;
     }
