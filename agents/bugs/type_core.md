@@ -47,6 +47,22 @@ fails types in both configurations.
   the constraint of T) and in the union order of `keyof S | "a"`.
 
 ## Relations, instantiation, reduction
+- **Two copies of one declaration file (webpack through a symlink): 30x slower than tsc, other diagnostics.**
+  `tttt -p thirdparty/corpora/webpack` from a worktree (where `thirdparty/corpora` is a symlink) takes ~60 s wall
+  (27 s in one checker, 525k type mappers) against 1.9 s by the real path. Not a path bug: tsc does the same as tttt
+  here (verified 2026-10-05, tsc 5.8 `--listFilesOnly`): root files keep the symlinked path, module resolution
+  realpaths only what it finds in node_modules (getOriginalAndResolvedFileName), and `node_modules/webpack -> ..`
+  leads to the real path, so webpack's `types.d.ts` is in the program twice (1189 files vs 1188) and the examples'
+  `webpack.config.js` compare their config against the other copy's `Configuration`. tsc reports 24 errors that way
+  (2x TS2321 "Excessive stack depth" at aggressive-merging/webpack.config.js:7 and :20, 22x TS2322 `'DllPlugin' is not
+  assignable to 'false | "" | 0 | WebpackPluginInstance | ...'`) and its check time only grows ~1.4x; tttt reports
+  8x TS2859 "Excessive complexity" at the configs' `const config` and 12x TS2322, and grinds. So the structural
+  comparison of two identical but distinct ~145k-line declaration graphs is where tttt and tsc differ: tsc overflows
+  its depth limit early (TS2321, see the HACK in check_related_inner's overflow branch: tttt's depth runs out where
+  tsc's instantiations do) where tttt keeps going until its relation-count limit. Repro: from a worktree,
+  `./release/tttt -q --keep-going --all-errors -p thirdparty/corpora/webpack` vs `node thirdparty/tsc/lib/tsc.js -p
+  thirdparty/corpora/webpack --noEmit`. Measurement scripts already use real paths (realworld.py, instrcount.sh,
+  threadcheck.sh); hand-run `--time`/arenasites probes from a worktree must too.
 - Distributive conditional base constraint: with `S2<T> = T extends string ? T : number`,
   `g2<T extends unknown[]>(x: [...{ [K in keyof T]: S2<T[K]> }])` widens `g2(['a'])` to `[string]`, tsc `["a"]` (its
   forConstraint constraint of `S2<T[number]>` keeps the true branch with T's implied `string`).

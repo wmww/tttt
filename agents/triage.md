@@ -29,6 +29,15 @@ missing_checks.md "Known missing checks", type_core.md "Circularity" (getter_cyc
 
 - **A project reached through a symlink is checked differently and ~45x slower.** `tttt -p thirdparty/corpora/webpack` run from a worktree (where `thirdparty/corpora` is a symlink to the main checkout) takes 45 s instead of 1 s, makes 525k type mappers (93% repeats) and reports different diagnostics (TS2859 "Excessive complexity" in webpack's examples) than the same project by its real path. Probably files reached by both the symlinked and the real path are loaded twice (tsc resolves symlinks by default, preserveSymlinks false), so every type exists twice and nothing is identical. Repro: `cd /tmp/<worktree> && ./release/tttt -q --keep-going -p thirdparty/corpora/webpack | md5sum` vs the same with `$(realpath thirdparty/corpora/webpack)`. Measurement scripts that pass relative paths from a worktree (arenasites.sh copies, `--time` probes) measure this pathology instead of the real project; instrcount.sh and threadcheck.sh use realpath.
 
+- `has_inferable_index()` (relate.c) grants every anonymous object type an implicit index signature; tsc only types with a symbol of the right kind (isObjectTypeWithInferableIndex). Found by the sweep (plan 44, rrdtool: D/literalKeyof.ts); check how much wider tttt's rule is and whether it hides errors elsewhere.
+
+- **`this` in a method of an object literal argument whose contextual type is a union with an intersection member is
+  the literal, not the contextual signature's `this: any`** (fan-out fo6-a, from the DefinitelyTyped sweep: ember__object
+  test/proxy.ts, spurious TS2339 + TS7006 + TS7023). Repro: `interface G<T> { get(this: any, key: string): T }
+  interface S<T> { set(this: any, key: string, value: T): T } type Obj<A, B> = G<A> | S<B> | (G<A> & S<B>);
+  declare function computed<A, B = A>(...args: [...keys: string[], cb: ((this: any, key: string) => A) | Obj<A, B>]): A;
+  class P { f = "x"; full = computed("f", { get() { return `${this.f}`; }, set(key, value: string) { return value; } }); }`
+  (tsc: no error).
 - (fan-out errors tail, 2026-10-05) Agent a's `cf5f800d` "tsc's mapped-type unwrapping in the deep-nesting check" was
   not merged: it fixes 2 of 3 errors of deeplyNestedMappedTypes but no whole test, and costs +0.17% instructions on
   drizzle (+0.05% type-fest) because comparisons that stopped early now go on, as tsc's do. Recreate it from that
@@ -40,5 +49,3 @@ missing_checks.md "Known missing checks", type_core.md "Circularity" (getter_cyc
   over binary-expression left spines, as the checker presumably does.
 - `./scenarios.py`: 3 tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file* fail (missing
   TS6377 at src/main/tsconfig.json:6); already failing at dfde5fbc.
-- (2026-10-05 fan-out) react +0.8% instructions over the session from four small commits (a29ce0b2, 84b12f2b,
-  8619aacb, 5b06210a; measurements.md). Check whether the first two are real work on a hot path.

@@ -15,7 +15,8 @@ Suite 12933 -> **13097** (0 lost); types component failing 488 -> 345, symbols 1
 unchanged (effect 7, the rest 0). Sweep 8575 -> 8579 / 8595 match (ember v3 x4, immediate, macrotask fixed; 0 crash,
 0 timeout). Instructions (callgrind, `./instrcount.sh`), d33bf103 -> end: tsc 4.615 -> 4.606, type-fest 3.109 ->
 3.106, valibot 3.867 -> 3.861, react 1.685 -> 1.699 (+0.83%: a29ce0b2 named union after subtype reduction +0.3%,
-84b12f2b generic string-key index access +0.35%, 8619aacb and 5b06210a +0.2% each, possibly layout), nest 1.253 ->
+84b12f2b generic string-key index access +0.35%, 8619aacb and 5b06210a +0.2% each, possibly layout). Rechecked by reverting each on the next triage: 84b12f2b was real (+0.4%: ty_string_index_only_key called for
+every deferred `T[K]`, 238k calls; an inline guard took back 0.24%), a29ce0b2 only 0.06%, nest 1.253 ->
 1.254, webpack 3.834 -> 3.829, zod 4.475 -> 4.467, xstate 2.871 -> 2.873, drizzle 13.288 -> 13.291, vue 7.676 ->
 7.674, effect 9.741 -> 9.709, vscode 32.042 -> 31.964. A mid-session +1.2% on effect (merged class/interface type
 parameters by name, recomputed per type reference) was bisected and fixed by caching the arity per symbol (e32b54dc).

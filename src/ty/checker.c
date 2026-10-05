@@ -2571,8 +2571,11 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     if ((object->flags & TYF_ANY) || (index->flags & TYF_ERROR)) return object->flags & TYF_ANY ? object : index;
     if (index->flags & TYF_NEVER) return index;
     // (Before the generic index check: `{ [k: string]: V }[K]` with K extends string is V, tsc's
-    // getIndexedAccessTypeOrUndefined)
-    index = ty_string_index_only_key(me, object, index);
+    // getIndexedAccessTypeOrUndefined. Only an object, union or intersection can be one: this runs for every deferred
+    // `T[K]`, the call alone cost react 0.3%)
+    if ((object->flags & TYF_OBJECT) || object->kind == TY_UNION || object->kind == TY_INTERSECTION) {
+        index = ty_string_index_only_key(me, object, index);
+    }
     // An element before the variadic part of a generic tuple is known (`[S, ...T][0]` is S, tsc's indexTypeLessThan
     // the fixed elements)
     if (ty_is_tuple(object) && ty_is_generic_tuple(me, object) && index_less_than_fixed(me, object, index)) {
