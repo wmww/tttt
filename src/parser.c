@@ -5883,6 +5883,12 @@ static bool parse_function_args_inner(
                     if (tok_is(word, "default") || tok_is(word, "export") || tok_is(word, "const") || tok_is(word, "in")) {
                         p.pos = word.end;
                     }
+                } else if (rest && tok_is_word(tok_peek(&p)) && *p.pos != '#' &&
+                    is_reserved_word((csview){ p.pos, tok_peek(&p).end - p.pos })
+                ) {
+                    // `...while`: the `...` committed to a parameter, whose name (parseBindingIdentifier) is TS1359
+                    expect_non_reserved_identifier(&p, &initializer.binding.content_span);
+                    initializer.binding.tag = BINDING_IDENTIFIER;
                 } else if (p.pos == before_param && !tok_is_start_of_parameter(tok_peek(&p))) {
                     // Nothing of a parameter: the list's recovery (tsc's parseDelimitedList). What tsc's
                     // isStartOfParameter takes (a type's start, `function f(\`x\`)`) is a parameter missing its name
@@ -6554,7 +6560,14 @@ static bool parse_function_keyword_function(Parser* parent, bool is_async, bool 
     }
 
     Span name;
-    if (!parse_identifier(&p, &name)) {
+    char const* name_start = p.pos;
+    bool named = parse_identifier(&p, &name);
+    if (named && is_reserved_word(name.sv)) {
+        // (tsc's parseBindingIdentifier: a reserved word is no name, it stays for what follows)
+        p.pos = name_start;
+        named = false;
+    }
+    if (!named) {
         name = span_null;
         if (name_required) {
             expect_non_reserved_identifier(&p, &name);

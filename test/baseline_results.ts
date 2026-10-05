@@ -5161,7 +5161,7 @@ const baselines = {
         types: true,
     },
     'commonMissingSemicolons': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27936,7 +27936,7 @@ const baselines = {
         types: true,
     },
     'selfReferencingFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27946,7 +27946,7 @@ const baselines = {
         types: true,
     },
     'selfReferencingFile3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41726,7 +41726,7 @@ const baselines = {
         types: true,
     },
     'destructuringParameterDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
