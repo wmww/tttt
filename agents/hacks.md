@@ -9,13 +9,12 @@ src` finds the code-side markers; every significant one has an entry here.
   madvise like the checker arena would remove it (`bugs/perf_leads.md`).
 - `shrink_list()`/`list_push()` (`parser.c`): finished parser lists give back their slack (a realloc), and their pushes
   reserve one element on the first push (most lists have one) where the vec's own push reserves 4. Costs ~0.7% of
-  nest's instructions (two-element lists grow 1 -> 6 and shrink); per-file node arenas with lists built in a scratch
-  stack and copied out exact would make it free (perf_leads.md "Memory": node arenas, a parser time lever). PERF notes: `CallExpr`
-  argument types recomputed per use, `Value.object` refcount churn.
+  nest's instructions; per-file node arenas with lists built in a scratch stack and copied out exact would make it
+  free (perf_leads.md "Memory").
 - `identifier_expr_name()` (`expr.h`): an `IdentifierExpr` has no name of its own, it reads its `Expr`'s inner_span
   through `offsetof` (an IdentifierExpr only ever lives inside an Expr: never copy one out on its own). Its rare
   pointers (`module_ref_`, `this_function_`, `evolving_index_`, `extends_entity_`) share a union that the accessors
-  pick by keyword/require_call/evolving_op; a new writer must keep those discriminants exclusive
+  pick by keyword/require_call/evolving_op; a new writer must keep those discriminants exclusive.
 - `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how the AST-side walk
   (`*_typecheck`, `*_evaluate_type`, `ty_of_node`) finds its checker; left set after `program_typecheck` for the test
   traversal. `compiler_options()` is a thread local too. Both want a passed check context (checker + errs + options).
@@ -47,29 +46,29 @@ src` finds the code-side markers; every significant one has an entry here.
 - Once-per-program diagnostics (`Error.once_key`, `error_ctx_keep_first_once()`): with K checkers each reports and the
   merge keeps the earliest file's. Only TS2343/TS2807 (`ty_check_emit_helpers`) are tagged; a new "said once" checker
   memo must be tagged too.
-- `ModuleResolver` caches are per `Program`, unsynchronised; resolutions aren't cached (tsc: per directory+name+mode).
 - Per-checker caches assumed pure in the type ids: `ty_union` of two types (KEY_UNION_PAIR), `ty_intersection`
   without an alias (KEY_INTERSECTION_OF), flow's `assignment_reduced_type` (KEY_ASSIGNMENT_REDUCED). tsc caches the
   same, but a result computed while something it reads is still in flight (constraints in
   `remove_constrained_type_variables`, members for empty-object checks) is pinned. First suspects of an order-dependent
   union or narrowing bug: disable these.
 - Each checker measures variances and builds relation caches on its own, and a TS2589 count is charged to whichever
-  node first needs them (tsc pays once): a TS2589 near the 5M limit could depend on `--checkers`.
+  node first needs them (tsc pays once): a TS2589 near the 5M limit could depend on `--checkers` (see also
+  "Instantiation limit" under Type core).
 
 ## Parser
-- `unique symbol` placement (TS1335, `parse_type` primary and `parse_binding_type_ex`): checked by the parser
-  through `unique_allowed_at`, not on the tree like tsc's checkGrammarTypeOperatorNode, and never in JSDoc, where
-  tsc goes to the tag's host (a variable or property declaration allows it).
+- `unique symbol` placement (TS1335, `parse_type_inner` and `expect_annotation_type`): checked by the parser through
+  `unique_allowed_at`, not on the tree like tsc's checkGrammarTypeOperatorNode, and never in JSDoc, where tsc goes to
+  the tag's host (a variable or property declaration allows it).
 - Strings are UTF-8: a lone surrogate escape becomes U+FFFD (`append_code_point()`), so all lone surrogates are one
   string and `"\u{D83D}\u{DE00}"` isn't the emoji. `regex_check_literal()` works in UTF-16 to port tsc's scanner; a
   position between surrogates is the 3rd UTF-8 byte (`utf8_byte_utf16_units()`). A NUL byte ends the file
   (scannerUnexpectedNullCharacter1, scannerStringLiteralWithContainingNullCharacter1).
-- Escaped identifiers (`\u0061`) resolve by value through `name_cooked()` (span.h): a global registry of cooked names
+- Escaped identifiers (`a`) resolve by value through `name_cooked()` (span.h): a global registry of cooked names
   behind a mutex, keyed by where the raw name sits in a file with a `\u`, each lookup a linear scan of that file's
   cooked names (quadratic for a file with thousands). Symbol tables cook at every lookup (a `memchr` for normal
   names). Comparisons against literals (`span_equals(name, "constructor")`) stay raw (`bugs/escaped_identifiers.md`).
-  `EnumCase.name` of a string member is the raw text. Escaped keywords
-  (`hop_escaped_keyword()`) report TS1260 wherever the probe matches, even speculatively (not seen over-reporting).
+  `EnumCase.name` of a string member is the raw text. Escaped keywords (`hop_escaped_keyword()`) report TS1260
+  wherever the probe matches, even speculatively (not seen over-reporting).
 - Two notions of "reserved": `parse_identifier()` refuses only `is_reserved_identifier()` (plus `var` in JS) because it
   also parses identifier names and keyword types; `parse_binding_identifier()` and enum names refuse all of
   `is_reserved_word()`. Refusing all in `parse_identifier()` broke 68 tests: each caller must pick tsc's
@@ -88,18 +87,19 @@ src` finds the code-side markers; every significant one has an entry here.
 - Spans rebuilt by scanning text: full starts by skipping spaces backwards (TS1433, TS1385-TS1388; comments not
   skipped); `question_dot_after()` scans forward for `?.`; an object literal missing `}` ends by walking back over
   whitespace (`parse_object`), a bodyless accessor's TS1005 likewise. A `span_from` on a parent's anchor inside a child
-  parser before `parse_success` truncates the span (was a bug in `parse_import_equals()`; may recur).
+  parser before `parse_success` truncates the span.
 - Error recovery (plan 27): `list_abort_or_skip()` skips a token that starts a list element instead of ending the list
   (right while tttt's element parsers fail where tsc's commit). The fail cache ignores
   `ParserShared.parsing_context`. `parse_list_member()` asks the member-start predicate only after errors;
   `parse_binding_content()` stops at the first bad element; a committed arrow whose parameters fail falls back to a
   parenthesized expression. `tok_scan_end()` is a second cheap token notion next to `hop_token()`.
   `parse_jsx_attributes` approximates isInSomeParsingContext (`jsx_children_depth` + a character list).
-- Statements: `parse_if_else` looks past a `;` for `else` (terminators belong to `parse_append_statement_sequence`);
-  `statement_takes_semicolon()` lists by tag who calls parseSemicolon(). Statement spans exclude the `;`
-  (`span_with_semicolon` patches `scope_export_default_expr`; TS7027 may be one off). `IfStatement` flattens `else
-  if` (no `Statement` for the nested if: no TS7027 on it). `statement_start_needs_check()` gates isStartOfStatement by
-  first word (a new rejecting case must be added).
+- Statements: `parse_if_else` still looks past a `;` for `else` although arms now take their own `;`
+  (`parse_statement_semicolon()`; the look-past may be dead, its comment is stale). `statement_takes_semicolon()` lists
+  by tag who calls parseSemicolon(). Statement spans include the `;`, but port items' and class members' full spans
+  don't (`span_with_semicolon()` at their error sites). `IfStatement` flattens `else if` (no `Statement` for the
+  nested if: no TS7027 on it; `Statement.flow` costs 8 bytes per statement for TS7027 only, labeled statements have
+  none). `statement_start_needs_check()` gates isStartOfStatement by first word (a new rejecting case must be added).
 - Dropped syntax the checker re-peeks: class field `x!: T` (`definite` in class_decl.c and
   `check_used_before_initialization` look at the character after the name); `in`/`out` type parameter modifiers never
   print; private names outside classes have no flag (`object_item_is_private_name`,
@@ -107,15 +107,17 @@ src` finds the code-side markers; every significant one has an entry here.
   declared and prints `__missing`).
 - Accessors: class accessors pair by name+staticness in `class_decl_lookup_names` (raw pointers in one vec); readonly
   means "no setter". Interface accessors become properties in `parse_interface` (`InterfaceMember.write_type`,
-  `second_name`, `setter_param`). Computed keys' `name_string` is source text: accessor pairs and overloads match by it
-  (tsc: late-bound symbol, `["a"]` pairs with `a`). `{ a = 1 }` keeps `ObjectExprItem.shorthand_default`.
+  `second_name`, `setter_param`; `interface_declaration_kind()` in check.c re-reads `get`/`set` from the span text).
+  `{ a = 1 }` keeps `ObjectExprItem.shorthand_default`. Computed keys: see "Class/interface members aren't symbols"
+  under Binder.
 - `await_is_operator`, `yield_is_operator_outside_generator`, `yield_await_is_keyword_here`: `ParserShared` flags plus a
-  character peek; `parse_class_item_inner` saves/restores them inline (want a `FunctionCtx` helper).
+  character peek; `parse_class_item_inner` saves/restores a `FunctionCtx` inline instead of `function_ctx_enter()`.
 - `mark_named_evaluation()`: every construction site that names an anonymous class must call it.
 - Grammar vs parse errors (`is_grammar_code()`, `SourceFile.has_parse_errors`): tsc drops checker grammar errors in
-  files with parse errors. Older checks (TS1254, some TS1155/TS1039, modifiers) use `error_ctx_error_d` and always
-  report. `is_grammar_code()` classifies ~50 codes: a code both parser and checker report can't be both, and a new
-  parser grammar check counts as a parse error until listed. Fix: a `parse_grammar_error()` flagging the Error itself.
+  files with parse errors. `Error.grammar` (`grammar_error()` in the parser, `error_ctx_grammar_error_d` in the
+  checker) is the real mechanism, but `is_grammar_code()` still classifies ~67 codes for errors made without it, and
+  some checks still use plain `error_ctx_error_d` and always report (TS1039/TS1254 in `statement.c`,
+  `modifier_list_check_grammar`). Fix: move those to the grammar variants, then drop `is_grammar_code()`.
 - Parsed and dropped: decorators before an import in `parse_decl_statement()`'s fallback (TS1206 lost); decorators
   without a declaration (MissingDeclaration: TS1128 at `@` instead of TS1146); index signature parameter initializers
   (`parse_index_signature()`, not a `FunctionArg` list: TS2304 in `[a = b]` lost); computed non-literal enum keys
@@ -135,8 +137,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - `triple_slash_invalid_reference()` re-implements tsc's pragma regexes next to `parse_source_directive()`.
 - `undefined` is a literal; `expr_lookup_names` rewrites it into an identifier when a non-global declaration is in
   scope (`Expr.undefined_assigned` for assignment targets). Should be an identifier resolved to undefinedSymbol.
-- Small: TS2574 (`type_typecheck()`) checks generic variadics only if type parameters; a misplaced `TYPE_PREDICATE`
-  resolves only its type's names.
+- Small: TS2574 (`type_typecheck()`, HACK) checks generic variadics only if type parameters; a misplaced
+  `TYPE_PREDICATE` resolves only its type's names.
 
 ## Binder and name resolution (`scope.c`)
 - `scope_release()` (plan 43): walk-only scopes (parameter list, return type, block statement, type literal, interface
@@ -150,56 +152,61 @@ src` finds the code-side markers; every significant one has an entry here.
   walked instead of a scope of its own. Scope chains are shorter than the AST's nesting.
 - `binder_redirect` / `Binder.overlays`: a program adding to a shared-lib symbol gets a clone (`clone_parent_symbol`);
   the checker maps through `canonical()` (`ty/lower.c`): anything new keyed by `Symbol*` must too. Fallout: an
-  augmented `Console` shows both `log` signatures (wants getIntersectedSignatures).
+  augmented `Console` shows both `log` signatures (wants getIntersectedSignatures); `maps_merged_type_param()`
+  (ty_display.c) misses an interface merged with a lib one, whose type parameter is the lib symbol's
+  (promisePermutations x3).
 - `make_gather_target`: namespace imports, `import x = require()` and `export as namespace` alias a namespace symbol of
   their own (`Symbol.gather_module`) so the type prints `typeof ns`; could go once messages name modules like tsc.
-- Module augmentations (`merge_augmentations`, `retarget_decl`): never merged into shared-lib symbols; an alias inside
-  one meeting an existing name isn't merged; names added through an `export *` module reach only that module.
-  `export =`: named imports see only the namespace side, `import("./a")` has no
-  synthetic `{ default }`; `namespace_import_type` asks `ty_type_of_symbol()` about the alias to spot namespace
-  imports (identifiers only; the synthetic `default` prints as `default` in symbols, tsc the module name).
+  Node16+ ESM `import * as ns` of CommonJS: it copies the module's resolved exports at link time (right only because
+  nothing merges into module exports after `binder_link()`), plus `Symbol.synthetic_default`; in `members.c` the
+  synthetic default's `prop->decl->symbol` is the alias rather than the module, so the symbols baseline prints
+  `d.default`. Related: `namespace_import_is_clone()` under Declaration diagnostics.
+- `merge_symbol()` returns early for alias sources and other binders' targets (one TODO): module augmentations
+  (`merge_augmentations`, `retarget_decl`) are never merged into shared-lib symbols, an alias inside one meeting an
+  existing name isn't merged (`export default x` of an alias in an augmentation), and `add_pattern_declarations`
+  (tsc's unidirectional merge of a pattern ambient module into a name's augmentation, `Binder.pattern_augmentations`)
+  only copies the flags and declarations of an export both declare (the rest through the exports table's parent), not
+  a nested namespace's exports. Real fix: a `merge_symbol` that can clone its target. Names added through an
+  `export *` module reach only that module.
+- `export =`: named imports see only the namespace side, `import("./a")` has no synthetic `{ default }`;
+  `namespace_import_type` asks `ty_type_of_symbol()` about the alias to spot namespace imports (identifiers only; the
+  synthetic `default` prints as `default` in symbols, tsc the module name).
 - `export = a.b` / `export default a.b` is an alias (`resolve_entity_alias()`, falling back to a value symbol of the
   expression): a class static merged with a namespace interface is an alias whose `value_target` is the static, and
   `module_export_equals()` returns the alias itself (callers assuming a non-alias beware). tsc makes them one symbol
   with both declarations; tttt keeps statics out of the class's exports (exportEqualsProperty2 symbols).
-  `merge_symbol()` still returns early for alias sources (`export default x` of an alias in an augmentation).
-- Node16+ ESM `import * as ns` of CommonJS: `make_gather_target()` copies the module's resolved exports at link time
-  (right only because nothing merges into module exports after `binder_link()`), plus `Symbol.synthetic_default`;
-  in `members.c` the synthetic default's `prop->decl->symbol` is the alias rather than the module, so the symbols
-  baseline prints `d.default`.
 - `globalThis` is a namespace over `Binder.globals`: every global is a property (tsc: `var`s and functions);
   `ty_namespace_type` builds ~2k props on first touch.
 - `arguments` has no symbol (`IdentifierExpr.is_arguments`, `IArguments` by name).
 - `scope_declare_default_local()`: a compatible local before `export default function A` keeps `A`.
-  `resolve_alias_target`: TS1192 suppressed only for declaration files under allowSyntheticDefaultImports.
-- Exported and local declarations of a name are two unlinked tables (tsc: `exportSymbol`): TS2440 special-cased in
-  `binder_link`, TS2395 a separate pass. TS2441, TS1203, TS2308, TS2661, TS2669 come from binder/link (tsc: checker);
-  TS2308 re-walks `export *` apart from `module_resolved_exports()`. `ty_emits_commonjs_like()` could use
-  `source_file_emit_module_kind()`.
-- `block_is_instantiated`: syntactic; a namespace found via `Scope.block` is judged with the wrong outer chain.
+- Exported and local declarations of a name are two unlinked tables (tsc: `exportSymbol`; `SymbolRare.export_symbol`
+  only for `export default` locals): TS2440 special-cased in `binder_link`, TS2395 a separate pass. TS2441, TS1203,
+  TS2308, TS2661, TS2669 come from binder/link (tsc: checker); TS2308 re-walks `export *` apart from
+  `module_resolved_exports()`. `ty_emits_commonjs_like()` could use `source_file_emit_module_kind()`.
+  `check_export_context_merges()` reads a declaration's explicit `export`/`declare` from the start of its `full` span's
+  text (SymbolDecl has no bits for them).
+- `block_is_instantiated`: syntactic; a nested namespace is judged with its parent's `outer` scope.
 - Class/interface members aren't symbols (`Prop` is the identity). `bind_member_symbols` + `class_decl_lookup_names`
-  apply binder rules at lookup but pair computed entity-name keys by text whatever their type (tsc late-binds only
-  literal/unique-symbol names: computedPropertyNames2): needs lazy pairing in the checker. `ty_member_name()` still
-  evaluates every computed key. `ty_check_class_duplicate_members` / `object_bind_members` replay the binder at check
-  time.
+  apply binder rules at lookup; computed keys' `name_string` is source text, so accessor pairs and overloads match
+  computed entity-name keys by text whatever their type (tsc late-binds only literal/unique-symbol names, and `["a"]`
+  pairs with `a`: computedPropertyNames2): needs lazy pairing in the checker. `ty_member_name()` still evaluates every
+  computed key. `ty_check_class_duplicate_members` / `object_bind_members` replay the binder at check time.
 - `declare_symbol`: a declaration named like a builtin type (`class number`) gets a detached symbol.
-- Merged interface/class type parameters share one symbol per name (`scope_new_generic_merged`) except against the
-  shared lib; `type_parameter_is_unused` compensates.
+- Merged interface/class type parameters share one symbol per name (`scope_new_generic_merged`, see the parallelism
+  contract) except against the shared lib; `type_parameter_is_unused` compensates.
 - TS2301 (`function_collect_local_value_names()`/`statement_collect_var_names()`) is a read-only copy of
   `statement_hoist_names()`: keep in sync.
 - TS1361/TS1362 valid sites (`FlowBuilder.type_only_alias_ok`, `in_type_query`) set by enclosing constructs, not
-  derived. `export =`/`export default` of a type-only name gets `symbol` without `target`. `check_type_only_value()`
-  scans back for `type` (PortItem has no clause span).
+  derived. `export =`/`export default` of a type-only name gets `symbol` without `target`. TS1376/TS1377's related
+  span (`span_from_type_keyword()`, from `port_item_add_type_only_related()`) scans back from the name for `type`:
+  PortItem has no span of the whole specifier.
 - Null-ErrorCtx resolution because the resolve walk reports checker errors: the body of `with`
   (`statement_resolve_names_reachable`; binder errors in it are lost too; the baseline walk still evaluates its types
   under `BaselineTestCase.in_with`) and `yield x` outside a generator (`UnaryOpExpr.outside_generator`). Real fix: the
   resolve walk stops reporting checker errors.
-- `is_for_in_numeric_variable` (`ty/expr.c`): "the index is the for-in variable" by position, not checked to be inside
-  the loop body.
-- `add_pattern_declarations` (`scope.c`): tsc's unidirectional merge of a pattern ambient module into a name's
-  augmentation (`Binder.pattern_augmentations`) only copies the flags and declarations of an export both declare (and
-  inherits the rest through the exports table's parent), not a nested namespace's exports. Real fix: a
-  merge_symbol that can clone its target.
+- `merge_into_umd_globals()`: declarations merged into a UMD global move into its module whatever the file order (tsc
+  drops the UMD global when a script declared the name first) and skip a conflicting target silently (tsc reports it
+  against the resolved target).
 
 ## Control flow and narrowing (`flow.c`, `ty/flow.c`)
 - Array mutation nodes (`flow_array_mutation`) only where `may_evolve`; `x.push` only as a callee (tsc: `f(x.push)`
@@ -208,25 +215,21 @@ src` finds the code-side markers; every significant one has an entry here.
   `expr_is_narrowable_reference()`: `a = b` counts whatever the left side. `expr_is_optional_chain()` is quadratic.
 - Nested destructuring assignments get assignment nodes from the outer pattern only; `pattern_path_type()` falls back
   to the declared type for rests, computed keys, iterables.
-- Body-less functions get no start node (their parameter defaults have no flow). `Statement.flow` costs 8 bytes per
-  statement for TS7027 only; labeled statements have none.
-- `function_impl_check_end()`: anonymous `function` reported at its parameters (tsc: keyword); annotated
-  async/generator functions and TS7030 on bare `return;` skipped.
-- `aliased_condition` narrows identifiers only (tsc: readonly properties too).
+- Body-less functions get no start node (their parameter defaults have no flow).
 - Destructured discriminants and dependent parameters (`discriminant_access()`, `ty_destructured_narrowed_type()`,
   `ty_parameter_narrowed_type()`) query flow with a placeholder reference (`FlowQuery.pattern`/`parameters_of`) for
   tsc's pseudo references: one extra query per read.
-- Not ported (ty/flow.c TODOs): `x.constructor === C`, `[Symbol.hasInstance]`, `"a" in x` intersecting
-  `Record<"a", unknown>`, `unknown` narrowed by switch, generic construct signature erasure, literal regular types.
+- Narrowing by a literal doesn't take its regular type (ty/flow.c TODO).
 - `narrowable_type`: constraint positions marked by the resolve walk (`constraint_position`); element access for
   literal indices only. A pattern with a rest element is never a contextual type (`pattern_type_has_rest`, expr.c
-  HACK; tsc checks the initializer twice, CheckMode.RestBindingElement).
-- `non_null_flow_type`: the `x!` rule for identifiers only. At flow depth 2000 queries silently give the error type.
+  HACK; tsc checks the initializer twice, CheckMode.RestBindingElement; same rule in call.c's return mapper).
+- `non_null_flow_type`: the `x!` rule for identifiers only. At flow depth 2000 queries silently give the error type
+  (no TS2563).
 - Auto types: `IdentifierExpr.outer_reference` decided by the resolve walk; isNeverInitialized is
   `!symbol->is_assigned`; "outer variable assumed initialized" decided at the start node (`Symbol.flow_start`).
 - `ty_flow_expr_type()` loop results are cached per back-edge walk by generation in `Checker.links`: stale generations
   stay until the checker dies. `LazyMemo.hits`: 8 re-entrant evaluations, then the error type (runaway guard).
-- `prop_has_explicit_type()` (HACK): a mapped type's property counts as explicitly typed; JSDoc-typed ones never do.
+- `prop_has_explicit_type()` (HACK): a mapped type's property counts as explicitly typed.
 - `ty_infer_type_predicate`: synthetic condition nodes and a reference `Expr` per unannotated signature.
 - Assertion signatures: a callee name without explicit type is silently not an assertion (no TS2775/TS2776).
 
@@ -598,14 +601,6 @@ src` finds the code-side markers; every significant one has an entry here.
   markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m, where
   tsc would count the read (its containing function is the nested one).
 
-- `interface_declaration_kind()` (check.c): whether an interface member declaration is a `get`/`set` accessor is
-  read from its declaration span's text; InterfaceMember has no flag for a lone getter (the parser folds accessors into
-  property-like members).
-- `check_export_context_merges()` (scope.c): a declaration's explicit `export`/`declare` is read from the start of its
-  `full` span's text (SymbolDecl has no bits for them).
-- `merge_into_umd_globals()` (scope.c): declarations merged into a UMD global move into its module whatever the file
-  order (tsc drops the UMD global when a script declared the name first) and skip a conflicting target silently (tsc
-  reports it against the resolved target).
 
 ## JavaScript and JSDoc (plan 26)
 - `ClassDecl.jsdoc_base` (a mismatched or empty `@augments`, tsc's getEffectiveBaseTypeNode) is only what
@@ -751,11 +746,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `TyDisplay.decl_literal` / `annotates_name_at()`: tsc reuses a `unique symbol` annotation only inside the enclosing
   declaration (the printed node's parent); the types baseline has no parent node, so "the literal is the annotation of
   the name at `at`" is decided from the source text between them (only `?`/`:`).
-- `maps_merged_type_param()` (signatures of a merged generic interface have fresh anonymous types) misses an
-  interface merged with a lib one: the type parameter Ty is the lib symbol's, whose redirect isn't the program's
-  merged symbol (promisePermutations x3).
-- `span_from_type_keyword` (`expr.c`): TS1376/TS1377's related span of a type-only default import or specifier is
-  found by scanning the source text back from the name for `type`; PortItem has no span of the whole specifier.
 - `symbol_chain.c` (getSymbolChain) sees only scopes the traversal tracks (`BaselineTestCase.enclosing`), so
   function-local shadowing isn't qualified; `try_locals_with_exports()` merges by position; no alternative containing
   modules, firstVariableMatch or accessibility cache. `append_qualified_name` always fully qualifies in messages.
