@@ -601,6 +601,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - `interface_declaration_kind()` (check.c): whether an interface member declaration is a `get`/`set` accessor is
   read from its declaration span's text; InterfaceMember has no flag for a lone getter (the parser folds accessors into
   property-like members).
+- `check_export_context_merges()` (scope.c): a declaration's explicit `export`/`declare` is read from the start of its
+  `full` span's text (SymbolDecl has no bits for them).
 - `merge_into_umd_globals()` (scope.c): declarations merged into a UMD global move into its module whatever the file
   order (tsc drops the UMD global when a script declared the name first) and skip a conflicting target silently (tsc
   reports it against the resolved target).
