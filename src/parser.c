@@ -10087,7 +10087,10 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         expect_expr(&p, expr_ctx_null, ret);
         parse_comma_ops_right_side(&p, ret);
         hop_whitespace(&p);
-        expect_char(&p, ')');
+        if (!expect_char(&p, ')')) {
+            // Without its `)` it ends with its last token, not the whitespace after it (tsc's finishNode)
+            while (p.pos > a.start + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
+        }
         inner_span_set = true;
         if (p.shared->source->is_js) jsdoc_apply_parenthesized(&p, a.start, span_from(a), ret);
     } else if (at_jsx_element_start(&p, ctx.min_precedence == unary_op_get_precedence(UNARY_OP_LEFT_BANG))) {

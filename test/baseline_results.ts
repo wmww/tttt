@@ -56136,7 +56136,7 @@ const baselines = {
         types: true,
     },
     'parserArrowFunctionExpression3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
