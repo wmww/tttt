@@ -24013,7 +24013,7 @@ const baselines = {
     'nonInferrableTypePropagation2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nonInferrableTypePropagation3': {
         errors: true,

@@ -789,6 +789,27 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
     return ty_signature_type(me, ty_instantiate_signature_in_context_of(me, generic, wanted, so_far));
 }
 
+// The second pass's inference from generic function argument `arg` (see Arg.generic_function), with `param_type` its
+// parameter's type
+static void infer_from_generic_function_arg(Checker* me, Signature const* sig, Inference* inf, Ty const* param_type, Arg const* arg) {
+    Signature const* contextual = nullptr;
+    Signature const* generic = generic_function_argument(me, arg->type, param_type, &contextual);
+    // Higher order: if the call returns a function and not everything is inferred yet, the argument's type
+    // parameters can become the result's (`pipe(list, box)` is `<T>(a: T) => { value: T[] }`)
+    if (returns_single_signature(me, sig)) {
+        bool all_inferred = true;
+        for (u32 j = 0; j < inf->len; j++) all_inferred &= inf->params[j].co_len || inf->params[j].contra_len;
+        Signature const* propagated = all_inferred ? nullptr : inference_propagate_generic(me, inf, generic, contextual);
+        if (propagated) {
+            infer_types(me, inf, ty_signature_type(me, propagated), param_type, INFER_PRIORITY_NORMAL);
+            return;
+        }
+    }
+    TyMapper const* so_far = fix_for_generic_function(me, sig, inf, contextual);
+    Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far);
+    infer_types(me, inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
+}
+
 // `contextual`: the contextual type of the call, which the return type is inferred from at a low priority
 // tsc's getSingleCallOrConstructSignature, without other members
 static Signature const* single_call_or_construct(Checker* me, Ty const* ty) {
@@ -1047,23 +1068,7 @@ static TyMapper const* infer_type_arguments(
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
         if (arg->generic_function && !skip_generic && !skip_generic_functions) {
-            Ty const* param_type = shape_type_at(&shape, i);
-            Signature const* contextual = nullptr;
-            Signature const* generic = generic_function_argument(me, arg->type, param_type, &contextual);
-            // Higher order: if the call returns a function and not everything is inferred yet, the argument's type
-            // parameters can become the result's (`pipe(list, box)` is `<T>(a: T) => { value: T[] }`)
-            if (returns_single_signature(me, sig)) {
-                bool all_inferred = true;
-                for (u32 j = 0; j < inf.len; j++) all_inferred &= inf.params[j].co_len || inf.params[j].contra_len;
-                Signature const* propagated = all_inferred ? nullptr : inference_propagate_generic(me, &inf, generic, contextual);
-                if (propagated) {
-                    infer_types(me, &inf, ty_signature_type(me, propagated), param_type, INFER_PRIORITY_NORMAL);
-                    continue;
-                }
-            }
-            TyMapper const* so_far = fix_for_generic_function(me, sig, &inf, contextual);
-            Signature const* instantiated = ty_instantiate_signature_in_context_of(me, generic, contextual, so_far);
-            infer_types(me, &inf, ty_signature_type(me, instantiated), param_type, INFER_PRIORITY_NORMAL);
+            infer_from_generic_function_arg(me, sig, &inf, shape_type_at(&shape, i), arg);
             continue;
         }
         if (arg->nested_generic && !arg->context_sensitive) {
@@ -1084,6 +1089,16 @@ static TyMapper const* infer_type_arguments(
             my outer_inference = &self;
             check_arg(me, &shape, args, i);
             my outer_inference = nullptr;
+            // What it returns is a generic function like any other: instantiated in the context of the parameter's
+            // signature (tsc's checkExpression instantiates every expression's single generic call signature),
+            // `pipe(effect, provide(tag))`
+            Signature const* contextual = nullptr;
+            arg->generic_function = !arg->spread && !arg->part_of_spread &&
+                generic_function_argument(me, arg->type, shape_type_at(&shape, i), &contextual);
+            if (arg->generic_function) {
+                infer_from_generic_function_arg(me, sig, &inf, shape_type_at(&shape, i), arg);
+                continue;
+            }
             infer_from_arg(me, &inf, &shape, args, i);
             continue;
         }

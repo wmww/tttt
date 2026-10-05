@@ -2035,7 +2035,7 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
 
         // `export default` is followed by any expression: `-1`, `` `a` ``, `!x`
         bool export_default = prev_was_export && !is_member && span_equals(mod.span, "default");
-        if (!is_identifier_char(*p.pos) && !export_default) {
+        if (!is_identifier_char(*p.pos) && !identifier_char_size(p.pos, true) && !export_default) {
             switch (*p.pos) {
                 case '[': case '"': case '\'': break;
 
