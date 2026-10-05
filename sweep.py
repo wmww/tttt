@@ -73,14 +73,22 @@ def shape(message):
     return re.sub(r"'[^']*'", "'…'", re.sub(r'"[^"]*"', '"…"', message))[:120]
 
 
+def lib_key(f, l):
+    """A default lib's diagnostic: tsc's lib.X.d.ts and tttt's own copy (thirdparty/lib/X.d.ts) number lines
+    differently, so only the lib's name counts"""
+    m = re.search(r'(?:/tsc/lib/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
+    return (f'lib.{m.group(1)}.d.ts', 0) if m else (f, l)
+
+
 def compare(package, tsc, tttt):
     """The diagnostics tttt reports that tsc doesn't (spurious) and the other way round (missing), by (file, line,
     code) multiset"""
-    want = collections.Counter((f, l, c) for f, l, _, c in tsc['diags'])
-    got = collections.Counter((f, l, c) for f, l, c, _ in tttt['diags'])
+    want = collections.Counter((*lib_key(f, l), c) for f, l, _, c in tsc['diags'])
+    got = collections.Counter((*lib_key(f, l), c) for f, l, c, _ in tttt['diags'])
     spurious, missing = [], []
     remaining = want.copy()
     for f, l, c, msg in tttt['diags']:
+        f, l = lib_key(f, l)
         if remaining[(f, l, c)] > 0:
             remaining[(f, l, c)] -= 1
         else:

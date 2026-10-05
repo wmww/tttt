@@ -727,6 +727,8 @@ static Error* report_unrelated_with_head(
 ) {
     VecTyReportLine lines = {0};
     ty_explain_unrelated_headed(me, source, target, relation, ts_code, &lines);
+    // (A check of a lib's declaration on purpose, when lib files are checked: interface_heritage_typecheck())
+    Error* (*report)(ErrorCtx*, Span, unsigned, cstr) = span.source && span.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s;
     span = relocated_span(&lines, span);
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
@@ -738,7 +740,7 @@ static Error* report_unrelated_with_head(
             cstr_clone(natural->message));
         first = 1;
     } else {
-        error = error_ctx_error_s(errs, span, ts_code, head);
+        error = report(errs, span, ts_code, head);
     }
     if (natural && (natural->ts_code == 2322 || natural->ts_code == 2719 || natural->ts_code == 2678) && !keep_natural_head) first = 1;
     attach_explanation(error, &lines, first);
