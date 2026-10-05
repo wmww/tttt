@@ -85,9 +85,6 @@ one commit each, `./sweep.py` before/after.
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
 
 ### Medium (15-100 lines)
-- **Interface extending `any`** (koa family 5; B/koa8.ts, C/2339/k): `non_augmenting_base_uncached` (members.c) gates
-  on type params and on object bases, so `interface DS extends AnyAlias {}` isn't normalised to any; and an any base
-  gives no `[x: string]: any` (tsc's anyBaseTypeIndexInfo). Could replace the class-side `ty_has_unresolved_base` hack.
 - **Augmentation-only references load the target file** (ember-data + 4; A/augonly): tsc never adds a file to the
   program for a module augmentation alone. Split resolution from loading in `program_load_module_ref` (program.c).
   20-40 lines.

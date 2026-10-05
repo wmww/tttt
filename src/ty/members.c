@@ -838,7 +838,15 @@ static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
     if (!decl || symbol_rare(decl)->members) return nullptr; // (JavaScript `this.x = v` members)
     // A class, or an interface that is a reference in tsc (generic, or mentioning `this`)
     bool is_class = target->declared.kind == TY_DECLARED_CLASS_INSTANCE;
-    if (!is_class && !target->declared.type_params.len && !target->declared.this_param) return nullptr;
+    // (An interface extending any is a reference too, tsc's isThislessInterface: its base isn't an interface. Then it
+    // is any, unless it has members)
+    bool maybe_any_base = false;
+    if (!is_class && !target->declared.type_params.len && !target->declared.this_param) {
+        for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+            if (declaration_has_members(node)) return nullptr;
+        }
+        maybe_any_base = true;
+    }
     LowerCtx ctx = { .generic = target->declared.type_params.len > 0 || target->declared.this_param };
     Ty const* base = nullptr;
     for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
@@ -859,12 +867,15 @@ static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
             InterfaceDecl const* interface_decl = node->node;
             for_each (extends, vec_spanned_type, &interface_decl->extends) {
                 Ty const* type = ty_from_node(me, &extends->type, ctx);
-                if (!(type->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+                bool any = (type->flags & TYF_ANY) && !(type->flags & TYF_ERROR);
+                if (!any && (maybe_any_base || !(type->flags & (TYF_OBJECT | TYF_INTERSECTION)))) continue;
                 if (base) return nullptr;
                 base = type;
             }
         }
     }
+    if (maybe_any_base && !(base && (base->flags & TYF_ANY))) return nullptr;
+    if (base && (base->flags & TYF_ANY)) return base;
     // (A circular base is none: tsc's resolveBaseTypesOfClass)
     if (!base || base == target || has_base_type(me, base, target, 0)) return nullptr;
     TyList params = target->declared.type_params;
@@ -2004,6 +2015,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             // (tsc's getBaseTypes pushing ResolvedBaseTypes: members asked for while the bases are lowered, see
             // members_reentered())
             ty_resolving_push(me, RESOLVING_BASES, ty);
+            bool any_base = false;
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind == SYMBOL_DECL_CLASS) {
                     Ty const* base = nullptr;
@@ -2026,8 +2038,20 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         } else if (base->kind == TY_TYPE_PARAM && is_valid_base_type(me, base, 0)) {
                             ty_buf_push(&bases, base);
                             dynamic = true;
+                        } else if ((base->flags & TYF_ANY) && !(base->flags & TYF_ERROR)) {
+                            // An any base gives a string index signature of any (tsc's anyBaseTypeIndexInfo)
+                            any_base = true;
                         }
                     }
+                }
+            }
+            if (any_base) {
+                Ty const* string = ty_intrinsic(me, TY_STRING);
+                bool has_string = false;
+                for (u32 i = 0; i < builder.index_count; i++) has_string |= builder.index[i].key == string;
+                if (!has_string) {
+                    builder_push(&builder, index, ((IndexInfo){ .key = string, .value = ty_intrinsic(me, TY_ANY),
+                        .param_name = checker_atom(me, c_sv("x")) }));
                 }
             }
             if (ty_resolving_pop(me)) {
