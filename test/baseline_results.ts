@@ -29218,7 +29218,7 @@ const baselines = {
     'strictModeReservedWordInClassDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictModeReservedWordInDestructuring': {
         errors: true,

@@ -900,8 +900,9 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                         .text = symbol_text(ctx, named),
                     });
                 }
-                for (isize_t k = (count < known ? count : known) - 1; k >= 1; k--) {
-                    Symbol const* decl = *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), k);
+                // (Unresolved ones too: `any`)
+                for (isize_t k = count - 1; k >= 1; k--) {
+                    Symbol const* decl = k < known ? *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), k) : nullptr;
                     Span prefix = span_between(*vec_span_at(identifier_type_namespaces(my identifier), 0), *vec_span_at(identifier_type_namespaces(my identifier), k));
                     if (decl && !decl->is_placeholder) {
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
@@ -921,6 +922,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 }
             }
             VecSpan so_far = vec_span_init();
+            bool heritage_unresolved = false;
             for_each (i, vec_span, identifier_type_namespaces(my identifier)) {
                 intptr_t index = i_index;
                 Symbol const* decl = index < vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier)) ?
@@ -934,7 +936,11 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 } else {
                     baseline_test_case_add_type_node(ctx, *i, &type_any);
                 }
-                if (heritage && !decl) break;
+                // (After an unresolved name of a heritage clause, the rest are expressions of no symbol)
+                if (heritage && (!decl || heritage_unresolved)) {
+                    heritage_unresolved = true;
+                    continue;
+                }
                 // (Nothing for a name an import type can't find: see below)
                 if (identifier_type_import_ref(my identifier) && (!decl || decl->is_placeholder)) {
                     vec_span_push(&so_far, *i);
