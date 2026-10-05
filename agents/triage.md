@@ -48,9 +48,6 @@ missing_checks.md "Module and import checks", type_core.md "Circularity" (getter
   `program_containers` caches in `symbol_chain.c` (never freed), eg importElisionConstEnumMerge1. Pre-existing.
 - `./scenarios.py`: 3 tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file* fail (missing
   TS6377 at src/main/tsconfig.json:6); already failing at dfde5fbc.
-- (2026-10-05 fan-out) `./test.sh` (valgrind) reports a "possibly lost" leak on literalTypes2 from the `thread_local`
-  cache in `program_modules_exporting` (src/symbol_chain.c); present before the session. Free it at thread exit or
-  make the debug harness ignore it.
 - (2026-10-05 fan-out) The symbols harness's expression walk is near the stack limit on binderBinaryExpressionStress:
   inlining a bigger `declaration_get_spans()` segfaulted the release suite (now `noinline`). Make the walk iterative
   over binary-expression left spines, as the checker presumably does.
