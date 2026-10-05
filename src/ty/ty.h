@@ -1404,6 +1404,8 @@ SymbolLinks* ty_symbol_links(Checker* me, Symbol const* symbol);
 Ty const* ty_namespace_type(Checker* me, struct Symbol const* symbol);
 Ty const* ty_static_type_of(Checker* me, Symbol const* symbol);
 Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol);
+// `import { x }` of a property of what `export =` names (SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) that it doesn't have
+bool ty_export_equals_property_missing(Checker* me, Symbol const* property);
 Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol);
 // What `import("m")` promises: the module's value, with a synthetic `default` for an `export =` module
 Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, struct SourceFile const* importer);

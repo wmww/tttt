@@ -430,7 +430,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         if (!target || !target->decl_count || target->decls[0].kind != SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) continue;
         Symbol const* assigned = target->decls[0].node;
         if (ty_type_of_symbol(current_checker, assigned)->flags & TYF_ERROR) continue;
-        if (!(ty_type_of_symbol(current_checker, target)->flags & TYF_ERROR)) continue;
+        if (!ty_export_equals_property_missing(current_checker, target)) continue;
         Symbol const* module = binder_module_of_ref(i->symbol->binder, i->module_ref);
         if (module) scope_report_non_exported_member(i, module, errs);
     }

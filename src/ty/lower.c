@@ -419,7 +419,7 @@ static Symbol const* export_equals_property_type(Checker* me, Symbol const* prop
         Symbol const* type = symbol_for_meaning(symbol, SYMBOL_TYPE);
         if (type && !type->is_placeholder) return canonical(me, type);
     }
-    if (ty_type_of_symbol(me, property)->flags & TYF_ERROR) return nullptr;
+    if (!prop && ty_export_equals_property_missing(me, property)) return nullptr;
     ty_error_at(me, identifier->name, 2749, cstr_d("'", identifier->name.sv,
         "' refers to a value, but is being used as a type here. Did you mean 'typeof ", identifier->name.sv, "'?"));
     return nullptr;
@@ -1169,6 +1169,33 @@ static bool is_js_container(Symbol const* symbol, Expr const* value, Span name) 
     return init && init->tag == EXPR_OBJECT;
 }
 
+// The type of the property a SYMBOL_DECL_EXPORT_EQUALS_PROPERTY stands for, null if what `export =` names has none
+static Ty const* export_equals_property_type_of(Checker* me, Symbol const* symbol) {
+    Ty const* assigned = ty_type_of_symbol(me, symbol->decls[0].node);
+    Atom const* name = checker_atom(me, symbol->name);
+    // (Of a union, a property every member has: tsc's getPropertyOfType makes a union property, without
+    // Object's members, skipObjectFunctionPropertyAugment)
+    if (assigned->kind == TY_UNION && !(assigned->flags & TYF_BOOLEAN)) {
+        TyList members = assigned->composite.types;
+        Ty const** types = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!types, "out of memory");
+        u32 count = 0;
+        for (u32 i = 0; i < members.len; i++) {
+            Ty const* part = ty_prop_type_of(me, members.data[i], name);
+            if (!part) break;
+            types[count++] = part;
+        }
+        Ty const* ret = count == members.len ? ty_union(me, types, count, nullptr, (TyList){0}) : nullptr;
+        free(types);
+        return ret;
+    }
+    return ty_prop_type_of(me, assigned, name);
+}
+
+bool ty_export_equals_property_missing(Checker* me, Symbol const* property) {
+    return !export_equals_property_type_of(me, property);
+}
+
 static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     switch (decl->kind) {
         case SYMBOL_DECL_VARIABLE: {
@@ -1238,25 +1265,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
         case SYMBOL_DECL_ALIAS: // `import * as ns`
             return ty_namespace_type(me, symbol);
         case SYMBOL_DECL_EXPORT_EQUALS_PROPERTY: {
-            Ty const* assigned = ty_type_of_symbol(me, decl->node);
-            Atom const* name = checker_atom(me, symbol->name);
-            // (Of a union, a property every member has: tsc's getPropertyOfType makes a union property, without
-            // Object's members, skipObjectFunctionPropertyAugment)
-            if (assigned->kind == TY_UNION && !(assigned->flags & TYF_BOOLEAN)) {
-                TyList members = assigned->composite.types;
-                Ty const** types = malloc(sizeof(Ty const*) * members.len);
-                panic_if(!types, "out of memory");
-                u32 count = 0;
-                for (u32 i = 0; i < members.len; i++) {
-                    Ty const* part = ty_prop_type_of(me, members.data[i], name);
-                    if (!part) break;
-                    types[count++] = part;
-                }
-                Ty const* ret = count == members.len ? ty_union(me, types, count, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ERROR);
-                free(types);
-                return ret;
-            }
-            Ty const* type = ty_prop_type_of(me, assigned, name);
+            Ty const* type = export_equals_property_type_of(me, symbol);
             return type ? type : ty_intrinsic(me, TY_ERROR);
         }
         default:
