@@ -16831,7 +16831,7 @@ const baselines = {
         types: true,
     },
     'incompatibleAssignmentOfIdenticallyNamedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

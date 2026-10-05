@@ -108,7 +108,7 @@ static Error* report_unassignable(
         } else if (head.ts_code == HEAD_EXACT_PROP.ts_code) {
             error = error_ctx_error_d(errs, span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
                 "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
-            if (natural_head && natural_head->ts_code == 2322) first_nested = 1;
+            if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2719)) first_nested = 1;
         } else if (head.ts_code == HEAD_COMPUTED.ts_code) {
             error = error_ctx_error_d(errs, span, head.ts_code, "Type of computed property's value is '", source_str,
                 "', which is not assignable to type '", target_str, "'.");
@@ -116,7 +116,7 @@ static Error* report_unassignable(
             error = error_ctx_error_d(errs, span, head.ts_code, head.source_label, " '", source_str,
                 "' is not assignable to ", head.target_label, " '", target_str, "'.");
         }
-        if (natural_head && natural_head->ts_code == 2322) first_nested = 1;
+        if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2719)) first_nested = 1;
     }
     attach_explanation(error, &lines, first_nested);
     vec_ty_report_line_drop(&lines);
@@ -740,7 +740,7 @@ static Error* report_unrelated_with_head(
     } else {
         error = error_ctx_error_s(errs, span, ts_code, head);
     }
-    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2678) && !keep_natural_head) first = 1;
+    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2719 || natural->ts_code == 2678) && !keep_natural_head) first = 1;
     attach_explanation(error, &lines, first);
     vec_ty_report_line_drop(&lines);
     return error;
@@ -1112,7 +1112,7 @@ bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Spa
     // The explanation goes under that line, less the generic "Type 'S' is not assignable" its message replaces
     Error* chain = vec_error_back_mut(&error->sub_errors);
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
-    isize_t first = natural && !natural->related && natural->ts_code == 2322 ? 1 : 0;
+    isize_t first = natural && !natural->related && (natural->ts_code == 2322 || natural->ts_code == 2719) ? 1 : 0;
     for (isize_t i = first; i < vec_ty_report_line_size(&lines); i++) {
         TyReportLine const* line = vec_ty_report_line_at(&lines, i);
         if (line->related) continue;

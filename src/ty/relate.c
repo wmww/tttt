@@ -776,7 +776,7 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     vec_ty_report_line_push(&st->lines, (TyReportLine){ .ts_code = ts_code, .message = message, .incompatible = true });
 }
 
-static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top);
+static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target);
 
 static bool is_identifier_text(csview text) {
     if (!text.size) return false;
@@ -867,7 +867,7 @@ static void flush_incompatible(RelationState* st) {
         vec_ty_report_line_drop(&secondary);
         cstr_drop(&path);
     }
-    if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target, false);
+    if (skipped_source) report_relation_error_now(st->checker, st, skipped_source, skipped_target);
 }
 
 // tsc's reportErrorResults
@@ -921,7 +921,7 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
             return;
         }
     }
-    report_relation_error_now(me, st, source, target, top);
+    report_relation_error_now(me, st, source, target);
 }
 
 // tsc's isExactOptionalPropertyMismatch: source may be undefined, target has an optional property's missing
@@ -968,8 +968,8 @@ bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const*
 
 static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index);
 
-// `top`: the error's head, which callers replace with their own words (tsc's headMessage)
-static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
+// The relation error line (its first one is the head, which callers replace with their own words: tsc's headMessage)
+static void report_relation_error_now(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     flush_incompatible(st);
     bool widen = report_widens(me, target);
     Ty const* generalized = widen && is_literal_type(source) ? ty_base_type_of_literal(me, source) : source;
@@ -1022,7 +1022,7 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
     }
     if (st->relation == TY_RELATION_COMPARABLE) {
         report_line(st, 2678, cstr_d("Type '", source_str, "' is not comparable to type '", target_str, "'."));
-    } else if (!top && cstr_eq(&source_str, &target_str)) {
+    } else if (cstr_eq(&source_str, &target_str)) { // (a head too: callers replace it like TS2322)
         report_line(st, 2719, cstr_d("Type '", source_str, "' is not assignable to type '", target_str,
             "'. Two different types with this name exist, but they are unrelated."));
     } else if (ty_has_exact_optional_unassignable(me, source, target)) {
