@@ -86,8 +86,6 @@ one commit each, `./sweep.py` before/after.
 
 ### Medium (15-100 lines)
 - **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
-- **Construct signatures compared bivariantly under strictFunctionTypes** (react, react-redux; D/ctorOverloads.ts):
-  relate.c exempts every SIGNATURE_CONSTRUCT target; tsc only class `constructor` declarations. Expect suite movement.
 - **Generic rest `[...AX, ...A]` implied arity** (call-bind; C/arity.ts): infer_to_tuple's "two variadic elements"
   TODO (tsc ~26690) plus impliedArity. ~60 lines.
 - **Rest `TArgs` inferred from the callback's own parameters** (immediate, macrotask, node; D/restTArgs.ts): tsc drops
