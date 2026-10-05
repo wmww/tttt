@@ -63556,9 +63556,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypeAsyncFunctionReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeCommaOperator01': {
         errors: true,

@@ -1162,7 +1162,11 @@ static void set_contextual_return(Checker* me, FunctionImpl const* function, Sig
     }
     Ty const* ret = signature_return_type(me, sig);
     u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
-    if (ret && !(ret->flags & (TYF_ANY | TYF_VOID))) *intern_slot(me, &my links, key, 2) = ret;
+    // (A `void` context says nothing about what a function returns, except an async one's: its return expressions are
+    // contextually typed `void | PromiseLike<void>`, so `return new Promise(r => r())` infers `void`: tsc's
+    // getContextualTypeForReturnExpression)
+    u32 ignored = function->is_async && !function->is_generator ? TYF_ANY : TYF_ANY | TYF_VOID;
+    if (ret && !(ret->flags & ignored)) *intern_slot(me, &my links, key, 2) = ret;
 }
 
 // `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
