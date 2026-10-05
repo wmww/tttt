@@ -2391,7 +2391,14 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->file_order = index - 1;
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
         source_file_check_verbatim_exports(source, checker->errs);
+        checker->defer_functions = true;
         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
+        // (A deferred body's own function expressions join the end of the queue)
+        for (u32 f = 0; f < checker->deferred_function_count; f++) {
+            function_impl_typecheck_body(checker->deferred_functions[f], checker->errs);
+        }
+        checker->deferred_function_count = 0;
+        checker->defer_functions = false;
     }
     // After its files are checked: the checker marks members it reads
     index = 0;

@@ -1018,6 +1018,23 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, my arrow_span, 1200, "Line terminator not permitted before arrow.");
     }
 
+    // A function expression's body is checked after the statements of its file (tsc's checkNodeDeferred): its
+    // signature is checked where it is, which is what the code around it sees
+    if (my is_expression && current_checker->defer_functions) {
+        // (One with a contextual signature gets its return type from its body where it is: tsc's
+        // contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
+        if (!my ret_explicit && my has_body && ty_function_assigned_contextual_signature(current_checker, me)) {
+            ty_function_return_type(current_checker, me);
+        }
+        checker_defer_function(current_checker, me);
+    } else {
+        function_impl_typecheck_body(me, errs);
+    }
+}
+
+// What function_impl_typecheck() checks of a function's body (tsc's checkFunctionExpressionOrObjectLiteralMethodDeferred
+// for a function expression)
+void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // tsc's checkGrammarStatementInAmbientContext for the body, which then covers the statements directly in it
     if (my ambient && my has_body && !my expression_body && my full_span.source && !my full_span.source->has_parse_errors) {
         // (The body's `{`: the first after the parameters and the return type)

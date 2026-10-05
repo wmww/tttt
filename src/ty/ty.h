@@ -828,6 +828,13 @@ struct Checker {
     struct ErrorCtx* errs;
     double check_ms; // How long program_typecheck() spent checking its files (tttt --time)
     u32 file_order; // The index (among the checked files) of the file it checks, for Error.once_order
+    // The function expressions (arrows, object literal methods and accessors) whose bodies the walk of the file being
+    // checked meets: checked after its statements, in that order (tsc's checkNodeDeferred and checkDeferredNodes).
+    // What a function's body is checked against is then settled by everything around it, whatever the body asks
+    bool defer_functions;
+    FunctionImpl** deferred_functions;
+    u32 deferred_function_count;
+    u32 deferred_function_cap;
     LazySlots lazy; // The memos of every LazyType in the AST, see lazy_type.h
     Arena arena;
     u32 next_type_id;
@@ -927,6 +934,8 @@ struct Checker {
 // checker.c
 Checker* checker_new(Program* program);
 void checker_drop(Checker* me);
+// Checks a function expression's body after the statements of the file being checked (Checker.defer_functions)
+void checker_defer_function(Checker* me, FunctionImpl* function);
 
 // The checker that code without a context parameter works for: lazy_type_get() uses its slots (through
 // current_lazy_slots). One per Program; set by program_typecheck() and stays set until that program is destroyed or
