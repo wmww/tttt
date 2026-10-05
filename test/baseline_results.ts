@@ -65701,9 +65701,9 @@ const baselines = {
         types: true,
     },
     'contextualTypeTupleEnd': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeWithTuple': {
         errors: true,

@@ -302,7 +302,8 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     if (!contextual && i >= shape->count && shape->rest_variadic && args->spread_index < 0 &&
         !(shape->rest_variadic->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
     ) {
-        contextual = ty_contextual_element_type(me, shape->rest_variadic, i - shape->count);
+        // (Elements after a variadic one count from the end: the arguments are its elements)
+        contextual = ty_contextual_element_type_of(me, shape->rest_variadic, i - shape->count, args->len - shape->count);
     }
     arg->type = ty_check_expr(me, arg->expr, contextual);
 }
