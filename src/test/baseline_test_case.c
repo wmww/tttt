@@ -377,8 +377,25 @@ static void apply_setting(BaselineTestCase* me, csview key, csview value) {
 // filesystem, so a failure here can't leave us with a BaselineTestFile pointing at nothing
 static_failable add_virtual_source_file(BaselineTestCase* me, csview virtual_path, cstr contents) {
     if (fs_exists(mock_fs_get_fs(my fs), virtual_path)) {
-        // A handful of tsc tests repeat a // @Filename:, in which case the first copy of the file wins
-        cstr_drop(&contents);
+        // A handful of tsc tests repeat a // @Filename:, in which case the last copy is the file (tsc's harness
+        // writes them all to its virtual file system in order); an earlier one is still shown with its own text,
+        // unless it was empty
+        for (isize i = vec_baseline_test_file_size(&my files) - 1; i >= 0; i--) {
+            BaselineTestFile* earlier = &my files.data[i];
+            if (earlier->superseded || !csview_equals_sv(cstr_sv(&earlier->path), virtual_path)) continue;
+            cstr shown = cstr_null;
+            try (fs_read_file(mock_fs_get_fs(my fs), virtual_path, &shown)) or_log(info);
+            if (!cstr_size(&shown)) {
+                cstr_drop(&shown);
+                baseline_test_file_drop(earlier);
+                vec_baseline_test_file_erase_n(&my files, i, 1);
+            } else {
+                earlier->raw_contents = shown;
+                earlier->superseded = true;
+            }
+            break;
+        }
+        try (mock_fs_overwrite_file(my fs, virtual_path, contents)) bubble;
     } else {
         try (mock_fs_create_file(my fs, virtual_path, contents)) bubble;
     }
@@ -877,7 +894,7 @@ BaselineTestCase run_baseline_test_case(
             cstr_drop(&cwd);
         }
         // (tsc's harness makes every file but a .json a root: a `.map` or `.txt` one is TS6054)
-        if (!is_root || csview_ends_with(cstr_sv(&i->path), ".json")) continue;
+        if (!is_root || i->superseded || csview_ends_with(cstr_sv(&i->path), ".json")) continue;
         // These were all just written into our mock filesystem, so failing to load one is a bug on our end
         try (SourceFile* source, program_load(program, cstr_sv(&i->path), &source)) or_panic;
         // (A root without extension may stand for another file, `e` for e.ts: that one is shown as itself)
@@ -905,6 +922,7 @@ BaselineTestCase run_baseline_test_case(
     }
     program_load_automatic_types(program);
     for_each (i, vec_baseline_test_file, &ret.files) {
+        if (i->superseded) continue;
         if (!i->source && (path_is_script(cstr_sv(&i->path)) || csview_ends_with(cstr_sv(&i->path), ".json"))) {
             i->source = program_find_source(program, cstr_sv(&i->path));
         }

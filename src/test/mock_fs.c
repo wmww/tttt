@@ -291,6 +291,10 @@ void mock_fs_destroy(MockFs* me) {
     free(me);
 }
 
+failable mock_fs_overwrite_file(MockFs* me, csview path, cstr contents) {
+    return mock_fs_set_file(me, path, contents);
+}
+
 failable mock_fs_create_file(MockFs* me, csview path, cstr contents) {
     csview filename = basename_of(path);
     if (!filename.size) {

@@ -1991,7 +1991,7 @@ const baselines = {
         types: false,
     },
     'augmentExportEquals2': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -49771,7 +49771,7 @@ const baselines = {
         types: true,
     },
     'importsNotUsedAsValues_error': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
