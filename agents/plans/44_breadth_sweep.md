@@ -80,8 +80,6 @@ one commit each, `./sweep.py` before/after.
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
-- **anyFunctionType lacks Function's members** (routie, browser-harness, benchmark; C/anyctx.ts): `ty_get_object_prop`
-  falls back to GLOBAL_FUNCTION for GLOBAL_ANY_FUNCTION (tsc ~15223).
 - **Union excess-property check ignores template/`string & {}` index keys** (dom-css, create-keyframe-animation;
   C/unionidx*.ts): `prop_or_index_type` (relate.c) should use `ty_applicable_index_info`.
 - **A module nested in a `declare module` block is an augmentation** (i18next-sprintf-postprocessor; D/augm):

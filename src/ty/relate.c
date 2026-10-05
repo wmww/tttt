@@ -1245,7 +1245,10 @@ Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name) {
     if (!prop && !const_enum) {
         Members const* members = ty_members(me, ty);
         Ty const* fallback = nullptr;
-        if (members->call_count || members->construct_count) {
+        // (tsc's anyFunctionType, what a context-sensitive function is while it's skipped, has Function's)
+        if (ty == my global_types[GLOBAL_ANY_FUNCTION]) {
+            fallback = global_type(me, GLOBAL_FUNCTION);
+        } else if (members->call_count || members->construct_count) {
             if (compiler_options()->strict_bind_call_apply) {
                 fallback = global_type(me, members->call_count ? GLOBAL_CALLABLE_FUNCTION : GLOBAL_NEWABLE_FUNCTION);
             }
