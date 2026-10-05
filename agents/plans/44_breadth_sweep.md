@@ -79,7 +79,7 @@ one commit each, `./sweep.py` before/after.
 Most mirror a latest package's open cause: node/v22, v24, v25 (node's TS2722/TS2345/TS2769/TS7006; v22/v24 add
 `stream.pipeline(function*(){...}, async function*(source){...})` overloads where `source` stays unknown, TS18046,
 then TS2339 'then' on never: generic overloads with context-sensitive generator arguments, the inference owner's), react-redux/v5, v6 (like react-redux's TS2741), ember/v3 (observable-tests TS2615/TS2578
-like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tests 1777, 1787: not investigated).
+like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType, fixed e207f80c: re-check), chai/v4 (TS2769 at chai-tests 1777, 1787: not investigated).
 - **ember-data__adapter/v3, ember-data__model/v3, ember-data__store/v3, ember__routing/v3**: +TS2717 at
   types/ember__object/index.d.ts:140-141. The program has both ember__object (latest, through a `*` devDependency) and
   ember__object/v3, and both augment the latest ember__utils's `TypeLookup` with `class: typeof EmberObject` and
@@ -88,13 +88,6 @@ like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tes
   hierarchies from different declarations.
 
 ### Small (1-10 lines each)
-- **A context-sensitive function argument is skipped, not related as anyFunctionType, in the skip round**
-  (`first_unfit_argument_skipping`/`check_args_until_unfit` `skipped_arg`): tsc relates anyFunctionType (`{}`, but
-  signatures always fit, checker.ts ~23891) to the parameter, so `c.query("SELECT", (err, r) => ...)` fails pg's
-  `(config, values?: QueryConfigValues<I>)` overload in that round and the arrow isn't typed against it for good. Left
-  alone in session 8 (forwarded to the effect agent); pg matches since, re-check with a probe like `declare function q(a: string, v?: number[]): void; declare function q(a: string, cb: (e: Error)
-  => void): void; q("x", e => {})`. The literal case is the Large item below.
-
 - **TS2303 on the import instead of the `export =` of a self-importing module** (koa-webpack, react-loadable;
   `types/webpack/index.d.ts`: `import webpack = require("webpack"); export = webpack;`): which alias of the cycle
   reports depends on which one tsc resolves first, and there it's incidental (checking koa's `DefaultState` resolves
@@ -138,7 +131,5 @@ like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tes
   (TRuntimeProps, TExtraProps) reliable invariant (0) while #0/#1 and ComponentClass's P are invariant+unreliable (8),
   so `{ onClick }` vs `{}` fails without a structural fallback. Suspect: the unreliable marker of ComponentClass's
   variance doesn't propagate into the alias's measurement for those parameters. Not confirmed against tsc.
-- **d3-array**'s remaining TS7006 (`cross([2, 3], [5, 6], (a, b) => ...)`): the skip-round anyFunctionType cause above
-  (the arrow should fail `Iterable<T[K]>` of the first overload).
 - Not investigated: google-apps-script (property named `''`), fabric's second `Image`, kefir; d3-tip and dynmap as
   above. `./sweep.py --last -k ...` lists each.
