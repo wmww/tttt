@@ -2587,10 +2587,16 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_DECL_TYPE:
+            if (body) { // (tsc's checkTypeAliasDeclaration: allowBlockDeclarations)
+                error_ctx_grammar_error_d(errs, my decl.type->name, 1156, "'type' declarations can only be declared inside a block.");
+            }
             type_decl_typecheck(my decl.type, errs);
             break;
 
         case STATEMENT_DECL_INTERFACE:
+            if (body) { // (tsc's checkInterfaceDeclaration: allowBlockDeclarations)
+                error_ctx_grammar_error_d(errs, my decl.interface->name, 1156, "'interface' declarations can only be declared inside a block.");
+            }
             interface_decl_typecheck(my decl.interface, errs);
             break;
 
