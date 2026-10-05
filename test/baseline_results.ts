@@ -20743,7 +20743,7 @@ const baselines = {
     'literalsInComputedProperties1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'localAliasExportAssignment': {
         errors: true,

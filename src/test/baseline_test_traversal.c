@@ -1382,6 +1382,19 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
                 .text = !i->name_is_value && declaration->parent ? symbol_text(ctx, declaration) :
                     member_text(ctx, my symbol, my name, (i->name_is_value ? i->full_name : declaration->name_span).sv, true),
             });
+            // ...and is an expression of its own (isInExpressionContext of a ComputedPropertyName)
+            {
+                Value value;
+                if (i->name_is_value) {
+                    value = value_string(cstr_from_sv(i->name.sv));
+                } else {
+                    cstr text = cstr_from_sv(i->name.sv);
+                    value = value_number(strtod(cstr_str(&text), nullptr));
+                    cstr_drop(&text);
+                }
+                baseline_test_case_add_type(ctx, literal, ty_literal(current_checker, &value));
+                value_drop(&value);
+            }
         }
         // (A computed name isn't checked, its expression is any: tsc's isComputedNonLiteralName)
         if (i->computed_key) baseline_test_case_add_type_node(ctx, expr_outer_span(i->computed_key), &type_any);
