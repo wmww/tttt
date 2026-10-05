@@ -159,7 +159,13 @@ static Args collect_args(Checker* me, CallInfo const* info) {
                     Atom const* name = shape->names ? shape->names[j] : nullptr;
                     if (shape->flags[j] & TUPLE_ELEMENT_REST) {
                         if (args.spread_index < 0) args.spread_index = (i32)args.len;
-                        args_push(&args, (Arg){ .expr = i, .type = ty_rest_element_type(me, elements.data[j]), .spread = true, .tuple_name = name });
+                        // A variadic element (`...T`, T generic) stays itself (tsc's getSpreadArgumentType)
+                        Ty const* rest = elements.data[j];
+                        bool variadic = !ty_is_array(me, rest) && !ty_is_tuple(rest) && !(rest->flags & TYF_ANY);
+                        Ty const* element = variadic ? ty_iterated_type(me, ITERATION_SPREAD, rest, span_null, nullptr) :
+                            ty_rest_element_type(me, rest);
+                        args_push(&args, (Arg){ .expr = i, .type = element, .spread = true, .tuple_name = name,
+                            .variadic = variadic ? rest : nullptr });
                     } else {
                         args_push(&args, (Arg){ .expr = i, .type = elements.data[j], .part_of_spread = true, .tuple_name = name });
                     }
