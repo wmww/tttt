@@ -32053,7 +32053,7 @@ const baselines = {
     'unionExcessPropsWithPartialMember': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionOfArraysFilterCall': {
         errors: true,

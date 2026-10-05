@@ -3262,7 +3262,9 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             continue;
         }
         TypeNode const* asserted = i->jsdoc_type;
+        // (Only an assertion that is the initializer itself, not parenthesized: tsc's typeFromPropertyAssignment)
         if (!asserted && i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_AS_TYPE && !i->value.as_type->is_satisfies &&
+            !expr_is_perenthisized(&i->value) &&
             !as_type_is_const(i->value.as_type) && type == ty_expr_type(me, &i->value)
         ) {
             asserted = &i->value.as_type->type;
