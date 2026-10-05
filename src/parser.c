@@ -4957,6 +4957,11 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             !port_item_is_export(&statement.import_export->main) && statement.import_export->main.tag != PORT_IMPORT_ALIAS
         ) {
             statement.import_export->main.type_only = true;
+            // (Type-only, so its `resolution-mode` attribute counts, like an `import type`'s)
+            if (statement.import_export->module_ref) {
+                statement.import_export->module_ref->resolution_override =
+                    import_attributes_resolution_mode(statement.import_export->attributes, nullptr);
+            }
             statement.import_export->jsdoc = true;
             statement.import_export->main.jsdoc = true;
             for_each (i, vec_port_item, &statement.import_export->items) i->jsdoc = true;

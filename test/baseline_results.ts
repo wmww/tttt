@@ -51931,9 +51931,9 @@ const baselines = {
         types: true,
     },
     'importTag17': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag18': {
         errors: true,
