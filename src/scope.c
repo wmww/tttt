@@ -1255,6 +1255,45 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
         }
     }
     if (!checked) return;
+    // tsc's local symbol gets the exported declarations too (with no meaning of their own there, ExportValue excludes
+    // nothing): an exported one that the block's earlier local declarations exclude is a duplicate, not TS2395
+    for (u32 d = 0; exported && d < exported->decl_count; d++) {
+        SymbolDecl const* decl = &exported->decls[d];
+        // (Declarations with `export`, not export specifiers, which tsc doesn't declare locally)
+        if (!span_within(decl->full, block) || decl->kind == SYMBOL_DECL_ALIAS || decl->kind == SYMBOL_DECL_EXPR ||
+            decl->kind == SYMBOL_DECL_ASSIGNMENT || (decl->flags & SYMBOL_ALIAS) || decl->kind == SYMBOL_DECL_FUNCTION
+        ) {
+            continue; // (A function is bound first, tsc's bindEachFunctionsFirst: nothing local is declared before it)
+        }
+        u32 excludes = symbol_excludes(decl->flags), earlier = 0;
+        for (u32 l = 0; l < local->decl_count; l++) {
+            SymbolDecl const* other = &local->decls[l];
+            if (other->flags && other->full.source == decl->full.source &&
+                (span_start_ptr(other->full) < span_start_ptr(decl->full) || other->kind == SYMBOL_DECL_FUNCTION)
+            ) {
+                earlier |= other->flags;
+            }
+        }
+        if (!(earlier & excludes)) continue;
+        unsigned code = (earlier | decl->flags) & SYMBOL_ENUM ? 2567 : earlier & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
+        for (u32 l = 0; l < local->decl_count; l++) {
+            SymbolDecl const* other = &local->decls[l];
+            if (other->flags && other->full.source == decl->full.source &&
+                (span_start_ptr(other->full) < span_start_ptr(decl->full) || other->kind == SYMBOL_DECL_FUNCTION)
+            ) {
+                report_conflict(my binder->errs, other->name, code);
+            }
+        }
+        Error* error = report_conflict(my binder->errs, decl->name, code);
+        // (tsc's declareSymbol: `export type T;` may have meant `export type { T }`)
+        if (error && decl->kind == SYMBOL_DECL_TYPE_ALIAS && earlier & (SYMBOL_ALIAS | SYMBOL_TYPE | SYMBOL_NAMESPACE)) {
+            TypeDecl const* alias = decl->node;
+            if (alias->type.tag == TYPE_ANY && !alias->type.parsed) {
+                error_add_related_d(error, decl->name, 1369, "Did you mean 'export type { ", decl->name, " }'?");
+            }
+        }
+        return;
+    }
     // The exported declarations of this block merge with its local ones (tsc: one local symbol), and so do those
     // of `export default class A` (the local's declarations without flags of their own)
     u32 exported_spaces = 0, local_spaces = 0, default_spaces = 0;

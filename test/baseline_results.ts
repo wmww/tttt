@@ -49586,7 +49586,7 @@ const baselines = {
         types: true,
     },
     'exportDeclaration_missingBraces': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
