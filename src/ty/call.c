@@ -1988,6 +1988,12 @@ static Resolution resolve_with_signatures(
                 free(shape.types);
                 candidate = make_candidate(me, sig, args, info, false, false);
                 shape = call_param_shape(me, info, sig, candidate.mapper);
+                if (generic_rest && candidate.mapper && !has_correct_arity(&shape, args)) {
+                    // (tsc's second hasCorrectArity after the full inference too)
+                    free(shape.types);
+                    arity_candidate = candidate;
+                    continue;
+                }
                 fits = check_args_until_unfit(me, &shape, args, rounds[round], false, false, &arg_type, &param_type) < 0;
             }
             fits = fits && this_fits(me, &candidate, info, rounds[round]);

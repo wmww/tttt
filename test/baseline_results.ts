@@ -28936,7 +28936,7 @@ const baselines = {
         types: true,
     },
     'spreadOfParamsFromGeneratorMakesRequiredParams': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
