@@ -452,11 +452,6 @@ src` finds the code-side markers; every significant one has an entry here.
   cost valibot +29% in the prototype: find why tsc doesn't pay that before trying again. `check_related`'s fast path
   runs on the unreduced types like tsc's isTypeRelatedTo (`any` is assignable to an intersection that is never),
   is_related_to() then reduces both sides.
-- `resolve_call` (call.c HACK): every resolution of a call starts a new region of the resolution stack; tsc's only
-  the first (a call re-entered in flight is resolved again with the whole stack visible). Since resolve-once (plan 38
-  stage 3) the only other resolutions are in-flight re-entries; skipping the barrier for those is +1 in the suite but
-  zod 0 -> 6 (plan 42 stage 4: zod's recursive getters typed during `z.object()`'s resolution). Costs `res1`'s TS7022
-  and circularReferenceInReturnType2's `A`/`fields`.
 - `reduce_type_variable_intersection` (checker.c HACKs): type parameters only, not indexed accesses (valibot's
   `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint); constraints with a
   deferred type aren't reduced (cost valibot 5%, `primitive_constraint_of`). Real fix: cheaper conditional base

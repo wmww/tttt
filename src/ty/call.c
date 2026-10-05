@@ -2097,14 +2097,16 @@ static void reorder_candidates(Checker* me, Signature** signatures, u32 count) {
 static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs);
 
 // A cycle found while resolving a call doesn't reach what is being resolved around the call (tsc's getResolvedSignature
-// setting resolutionStart). HACK: tsc only does that for a call's first resolution: a nested one gets resolvingSignature and
-// sees the whole stack. tttt resolves a call again while it is in flight (see call_return_type()), and letting those see
-// the whole stack marks implicitAnyFromCircularInference's `s = foo(this)` circular (plan 39 "Stage 3")
+// setting resolutionStart), only for a call's first resolution: one re-entered while in flight (call_return_type())
+// sees the whole stack
 static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     u32 start = my resolving_start, call_start = my resolving_call_start;
     my resolving_call_start = start;
-    my resolving_start = my resolving_len;
+    if (!my resolving_nested_call) my resolving_start = my resolving_len;
+    bool nested = my resolving_nested_call;
+    my resolving_nested_call = false;
     Ty const* ret = resolve_call_inner(me, callee, info, call_span, errs);
+    my resolving_nested_call = nested;
     my resolving_start = start;
     my resolving_call_start = call_start;
     return ret;
@@ -2641,8 +2643,17 @@ static Ty const* call_return_type(
     CallResolution* resolution = (CallResolution*)intern_get(&my links, key, 2);
     if (resolution && !resolution->in_flight) return resolution->ret;
     // A call asked for again while in flight is resolved again (tsc's getResolvedSignature: resolvingSignature only
-    // reaches SkipGenericFunctions and contextual types). tsc puts no barrier at the nested resolution (plan 42 stage 4)
-    if (resolution || my flow_uncached) {
+    // reaches SkipGenericFunctions and contextual types)
+    if (resolution) {
+        // Without a barrier of its own: the whole stack is visible to the nested resolution (tsc's resolutionStart is
+        // set only for a call's first resolution)
+        bool saved = my resolving_nested_call;
+        my resolving_nested_call = true;
+        Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
+        my resolving_nested_call = saved;
+        return ret;
+    }
+    if (my flow_uncached) {
         return resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
     }
     // (Not remembered while control flow analysis has nothing memoized: tsc's flowLoopStart === flowLoopCount)

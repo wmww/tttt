@@ -3426,9 +3426,9 @@ const baselines = {
         types: true,
     },
     'circularReferenceInReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularReferenceInReturnType2': {
         errors: false,

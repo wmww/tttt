@@ -1145,6 +1145,8 @@ static void set_contextual_return(Checker* me, FunctionImpl const* function, Sig
     // (Later checks of its return expressions see the return type it has then, like tsc's getContextualReturnType)
     if (sig->function == function && !sig->target) {
         *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) = function;
+        // (Not while its return type is being decided: a call re-entered from its body checks it against itself)
+        if (ty_function_return_in_flight(me, function)) return;
     }
     Ty const* ret = signature_return_type(me, sig);
     u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
