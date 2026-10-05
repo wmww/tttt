@@ -1116,7 +1116,11 @@ static TyMapper const* infer_type_arguments(
             Ty const* param_type = shape_type_at(&shape, i);
             Ty const* context = !param_type ? nullptr : arg->expr->tag == EXPR_FUNCTION ?
                 ty_instantiate(me, param_type, return_mapper) : instantiate_instantiable(me, param_type, return_mapper);
-            arg->type = ty_check_expr_in_const(me, arg->expr, context,
+            // A call's own inference reads its contextual type as it is (tsc's inferTypeArguments: getContextualType,
+            // not instantiateContextualType), instantiating it with what this call has inferred so far, and only its
+            // return mapper with ours. With ours here, `succeed(none())` returning into `Eff<Opt<[A, S]>>` would infer
+            // `none`'s A from the outer A and S that the outer inference silenced
+            arg->type = ty_check_expr_in_const(me, arg->expr, arg->expr->tag == EXPR_CALL ? param_type : context,
                 ty_is_const_type_variable(me, param_type, 0));
             // A literal the instantiated contextual type has room for is regular, so it isn't widened as a candidate
             // (tsc's checkExpressionWithContextualType)
