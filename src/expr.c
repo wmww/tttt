@@ -376,6 +376,29 @@ static Span span_from_type_keyword(Span name) {
     return span_make(name.source, before, span_end_ptr(name));
 }
 
+// tsc's addTypeOnlyDeclarationRelatedInfo: TS1376/TS1377 on the type-only import or export `name` comes through
+void port_item_add_type_only_related(Error* error, PortItem const* item, csview name) {
+    if (!error || !item) return;
+    bool exported = port_item_is_export(item);
+    // (tsc's node: the whole `export type *` declaration, the `* as ns` of a namespace export, the whole
+    // `import A = require()`, the import clause of a default import, the whole specifier)
+    Span at = item->decl_name;
+    if (item->tag == PORT_REEXPORT_SPLAT || item->tag == PORT_REEXPORT_GATHER || item->tag == PORT_IMPORT_ALIAS ||
+        item->is_require
+    ) {
+        at = item->full_span;
+    } else if (item->tag == PORT_IMPORT_DEFAULT && item->type_only) {
+        at = span_from_type_keyword(item->decl_name); // (from its `type`)
+    } else if (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) {
+        if (span_valid(item->source_name) && span_start_ptr(item->source_name) < span_start_ptr(item->decl_name)) {
+            at = item->source_name;
+        }
+        // (A specifier's own `type` is part of it: `type a`)
+        if (item->type_modifier) at = span_from_type_keyword(at);
+    }
+    error_add_related_d(error, at, exported ? 1377 : 1376, "'", name, "' was ", exported ? "exported" : "imported", " here.");
+}
+
 // TS1361/TS1362: a value that was imported or exported as a type only (tsc's
 // checkAndReportErrorForResolvingImportAliasToTypeOnlySymbol). Fine in `typeof x` types and ambient contexts
 // A value use of `x` after an `import x = A.B` that resolved to nothing: tsc checks `A.B` as an expression then
@@ -410,26 +433,7 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     bool exported = port_item_is_export(item);
     Error* error = error_ctx_error_d(errs, my name, exported ? 1362 : 1361, "'", my name, "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
-    if (error) {
-        // (tsc's node: the whole `export type *` declaration, the `* as ns` of a namespace export, the whole
-        // `import A = require()`, the import clause of a default import, the whole specifier)
-        Span at = item->decl_name;
-        if (item->tag == PORT_REEXPORT_SPLAT || item->tag == PORT_REEXPORT_GATHER || item->tag == PORT_IMPORT_ALIAS ||
-            item->is_require
-        ) {
-            at = item->full_span;
-        } else if (item->tag == PORT_IMPORT_DEFAULT && item->type_only) {
-            at = span_from_type_keyword(item->decl_name); // (from its `type`)
-        } else if (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) {
-            if (span_valid(item->source_name) && span_start_ptr(item->source_name) < span_start_ptr(item->decl_name)) {
-                at = item->source_name;
-            }
-            // (A specifier's own `type` is part of it: `type a`)
-            if (item->type_modifier) at = span_from_type_keyword(at);
-        }
-        error_add_related_d(error, at, exported ? 1377 : 1376, "'", my name, "' was ",
-            exported ? "exported" : "imported", " here.");
-    }
+    port_item_add_type_only_related(error, item, my name.sv);
 }
 
 // What there is to say about a module name that an import-like construct uses

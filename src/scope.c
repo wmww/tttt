@@ -3101,6 +3101,88 @@ static void check_alias_ambient_const_enum(Symbol const* alias, Symbol const* ta
     error_ctx_error_d(scope->errs, at, 2748, "Cannot access ambient const enums when 'verbatimModuleSyntax' is enabled.");
 }
 
+// tsc's checkAliasSymbol under isolatedModules/verbatimModuleSyntax: what a transpiler that sees one file at a time
+// can't elide (an import or re-export of a type, or of something imported as a type only), and ES syntax in a file
+// emitted as CommonJS
+static void check_alias_isolated_modules(Symbol const* alias, Symbol const* target) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->isolated_modules && !options->verbatim_module_syntax) return;
+    PortItem const* item = alias->alias->item;
+    Scope const* scope = alias->alias->scope;
+    SourceFile const* file = scope->file;
+    if (item->type_only || item->type_modifier || item->jsdoc || scope->ambient || !file || file->is_declaration) return;
+    u32 target_flags = symbol_resolved_flags(target);
+    bool is_type = !(target_flags & SYMBOL_VALUE);
+    // (a JavaScript file's import of a type is an error of its own)
+    if (file->is_js && is_type) return;
+    const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
+    ErrorCtx* errs = scope->errs;
+    bool import_equals = item->tag == PORT_IMPORT_ALIAS || item->is_require;
+    // tsc's error node: the whole specifier, the whole `import x = ...`, the name of `* as ns` (and of a default
+    // import's clause, which tsc spans to its named imports too)
+    Span at = item->decl_name;
+    if (import_equals) {
+        at = span_with_semicolon(item->full_span);
+    } else if (item->tag == PORT_IMPORT_SPECIFIC || item->tag == PORT_EXPORT_SPECIFIC || item->tag == PORT_REEXPORT_SPECIFIC) {
+        if (span_valid(item->source_name)) at = span_between(item->source_name, item->decl_name);
+    } else if (item->tag == PORT_REEXPORT_GATHER) {
+        at = item->full_span;
+    }
+    PortItem const* type_only = symbol_type_only_declaration(alias);
+    if (is_type || type_only) {
+        // (`{ a as b }` names `a`)
+        csview name = port_item_name(span_valid(item->source_name) ? item->source_name : item->decl_name);
+        switch (item->tag) {
+            case PORT_IMPORT_DEFAULT:
+            case PORT_IMPORT_SPECIFIC:
+            case PORT_IMPORT_ALIAS:
+            case PORT_IMPORT_GATHER:
+                if (item->tag == PORT_IMPORT_GATHER && !item->is_require) break; // (not tsc's switch)
+                if (options->verbatim_module_syntax) {
+                    Error* error = item->tag == PORT_IMPORT_ALIAS ?
+                        error_ctx_error_d(errs, at, 1288, "An import alias cannot resolve to a type or type-only "
+                            "declaration when 'verbatimModuleSyntax' is enabled.") :
+                        is_type ?
+                        error_ctx_error_d(errs, at, 1484, "'", name, "' is a type and must be imported using a type-only "
+                            "import when 'verbatimModuleSyntax' is enabled.") :
+                        error_ctx_error_d(errs, at, 1485, "'", name, "' resolves to a type-only declaration and must be "
+                            "imported using a type-only import when 'verbatimModuleSyntax' is enabled.");
+                    if (!is_type) port_item_add_type_only_related(error, type_only, name);
+                }
+                if (is_type && import_equals && item->export_import) {
+                    error_ctx_error_d(errs, at, 1269, "Cannot use 'export import' on a type or type-only namespace when '",
+                        flag, "' is enabled.");
+                }
+                break;
+            case PORT_EXPORT_SPECIFIC:
+            case PORT_REEXPORT_SPECIFIC: {
+                // (`import type { A } from "./a"; export { A }` is fine without verbatimModuleSyntax: a transpiler
+                // sees it's a type)
+                SourceFile const* type_only_file = type_only ? type_only->decl_name.source : nullptr;
+                if (!options->verbatim_module_syntax && type_only_file == file) break;
+                Error* error = is_type ?
+                    error_ctx_error_d(errs, at, 1205, "Re-exporting a type when '", flag,
+                        "' is enabled requires using 'export type'.") :
+                    error_ctx_error_d(errs, at, 1448, "'", name, "' resolves to a type-only declaration and must be "
+                        "re-exported using a type-only re-export when '", flag, "' is enabled.");
+                if (!is_type) port_item_add_type_only_related(error, type_only, name);
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    if (import_equals) return;
+    ModuleKind format = source_file_emit_module_kind(file);
+    if (options->verbatim_module_syntax && !file->is_js && format == MODULE_KIND_COMMONJS) {
+        error_ctx_error_d(errs, at, 1286, "ESM syntax is not allowed in a CommonJS module when 'verbatimModuleSyntax' is "
+            "enabled.");
+    } else if (options->module == MODULE_KIND_PRESERVE && format == MODULE_KIND_COMMONJS) {
+        error_ctx_error_d(errs, at, 1293, "ESM syntax is not allowed in a CommonJS module when 'module' is set to "
+            "'preserve'.");
+    }
+}
+
 void binder_link(Binder* me) {
     merge_augmentations(me);
     // Resolving makes placeholder symbols: by index
@@ -3116,6 +3198,7 @@ void binder_link(Binder* me) {
         // (A UMD global, `export as namespace foo`, isn't one tsc's checkAliasSymbol checks)
         if (symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE) continue;
         check_alias_ambient_const_enum(symbol, target);
+        check_alias_isolated_modules(symbol, target);
         // In tsc an exported declaration also has a local symbol, which an import of the same name conflicts with
         u32 local_flags = symbol->flags;
         Symbol const* container = symbol->alias->scope->container;

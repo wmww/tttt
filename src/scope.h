@@ -342,6 +342,8 @@ Symbol* symbol_resolve_alias(Symbol* me);
 // tsc's getTypeOnlyAliasDeclaration(): the nearest `import type`/`export type` (or `type` specifier) along the chain of
 // aliases that ends in the symbol, if any. What it names can't be used as a value
 PortItem const* symbol_type_only_declaration(Symbol const* me);
+// tsc's addTypeOnlyDeclarationRelatedInfo: TS1376/TS1377 on the type-only import or export (expr.c)
+void port_item_add_type_only_related(Error* error, PortItem const* item, csview name);
 // Member of a namespace, enum or module (`export *` included), null if there is none
 Symbol* symbol_get_export(Symbol const* me, csview name);
 // The `export type *` that is the only way the module exports that name (tsc's typeOnlyExportStarMap), if any
