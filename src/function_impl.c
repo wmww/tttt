@@ -1119,13 +1119,13 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
 
     // A function expression's body is checked after the statements of its file (tsc's checkNodeDeferred): its
     // signature is checked where it is, which is what the code around it sees
-    if (my is_expression && current_checker->defer_functions) {
+    if (my is_expression && current_checker->defer_checks) {
         // (One with a contextual signature gets its return type from its body where it is: tsc's
         // contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
         if (!my ret_explicit && my has_body && ty_function_assigned_contextual_signature(current_checker, me)) {
             ty_function_return_type(current_checker, me);
         }
-        checker_defer_function(current_checker, me);
+        checker_defer(current_checker, DEFERRED_FUNCTION_BODY, me);
     } else {
         function_impl_typecheck_body(me, errs);
     }

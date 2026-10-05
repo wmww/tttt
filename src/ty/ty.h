@@ -847,6 +847,19 @@ typedef struct CurrentNode {
     struct Expr const* expr; // If set, the node is this expression (the span isn't)
 } CurrentNode;
 
+// What Checker.deferred holds (tsc's checkDeferredNode cases tttt has)
+typedef enum DeferredCheckKind {
+    DEFERRED_FUNCTION_BODY, // A FunctionImpl: function_impl_typecheck_body()
+    DEFERRED_CLASS_MEMBERS, // A class expression's ClassDecl: class_decl_typecheck_members()
+    DEFERRED_JSX_ELEMENT, // An EXPR_JSX_ELEMENT Expr: its tag, attributes and children
+    DEFERRED_EXPR, // An Expr checked by expr_typecheck() (a `void` operand)
+} DeferredCheckKind;
+
+typedef struct DeferredCheck {
+    DeferredCheckKind kind;
+    void const* node;
+} DeferredCheck;
+
 struct Checker {
     Program* program;
     struct Binder const* binder;
@@ -857,13 +870,14 @@ struct Checker {
     struct ErrorCtx* errs;
     double check_ms; // How long program_typecheck() spent checking its files (tttt --time)
     u32 file_order; // The index (among the checked files) of the file it checks, for Error.once_order
-    // The function expressions (arrows, object literal methods and accessors) whose bodies the walk of the file being
-    // checked meets: checked after its statements, in that order (tsc's checkNodeDeferred and checkDeferredNodes).
-    // What a function's body is checked against is then settled by everything around it, whatever the body asks
-    bool defer_functions;
-    FunctionImpl** deferred_functions;
-    u32 deferred_function_count;
-    u32 deferred_function_cap;
+    // What the walk of the file being checked meets and tsc checks after the file's statements, in that order (tsc's
+    // checkNodeDeferred and checkDeferredNodes): function expression bodies (arrows, object literal methods and
+    // accessors), class expression members, JSX elements and `void` operands. What they ask is then asked after
+    // everything around them settled, which decides cycles and the order types are made in (union order)
+    bool defer_checks;
+    DeferredCheck* deferred;
+    u32 deferred_count;
+    u32 deferred_cap;
     LazySlots lazy; // The memos of every LazyType in the AST, see lazy_type.h
     Arena arena;
     u32 next_type_id;
@@ -977,8 +991,8 @@ struct Checker {
 // checker.c
 Checker* checker_new(Program* program);
 void checker_drop(Checker* me);
-// Checks a function expression's body after the statements of the file being checked (Checker.defer_functions)
-void checker_defer_function(Checker* me, FunctionImpl* function);
+// Checks something after the statements of the file being checked (Checker.defer_checks)
+void checker_defer(Checker* me, DeferredCheckKind kind, void const* node);
 
 // The checker that code without a context parameter works for: lazy_type_get() uses its slots (through
 // current_lazy_slots). One per Program; set by program_typecheck() and stays set until that program is destroyed or

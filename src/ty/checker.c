@@ -427,13 +427,13 @@ void checker_make_current(Checker* me) {
     current_lazy_slots = me ? &my lazy : nullptr;
 }
 
-void checker_defer_function(Checker* me, FunctionImpl* function) {
-    if (my deferred_function_count == my deferred_function_cap) {
-        my deferred_function_cap = my deferred_function_cap ? my deferred_function_cap * 2 : 64;
-        my deferred_functions = realloc(my deferred_functions, sizeof(FunctionImpl*) * my deferred_function_cap);
-        panic_if(!my deferred_functions, "out of memory");
+void checker_defer(Checker* me, DeferredCheckKind kind, void const* node) {
+    if (my deferred_count == my deferred_cap) {
+        my deferred_cap = my deferred_cap ? my deferred_cap * 2 : 64;
+        my deferred = realloc(my deferred, sizeof(DeferredCheck) * my deferred_cap);
+        panic_if(!my deferred, "out of memory");
     }
-    my deferred_functions[my deferred_function_count++] = function;
+    my deferred[my deferred_count++] = (DeferredCheck){ kind, node };
 }
 
 void checker_drop(Checker* me) {
@@ -441,7 +441,7 @@ void checker_drop(Checker* me) {
 #ifdef TTTT_TY_POISON
     poison_verify(me);
 #endif
-    free(my deferred_functions);
+    free(my deferred);
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
     lazy_slots_drop(&my lazy);

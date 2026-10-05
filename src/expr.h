@@ -388,6 +388,8 @@ Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 // `private_names`, TS18027 (WeakMap/WeakSet)
 void report_emit_name_collisions(struct Scope const* names, char const* name, bool private_names);
 void expr_typecheck(Expr const* me, ErrorCtx* errs);
+// A JSX element or fragment's tag, attributes and children (deferred for an element: Checker.defer_checks)
+void jsx_element_typecheck(Expr const* me, ErrorCtx* errs);
 // `[a, b]` or `{ a }` as the target of an assignment of `source` (for..of): each target gets what it destructures to
 void expr_destructuring_typecheck(Expr const* target, Ty const* source, ErrorCtx* errs);
 

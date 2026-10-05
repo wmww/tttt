@@ -2531,6 +2531,16 @@ typedef struct CheckShares {
     atomic_uint next;
 } CheckShares;
 
+// One of Checker.deferred (tsc's checkDeferredNode)
+static void check_deferred(DeferredCheck deferred, ErrorCtx* errs) {
+    switch (deferred.kind) {
+        case DEFERRED_FUNCTION_BODY: function_impl_typecheck_body((FunctionImpl*)deferred.node, errs); break;
+        case DEFERRED_CLASS_MEMBERS: class_decl_typecheck_members((ClassDecl*)deferred.node, errs); break;
+        case DEFERRED_JSX_ELEMENT: jsx_element_typecheck(deferred.node, errs); break;
+        case DEFERRED_EXPR: expr_typecheck(deferred.node, errs); break;
+    }
+}
+
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
@@ -2544,14 +2554,14 @@ static void check_share(Program* me, u32 c, u32 count) {
         checker->file_order = index - 1;
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
         source_file_check_verbatim_exports(source, checker->errs);
-        checker->defer_functions = true;
+        checker->defer_checks = true;
         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
-        // (A deferred body's own function expressions join the end of the queue)
-        for (u32 f = 0; f < checker->deferred_function_count; f++) {
-            function_impl_typecheck_body(checker->deferred_functions[f], checker->errs);
+        // (What a deferred check defers joins the end of the queue)
+        for (u32 d = 0; d < checker->deferred_count; d++) {
+            check_deferred(checker->deferred[d], checker->errs);
         }
-        checker->deferred_function_count = 0;
-        checker->defer_functions = false;
+        checker->deferred_count = 0;
+        checker->defer_checks = false;
     }
     // After its files are checked: the checker marks members it reads
     index = 0;

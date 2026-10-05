@@ -1831,6 +1831,8 @@ static void check_decorator_metadata_signature(FunctionImpl const* function, boo
     if (with_return && function->ret_explicit) check_decorator_metadata_type(&function->ret, errs);
 }
 
+static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs);
+
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     if (!ty_first_check(current_checker, me)) return;
 
@@ -2058,6 +2060,18 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         ty_check_index_constraints(checker, ty_static_type_of(checker, my symbol), my symbol, true, nullptr, 0, my name, errs);
     }
 
+    // A class expression's members are checked after the statements of its file (tsc's checkClassExpressionDeferred)
+    if (my is_expression && current_checker->defer_checks) {
+        class_typecheck_implements(me, errs);
+        checker_defer(current_checker, DEFERRED_CLASS_MEMBERS, me);
+    } else {
+        class_decl_typecheck_members(me, errs);
+        class_typecheck_implements(me, errs);
+    }
+}
+
+// The members of a class (tsc's checkSourceElement of each, which a class expression defers)
+void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
     int constructor_count = 0; // Implementations
     for_each (i, vec_class_item, &my items) {
         // tsc's checkGrammarProperty/Method/Accessor (not for an ambient class's accessors)
@@ -2213,7 +2227,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             }
         }
     }
+}
 
+// The implements clause and the base's type argument count (the end of tsc's checkClassLikeDeclaration)
+static void class_typecheck_implements(ClassDecl* me, ErrorCtx* errs) {
     // (Whether the class implements them is class_check_heritage()'s business)
     for_each (i, vec_spanned_type, &my implements) {
         type_typecheck(&i->type, errs);

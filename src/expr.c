@@ -3778,45 +3778,57 @@ static void private_access_check_emit_helpers(Expr const* me, ErrorCtx* errs) {
     if (target != FLOW_TARGET_DEFINITE) ty_check_emit_helpers(current_checker, expr_outer_span(me), EMIT_HELPER_CLASS_PRIVATE_FIELD_GET, errs);
 }
 
+// An element or fragment: its tag, attributes and children (for an element, Checker.defer_checks defers this)
+void jsx_element_typecheck(Expr const* me, ErrorCtx* errs) {
+    // tsc's checkJsxPreconditions
+    if (compiler_options()->jsx == JSX_NONE) {
+        error_ctx_error_d(errs, my jsx->opening_span, 17004, "Cannot use JSX unless the '--jsx' flag is provided.");
+    }
+    bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
+        !my jsx->tag_name.inner_span.sv.size;
+    if (!intrinsic) expr_typecheck(&my jsx->tag_name, errs);
+    for_each (i, vec_spanned_type, &my jsx->type_args) type_typecheck(&i->type, errs);
+    if (span_valid(my jsx->type_args_trailing_comma)) {
+        error_ctx_grammar_error_d(errs, my jsx->type_args_trailing_comma, 1009, "Trailing comma not allowed.");
+    }
+    // tsc's checkGrammarJsxName: a namespaced name whose namespace isn't intrinsic-like, when JSX is transformed
+    JsxKind jsx_kind = compiler_options()->jsx;
+    if (my tag == EXPR_JSX_ELEMENT && my jsx->namespaced &&
+        (jsx_kind == JSX_REACT || jsx_kind == JSX_REACT_JSX || jsx_kind == JSX_REACT_JSXDEV)
+    ) {
+        csview name = my jsx->tag_name.inner_span.sv;
+        isize colon = csview_find(name, ":");
+        csview ns = colon == c_NPOS ? name : csview_trim(csview_slice(name, 0, colon));
+        bool intrinsic_like = ns.size && ((ns.buf[0] >= 'a' && ns.buf[0] <= 'z') || csview_contains(ns, "-"));
+        if (!intrinsic_like) {
+            error_ctx_grammar_error_d(errs, my jsx->tag_name.inner_span, 2639, "React components cannot include JSX namespace names");
+        }
+    }
+    if (span_valid(my jsx->type_args_empty)) {
+        error_ctx_grammar_error_d(errs, my jsx->type_args_empty, 1099, "Type argument list cannot be empty.");
+    }
+    // (What checks the attributes with their contextual type, before the walk gets to them)
+    ty_check_jsx_element(current_checker, me, errs);
+    expr_typecheck(&my jsx->attributes, errs);
+    for_each (i, vec_jsx_child, &my jsx->children) {
+        if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_typecheck(&i->expr, errs);
+    }
+}
+
 // Not inlined into expr_typecheck(), whose frame deeply nested expressions pay for (binderBinaryExpressionStress)
 __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_JSX_ELEMENT:
-        case EXPR_JSX_FRAGMENT: {
-            // tsc's checkJsxPreconditions
-            if (compiler_options()->jsx == JSX_NONE) {
-                error_ctx_error_d(errs, my jsx->opening_span, 17004, "Cannot use JSX unless the '--jsx' flag is provided.");
+            // An element is checked after the statements of its file (tsc's checkJsxElementDeferred): its type is
+            // JSX.Element whatever its tag and attributes are
+            if (current_checker->defer_checks) {
+                checker_defer(current_checker, DEFERRED_JSX_ELEMENT, me);
+                break;
             }
-            bool intrinsic = my tag == EXPR_JSX_FRAGMENT || jsx_element_is_intrinsic(my jsx) ||
-                !my jsx->tag_name.inner_span.sv.size;
-            if (!intrinsic) expr_typecheck(&my jsx->tag_name, errs);
-            for_each (i, vec_spanned_type, &my jsx->type_args) type_typecheck(&i->type, errs);
-            if (span_valid(my jsx->type_args_trailing_comma)) {
-                error_ctx_grammar_error_d(errs, my jsx->type_args_trailing_comma, 1009, "Trailing comma not allowed.");
-            }
-            // tsc's checkGrammarJsxName: a namespaced name whose namespace isn't intrinsic-like, when JSX is transformed
-            JsxKind jsx_kind = compiler_options()->jsx;
-            if (my tag == EXPR_JSX_ELEMENT && my jsx->namespaced &&
-                (jsx_kind == JSX_REACT || jsx_kind == JSX_REACT_JSX || jsx_kind == JSX_REACT_JSXDEV)
-            ) {
-                csview name = my jsx->tag_name.inner_span.sv;
-                isize colon = csview_find(name, ":");
-                csview ns = colon == c_NPOS ? name : csview_trim(csview_slice(name, 0, colon));
-                bool intrinsic_like = ns.size && ((ns.buf[0] >= 'a' && ns.buf[0] <= 'z') || csview_contains(ns, "-"));
-                if (!intrinsic_like) {
-                    error_ctx_grammar_error_d(errs, my jsx->tag_name.inner_span, 2639, "React components cannot include JSX namespace names");
-                }
-            }
-            if (span_valid(my jsx->type_args_empty)) {
-                error_ctx_grammar_error_d(errs, my jsx->type_args_empty, 1099, "Type argument list cannot be empty.");
-            }
-            // (What checks the attributes with their contextual type, before the walk gets to them)
-            ty_check_jsx_element(current_checker, me, errs);
-            expr_typecheck(&my jsx->attributes, errs);
-            for_each (i, vec_jsx_child, &my jsx->children) {
-                if (i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) expr_typecheck(&i->expr, errs);
-            }
-        }   break;
+            // fallthrough
+        case EXPR_JSX_FRAGMENT:
+            jsx_element_typecheck(me, errs);
+            break;
 
         case EXPR_JSX_ATTRIBUTES: {
             TyWrittenProp* written = nullptr;
@@ -4058,6 +4070,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_UNARY_OP:
             if (my unary_op->outside_generator) break; // Only TS1163 (from the resolve walk)
+            // (`void`'s operand is checked after the statements of its file, tsc's checkVoidExpression)
+            if (my unary_op->op == UNARY_OP_VOID && current_checker->defer_checks) {
+                checker_defer(current_checker, DEFERRED_EXPR, &my unary_op->expr);
+                break;
+            }
             expr_typecheck(&my unary_op->expr, errs);
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG:

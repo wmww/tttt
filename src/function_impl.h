@@ -303,5 +303,5 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me);
 void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, struct Expr const* key);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
-// The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_functions)
+// The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_checks)
 void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs);
