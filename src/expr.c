@@ -669,7 +669,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue)
         error_ctx_error_d(errs, identifier_expr_name(me), 2708, "Cannot use namespace '", identifier_expr_name(me), "' as a value.");
         my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_NAMESPACE_MODULE);
-    } else if (scope_get_type(names, identifier_expr_name(me).sv, nullptr)) {
+    } else if (scope_get_type(names, identifier_expr_name(me).sv, nullptr) &&
+        !scope_hides_base_expression_type_parameter(names, scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_TYPE))
+    ) {
         // (tsc's isES2015OrLaterConstructorName)
         static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };
         bool later_lib = false;

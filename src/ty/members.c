@@ -640,6 +640,11 @@ static bool is_valid_base_type(Checker* me, Ty const* ty, u32 depth) {
     return ty->kind != TY_ANONYMOUS || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_members(me, ty)->mapped;
 }
 
+// tsc's isValidBaseType, which takes `any`: what an interface may extend and a class implement (TS2312, TS2422)
+bool ty_is_valid_base_type(Checker* me, Ty const* ty) {
+    return (ty->flags & TYF_ANY) || is_valid_base_type(me, ty, 0);
+}
+
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: a class name (`extends Name`, `extends Name<Args>`, `extends A.B.Name`) is found syntactically;
 // any other expression is the return type of its first construct signature that takes the written type arguments

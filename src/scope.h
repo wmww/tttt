@@ -434,6 +434,9 @@ typedef struct ScopeRare {
     // A computed member name of a class or interface: the type parameters of that class or interface, which it can't
     // reference (TS2467, tsc's resolveNameHelper at a ComputedPropertyName)
     struct Generic const* computed_name_of;
+    // The base class expression of a class (not its type arguments): the type parameters of that class, which it can't
+    // reference (TS2562, tsc's resolveNameHelper at an ExpressionWithTypeArguments)
+    struct Generic const* base_expression_of;
     // A parameter decorator's scope: the function whose parameter it decorates, what tsc's getContainingFunction finds
     // for the decorator (TS1356 suggests making that one async)
     struct FunctionImpl const* decorated_function;
@@ -727,6 +730,8 @@ Symbol* binder_require_symbol(Binder* me);
 
 // Whether the scope's own tables (its locals, its container's exports) have the symbol
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol);
+// A type parameter of a class that `me` is in the base class expression of (ScopeRare.base_expression_of)
+bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* symbol);
 // Lookup by meaning, seeing through aliases. The symbol found may be an alias, see symbol_declaration()
 // tsc's getSpellingSuggestion: the candidate name closest to `name`, if any is close enough. `names` are `count`
 // strings, returns the index of the best, or -1

@@ -193,6 +193,15 @@ static void check_static_type_parameter_reference(IdentifierType* me, Scope cons
             }
         }
         in_computed_name |= scope_rare(scope)->computed_name_of != nullptr;
+        Generic const* base_of = scope_rare(scope)->base_expression_of;
+        for (u32 i = 0; base_of && i < base_of->items.size; i++) {
+            GenericItem const* item = &base_of->items.data[i];
+            if (item->owned_symbol == my target || item->symbol_ref == my target) {
+                error_ctx_error_d(errs, my name, 2562, "Base class expressions cannot reference class type parameters.");
+                my target = my symbol = nullptr; // (Resolves to nothing, like in tsc)
+                return;
+            }
+        }
         if (scope_rare(scope)->this_ref.kind != THIS_CLASS_STATIC || !scope_rare(scope)->this_ref.class_decl) continue;
         for_each (i, vec_generic_item, &scope_rare(scope)->this_ref.class_decl->generic.items) {
             if (i->owned_symbol == my target || i->symbol_ref == my target) {

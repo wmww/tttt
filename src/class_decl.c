@@ -550,7 +550,22 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     Expr* head = base;
     while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
     if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword) head->identifier.extends_entity_ = base;
-    expr_lookup_names(&my extends, names, errs);
+    if (!generic_empty(&my generic) && base->tag != EXPR_IMPLICIT_ANY) {
+        // The base class expression can't see the class's type parameters, its type arguments can
+        ScopePendingMark pending_mark = scope_pending_mark(names->binder);
+        Scope* scope = scope_new(names, SCOPE_BLOCK);
+        scope_rare_mut(scope)->base_expression_of = &my generic;
+        if (my extends.tag == EXPR_GENERIC_PARAMS) {
+            lazy_type_bind(&my extends.lazy_type, LAZY_TYPE_EXPR);
+            expr_lookup_names(&my extends.generic_params->expr, scope, errs);
+            for_each (i, vec_spanned_type, &my extends.generic_params->params) type_lookup_names(&i->type, names, errs);
+        } else {
+            expr_lookup_names(&my extends, scope, errs);
+        }
+        scope_release(scope, pending_mark);
+    } else {
+        expr_lookup_names(&my extends, names, errs);
+    }
     if (my jsdoc_base) expr_lookup_names(my jsdoc_base, names, errs);
     for_each (i, vec_spanned_type, &my implements) {
         type_lookup_names(&i->type, names, errs);
@@ -1153,6 +1168,11 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
     }
     for_each (i, vec_spanned_type, &my implements) {
         Ty const* implemented = ty_of_node(&i->type);
+        if (i->type.tag == TYPE_IDENTIFIER && !ty_is_valid_base_type(checker, implemented)) { // (a keyword is TS2864)
+            error_ctx_error_d(errs, i->span, 2422, "A class can only implement an object type or intersection of object "
+                "types with statically known members.");
+            continue;
+        }
         if (!(implemented->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
         Ty const* target = implemented->kind == TY_REFERENCE ? implemented->reference.target : implemented;
         bool is_class = target->kind == TY_DECLARED && target->declared.symbol && (target->declared.symbol->flags & SYMBOL_CLASS);

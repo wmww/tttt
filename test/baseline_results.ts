@@ -2291,8 +2291,8 @@ const baselines = {
         types: false,
     },
     'baseExpressionTypeParameters': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'baseIndexSignatureResolution': {
@@ -15146,7 +15146,7 @@ const baselines = {
         types: true,
     },
     'genericMappedTypeAsClause': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17566,7 +17566,7 @@ const baselines = {
         types: true,
     },
     'inheritFromGenericTypeParameter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -31251,7 +31251,7 @@ const baselines = {
         types: true,
     },
     'typeParameterAsBaseClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66056,7 +66056,7 @@ const baselines = {
         types: true,
     },
     'typeParameterAsBaseType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

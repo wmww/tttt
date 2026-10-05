@@ -3386,6 +3386,18 @@ static bool symbol_has_meaning(Symbol const* me, u32 meaning) {
     return my flags & SYMBOL_ALIAS && symbol_resolved_flags(me) & meaning;
 }
 
+bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* symbol) {
+    if (!symbol || !(symbol->flags & SYMBOL_TYPE_PARAMETER)) return false;
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (scope_declares_symbol(scope, symbol)) return false;
+        Generic const* generic = scope_rare(scope)->base_expression_of;
+        for (u32 i = 0; generic && i < generic->items.size; i++) {
+            if (generic->items.data[i].owned_symbol == symbol || generic->items.data[i].symbol_ref == symbol) return true;
+        }
+    }
+    return false;
+}
+
 bool scope_declares_symbol(Scope const* me, Symbol const* symbol) {
     u64 hash = symbol_name_hash(symbol->name);
     SymbolTable const* table = my kind == SCOPE_GLOBAL ? &my binder->globals : &my locals;
