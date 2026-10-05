@@ -1940,6 +1940,14 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
         SourceFile const* file = overload->name.source;
         if (file->is_declaration) return;
         FunctionImpl const* next = i + 1 < count ? function_declaration(vec_statement_at(statements, i + 1)) : nullptr;
+        // An ambient declaration next starts over (tsc's checkFunctionOrConstructorSymbol forgets previousDeclaration
+        // at one)
+        Statement const* after_statement = i + 1 < count ? vec_statement_at(statements, i + 1) : nullptr;
+        if (!next && after_statement && after_statement->tag == STATEMENT_DECL_FUNCTION && after_statement->decl.props.declared &&
+            name_equals(after_statement->decl.function.impl->name.sv, overload->name.sv)
+        ) {
+            continue;
+        }
         if (next && name_equals(next->name.sv, overload->name.sv)) {
             // A declaration the next one of the function doesn't directly follow (a token was skipped in between) is
             // missing its implementation, body or not, unless the next is a second implementation (tsc's
@@ -2000,38 +2008,121 @@ static bool function_symbol_decl_is_ambient(SymbolDecl const* decl) {
     }
 }
 
-// The ambient half of tsc's checkFlagAgreementBetweenOverloads (TS2384): when some but not all of the function's
-// declarations are ambient, those that differ from the canonical one of their file (the implementation if it's in the
-// same container as the file's first declaration, else that first declaration). TODO: TS2383 (export), which needs the
-// export context of ambient declarations (the class method ones, TS2385/TS2512/TS2386, are class_check_overload_agreement())
-static void function_check_ambient_agreement(Symbol const* symbol, FunctionImpl const* implementation, ErrorCtx* errs) {
-    bool some = false, all = true;
-    SymbolDecl const* implementation_decl = nullptr;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        SymbolDecl const* decl = &symbol->decls[i];
-        if (decl->node == implementation) implementation_decl = decl;
-        if (decl->kind != SYMBOL_DECL_FUNCTION) continue;
-        bool ambient = function_symbol_decl_is_ambient(decl);
-        some |= ambient;
-        all &= ambient;
+// The declarations of tsc's local symbol of a function: those of `symbol` and, in a module or namespace, those the same
+// block exports under that name (tttt keeps the exported ones in a symbol of their own), in source order. `exported`
+// says which are exported
+static u32 function_local_symbol_decls(Symbol const* symbol, SymbolDecl const** out, bool* exported, u32 cap) {
+    Scope const* block = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && !block; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION) block = symbol->decls[i].block;
     }
-    if (some == all) return;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        SymbolDecl const* decl = &symbol->decls[i];
+    Symbol const* local = symbol;
+    Symbol const* exports = nullptr;
+    if (block && (block->kind == SCOPE_MODULE || block->kind == SCOPE_NAMESPACE) && block->container && block->container->exports) {
+        exports = symbol_table_get(block->container->exports, symbol->name);
+        local = symbol_table_get(&block->locals, symbol->name);
+    }
+    if (exports == local) exports = nullptr;
+    u32 count = 0;
+    Symbol const* symbols[2] = { local, exports };
+    for (u32 s = 0; s < 2; s++) {
+        for (u32 i = 0; symbols[s] && i < symbols[s]->decl_count && count < cap; i++) {
+            SymbolDecl const* decl = &symbols[s]->decls[i];
+            if (s == 1 && decl->block != block) continue;
+            // (insertion into source order)
+            u32 at = count;
+            while (at > 0 && out[at - 1]->full.source == decl->full.source &&
+                span_start_ptr(out[at - 1]->full) > span_start_ptr(decl->full)
+            ) {
+                out[at] = out[at - 1];
+                exported[at] = exported[at - 1];
+                at--;
+            }
+            out[at] = decl;
+            exported[at] = s == 1 || (symbols[s] == exports) || (block && block->export_context);
+            count++;
+        }
+    }
+    return count;
+}
+
+// tsc's checkFlagAgreementBetweenOverloads for the export and ambient flags (TS2383, TS2384) of a function's symbol
+// with overloads: when some but not all of its function declarations have one, those that differ from the canonical
+// one of their file (the implementation if it's in the same container as the file's first declaration, else that first
+// declaration). `skip`: declarations reported already (tsc deduplicates diagnostics), `reported` gets those reported.
+// (The class method ones, TS2385/TS2512/TS2386, are class_check_overload_agreement())
+static u32 function_check_flag_agreement(
+    SymbolDecl const* const* decls, bool const* exported, u32 count,
+    SymbolDecl const* const* skip, u32 skip_count, SymbolDecl const** reported, ErrorCtx* errs
+) {
+    bool some_ambient = false, all_ambient = true, some_exported = false, all_exported = true, overloads = false;
+    SymbolDecl const* implementation_decl = nullptr;
+    for (u32 i = 0; i < count; i++) {
+        if (decls[i]->kind != SYMBOL_DECL_FUNCTION) continue;
+        if (!implementation_decl && ((FunctionImpl const*)decls[i]->node)->has_body) implementation_decl = decls[i];
+        overloads |= !((FunctionImpl const*)decls[i]->node)->has_body;
+        bool ambient = function_symbol_decl_is_ambient(decls[i]);
+        some_ambient |= ambient;
+        all_ambient &= ambient;
+        some_exported |= exported[i];
+        all_exported &= exported[i];
+    }
+    if (!overloads || (some_ambient == all_ambient && some_exported == all_exported)) return 0;
+    u32 reported_count = 0;
+    for (u32 i = 0; i < count; i++) {
+        SymbolDecl const* decl = decls[i];
+        bool skipped = false;
+        for (u32 j = 0; j < skip_count; j++) skipped |= skip[j] == decl;
+        if (skipped) continue;
         SourceFile const* file = decl->name.source ? decl->name.source : decl->full.source;
         // The canonical declaration of its file
-        SymbolDecl const* file_first = nullptr;
-        for (u32 j = 0; j < symbol->decl_count && !file_first; j++) {
-            SymbolDecl const* other = &symbol->decls[j];
-            if ((other->name.source ? other->name.source : other->full.source) == file) file_first = other;
+        u32 file_first = 0;
+        while ((decls[file_first]->name.source ? decls[file_first]->name.source : decls[file_first]->full.source) != file) file_first++;
+        u32 canonical = file_first;
+        for (u32 j = 0; implementation_decl && j < count; j++) {
+            if (decls[j] == implementation_decl && implementation_decl->block == decls[file_first]->block) canonical = j;
         }
-        SymbolDecl const* file_canonical = implementation_decl && implementation_decl->block == file_first->block ?
-            implementation_decl : file_first;
-        bool ambient = function_symbol_decl_is_ambient(decl);
-        if (ambient != function_symbol_decl_is_ambient(file_canonical)) {
+        if (some_exported != all_exported && exported[i] != exported[canonical]) {
+            error_ctx_error_d(errs, symbol_decl_error_span(decl), 2383, "Overload signatures must all be exported or non-exported.");
+            reported[reported_count++] = decl;
+        } else if (function_symbol_decl_is_ambient(decl) != function_symbol_decl_is_ambient(decls[canonical])) {
             error_ctx_error_d(errs, symbol_decl_error_span(decl), 2384, "Overload signatures must all be ambient or non-ambient.");
+            reported[reported_count++] = decl;
         }
     }
+    return reported_count;
+}
+
+// tsc's checkFunctionOrMethodDeclaration checks the flags of the function's local symbol once, and those of its export
+// symbol (across the blocks of a namespace) too
+static void function_check_flag_agreements(FunctionImpl const* me, Symbol const* symbol, ErrorCtx* errs) {
+    SymbolDecl const* decls[64];
+    bool exported[64];
+    SymbolDecl const* reported[64];
+    u32 reported_count = 0;
+    u32 count = function_local_symbol_decls(symbol, decls, exported, c_arraylen(decls));
+    // Once per local symbol, from its first function declaration
+    for (u32 i = 0; i < count; i++) {
+        if (decls[i]->kind != SYMBOL_DECL_FUNCTION) continue;
+        if (decls[i]->node == me) {
+            reported_count = function_check_flag_agreement(decls, exported, count, nullptr, 0, reported, errs);
+        }
+        break;
+    }
+    // The export symbol, once (from its first function declaration)
+    Scope const* block = nullptr;
+    for (u32 i = 0; i < symbol->decl_count && !block; i++) {
+        if (symbol->decls[i].kind == SYMBOL_DECL_FUNCTION) block = symbol->decls[i].block;
+    }
+    if (!block || !block->container || !block->container->exports || symbol_table_get(block->container->exports, symbol->name) != symbol) return;
+    if (symbol_find_node(symbol, SYMBOL_DECL_FUNCTION) != me) return;
+    count = 0;
+    for (u32 i = 0; i < symbol->decl_count && count < c_arraylen(decls); i++) {
+        decls[count] = &symbol->decls[i];
+        exported[count++] = true;
+    }
+    SymbolDecl const* more[64];
+    function_check_flag_agreement(decls, exported, count, reported, reported_count, more, errs);
 }
 
 // tsc's duplicateFunctionDeclaration: more than one declaration of the function has a body, reported on all of them.
@@ -2053,7 +2144,7 @@ static void function_check_duplicate_implementation(FunctionImpl const* me, Erro
             overloads[overload_count++] = function;
         }
     }
-    if (overload_count) function_check_ambient_agreement(symbol, implementation, errs);
+    function_check_flag_agreements(me, symbol, errs);
     if (implementation && overload_count) {
         ty_check_overloads_compatible(current_checker, implementation, implementation->name, overloads, names, overload_count, errs);
     }

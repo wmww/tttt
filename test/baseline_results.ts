@@ -24901,7 +24901,7 @@ const baselines = {
         types: true,
     },
     'overloadModifiersMustAgree': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -50086,7 +50086,7 @@ const baselines = {
         types: true,
     },
     'functionOverloadErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

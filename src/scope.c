@@ -1210,6 +1210,19 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
             return;
         }
     }
+    // (tsc checks from variable, class, interface, type alias, enum and namespace declarations, not functions: a merge
+    // of only functions is TS2383's, see checkFunctionOrConstructorSymbol)
+    bool checked = false;
+    for (u32 s = 0; s < 2 && !checked; s++) {
+        for (u32 d = 0; symbols[s] && d < symbols[s]->decl_count && !checked; d++) {
+            SymbolDecl const* decl = &symbols[s]->decls[d];
+            if (s == 1 && !span_within(decl->full, block)) continue;
+            checked = decl->kind == SYMBOL_DECL_VARIABLE || decl->kind == SYMBOL_DECL_CLASS ||
+                decl->kind == SYMBOL_DECL_INTERFACE || decl->kind == SYMBOL_DECL_TYPE_ALIAS ||
+                decl->kind == SYMBOL_DECL_ENUM || decl->kind == SYMBOL_DECL_NAMESPACE;
+        }
+    }
+    if (!checked) return;
     // The exported declarations of this block merge with its local ones (tsc: one local symbol), and so do those
     // of `export default class A` (the local's declarations without flags of their own)
     u32 exported_spaces = 0, local_spaces = 0, default_spaces = 0;
