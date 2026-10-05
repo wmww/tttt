@@ -95,7 +95,6 @@ like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType
   file's imports). tttt resolves aliases in program order at link, so the import comes first. Not worth chasing.
 
 ### Medium (15-100 lines)
-- **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
 - **`[...T, ...rest]` / `[...rest, ...T]` in the middle of a target tuple** (infer_to_tuple's remaining TODO, tsc
   ~26699: T sliced by its constraint's fixed arity). `[...T, ...U]` (impliedArity) is done.
 - **Inference candidate order follows union member order, which follows type creation order** (react-redux:

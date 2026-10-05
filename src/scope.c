@@ -2947,6 +2947,10 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 // Whether it has the property is up to the checker: without one the value is the error type
                 bool from_value = symbol_resolved_flags(assigned) & SYMBOL_VALUE &&
                     !csview_equals(port_item_name(item->source_name), "default");
+                // A function (with a namespace) has no properties but the namespace's values: a type the namespace
+                // exports isn't a value too (tsc's getPropertyOfType of the function's type finds nothing, TS2693)
+                u32 value_flags = symbol_resolved_flags(assigned) & SYMBOL_VALUE;
+                if (from_value && found && (value_flags & ~(u32)(SYMBOL_FUNCTION | SYMBOL_VALUE_MODULE)) == 0) from_value = false;
                 if (from_value && !(found && symbol_resolved_flags(found) & SYMBOL_VALUE)) {
                     Symbol* property = binder_new_symbol(my binder, port_item_name(item->source_name), SYMBOL_PROPERTY);
                     property->name_span = item->source_name;
