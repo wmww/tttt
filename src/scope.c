@@ -3514,8 +3514,50 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     }
 }
 
+// tsc's initializeTypeChecker merges what later declares a UMD global's name (a script after the module, a
+// `declare global` augmentation) with mergeSymbol, which resolves the alias: the declarations go into the module (or
+// what its `export =` names), and the global becomes that merged symbol. The binder merged them into the alias:
+// move them over, with the module's exports visible inside (a `namespace N` in `declare global` sees N's exports)
+static void merge_into_umd_globals(Binder* me) {
+    SymbolTable* globals = &my globals;
+    for (u32 i = 0; i < globals->count; i++) {
+        Symbol* global = globals->entries[i].symbol;
+        if (!is_umd_global(global) || !global->alias->scope || global->binder != me) continue;
+        bool others = false;
+        for (u32 d = 0; d < global->decl_count && !others; d++) others = global->decls[d].kind != SYMBOL_DECL_ALIAS;
+        if (!others) continue;
+        Symbol* own = global->alias->scope->container;
+        if (!own || !own->is_module) continue;
+        Symbol* target = module_export_equals(own);
+        if (!target || target->is_placeholder || target->binder != me || (target->flags & SYMBOL_ALIAS)) continue;
+        if (!target->is_module && !(target->flags & SYMBOL_NAMESPACE)) continue;
+        u32 flags = 0;
+        for (u32 d = 0; d < global->decl_count; d++) {
+            if (global->decls[d].kind != SYMBOL_DECL_ALIAS) flags |= global->decls[d].flags;
+        }
+        if (target->flags & excluded_flags(flags)) continue; // TODO: tsc's conflict report against the target
+        ErrorCtx* errs = global->alias->scope->binder->errs;
+        target->flags |= flags;
+        for (u32 d = 0; d < global->decl_count; d++) {
+            if (global->decls[d].kind == SYMBOL_DECL_ALIAS) continue;
+            symbol_add_decl(target, global->decls[d]);
+            retarget_decl(&global->decls[d], target);
+        }
+        if (global->exports) {
+            symbol_ensure_exports(target);
+            u32 count;
+            SymbolEntry* entries = symbol_table_collect(global->exports, &count);
+            for (u32 j = 0; j < count; j++) merge_into_exports(me, target, symbol_entry_name(&entries[j]), entries[j].symbol, errs);
+            free(entries);
+        }
+        global->exports = target->exports;
+        globals->entries[i].symbol = target;
+    }
+}
+
 void binder_link(Binder* me) {
     merge_augmentations(me);
+    merge_into_umd_globals(me);
     // Resolving makes placeholder symbols: by index
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];

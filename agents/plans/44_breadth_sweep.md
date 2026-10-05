@@ -97,8 +97,6 @@ one commit each, `./sweep.py` before/after.
   (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
   signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
   `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
-- **UMD global + `declare global` function merge** (namespace-js; B/nsjs): tsc merges the global function into the
-  module symbol (mergeSymbol through the alias); `scope_add_port` PORT_EXPORT_AS_NAMESPACE doesn't.
 - **Class + interface member conflicts give no TS2300** (selenium-webdriver 22; D/dupMerge*.ts); plus a spurious TS2687
   for an interface accessor merged with a property.
 
@@ -106,6 +104,17 @@ one commit each, `./sweep.py` before/after.
 - **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md
   `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
 - Not investigated: mapbox, rangy, strophe (`declare global` namespace + UMD), prismjs (`"x/components/"` with a
+- **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
+- **mapbox**: `import * as Leaflet from "leaflet"` then `Leaflet.Map.MapOptions` (Map a class) where leaflet's UMD
+  global L got mapbox's `declare global { namespace L.mapbox }` merged in: tsc says TS2724 ''L' has no exported member
+  named 'Map'' (the merged clone's view), tttt TS2713. Not investigated further.
+- **d3-tip**: a `declare module "d3"` augmentation isn't visible through d3's UMD global in tsc (its
+  getTargetOfNamespaceExportDeclaration -> resolveExternalModuleSymbol returns the *unmerged* module symbol when there
+  is no `export =`: `getMergedSymbol(undefined) || moduleSymbol`), so `d3.Tooltip` is TS2694 there; tttt merges
+  augmentations into the module's own exports. Would need the UMD view to skip names only augmentations add.
+- **dynmap**: tsc's TS2317 for jquery's 1-parameter `interface Iterable<T>` (es5 lib) comes from typeToString in an
+  elaboration calling getGlobalIterableType: incidental, not worth chasing.
+- Not investigated: prismjs (`"x/components/"` with a
   trailing slash resolving to the file), stampit, alpinejs, google-apps-script (property named `''`), d3-dispatch,
   ember (access-modifier, observable), function-bind, oidc-provider, d3-array, fabric's second `Image`, enzyme-async-helpers,
   kefir, chai, fs-extra (only "the last overload" reported). `./sweep.py --last -k ...` lists each.

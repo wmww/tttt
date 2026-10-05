@@ -1278,6 +1278,8 @@ static u32 value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
     u32 count = 0;
     *out = malloc(sizeof(Ty const*) * (symbol->decl_count + 1));
     panic_if(!*out, "out of memory");
+    // (A module a UMD global's `declare global` function merged into, merge_into_umd_globals(): its exports first)
+    if (symbol->is_module) (*out)[count++] = ty_namespace_type(me, symbol);
     for (u32 i = 0; i < symbol->decl_count; i++) {
         if (decl_contributes_value(symbol, i)) (*out)[count++] = value_entry_type(me, symbol, &symbol->decls[i]);
     }
@@ -1604,7 +1606,11 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`. A shorthand ambient module is any
     if (symbol->is_module && symbol->is_shorthand_module) return ty_intrinsic(me, TY_ANY);
-    if (symbol->is_module || symbol->is_global_this) return ty_namespace_type(me, symbol);
+    if (symbol->is_module || symbol->is_global_this) {
+        // (A function merged into a module: merge_into_umd_globals())
+        if (symbol->is_module && symbol->flags & SYMBOL_FUNCTION) return ty_merged_value_type(me, symbol);
+        return ty_namespace_type(me, symbol);
+    }
     bool assignments = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT;
     if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY ||
         symbol_decl_jsdoc_type(&symbol->decls[0]))
