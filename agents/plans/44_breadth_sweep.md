@@ -76,8 +76,9 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### From the versioned packages (2026-10-05)
-Most mirror a latest package's open cause: node/v22, v24, v25 (node's TS2722/TS2345/TS2769/TS7006, more of them in
-v22/v24: not separated yet), react-redux/v5, v6 (like react-redux's TS2741), ember/v3 (observable-tests TS2615/TS2578
+Most mirror a latest package's open cause: node/v22, v24, v25 (node's TS2722/TS2345/TS2769/TS7006; v22/v24 add
+`stream.pipeline(function*(){...}, async function*(source){...})` overloads where `source` stays unknown, TS18046,
+then TS2339 'then' on never: generic overloads with context-sensitive generator arguments, the inference owner's), react-redux/v5, v6 (like react-redux's TS2741), ember/v3 (observable-tests TS2615/TS2578
 like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tests 1777, 1787: not investigated).
 - **ember-data__adapter/v3, ember-data__model/v3, ember-data__store/v3, ember__routing/v3**: +TS2717 at
   types/ember__object/index.d.ts:140-141. The program has both ember__object (latest, through a `*` devDependency) and
