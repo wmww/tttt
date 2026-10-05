@@ -616,9 +616,23 @@ static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementCont
     return ty_tuple_slice_element_type(me, tuple, from, end_skip, true);
 }
 
+// The element of an array literal whose contextual type is any (tsc's getIteratedTypeOrElementType for
+// IterationUse.Element: any is iterable, but in ES5 it lacks the numeric index signature it wants)
+static Ty const* any_element_context(Checker* me) {
+    return compiler_options()->target >= SCRIPT_TARGET_ES2015 || compiler_options()->downlevel_iteration ?
+        ty_intrinsic(me, TY_ANY) : nullptr;
+}
+
 static Ty const* get_element_context(Checker* me, Ty const* object, void const* arg) {
     ElementContextArg const* a = arg;
     u32 index = a->index;
+    // any has no properties: only iterating it (ES2015 or downlevelIteration) gives an element, any (tsc's
+    // getIteratedTypeOrElementType, which in ES5 wants a numeric index signature)
+    if ((object->flags & TYF_ANY) ||
+        ((object->kind == TY_TYPE_PARAM || (object->flags & TYF_DEFERRED)) && (ty_apparent_type(me, object)->flags & TYF_ANY))
+    ) {
+        return any_element_context(me);
+    }
     // A type parameter as its constraint (tsc's getApparentTypeOfContextualType): the elements of a tuple constraint
     if (object->kind == TY_TYPE_PARAM) {
         Ty const* apparent = ty_apparent_type(me, object);
@@ -650,6 +664,7 @@ static Ty const* contextual_element_type(Checker* me, Ty const* contextual, u32 
 // The contextual type of the element at `index` of an array literal
 static Ty const* contextual_array_element_type(Checker* me, Ty const* contextual, Expr const* array, u32 index) {
     if (!contextual) return nullptr;
+    if (contextual->flags & TYF_ANY) return any_element_context(me);
     ElementContextArg arg = { index, (u32)vec_expr_size(&array->array), UINT32_MAX, UINT32_MAX };
     for_each (i, vec_expr, &array->array) {
         if (i->tag != EXPR_SPREAD) continue;

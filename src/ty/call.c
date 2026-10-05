@@ -1023,7 +1023,7 @@ static TyMapper const* infer_type_arguments(
                     (TyList){ .data = targets, .len = return_mapper->len });
             }
         }
-    } else if (contextual && !(contextual->flags & TYF_ANY)) {
+    } else if (contextual) {
         Ty const* return_type = signature_return_type(me, sig);
         if (return_type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // A call at the end of an optional chain that may stop short returns undefined too, which the contextual
