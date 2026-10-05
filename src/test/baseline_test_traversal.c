@@ -2330,8 +2330,11 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
 static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, BaselineTestCase* ctx) {
     if (name->tag == EXPR_IMPLICIT_ANY || !span_valid(name->inner_span)) return;
     if (!name->inner_span.sv.size) {
-        // A missing name (`<` at the end of the file, a missing closing tag): an error type
-        baseline_test_case_add_type(ctx, name->inner_span, ty_intrinsic(current_checker, TY_ANY));
+        // A missing name (`<` at the end of the file, a missing closing tag): an error type, shown where the next token
+        // starts (the harness skips the trivia after the missing node's position)
+        const char* at = name->inner_span.sv.buf;
+        while (*at == ' ' || *at == '\t' || *at == '\r' || *at == '\n') at++;
+        baseline_test_case_add_type(ctx, span_make(name->inner_span.source, at, at), ty_intrinsic(current_checker, TY_ANY));
         return;
     }
     if (!jsx_element_is_intrinsic(element)) {

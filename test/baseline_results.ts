@@ -52973,7 +52973,7 @@ const baselines = {
     'jsxParsingError2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxParsingError3': {
         errors: true,
@@ -53008,7 +53008,7 @@ const baselines = {
     'jsxUnclosedParserRecovery': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxJsxsCjsTransformChildren(jsx=react-jsx)': {
         errors: true,

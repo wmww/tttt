@@ -10027,11 +10027,12 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         if (!hop_char(&p, '>')) {
             bool slash = hop_char(&p, '/');
             if (!slash) parse_error(&p, span_from_token(&p), 1005, "'/' expected.");
+            const char* slash_end = p.pos;
             hop_whitespace(&p);
             if (!hop_char(&p, '>')) {
                 parse_error(&p, span_from_token(&p), 1005, "'>' expected.");
-                // Nothing of the tag's end: the element ends with its last token (`~< <`)
-                if (!slash) p.pos = attributes_end;
+                // Nothing of the tag's end: the element ends with its last token (`~< <`, `<a/`)
+                p.pos = slash ? slash_end : attributes_end;
             }
             el->self_closing = true;
         }
@@ -10061,6 +10062,8 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             el->closing_span = inner->closing_span;
             inner->closing_name = expr_identifier(span_from_pos(&p), (IdentifierExpr){0});
             inner->closing_span = span_from_pos(&p);
+            // (and ends with its children)
+            last->expr.inner_span = span_make(p.shared->source, span_start_ptr(last->expr.inner_span), span_start_ptr(el->closing_span));
         } else {
             Anchor closing_a = anchor(&p);
             if (!hop_start(&p, "</")) {
