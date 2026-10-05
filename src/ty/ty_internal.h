@@ -95,6 +95,8 @@ enum {
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
+    KEY_CONTEXT_NONE,   // FunctionImpl -> the call being resolved when its first check had a contextual type without signature
+    KEY_FUNCTION_SIG_CONTEXT, // FunctionImpl -> the contextual type of its last check after KEY_CONTEXT_NONE
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_CONTEXT_UNFIXED, // FunctionImpl -> that signature before ty_fix_contextual_signature(), when that changed it
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
@@ -262,6 +264,7 @@ Ty const* ty_check_literal_argument(
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode);
 bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr);
 Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call); // call.c: a remembered resolution's return, or null
+void ty_late_contextual_return(Checker* me, FunctionImpl const* function); // expr.c
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference
 void inference_drop(Inference* inf);

@@ -1980,9 +1980,12 @@ static Resolution resolve_with_signatures(
     ErrorCtx* errs
 ) {
     u32 saved = my inferential_depth;
+    CallExpr const* saved_call = my resolving_call;
     my inferential_depth = 0;
+    my resolving_call = info->call;
     Resolution ret = resolve_with_signatures_inner(me, signatures, count, args, info, call_span, errs);
     my inferential_depth = saved;
+    my resolving_call = saved_call;
     return ret;
 }
 

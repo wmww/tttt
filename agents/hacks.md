@@ -347,6 +347,13 @@ src` finds the code-side markers; every significant one has an entry here.
   `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
   `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and
   destructuring defaults don't. Union order depends on who asks first.
+- `KEY_CONTEXT_NONE` / `ty_late_contextual_return` (expr.c): tsc's ContextChecked is set at a function's first check
+  even without a contextual signature, and getReturnTypeFromBody reads the context when the return type is computed
+  (resolvingSignature while the call resolves, its resolvedSignature after). tttt marks only functions that aren't
+  context sensitive (marking those too broke ~50 sweep packages, xstate +20, vscode +7: tttt checks them where tsc
+  skips them or with other contextual types), and applies the late context only when it is the function's own type
+  (a self context keeps a returned literal; any other contextual signature would be inferred eagerly, circular for
+  compositeContextualSignature).
 - `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_DONE`), from the first usable context; generic
   contextual signatures aren't instantiated. `KEY_CONTEXT_PARAM_PATTERN` marks pattern fallbacks for the symbols
   traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check; an earlier return type misses it.

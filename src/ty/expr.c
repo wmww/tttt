@@ -1217,6 +1217,35 @@ static void set_contextual_return(Checker* me, FunctionImpl const* function, Sig
     if (ret && !(ret->flags & ignored)) *intern_slot(me, &my links, key, 2) = ret;
 }
 
+// A function whose first check had no contextual signature (KEY_CONTEXT_NONE) has its return type inferred with the
+// context of its last check once the call it is an argument of is resolved, and without any while it isn't (tsc's
+// getReturnTypeFromBody asks getContextualSignatureForFunctionLikeDeclaration, through the call's resolvedSignature
+// or resolvingSignature): `asFunction(() => 1)` returns `() => 1` (its own signature is the context)
+void ty_late_contextual_return(Checker* me, FunctionImpl const* function) {
+    CallExpr const* call = intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2);
+    if (!call || !ty_call_resolved_return(me, call)) return;
+    Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_SIG_CONTEXT, (u64)(uintptr_t)function }, 2);
+    if (!contextual) return;
+    // HACK: only its own type (what the call inferred from it), whose signature keeps a literal it returns: tsc only asks
+    // for the contextual return type of a unit return type, any other would be inferred now, eagerly, and may need this
+    // very return type (a composite of it and its siblings: compositeContextualSignature)
+    Ty const* own = ty_function_type(me, function);
+    if (contextual->kind == TY_UNION) {
+        // (Its own type among members without signatures: `T | number`)
+        bool found = false;
+        for (u32 i = 0; i < contextual->composite.types.len; i++) {
+            Ty const* member = contextual->composite.types.data[i];
+            if (member == own) found = true;
+            else if ((member->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_members(me, member)->call_count) return;
+        }
+        if (!found) return;
+    } else if (contextual != own) {
+        return;
+    }
+    Members const* members = ty_members(me, own);
+    if (members->call_count == 1) set_contextual_return(me, function, members->call[0]);
+}
+
 // `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
 static void assign_contextual_signature_as(
     Checker* me, FunctionImpl const* function, Ty const* contextual, Signature const* given, InitializedBinding const* evaluating
@@ -4315,11 +4344,27 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_CALL: return check_call(me, expr->call, expr->inner_span, ctx);
 
         case EXPR_FUNCTION: {
-            if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
+            // A first check, under a call's resolution, with a contextual type that has no signature for it decides
+            // that it has none (tsc's ContextChecked is set either way): `m(() => 1, (z) => () => 2)` with `zero: Z`
+            // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its
+            // return type only sees the context once the call is resolved (ty_late_contextual_return())
+            u64 none_key[2] = { KEY_CONTEXT_NONE, (u64)(uintptr_t)expr->function };
+            CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
+            if (none_call) {
+                *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
+                *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_SIG_CONTEXT, (u64)(uintptr_t)expr->function }, 2) =
+                    ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
+            } else if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
                 u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
                 bool assigned = intern_get(&my links, done_key, 2) != nullptr;
                 assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr);
+                // (Only one that isn't context sensitive: tttt checks those in places tsc skips them, or with other
+                // contextual types, so their parameters would miss what tsc gives them)
+                if (!assigned && my resolving_call && !intern_get(&my links, done_key, 2) &&
+                    !ty_function_is_context_sensitive(expr->function)) {
+                    *intern_slot(me, &my links, none_key, 2) = my resolving_call;
+                }
                 if (assigned) {
                     Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0);
                     if (sig) set_contextual_return(me, expr->function, sig);

@@ -360,6 +360,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;
     inferred_promise_missing = false;
+    if (function->is_expression) ty_late_contextual_return(me, function);
     Ty const* type = infer_return_type(me, function);
     bool promise_missing = inferred_promise_missing;
     inferred_promise_missing = false;
