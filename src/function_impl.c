@@ -422,6 +422,10 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
                 checker->return_context = both[1] ? ty_union(checker, both, 2, nullptr, (TyList){0}) : awaited;
             }
         }
+    } else if (my is_constructor && function_impl_rare(me)->constructed_class) {
+        // A constructor's return expressions replace the instance: its type is their context (tsc's
+        // getContextualReturnType through the constructor's signature)
+        checker->return_context = ty_instance_type_of_class(checker, function_impl_rare(me)->constructed_class);
     } else if (my ret_explicit || function_impl_rare(me)->setter_type) {
         Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : function_impl_rare(me)->setter_type, (LowerCtx){ .generic = true });
         checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
