@@ -1170,6 +1170,27 @@ static FlowNode* flow_set_continue_target(FlowBuilder* flow, u32 label_count, Fl
     return target;
 }
 
+// The scope of an `if` branch: a statement that declares nothing where it is (a block, loop, `switch`, `try` makes
+// scopes of its own; `return`, `break`...) needs none, the rest a block scope (`if (a) function f() {}`, `let`)
+static Scope* branch_names_scope(Statement const* branch, Scope* names) {
+    switch (branch->tag) {
+        case STATEMENT_NOOP:
+        case STATEMENT_BLOCK:
+        case STATEMENT_IF_ELSE:
+        case STATEMENT_FOR_LOOP:
+        case STATEMENT_FOR_EACH_LOOP:
+        case STATEMENT_SWITCH:
+        case STATEMENT_TRY_CATCH:
+        case STATEMENT_BREAK:
+        case STATEMENT_CONTINUE:
+        case STATEMENT_RETURN_EXPR:
+        case STATEMENT_THROW_EXPR:
+            return names;
+        default:
+            return scope_new(names, SCOPE_BLOCK);
+    }
+}
+
 static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     FlowNode* then_label = flow_new_branch_label(flow);
@@ -1179,7 +1200,7 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
     flow_set_current(flow, flow_finish_label(then_label));
     {
         Statement* branch = vec_statement_at_mut(&my statements, index);
-        Scope* branch_scope = scope_new(names, SCOPE_BLOCK);
+        Scope* branch_scope = branch_names_scope(branch, names);
         statement_add_names(branch, branch_scope);
         statement_resolve_names(branch, branch_scope, errs);
     }
@@ -1191,7 +1212,7 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
         if_else_resolve_names(me, index + 1, names, errs);
     } else if (index + 1 < vec_statement_size(&my statements)) {
         Statement* branch = vec_statement_at_mut(&my statements, index + 1);
-        Scope* branch_scope = scope_new(names, SCOPE_BLOCK);
+        Scope* branch_scope = branch_names_scope(branch, names);
         statement_add_names(branch, branch_scope);
         statement_resolve_names(branch, branch_scope, errs);
     }

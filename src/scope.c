@@ -491,7 +491,8 @@ void scope_check_strict_block_function(Scope const* me, Span name) {
 }
 
 Scope* scope_new_self(Scope* parent, Symbol const* self, bool declared) {
-    if (!declared && (!unused_enabled() || !self)) return parent;
+    // (Only unused.c reads self: in an ambient context already, a `declare` scope would change nothing)
+    if ((!declared || parent->ambient) && (!unused_enabled() || !self)) return parent;
     Scope* ret = scope_new(parent, SCOPE_BLOCK);
     ret->self = self;
     ret->ambient |= declared;
