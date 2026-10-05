@@ -85,9 +85,6 @@ one commit each, `./sweep.py` before/after.
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
 
 ### Medium (15-100 lines)
-- **three +TS2415** (8 packages; B/three3.ts): an intersection base's merged `this`-typed member gets `this` rebound to
-  the intersection (`find_prop_in` always `ty_with_this_arg`s; `builder_add_intersection_members`). tsc's
-  createUnionOrIntersectionProperty keeps each part's `this`. ~20 lines.
 - **Interface extending `any`** (koa family 5; B/koa8.ts, C/2339/k): `non_augmenting_base_uncached` (members.c) gates
   on type params and on object bases, so `interface DS extends AnyAlias {}` isn't normalised to any; and an any base
   gives no `[x: string]: any` (tsc's anyBaseTypeIndexInfo). Could replace the class-side `ty_has_unresolved_base` hack.

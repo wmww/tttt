@@ -1292,7 +1292,11 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType):
             // `(R & { T: X })['component']` with `component: (props: this['T']) => void` in R takes X
             Ty const* member = ty->composite.types.data[i];
-            if (member->kind != TY_TYPE_PARAM) member = ty_with_this_arg(me, member, ty);
+            // (One that has a `this` already keeps it, `RefI<this = DB>` of a class's base: tsc's
+            // getTypeWithThisArgument leaves a reference with its this-argument as it is)
+            if (member->kind != TY_TYPE_PARAM && !(member->kind == TY_REFERENCE && member->reference.this_arg)) {
+                member = ty_with_this_arg(me, member, ty);
+            }
             FoundProp part = find_prop_in(me, apparent_type(me, member), name, depth + 1, own_only);
             if (!part.found) continue;
             if (!ret.prop) ret.prop = part.prop;
