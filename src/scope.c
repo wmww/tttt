@@ -1407,9 +1407,50 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
     }
 }
 
+// A declaration file without `export {}` or `export =` exports everything (tsc's ExportContext), so its exported and
+// local declarations of a name are one symbol here. tsc's getEffectiveDeclarationFlags still takes one with `declare`
+// and no `export` as local: checkExportsOnMergedDeclarations' TS2395 when both kinds share a declaration space
+static bool starts_with_word(csview text, char const* word) {
+    isize n = (isize)strlen(word);
+    return text.size > n && !memcmp(text.buf, word, (size_t)n) && (text.buf[n] == ' ' || text.buf[n] == '\t' || text.buf[n] == '\n');
+}
+
+static void check_export_context_merges(Scope* me, Span block) {
+    for (u32 i = 0; i < my container->exports->count; i++) {
+        Symbol* symbol = my container->exports->entries[i].symbol;
+        if (symbol->decl_count < 2) continue;
+        u32 exported_spaces = 0, local_spaces = 0;
+        bool checked = false;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (!span_within(decl->full, block) || decl->kind == SYMBOL_DECL_ALIAS || decl->kind == SYMBOL_DECL_EXPR ||
+                decl->kind == SYMBOL_DECL_ASSIGNMENT || (decl->flags & SYMBOL_ALIAS)
+            ) {
+                continue;
+            }
+            checked |= decl->kind != SYMBOL_DECL_FUNCTION;
+            bool exported = starts_with_word(decl->full.sv, "export") || !starts_with_word(decl->full.sv, "declare");
+            *(exported ? &exported_spaces : &local_spaces) |= declaration_spaces(symbol, decl, false);
+        }
+        u32 common = exported_spaces & local_spaces;
+        if (!checked || !common) continue;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (!span_within(decl->full, block) || decl->kind == SYMBOL_DECL_ALIAS || (decl->flags & SYMBOL_ALIAS) ||
+                !span_valid(decl->name) || !(declaration_spaces(symbol, decl, false) & common)
+            ) {
+                continue;
+            }
+            error_ctx_error_d(binder_errs(my binder), decl->name, 2395, "Individual declarations in merged declaration '",
+                decl->name, "' must be all exported or all local.");
+        }
+    }
+}
+
 void scope_check_export_merges(Scope* me, Span block) {
     if (!my container || !my container->exports || !span_valid(block)) return;
     for (u32 i = 0; i < my locals.count; i++) check_export_merge(me, block, my locals.entries[i].symbol, false);
+    if (my export_context && my file && my file->is_declaration) check_export_context_merges(me, block);
 }
 
 // `export default function () {}`: its first token (tsc's getErrorSpanForNode without a name)
