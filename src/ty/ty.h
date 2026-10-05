@@ -348,6 +348,7 @@ struct Ty {
             bool jsx_attributes : 1; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
             bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
+            bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
         } anonymous;
         struct {
             TyList types; // sorted by id, no duplicates
@@ -1649,6 +1650,9 @@ typedef enum ObjectLiteralKind {
     // Or'ed with the kind: an object literal of a JavaScript file, open-ended without noImplicitAny (tsc's
     // ObjectFlags.JSLiteral, isJSLiteralType)
     OBJECT_JS = 1 << 4,
+    // Or'ed with OBJECT_SYNTHETIC: a type tsc makes without a symbol (createEmptyObjectTypeFromStringLiteral), which
+    // has no inferable index (isObjectTypeWithInferableIndex)
+    OBJECT_NO_INFERABLE_INDEX = 1 << 5,
 } ObjectLiteralKind;
 Ty const* ty_object_literal(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind

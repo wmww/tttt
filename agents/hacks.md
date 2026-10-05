@@ -762,3 +762,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - `failstats.py`'s `line_ratio` is multiset overlap, not a diff. `bench/make_corpus.py` replicates passing tests
   (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
+- **Every anonymous object type has an inferable index** (`has_inferable_index`, relate.c): tsc's
+  isObjectTypeWithInferableIndex wants a symbol (an object literal, type literal, ...) and excludes types the checker
+  makes without one. tttt only knows `OBJECT_NO_INFERABLE_INDEX` (the literal-keyof inference object) and the global
+  empty object; other symbolless synthetic types (spreads? reverse mapped types?) may wrongly relate to index signatures.

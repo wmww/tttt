@@ -3745,7 +3745,8 @@ Ty const* ty_object_literal_of(
     }
     Ty const* ret = intern_get(&my links, words.data, words.len);
     bool js = kind & OBJECT_JS;
-    kind &= ~OBJECT_JS;
+    bool no_inferable_index = kind & OBJECT_NO_INFERABLE_INDEX;
+    kind &= ~(OBJECT_JS | OBJECT_NO_INFERABLE_INDEX);
     if (!ret) {
         MembersBuilder builder = {0};
         bool widens = kind == OBJECT_LITERAL_FRESH || kind == OBJECT_JSX_ATTRIBUTES_FRESH || kind == OBJECT_LITERAL_REGULAR;
@@ -3789,6 +3790,7 @@ Ty const* ty_object_literal_of(
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
         fresh->anonymous.free_params_unknown = true;
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
+        fresh->anonymous.no_inferable_index = no_inferable_index;
         fresh->anonymous.regular = kind == OBJECT_LITERAL_REGULAR;
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
         fresh->anonymous.js_literal = js;

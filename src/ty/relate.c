@@ -2379,6 +2379,7 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
     // (Not tsc's emptyObjectType, which has no symbol: the apparent type of `object`)
     if (ty == global_type(me, GLOBAL_EMPTY_OBJECT)) return false;
     if (ty->kind == TY_ANONYMOUS) {
+        if (ty->anonymous.no_inferable_index) return false;
         Members const* members = ty_members(me, ty);
         return !members->call_count && !members->construct_count;
     }
