@@ -458,10 +458,12 @@ Signature const* ty_instantiate_signature_in_context_of(
 static void infer_from_signature_lists(
     Checker* me, Inference* inf, Signature* const* sources, u32 source_count, Signature* const* targets, u32 target_count
 ) {
-    // Matched up from the end: for overloads the last one is the most general
-    u32 count = source_count < target_count ? source_count : target_count;
-    for (u32 i = 0; i < count; i++) {
-        infer_from_signatures(me, inf, sources[source_count - count + i], targets[target_count - count + i]);
+    // Matched up from the end: for overloads the last one is the most general. A target with more signatures than the
+    // source has its first ones all inferred from the source's first (tsc's inferFromSignatures)
+    if (!source_count) return;
+    for (u32 i = 0; i < target_count; i++) {
+        i64 at = (i64)source_count - (i64)target_count + (i64)i;
+        infer_from_signatures(me, inf, sources[at > 0 ? at : 0], targets[i]);
     }
 }
 

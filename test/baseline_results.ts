@@ -22543,7 +22543,7 @@ const baselines = {
     'multiSignatureTypeInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multipleBaseInterfaesWithIncompatibleProperties': {
         errors: true,
