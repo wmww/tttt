@@ -4920,6 +4920,50 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
     parse_fail(&p);
 }
 
+// The alias declaration `C` of a dotted JSDoc name `A.B.C` (`full_name`) wrapped in namespace declarations A and B,
+// inside out. The same statement for a plain name
+static Statement jsdoc_wrap_in_namespaces(Statement alias, Span full_name, Span name, Span span) {
+    for (char const* end = span_start_ptr(name) - 1; end > span_start_ptr(full_name);) {
+        char const* start = end;
+        while (start > span_start_ptr(full_name) && start[-1] != '.') start--;
+        Block contents = {0};
+        alias.decl.props.exported = DECL_EXPORTED_YES;
+        vec_statement_push(&contents.statements, alias);
+        // (The declaration starts at its part of the name: tsc's JSDocNamespaceDeclaration)
+        NamespaceDecl inner = {
+            .name = span_make(full_name.source, start, end), .contents = contents, .jsdoc = true,
+            .full_span = span_make(full_name.source, start, span_end_ptr(span)),
+        };
+        alias = (Statement){ .tag = STATEMENT_DECL_NAMESPACE, .decl.namespace = c_new(NamespaceDecl, inner), .span = span };
+        end = start - 1;
+    }
+    return alias;
+}
+
+// `A.B.C = v` as a statement, A an identifier other than `exports`, `module` (CommonJS exports have containers of their
+// own in tsc) and `this`: the dotted name as written without trivia, an invalid span otherwise
+static Span jsdoc_namespace_assignment_name(Statement const* host) {
+    if (host->tag != STATEMENT_EXPR || host->expr.tag != EXPR_BINARY_OP || host->expr.binary_op->op != BINARY_OP_EQUAL ||
+        expr_is_perenthisized(&host->expr)
+    ) {
+        return span_null;
+    }
+    Expr const* left = &host->expr.binary_op->left;
+    if (left->tag != EXPR_PROPERTY || !expr_is_entity_name(left)) return span_null;
+    Expr const* root = left;
+    while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
+    csview root_name = root->inner_span.sv;
+    if (csview_equals(root_name, "exports") || csview_equals(root_name, "module")) return span_null;
+    Span name = expr_outer_span(left);
+    for (isize k = 0; k < name.sv.size; k++) {
+        char c = name.sv.buf[k];
+        if (!(c == '.' || c == '_' || c == '$' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))) {
+            return span_null;
+        }
+    }
+    return name;
+}
+
 // Binds the declaration tags (`@typedef`, `@callback`, `@import`) of the JSDoc comments from `from` to `to` that no
 // statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
 // declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
@@ -4980,6 +5024,11 @@ static void jsdoc_bind_comments(
                         host->decl.variable.initializers.data[0].binding.tag == BINDING_IDENTIFIER
                     ) {
                         i->name = host->decl.variable.initializers.data[0].binding.content_span;
+                    } else if (between == host_start && toplevel) {
+                        // Of a top-level `A.B.C = v`: C in A.B's namespace (delayedBindJSDocTypedefTag with
+                        // isTopLevelNamespaceAssignment)
+                        Span dotted = jsdoc_namespace_assignment_name(host);
+                        if (span_valid(dotted)) i->name = dotted;
                     }
                     break;
                 }
@@ -5044,25 +5093,8 @@ static void jsdoc_bind_comments(
                 }),
                 .span = span,
             });
-            // Wrapped in the namespaces of the dotted name, inside out
-            for (char const* end = span_start_ptr(i->name) - 1; end > span_start_ptr(full_name);) {
-                char const* start = end;
-                while (start > span_start_ptr(full_name) && start[-1] != '.') start--;
-                Block contents = {0};
-                vec_statement_push(&contents.statements, vec_statement_pull(out));
-                contents.statements.data[0].decl.props.exported = DECL_EXPORTED_YES;
-                // (The declaration starts at its part of the name: tsc's JSDocNamespaceDeclaration)
-                NamespaceDecl inner = {
-                    .name = span_make(full_name.source, start, end), .contents = contents, .jsdoc = true,
-                    .full_span = span_make(full_name.source, start, span_end_ptr(span)),
-                };
-                vec_statement_push(out, (Statement){
-                    .tag = STATEMENT_DECL_NAMESPACE,
-                    .decl.namespace = c_new(NamespaceDecl, inner),
-                    .span = span,
-                });
-                end = start - 1;
-            }
+            Statement alias = vec_statement_pull(out);
+            vec_statement_push(out, jsdoc_wrap_in_namespaces(alias, full_name, i->name, span));
         }
         vec_jsdoc_tag_drop(&tags);
     }
@@ -12984,7 +13016,7 @@ static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, Init
     }));
 }
 
-static void jsdoc_apply_statement(Parser* p, const char* start, Statement* statement) {
+static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, Statement* statement) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before(p, start, &tags)) return;
     switch (statement->tag) {
@@ -13089,6 +13121,27 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
             if (statement->expr.tag == EXPR_PROPERTY && !expr_is_perenthisized(&statement->expr)) {
                 JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
                 if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
+            }
+            JsDocTag* enum_tag = toplevel ? jsdoc_find_typed(&tags, JSDOC_TAG_ENUM) : nullptr;
+            Span enum_name = enum_tag ? jsdoc_namespace_assignment_name(statement) : span_null;
+            if (span_valid(enum_name)) {
+                // `/** @enum {T} */ A.B.C = {...}` at the top level: C is also a type alias of T in A.B's namespace
+                // (tsc's delayedBindJSDocTypedefTag with isTopLevelNamespaceAssignment)
+                Span span = jsdoc_tag_decl_span(enum_tag);
+                jsdoc_drop_enum(p);
+                TypeNode type = jsdoc_take_type(enum_tag, nullptr);
+                type.from_jsdoc = false;
+                Expr* value = &statement->expr.binary_op->right;
+                if (value->tag == EXPR_OBJECT) value->jsdoc_enum_literal = true;
+                char const* last_dot = span_end_ptr(enum_name);
+                while (last_dot[-1] != '.') last_dot--;
+                Span name = span_make(enum_name.source, last_dot, span_end_ptr(enum_name));
+                Statement alias = {
+                    .tag = STATEMENT_DECL_TYPE,
+                    .decl.type = c_new(TypeDecl, { .name = name, .full_span = span, .type = type, .jsdoc = true, .jsdoc_enum = true }),
+                    .span = span,
+                };
+                p->shared->jsdoc_enum = c_new(Statement, jsdoc_wrap_in_namespaces(alias, enum_name, name, span));
             }
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
                 BinaryOpExpr* assignment = statement->expr.binary_op;
@@ -13246,7 +13299,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
 
     if (ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) ret->jump_label = label;
     ret->span = span_from(a);
-    if (p.shared->source->is_js) jsdoc_apply_statement(&p, a.start, ret);
+    if (p.shared->source->is_js) jsdoc_apply_statement(&p, a.start, toplevel, ret);
 
     reset_fail_cache(&p);
     return parse_success(&p);
