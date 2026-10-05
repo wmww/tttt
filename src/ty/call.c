@@ -425,7 +425,14 @@ static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper 
 // so that `box(false)` against `Box<boolean>` is `Box<boolean>`, not `Box<false>`)
 static Ty const* instantiate_with_return_mapper(Checker* me, Ty const* contextual, TyMapper const* return_mapper) {
     Ty const* type = instantiate_instantiable(me, contextual, return_mapper);
-    if (type->kind != TY_UNION || !(type->flags & TYF_BOOLEAN)) return type;
+    if (type->kind != TY_UNION) return type;
+    // (Both of true and false: `boolean | undefined` too, whose flags aren't boolean's)
+    bool has_true = false, has_false = false;
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        has_true |= type->composite.types.data[i] == ty_intrinsic(me, TY_TRUE);
+        has_false |= type->composite.types.data[i] == ty_intrinsic(me, TY_FALSE);
+    }
+    if (!has_true || !has_false) return type;
     TyBuf kept = {0};
     for (u32 i = 0; i < type->composite.types.len; i++) {
         Ty const* part = type->composite.types.data[i];
