@@ -9506,6 +9506,8 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
         } else if (expect_expr(&p, ctx, &expr)) {
             decorator_check_grammar(&p, &expr);
             vec_expr_push(ret, expr);
+        } else if (expr.tag == EXPR_IMPLICIT_ANY && expr.missing) {
+            vec_expr_push(ret, expr); // (tsc's missing identifier)
         }
         hop_whitespace(&p);
     }
@@ -11947,8 +11949,12 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     } else if (*p.pos == ';') {
         statement = statement_noop;
     } else {
+        // (tsc's parseExpression: a missing identifier)
         expected_expression_error(&p);
-        statement = statement_noop;
+        statement.tag = STATEMENT_EXPR;
+        statement.expr = expr_implicit_any(span_from_pos(&p));
+        statement.expr.missing = true;
+        statement.expr_jsdoc_type = nullptr;
     }
     hop_whitespace(&p);
 
@@ -12187,6 +12193,7 @@ static void parse_jump_target(Parser* parent, Span* ret) {
     Span label;
     if (yield_await_is_keyword_here(&p)) {
         parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
+        *ret = span_from_pos(&p); // (tsc's missing identifier)
         parse_success(&p);
     } else if (parse_identifier(&p, &label)) {
         *ret = label;

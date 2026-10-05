@@ -2911,7 +2911,10 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             }
             statement_compile_test_info(&my for_loop->initialization, ctx);
             // (`for (;;)` has a `true` condition the parser made up, with an empty span)
-            if (my for_loop->condition.inner_span.sv.size) expr_compile_test_info(&my for_loop->condition, ctx);
+            // (a missing one is tsc's missing identifier: `while ()`)
+            if (my for_loop->condition.inner_span.sv.size || my for_loop->condition.missing) {
+                expr_compile_test_info(&my for_loop->condition, ctx);
+            }
             if (my for_loop->afterthought.tag != EXPR_LITERAL ||
                 my for_loop->afterthought.literal.tag != VALUE_UNDEFINED
             ) {

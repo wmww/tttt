@@ -213,7 +213,7 @@ const baselines = {
     'TransportStream': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'abstractClassInLocalScope': {
         errors: true,
@@ -13733,7 +13733,7 @@ const baselines = {
     'for': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'forAwaitForUnion': {
         errors: true,
@@ -20793,7 +20793,7 @@ const baselines = {
     'manyCompilerErrorsInTheTwoFiles': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'manyConstExports': {
         errors: true,
@@ -27548,7 +27548,7 @@ const baselines = {
     'reservedWords3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolutionCandidateFromPackageJsonField1': {
         errors: true,
@@ -35323,12 +35323,12 @@ const baselines = {
     'classStaticBlock26(target=es2022)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock26(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classStaticBlock27': {
         errors: true,
@@ -56678,7 +56678,7 @@ const baselines = {
     'parserErrorRecovery_ClassElement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserErrorRecovery_Expression1': {
         errors: true,
