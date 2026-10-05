@@ -55312,17 +55312,17 @@ const baselines = {
     },
     'nodeModulesResolveJsonModule(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesResolveJsonModule(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesResolveJsonModule(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesSynchronousCallErrors(module=node16)': {

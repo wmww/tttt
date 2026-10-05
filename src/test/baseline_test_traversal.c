@@ -2399,13 +2399,27 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
         collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
     }
+    // The synthetic `default` of a namespace import of a JSON module (with_synthetic_default()): named as the module
+    Symbol const* default_of = nullptr;
+    if (info.found && !info.parent && vec_span_is_empty(&info.declarations) && my property->prop.tag == EXPR_LITERAL &&
+        csview_equals(expr_outer_span(&my property->prop).sv, "default") && my property->expr.tag == EXPR_IDENTIFIER
+    ) {
+        Symbol const* alias = my property->expr.identifier.symbol;
+        PortItem const* item = alias && alias->alias ? alias->alias->item : nullptr;
+        // (Of a JSON module: what other modules' synthetic defaults print as is their alias's name, `default`)
+        if (item && item->tag == PORT_IMPORT_GATHER && !item->is_require && item->module_ref && item->module_ref->file &&
+            item->module_ref->file->is_json
+        ) {
+            default_of = binder_module_of_ref(alias->binder, item->module_ref);
+        }
+    }
     if (info.found) {
         if (my property->form == PROPERTY_EXPR_DOT) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
                 .span = my inner_span,
-                .text = prop_text(&info, ctx, expr_outer_span(&my property->prop)),
+                .text = default_of ? module_name_for_error(default_of, nullptr, false) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
             });
         }
         expr_compile_test_info(&my property->expr, ctx);
@@ -2416,7 +2430,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
                 .span = expr_outer_span(&my property->prop),
-                .text = prop_text(&info, ctx, expr_outer_span(&my property->prop)),
+                .text = default_of ? module_name_for_error(default_of, nullptr, false) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
             });
         }
     }

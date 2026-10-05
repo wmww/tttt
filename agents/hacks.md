@@ -754,6 +754,9 @@ src` finds the code-side markers; every significant one has an entry here.
   names. Syntactic typing (`single_return_expr()`, `FunctionImpl.syntactically_contextual`, which counts any JSX
   element as contextual; `single_return_keyword()` only does primitive literals of tsc's typeFromExpression); index
   signatures, tuple names, defaults always synthetic; enum member annotations print `E` (tsc: `E.x`).
+- `property_compile_test_info()` (HACK): the synthetic `default` of `import * as ns` of a JSON module prints as the
+  module's name (`Symbol("package")`, tsc's createDefaultPropertyWrapperForModule alias), other modules' as `default`;
+  restated per module kind without knowing why tsc's symbolToString differs.
 - `index_components_printed()` (HACK): isEntityNameVisible for `{ [k]: T }` approximated (function-declaration
   parameters visible even nested; no shadowing check since `TyDisplay.enclosing` misses enclosing parameters).
 - `TyDisplay.widen_literals` (HACK) prints literals in expression-made object types as primitives.
