@@ -400,8 +400,11 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
             flags[i] = TUPLE_ELEMENT_REST;
             elements[i] = arg->variadic ? arg->variadic : ty_array(me, arg->type, false);
         } else {
+            // (A context-sensitive literal with its functions left out: typed without them, they would be typed for
+            // good without a contextual type)
             Ty const* type = arg->type ? arg->type :
                 skip_sensitive && arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION ? ty_any_function_type(me) :
+                skip_sensitive && arg->context_sensitive ? ty_check_expr_skipping_sensitive(me, arg->expr, nullptr, false) :
                 ty_expr_type(me, arg->expr);
             elements[i] = widen ? ty_widened_literal(me, type) : type;
         }
