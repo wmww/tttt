@@ -54,7 +54,11 @@ static void generic_check_default(GenericItem const* item, Ty const* param, Erro
         error_ctx_error_d(errs, item->fallback_span, 2716, "Type parameter '", item->name, "' has a circular default.");
     }
     Ty const* constraint = fallback ? ty_param_constraint(checker, param) : nullptr;
-    if (!constraint || (fallback->flags & TYF_ERROR)) return;
+    if (!constraint || (fallback->flags & TYF_ERROR) || fallback == constraint) return;
+    // HACK: a deferred conditional default isn't checked, like a type argument (ty_check_type_reference_constraints):
+    // relating it through its constraints is costly (type-fest's arithmetic types) and misses what tsc infers for its
+    // `infer` type parameters
+    if (fallback->kind == TY_CONDITIONAL) return;
     TyMapper const* mapper = ty_mapper_new(checker, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &fallback, .len = 1 });
     Ty const* target = ty_with_this_arg(checker, ty_instantiate(checker, constraint, mapper), fallback);
     if (ty_is_related(checker, fallback, target, TY_RELATION_ASSIGNABLE)) return;
