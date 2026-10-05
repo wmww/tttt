@@ -353,14 +353,14 @@ static void report_statement(Reporter const* r, Statement const* me) {
             report_declaration(r, my decl.interface->symbol, my decl.interface->name, true);
             break;
         case STATEMENT_DECL_TYPE:
-            report_declaration(r, my decl.type.symbol, my decl.type.name, true);
+            report_declaration(r, my decl.type->symbol, my decl.type->name, true);
             break;
         case STATEMENT_DECL_ENUM:
             report_declaration(r, my decl.enum_->symbol, my decl.enum_->name, true);
             break;
         case STATEMENT_DECL_NAMESPACE:
-            if (!my decl.namespace.is_global && !my decl.namespace.is_ambient_module) {
-                report_declaration(r, my decl.namespace.symbol, my decl.namespace.name, false);
+            if (!my decl.namespace->is_global && !my decl.namespace->is_ambient_module) {
+                report_declaration(r, my decl.namespace->symbol, my decl.namespace->name, false);
             }
             break;
         case STATEMENT_IMPORT_EXPORT:

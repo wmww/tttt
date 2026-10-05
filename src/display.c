@@ -1349,14 +1349,14 @@ void display_statement(Display d, Statement const* me) {
             break;
 
         case STATEMENT_DECL_CLASS: display_class_decl(d, my decl.class); break;
-        case STATEMENT_DECL_TYPE: display_type_decl(d, &my decl.type); break;
+        case STATEMENT_DECL_TYPE: display_type_decl(d, my decl.type); break;
         case STATEMENT_DECL_INTERFACE: display_interface_decl(d, my decl.interface); break;
 
         case STATEMENT_DECL_NAMESPACE:
             display_lit(d, "namespace ");
-            display_colored_span(d, color_name, my decl.namespace.name);
+            display_colored_span(d, color_name, my decl.namespace->name);
             display_lit(d, " ");
-            display_block(d, &my decl.namespace.contents);
+            display_block(d, &my decl.namespace->contents);
             break;
     }
 }

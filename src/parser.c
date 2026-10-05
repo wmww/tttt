@@ -4891,7 +4891,6 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             for_each (i, vec_port_item, &statement.import_export->items) i->jsdoc = true;
             statement.span = span_make(p.shared->source, tag->tag_name.sv.buf - 1, p.pos);
             statement.flow = nullptr;
-            statement.jump_label = span_null;
             vec_statement_push(out, statement);
         } else {
             statement_drop(&statement);
@@ -4938,7 +4937,7 @@ static void jsdoc_bind_comments(
                 type.from_jsdoc = false;
                 vec_statement_push(out, (Statement){
                     .tag = STATEMENT_DECL_TYPE,
-                    .decl.type = { .full_span = span, .type = type, .jsdoc = true, .jsdoc_check_only = true },
+                    .decl.type = c_new(TypeDecl, { .full_span = span, .type = type, .jsdoc = true, .jsdoc_check_only = true }),
                     .span = span,
                 });
                 continue;
@@ -5006,7 +5005,7 @@ static void jsdoc_bind_comments(
             while (is_js_ascii_space(*after)) after++;
             vec_statement_push(out, (Statement){
                 .tag = STATEMENT_DECL_TYPE,
-                .decl.type = {
+                .decl.type = c_new(TypeDecl, {
                     .name = i->name,
                     .full_span = span,
                     .generic = jsdoc_template_generic(&tags),
@@ -5016,7 +5015,7 @@ static void jsdoc_bind_comments(
                     // (A comment inside a statement no inner list claimed, a class member's: its typedef isn't named
                     // when printed, like a local one)
                     .local = inner_from && range.start > inner_from,
-                },
+                }),
                 .span = span,
             });
         }
@@ -11923,7 +11922,7 @@ static bool statement_takes_semicolon(Statement const* me) {
             return true;
         case STATEMENT_NOOP: return span_valid(my span) && my span.sv.size && my span.sv.buf[0] == 'd'; // `debugger`
         case STATEMENT_DECL_FUNCTION: return !my decl.function.impl->has_body;
-        case STATEMENT_DECL_NAMESPACE: return my decl.namespace.is_shorthand;
+        case STATEMENT_DECL_NAMESPACE: return my decl.namespace->is_shorthand;
         case STATEMENT_FOR_LOOP: return my for_loop->is_do_while;
         default: return false;
     }
@@ -12450,7 +12449,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .props = { .exported = DECL_EXPORTED_YES },
-                .namespace = inner,
+                .namespace = c_new(NamespaceDecl, inner),
             },
         });
     }
@@ -12504,9 +12503,9 @@ static void js_syntax_declaration(Parser* p, intptr_t mark, const char* keyword,
     switch (s->tag) {
         case STATEMENT_DECL_INTERFACE: name = s->decl.interface->name; what = "interface"; break;
         case STATEMENT_DECL_ENUM: name = s->decl.enum_->name; what = "enum"; break;
-        case STATEMENT_DECL_TYPE: name = s->decl.type.name; code = 8008; what = nullptr; break;
+        case STATEMENT_DECL_TYPE: name = s->decl.type->name; code = 8008; what = nullptr; break;
         case STATEMENT_DECL_NAMESPACE:
-            name = s->decl.namespace.name;
+            name = s->decl.namespace->name;
             what = strncmp(keyword, "namespace", 9) == 0 ? "namespace" : "module";
             break;
         case STATEMENT_DECL_FUNCTION:
@@ -12545,6 +12544,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         ClassDecl class;
         TypeDecl type_decl;
         InterfaceDecl interface_decl;
+        NamespaceDecl namespace_decl;
         Expr expr;
         Block block;
     } parsed;
@@ -12645,7 +12645,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_DECL_TYPE,
             .decl = {
                 .props = decl_props,
-                .type = parsed.type_decl,
+                .type = c_new(TypeDecl, parsed.type_decl),
             },
         };
     } else if (parse_interface_decl(&p, &parsed.interface_decl)) {
@@ -12668,21 +12668,21 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
                 .enum_ = c_new(EnumDecl, parsed.enum_decl),
             },
         };
-    } else if (parse_global_block(&p, &ret->decl.namespace)) {
+    } else if (parse_global_block(&p, &parsed.namespace_decl)) {
         modified.kind = MODIFIED_MODULE;
         if (decl_props.declared) {
-            for_each (i, vec_statement, &ret->decl.namespace.contents.statements) {
+            for_each (i, vec_statement, &parsed.namespace_decl.contents.statements) {
                 if (statement_tag_is_decl(i->tag)) {
                     i->decl.props.declared = true;
                 }
             }
         }
-        ret->decl.namespace.full_span = span_from(a);
+        parsed.namespace_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .props = decl_props,
-                .namespace = ret->decl.namespace,
+                .namespace = c_new(NamespaceDecl, parsed.namespace_decl),
             },
         };
     } else if (decl_props.exported == DECL_EXPORTED_YES_DEFAULT && (parse_expr(&p, expr_ctx_null, &parsed.expr) ||
@@ -12696,14 +12696,14 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             .tag = STATEMENT_EXPORT_DEFAULT_EXPR,
             .expr = parsed.expr,
         };
-    } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &ret->decl.namespace)) {
+    } else if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT && parse_namespace(&p, &parsed.namespace_decl)) {
         modified.kind = MODIFIED_MODULE;
-        ret->decl.namespace.full_span = span_from(a);
+        parsed.namespace_decl.full_span = span_from(a);
         *ret = (Statement){
             .tag = STATEMENT_DECL_NAMESPACE,
             .decl = {
                 .props = decl_props,
-                .namespace = ret->decl.namespace,
+                .namespace = c_new(NamespaceDecl, parsed.namespace_decl),
             },
         };
     } else if ((!vec_spanned_modifier_is_empty(&modifiers.spanned) || !vec_expr_is_empty(&decorators)) &&
@@ -12856,10 +12856,10 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 if (initialized_binding_value(initializer)->tag == EXPR_OBJECT) initialized_binding_value(initializer)->jsdoc_enum_literal = true;
                 p->shared->jsdoc_enum = c_new(Statement, (Statement){
                     .tag = STATEMENT_DECL_TYPE,
-                    .decl.type = {
+                    .decl.type = c_new(TypeDecl, {
                         .name = initializer->binding.content_span, .full_span = span, .type = type, .jsdoc = true,
                         .jsdoc_enum = true,
-                    },
+                    }),
                     // Exported with its variable only (tsc's jsdocTreatAsExported)
                     .decl.props.exported = statement->decl.props.exported,
                     .span = span,
@@ -12895,10 +12895,10 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                     Span span = statement->span;
                     p->shared->jsdoc_enum = c_new(Statement, (Statement){
                         .tag = STATEMENT_DECL_TYPE,
-                        .decl.type = {
+                        .decl.type = c_new(TypeDecl, {
                             .full_span = span, .generic = generic, .type = type_any, .jsdoc = true,
                             .jsdoc_check_only = true, .jsdoc_free_templates = true,
-                        },
+                        }),
                         .span = span,
                     });
                 }
@@ -13004,7 +13004,6 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     Anchor a = anchor(&p);
 
     Span label = span_null;
-    ret->jump_label = span_null;
     ret->flow = nullptr;
     // Every branch before the expression statement needs a particular first character: test it first
     char c = *p.pos;
@@ -13086,9 +13085,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         return parse_fail(&p);
     }
 
-    if ((ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) && span_valid(label)) {
-        ret->jump_label = label;
-    }
+    if (ret->tag == STATEMENT_BREAK || ret->tag == STATEMENT_CONTINUE) ret->jump_label = label;
     ret->span = span_from(a);
     if (p.shared->source->is_js) jsdoc_apply_statement(&p, a.start, ret);
 

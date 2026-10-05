@@ -780,8 +780,8 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                         statement->tag == STATEMENT_DECL_FUNCTION ? statement->decl.function.impl->name :
                         statement->tag == STATEMENT_DECL_ENUM ? statement->decl.enum_->name :
                         statement->tag == STATEMENT_DECL_INTERFACE ? statement->decl.interface->name :
-                        statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type.name :
-                        statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace.name : span_null;
+                        statement->tag == STATEMENT_DECL_TYPE ? statement->decl.type->name :
+                        statement->tag == STATEMENT_DECL_NAMESPACE ? statement->decl.namespace->name : span_null;
                     source->module_indicator = span_valid(name) ? name : statement->span;
                 }
             }

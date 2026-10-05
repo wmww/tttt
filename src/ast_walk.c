@@ -120,7 +120,7 @@ bool ast_walk_statement(Statement const* me, AstExprVisit visit, void* arg) {
             for_each (i, vec_enum_case, &my decl.enum_->cases) if (ast_walk_expr(&i->value, visit, arg)) return true;
             return false;
         case STATEMENT_DECL_CLASS: return walk_class(my decl.class, visit, arg);
-        case STATEMENT_DECL_NAMESPACE: return walk_block(&my decl.namespace.contents, visit, arg);
+        case STATEMENT_DECL_NAMESPACE: return walk_block(&my decl.namespace->contents, visit, arg);
     }
     return false;
 }

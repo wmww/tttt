@@ -2053,9 +2053,9 @@ static Symbol const* statement_declared_symbol(Statement const* statement) {
         case STATEMENT_DECL_FUNCTION: return statement->decl.function.impl->symbol;
         case STATEMENT_DECL_CLASS: return statement->decl.class->symbol;
         case STATEMENT_DECL_INTERFACE: return statement->decl.interface->symbol;
-        case STATEMENT_DECL_TYPE: return statement->decl.type.symbol;
+        case STATEMENT_DECL_TYPE: return statement->decl.type->symbol;
         case STATEMENT_DECL_ENUM: return statement->decl.enum_->symbol;
-        case STATEMENT_DECL_NAMESPACE: return statement->decl.namespace.symbol;
+        case STATEMENT_DECL_NAMESPACE: return statement->decl.namespace->symbol;
         default: return nullptr;
     }
 }
@@ -2079,7 +2079,7 @@ static void check_statement(Walk* me, Statement const* statement, Container cont
         return;
     }
     if (statement->tag == STATEMENT_DECL_NAMESPACE) {
-        NamespaceDecl const* decl = &statement->decl.namespace;
+        NamespaceDecl const* decl = statement->decl.namespace;
         bool augmentation = decl->is_augmentation || decl->is_global;
         if (augmentation || statement_visible_at_first(me, statement, container, decl->symbol)) {
             check_statement_now(me, statement, container); // (still a late pass inside)
@@ -2177,7 +2177,7 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
             return;
         }
         case STATEMENT_DECL_TYPE: {
-            TypeDecl const* decl = &statement->decl.type;
+            TypeDecl const* decl = statement->decl.type;
             if (decl->jsdoc || decl->jsdoc_check_only) return;
             if (statement_visible(me, statement, container, decl->symbol)) {
                 check_generic(me, &decl->generic, SIG_TYPE_ALIAS);
@@ -2198,7 +2198,7 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
             return;
         }
         case STATEMENT_DECL_NAMESPACE: {
-            NamespaceDecl const* decl = &statement->decl.namespace;
+            NamespaceDecl const* decl = statement->decl.namespace;
             bool augmentation = decl->is_augmentation || decl->is_global;
             if (!augmentation && !statement_visible(me, statement, container, decl->symbol)) return;
             bool ambient = container.ambient || statement->decl.props.declared || decl->is_ambient_module || decl->is_global;

@@ -2794,7 +2794,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     if (statement_declares_name(my tag) && my decl.props.invalid_decorators) {
         for_each (i, vec_expr, my decl.props.invalid_decorators) expr_compile_test_info(i, ctx);
     }
-    if (span_valid(my jump_label)) {
+    if ((my tag == STATEMENT_BREAK || my tag == STATEMENT_CONTINUE) && span_valid(my jump_label)) {
         // Both labels and the targets of break and continue are shown as any
         ctx->any_keeps_underline = true;
         baseline_test_case_add_type_node(ctx, my jump_label, &type_any);
@@ -2968,7 +2968,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            type_decl_compile_test_info(&my decl.type, ctx);
+            type_decl_compile_test_info(my decl.type, ctx);
             break;
 
         case STATEMENT_DECL_INTERFACE:
@@ -2976,7 +2976,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_compile_test_info(&my decl.namespace, ctx);
+            namespace_decl_compile_test_info(my decl.namespace, ctx);
             break;
     }
 }

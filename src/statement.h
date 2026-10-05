@@ -161,6 +161,7 @@ typedef struct Statement {
         STATEMENT_DECL_INTERFACE,
         STATEMENT_DECL_NAMESPACE,
     } tag;
+    bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
     union {
         SourceDirectiveStatement* source_directive;
         Block block;
@@ -176,7 +177,10 @@ typedef struct Statement {
         SwitchStatement* switch_;
         TryCatchStatement* try_catch;
         WithStatement* with;
-        Span keyword_span; // Used for continue and break
+        struct {
+            Span keyword_span; // Used for continue and break
+            Span jump_label; // The label break and continue jump to, null if there isn't one
+        };
         struct {
             Span name;
             Statement* body; // Owned, never null
@@ -191,9 +195,9 @@ typedef struct Statement {
                 } function;
                 EnumDecl* enum_;
                 ClassDecl* class;
-                TypeDecl type;
+                TypeDecl* type; // Owned, never null
                 InterfaceDecl* interface;
-                NamespaceDecl namespace;
+                NamespaceDecl* namespace; // Owned, never null
             };
         } decl;
     };
@@ -201,8 +205,6 @@ typedef struct Statement {
     // The control flow node before the statement, for the statements tsc gives one (null otherwise, and in code the
     // builder found unreachable): a call that never returns or an exhaustive switch before it makes it unreachable
     FlowNode* flow;
-    bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
-    Span jump_label; // The label break and continue jump to, null if there isn't one or for other statements
 } Statement;
 
 #define statement_noop ((Statement){ .tag = STATEMENT_NOOP })

@@ -284,7 +284,7 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
     *found = false;
     switch (my tag) {
         case STATEMENT_DECL_TYPE:
-            *found = csview_equals_sv(my decl.type.name.sv, name);
+            *found = csview_equals_sv(my decl.type->name.sv, name);
             return NON_INSTANTIATED;
         case STATEMENT_DECL_INTERFACE:
             *found = csview_equals_sv(my decl.interface->name.sv, name);
@@ -304,9 +304,9 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
             }
             return INSTANTIATED;
         case STATEMENT_DECL_NAMESPACE:
-            *found = !my decl.namespace.is_ambient_module && csview_equals_sv(my decl.namespace.name.sv, name);
+            *found = !my decl.namespace->is_ambient_module && csview_equals_sv(my decl.namespace->name.sv, name);
             if (!*found) return NON_INSTANTIATED;
-            return block_is_instantiated(&my decl.namespace.contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
+            return block_is_instantiated(&my decl.namespace->contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
         case STATEMENT_IMPORT_EXPORT: {
             // A re-export of `import x = N.x` is instantiated, it's ambiguous. Other imports aren't
             PortStatement const* port = my import_export;
@@ -382,7 +382,7 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
 
             case STATEMENT_DECL_NAMESPACE:
                 // (A `declare global` too, by its contents: tsc's getModuleInstanceState)
-                if (block_is_instantiated(&i->decl.namespace.contents, const_enums, outer, depth + 1)) {
+                if (block_is_instantiated(&i->decl.namespace->contents, const_enums, outer, depth + 1)) {
                     return true;
                 }
                 break;
@@ -774,7 +774,8 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            type_decl_drop(&my decl.type);
+            type_decl_drop(my decl.type);
+            free(my decl.type);
             break;
 
         case STATEMENT_DECL_INTERFACE:
@@ -783,7 +784,8 @@ void statement_drop(Statement* me) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_drop(&my decl.namespace);
+            namespace_decl_drop(my decl.namespace);
+            free(my decl.namespace);
             break;
     }
 }
@@ -1029,7 +1031,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_TYPE:
-            type_decl_add_names(&my decl.type, scope, my decl.props);
+            type_decl_add_names(my decl.type, scope, my decl.props);
             break;
 
         case STATEMENT_DECL_INTERFACE:
@@ -1037,11 +1039,11 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_add_names(&my decl.namespace, scope, my decl.props);
+            namespace_decl_add_names(my decl.namespace, scope, my decl.props);
             break;
 
         case STATEMENT_LABELED:
-            if (my labeled.body->tag == STATEMENT_DECL_NAMESPACE) my labeled.body->decl.namespace.labeled = true;
+            if (my labeled.body->tag == STATEMENT_DECL_NAMESPACE) my labeled.body->decl.namespace->labeled = true;
             statement_add_names(my labeled.body, scope);
             break;
 
@@ -1083,7 +1085,7 @@ static bool statement_is_executable(Statement const* me) {
         case STATEMENT_DECL_INTERFACE:
             return false;
         case STATEMENT_DECL_NAMESPACE:
-            return namespace_decl_is_instantiated(&my decl.namespace);
+            return namespace_decl_is_instantiated(my decl.namespace);
         case STATEMENT_DECL_ENUM:
             return !my decl.enum_->is_const || compiler_options()->preserve_const_enums;
         case STATEMENT_DECL_VARIABLE:
@@ -1588,17 +1590,17 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_DECL_TYPE: {
-            if (my decl.type.jsdoc_check_only) {
-                if (my decl.type.jsdoc_free_templates) generic_lookup_names(&my decl.type.generic, names, errs);
-                type_lookup_names(&my decl.type.type, names, errs);
+            if (my decl.type->jsdoc_check_only) {
+                if (my decl.type->jsdoc_free_templates) generic_lookup_names(&my decl.type->generic, names, errs);
+                type_lookup_names(&my decl.type->type, names, errs);
                 break;
             }
-            Scope* self_scope = scope_new_self(names, my decl.type.symbol, my decl.props.declared);
-            unused_register(self_scope, UNUSED_TYPE_ALIAS, &my decl.type, span_null);
-            my decl.type.outer_generics = names->generics;
-            my decl.type.local |= names->kind == SCOPE_BLOCK || names->kind == SCOPE_FUNCTION || names->kind == SCOPE_STATIC_BLOCK;
-            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type.generic, my decl.type.name, span_null, errs);
-            type_lookup_names(&my decl.type.type, generic_scope, errs);
+            Scope* self_scope = scope_new_self(names, my decl.type->symbol, my decl.props.declared);
+            unused_register(self_scope, UNUSED_TYPE_ALIAS, my decl.type, span_null);
+            my decl.type->outer_generics = names->generics;
+            my decl.type->local |= names->kind == SCOPE_BLOCK || names->kind == SCOPE_FUNCTION || names->kind == SCOPE_STATIC_BLOCK;
+            Scope* generic_scope = scope_new_generic(self_scope, &my decl.type->generic, my decl.type->name, span_null, errs);
+            type_lookup_names(&my decl.type->type, generic_scope, errs);
         }   break;
 
         case STATEMENT_DECL_INTERFACE:
@@ -1606,7 +1608,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_resolve_names(&my decl.namespace, names, errs);
+            namespace_decl_resolve_names(my decl.namespace, names, errs);
             break;
 
         case STATEMENT_SOURCE_DIRECTIVE:
@@ -2444,7 +2446,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_DECL_TYPE:
-            type_decl_typecheck(&my decl.type, errs);
+            type_decl_typecheck(my decl.type, errs);
             break;
 
         case STATEMENT_DECL_INTERFACE:
@@ -2452,7 +2454,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_DECL_NAMESPACE:
-            namespace_decl_typecheck(&my decl.namespace, my decl.props.declared || ctx.ambient, errs);
+            namespace_decl_typecheck(my decl.namespace, my decl.props.declared || ctx.ambient, errs);
             break;
     }
 }
@@ -2579,8 +2581,8 @@ void source_file_check_verbatim_exports(SourceFile const* file, ErrorCtx* errs) 
                 break;
             case STATEMENT_DECL_NAMESPACE:
                 if (i->decl.props.exported == DECL_EXPORTED_NO || i->decl.props.declared) continue;
-                if (i->decl.namespace.is_global || i->decl.namespace.is_ambient_module) continue;
-                if (!namespace_decl_is_instantiated(&i->decl.namespace)) continue;
+                if (i->decl.namespace->is_global || i->decl.namespace->is_ambient_module) continue;
+                if (!namespace_decl_is_instantiated(i->decl.namespace)) continue;
                 grammar = false;
                 break;
             case STATEMENT_IMPORT_EXPORT:
