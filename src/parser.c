@@ -2095,8 +2095,9 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
 
                 case '(':
                 case '<': // `export default <div />`
-                    // (tsc's canFollowModifier has no `(` or `<`: `export default async () => {}` is an async arrow)
-                    if (is_member || span_equals(mod.span, "async")) {
+                    // (tsc's canFollowModifier has no `(` or `<`: `export default async () => {}` is an async arrow,
+                    // `export default declare(...)` a call of a function named `declare`)
+                    if (is_member || !span_equals(mod.span, "default")) {
                         goto loop_end;
                     }
                     break;
