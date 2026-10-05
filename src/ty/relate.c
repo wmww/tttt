@@ -431,6 +431,10 @@ static inline bool same_literal_value(Ty const* s, Ty const* t) {
 
 // Simple relations: decided by flags and identity alone (tsc's isSimpleTypeRelatedTo)
 
+static bool is_readonly_prop(Prop const* prop) {
+    return (prop->flags & PROP_READONLY) || ((prop->flags & PROP_GETTER) && !(prop->flags & PROP_SETTER));
+}
+
 static bool is_subtype_relation(TyRelation relation) {
     return relation == TY_RELATION_SUBTYPE || relation == TY_RELATION_STRICT_SUBTYPE;
 }
@@ -2244,6 +2248,14 @@ static Ternary props_related_impl(
             goto done;
         }
         if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) { result = TERNARY_FALSE; goto done; }
+        // `{ readonly a: T }` isn't a strict subtype of `{ a: T }` (the other way around it is), which orders subtype
+        // reduction and narrowing by a type predicate (tsc's propertiesRelatedTo, strictSubtypeRelation only)
+        if (st->relation == TY_RELATION_STRICT_SUBTYPE && !is_readonly_prop(target_prop) &&
+            (source_prop.prop ? is_readonly_prop(source_prop.prop) : (source_prop.flags & PROP_READONLY))
+        ) {
+            result = TERNARY_FALSE;
+            goto done;
+        }
         Ty const* target_type = prop_type(me, target_prop);
         Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
         if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
@@ -4025,9 +4037,6 @@ static Ternary each_identical_to_some(Checker* me, RelationState* st, TyList sou
     return result;
 }
 
-static bool is_readonly_prop(Prop const* prop) {
-    return (prop->flags & PROP_READONLY) || ((prop->flags & PROP_GETTER) && !(prop->flags & PROP_SETTER));
-}
 
 // tsc's compareProperties
 // tsc's compareProperties, less the types

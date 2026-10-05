@@ -26681,9 +26681,9 @@ const baselines = {
         types: true,
     },
     'readonlyPropertySubtypeRelationDirected': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'readonlyTupleAndArrayElaboration': {
         errors: true,
