@@ -16876,9 +16876,9 @@ const baselines = {
         types: true,
     },
     'incorrectRecursiveMappedTypeConstraint': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'incrementOnNullAssertion': {
         errors: true,
@@ -31968,7 +31968,7 @@ const baselines = {
     'underscoreTest1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'underscoreThisInDerivedClass01': {
         errors: true,
