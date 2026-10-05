@@ -2423,6 +2423,48 @@ bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
     return false;
 }
 
+// An intersection that some instantiation reduces to never: a property declared in two of its object members, a
+// literal in one and a type parameter in the other (`{ src: "child" } & { src: TSrc }`). tsc's isReducibleIntersection
+// instantiates the type parameters with a never that counts as a literal and asks getReducedType; this looks for the
+// shape that makes that never
+static bool is_reducible_intersection(Checker* me, Ty const* ty) {
+    TyList parts = ty->composite.types;
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* a = parts.data[i];
+        if (!is_known_object(me, a)) continue;
+        Members const* members = ty_members(me, a);
+        for (u32 p = 0; p < members->prop_count; p++) {
+            Prop const* prop = members->props[p];
+            Ty const* a_type = nullptr;
+            for (u32 j = 0; j < parts.len; j++) {
+                if (j == i || !is_known_object(me, parts.data[j])) continue;
+                Prop const* other = ty_get_prop(me, parts.data[j], prop->name);
+                if (!other || ((prop->flags & other->flags) & PROP_OPTIONAL)) continue;
+                if (!a_type) a_type = prop_type(me, prop);
+                if (!is_literal_like(a_type) || (a_type->flags & TYF_NULLABLE)) break;
+                if (prop_type(me, other)->kind == TY_TYPE_PARAM) return true;
+            }
+        }
+    }
+    return false;
+}
+
+// tsc's isGenericReducibleType: a union an instantiation can take members out of stays generic, so that an indexed
+// access of it is deferred and reduced once instantiated: `(({ src: "a"; v: A } | { src: "b"; v: B }) & { src: S })["v"]`
+// with S = "a" is A, not A | B
+static bool is_generic_reducible(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        if (member->kind == TY_INTERSECTION && (member->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+            is_reducible_intersection(me, member)
+        ) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Returns null if the new core can't tell yet
 // Generic as far as deferring an indexed access goes: a type variable at the top level (tsc's isGenericObjectType /
 // isGenericIndexType). `{ a: T }["a"]` isn't, it's `T`
@@ -2473,7 +2515,7 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     if (ty_is_tuple(object) && ty_is_generic_tuple(me, object) && index_less_than_fixed(me, object, index)) {
         return ty_access(me, object, index);
     }
-    if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return nullptr;
+    if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0) || is_generic_reducible(me, object)) return nullptr;
     index = ty_string_index_only_key(me, object, index);
     Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
@@ -2574,10 +2616,18 @@ Ty const* ty_actual_type_variable(Checker* me, Ty const* ty) {
 // `O['length'] extends number ? T[] : T` with `O = { withAccents: false }` takes the false branch
 Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
     Ty const* ret = indexed(me, object, index, false, include_undefined);
-    if (ret->kind != TY_INDEXED || is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0)) return ret;
+    if (ret->kind != TY_INDEXED || is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0) ||
+        is_generic_reducible(me, object)
+    ) {
+        return ret;
+    }
     // (Only if it is this access that stayed deferred: a property whose type is an indexed access, `{ a: U["x"] }["a"]`,
     // resolved fine)
-    if (is_generic_operand(me, ret->indexed.object, 0) || is_generic_operand(me, ret->indexed.index, 0)) return ret;
+    if (is_generic_operand(me, ret->indexed.object, 0) || is_generic_operand(me, ret->indexed.index, 0) ||
+        is_generic_reducible(me, ret->indexed.object)
+    ) {
+        return ret;
+    }
     return my intrinsics[TY_UNKNOWN_];
 }
 

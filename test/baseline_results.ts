@@ -27103,7 +27103,7 @@ const baselines = {
     'reducibleIndexedAccessTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reexportDefaultIsCallable': {
         errors: true,
