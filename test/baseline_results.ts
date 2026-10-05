@@ -16078,7 +16078,7 @@ const baselines = {
     'importDecl': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclFromTypeNodeInJsSource': {
         errors: true,
@@ -49908,12 +49908,12 @@ const baselines = {
     'umd-augmentation-1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd-augmentation-2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd-augmentation-3': {
         errors: true,

@@ -773,7 +773,8 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     if (!(found->flags & SYMBOL_ALIAS) && !(symbol->flags & SYMBOL_ALIAS)) return false;
     Symbol const* target = symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias((Symbol*)symbol) : symbol;
     Symbol const* found_target = found->flags & SYMBOL_ALIAS ? symbol_resolve_alias((Symbol*)found) : found;
-    return target && found_target && same_symbol(me, found_target, target);
+    // (Two `import * as`/`import = require` of one module are two gathering symbols of the same module)
+    return target && found_target && same_symbol(me, symbol_members(found_target), symbol_members(target));
 }
 
 // A type of the uninstantiated signature at the root of `sig` as `sig` has it
