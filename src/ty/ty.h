@@ -1652,6 +1652,9 @@ typedef struct ObjectLiteralProp {
     uint8_t name_form; // See PropDecl.name_form
     Ty const* name_type; // See PropDecl.name_type
     Prop const* reuse; // The property is this one as it is (tsc: the same symbol), the other fields are ignored
+    // A spread or widened copy of a declared member that tsc's getSpreadSymbol / getWidenedProperty would keep as the
+    // same symbol: that member's container (Prop.parent), which names it in the symbols baseline
+    Symbol const* parent;
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker

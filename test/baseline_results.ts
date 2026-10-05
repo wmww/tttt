@@ -65322,7 +65322,7 @@ const baselines = {
     },
     'spreadMethods': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'spreadNonObject1': {

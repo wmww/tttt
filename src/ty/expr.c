@@ -2564,6 +2564,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
                     literal_builder_add(&all, part.props[j]);
                 } else if (!(part.props[j].flags & PROP_OPTIONAL)) {
                     existing->flags &= ~(u32)PROP_OPTIONAL;
+                    existing->parent = nullptr;
                 }
             }
             for (u32 j = 0; j < part.index_count && all.index_count < c_arraylen(all.index); j++) all.index[all.index_count++] = part.index[j];
@@ -2571,6 +2572,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             literal_builder_drop(&part);
         }
         for (u32 j = 0; j < all.count; j++) {
+            all.props[j].parent = nullptr; // (A property of the intersection: a symbol of its own)
             Ty const* type = ty_access(me, object, ty_prop_name_literal(me, all.props[j].name));
             // (Under exactOptionalPropertyTypes the optional property keeps its declared type: the read's missing goes)
             bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
@@ -2631,6 +2633,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             .decl_spans = origin->decl->decl_spans,
             .decl_span_count = origin->decl->decl_span_count,
             .name_is_value = origin->decl->name_is_value,
+            .parent = !partial && !setonly && !(prop->flags & PROP_READONLY) ? prop->parent : nullptr,
         });
     }
     // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)
@@ -2652,6 +2655,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         }
         // Optional: what was there stays possible, and so does its being required
         ObjectLiteralProp merged = *l;
+        merged.parent = nullptr;
         merged.flags = l->flags & (PROP_OPTIONAL | PROP_METHOD);
         merged.own = false;
         // (Under exactOptionalPropertyTypes only the missing goes, which the declared type doesn't have: tsc's

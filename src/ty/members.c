@@ -3848,6 +3848,7 @@ Ty const* ty_object_literal_of(
         // (How the name prints, and an accessor pair's setter)
         words_push(&words, props[i].name_form | (props[i].name_type ? (u64)props[i].name_type->id << 8 : 0));
         if (props[i].setter) words_push(&words, (u64)(uintptr_t)props[i].setter);
+        if (props[i].parent) words_push(&words, (u64)(uintptr_t)props[i].parent | 1);
     }
     for (u32 i = 0; i < index_count; i++) {
         words_push(&words, 3);
@@ -3884,6 +3885,7 @@ Ty const* ty_object_literal_of(
             prop->decl->name_form = props[i].name_form;
             prop->decl->name_type = props[i].name_type;
             prop->decl->asserted = props[i].asserted;
+            prop->parent = props[i].parent;
             prop_add_shared_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
             flags |= props[i].type ? props[i].type->flags & (TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_NON_INFERRABLE) :
@@ -4028,6 +4030,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop->decl->name_type,
+            .parent = !prop->decl->function && type == prop_type(me, prop) ? prop->parent : nullptr,
         };
     }
     u32 count = members->prop_count;
