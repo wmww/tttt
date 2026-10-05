@@ -2205,7 +2205,8 @@ static Ternary props_related_impl(
                     goto done;
                 }
             }
-            if (prop) source_prop = (FoundProp){ .found = true, .type = prop_type(me, prop), .flags = prop->flags, .prop = prop };
+            // (Its type is asked for after the target property's: tsc's isPropertySymbolTypeRelated)
+            if (prop) source_prop = (FoundProp){ .found = true, .flags = prop->flags, .prop = prop };
         } else {
             source_prop = find_prop(me, source, target_prop->name, 0);
         }
@@ -2223,8 +2224,8 @@ static Ternary props_related_impl(
             goto done;
         }
         if (!modifiers_related(me, st, source, target, &source_prop, target_prop, report)) { result = TERNARY_FALSE; goto done; }
-        Ty const* source_type = source_prop.type;
         Ty const* target_type = prop_type(me, target_prop);
+        Ty const* source_type = source_prop.type ? source_prop.type : prop_type(me, source_prop.prop);
         if ((target_prop->flags & PROP_OPTIONAL) && optional_adds_undefined()) {
             Ty const* parts[2] = { target_type, undefined };
             target_type = ty_union(me, parts, 2, nullptr, (TyList){0});
