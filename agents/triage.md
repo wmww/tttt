@@ -12,7 +12,7 @@ errors and missing `extends`. (C) getTargetofModuleDefault/TS2613, TS1479 for th
 isolatedModules/verbatimModuleSyntax alias checks (+13). (D) the checkReturnStatement port landed after fixing its
 two order bugs: flow typed assigned values without their contextual type, and function expression bodies are now
 deferred to the end of the file like tsc's checkNodeDeferred. (E) plan 43 (AST memory). Leftovers are in hacks.md,
-missing_checks.md "Module and import checks", type_core.md "Circularity" (getter_cycle.ts).
+missing_checks.md "Known missing checks", type_core.md "Circularity" (getter_cycle.ts).
 
 - (triage 2026-10-05, D) tttt now defers function expression bodies to the end of the file (`Checker.defer_functions`,
   tsc's checkNodeDeferred), but tsc also defers class expressions, JSX elements and type assertion checks; those
