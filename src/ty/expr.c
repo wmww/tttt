@@ -2446,8 +2446,9 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
             flags |= PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
         }
-        // The annotation of the property it comes from still says what it is, unless instantiated
-        TypeNode const* annotation = !partial && origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
+        // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
+        // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
+        TypeNode const* annotation = origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
             !origin->decl->overload_count && !origin->decl->symbol && type == prop_type(me, origin) ? origin->decl->node : nullptr;
         literal_builder_add(out, (ObjectLiteralProp){
             .name = prop->name,
