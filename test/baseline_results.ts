@@ -20218,12 +20218,12 @@ const baselines = {
     'jsxNamespacePrefixInName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespacePrefixInNameReact': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespacePrefixIntrinsics': {
         errors: true,
@@ -24293,7 +24293,7 @@ const baselines = {
     'objectBindingPattern_restElementWithPropertyName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectCreate-errors': {
         errors: true,
@@ -27683,7 +27683,7 @@ const baselines = {
     'restParameterWithBindingPattern3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParameters': {
         errors: true,

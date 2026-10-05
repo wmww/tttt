@@ -539,6 +539,10 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                     // (Its type is any: tsc's getTypeOfNode of a property name that isn't an expression)
                     ctx->any_keeps_underline = true;
                     baseline_test_case_add_type_node(ctx, i->source_span, &type_any);
+                } else if (i->target.rest_property_name) {
+                    // `...a: b` (TS2566): the property name is any too
+                    ctx->any_keeps_underline = true;
+                    baseline_test_case_add_type_node(ctx, i->source_span, &type_any);
                 }
                 binding_content_compile_test_info(&i->target, ctx);
             }
@@ -2268,7 +2272,8 @@ static void jsx_namespaced_name_compile_test_info(Span name, BaselineTestCase* c
     for (u32 i = 0; i < 2; i++) {
         while (parts[i].sv.size && isspace((unsigned char)parts[i].sv.buf[0])) parts[i].sv = csview_slice(parts[i].sv, 1, parts[i].sv.size);
         while (parts[i].sv.size && isspace((unsigned char)parts[i].sv.buf[parts[i].sv.size - 1])) parts[i].sv.size--;
-        if (parts[i].sv.size) baseline_test_case_add_type(ctx, parts[i], ty_intrinsic(current_checker, TY_ERROR));
+        // (A missing name after the colon, `attr:={x}`, is tsc's missing identifier)
+        if (parts[i].sv.size || i == 1) baseline_test_case_add_type(ctx, parts[i], ty_intrinsic(current_checker, TY_ERROR));
     }
 }
 
