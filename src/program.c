@@ -960,7 +960,9 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
         options->module_resolution == MODULE_RESOLUTION_NODENEXT;
     // (A JSON file has no module format of its own: tsc's getImpliedNodeFormatForFile, which also looks at the
     // package.json of anything in node_modules)
-    bool in_node_modules = csview_contains(cstr_sv(&source_file->canonical_path), "/node_modules/");
+    // (canonical paths are relative to the working directory: `node_modules/x` is in one too)
+    csview canonical = cstr_sv(&source_file->canonical_path);
+    bool in_node_modules = csview_contains(canonical, "/node_modules/") || csview_starts_with(canonical, "node_modules/");
     if ((node_formats || in_node_modules) && !is_stdlib && !source_file->is_json) {
         FileFormat format = module_resolver_file_format(
             program_resolver_of(me, source_file), cstr_sv(&source_file->canonical_path)
