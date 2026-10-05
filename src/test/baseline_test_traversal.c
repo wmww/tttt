@@ -1856,7 +1856,20 @@ void interface_decl_compile_test_info(InterfaceDecl const* me, BaselineTestCase*
 void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase* ctx) {
     if (my is_global && span_valid(my name)) {
         // `declare global`: a namespace named `global` of its own in tsc, its value `typeof global` if it has one
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = vec_span_single(my full_span), .span = my name });
+        // (Every `declare global` at the top of the file: one symbol in its locals)
+        VecSpan declarations = vec_span_init();
+        SourceFile const* file = my name.source;
+        bool top = false;
+        for_each (i, vec_statement, &file->ast.statements) {
+            if (i->tag != STATEMENT_DECL_NAMESPACE || !i->decl.namespace->is_global) continue;
+            vec_span_push(&declarations, i->decl.namespace->full_span);
+            top |= i->decl.namespace == me;
+        }
+        if (!top) {
+            vec_span_clear(&declarations);
+            vec_span_push(&declarations, my full_span);
+        }
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .declarations = declarations, .span = my name });
         if (namespace_decl_is_instantiated(me)) {
             baseline_test_case_add_type_text(ctx, my name, c_sv("typeof global"));
         } else {
