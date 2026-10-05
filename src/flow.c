@@ -7,7 +7,9 @@
 #include "binding.h"
 #include "lazy_type.h"
 
-FlowNode flow_unreachable = { .flags = FLOW_UNREACHABLE };
+// (Referenced and shared from the start, never written: every walk of every program uses it, maybe on threads of their
+// own)
+FlowNode flow_unreachable = { .flags = FLOW_UNREACHABLE | FLOW_REFERENCED | FLOW_SHARED };
 // Unreachable, and TS7027 was reported (or deliberately not) for the code that follows
 FlowNode flow_reported_unreachable = { .flags = FLOW_UNREACHABLE };
 
@@ -25,7 +27,7 @@ static void dump_record(FlowBuilder* me, FlowNode const* node, Span reference) {
 
 void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, FunctionImpl const* function, ErrorCtx* errs) {
     *me = (FlowBuilder){
-        .arena = &scope->binder->arena,
+        .arena = binder_arena(scope->binder),
         .errs = errs,
         .function = function,
         .container = outer ? outer->container : (void const*)scope->file,
@@ -51,6 +53,7 @@ static FlowNode* new_node(FlowBuilder* me, u32 flags, FlowNode* antecedent, void
 }
 
 static void set_referenced(FlowNode* flow) {
+    if (flow == &flow_unreachable) return;
     // On first reference the node is referenced, from then on it is shared
     flow->flags |= flow->flags & FLOW_REFERENCED ? FLOW_SHARED : FLOW_REFERENCED;
 }

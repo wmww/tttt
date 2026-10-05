@@ -339,6 +339,8 @@ static Span const* constructor_locals(ClassDecl const* me, Arena* arena, u32* co
     return ret;
 }
 
+bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* item);
+
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
     scope_rare_mut(this_scope)->this_ref = (ThisRef){
@@ -348,7 +350,7 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
     this_scope->class_strict = true;
 
     u32 local_count = 0;
-    Span const* locals = static_members ? nullptr : constructor_locals(me, &names->binder->arena, &local_count);
+    Span const* locals = static_members ? nullptr : constructor_locals(me, binder_arena(names->binder), &local_count);
     for_each (i, vec_class_item, &my items) {
         if (class_item_is_static(i) == static_members) {
             Scope* scope = this_scope;
@@ -368,6 +370,11 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
                 function_impl_rare_mut(&i->method.func)->static_method_of = my symbol;
             }
             if (i->tag == CLASS_ITEM_METHOD) i->method.func.in_class_expression = my is_expression;
+            // (Here, not when checking: the checkers share the AST)
+            if (i->tag == CLASS_ITEM_CONSTRUCTOR) i->constructor.func.private_ambient = class_item_private_in_ambient(me, i);
+            if (i->tag == CLASS_ITEM_METHOD) {
+                i->method.func.private_ambient = class_item_private_in_ambient(me, i) || i->method.is_declare;
+            }
             class_item_lookup_names(i, scope, errs);
         }
     }
@@ -1608,7 +1615,7 @@ static void class_check_emit_helpers(ClassDecl* me, ErrorCtx* errs) {
 }
 
 // tsc's isPrivateWithinAmbient: private members of an ambient class have no implicit any errors
-static bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* item) {
+bool class_item_private_in_ambient(ClassDecl const* me, ClassItem const* item) {
     return my is_ambient && (item->access == ACCESS_MODIFIER_PRIVATE || span_valid(class_item_private_name(item)));
 }
 
@@ -2090,7 +2097,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
         switch (i->tag) {
             case CLASS_ITEM_CONSTRUCTOR:
-                i->constructor.func.private_ambient = class_item_private_in_ambient(me, i);
                 function_impl_typecheck(&i->constructor.func, errs);
                 // tsc's checkConstructorDeclaration
                 if (i->constructor.func.has_body && my extends.tag != EXPR_IMPLICIT_ANY) {
@@ -2113,7 +2119,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
             case CLASS_ITEM_METHOD:
                 if (i->method.computed_key) class_computed_key_typecheck(me, i, decorators_rejected, errs);
-                i->method.func.private_ambient = class_item_private_in_ambient(me, i) || i->method.is_declare;
                 if (i->method.accessor && !i->method.func.has_body && !i->method.is_abstract && !i->method.func.ambient &&
                     !i->method.is_declare
                 ) {

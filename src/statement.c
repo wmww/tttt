@@ -437,7 +437,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     if (my jsdoc && scope->kind == SCOPE_MODULE && !(my full_span.source && my full_span.source->is_commonjs)) {
         props.exported = DECL_EXPORTED_YES;
     }
-    ErrorCtx* errs = misplaced ? nullptr : scope->binder->errs;
+    ErrorCtx* errs = misplaced ? nullptr : binder_errs(scope->binder);
     bool checked = true;
     for (Scope const* i = scope; i && checked; i = i->parent) checked = !i->with_body;
     if (misplaced && checked) {
@@ -445,7 +445,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         isize len = 0;
         while (len < first.sv.size && (isalnum((unsigned char)first.sv.buf[len]) || first.sv.buf[len] == '_')) len++;
         first.sv.size = len;
-        error_ctx_grammar_error_d(scope->binder->errs, first, (my is_global || my is_ambient_module) ? 1234 : 1235,
+        error_ctx_grammar_error_d(binder_errs(scope->binder), first, (my is_global || my is_ambient_module) ? 1234 : 1235,
             (my is_global || my is_ambient_module) ? "An ambient module declaration is only allowed at the top level in a file." :
             "A namespace declaration is only allowed at the top level of a namespace or module.");
     }
@@ -505,7 +505,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
             if (augmentation && !my is_shorthand) {
                 module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
                 module->name_span = my name;
-                module->exports = arena_new(&scope->binder->arena, SymbolTable);
+                module->exports = arena_new(binder_arena(scope->binder), SymbolTable);
                 module->is_augmentation = true;
                 binder_add_augmentation(scope->binder, me);
             } else if (nested_ambient_module) {
@@ -514,8 +514,8 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
                 module->name_span = my name;
                 module->is_module = true;
-                module->module = arena_new(&scope->binder->arena, SymbolModule);
-                module->exports = arena_new(&scope->binder->arena, SymbolTable);
+                module->module = arena_new(binder_arena(scope->binder), SymbolModule);
+                module->exports = arena_new(binder_arena(scope->binder), SymbolTable);
                 binder_add_module_declaration(module, me);
             }
             if (!module) {
@@ -878,7 +878,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
             span = span_make(span.source, span_start_ptr(span), span_start_ptr(span) + 1);
         }
         error_ctx_error_d(
-            scope->binder->errs,
+            binder_errs(scope->binder),
             span,
             my keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
             "Only a single variable declaration is allowed in a 'for...",
@@ -890,7 +890,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         InitializedBinding* initializer = initializers->data;
         if (initialized_binding_value(initializer)->tag != EXPR_IMPLICIT_ANY) {
             error_ctx_error_d(
-                scope->binder->errs,
+                binder_errs(scope->binder),
                 initializer->binding.content_span,
                 my keyword == FOR_EACH_LOOP_OF ? 1190 : 1189,
                 "The variable declaration of a 'for...",
@@ -899,7 +899,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
             );
         } else if (initializer->binding.has_explicit_type) {
             error_ctx_error_d(
-                scope->binder->errs,
+                binder_errs(scope->binder),
                 initializer->binding.content_span,
                 my keyword == FOR_EACH_LOOP_OF ? 2483 : 2404,
                 "The left-hand side of a 'for...",

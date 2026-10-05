@@ -37,7 +37,8 @@ void unused_mark_referenced(Scope const* scope, Symbol* found, u32 meaning) {
         if (scope_declares_symbol(i, found)) break;
         if (i->self) self = i->self;
     }
-    if (self != found) found->referenced |= meaning;
+    // (Atomic: files are resolved on several threads, and a global is anyone's, plan 45)
+    if (self != found) __atomic_fetch_or(&found->referenced, meaning, __ATOMIC_RELAXED);
 }
 
 // Reporting

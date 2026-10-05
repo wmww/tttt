@@ -3,6 +3,7 @@
 #include "type.h"
 #include "expr.h"
 #include "arena.h"
+#include "error.h"
 
 // Symbols, symbol tables and scopes: the binder (plan 04). The model is tsc's (SymbolFlags, the *Excludes merge
 // masks, aliases, exports tables shared by every block of a namespace), the laziness isn't: names are resolved in a
@@ -592,7 +593,55 @@ typedef struct Binder {
     // Some SymbolDecl.flow_container is set (a dot assignment declaration): only then can a read be one in the container
     // that declares it (TS2565, is_read_in_declaring_container())
     bool has_assignment_flow_containers;
+    // The arenas of resolve threads other than the main one (plan 45), owned
+    Arena* thread_arenas; // malloc'd
+    u32 thread_arena_count;
 } Binder;
+
+// A TypeScript file's resolve walk on a thread of its own (plan 45, program_resolve_names()): what the walk would write
+// to the binder goes here while `resolve_shard` is set, and the events whose outcome depends on the files walked before
+// it (tsc's first ten spelling suggestions, expandos of symbols other files share) are deferred.
+// resolve_shard_merge() replays and merges it, file by file in program order
+typedef struct ResolveShard {
+    Binder* binder;
+    Arena* arena; // The thread's
+    ErrorCtx errs; // The file's reports, parent: the program's (frozen meanwhile)
+    ErrorCtx discarded; // binder_discarded_errs()
+    Symbol** symbols; // malloc'd, what binder_new_symbol() made
+    u32 symbol_count;
+    u32 symbol_cap;
+    struct PendingNotFound* pending_not_found; // malloc'd
+    u32 pending_not_found_count;
+    u32 pending_not_found_cap;
+    struct PendingTypeAsValue* pending_type_as_value; // malloc'd
+    u32 pending_type_as_value_count;
+    struct PendingExportMerge* pending_export_merges; // malloc'd
+    u32 pending_export_merge_count;
+    u32 pending_export_merge_cap;
+    struct DeferredEvent* deferred; // malloc'd
+    u32 deferred_count;
+    u32 deferred_cap;
+} ResolveShard;
+extern thread_local ResolveShard* resolve_shard;
+// Where the binder's symbols, scopes and tables are allocated: the resolve thread's arena while one walks a file
+static inline Arena* binder_arena(Binder* me) {
+    return resolve_shard && resolve_shard->binder == me ? resolve_shard->arena : &my arena;
+}
+// Where name resolution reports: the walked file's own context on a resolve thread
+static inline ErrorCtx* binder_errs(Binder* me) {
+    return resolve_shard && resolve_shard->binder == me ? &resolve_shard->errs : my errs;
+}
+// Before the resolve walks: marks the files whose walk needs another file's walk done first (SourceFile.resolve_serial):
+// a later class or interface declaration with type parameters shares the first declaration's type parameter symbols,
+// which that one's walk makes (scope_new_generic_merged())
+void binder_mark_serial_resolves(Binder* me);
+// Whether the symbol's first declaration is in another file than `file`
+bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* file);
+// An arena for resolve thread `t` (> 0; 0 is the main thread's, Binder.arena), kept until the binder dies
+Arena* binder_thread_arena(Binder* me, u32 t);
+// The shard's deferred events replayed (on the calling thread, no shard set), then its symbols, pending reports and
+// errors merged into the binder and the program's errors; frees the shard's lists. Call in program order
+void resolve_shard_merge(ResolveShard* me);
 
 Binder* binder_new(ErrorCtx* errs);
 // An ErrorCtx that lives as long as the binder and whose errors nobody reports: names resolved only for the
@@ -640,7 +689,7 @@ Scope* scope_new(Scope* parent, ScopeKind kind);
 // it is still the binder arena's latest allocation (no child scope, symbol, declaration or flow node came after it;
 // its ScopeRare may come right after it) and no pending report took it. Whatever stores a Scope pointer outside the
 // binder arena (malloc'd lists, the AST) must keep the scope from being released: see the pending reports. `pending_mark` is scope_pending_mark() from when it was made
-typedef struct ScopePendingMark { u32 not_found, export_merges; } ScopePendingMark;
+typedef struct ScopePendingMark { u32 not_found, export_merges, deferred; } ScopePendingMark;
 ScopePendingMark scope_pending_mark(Binder const* binder);
 void scope_release(Scope* me, ScopePendingMark pending_mark);
 // The innermost for-in loop whose body `names` is in and whose variable is `variable` (null if none)
@@ -755,13 +804,15 @@ void add_duplicate_related(Error* error, Span at, Span other);
 // A name used with `meaning` wasn't found: TS2304, or TS2552 with the closest name in scope (tsc's
 // onFailedToResolveSymbol with getSuggestedSymbolForNonexistentSymbol). `shorthand`: the value of `{ a }` (TS18004)
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs);
-// Its TS2552 half: `name`, which `at` needs, is misspelled (a spelling suggestion was found and reported)
-bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs);
+// A JSX factory `name` (what `at` needs) isn't in scope: TS2552 with a spelling suggestion, else TS2874
+void scope_report_jsx_factory_not_found(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs);
 // TS2693 for a type used as a value, TS2690 if it may have meant a mapped type `{ [P in K]: ... }` (`maybe_mapped`: the
 // name is the lone computed key of a type literal, tsc's maybeMappedType, which is told by the type when checking starts)
 void scope_report_type_as_value(Binder* binder, Symbol const* type, Span name, bool maybe_mapped, ErrorCtx* errs);
-// TS2833 rather than TS2503 for a namespace with a close name in scope (tsc's resolveEntityName with a namespace meaning)
-bool scope_report_misspelled_namespace(Scope const* me, Span at, ErrorCtx* errs);
+// TS2503, or TS2833 for a namespace with a close name in scope (tsc's resolveEntityName with a namespace meaning)
+void scope_report_namespace_not_found(Scope const* me, Span at, ErrorCtx* errs);
+// A name not found that tsc counts among its suggestions without making one (`await` outside an async function)
+void scope_count_suggestion(Binder* binder);
 // The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that
 // waits for the checker
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs);

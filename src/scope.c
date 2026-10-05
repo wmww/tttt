@@ -15,7 +15,10 @@
 #include "enum_decl.h"
 #include "unused.h"
 
-static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs);
+typedef enum MisspelledFallback { FALLBACK_NAMESPACE, FALLBACK_JSX_FACTORY } MisspelledFallback;
+static void report_misspelled_or(
+    Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
+);
 
 // Symbol tables
 
@@ -119,7 +122,34 @@ Binder* binder_new(ErrorCtx* errs) {
     return me;
 }
 
+thread_local ResolveShard* resolve_shard;
+
+// A new last element of a malloc'd list
+static void* list_push(void** data, u32* count, u32* cap, size_t size) {
+    if (*count == *cap) {
+        *cap = *cap ? *cap * 2 : 8;
+        *data = realloc(*data, size * *cap);
+        panic_if(!*data, "out of memory");
+    }
+    return (char*)*data + size * (*count)++;
+}
+
+static ResolveShard* binder_shard(Binder const* me) {
+    return resolve_shard && resolve_shard->binder == me ? resolve_shard : nullptr;
+}
+
+Arena* binder_thread_arena(Binder* me, u32 t) {
+    if (t > my thread_arena_count) {
+        my thread_arenas = realloc(my thread_arenas, sizeof(Arena) * t);
+        panic_if(!my thread_arenas, "out of memory");
+        for (u32 i = my thread_arena_count; i < t; i++) my thread_arenas[i] = (Arena){0};
+        my thread_arena_count = t;
+    }
+    return &my thread_arenas[t - 1];
+}
+
 ErrorCtx* binder_discarded_errs(Binder* me) {
+    if (resolve_shard && resolve_shard->binder == me) return &resolve_shard->discarded;
     if (!my discarded_errs) my discarded_errs = c_new(ErrorCtx, error_ctx_init());
     return my discarded_errs;
 }
@@ -140,6 +170,8 @@ void binder_destroy(Binder* me) {
     free(my global_expandos);
     free(my overlays.keys);
     free(my overlays.values);
+    for (u32 i = 0; i < my thread_arena_count; i++) arena_drop(&my thread_arenas[i]);
+    free(my thread_arenas);
     arena_drop(&my arena);
     free(me);
 }
@@ -189,11 +221,21 @@ Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol) {
 
 Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
     if (my frozen) log_error("Symbol '", name, "' made while typechecking: the checkers share the binder");
-    Symbol* ret = arena_new(&my arena, Symbol);
+    Symbol* ret = arena_new(binder_arena(me), Symbol);
     ret->name = name;
     ret->flags = flags;
     ret->binder = me;
-    if (flags & SYMBOL_ALIAS) ret->alias = arena_new(&my arena, SymbolAlias);
+    if (flags & SYMBOL_ALIAS) ret->alias = arena_new(binder_arena(me), SymbolAlias);
+    ResolveShard* shard = resolve_shard && resolve_shard->binder == me ? resolve_shard : nullptr;
+    if (shard) {
+        if (shard->symbol_count == shard->symbol_cap) {
+            shard->symbol_cap = shard->symbol_cap ? shard->symbol_cap * 2 : 64;
+            shard->symbols = realloc(shard->symbols, sizeof(Symbol*) * shard->symbol_cap);
+            panic_if(!shard->symbols, "out of memory");
+        }
+        shard->symbols[shard->symbol_count++] = ret;
+        return ret;
+    }
     if (my symbol_count == my symbol_cap) {
         my symbol_cap = my symbol_cap ? my symbol_cap * 2 : 64;
         my symbols = realloc(my symbols, sizeof(Symbol*) * my symbol_cap);
@@ -206,13 +248,13 @@ SymbolRare const symbol_rare_none;
 
 SymbolRare* symbol_rare_new(Symbol* me) {
     if (my binder->frozen) log_error("Symbol '", my name, "' given rare fields while typechecking: the checkers share it");
-    return my rare = arena_new(&my binder->arena, SymbolRare);
+    return my rare = arena_new(binder_arena(my binder), SymbolRare);
 }
 
 // After a struct copy of another symbol: a copy of its rare fields of its own
 static void symbol_own_rare(Symbol* me) {
     if (!my rare) return;
-    SymbolRare* rare = arena_new(&my binder->arena, SymbolRare);
+    SymbolRare* rare = arena_new(binder_arena(my binder), SymbolRare);
     *rare = *my rare;
     my rare = rare;
 }
@@ -220,19 +262,19 @@ static void symbol_own_rare(Symbol* me) {
 // A SymbolDecl.js: always for an assignment (whose flow container the resolve walk may set), else only with a type
 static SymbolDeclJs* symbol_decl_js(Binder* binder, struct TypeNode const* jsdoc_type, bool assignment) {
     if (!assignment && !jsdoc_type) return nullptr;
-    SymbolDeclJs* ret = arena_new(&binder->arena, SymbolDeclJs);
+    SymbolDeclJs* ret = arena_new(binder_arena(binder), SymbolDeclJs);
     ret->jsdoc_type = jsdoc_type;
     return ret;
 }
 
 static void symbol_ensure_exports(Symbol* me) {
-    if (!my exports) my exports = arena_new(&my binder->arena, SymbolTable);
+    if (!my exports) my exports = arena_new(binder_arena(my binder), SymbolTable);
 }
 
 Symbol* binder_new_module_symbol(Binder* me, SourceFile* file) {
     Symbol* ret = binder_new_symbol(me, c_sv(""), SYMBOL_VALUE_MODULE);
     ret->is_module = true;
-    ret->module = arena_new(&my arena, SymbolModule);
+    ret->module = arena_new(binder_arena(me), SymbolModule);
     ret->module->file = file;
     symbol_ensure_exports(ret);
     return ret;
@@ -245,7 +287,7 @@ void binder_declare_global_this(Binder* me) {
     symbol->name_span = sv_make_span(name);
     my global_this = symbol;
     symbol->exports = &my globals; // Its parent table included, when there is one
-    symbol_table_insert(&my globals, &my arena, name, symbol_name_hash(name), symbol);
+    symbol_table_insert(&my globals, binder_arena(me), name, symbol_name_hash(name), symbol);
 }
 
 static void symbol_add_decl(Symbol* me, SymbolDecl decl);
@@ -263,10 +305,10 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
     if (ret) return ret;
     ret = binder_new_symbol(me, name_span.sv, SYMBOL_VALUE_MODULE);
     ret->is_module = true;
-    ret->module = arena_new(&my arena, SymbolModule);
+    ret->module = arena_new(binder_arena(me), SymbolModule);
     ret->name_span = name_span;
     symbol_ensure_exports(ret);
-    symbol_table_insert(&my ambient_modules, &my arena, name, hash, ret);
+    symbol_table_insert(&my ambient_modules, binder_arena(me), name, hash, ret);
     if (memchr(name.buf, '*', (size_t)name.size)) {
         if (my pattern_module_count == my pattern_module_cap) {
             my pattern_module_cap = my pattern_module_cap ? my pattern_module_cap * 2 : 4;
@@ -280,7 +322,7 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
 static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
     if (my decl_count == my decl_cap) {
         u32 cap = my decl_cap ? my decl_cap * 2 : 1; // Most symbols have one declaration
-        SymbolDecl* decls = arena_new_n(&my binder->arena, SymbolDecl, cap);
+        SymbolDecl* decls = arena_new_n(binder_arena(my binder), SymbolDecl, cap);
         if (my decl_count) memcpy(decls, my decls, sizeof(SymbolDecl) * my decl_count);
         my decls = decls;
         my decl_cap = cap;
@@ -351,7 +393,7 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
 ScopeRare const scope_rare_none;
 
 ScopeRare* scope_rare_new(Scope* me) {
-    return my rare = arena_new(&my binder->arena, ScopeRare);
+    return my rare = arena_new(binder_arena(my binder), ScopeRare);
 }
 
 struct FunctionImpl const* scope_containing_function(Scope const* me) {
@@ -362,7 +404,7 @@ struct FunctionImpl const* scope_containing_function(Scope const* me) {
 }
 
 Scope* scope_new(Scope* parent, ScopeKind kind) {
-    Scope* ret = arena_new(&parent->binder->arena, Scope);
+    Scope* ret = arena_new(binder_arena(parent->binder), Scope);
     ret->parent = parent;
     ret->kind = kind;
     ret->binder = parent->binder;
@@ -377,13 +419,21 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
 }
 
 ScopePendingMark scope_pending_mark(Binder const* binder) {
-    return (ScopePendingMark){ binder->pending_not_found_count, binder->pending_export_merge_count };
+    ResolveShard const* shard = resolve_shard;
+    if (shard && shard->binder == binder) {
+        return (ScopePendingMark){ shard->pending_not_found_count, shard->pending_export_merge_count, shard->deferred_count };
+    }
+    return (ScopePendingMark){ binder->pending_not_found_count, binder->pending_export_merge_count, 0 };
 }
 
 void scope_release(Scope* me, ScopePendingMark pending_mark) {
     ScopePendingMark now = scope_pending_mark(my binder);
-    if (now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges) return;
-    Arena* arena = &my binder->arena;
+    if (now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges ||
+        now.deferred != pending_mark.deferred
+    ) {
+        return;
+    }
+    Arena* arena = binder_arena(my binder);
     bool popped_rare = false;
     if (my rare) {
         // (Its rare part right after it, as when it was given one before anything else was allocated)
@@ -440,7 +490,7 @@ void scope_check_strict_class_name(Scope const* me, Span name) {
         scope_check_strict_identifier(me, name, false);
         return;
     }
-    error_ctx_error_d(my binder->errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+    error_ctx_error_d(binder_errs(my binder), name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
         "Class definitions are automatically in strict mode.");
 }
 
@@ -474,23 +524,23 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
             break;
         }
         if (await && my file && my file->is_module && top_level && !await_context) {
-            error_ctx_error_d(my binder->errs, name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
+            error_ctx_error_d(binder_errs(my binder), name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
         } else if ((await && await_context) || (yield && yield_context)) {
-            error_ctx_error_d(my binder->errs, name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
+            error_ctx_error_d(binder_errs(my binder), name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
         }
         return;
     }
     switch (strict_reason(me)) {
         case 2:
-            error_ctx_error_d(my binder->errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+            error_ctx_error_d(binder_errs(my binder), name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
                 "Class definitions are automatically in strict mode.");
             break;
         case 1:
-            error_ctx_error_d(my binder->errs, name, 1214, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+            error_ctx_error_d(binder_errs(my binder), name, 1214, "Identifier expected. '", name, "' is a reserved word in strict mode. "
                 "Modules are automatically in strict mode.");
             break;
         default:
-            error_ctx_error_d(my binder->errs, name, 1212, "Identifier expected. '", name, "' is a reserved word in strict mode.");
+            error_ctx_error_d(binder_errs(my binder), name, 1212, "Identifier expected. '", name, "' is a reserved word in strict mode.");
     }
 }
 
@@ -498,15 +548,15 @@ void scope_check_strict_eval_or_arguments(Scope const* me, Span name) {
     if (!my strict || !span_valid(name) || (!csview_equals(name.sv, "eval") && !csview_equals(name.sv, "arguments"))) return;
     switch (strict_reason(me)) {
         case 2:
-            error_ctx_error_d(my binder->errs, name, 1210, "Code contained in a class is evaluated in JavaScript's strict mode which "
+            error_ctx_error_d(binder_errs(my binder), name, 1210, "Code contained in a class is evaluated in JavaScript's strict mode which "
                 "does not allow this use of '", name, "'. For more information, see "
                 "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.");
             break;
         case 1:
-            error_ctx_error_d(my binder->errs, name, 1215, "Invalid use of '", name, "'. Modules are automatically in strict mode.");
+            error_ctx_error_d(binder_errs(my binder), name, 1215, "Invalid use of '", name, "'. Modules are automatically in strict mode.");
             break;
         default:
-            error_ctx_error_d(my binder->errs, name, 1100, "Invalid use of '", name, "' in strict mode.");
+            error_ctx_error_d(binder_errs(my binder), name, 1100, "Invalid use of '", name, "' in strict mode.");
     }
 }
 
@@ -515,15 +565,15 @@ void scope_check_strict_block_function(Scope const* me, Span name) {
     if (compiler_options()->target >= SCRIPT_TARGET_ES2015) return;
     switch (strict_reason(me)) {
         case 2:
-            error_ctx_error_d(my binder->errs, name, 1251, "Function declarations are not allowed inside blocks in strict mode when "
+            error_ctx_error_d(binder_errs(my binder), name, 1251, "Function declarations are not allowed inside blocks in strict mode when "
                 "targeting 'ES5'. Class definitions are automatically in strict mode.");
             break;
         case 1:
-            error_ctx_error_d(my binder->errs, name, 1252, "Function declarations are not allowed inside blocks in strict mode when "
+            error_ctx_error_d(binder_errs(my binder), name, 1252, "Function declarations are not allowed inside blocks in strict mode when "
                 "targeting 'ES5'. Modules are automatically in strict mode.");
             break;
         default:
-            error_ctx_error_d(my binder->errs, name, 1250,
+            error_ctx_error_d(binder_errs(my binder), name, 1250,
                 "Function declarations are not allowed inside blocks in strict mode when targeting 'ES5'.");
     }
 }
@@ -552,7 +602,7 @@ Scope* scope_new_file(Binder* binder, SourceFile* file) {
 }
 
 static OuterGenerics* push_generics(Scope* me, Generic const* generic, Span owner) {
-    OuterGenerics* outer = arena_new(&my binder->arena, OuterGenerics);
+    OuterGenerics* outer = arena_new(binder_arena(my binder), OuterGenerics);
     *outer = (OuterGenerics){ .parent = my generics, .generic = generic, .owner = owner, .owner_class = span_null };
     my generics = outer;
     return outer;
@@ -581,6 +631,32 @@ static Generic const* earlier_generic(Symbol const* owner, void const* node, u32
     return nullptr;
 }
 
+bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* file) {
+    return symbol->decl_count && symbol->decls[0].full.source != file;
+}
+
+void binder_mark_serial_resolves(Binder* me) {
+    for (u32 s = 0; s < my symbol_count; s++) {
+        Symbol const* owner = my symbols[s];
+        if (!(owner->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE)) || owner->decl_count < 2) continue;
+        u32 index;
+        Generic const* first = nullptr;
+        for (u32 i = 0; i < owner->decl_count; i++) {
+            SymbolDecl const* decl = &owner->decls[i];
+            if (decl->kind != SYMBOL_DECL_INTERFACE && decl->kind != SYMBOL_DECL_CLASS) continue;
+            if (!first) {
+                first = earlier_generic(owner, nullptr, &index);
+                if (generic_empty((Generic*)first)) break;
+                continue;
+            }
+            Generic const* generic = decl->kind == SYMBOL_DECL_INTERFACE ? &((InterfaceDecl const*)decl->node)->generic :
+                &((ClassDecl const*)decl->node)->generic;
+            SourceFile* file = (SourceFile*)decl->full.source;
+            if (file && file != owner->decls[index].full.source && !generic_empty((Generic*)generic)) file->resolve_serial = true;
+        }
+    }
+}
+
 Scope* scope_new_generic_merged(
     Scope* parent, Generic* generic, Symbol const* owner, void const* node, Span owner_name, ErrorCtx* errs
 ) {
@@ -607,7 +683,7 @@ Scope* scope_new_generic_merged(
                 Symbol* symbol = binder_new_symbol(ret->binder, i->name.sv, SYMBOL_TYPE_PARAMETER);
                 symbol->name_span = shared_lib->name_span;
                 for (u32 k = 0; k < shared_lib->decl_count; k++) symbol_add_decl(symbol, shared_lib->decls[k]);
-                symbol_table_insert(&ret->locals, &ret->binder->arena, i->name.sv, symbol_name_hash(i->name.sv), symbol);
+                symbol_table_insert(&ret->locals, binder_arena(ret->binder), i->name.sv, symbol_name_hash(i->name.sv), symbol);
                 symbol_add_decl(symbol, (SymbolDecl){
                     .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
                 });
@@ -620,7 +696,7 @@ Scope* scope_new_generic_merged(
                 .name = i->name, .full = i->full_span, .kind = SYMBOL_DECL_TYPE_PARAMETER, .node = i,
             });
         } else {
-            symbol_table_insert(&ret->locals, &ret->binder->arena, i->name.sv, symbol_name_hash(i->name.sv), shared);
+            symbol_table_insert(&ret->locals, binder_arena(ret->binder), i->name.sv, symbol_name_hash(i->name.sv), shared);
             symbol_add_decl(shared, (SymbolDecl){
                 .kind = SYMBOL_DECL_TYPE_PARAMETER, .flags = SYMBOL_TYPE_PARAMETER, .node = i, .name = i->name, .full = i->full_span,
             });
@@ -770,11 +846,11 @@ static Symbol* clone_parent_symbol(Binder* binder, Symbol const* original) {
     ret->binder = owner;
     symbol_own_rare(ret);
     if (original->decl_count) {
-        ret->decls = arena_new_n(&binder->arena, SymbolDecl, original->decl_cap);
+        ret->decls = arena_new_n(binder_arena(binder), SymbolDecl, original->decl_cap);
         memcpy(ret->decls, original->decls, sizeof(SymbolDecl) * original->decl_count);
     }
     if (original->exports) {
-        ret->exports = arena_new(&binder->arena, SymbolTable);
+        ret->exports = arena_new(binder_arena(binder), SymbolTable);
         ret->exports->parent = original->exports;
     }
     symbol_map_set(&binder->overlays, original, ret);
@@ -843,7 +919,7 @@ static void check_require_exports_collision(Scope* me, Span name) {
     // (tsc's errorSkippedOn("noEmit"))
     if (compiler_options()->no_emit || source_file_emit_module_kind(my file) >= MODULE_KIND_ES2015) return;
     error_ctx_error_d(
-        my binder->errs, name, 2441, "Duplicate identifier '", name, "'. Compiler reserves name '", name,
+        binder_errs(my binder), name, 2441, "Duplicate identifier '", name, "'. Compiler reserves name '", name,
         "' in top level scope of a module."
     );
 }
@@ -925,11 +1001,11 @@ static Symbol* declare_symbol(
         Symbol* inherited = symbol_table_lookup(table->parent, name, hash);
         if (inherited) {
             if (inherited->flags & excludes) {
-                report_conflicts(scope->binder->errs, inherited, name_span, includes, false, (csview){0});
+                report_conflicts(binder_errs(scope->binder), inherited, name_span, includes, false, (csview){0});
                 return binder_new_symbol(binder, name, includes);
             }
             existing = clone_parent_symbol(binder, inherited);
-            symbol_table_insert(table, &binder->arena, existing->name, hash, existing);
+            symbol_table_insert(table, binder_arena(binder), existing->name, hash, existing);
         }
     }
     // A function's type parameters and the types its body declares share a declaration space (tsc: the function's
@@ -938,10 +1014,10 @@ static Symbol* declare_symbol(
         scope->parent->generics && scope->parent->generics->generic && table == &scope->locals
     ) {
         Symbol* param = symbol_table_get_own(&scope->parent->locals, name, hash);
-        if (param && (param->flags & SYMBOL_TYPE_PARAMETER)) report_conflicts(binder->errs, param, name_span, includes, false, (csview){0});
+        if (param && (param->flags & SYMBOL_TYPE_PARAMETER)) report_conflicts(binder_errs(binder), param, name_span, includes, false, (csview){0});
     }
     if (existing && table == &binder->globals && umd_global_conflict(scope, existing, includes, excludes)) {
-        report_conflicts(scope->binder->errs, existing, name_span, includes, true, (csview){0});
+        report_conflicts(binder_errs(scope->binder), existing, name_span, includes, true, (csview){0});
         Symbol* ret = binder_new_symbol(binder, name, includes);
         // (tsc's mergeSymbol answers the augmentation's symbol, which becomes the global)
         if (scope->kind == SCOPE_GLOBAL_AUGMENTATION) {
@@ -959,19 +1035,19 @@ static Symbol* declare_symbol(
         if (existing->flags & excludes && !(expando_only && table == &binder->globals) &&
             !(table == &binder->globals && global_merges_by_assignment(scope, existing, name))
         ) {
-            if (default_export && existing->decl_count) report_multiple_defaults(scope->binder->errs, existing, name_span);
-            else report_conflicts(scope->binder->errs, existing, name_span, includes, false,
+            if (default_export && existing->decl_count) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
+            else report_conflicts(binder_errs(scope->binder), existing, name_span, includes, false,
                 csview_equals(name, "export=") ? name : (csview){0});
             return binder_new_symbol(binder, name, includes);
         }
         existing->decl_flags_before = existing->flags;
         existing->flags |= includes;
-        if (includes & SYMBOL_ALIAS && !existing->alias) existing->alias = arena_new(&binder->arena, SymbolAlias);
+        if (includes & SYMBOL_ALIAS && !existing->alias) existing->alias = arena_new(binder_arena(binder), SymbolAlias);
         *merged = true;
         return existing;
     }
     Symbol* ret = binder_new_symbol(binder, name, includes);
-    symbol_table_insert(table, &binder->arena, name, hash, ret);
+    symbol_table_insert(table, binder_arena(binder), name, hash, ret);
     return ret;
 }
 
@@ -1086,7 +1162,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         scope_check_strict_eval_or_arguments(me, props.name);
     }
 
-    check_type_name_is_reserved(me->binder->errs, props.name, props.kind);
+    check_type_name_is_reserved(binder_errs(me->binder), props.name, props.kind);
     if (!props.is_ambient && (
         (props.kind == SYMBOL_DECL_VARIABLE && !props.is_parameter) || props.kind == SYMBOL_DECL_FUNCTION ||
         props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
@@ -1115,7 +1191,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
         // in one conditional type wants. <T, T>: one symbol declared twice (and one type), the second is TS2300
-        report_conflict(scope->binder->errs, props.name, 2300);
+        report_conflict(binder_errs(scope->binder), props.name, 2300);
     }
     if (props.kind == SYMBOL_DECL_VARIABLE) {
         // (Also when it merges into something that isn't a variable: a `declare const never` and the type `never`)
@@ -1240,13 +1316,11 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
         }
         if (needs_target) {
             Binder* binder = my binder;
-            if (binder->pending_export_merge_count == binder->pending_export_merge_cap) {
-                binder->pending_export_merge_cap = binder->pending_export_merge_cap ? binder->pending_export_merge_cap * 2 : 4;
-                binder->pending_export_merges = realloc(binder->pending_export_merges,
-                    sizeof(PendingExportMerge) * binder->pending_export_merge_cap);
-                panic_if(!binder->pending_export_merges, "out of memory");
-            }
-            binder->pending_export_merges[binder->pending_export_merge_count++] = (PendingExportMerge){ me, block, local };
+            ResolveShard* shard = binder_shard(binder);
+            PendingExportMerge* pending = shard ?
+                list_push((void**)&shard->pending_export_merges, &shard->pending_export_merge_count, &shard->pending_export_merge_cap, sizeof(PendingExportMerge)) :
+                list_push((void**)&binder->pending_export_merges, &binder->pending_export_merge_count, &binder->pending_export_merge_cap, sizeof(PendingExportMerge));
+            *pending = (PendingExportMerge){ me, block, local };
             return;
         }
     }
@@ -1289,10 +1363,10 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
             if (other->flags && other->full.source == decl->full.source &&
                 (span_start_ptr(other->full) < span_start_ptr(decl->full) || other->kind == SYMBOL_DECL_FUNCTION)
             ) {
-                report_conflict(my binder->errs, other->name, code);
+                report_conflict(binder_errs(my binder), other->name, code);
             }
         }
-        Error* error = report_conflict(my binder->errs, decl->name, code);
+        Error* error = report_conflict(binder_errs(my binder), decl->name, code);
         // (tsc's declareSymbol: `export type T;` may have meant `export type { T }`)
         if (error && decl->kind == SYMBOL_DECL_TYPE_ALIAS && earlier & (SYMBOL_ALIAS | SYMBOL_TYPE | SYMBOL_NAMESPACE)) {
             TypeDecl const* alias = decl->node;
@@ -1322,11 +1396,11 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
             if (!span_valid(decl->name)) continue;
             u32 spaces = declaration_spaces(symbols[s], decl, resolve);
             if (spaces & common_default) {
-                error_ctx_error_d(my binder->errs, decl->name, 2652, "Merged declaration '", decl->name,
+                error_ctx_error_d(binder_errs(my binder), decl->name, 2652, "Merged declaration '", decl->name,
                     "' cannot include a default export declaration. Consider adding a separate 'export default ",
                     decl->name, "' declaration instead.");
             } else if (spaces & common && (s == 1 || decl->flags)) {
-                error_ctx_error_d(my binder->errs, decl->name, 2395, "Individual declarations in merged declaration '",
+                error_ctx_error_d(binder_errs(my binder), decl->name, 2395, "Individual declarations in merged declaration '",
                     decl->name, "' must be all exported or all local.");
             }
         }
@@ -1412,7 +1486,7 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
 }
 
 void scope_check_duplicate_exports(Scope* me) {
-    check_module_exports(my container, my binder->errs);
+    check_module_exports(my container, binder_errs(my binder));
 }
 
 void binder_check_ambient_module_exports(Binder* me, ErrorCtx* errs) {
@@ -1441,16 +1515,16 @@ void scope_add_port(Scope* me, PortItem* item) {
                 if (span_start_ptr(item->modifiers) < span_start_ptr(whole)) {
                     whole = span_make(whole.source, span_start_ptr(item->modifiers), span_end_ptr(whole));
                 }
-                error_ctx_error_d(my binder->errs, whole, 1184, "Modifiers cannot appear here.");
+                error_ctx_error_d(binder_errs(my binder), whole, 1184, "Modifiers cannot appear here.");
             }
             if (item->not_top_level) {
-                error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
+                error_ctx_error_d(binder_errs(my binder), span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
                 return;
             } else if (my kind != SCOPE_MODULE) {
-                error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1314, "Global module exports may only appear in module files.");
+                error_ctx_error_d(binder_errs(my binder), span_with_semicolon(item->full_span), 1314, "Global module exports may only appear in module files.");
                 return;
             } else if (my file && !my file->is_declaration) {
-                error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1315, "Global module exports may only appear in declaration files.");
+                error_ctx_error_d(binder_errs(my binder), span_with_semicolon(item->full_span), 1315, "Global module exports may only appear in declaration files.");
                 return;
             }
             if (!my container) return;
@@ -1495,7 +1569,7 @@ void scope_add_port(Scope* me, PortItem* item) {
             if (!module || !module->is_module || !item->module_ref) return;
             if (module->module->export_star_count == module->module->export_star_cap) {
                 u32 cap = module->module->export_star_cap ? module->module->export_star_cap * 2 : 4;
-                PortItem** stars = arena_new_n(&my binder->arena, PortItem*, cap);
+                PortItem** stars = arena_new_n(binder_arena(my binder), PortItem*, cap);
                 if (module->module->export_star_count) {
                     memcpy(stars, module->module->export_stars, sizeof(PortItem*) * module->module->export_star_count);
                 }
@@ -1576,9 +1650,9 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     if (!top && span_valid(statement) && csview_starts_with(statement.sv, "export")) {
         Span first = span_make(statement.source, statement.sv.buf, statement.sv.buf + 6);
         if (export_equals) {
-            error_ctx_grammar_error_d(my binder->errs, first, 1231, "An export assignment must be at the top level of a file or module declaration.");
+            error_ctx_grammar_error_d(binder_errs(my binder), first, 1231, "An export assignment must be at the top level of a file or module declaration.");
         } else {
-            error_ctx_grammar_error_d(my binder->errs, first, 1258, "A default export must be at the top level of a file or module declaration.");
+            error_ctx_grammar_error_d(binder_errs(my binder), first, 1258, "A default export must be at the top level of a file or module declaration.");
         }
         return;
     }
@@ -1606,12 +1680,12 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     ) {
         ModuleKind implied = source_file_implied_format_for_emit(my file);
         if (my ambient ? implied == MODULE_KIND_ESNEXT : implied != MODULE_KIND_COMMONJS) {
-            error_ctx_grammar_error_d(my binder->errs, statement, 1203,
+            error_ctx_grammar_error_d(binder_errs(my binder), statement, 1203,
                 "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
                 "another module format instead.");
         }
     } else if (export_equals && my file && !my file->is_json && module_kind == MODULE_KIND_SYSTEM && !my ambient) {
-        error_ctx_grammar_error_d(my binder->errs, statement, 1218,
+        error_ctx_grammar_error_d(binder_errs(my binder), statement, 1218,
             "Export assignment is not supported when '--module' flag is 'system'.");
     }
     // (Not an augmentation: tsc skips those)
@@ -1636,7 +1710,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         symbol->is_default_export = !export_equals;
     }
     if (alias) {
-        if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
+        if (!symbol->alias) symbol->alias = arena_new(binder_arena(my binder), SymbolAlias);
         symbol->alias->scope = me;
         symbol->alias->name = expr->inner_span;
         symbol_add_decl(symbol, (SymbolDecl){
@@ -1644,7 +1718,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
             .js = symbol_decl_js(my binder, jsdoc_type, false),
         });
     } else if (entity || class_alias) {
-        if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
+        if (!symbol->alias) symbol->alias = arena_new(binder_arena(my binder), SymbolAlias);
         symbol->alias->scope = me;
         if (entity) {
             symbol->alias->entity = expr;
@@ -1687,7 +1761,7 @@ static void set_function_class_symbol(Expr* value, Symbol* symbol) {
 void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, FunctionImpl const* function) {
     if (!symbol || !function->jsdoc_class) return;
     symbol->flags |= SYMBOL_CLASS;
-    if (!symbol_rare(symbol)->members) symbol_rare_mut(symbol)->members = arena_new(&binder->arena, SymbolTable);
+    if (!symbol_rare(symbol)->members) symbol_rare_mut(symbol)->members = arena_new(binder_arena(binder), SymbolTable);
 }
 
 static void declare_commonjs_export(
@@ -1711,7 +1785,7 @@ static void declare_commonjs_export(
         symbol->exported = true;
     }
     if (alias) {
-        if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
+        if (!symbol->alias) symbol->alias = arena_new(binder_arena(my binder), SymbolAlias);
         symbol->alias->scope = me;
         if (class_alias) {
             ClassDecl* class_decl = value->class_decl;
@@ -2009,12 +2083,12 @@ static Symbol* merged_export_equals(Symbol* module, Symbol* target) {
     symbol_own_rare(ret);
     symbol_rare_mut(ret)->merged_export_equals_of = target;
     ret->flags |= SYMBOL_VALUE_MODULE; // (Something to look names up in)
-    ret->exports = arena_new(&binder->arena, SymbolTable);
+    ret->exports = arena_new(binder_arena(binder), SymbolTable);
     ret->exports->parent = target->exports;
     for (u32 i = 0; i < module->exports->count; i++) {
         SymbolEntry const* entry = &module->exports->entries[i];
         if (csview_equals(symbol_entry_name(entry), "export=") || symbol_table_get(target->exports, symbol_entry_name(entry))) continue;
-        symbol_table_insert(ret->exports, &binder->arena, symbol_entry_name(entry), entry->hash, entry->symbol);
+        symbol_table_insert(ret->exports, binder_arena(binder), symbol_entry_name(entry), entry->hash, entry->symbol);
     }
     module->module->merged_export_equals = ret;
     return ret;
@@ -2226,8 +2300,8 @@ void binder_check_export_star_conflicts(Binder* me, ErrorCtx* errs) {
 static SymbolTable const* module_resolved_exports(Symbol* me) {
     if (!my module->export_star_count) return my exports;
     if (my module->resolved_exports_state == ALIAS_DONE) return my module->resolved_exports;
-    SymbolTable* table = arena_new(&my binder->arena, SymbolTable);
-    ExportStarsCtx ctx = { .target = table, .arena = &my binder->arena };
+    SymbolTable* table = arena_new(binder_arena(my binder), SymbolTable);
+    ExportStarsCtx ctx = { .target = table, .arena = binder_arena(my binder) };
     extend_export_stars(&ctx, me, false, nullptr);
     // What stays type-only: the names no module reached without a type-only star exports
     for (u32 i = 0; i < ctx.type_only.count; i++) {
@@ -2237,12 +2311,12 @@ static SymbolTable const* module_resolved_exports(Symbol* me) {
             value = symbol_table_get_own(ctx.value_modules[m]->exports, symbol_entry_name(entry), entry->hash);
         }
         if (value) continue;
-        if (!my module->type_only_exports) my module->type_only_exports = arena_new(&my binder->arena, SymbolTable);
+        if (!my module->type_only_exports) my module->type_only_exports = arena_new(binder_arena(my binder), SymbolTable);
         SymbolTable* names = my module->type_only_exports;
-        symbol_table_insert(names, &my binder->arena, symbol_entry_name(entry), entry->hash, entry->symbol);
+        symbol_table_insert(names, binder_arena(my binder), symbol_entry_name(entry), entry->hash, entry->symbol);
         if (names->count > my module->type_only_star_cap) {
             u32 cap = my module->type_only_star_cap ? my module->type_only_star_cap * 2 : 8;
-            PortItem const** stars = arena_new_n(&my binder->arena, PortItem const*, cap);
+            PortItem const** stars = arena_new_n(binder_arena(my binder), PortItem const*, cap);
             if (names->count > 1) memcpy(stars, my module->type_only_stars, sizeof(PortItem const*) * (names->count - 1));
             my module->type_only_stars = stars;
             my module->type_only_star_cap = cap;
@@ -2317,9 +2391,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
             if (!other) {
                 // (tsc's getSymbolOfPartOfRightHandSideOfImportEquals: a namespace meaning, with a spelling suggestion,
                 // whose candidates' aliases are resolved: an alias in flight is TS2303 then)
-                if (!report_misspelled(my alias->scope, first, first.sv, SYMBOL_NAMESPACE, true, errs)) {
-                    error_ctx_error_d(errs, first, 2503, "Cannot find namespace '", first, "'.");
-                }
+                report_misspelled_or(my alias->scope, first, first.sv, SYMBOL_NAMESPACE, true, FALLBACK_NAMESPACE, errs);
             } else if (symbol_resolved_flags(other) & SYMBOL_TYPE) {
                 error_ctx_error_d(errs, first, 2702, "'", first, "' only refers to a type, but is being used as a namespace here.");
             } else {
@@ -2387,17 +2459,17 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
         // An ES module's `import * as ns` of a CommonJS one in Node.js: the module's exports, and in its type a
         // synthetic `default` that is the module, overriding a declared one. A module of its own, not named like the
         // module (tsc's resolveESModuleSymbol -> getTypeWithSyntheticDefaultImportType, cloneTypeAsModuleType)
-        ret->exports = arena_new(&my binder->arena, SymbolTable);
+        ret->exports = arena_new(binder_arena(my binder), SymbolTable);
         u32 count;
         SymbolEntry* entries = symbol_collect_exports(module, &count);
         for (u32 i = 0; i < count; i++) {
             if (csview_equals(symbol_entry_name(&entries[i]), "default")) continue;
-            symbol_table_insert(ret->exports, &my binder->arena, symbol_entry_name(&entries[i]), entries[i].hash, entries[i].symbol);
+            symbol_table_insert(ret->exports, binder_arena(my binder), symbol_entry_name(&entries[i]), entries[i].hash, entries[i].symbol);
         }
         free(entries);
         Symbol* synthetic = binder_new_symbol(my binder, c_sv("default"), SYMBOL_ALIAS);
         synthetic->parent = module;
-        synthetic->alias = arena_new(&my binder->arena, SymbolAlias);
+        synthetic->alias = arena_new(binder_arena(my binder), SymbolAlias);
         synthetic->alias->scope = my alias->scope;
         synthetic->alias->target = module;
         synthetic->alias->state = ALIAS_DONE;
@@ -3046,10 +3118,10 @@ void binder_add_augmentation(Binder* me, NamespaceDecl* decl) {
     }
     Symbol* module = binder_new_symbol(me, decl->name.sv, SYMBOL_VALUE_MODULE);
     module->is_module = true;
-    module->module = arena_new(&my arena, SymbolModule);
+    module->module = arena_new(binder_arena(me), SymbolModule);
     module->name_span = decl->name;
     symbol_ensure_exports(module);
-    symbol_table_insert(&my pattern_augmentations, &my arena, path, hash, module);
+    symbol_table_insert(&my pattern_augmentations, binder_arena(me), path, hash, module);
 }
 
 // tsc's getExcludedSymbolFlags()
@@ -3129,9 +3201,9 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
         from_star = existing != nullptr;
     }
     if (!existing) {
-        symbol_table_insert(owner->exports, &binder->arena, name, hash, source);
+        symbol_table_insert(owner->exports, binder_arena(binder), name, hash, source);
         if (owner->is_module && owner->module->resolved_exports_state == ALIAS_DONE) {
-            symbol_table_insert(owner->module->resolved_exports, &binder->arena, name, hash, source);
+            symbol_table_insert(owner->module->resolved_exports, binder_arena(binder), name, hash, source);
         }
         source->parent = owner;
         return;
@@ -3157,7 +3229,7 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
     // (What `export *` brought is then the module's own export too, which the augmentation's blocks see: tsc's
     // mergeModuleAugmentation merges into the resolved export, then the augmentation into the module)
     if (from_star && existing->binder == binder && !(existing->flags & excluded_flags(source->flags))) {
-        symbol_table_insert(owner->exports, &binder->arena, name, hash, existing);
+        symbol_table_insert(owner->exports, binder_arena(binder), name, hash, existing);
     }
 }
 
@@ -3339,7 +3411,7 @@ static void check_alias_ambient_const_enum(Symbol const* alias, Symbol const* ta
     } else if (item->tag != PORT_IMPORT_DEFAULT) {
         return;
     }
-    error_ctx_error_d(scope->binder->errs, at, 2748, "Cannot access ambient const enums when 'verbatimModuleSyntax' is enabled.");
+    error_ctx_error_d(binder_errs(scope->binder), at, 2748, "Cannot access ambient const enums when 'verbatimModuleSyntax' is enabled.");
 }
 
 // tsc's checkAliasSymbol under isolatedModules/verbatimModuleSyntax: what a transpiler that sees one file at a time
@@ -3357,7 +3429,7 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     // (a JavaScript file's import of a type is an error of its own)
     if (file->is_js && is_type) return;
     const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
-    ErrorCtx* errs = scope->binder->errs;
+    ErrorCtx* errs = binder_errs(scope->binder);
     bool import_equals = item->tag == PORT_IMPORT_ALIAS || item->is_require;
     // tsc's error node: the whole specifier, the whole `import x = ...`, the name of `* as ns` (and of a default
     // import's clause, which tsc spans to its named imports too)
@@ -3718,12 +3790,93 @@ static void report_not_found_counted(Scope const* me, Span name, u32 meaning, bo
     error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
+// What a resolve shard leaves to resolve_shard_merge(): an event that counts toward tsc's ten suggestions (which ones
+// get one depends on the files before), or an expando whose host other files share
+typedef enum DeferredKind {
+    DEFERRED_NOT_FOUND, // scope_report_not_found()
+    DEFERRED_MISSPELLED, // report_misspelled_or(), `fallback` if there is no suggestion
+    DEFERRED_COUNT, // scope_count_suggestion()
+    DEFERRED_PENDING, // the count of pending_not_found[index]
+    DEFERRED_EXPANDO, // add_expando_member()
+} DeferredKind;
+
+typedef struct DeferredEvent {
+    DeferredKind kind;
+    Scope* scope;
+    ErrorCtx* errs;
+    Span at;
+    csview name;
+    u32 meaning;
+    bool shorthand;
+    bool namespace;
+    MisspelledFallback fallback;
+    u32 index;
+    // DEFERRED_EXPANDO
+    Expr* object;
+    Span member;
+    Expr* left;
+    Expr* right;
+    TypeNode const* jsdoc_type;
+    Expr const* late_bound_key;
+    AssignmentDeclKind assignment;
+    bool top_level;
+} DeferredEvent;
+
+// Where a shard's report that outlives the walk goes: the walk's contexts other than the file's are scratch ones it
+// drops (a `return` outside a function, `super<T>`)
+static ErrorCtx* shard_lasting_errs(ResolveShard* shard, ErrorCtx* errs) {
+    return !errs || errs == &shard->errs ? errs : &shard->discarded;
+}
+
+static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope const* scope, ErrorCtx* errs) {
+    DeferredEvent* ret = list_push((void**)&shard->deferred, &shard->deferred_count, &shard->deferred_cap, sizeof(DeferredEvent));
+    *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs) };
+    return ret;
+}
+
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
+    ResolveShard* shard = binder_shard(my binder);
+    if (shard) {
+        DeferredEvent* event = defer_event(shard, DEFERRED_NOT_FOUND, me, errs);
+        event->at = name;
+        event->meaning = meaning;
+        event->shorthand = shorthand;
+        return;
+    }
     report_not_found_counted(me, name, meaning, shorthand, my binder->suggestion_count++ < 10, errs);
 }
 
-static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, ErrorCtx* errs) {
-    return report_misspelled_counted(me, at, name, meaning, namespace, my binder->suggestion_count++ < 10, errs);
+void scope_count_suggestion(Binder* binder) {
+    ResolveShard* shard = binder_shard(binder);
+    if (shard) defer_event(shard, DEFERRED_COUNT, nullptr, nullptr);
+    else binder->suggestion_count++;
+}
+
+static void report_misspelled_fallback(Span at, csview name, MisspelledFallback fallback, ErrorCtx* errs) {
+    if (fallback == FALLBACK_NAMESPACE) {
+        error_ctx_error_d(errs, at, 2503, "Cannot find namespace '", at, "'.");
+    } else {
+        error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
+    }
+}
+
+// A misspelling of `name` (which `at` needs) if tsc's count allows a suggestion and there is one, else `fallback`
+static void report_misspelled_or(
+    Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
+) {
+    ResolveShard* shard = binder_shard(my binder);
+    if (shard) {
+        DeferredEvent* event = defer_event(shard, DEFERRED_MISSPELLED, me, errs);
+        event->at = at;
+        event->name = name;
+        event->meaning = meaning;
+        event->namespace = namespace;
+        event->fallback = fallback;
+        return;
+    }
+    if (!report_misspelled_counted(me, at, name, meaning, namespace, my binder->suggestion_count++ < 10, errs)) {
+        report_misspelled_fallback(at, name, fallback, errs);
+    }
 }
 
 static bool report_misspelled_counted(
@@ -3743,12 +3896,12 @@ static bool report_misspelled_counted(
     return true;
 }
 
-bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs) {
-    return report_misspelled(me, at, name, meaning, false, errs);
+void scope_report_jsx_factory_not_found(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs) {
+    report_misspelled_or(me, at, name, meaning, false, FALLBACK_JSX_FACTORY, errs);
 }
 
-bool scope_report_misspelled_namespace(Scope const* me, Span at, ErrorCtx* errs) {
-    return report_misspelled(me, at, at.sv, SYMBOL_NAMESPACE, true, errs);
+void scope_report_namespace_not_found(Scope const* me, Span at, ErrorCtx* errs) {
+    report_misspelled_or(me, at, at.sv, SYMBOL_NAMESPACE, true, FALLBACK_NAMESPACE, errs);
 }
 
 typedef struct PendingNotFound {
@@ -3774,11 +3927,6 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
         return;
     }
     Binder* binder = my binder;
-    if (binder->pending_not_found_count == binder->pending_not_found_cap) {
-        binder->pending_not_found_cap = binder->pending_not_found_cap ? binder->pending_not_found_cap * 2 : 8;
-        binder->pending_not_found = realloc(binder->pending_not_found, sizeof(PendingNotFound) * binder->pending_not_found_cap);
-        panic_if(!binder->pending_not_found, "out of memory");
-    }
     // tsc doesn't count what checkAndReportErrorForMissingPrefix reports: a member of a class around it, which needs
     // types to tell. Counted now unless a class around it declares a member of that name (then when reported)
     bool maybe_member = false;
@@ -3786,7 +3934,16 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
         ClassDecl const* class_decl = scope_rare(scope)->this_ref.class_decl;
         maybe_member = class_decl && (class_decl_find_member(class_decl, name.sv, true) || class_decl_find_member(class_decl, name.sv, false));
     }
-    binder->pending_not_found[binder->pending_not_found_count++] =
+    ResolveShard* shard = binder_shard(binder);
+    if (shard) {
+        u32 index = shard->pending_not_found_count;
+        *(PendingNotFound*)list_push((void**)&shard->pending_not_found, &shard->pending_not_found_count,
+            &shard->pending_not_found_cap, sizeof(PendingNotFound)) = (PendingNotFound){ me, name, shorthand, maybe_member, maybe_member, shard_lasting_errs(shard, errs) };
+        if (!maybe_member) defer_event(shard, DEFERRED_PENDING, me, errs)->index = index;
+        return;
+    }
+    *(PendingNotFound*)list_push((void**)&binder->pending_not_found, &binder->pending_not_found_count,
+        &binder->pending_not_found_cap, sizeof(PendingNotFound)) =
         (PendingNotFound){ me, name, shorthand, maybe_member || binder->suggestion_count++ < 10, maybe_member, errs };
 }
 
@@ -3829,10 +3986,12 @@ void scope_report_type_as_value(Binder* binder, Symbol const* type, Span name, b
         error_ctx_error_d(errs, name, 2693, "'", name, "' only refers to a type, but is being used as a value here.");
         return;
     }
-    binder->pending_type_as_value = realloc(binder->pending_type_as_value,
-        sizeof(PendingTypeAsValue) * (binder->pending_type_as_value_count + 1));
-    panic_if(!binder->pending_type_as_value, "out of memory");
-    binder->pending_type_as_value[binder->pending_type_as_value_count++] = (PendingTypeAsValue){ type, name, errs };
+    ResolveShard* shard = binder_shard(binder);
+    PendingTypeAsValue** list = shard ? &shard->pending_type_as_value : &binder->pending_type_as_value;
+    u32* count = shard ? &shard->pending_type_as_value_count : &binder->pending_type_as_value_count;
+    *list = realloc(*list, sizeof(PendingTypeAsValue) * (*count + 1));
+    panic_if(!*list, "out of memory");
+    (*list)[(*count)++] = (PendingTypeAsValue){ type, name, shard ? shard_lasting_errs(shard, errs) : errs };
 }
 
 // tsc's maybeMappedType: a union of string-like and number-like types (allTypesAssignableToKind(StringOrNumberLiteral))
@@ -4269,6 +4428,15 @@ static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
     return symbol_is_expando_host(found, file, js, init_ret) ? found : nullptr;
 }
 
+// A local all of whose declarations are in `file`: no other file's resolve walk can see it
+static bool expando_host_is_private(Symbol const* host, SourceFile const* file) {
+    if (!host->is_local) return false;
+    for (u32 i = 0; i < host->decl_count; i++) {
+        if (host->decls[i].full.source != file) return false;
+    }
+    return true;
+}
+
 // Whether the entity name of a top-level JavaScript `a.b.x = v` starts with a name the file doesn't declare, which
 // makes it a global namespace (tsc's bindPotentiallyMissingNamespaces: file.jsGlobalAugmentations)
 static bool is_global_expando_entity(Scope* me, Expr const* target) {
@@ -4539,6 +4707,20 @@ static void add_expando_member(
     if (module && is_exports_alias(module, object)) return;
     Expr* init;
     Symbol* host = expando_host(me, object, &init);
+    ResolveShard* shard = binder_shard(my binder);
+    if (shard && host && !expando_host_is_private(host, my file)) {
+        // Other files may declare into it or read it meanwhile: in program order instead (plan 45)
+        DeferredEvent* event = defer_event(shard, DEFERRED_EXPANDO, me, nullptr);
+        event->object = object;
+        event->member = name;
+        event->left = left;
+        event->right = right;
+        event->jsdoc_type = jsdoc_type;
+        event->top_level = top_level;
+        event->late_bound_key = late_bound_key;
+        event->assignment = kind;
+        return;
+    }
     Symbol* exported = top_level && module ? commonjs_export_entity(module, object) : nullptr;
     if (exported) {
         // `module.exports.f.x = v` at the top level: f is the export (tsc's forEachIdentifierInEntityName starts from
@@ -4615,7 +4797,7 @@ static void add_expando_member(
         !symbol_find_decl(host, SYMBOL_DECL_CLASS)
     ) {
         host->flags |= SYMBOL_CLASS;
-        if (!symbol_rare(host)->members) symbol_rare_mut(host)->members = arena_new(&my binder->arena, SymbolTable);
+        if (!symbol_rare(host)->members) symbol_rare_mut(host)->members = arena_new(binder_arena(my binder), SymbolTable);
         if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->class_symbol = host;
     }
 }
@@ -4737,7 +4919,7 @@ static void declare_assignment_member(
     Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
     AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 ) {
-    if (!*table) *table = arena_new(&my binder->arena, SymbolTable);
+    if (!*table) *table = arena_new(binder_arena(my binder), SymbolTable);
     bool merged;
     Symbol* member = declare_symbol(me, *table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
@@ -4931,4 +5113,76 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
         }   break;
         default: break;
     }
+}
+
+// Plan 45
+
+void resolve_shard_merge(ResolveShard* me) {
+    check(resolve_shard == nullptr);
+    Binder* binder = my binder;
+    ErrorCtx* errs = binder->errs;
+    ErrorCtx* discarded = binder_discarded_errs(binder);
+    // (What the shard's pending reports go to once its contexts are merged)
+    #define MERGED_ERRS(e) ((e) == &my errs ? errs : (e) == &my discarded ? discarded : (e))
+    for (u32 i = 0; i < my deferred_count; i++) {
+        DeferredEvent const* event = &my deferred[i];
+        ErrorCtx* event_errs = event->errs;
+        switch (event->kind) {
+            case DEFERRED_NOT_FOUND:
+                report_not_found_counted(event->scope, event->at, event->meaning, event->shorthand, binder->suggestion_count++ < 10, event_errs);
+                break;
+            case DEFERRED_MISSPELLED:
+                if (!report_misspelled_counted(event->scope, event->at, event->name, event->meaning, event->namespace,
+                    binder->suggestion_count++ < 10, event_errs)
+                ) {
+                    report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
+                }
+                break;
+            case DEFERRED_COUNT:
+                binder->suggestion_count++;
+                break;
+            case DEFERRED_PENDING:
+                my pending_not_found[event->index].may_suggest = binder->suggestion_count++ < 10;
+                break;
+            case DEFERRED_EXPANDO:
+                add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
+                    event->top_level, event->late_bound_key, event->assignment);
+                expr_link_assignment_declaration(event->left, binder);
+                break;
+        }
+    }
+    for (u32 i = 0; i < my symbol_count; i++) {
+        *(Symbol**)list_push((void**)&binder->symbols, &binder->symbol_count, &binder->symbol_cap, sizeof(Symbol*)) = my symbols[i];
+    }
+    for (u32 i = 0; i < my pending_not_found_count; i++) {
+        PendingNotFound pending = my pending_not_found[i];
+        pending.errs = MERGED_ERRS(pending.errs);
+        *(PendingNotFound*)list_push((void**)&binder->pending_not_found, &binder->pending_not_found_count,
+            &binder->pending_not_found_cap, sizeof(PendingNotFound)) = pending;
+    }
+    if (my pending_type_as_value_count) {
+        u32 count = binder->pending_type_as_value_count + my pending_type_as_value_count;
+        binder->pending_type_as_value = realloc(binder->pending_type_as_value, sizeof(PendingTypeAsValue) * count);
+        panic_if(!binder->pending_type_as_value, "out of memory");
+        for (u32 i = 0; i < my pending_type_as_value_count; i++) {
+            PendingTypeAsValue pending = my pending_type_as_value[i];
+            pending.errs = MERGED_ERRS(pending.errs);
+            binder->pending_type_as_value[binder->pending_type_as_value_count++] = pending;
+        }
+    }
+    for (u32 i = 0; i < my pending_export_merge_count; i++) {
+        *(PendingExportMerge*)list_push((void**)&binder->pending_export_merges, &binder->pending_export_merge_count,
+            &binder->pending_export_merge_cap, sizeof(PendingExportMerge)) = my pending_export_merges[i];
+    }
+    #undef MERGED_ERRS
+    error_ctx_merge(errs, &my errs);
+    error_ctx_merge(discarded, &my discarded);
+    error_ctx_drop(&my errs);
+    error_ctx_drop(&my discarded);
+    free(my deferred);
+    free(my symbols);
+    free(my pending_not_found);
+    free(my pending_type_as_value);
+    free(my pending_export_merges);
+    *me = (ResolveShard){0};
 }

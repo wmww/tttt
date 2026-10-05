@@ -115,6 +115,9 @@ typedef struct SourceFile {
     u32 parse_error_count;
     // A .js/.jsx/.mjs/.cjs file: only part of a program with `allowJs`
     bool is_js;
+    // Its resolve walk reads what another file's walk writes, so it runs after the parallel ones (plan 45,
+    // binder_mark_serial_resolves())
+    bool resolve_serial;
     // A .json file an import resolved to (resolveJsonModule): one expression, which is what the module is (`export =`)
     bool is_json;
     // The tsconfig.json/jsconfig.json the options come from: its diagnostics sort before every file's (tsc's config

@@ -312,8 +312,8 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     Symbol const* type = my jsdoc ? nullptr : scope_get_type(names, i->sv, &type_symbol);
                     if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
                         rare->type_as_namespace = type;
-                    } else if (!scope_report_misspelled_namespace(names, *i, errs)) {
-                        error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
+                    } else {
+                        scope_report_namespace_not_found(names, *i, errs);
                     }
                 }
             } else /* Subsequent namespaces */ {

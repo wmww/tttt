@@ -2183,6 +2183,116 @@ static void program_order_stdlib_first(Program* me) {
     for (isize i = 0; i < count; i++) files[i]->program_order = (u32)i;
 }
 
+static void resolve_file(SourceFile* source, ErrorCtx* errs) {
+    block_lookup_names_container(&source->ast, false, c_sv("file"), span_null, source->scope, errs);
+    if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
+}
+
+// Whether a file's resolve walk can run on a thread of its own (plan 45): not a JavaScript file's, which declares into
+// other files' symbols (`this.x = v`, prototype assignments, CommonJS) and reads it back in the same walk
+static bool resolves_in_parallel(SourceFile const* source) {
+    return !source->is_js && !source->resolve_serial;
+}
+
+// The TypeScript files' walks, shared by the resolve threads
+typedef struct ResolveLane {
+    Program* program;
+    SourceFile** files; // Biggest first
+    u32* shard_of; // Index into shards, by files' index
+    ResolveShard* shards;
+    u32 count;
+    atomic_uint next;
+} ResolveLane;
+
+static void resolve_lane_run(ResolveLane* me, u32 thread) {
+    Binder* binder = my program->binder;
+    Arena* arena = thread ? binder_thread_arena(binder, thread) : &binder->arena;
+    for (u32 i; (i = atomic_fetch_add(&my next, 1)) < my count;) {
+        ResolveShard* shard = &my shards[my shard_of[i]];
+        *shard = (ResolveShard){
+            .binder = binder, .arena = arena,
+            .errs = { .phase = my program->errs->phase, .parent = my program->errs },
+            .discarded = error_ctx_scratch(my program->errs),
+        };
+        resolve_shard = shard;
+        resolve_file(my files[i], &shard->errs);
+        resolve_shard = nullptr;
+    }
+}
+
+typedef struct ResolveThread {
+    ResolveLane* lane;
+    u32 index;
+} ResolveThread;
+
+static void* resolve_lane_thread(void* arg) {
+    ResolveThread* thread = arg;
+    set_compiler_options(&thread->lane->program->options);
+    resolve_lane_run(thread->lane, thread->index);
+    clear_compiler_options();
+    return nullptr;
+}
+
+// The resolve walk of every file (plan 45). TypeScript files are walked in any order, on --threads threads, each into a
+// ResolveShard of its own; then, in program order, each TypeScript file's shard is replayed and merged and each
+// JavaScript file walked. The order of everything that reaches the binder is the same for any thread count
+static void program_resolve_walk(Program* me) {
+    isize file_count = vec_source_file_ptr_size(&my source_files_ordered);
+    ResolveShard* shards = c_new_n(ResolveShard, file_count ? file_count : 1);
+    ResolveLane lane = { .program = me, .shards = shards };
+    binder_mark_serial_resolves(my binder);
+    lane.files = c_new_n(SourceFile*, file_count ? file_count : 1);
+    lane.shard_of = c_new_n(u32, file_count ? file_count : 1);
+    for (isize i = 0; i < file_count; i++) {
+        SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
+        if (!resolves_in_parallel(source)) continue;
+        // (Biggest first, so that one big file doesn't start last: an insertion sort by size)
+        u32 j = lane.count++;
+        while (j > 0 && cstr_size(&lane.files[j - 1]->contents) < cstr_size(&source->contents)) {
+            lane.files[j] = lane.files[j - 1];
+            lane.shard_of[j] = lane.shard_of[j - 1];
+            j--;
+        }
+        lane.files[j] = source;
+        lane.shard_of[j] = (u32)i;
+    }
+    atomic_init(&lane.next, 0);
+    u32 threads = my threads ? my threads : 1;
+    // (Few files aren't worth a thread each)
+    if (threads > lane.count / 8 && !debug_env.parallel_resolve) threads = lane.count / 8 ? lane.count / 8 : 1;
+    // Nothing reports into the program's context meanwhile, every file into its own
+    my errs->frozen = true;
+    if (threads <= 1) {
+        resolve_lane_run(&lane, 0);
+    } else {
+        // The main thread works too, with Binder.arena. Workers get the main thread's stack size: the walk recurses
+        pthread_attr_t attr;
+        pthread_attr_init(&attr);
+        pthread_attr_setstacksize(&attr, worker_stack_size());
+        pthread_t* workers = c_new_n(pthread_t, threads - 1);
+        ResolveThread* args = c_new_n(ResolveThread, threads - 1);
+        for (u32 t = 1; t < threads; t++) binder_thread_arena(my binder, t);
+        for (u32 t = 0; t < threads - 1; t++) {
+            args[t] = (ResolveThread){ &lane, t + 1 };
+            panic_if(pthread_create(&workers[t], &attr, resolve_lane_thread, &args[t]), "couldn't start a resolve thread");
+        }
+        resolve_lane_run(&lane, 0);
+        for (u32 t = 0; t < threads - 1; t++) pthread_join(workers[t], nullptr);
+        free(workers);
+        free(args);
+        pthread_attr_destroy(&attr);
+    }
+    my errs->frozen = false;
+    for (isize i = 0; i < file_count; i++) {
+        SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
+        if (resolves_in_parallel(source)) resolve_shard_merge(&shards[i]);
+        else resolve_file(source, my errs);
+    }
+    free(lane.files);
+    free(lane.shard_of);
+    free(shards);
+}
+
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
@@ -2274,11 +2384,7 @@ void program_resolve_names(Program* me) {
     binder_check_export_star_conflicts(my binder, my errs);
 
     // Resolve: every identifier gets its symbol, function and block scopes are made on the way
-    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-        SourceFile* source = *i;
-        block_lookup_names_container(&source->ast, false, c_sv("file"), span_null, source->scope, my errs);
-        if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
-    }
+    program_resolve_walk(me);
 
     binder_resolve_remaining_aliases(my binder);
 

@@ -379,6 +379,10 @@ void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs);
 // `for (me of xs)`: what the loop assigns to (already walked)
 typedef struct ForEachLoopStatement ForEachLoopStatement;
 void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatement const* for_each);
+// An assignment `a.x = v` that declared x (PropertyExpr.declares): the declaration's flow container is the access's
+// (tsc's getControlFlowContainer of a valueDeclaration). The resolve walk does it, or a deferred expando's replay
+typedef struct Binder Binder;
+void expr_link_assignment_declaration(Expr* me, Binder* binder);
 Ty const* expr_evaluate_type(Expr const* me); // Should only be used by LazyType
 // Emit collisions of runtime declarations named `name` around `names` (expr.c): TS2818 (Reflect) or, with
 // `private_names`, TS18027 (WeakMap/WeakSet)

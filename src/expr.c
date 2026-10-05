@@ -107,10 +107,10 @@ void report_emit_name_collisions(Scope const* names, char const* name, bool priv
                 }
             }
             if (private_names) {
-                error_ctx_error_d(scope->binder->errs, at, 18027, "Compiler reserves name '", name,
+                error_ctx_error_d(binder_errs(scope->binder), at, 18027, "Compiler reserves name '", name,
                     "' when emitting private identifier downlevel.");
             } else {
-                error_ctx_error_d(scope->binder->errs, at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
+                error_ctx_error_d(binder_errs(scope->binder), at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
                     "'Reflect' when emitting 'super' references in static initializers.");
             }
         }
@@ -420,7 +420,7 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
     item->value_use_checked = true;
     Span first = *vec_span_front(&item->alias_path);
     if (!first.sv.size || scope_get_value(scope, first.sv, nullptr)) return;
-    scope_report_value_not_found(scope, first, false, scope->binder->errs);
+    scope_report_value_not_found(scope, first, false, binder_errs(scope->binder));
 }
 
 static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
@@ -680,7 +680,10 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             check_isolated_enum_member(me, names, errs);
         }
         check_isolated_global_shadow(me, names, errs);
-        my outer_reference = my target->flow_start && names->flow && names->flow->container_start != my target->flow_start;
+        // (First declared by another file: another flow container, whose walk may not have run yet, maybe on another
+        // thread)
+        my outer_reference = names->flow && (symbol_first_declared_elsewhere(my target, names->file) ||
+            (my target->flow_start && names->flow->container_start != my target->flow_start));
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
             // (tsc's checkIdentifier: the error type)
@@ -736,7 +739,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         }
     } else if (my call_child && span_equals(identifier_expr_name(me), "await")) {
         // (tsc's getCannotFindNameDiagnosticForName)
-        names->binder->suggestion_count++;
+        scope_count_suggestion(names->binder);
         error_ctx_error_d(errs, identifier_expr_name(me), 2311, "Cannot find name 'await'. Did you mean to write this in an "
             "async function?");
     } else if (!my shorthand_unchecked) {
@@ -1293,6 +1296,22 @@ void expr_flow_assign_for_each(Expr const* me, Scope* names, ForEachLoopStatemen
     flow_assignment_target(names->flow, me, (FlowAssign){ .kind = FLOW_ASSIGN_FOR_EACH, .for_each = for_each });
 }
 
+void expr_link_assignment_declaration(Expr* me, Binder* binder) {
+    if (my tag != EXPR_PROPERTY || !my property->declares || my property->form != PROPERTY_EXPR_DOT) return;
+    // (The declaration this assignment made: tsc's getControlFlowContainer of a valueDeclaration)
+    Symbol* declared = (Symbol*)my property->declares;
+    for (u32 d = 0; d < declared->decl_count; d++) {
+        SymbolDecl* decl = &declared->decls[d];
+        if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(expr_outer_span(me)) &&
+            decl->name.source == expr_outer_span(me).source
+        ) {
+            if (decl->js) decl->js->flow_container = my property->context->flow_container;
+            // (Files resolved on other threads may set it too)
+            __atomic_store_n(&binder->has_assignment_flow_containers, true, __ATOMIC_RELAXED);
+        }
+    }
+}
+
 // What narrowing inside closures needs to know about a local variable (tsc's markNodeAssignments())
 static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* names) {
     Symbol* symbol = (Symbol*)my target; // Local: this file's walk owns it
@@ -1519,9 +1538,7 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
         if (jsx == JSX_REACT) check_umd_global_symbol_use(found, at, names, errs);
     } else if (jsx == JSX_REACT) {
         // (tsc's resolveName: a misspelling is said to be one instead)
-        if (!scope_report_misspelled(names, at, name, meaning, errs)) {
-            error_ctx_error_d(errs, at, 2874, "This JSX tag requires '", name, "' to be in scope, but it could not be found.");
-        }
+        scope_report_jsx_factory_not_found(names, at, name, meaning, errs);
     }
     return found;
 }
@@ -1964,19 +1981,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 while (c && !class_decl_find_private_name(c, name)) c = c->outer_class;
                 my property->private_class_ = c;
             }
-            if (my property->declares && my property->form == PROPERTY_EXPR_DOT) {
-                // (The declaration this assignment made: tsc's getControlFlowContainer of a valueDeclaration)
-                Symbol* declared = (Symbol*)my property->declares;
-                for (u32 d = 0; d < declared->decl_count; d++) {
-                    SymbolDecl* decl = &declared->decls[d];
-                    if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(expr_outer_span(me)) &&
-                        decl->name.source == expr_outer_span(me).source
-                    ) {
-                        if (decl->js) decl->js->flow_container = flow->container;
-                        names->binder->has_assignment_flow_containers = true;
-                    }
-                }
-            }
+            expr_link_assignment_declaration(me, names->binder);
             if (my property->expr.tag == EXPR_IDENTIFIER) {
                 my property->expr.identifier.super_member = my property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER;
             }
