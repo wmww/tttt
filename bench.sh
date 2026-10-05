@@ -86,7 +86,9 @@ echo "tttt phases (one run):"
 # relative to the tsconfig either way). The NestJS app (plan 31) is `incremental`: without --incremental false tsc
 # writes a tsbuildinfo and later runs check nothing; tsgo 7 also defaults to strict, which its tsconfig doesn't unset.
 # webpack (plan 33) is checkJs JavaScript; tsgo 7 rejects 3 of its JSDoc comments (TS1003), so its time may not be of
-# a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json
+# a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json.
+# VS Code's src (todo entry 5 of the ninth window, 1.39M lines) is the scale benchmark; tsgo 7 reports ~10 TS2300 of
+# its own there (its lib.dom declares the WebGPU types @webgpu/types also declares), which costs it nothing measurable
 thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite
 NEST=nestjs-boilerplate
@@ -96,12 +98,12 @@ echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > th
 # a full check
 echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"~/*": ["./src/*"], "*": ["./*"]}}}' > thirdparty/corpora/drizzle/drizzle-orm/tsconfig.tsgo.json
 echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"@vue/compat": ["./packages/vue-compat/src"], "@vue/*": ["./packages/*/src"], "vue": ["./packages/vue/src"], "*": ["./*"]}}}' > thirdparty/corpora/vue/tsconfig.tsgo.json
-for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json; do
+for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json vscode/src; do
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
     TSC_EXTRA=""
     if test $CORPUS = $REACT; then TSGO_ARGS="-p $DIR/tsconfig.tsgo.json"; fi
-    if test $CORPUS = webpack || test ${CORPUS%.json} != $CORPUS; then TSGO_ARGS="-p $DIR"; fi
+    if test $CORPUS = webpack || test $CORPUS = vscode/src || test ${CORPUS%.json} != $CORPUS; then TSGO_ARGS="-p $DIR"; fi
     case $CORPUS in drizzle/*|vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
     if test $CORPUS = $NEST; then TSC_EXTRA="--incremental false"; TSGO_ARGS="$TSGO_ARGS --incremental false --strict false"; fi
     echo
