@@ -19728,7 +19728,7 @@ const baselines = {
     'jsdocParameterParsingInfiniteLoop': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParameterParsingInvalidName': {
         errors: true,
@@ -52213,7 +52213,7 @@ const baselines = {
     'jsdocOuterTypeParameters1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocOuterTypeParameters2': {
         errors: true,

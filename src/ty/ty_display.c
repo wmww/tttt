@@ -854,7 +854,9 @@ static bool has_prototype_members(Symbol const* symbol) {
 
 static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
-    if (identifier->jsdoc_intrinsic || !identifier->target) return false;
+    if (identifier->jsdoc_intrinsic) return false;
+    // (An unresolved name is reused as written: tsc's errorType for it, unresolved names allowed)
+    if (!identifier->target) return !identifier_type_namespace_count(identifier) && (node_type(me, d, node)->flags & TYF_ERROR);
     // A value used as a type (an expando `Outer.Inner = class {}`: tsc's getTypeFromJSDocValueReference) isn't found by
     // a type lookup, which reuse needs
     if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return false;
@@ -1495,7 +1497,7 @@ static bool annotation_plus_undefined(Checker* me, TypeNode const* node, Ty cons
 static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotation, Ty const* ty, bool optional) {
     if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, ty, optional)) {
         display_node(me, d, annotation);
-    } else if (annotation && d.underline && d.enclosing && !annotation->parsed) {
+    } else if (annotation && d.underline && d.enclosing && !annotation->parsed && !annotation->synthesized) {
         ty_display(me, reused_if(d, true), ty); // A missing type (`(a: ) => {}`), which tsc reuses as `any`
     } else {
         ty_display(me, d, ty);

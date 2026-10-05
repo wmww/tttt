@@ -2677,6 +2677,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
                 return parse_fail(&p);
             }
             expect_type(&p, TYPE_PRECEDENCE_NULL, &type);
+            type.synthesized = true; // (No node of tsc's: printed, not reused)
         }
         if (!is_new) hop_jsdoc_optional(&p, &type);
         if (is_new) {
