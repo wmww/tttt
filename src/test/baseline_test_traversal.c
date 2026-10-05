@@ -966,6 +966,17 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 .span = my identifier->name,
                 .text = shown && !shown->is_placeholder ? symbol_text(ctx, shown) : cstr_init(),
             });
+            // `typeof import("a").x`'s qualifier isn't part of a type node to tsc's writer (isPartOfTypeNode: an
+            // import type with isTypeOf), and getTypeAtLocation has nothing for it: errorType, `any` as the right of
+            // a qualified name
+            if (identifier_type_import_typeof(my identifier)) {
+                if (identifier_type_namespace_count(my identifier)) {
+                    ctx->any_keeps_underline = true;
+                    baseline_test_case_add_type_node(ctx, my identifier->name, &type_any);
+                } else {
+                    baseline_test_case_add_type(ctx, my identifier->name, ty_intrinsic(current_checker, TY_ERROR));
+                }
+            }
             for_each (i, vec_spanned_type, &my identifier->generic_params) {
                 type_compile_test_info(&i->type, ctx);
             }
