@@ -64,6 +64,7 @@ typedef struct ModuleRef {
     cstr alternate_result;
     cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
     Symbol* module; // Memo of binder_module_of_ref()
+    Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
     bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: what there is to say about it was said (once per file, like tsc)
     AliasState module_state;
 } ModuleRef;

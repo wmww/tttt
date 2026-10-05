@@ -3308,8 +3308,20 @@ static Symbol* augmented_module(Binder* me, NamespaceDecl* decl) {
     Symbol* ret = binder_module_of_ref(me, ref);
     if (ret && ret->is_module && !ret->module->file && memchr(ret->name.buf, '*', (size_t)ret->name.size)) ret = nullptr;
     if (!ret && ref->file) ret = ref->file->scope ? ref->file->scope->container : nullptr;
-    // (Nobody declares it, TS2664: it becomes an ambient module all the same)
-    if (!ret) ret = binder_ambient_module(me, cstr_sv(&ref->path), decl->name);
+    // Nobody declares it (TS2664, or silently in an ambient context): tsc's mergeModuleAugmentation merges it into
+    // nothing, the augmentation's symbol stays a local of its file. A module of its own, not a global ambient module
+    // that other files' imports of the name would find (an augmentation of a file outside the program)
+    if (!ret) {
+        if (!ref->detached_module) {
+            Symbol* module = binder_new_symbol(me, decl->name.sv, SYMBOL_VALUE_MODULE);
+            module->is_module = true;
+            module->module = arena_new(binder_arena(me), SymbolModule);
+            module->name_span = decl->name;
+            symbol_ensure_exports(module);
+            ref->detached_module = module;
+        }
+        ret = ref->detached_module;
+    }
     return ret;
 }
 

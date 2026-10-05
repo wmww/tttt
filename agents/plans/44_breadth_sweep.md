@@ -80,12 +80,6 @@ Most mirror a latest package's open cause: node/v22, v24, v25 (node's TS2722/TS2
 `stream.pipeline(function*(){...}, async function*(source){...})` overloads where `source` stays unknown, TS18046,
 then TS2339 'then' on never: generic overloads with context-sensitive generator arguments, the inference owner's), react-redux/v5, v6 (like react-redux's TS2741), ember/v3 (observable-tests TS2615/TS2578
 like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType, fixed e207f80c: re-check), chai/v4 (TS2769 at chai-tests 1777, 1787: not investigated).
-- **ember-data__adapter/v3, ember-data__model/v3, ember-data__store/v3, ember__routing/v3**: +TS2717 at
-  types/ember__object/index.d.ts:140-141. The program has both ember__object (latest, through a `*` devDependency) and
-  ember__object/v3, and both augment the latest ember__utils's `TypeLookup` with `class: typeof EmberObject` and
-  `instance: EmberObject` of their own EmberObject. tsc finds the two identical (structurally, or Maybe through
-  recursion), tttt doesn't. Repro: a merged interface property typed with two structurally equal deep class
-  hierarchies from different declarations.
 
 ### Small (1-10 lines each)
 - **TS2303 on the import instead of the `export =` of a self-importing module** (koa-webpack, react-loadable;
