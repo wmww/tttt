@@ -986,7 +986,15 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
         ObjectBindingItem const* item = binding->parent_item;
         key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
     }
-    Ty const* ret = object->flags & TYF_ANY ? nullptr : ty_access_reading(me, object, key);
+    Ty const* ret = nullptr;
+    // Past the end of a tuple without a rest element: undefined (tsc's getTupleElementTypeOutOfStartCount)
+    TupleShape const* shape = parent->tag == BINDING_ARRAY ? ty_tuple_shape(object) : nullptr;
+    if (shape && binding->parent_index >= shape->arity) {
+        bool has_rest = false;
+        for (u32 i = 0; i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+        if (!has_rest) ret = ty_intrinsic(me, TY_UNDEFINED);
+    }
+    if (!ret) ret = object->flags & TYF_ANY ? nullptr : ty_access_reading(me, object, key);
     if (!ret) return ty_binding_assigned_type(me, binding);
     // (tsc's getTypeWithDefault)
     if (binding->default_value) {

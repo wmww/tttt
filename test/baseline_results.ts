@@ -41577,8 +41577,8 @@ const baselines = {
     },
     'destructuringControlFlow': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'destructuringEvaluationOrder(target=es2015)': {
         errors: true,
