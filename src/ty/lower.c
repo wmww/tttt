@@ -1769,6 +1769,15 @@ static Ty const* tuple_element_type(Checker* me, TupleElement const* element, Lo
     if (element->rest && type->kind == TY_REFERENCE && ty_is_array(me, type) && type->alias) {
         return ty_array(me, ty_reference_args(me, type).data[0], false);
     }
+    // `...string` (TS2574): a variadic element of something that isn't array-like spreads the error type's array (tsc's
+    // createNormalizedTupleType: isArrayLikeType && its number index type, else errorType, as a rest element)
+    if (element->rest) {
+        u32 array_like = TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION | TYF_NEVER;
+        TyList parts = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
+        bool primitive = true;
+        for (u32 i = 0; i < parts.len && primitive; i++) primitive = !(parts.data[i]->flags & array_like);
+        if (primitive) return ty_array(me, ty_intrinsic(me, TY_ERROR), false);
+    }
     return element->optional ? ty_optional_prop_type(me, type) : type;
 }
 
@@ -3187,6 +3196,10 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // With a union index the result is the union of what each member accesses, made under the alias's name
             // (tsc's getIndexedAccessType passes the alias symbol to getUnionType)
             bool renames = ret->kind == TY_INDEXED || (ret->kind == TY_UNION && index->kind == TY_UNION);
+            // (boolean too, which ty_realias() leaves alone for `type B = boolean`)
+            if (alias && ret->kind == TY_UNION && index->kind == TY_UNION && (ret->flags & TYF_BOOLEAN) && ret->alias != alias) {
+                return ty_union(me, ret->composite.types.data, ret->composite.types.len, alias, alias_args);
+            }
             return alias && renames ? ty_realias(me, ret, alias, alias_args) : ret;
         }
 

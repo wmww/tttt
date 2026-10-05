@@ -63948,7 +63948,7 @@ const baselines = {
     'numericStringLiteralTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'stringEnumLiteralTypes1': {
         errors: true,
@@ -65768,7 +65768,7 @@ const baselines = {
     'restTupleElements1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictTupleLength': {
         errors: true,
