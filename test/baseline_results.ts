@@ -65721,7 +65721,7 @@ const baselines = {
         types: true,
     },
     'indexerWithTuple': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

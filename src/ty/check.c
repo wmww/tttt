@@ -1590,6 +1590,10 @@ static void check_access(
         bool has_rest = false;
         for (u32 i = 0; i < shape->arity; i++) has_rest |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
         if ((index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && !has_rest &&
+            index->literal.value.number < 0
+        ) {
+            error_ctx_error_d(errs, index_span, 2514, "A tuple type cannot be indexed with a negative value.");
+        } else if ((index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && !has_rest &&
             index->literal.value.number >= shape->arity
         ) {
             cstr object_str = ty_to_cstr(me, object);
@@ -1665,6 +1669,19 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
         // (tsc's getPropertyTypeForIndexType falls through to TS2538)
         if (!(apparent->flags & TYF_OBJECT) || ty_applicable_index_info(me, apparent, index)) return;
         is_key = false;
+    }
+    // (A negative element of a tuple without a rest element isn't its number index signature's: tsc's
+    // getPropertyTypeForIndexType)
+    if (ty_is_tuple(apparent) && (index->flags & TYF_NUMBER_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) &&
+        index->literal.value.number < 0
+    ) {
+        TupleShape const* shape = apparent->reference.target->declared.tuple;
+        bool variable = false;
+        for (u32 i = 0; i < shape->arity; i++) variable |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+        if (!variable) {
+            error_ctx_error_d(errs, index_span, 2514, "A tuple type cannot be indexed with a negative value.");
+            return;
+        }
     }
     if (is_key && ty_access(me, apparent, index)) return;
     if (ty_is_tuple(apparent) && (index->flags & TYF_NUMBER_LITERAL)) {
