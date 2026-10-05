@@ -1987,6 +1987,13 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                     char const* end = span_end_ptr(full);
                     error_ctx_grammar_error_d(errs, span_make(full.source, end - 1, end), 1005, "'{' expected.");
                 }
+                if (!i->method.computed_key && !i->method.name_is_value && span_equals(i->method.name_span, "constructor")) {
+                    if (i->method.accessor) { // (tsc's checkAccessorDeclaration)
+                        error_ctx_error_d(errs, i->method.name_span, 1341, "Class constructor may not be an accessor.");
+                    } else if (i->method.func.is_generator) { // (tsc's checkMethodDeclaration)
+                        error_ctx_error_d(errs, i->method.name_span, 1368, "Class constructor may not be a generator.");
+                    }
+                }
                 // (tsc's checkGrammarModifiers: legacy decorators on both accessors of a pair, at the second)
                 if (i->method.accessor && compiler_options()->experimental_decorators && vec_expr_size(&i->decorators) &&
                     i->method.accessor_first && i->method.accessor_first != i && vec_expr_size(&i->method.accessor_first->decorators)
