@@ -865,8 +865,37 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
             infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, (u32)first_skip), target_args.data[start]);
             infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, second_start, end), target_args.data[start + 1]);
         }
+    } else if (source_shape && target_arity - start - end == 2 && (target_shape->flags[start] & TUPLE_ELEMENT_REST) &&
+        (target_shape->flags[start + 1] & TUPLE_ELEMENT_REST)
+    ) {
+        // `[...T, ...rest]` / `[...rest, ...T]` in the middle: T takes as many elements as its constraint, a tuple
+        // without rest elements, has (tsc's inferFromObjectTypes)
+        bool first_variadic = is_variadic_element(me, target_shape, target_args, start);
+        u32 at = first_variadic ? start : start + 1;
+        InferParam const* param = first_variadic != is_variadic_element(me, target_shape, target_args, start + 1) ?
+            inference_param(inf, target_args.data[at]) : nullptr;
+        Ty const* constraint = param ? ty_base_constraint(me, target_args.data[at]) : nullptr;
+        TupleShape const* constraint_shape = constraint && ty_is_tuple(constraint) ? constraint->reference.target->declared.tuple : nullptr;
+        if (constraint_shape && tuple_fixed_length(constraint_shape) == constraint_shape->arity) {
+            u32 implied = constraint_shape->arity;
+            if (first_variadic) {
+                i64 skip = (i64)source_arity - (i64)start - (i64)implied;
+                if (skip < 0) skip = 0;
+                if ((i64)start + skip > (i64)source_arity) skip = (i64)source_arity - start;
+                infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, (u32)skip), target_args.data[start]);
+                Ty const* rest = start + implied + end <= source_arity ?
+                    slice_element_type(me, source_shape, source_args, start + implied, end) : nullptr;
+                if (rest) infer_from(me, inf, ty_array(me, rest, false), target_args.data[start + 1]);
+            } else if (source_arity >= end + implied + start) {
+                u32 end_index = source_arity - tuple_end_fixed_count(target_shape);
+                u32 start_index = end_index - implied;
+                Ty const* rest = slice_element_type(me, source_shape, source_args, start, end + implied);
+                if (rest) infer_from(me, inf, ty_array(me, rest, false), target_args.data[start]);
+                infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start_index, source_arity - end_index),
+                    target_args.data[start + 1]);
+            }
+        }
     }
-    // TODO: `[...T, ...rest]` and `[...rest, ...T]` in the middle of the target (tsc infers T by its constraint's arity)
     for (u32 i = 0; i < end; i++) {
         infer_from(me, inf, source_args.data[source_arity - 1 - i], target_args.data[target_arity - 1 - i]);
     }

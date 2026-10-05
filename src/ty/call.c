@@ -952,6 +952,18 @@ static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args 
 // contextual type as it is. And checked as the call infers (its outer inference), like the other arguments in
 // infer_type_arguments(): a function's return type is computed then, returning into what the return mapper says
 // (`M.tag("A", () => "a")` under `...pattern: [first: P, ...values: P[], f: Fn]` keeps "a" for `Ret`)
+// tsc's maybeTypeOfKind(contextualType, Primitive | Index | TemplateLiteral | StringMapping) in getSpreadArgumentType:
+// a literal argument stays a literal where the contextual type has a primitive member (`T[number] | string`)
+static bool maybe_primitive_context(Ty const* ty) {
+    TyList parts = ty->kind == TY_UNION || ty->kind == TY_INTERSECTION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_LITERAL | TYF_BOOLEAN | TYF_ENUM |
+        TYF_ENUM_LITERAL | TYF_NULLABLE | TYF_VOID;
+    for (u32 i = 0; i < parts.len; i++) {
+        if ((parts.data[i]->flags & primitive) || parts.data[i]->kind == TY_KEYOF) return true;
+    }
+    return false;
+}
+
 static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32 i, u32 from, bool is_const, OuterInference* self) {
     Arg* arg = &args->data[i];
     Ty const* contextual = rest_arg_contextual(me, shape, args, i, from);
@@ -968,7 +980,7 @@ static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32
     }
     my outer_inference = saved;
     if (!is_const && contextual && (arg->type->flags & TYF_FRESH_LITERAL) &&
-        ty_is_literal_of_contextual_type(me, arg->type, contextual)
+        (ty_is_literal_of_contextual_type(me, arg->type, contextual) || maybe_primitive_context(contextual))
     ) {
         arg->type = ty_regular(me, arg->type);
     }

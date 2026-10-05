@@ -17293,7 +17293,7 @@ const baselines = {
     'inferTypesWithFixedTupleExtendsAtVariadicPosition': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceAndHKTs': {
         errors: true,
