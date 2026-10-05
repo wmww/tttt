@@ -1640,6 +1640,9 @@ typedef struct ObjectLiteralProp {
     u32 decl_span_count;
     bool name_is_value;
     TypeNode const* asserted; // See Prop.asserted
+    // Made optional by a partial spread: the annotation of a required property, which says the same again once an
+    // existing property takes this one's type without undefined (spread_into())
+    TypeNode const* asserted_required;
     bool own; // Written in the literal itself, not spread into it: only those get excess property checks
     uint8_t name_form; // See PropDecl.name_form
     Ty const* name_type; // See PropDecl.name_type

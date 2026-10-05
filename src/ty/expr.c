@@ -2572,6 +2572,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
         bool setonly = ((prop->flags | origin->flags) & PROP_SETTER) && !((prop->flags | origin->flags) & PROP_GETTER);
         Ty const* type = setonly ? ty_intrinsic(me, TY_UNDEFINED) : prop_type(me, prop);
         u32 flags = prop->flags & (u32)~(PROP_READONLY | (setonly ? PROP_SETTER : 0));
+        Ty const* declared_type = type;
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
@@ -2579,12 +2580,18 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, Literal
         // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
         // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
         TypeNode const* annotation = origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
-            !origin->decl->overload_count && !origin->decl->symbol && type == prop_type(me, origin) ? origin->decl->node : nullptr;
+            !origin->decl->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
+        TypeNode const* annotation_required = nullptr;
+        if (annotation && type != declared_type) {
+            annotation_required = annotation;
+            annotation = nullptr;
+        }
         literal_builder_add(out, (ObjectLiteralProp){
             .name = prop->name,
             .flags = flags,
             .type = type,
             .asserted = annotation,
+            .asserted_required = annotation_required,
             .name_span = origin->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop->decl->name_type,
@@ -2624,7 +2631,8 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         }
         // (tsc's merged symbol has both declarations: the types baseline reuses the first annotation that still says
         // the same)
-        if (!merged.asserted) merged.asserted = r->asserted;
+        if (!merged.asserted) merged.asserted = r->asserted ? r->asserted : r->asserted_required;
+        merged.asserted_required = nullptr;
         u32 count = l->decl_span_count + r->decl_span_count;
         Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
         for (u32 k = 0; k < l->decl_span_count; k++) spans[k] = l->decl_spans[k];

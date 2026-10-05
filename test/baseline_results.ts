@@ -28893,7 +28893,7 @@ const baselines = {
     'spreadIdenticalTypesRemoved': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadIntersection': {
         errors: true,
@@ -65348,7 +65348,7 @@ const baselines = {
     'spreadOverwritesPropertyStrict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadTypeVariable': {
         errors: true,
