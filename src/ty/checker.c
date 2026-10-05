@@ -1917,6 +1917,10 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         Ty const* element = ty_reference_args(me, args.data[0]).data[0];
         return ty_array(me, element, shape->readonly);
     }
+    // A spread of any or unknown is a rest element of it (tsc's createNormalizedTupleType): `[...any]` is `any[]`
+    if (shape->arity == 1 && (shape->flags[0] & TUPLE_ELEMENT_REST) && (args.data[0]->flags & (TYF_ANY | TYF_UNKNOWN))) {
+        return ty_array(me, args.data[0], shape->readonly);
+    }
     bool needed = false;
     bool past_rest = false; // Past a (non-generic) rest element: an optional or rest element after it merges into it
     for (u32 i = 0; i < shape->arity && !needed; i++) {
@@ -1925,6 +1929,7 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         Ty const* arg = args.data[i];
         // (A rest element keeps only the element type of the array it spreads: `...readonly T[]` is `...T[]`)
         needed = ty_is_tuple(arg) || (arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET) ||
+            (arg->flags & (TYF_ANY | TYF_UNKNOWN)) ||
             (arg->kind == TY_UNION && !(arg->flags & TYF_BOOLEAN)) || (arg->flags & TYF_NEVER) || is_readonly_array(me, arg);
         if (!is_generic_spread(me, arg)) {
             needed |= past_rest;
@@ -1973,6 +1978,8 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
             }
         } else if (is_readonly_array(me, arg)) {
             tuple_builder_add(me, &b, ty_array(me, ty_reference_args(me, arg).data[0], false), TUPLE_ELEMENT_REST, name);
+        } else if (arg->flags & (TYF_ANY | TYF_UNKNOWN)) {
+            tuple_builder_add(me, &b, ty_array(me, arg, false), TUPLE_ELEMENT_REST, name);
         } else if (!(arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET)) {
             tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name);
         }

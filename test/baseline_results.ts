@@ -20926,7 +20926,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeOverArrayWithBareAnyRestCanBeUsedAsRestParam1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
