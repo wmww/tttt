@@ -7096,7 +7096,7 @@ const baselines = {
         types: true,
     },
     'crashInYieldStarInAsyncFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34208,7 +34208,7 @@ const baselines = {
     'asyncFunctionDeclaration15_es5': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration16_es5': {
         errors: false,
@@ -34541,9 +34541,9 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration15_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asyncFunctionDeclaration1_es6': {
         errors: true,

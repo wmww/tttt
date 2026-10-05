@@ -641,6 +641,12 @@ static void report_iterator_methods(Checker* me, Ty const* iterable, bool async,
         sig_list_drop(&sigs);
         Ty const* result = ty_intersection(me, results.data, results.len, nullptr, (TyList){0});
         ty_buf_drop(&results);
+        if (async && ty_awaits_thenable(me, result)) {
+            // (tsc's getIterationTypesOfMethod: getAwaitedType with the error node)
+            error_ctx_error_d(errs, span, 1320, "Type of 'await' operand must either be a valid promise or must not "
+                "contain a callable 'then' member.");
+            continue;
+        }
         if (async) result = ty_awaited_no_alias(me, result);
         if (iteration_types_of_result(me, result) != &no_iteration_types) continue;
         if (async) {

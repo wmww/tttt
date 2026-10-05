@@ -618,7 +618,7 @@ void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function,
     if (ret == promise || (ret->kind == TY_REFERENCE && ret->reference.target == promise)) return;
     Ty const* awaited = ty_awaited_no_alias(me, ret);
     report_invalid_async_return(errs, location, ret_span, 1064, cstr_d("The return type of an async function or method must be "
-        "the global Promise<T> type. Did you mean to write 'Promise<", awaited ? awaited : ty_intrinsic(me, TY_VOID), ">'?"));
+        "the global Promise<T> type. Did you mean to write 'Promise<", awaited && !(awaited->flags & TYF_ERROR) ? awaited : ty_intrinsic(me, TY_VOID), ">'?"));
 }
 
 // A function (or class) whose call (construction) would fit: the whole error, plus a hint

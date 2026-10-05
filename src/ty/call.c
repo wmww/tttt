@@ -2976,6 +2976,13 @@ static bool awaited_in_progress(AwaitedFrame const* stack, Ty const* ty) {
 static bool primitive_or_never(Ty const* ty) {
     u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
         TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE | TYF_NEVER;
+    if (ty->kind == TY_INTERSECTION) {
+        // (Assignable to a primitive: tsc's allTypesAssignableToKind)
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (primitive_or_never(ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
     if (ty->kind != TY_UNION) return ty->flags & primitive;
     for (u32 i = 0; i < ty->composite.types.len; i++) {
         if (!primitive_or_never(ty->composite.types.data[i])) return false;
@@ -3147,8 +3154,32 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         AwaitedFrame frame = { ty, stack };
         return awaited_type_in(me, promised, wrap, &frame);
     }
+    // A `then` that isn't a promise's: no awaited type (the callers say TS1320 and friends, see ty_awaits_thenable())
+    if (ty_is_thenable(me, ty)) return ty_intrinsic(me, TY_ERROR);
     return ty;
 }
+
+bool ty_is_thenable(Checker* me, Ty const* ty) { return !(ty->flags & TYF_ANY) && is_thenable(me, ty); }
+
+// Whether awaiting ty meets a thenable that isn't a promise (tsc's getAwaitedTypeNoAlias reporting its
+// diagnosticMessage): ty, a member of it, or what a promise in there resolves to
+static bool awaits_thenable(Checker* me, Ty const* ty, u32 depth) {
+    for (; depth < 16 && !(ty->flags & TYF_ANY) && !ty_is_generic_type(me, ty); depth++) {
+        if (ty->kind == TY_UNION) {
+            for (u32 i = 0; i < ty->composite.types.len; i++) {
+                if (awaits_thenable(me, ty->composite.types.data[i], depth + 1)) return true;
+            }
+            return false;
+        }
+        Ty const* promised = promised_type_of(me, ty);
+        if (!promised) return ty_is_thenable(me, ty);
+        if (promised == ty) return false;
+        ty = promised;
+    }
+    return false;
+}
+
+bool ty_awaits_thenable(Checker* me, Ty const* ty) { return awaits_thenable(me, ty, 0); }
 
 static Ty const* awaited_type(Checker* me, Ty const* ty, bool wrap) { return awaited_type_in(me, ty, wrap, nullptr); }
 

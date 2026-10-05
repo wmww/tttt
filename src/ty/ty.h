@@ -1207,6 +1207,8 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 bool ty_is_valid_base_type(Checker* me, Ty const* ty); // members.c, tsc's isValidBaseType
+bool ty_is_thenable(Checker* me, Ty const* ty); // call.c, tsc's isThenableType
+bool ty_awaits_thenable(Checker* me, Ty const* ty); // call.c: awaiting it meets a thenable that's no promise (TS1320...)
 Prop const* ty_get_object_prop(Checker* me, Ty const* ty, Atom const* name); // relate.c, with Function/Object members
 /// tsc's getPropertyOfType of any type (an intersection's from its first part that has it), null if none. relate.c
 Prop const* ty_property_of_type(Checker* me, Ty const* ty, Atom const* name);

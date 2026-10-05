@@ -2618,6 +2618,14 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             }
             ty_check_expr(current_checker, &my expr, current_checker->return_context);
             expr_typecheck(&my expr, errs);
+            // tsc's checkAndAggregateReturnExpressionTypes: an async function's inferred return awaits what it returns
+            if (ctx.function && ctx.function->is_async && !ctx.function->is_generator && !ctx.function->ret_explicit &&
+                span_valid(ctx.function->name) && !statement_is_bare_return(me) &&
+                ty_awaits_thenable(current_checker, ty_expr_type(current_checker, &my expr))
+            ) {
+                error_ctx_error_d(errs, ctx.function->name, 1058, "The return type of an async function must either be a "
+                    "valid promise or must not contain a callable 'then' member.");
+            }
             if (ctx.in_setter) {
                 if (!statement_is_bare_return(me)) {
                     error_ctx_error_d(errs, span_make(my span.source, span_start_ptr(my span), span_start_ptr(my span) + 6), 2408,
