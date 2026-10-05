@@ -47071,7 +47071,7 @@ const baselines = {
         types: true,
     },
     'instanceofOperatorWithInvalidOperands.es2015': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

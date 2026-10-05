@@ -753,6 +753,56 @@ static Error* report_unassignable_with_head(
     return report_unrelated_with_head(me, TY_RELATION_ASSIGNABLE, source, target, ts_code, head, keep_natural_head, span, errs);
 }
 
+// tsc's resolveInstanceofExpression and checkInstanceOfExpression for a right operand with a `[Symbol.hasInstance]`
+// method: checked like the call `right[Symbol.hasInstance](left)` (TS2860 then why the argument doesn't fit), whose
+// return type must be boolean (TS2861). TODO: overloads and generic methods
+void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* right, Span left_span, Span right_span, ErrorCtx* errs) {
+    if ((right->flags & TYF_ANY) || (left->flags & TYF_ERROR)) return;
+    Atom const* name = ty_well_known_symbol_name(me, "hasInstance");
+    Ty const* apparent = name ? ty_apparent_type(me, right) : nullptr;
+    if (!apparent || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+    FoundProp prop = ty_find_prop(me, apparent, name);
+    if (!prop.found || !(prop.type->flags & TYF_OBJECT)) return;
+    Members const* members = ty_members(me, prop.type);
+    if (members->call_count != 1) return;
+    Signature const* sig = members->call[0];
+    signature_resolve(me, sig);
+    if (sig->type_params.len) return;
+    Ty const* param = ty_contextual_signature_type_at(me, sig, 0, false);
+    if (param && !ty_is_related(me, left, param, TY_RELATION_ASSIGNABLE)) {
+        VecTyReportLine lines = {0};
+        ty_explain_unrelated(me, left, param, TY_RELATION_ASSIGNABLE, &lines);
+        cstr source_str, target_str;
+        ty_report_pair_cstr(me, left, param, &source_str, &target_str);
+        Error* error = error_ctx_error_d(errs, left_span, 2860, "The left-hand side of an 'instanceof' expression must be "
+            "assignable to the first argument of the right-hand side's '[Symbol.hasInstance]' method.");
+        if (error) {
+            error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Argument of type '", source_str,
+                "' is not assignable to parameter of type '", target_str, "'.");
+            Error* chain = vec_error_back_mut(&error->sub_errors);
+            TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
+            isize_t first = natural && !natural->related && (natural->ts_code == 2322 || natural->ts_code == 2719) ? 1 : 0;
+            for (isize_t i = first; i < vec_ty_report_line_size(&lines); i++) {
+                TyReportLine const* line = vec_ty_report_line_at(&lines, i);
+                if (line->related) continue;
+                error_sub_error_s(chain, (Span){0}, TS_CODE_NONE, cstr_clone(line->message));
+                chain = vec_error_back_mut(&chain->sub_errors);
+            }
+            for_each (line, vec_ty_report_line, &lines) {
+                if (line->related) error_add_related_s(error, line->span, line->ts_code, cstr_clone(line->message));
+            }
+        }
+        vec_ty_report_line_drop(&lines);
+        c_drop(cstr, &source_str, &target_str);
+        return;
+    }
+    Ty const* ret = signature_return_type(me, sig);
+    Ty const* boolean = ty_intrinsic(me, TY_BOOLEAN);
+    if (ty_is_related(me, ret, boolean, TY_RELATION_ASSIGNABLE)) return;
+    report_unassignable_with_head(me, ret, boolean, 2861, cstr_lit("An object's '[Symbol.hasInstance]' method must return a "
+        "boolean value for it to be used on the right-hand side of an 'instanceof' expression."), false, right_span, errs);
+}
+
 // tsc's checkTypeComparableTo without a head message: TS2678 and why, or what replaces it (an excess property)
 void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;

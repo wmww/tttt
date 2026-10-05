@@ -3655,6 +3655,8 @@ static bool binary_op_typecheck(
             }
             // (tsc's resolveInstanceofExpression) the right side something callable or constructable
             if (right->flags & TYF_ANY) break;
+            ty_check_instanceof_has_instance(checker, left, right, expr_error_span(&expr->binary_op->left),
+                expr_error_span(&expr->binary_op->right), errs);
             if (instanceof_target_ok(checker, right)) break;
             Ty const* function_type = ty_global_function_type(checker);
             if (!function_type || ty_is_related(checker, right, function_type, TY_RELATION_ASSIGNABLE)) break;
