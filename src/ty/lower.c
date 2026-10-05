@@ -2153,7 +2153,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
             panic_if(!props, "out of memory");
             props[count++] = (ObjectLiteralProp){
                 .name = name,
-                .flags = found.flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
+                .flags = found.flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER),
                 .type = found.type,
                 .name_span = origin ? origin->decl->name_span : (Span){0},
                 .decl_spans = origin ? origin->decl->decl_spans : nullptr,
@@ -2250,7 +2250,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
         while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
-            .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR),
+            .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER),
             .type = prop_type(me, prop),
             .name_span = declared->decl->name_span,
             .name_form = ty_prop_name_form_of(declared),

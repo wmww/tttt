@@ -1119,6 +1119,7 @@ static void builder_add_class_items(
                     prop->flags = (prop->flags & ~(u32)(PROP_PRIVATE | PROP_PROTECTED)) | get_access |
                         (set_access & PROP_PRIVATE ? PROP_SET_PRIVATE : 0) | (set_access & PROP_PROTECTED ? PROP_SET_PROTECTED : 0);
                     if (!has_setter) prop->flags |= PROP_READONLY;
+                    if (has_getter) prop->flags |= PROP_CLASS_GETTER;
                     if (has_getter) prop_decl_rare_mut(me, prop->decl)->write_node = setter_type; // Writes go by the setter's parameter type
                     break;
                 }

@@ -1428,6 +1428,32 @@ static Span invocation_error_span(CallInfo const* info) {
     return expr_outer_span(callee);
 }
 
+// TS6234 rather than TS2349: `x.y()` without arguments where y is a get accessor (tsc's invocationErrorDetails, through
+// the resolvedSymbol of the callee, which a parenthesized one doesn't have)
+static bool callee_is_get_accessor(Checker* me, CallInfo const* info) {
+    Expr const* callee = &info->call->callable;
+    if (info->jsx || info->tagged_template || info->decorator || info->call->uses_new || vec_expr_size(&info->call->args)) {
+        return false;
+    }
+    if (callee->tag != EXPR_PROPERTY || expr_is_perenthisized(callee)) return false;
+    PropertyExpr const* access = callee->property;
+    Atom const* name = ty_literal_name(me, ty_regular(me, ty_access_key_type(me, access)));
+    if (!name) return false;
+    Ty const* object = ty_apparent_type(me, ty_expr_type(me, &access->expr));
+    Prop const* prop = ty_get_prop(me, object, name);
+    while (prop && prop->target) prop = prop->target;
+    return prop && (prop->flags & (PROP_CLASS_GETTER | PROP_GETTER));
+}
+
+static Error* not_callable_error(Checker* me, ErrorCtx* errs, CallInfo const* info) {
+    if (callee_is_get_accessor(me, info)) {
+        return error_ctx_error_d(errs, invocation_error_span(info), 6234,
+            "This expression is not callable because it is a 'get' accessor. Did you mean to use it without '()'?");
+    }
+    return error_ctx_error_d(errs, invocation_error_span(info), 2349, "This expression is not callable.");
+}
+
+
 // Whether a line break comes after `span`, before anything but whitespace and comments (tsc's skipTrivia with
 // stopAfterLineBreak, then isLineBreak of the character before)
 static bool line_break_follows(Span span) {
@@ -2407,7 +2433,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 "Value of type '", rendered, "' is not callable. Did you mean to include 'new'?");
             cstr_drop(&rendered);
         } else {
-            Error* e = error_ctx_error_d(errs, invocation_error_span(info), 2349, "This expression is not callable.");
+            Error* e = not_callable_error(me, errs, info);
             // (tsc's invocationErrorDetails: about the apparent type, `{}` for unknown)
             cstr rendered = ty_to_cstr(me, callee->flags & TYF_UNKNOWN ? ty_empty_object_type(me) : apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no call signatures.");
