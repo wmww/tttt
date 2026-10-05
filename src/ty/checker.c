@@ -1727,7 +1727,14 @@ Ty const* ty_type_param(Checker* me, Symbol const* decl) {
         // `infer U extends X`. Declared type parameters read their GenericItem (TyParamState.item), mapped type keys
         // get their constraint from whoever lowers the mapped type
         InferredType const* inferred = symbol_find_node(decl, SYMBOL_DECL_INFER);
-        if (inferred && inferred->extends.tag != TYPE_ANY) ret->param.state->constraint_node = &inferred->extends;
+        // (Of several `infer U`, the first that has one: tsc's getConstraintDeclaration)
+        for (u32 i = 0; inferred && i < decl->decl_count; i++) {
+            InferredType const* other = decl->decls[i].kind == SYMBOL_DECL_INFER ? decl->decls[i].node : nullptr;
+            if (other && other->extends.tag != TYPE_ANY) {
+                ret->param.state->constraint_node = &other->extends;
+                break;
+            }
+        }
         // The key of a mapped type is constrained by what it iterates over (as declared: instantiations share it)
         InterfaceMember const* mapped = symbol_find_node(decl, SYMBOL_DECL_MAPPED_KEY);
         if (mapped) ret->param.state->constraint_node = &mapped->key.mapped->in_type;
