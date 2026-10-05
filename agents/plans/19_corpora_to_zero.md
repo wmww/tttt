@@ -151,7 +151,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (31; 6300 at pinning)
+### effect (25; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -183,16 +183,13 @@ Stream/constructors 4); a conditional's branches and `||`/`??`/`&&`/comma operan
 constraint of a union keeps member intersections that have nothing to replace (LayerMap 402/403); a lone spread of an
 `any` argument is any for a generic rest parameter (Schema 944/1004/1005, layer 1161).
 
+Third pass: a generic call argument already resolved (under an earlier overload's full check) isn't skipped by a later
+candidate's first inference (tsc's getResolvedSignature cache beats SkipGenericFunctions), so `tap(acquireRelease(...),
+(q) => ...)` infers `Queue<A>` from it before typing the callback (stream.ts 5, probe
+`overload_generic_call_then_callback.ts`; the earlier attempt, skipping the sensitive arguments instead, was the wrong
+model).
+
 Left, by cause (not reduced unless said):
-- **`tap(acquireRelease(...), (q) => ...)` picks up the contextual return type** (stream.ts 3038-3040, 7165, 7192: 5;
-  probe `overload_generic_call_then_callback.ts`, which fails): with an overloaded callee whose first overload fits the
-  skip-sensitive round, `resolve_signatures` clears `skip_sensitive` for every later candidate, so a later candidate's
-  first inference (skip_generic_functions only) types the context-sensitive callback while the generic-call argument
-  (`generic_call`) is still left out: the callback's parameter is fixed to what the contextual return type says
-  (`Dequeue<A>` for `Queue<A>`). tsc's argCheckMode does the same reset, yet gets `Queue<A>`: its parameter types are
-  assigned lazily (getContextuallyTypedParameterType at first use), which tttt doesn't model. Skipping the sensitive
-  arguments in that first inference when a `generic_call` argument is skipped fixes the probe but regresses ~10 tests
-  and the corpora badly (tsc 87, effect 376): understand why before retrying.
 - **TS2769 on `dual<A, B>(arity, body)`** (core-effect 1834/1858, metric 542, fiberRuntime 3612: 4; probe
   `generic_arrow_predicate_poisons_return.ts`, which fails): relating the generic body against DataFirst asks for its
   type predicate (`infer_from_returns` -> `signature_predicate` -> `ty_infer_type_predicate`), which types the single
