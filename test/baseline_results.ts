@@ -52253,7 +52253,7 @@ const baselines = {
     'jsdocParseErrorsInTypescript': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParseHigherOrderFunction': {
         errors: true,

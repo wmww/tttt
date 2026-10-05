@@ -3578,7 +3578,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             param->name = checker_atom(me, i->initializer.binding.content_span.sv);
             param->rest = i->rest;
             param->decl = i;
-            param->optional = i->explicit_optional || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY;
+            // (A missing initializer, `n: number=)`, is one: tsc's missing identifier)
+            Expr const* initial = initialized_binding_value(&i->initializer);
+            param->optional = i->explicit_optional || initial->tag != EXPR_IMPLICIT_ANY || initial->missing;
             param->type = ty_binding_type(me, &i->initializer.binding, ctx);
             // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
             // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
