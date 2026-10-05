@@ -1812,6 +1812,22 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
         Ty const* fallback = ty_param_default(me, params.data[i]);
         if (fallback) inferred[i] = true; // (Only for the constraint check below)
         Ty const* nothing = ty_intrinsic(me, inf->any_default ? TY_ANY : TY_UNKNOWN_); // (tsc's getDefaultTypeArgumentType)
+        if (fallback && (fallback->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+            // An earlier type parameter with neither inferences nor a default is its constraint by now if nothing
+            // doesn't satisfy that (tsc's getInferredType of it, which the default's back-reference mapper asks for):
+            // `<C extends Component, S = C["state"]>` without inferences for C is S = Component["state"]
+            bool changed = false;
+            for (u32 j = 0; j < i; j++) {
+                if (inferred[j] || results[j] != nothing) continue;
+                Ty const* constraint = ty_param_constraint(me, params.data[j]);
+                if (!constraint || constraint == params.data[j]) continue;
+                Ty const* instantiated = ty_instantiate(me, constraint, mapper);
+                if (ty_is_related(me, nothing, instantiated, TY_RELATION_ASSIGNABLE)) continue;
+                results[j] = instantiated;
+                changed = true;
+            }
+            if (changed) mapper = inference_mapper_of(me, inf, params, results);
+        }
         results[i] = fallback ? ty_instantiate(me, fallback, mapper) : nothing;
         if (results[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // A default that mentions a type parameter that has none itself
