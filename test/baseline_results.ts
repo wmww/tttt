@@ -3256,9 +3256,9 @@ const baselines = {
         types: true,
     },
     'checkMergedGlobalUMDSymbol': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'checkSuperCallBeforeThisAccess': {
         errors: true,
@@ -7076,8 +7076,8 @@ const baselines = {
         types: true,
     },
     'crashDeclareGlobalTypeofExport': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'crashInEmitTokenWithComment': {
@@ -31806,9 +31806,9 @@ const baselines = {
         types: true,
     },
     'umdGlobalAugmentationNoCrash': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'umdGlobalConflict': {
         errors: true,
@@ -31821,9 +31821,9 @@ const baselines = {
         types: true,
     },
     'umdNamespaceMergedWithGlobalAugmentationIsNotCircular': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'unaryOperators1': {
         errors: true,

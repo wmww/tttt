@@ -735,8 +735,9 @@ static void report_conflicts(
         code = 2567;
     } else if (existing->flags & SYMBOL_BLOCK_SCOPED_VARIABLE) {
         code = 2451;
-    } else if (!same_file && includes & SYMBOL_BLOCK_SCOPED_VARIABLE) {
-        // Across files symbols are merged by the checker in tsc, which looks at both sides
+    } else if ((!same_file || related) && includes & SYMBOL_BLOCK_SCOPED_VARIABLE) {
+        // Across files (or for related, where tsc's checker merges) symbols are merged by the checker in tsc, which looks
+        // at both sides (reportMergeSymbolError)
         code = 2451;
     }
     related |= !same_file;
@@ -886,6 +887,25 @@ static bool global_merges_by_assignment(Scope const* scope, Symbol const* existi
     return assigned;
 }
 
+static bool is_umd_global(Symbol const* symbol) {
+    return symbol->flags & SYMBOL_ALIAS && symbol->alias && symbol->alias->item && symbol->alias->item->tag == PORT_EXPORT_AS_NAMESPACE;
+}
+
+// tsc's initializeTypeChecker makes a UMD global (`export as namespace N`) a global unless a script declared one, then
+// merges `declare global` augmentations into it: mergeSymbol resolves the alias, a module (or so we assume of what an
+// `export =` names: the binder can't resolve it), which conflicts with a variable
+static bool umd_global_conflict(Scope* scope, Symbol const* existing, u32 includes, u32 excludes) {
+    if (scope->kind == SCOPE_GLOBAL_AUGMENTATION) return is_umd_global(existing) && excludes & SYMBOL_VALUE_MODULE;
+    if (scope->kind != SCOPE_MODULE || !(includes & SYMBOL_ALIAS) || !existing->decl_count) return false;
+    if (!(existing->flags & (SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_BLOCK_SCOPED_VARIABLE))) return false;
+    // (All of it from augmentations: a script's declaration wins silently)
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        SourceFile const* file = existing->decls[i].name.source;
+        if (!file || !file->is_module) return false;
+    }
+    return true;
+}
+
 static Symbol* declare_symbol(
     Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool default_export,
     bool* merged
@@ -910,6 +930,17 @@ static Symbol* declare_symbol(
             existing = clone_parent_symbol(binder, inherited);
             symbol_table_insert(table, &binder->arena, existing->name, hash, existing);
         }
+    }
+    if (existing && table == &binder->globals && umd_global_conflict(scope, existing, includes, excludes)) {
+        report_conflicts(scope->binder->errs, existing, name_span, includes, true, (csview){0});
+        Symbol* ret = binder_new_symbol(binder, name, includes);
+        // (tsc's mergeSymbol answers the augmentation's symbol, which becomes the global)
+        if (scope->kind == SCOPE_GLOBAL_AUGMENTATION) {
+            for (u32 i = 0; i < table->count; i++) {
+                if (table->entries[i].symbol == existing) table->entries[i].symbol = ret;
+            }
+        }
+        return ret;
     }
     if (existing) {
         // A global namespace JavaScript expandos of another file made merges with anything (tsc's mergeSymbol: the
