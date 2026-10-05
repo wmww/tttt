@@ -26871,7 +26871,7 @@ const baselines = {
         types: true,
     },
     'recursiveFunctionTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

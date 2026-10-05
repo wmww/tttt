@@ -2696,6 +2696,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 // (A function declared in a file or namespace prints as `typeof f` instead: tsc's
                 // shouldWriteTypeOfFunctionSymbol)
                 Symbol const* function = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function->symbol : nullptr;
+                // (An overloaded function's type is its symbol's)
+                if (!function && !ty->anonymous.target && !ty->anonymous.is_reverse && ty->anonymous.merged_value &&
+                    (ty->anonymous.merged_value->flags & SYMBOL_FUNCTION)
+                ) {
+                    function = ty->anonymous.merged_value;
+                }
                 if (function && is_non_local_function(function)) {
                     out_lit(d, "typeof ");
                     out_symbol_name(me, d, function, SYMBOL_VALUE);
@@ -2706,8 +2712,12 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 Symbol const* owner = method ? function_impl_rare(method)->static_method_of : nullptr;
                 if (owner && span_valid(owner->name_span) && span_valid(function_impl_member_name(method))) {
                     out_lit(d, "typeof ");
-                    out_symbol_name(me, d, owner, SYMBOL_VALUE);
-                    out_lit(d, ".");
+                    // (Qualified by the class only where printed for a location: tsc's symbolToTypeNode without an
+                    // enclosing declaration has the symbol alone)
+                    if (d.enclosing) {
+                        out_symbol_name(me, d, owner, SYMBOL_VALUE);
+                        out_lit(d, ".");
+                    }
                     out(d, function_impl_member_name(method).sv);
                     return;
                 }
