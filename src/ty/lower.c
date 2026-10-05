@@ -1958,7 +1958,7 @@ static Expr const* synthetic_element_access(Checker* me, Binding const* binding,
         key_span = item->source_span;
     } else if (parent->tag == BINDING_ARRAY) {
         key = value_number(binding->parent_index);
-        key_span = binding->element_span;
+        key_span = binding_element_span(binding);
     } else {
         return nullptr;
     }

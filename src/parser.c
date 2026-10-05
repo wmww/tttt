@@ -4193,7 +4193,9 @@ static void jsdoc_apply_type_to_binding(VecJsDocTag* tags, Binding* binding) {
     if (binding->has_explicit_type) return;
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (!tag) return;
-    binding->explicit_type = jsdoc_take_type(tag, &binding->explicit_type_span);
+    Span type_span;
+    binding->explicit_type = jsdoc_take_type(tag, &type_span);
+    binding_set_explicit_type_span(binding, type_span);
     binding->has_explicit_type = true;
 }
 
@@ -4293,8 +4295,8 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
             .content_span = signature_this->initializer.binding.content_span,
             .has_explicit_type = true,
             .explicit_type = signature_this->initializer.binding.explicit_type,
-            .explicit_type_span = signature_this->initializer.binding.explicit_type_span,
         };
+        binding_set_explicit_type_span(&arg.initializer.binding, binding_explicit_type_span(&signature_this->initializer.binding));
         arg.initializer.binding.explicit_type.from_jsdoc = true;
         signature_this->initializer.binding.has_explicit_type = false;
         signature_this->initializer.binding.explicit_type = (TypeNode){0};
@@ -4317,7 +4319,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         binding->explicit_type = from->initializer.binding.explicit_type;
         binding->explicit_type.from_jsdoc = true;
         i->jsdoc_span = c_new(Span, from->span);
-        binding->explicit_type_span = tag->type_span;
+        binding_set_explicit_type_span(binding, tag->type_span);
         binding->has_explicit_type = true;
         from->initializer.binding.has_explicit_type = false;
         from->initializer.binding.explicit_type = (TypeNode){0};
@@ -4624,7 +4626,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             .has_explicit_type = true,
         };
         if (this_tag->has_type) {
-            arg.initializer.binding.explicit_type = jsdoc_take_type(this_tag, &arg.initializer.binding.explicit_type_span);
+            Span type_span;
+            arg.initializer.binding.explicit_type = jsdoc_take_type(this_tag, &type_span);
+            binding_set_explicit_type_span(&arg.initializer.binding, type_span);
         } else {
             arg.initializer.binding.explicit_type = jsdoc_synthesized(type_any);
             arg.initializer.binding.explicit_type.from_jsdoc = true;
@@ -4660,7 +4664,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             tag->type = literal;
             tag->type_span = type_span;
         }
-        binding->explicit_type = jsdoc_take_type(tag, &binding->explicit_type_span);
+        Span type_span;
+        binding->explicit_type = jsdoc_take_type(tag, &type_span);
+        binding_set_explicit_type_span(binding, type_span);
         binding->has_explicit_type = true;
         if (binding->explicit_type.jsdoc_optional || bracketed) {
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
@@ -4677,8 +4683,8 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             // last parameter it's TS1014 (checkJSDocVariadicType), at the `...T`
             binding->explicit_type = jsdoc_union(binding->explicit_type, jsdoc_synthesized(type_undefined));
             binding->explicit_type.jsdoc_variadic = true;
-            if (i + 1 < function->args.data + function->args.size && span_valid(binding->explicit_type_span)) {
-                Span type = binding->explicit_type_span;
+            if (i + 1 < function->args.data + function->args.size && binding->has_explicit_type_span) {
+                Span type = binding_explicit_type_span(binding);
                 const char* dots = span_start_ptr(type);
                 while (dots > source_file_start(type.source) && dots[-1] == '.') dots--;
                 jsdoc_error(p, span_make(type.source, dots, span_end_ptr(type)), 1014,
@@ -7547,10 +7553,10 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 }
             };
 
-            Binding binding = {0};
+            Binding binding = { .content_span = name_span }; // (Only for the file of the type's span)
             if (parse_binding_type_ex(&p, &binding, !is_type)) {
                 ret->field.explicit_type = binding.explicit_type;
-                ret->field.explicit_type_span = binding.explicit_type_span;
+                ret->field.explicit_type_span = binding_explicit_type_span(&binding);
                 ret->field.has_explicit_type = binding.has_explicit_type;
                 is_definitely_field = true;
                 hop_whitespace(&p);
@@ -10931,7 +10937,7 @@ static bool parse_binding_element(Parser* parent, Binding* ret) {
         parse_fail(&default_p);
     }
 
-    ret->element_span = span_from(a);
+    binding_set_element_span(ret, span_from(a));
     return parse_success(&p);
 }
 
@@ -11009,7 +11015,7 @@ static bool parse_binding_content(Parser* parent, Binding* ret) {
                         parse_success(&colon);
                         target.rest = true;
                         target.rest_property_name = true;
-                        target.element_span = span_from(key_anchor); // (The element, from its `...`)
+                        binding_set_element_span(&target, span_from(key_anchor)); // (The element, from its `...`)
                         Span key_name = binding.content_span;
                         binding_drop(&binding);
                         vec_object_binding_item_push(&ret->object, (ObjectBindingItem){
@@ -11147,10 +11153,10 @@ static bool parse_binding_type_ex(Parser* parent, Binding* ret, bool report_js) 
     expect_type(parent, TYPE_PRECEDENCE_NULL, &type);
     ret->has_explicit_type = true;
     ret->explicit_type = type;
-    ret->explicit_type_span = span_from(a);
+    binding_set_explicit_type_span(ret, span_from(a));
     if (report_js) {
         js_syntax_skip_since(parent, mark);
-        js_syntax_error(parent, ret->explicit_type_span, 8010, "Type annotations can only be used in TypeScript files.");
+        js_syntax_error(parent, binding_explicit_type_span(ret), 8010, "Type annotations can only be used in TypeScript files.");
     }
 
     return true;
@@ -11164,7 +11170,7 @@ static bool parse_binding_type_or_set_to_default(Parser* parent, Binding* ret) {
     if (parse_binding_type(parent, ret)) {
         return true;
     } else {
-        ret->explicit_type_span = span_null;
+        ret->has_explicit_type_span = false;
         ret->has_explicit_type = false;
         ret->explicit_type = (TypeNode){0};
             return false;
@@ -12238,7 +12244,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                     parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
                     // (A missing name, which tsc still declares)
                     try_catch.catch_var = (Binding){ .tag = BINDING_IDENTIFIER, .content_span = span_from_pos(&p) };
-                    try_catch.catch_var.element_span = try_catch.catch_var.content_span;
+                    binding_set_element_span(&try_catch.catch_var, try_catch.catch_var.content_span);
                 }
                 hop_whitespace(&p);
                 if (parse_binding_type(&p, &try_catch.catch_var)) hop_whitespace(&p);

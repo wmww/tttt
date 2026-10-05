@@ -2333,7 +2333,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             if (my try_catch->catch_var.has_explicit_type &&
                 !(ty_of_node(&my try_catch->catch_var.explicit_type)->flags & (TYF_ANY | TYF_UNKNOWN))
             ) {
-                error_ctx_error_d(errs, my try_catch->catch_var.explicit_type_span, 1196,
+                error_ctx_error_d(errs, binding_explicit_type_span(&my try_catch->catch_var), 1196,
                     "Catch clause variable type annotation must be 'any' or 'unknown' if specified.");
             }
             if (my try_catch->has_catch && !my try_catch->catch_var.has_explicit_type && !my try_catch->catch_var.default_value) {

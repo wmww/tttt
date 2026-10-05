@@ -10,6 +10,34 @@
 #include "source_file.h"
 #include "function_impl.h"
 
+static void span_to_offsets(Binding const* me, Span span, u32* start, u32* length) {
+    panic_if(span.source != my content_span.source, "a binding's span in another file than its name");
+    *start = (u32)(span.sv.buf - source_file_start(span.source));
+    *length = (u32)span.sv.size;
+}
+
+Span binding_explicit_type_span(Binding const* me) {
+    if (!my has_explicit_type_span) return span_null;
+    char const* start = source_file_start(my content_span.source) + my explicit_type_start;
+    return (Span){ .source = my content_span.source, .sv = { start, my explicit_type_length } };
+}
+
+Span binding_element_span(Binding const* me) {
+    if (!my has_element_span) return span_null;
+    char const* start = source_file_start(my content_span.source) + my element_start;
+    return (Span){ .source = my content_span.source, .sv = { start, my element_length } };
+}
+
+void binding_set_explicit_type_span(Binding* me, Span span) {
+    my has_explicit_type_span = span_valid(span);
+    if (my has_explicit_type_span) span_to_offsets(me, span, &my explicit_type_start, &my explicit_type_length);
+}
+
+void binding_set_element_span(Binding* me, Span span) {
+    my has_element_span = span_valid(span);
+    if (my has_element_span) span_to_offsets(me, span, &my element_start, &my element_length);
+}
+
 void binding_drop(Binding* me) {
     switch (my tag) {
         case BINDING_NOOP: break;
@@ -50,7 +78,7 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
 
         case BINDING_ARRAY:
             for_each (i, vec_binding, &my array) {
-                props.full = span_valid(i->element_span) ? i->element_span : i->content_span;
+                props.full = i->has_element_span ? binding_element_span(i) : i->content_span;
                 i->parent = me;
                 i->parent_index = (u32)i_index;
                 binding_add_names(i, nullptr, scope, props);
@@ -60,7 +88,7 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
                 // The element starts at its property name (`{ x: a }` declares `a` at `x`)
-                props.full = i->target.rest ? i->target.element_span :
+                props.full = i->target.rest ? binding_element_span(&i->target) :
                     span_valid(i->source_span) && span_start_ptr(i->source_span) < span_start_ptr(i->target.content_span) ?
                         span_between(i->source_span, i->target.content_span) : i->target.content_span;
                 i->target.parent = me;

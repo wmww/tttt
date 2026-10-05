@@ -268,7 +268,7 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             // In the default of another element of the pattern it's initialized already (`{ a, b = a }`)
             char const* at = span_start_ptr(my name);
             bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
-            Span element = span_valid(binding->element_span) ? binding->element_span : binding->content_span;
+            Span element = binding->has_element_span ? binding_element_span(binding) : binding->content_span;
             if (binding->default_value) element = span_between(element, expr_outer_span(binding->default_value));
             // (the element starts at its property name: `{ [a]: a }`)
             if (span_start_ptr(decl->full) < span_start_ptr(element)) element = span_between(decl->full, element);

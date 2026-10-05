@@ -9,12 +9,6 @@ typedef struct ObjectBindingItem ObjectBindingItem;
 g_declare_vec(ObjectBindingItem, object_binding_item);
 
 typedef struct Binding {
-    enum {
-        BINDING_NOOP = 0,
-        BINDING_IDENTIFIER,
-        BINDING_ARRAY,
-        BINDING_OBJECT,
-    } tag;
     union {
         Symbol* symbol;
         VecBinding array;
@@ -23,24 +17,43 @@ typedef struct Binding {
     Span content_span; // Just the name/array/object, not the type/value
     // An object pattern: where its members are read (owned, may be null: see AccessSite). Set by binding_lookup_names()
     struct AccessSite* access_site;
-    Span element_span; // With the `...` and the default, only valid for elements of a pattern
     Expr* default_value; // Owned, `x = 1` as an element of a pattern. Null if there's none
-    bool rest; // `...x` as an element of an array or object pattern
-    bool rest_property_name; // `{ ...a: x }`: a rest element with a property name (TS2566)
-    bool definitely_assigned; // `let x!: T`
-    bool ambient; // Declared in an ambient context, set by binding_add_names()
-    bool is_parameter; // Of a function's parameter (the parameter itself when it has no parent), see binding_add_names()
-    bool optional_parameter; // `x?: T` of a function: read as `T | undefined`
-    bool has_explicit_type; // If the type was explicitly specified and explicit_type is meaningful
-    Span explicit_type_span; // Only valid if has_explicit_type
     TypeNode explicit_type; // The type explicitly specified
     // Where the type comes from when there's no explicit type, see ty_binding_type(). Set by binding_add_names()
     struct Binding const* parent; // The pattern this is an element of, null for the root of a pattern
-    ObjectBindingItem const* parent_item; // If parent is an object pattern
-    u32 parent_index; // If parent is an array pattern
+    union {
+        ObjectBindingItem const* parent_item; // If parent is an object pattern
+        u32 parent_index; // If parent is an array pattern
+    };
     // Root only: the type of what is assigned (the initializer, the elements of a for..of). Null: any (a catch variable)
     LazyType* source;
+    // binding_explicit_type_span() and binding_element_span(): offsets in content_span's file
+    u32 explicit_type_start, explicit_type_length;
+    u32 element_start, element_length;
+    enum {
+        BINDING_NOOP = 0,
+        BINDING_IDENTIFIER,
+        BINDING_ARRAY,
+        BINDING_OBJECT,
+    } tag : 8;
+    bool has_explicit_type_span : 1;
+    bool has_element_span : 1;
+    bool rest : 1; // `...x` as an element of an array or object pattern
+    bool rest_property_name : 1; // `{ ...a: x }`: a rest element with a property name (TS2566)
+    bool definitely_assigned : 1; // `let x!: T`
+    bool ambient : 1; // Declared in an ambient context, set by binding_add_names()
+    bool is_parameter : 1; // Of a function's parameter (the parameter itself when it has no parent), see binding_add_names()
+    bool optional_parameter : 1; // `x?: T` of a function: read as `T | undefined`
+    bool has_explicit_type : 1; // If the type was explicitly specified and explicit_type is meaningful
 } Binding;
+
+// Where the type annotation is (only valid if has_explicit_type, may be invalid then too)
+Span binding_explicit_type_span(Binding const* me);
+// With the `...` and the default, only valid for elements of a pattern
+Span binding_element_span(Binding const* me);
+// Both in the file of content_span, which must be set first
+void binding_set_explicit_type_span(Binding* me, Span span);
+void binding_set_element_span(Binding* me, Span span);
 
 typedef struct ObjectBindingItem {
     Value source;
