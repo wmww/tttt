@@ -35,7 +35,15 @@ void variable_statement_add_names(VariableStatement* me, Scope* scope, bool expo
     }
 }
 
+// tsc's checkAwaitGrammar for an `await using` in a function that isn't async, with the function to mark async
+static void variable_statement_check_await_place(VariableStatement const* me, Scope* names, ErrorCtx* errs) {
+    if (my keyword == VAR_INIT_AWAIT_USING && my in_sync_function && !my in_static_block) {
+        await_check_grammar(AWAIT_IN_FUNCTION, AWAIT_KIND_USING, my await_span, scope_containing_function(names), errs);
+    }
+}
+
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs) {
+    variable_statement_check_await_place(me, names, errs);
     for_each (i, vec_initialized_binding, &my initializers) {
         initialized_binding_lookup_names(i, names, errs);
     }
@@ -1529,6 +1537,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
         case STATEMENT_FOR_EACH_LOOP: {
             ForEachLoopStatement* loop = my for_each_loop;
             await_check_grammar(loop->await_place, AWAIT_KIND_FOR, loop->await_span, scope_containing_function(names), errs);
+            if (loop->variable.tag == FOR_EACH_LOOP_STATEMENT) variable_statement_check_await_place(&loop->variable.statement, names, errs);
             lazy_type_bind(&loop->var_type, LAZY_TYPE_FOR_EACH_LOOP_VAR);
             Scope* loop_scope = scope_new(names, SCOPE_BLOCK);
             bool is_declaration = loop->variable.tag == FOR_EACH_LOOP_STATEMENT;

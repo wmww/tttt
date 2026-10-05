@@ -61231,7 +61231,7 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarations.13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -11557,10 +11557,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         ret->await_span = (Span){ .source = p.shared->source, .sv = csview_from_n(start.start, 5) };
         ret->at_top_level = p.shared->function_depth == 0;
         ret->in_static_block = p.shared->in_static_block;
-        if (!p.shared->in_async && p.shared->function_depth > 0) {
-            parse_error(&p, ret->await_span, 2852,
-                "'await using' statements are only allowed within async functions and at the top levels of modules.");
-        }
+        ret->in_sync_function = !p.shared->in_async && p.shared->function_depth > 0;
     } else {
         return parse_fail(&p);
     }

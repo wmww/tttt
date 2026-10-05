@@ -41,6 +41,7 @@ typedef struct VariableStatement {
     Span span; // From the keyword to the end of the last declaration
     Span await_span; // `await using`: the `await`
     bool at_top_level; // `await using` outside of any function
+    bool in_sync_function; // `await using` in a function that isn't async (TS2852, said by the resolve walk)
     bool in_static_block; // `await using` in a class `static {}` block
 } VariableStatement;
 
