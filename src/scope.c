@@ -3293,6 +3293,8 @@ static void merge_augmentations(Binder* me) {
     for (u32 i = 0; i < my augmentation_count; i++) {
         NamespaceDecl* decl = my augmentations[i];
         ModuleRef* ref = decl->module_ref;
+        // (tsc's resolveExternalModule for the augmentation's name: a CommonJS file can't augment an ES module, TS1479)
+        if (ref->file) module_ref_report_require_of_esm(ref, ref->span, decl->inner_scope->binder->errs);
         if (ref->file || binder_module_of_ref(me, ref)) continue;
         if (ref->failure != MODULE_REF_IS_JS) {
             // (tsc's mergeModuleAugmentation: not for one in an ambient context, a declaration file's)
