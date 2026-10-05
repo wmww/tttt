@@ -22,8 +22,10 @@
 - The CLI (`program.c`) loads the default lib even when a file says `/// <reference no-default-lib="true"/>`; only the
   harness honours it.
 - Option diagnostics go on the tsconfig (program_set_config_file(), option_sites()) since suite checker bugs 6. Left:
-  `paths` only an extended config sets isn't validated; libReplacement (`@typescript/lib-*`, 4 tests) isn't
-  implemented; APILibCheck wants typescript.internal.d.ts and tsserverlibrary, which only a tsc build has.
+  `paths` only an extended config sets isn't validated; libReplacement (`@typescript/lib-*`:
+  libTypeScriptOverrideSimple, libTypeScriptSubfileResolving and their `Config` variants; a test's `/// <reference
+  lib>` can't add to the harness's shared lib program either) isn't implemented; APILibCheck wants
+  typescript.internal.d.ts and tsserverlibrary, which only a tsc build has.
 - Module resolution leftovers: resolution-mode attributes (~20 tests), `tryLoadInputFileForPath` (outDir mapping back
   to the input `.ts`, 8), Windows rooted paths, tsconfig `references`/`watchOptions`.
 - The stdlib checks clean: a cheap regression check for lib-related changes (`./bench.sh`'s `lib_closure` lists the
