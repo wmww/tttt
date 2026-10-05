@@ -1852,6 +1852,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my property->flow = flow_builder_reference(flow, expr_outer_span(me));
             flow_length_access(me);
             my property->assignment_target = assignment_target;
+            my property->read_target = read_target;
             my property->compound_like_target = compound_like_target;
             {
                 PropertyContext context = { .enclosing_class = scope_enclosing_class(names) };

@@ -3094,7 +3094,7 @@ static void mark_member_referenced(Checker* me, Prop const* prop, PropertyExpr c
     while (prop->target) prop = prop->target;
     bool private_name = span_valid(prop->decl->name_span) && prop->decl->name_span.sv.buf[0] == '#';
     if (!(prop->flags & PROP_PRIVATE) && !private_name) return;
-    if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !(prop->flags & PROP_ACCESSOR)) return;
+    if (access && access->assignment_target == FLOW_TARGET_DEFINITE && !access->read_target && !(prop->flags & PROP_ACCESSOR)) return;
     Expr const* object = access ? &access->expr : nullptr;
     bool self_type = object && (is_keyword(object, KEYWORD_IDENTIFIER_THIS) ||
         (object->tag == EXPR_IDENTIFIER && prop->parent && object->identifier.target == prop->parent));

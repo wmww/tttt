@@ -599,6 +599,8 @@ typedef struct PropertyExpr {
     // declare step: a declaration, not an assignment to what x may alias (like `exports.x = v`)
     bool commonjs_export_alias : 1;
     bool non_null_operand : 1; // The operand of `a.b!` (unparenthesized), like IdentifierExpr.non_null_operand
+    // A target that is read too (`a.b ??= v`, `[...a.b] = v`, `a.b! = v`): a private member it names is referenced
+    bool read_target : 1;
     FlowNode* flow; // Like IdentifierExpr.flow
     // Set by the resolve walk (null before), see PropertyContext
     PropertyContext const* context;
