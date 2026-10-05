@@ -812,9 +812,10 @@ bool ty_check_heritage(
     Ty const* derived_apparent = ty_apparent_type(me, derived);
     Ty const* base_apparent = ty_apparent_type(me, base);
     for (u32 i = 0; members && i < count; i++) {
-        if (!members[i].name || !(derived_apparent->flags & TYF_OBJECT) || !(base_apparent->flags & TYF_OBJECT)) continue;
+        u32 objects = TYF_OBJECT | TYF_INTERSECTION;
+        if (!members[i].name || !(derived_apparent->flags & objects) || !(base_apparent->flags & objects)) continue;
         Prop const* prop = ty_get_prop(me, derived_apparent, members[i].name);
-        Prop const* base_prop = ty_get_prop(me, base_apparent, members[i].name);
+        Prop const* base_prop = ty_property_of_type(me, base_apparent, members[i].name); // (an intersection's too)
         if (!prop || !base_prop) continue;
         Ty const* source = heritage_prop_type(me, prop);
         Ty const* target = heritage_prop_type(me, base_prop);

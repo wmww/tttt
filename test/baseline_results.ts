@@ -15816,7 +15816,7 @@ const baselines = {
         types: true,
     },
     'implementsIncorrectlyNoAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
