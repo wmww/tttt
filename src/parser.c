@@ -12028,6 +12028,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         statement.expr = expr_implicit_any(span_from_pos(&p));
         statement.expr.missing = true;
         statement.expr_jsdoc_type = nullptr;
+        parse_comma_ops_right_side(&p, &statement.expr); // (`for , a`: a comma expression of it)
     }
     hop_whitespace(&p);
 
@@ -12135,7 +12136,8 @@ static bool parse_while_loop_statement(Parser* parent, Statement* ret) {
 
     Expr condition = expr_literal(span_from_pos(&p), value_boolean(false));
     Statement body = statement_noop;
-    if (expect_expr(&p, expr_ctx_null, &condition)) {
+    // (A missing operand goes on into a comma expression too: tsc's parseExpression)
+    if (expect_expr(&p, expr_ctx_null, &condition) || (condition.tag == EXPR_IMPLICIT_ANY && condition.missing)) {
         parse_comma_ops_right_side(&p, &condition);
     }
     hop_whitespace(&p);
