@@ -8244,6 +8244,7 @@ static bool parse_bracket_prop(Parser* parent, Expr* ret) {
         Span missing = span_make(p.shared->source, after_bracket, after_bracket);
         parse_error(&p, missing, 1011, "An element access expression should take an argument.");
         *ret = expr_implicit_any(missing);
+        ret->missing = true;
         p.pos++;
         return parse_success(&p);
     }
@@ -10271,7 +10272,14 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         } else {
             parse_fail(&chain_p);
         }
-        if (!parse_call_args(&p, &call.args)) {
+        // (After whitespace too, line breaks included: tsc's parseNewExpressionOrNewDotTarget takes `(` as the
+        // arguments wherever it is)
+        Parser args_p = parser(&p);
+        hop_whitespace(&args_p);
+        if (*args_p.pos == '(' && parse_call_args(&args_p, &call.args)) {
+            parse_success(&args_p);
+        } else {
+            parse_fail(&args_p);
             call.args = vec_expr_init();
         }
         *ret = expr_call(span_from(a), c_new(CallExpr, call));

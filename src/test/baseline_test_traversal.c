@@ -18,6 +18,24 @@
 #include "symbol_chain.h"
 
 static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx);
+// Past whitespace and comments: where the harness shows a node that starts at a missing node's full start (its
+// skipTrivia)
+static const char* skip_trivia_forward(const char* at) {
+    while (true) {
+        if (*at == ' ' || *at == '\t' || *at == '\r' || *at == '\n' || *at == '\f' || *at == '\v') {
+            at++;
+        } else if (at[0] == '/' && at[1] == '/') {
+            while (*at && *at != '\n' && *at != '\r') at++;
+        } else if (at[0] == '/' && at[1] == '*') {
+            const char* end = strstr(at + 2, "*/");
+            if (!end) return at;
+            at = end + 2;
+        } else {
+            return at;
+        }
+    }
+}
+
 static VecSpan class_prop_declarations(Symbol const* class_symbol, bool is_static, csview name, Span own, u32 min_count);
 
 // What the symbols baseline shows for a reference: the declarations of the symbol the name found (an alias shows its
@@ -964,7 +982,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (!my identifier->name.sv.size && !identifier_type_import_ref(my identifier)) {
                 // A missing name (`a.` at the end of a line): tsc's unknownSymbol, shown where the next token starts
                 const char* at = my identifier->name.sv.buf;
-                while (*at == ' ' || *at == '\t' || *at == '\r' || *at == '\n') at++;
+                at = skip_trivia_forward(at);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .allow_declaration_empty = true,
                     .span = span_make(my identifier->name.source, at, at),
@@ -2342,7 +2360,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         // A missing name (`<` at the end of the file, a missing closing tag): an error type, shown where the next token
         // starts (the harness skips the trivia after the missing node's position)
         const char* at = name->inner_span.sv.buf;
-        while (*at == ' ' || *at == '\t' || *at == '\r' || *at == '\n') at++;
+        at = skip_trivia_forward(at);
         baseline_test_case_add_type(ctx, span_make(name->inner_span.source, at, at), ty_intrinsic(current_checker, TY_ANY));
         return;
     }
@@ -2865,6 +2883,14 @@ static void callee_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     if (my tag == EXPR_IMPLICIT_ANY && my missing_decorators) { // (tsc's MissingDeclaration: no expression of its own)
         for_each (i, vec_expr, my missing_decorators) expr_compile_test_info(i, ctx);
+        return;
+    }
+    if (my tag == EXPR_IMPLICIT_ANY && my missing && !my inner_span.sv.size && !my paren_before && span_valid(my inner_span)) {
+        // A missing identifier is at the full start of the next token: the harness shows it where the token starts
+        const char* at = my inner_span.sv.buf;
+        at = skip_trivia_forward(at);
+        baseline_test_case_add_type_recursive(ctx, span_make(my inner_span.source, at, at), span_make(my inner_span.source, at, at),
+            ty_regular(current_checker, expr_get_type(me)));
         return;
     }
     if (my tag == EXPR_LITERAL && my literal.tag == VALUE_NULL) {

@@ -6053,7 +6053,7 @@ const baselines = {
     'constructorWithIncompleteTypeAnnotation': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'constructorWithParameterPropertiesAndPrivateFields.es2015': {
         errors: true,
@@ -23283,7 +23283,7 @@ const baselines = {
     'newOperator': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noAsConstNameLookup': {
         errors: true,
@@ -52938,7 +52938,7 @@ const baselines = {
     'jsxAndTypeAssertion': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxAttributeInitializer(jsx=preserve)': {
         errors: true,
