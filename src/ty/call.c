@@ -3034,6 +3034,64 @@ static Ty const* promised_type_of(Checker* me, Ty const* ty) {
     return first_params_union(me, callbacks, count, true);
 }
 
+// tsc's isThenableType: not primitive, with a callable `then`
+static bool is_thenable(Checker* me, Ty const* ty) {
+    Ty const* constraint = ty_base_constraint(me, ty);
+    if (primitive_or_never(constraint ? constraint : ty)) return false;
+    Ty const* then = ty_prop_type_of(me, ty, checker_atom(me, c_sv("then")));
+    if (!then) return false;
+    u32 count = 0;
+    call_signatures_of(me, ty_non_nullable(me, then), &count);
+    return count > 0;
+}
+
+// The `this` type of the last `then` signature that the type doesn't fit, when none fits (tsc's getPromisedTypeOfPromise's
+// thisTypeForErrorOut), else null
+static Ty const* then_this_type_for_error(Checker* me, Ty const* ty) {
+    Ty const* then = ty_prop_type_of(me, ty, checker_atom(me, c_sv("then")));
+    if (!then || then->flags & TYF_ANY) return nullptr;
+    u32 count = 0;
+    Signature* const* sigs = call_signatures_of(me, then, &count);
+    Ty const* ret = nullptr;
+    for (u32 i = 0; i < count; i++) {
+        signature_resolve(me, sigs[i]);
+        Ty const* this_type = sigs[i]->this_type;
+        if (this_type && !(this_type->flags & TYF_VOID) && !ty_is_related(me, ty, this_type, TY_RELATION_SUBTYPE)) ret = this_type;
+        else return nullptr;
+    }
+    return ret;
+}
+
+// tsc's getAwaitedType with an error node, for `await x`: a thenable that isn't a proper promise is TS1320 (with why,
+// when its `then` doesn't take it as `this`)
+static void check_await_operand(Checker* me, Ty const* ty, Span at, u32 depth, ErrorCtx* errs) {
+    for (; depth < 16; depth++) {
+        // (A generic type is awaited as `Awaited<T>` or itself, never an error: tsc's isAwaitedTypeNeeded)
+        if (ty->flags & TYF_ANY || ty_is_generic_type(me, ty)) return;
+        if (ty->kind == TY_UNION) {
+            for (u32 i = 0; i < ty->composite.types.len; i++) check_await_operand(me, ty->composite.types.data[i], at, depth + 1, errs);
+            return;
+        }
+        Ty const* promised = promised_type_of(me, ty);
+        if (promised) {
+            if (promised == ty) return;
+            ty = promised;
+            continue;
+        }
+        if (!is_thenable(me, ty)) return;
+        Error* error = error_ctx_error_d(errs, at, 1320, "Type of 'await' operand must either be a valid promise or must "
+            "not contain a callable 'then' member.");
+        Ty const* this_type = error ? then_this_type_for_error(me, ty) : nullptr;
+        if (this_type) {
+            error_sub_error_d(error, span_null, 2684, "The 'this' context of type '", ty,
+                "' is not assignable to method's 'this' of type '", this_type, "'.");
+        }
+        return;
+    }
+}
+
+void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs) { check_await_operand(me, ty, at, 0, errs); }
+
 // tsc's getSignaturesOfType(ty, SignatureKind.Call).length
 u32 ty_call_signature_count(Checker* me, Ty const* ty) {
     u32 count = 0;

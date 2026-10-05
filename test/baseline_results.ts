@@ -33851,7 +33851,7 @@ const baselines = {
         types: true,
     },
     'await_incorrectThisType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49866,7 +49866,7 @@ const baselines = {
         types: true,
     },
     'typeOnlyESMImportFromCJS(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55216,17 +55216,17 @@ const baselines = {
         types: true,
     },
     'nodeModulesJson(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModulesJson(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'nodeModulesJson(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

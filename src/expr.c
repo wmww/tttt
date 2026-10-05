@@ -4035,8 +4035,9 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
                 case UNARY_OP_TYPEOF:
                 case UNARY_OP_VOID:
+                    break;
                 case UNARY_OP_AWAIT:
-                    // TODO: add typechecking
+                    ty_check_await_operand(current_checker, expr_get_type(&my unary_op->expr), my inner_span, errs);
                     break;
 
                 case UNARY_OP_DELETE:
