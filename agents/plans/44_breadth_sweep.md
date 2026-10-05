@@ -74,11 +74,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **jest +TS2536** (12 packages; B/jest2.ts): a homomorphic mapped type over `keyof X` / a generic template literal /
-  string mapping must return the operand (tsc's instantiateConstituent maps only AnyOrUnknown, InstantiableNonPrimitive,
-  Object, Intersection). `instantiate_mapped_over_list` (instantiate.c) counts TYF_DEFERRED as mappable.
-- **-TS7006 under `Partial<Unresolved.X>`** (bootstrap, chrome-remote-interface; D/partialErr.ts): same function,
-  TY_ERROR must not be mappable either (tsc: isErrorType -> the error type, a union with it is any).
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).

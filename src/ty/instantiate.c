@@ -270,13 +270,19 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     if (list == variable) return nullptr;
     if (list->kind == TY_UNION || list->kind == TY_INTERSECTION) list = ty_reduced(me, list); // (tsc's instantiateMappedType)
     u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
+    // (tsc's instantiateConstituent: of the deferred types only the instantiable non-primitive ones, an indexed access, a
+    // conditional or substitution type, are mapped; `keyof X`, a generic template literal or string mapping, and the
+    // error type, stay what they are)
+#define MAPS(t) (((t)->flags & mappable) && !((t)->flags & TYF_ERROR) && \
+    (!((t)->flags & TYF_DEFERRED) || (t)->kind == TY_INDEXED || (t)->kind == TY_CONDITIONAL || (t)->kind == TY_SUBSTITUTION || \
+        ((t)->flags & (TYF_TYPE_PARAM | TYF_OBJECT | TYF_INTERSECTION))))
     // (The empty tuple is its tuple target, not a reference)
     TupleShape const* empty = list->kind == TY_DECLARED ? ty_tuple_shape(list) : nullptr;
     if (empty && !mapped->name_type) {
         TupleShape new_shape = { .readonly = mapped->readonly ? mapped->readonly > 0 : empty->readonly };
         return ty_tuple_target(me, &new_shape);
     }
-    if (list->kind != TY_UNION && !(list->flags & (mappable | TYF_ERROR))) return list;
+    if (list->kind != TY_UNION && !MAPS(list)) return list;
     // any for a T constrained to arrays or tuples maps to an array too: `{ [K in keyof T]: X }` with `T extends
     // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent)
     bool any_as_array = list->kind == TY_ANY && !mapped->name_type && mapped_variable_is_list(me, variable);
@@ -295,7 +301,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         panic_if(!parts, "out of memory");
         for (u32 i = 0; i < len; i++) {
             Ty const* part = list->composite.types.data[i];
-            parts[i] = part->flags & mappable ? ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, part)) : part;
+            parts[i] = MAPS(part) ? ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, part)) : part;
         }
         Ty const* alias_buf[16];
         TyList alias_args = instantiate_alias_args(me, ty, outer, alias_buf);
@@ -308,6 +314,7 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
         TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
         return ty_array(me, mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), true), readonly);
     }
+#undef MAPS
     if (!ty_is_tuple(list)) return nullptr;
     TupleShape const* shape = list->reference.target->declared.tuple;
     TyList elements = ty_reference_args(me, list);
