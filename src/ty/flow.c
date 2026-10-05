@@ -1413,6 +1413,10 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
         if (member->flags & (TYF_NULLABLE | TYF_VOID)) continue;
         // (A member that is never has no properties: tsc's createUnionOrIntersectionProperty through getPropertyOfType)
         if (ty_reduced(me, member)->flags & TYF_NEVER) continue;
+        // (Its own properties only: an index signature's type takes no part in the uniformity or the literal parts,
+        // tsc's createUnionOrIntersectionProperty only counts it among the property's types)
+        Ty const* holder = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ? member : ty_apparent_type(me, member);
+        if (!ty_find_prop(me, holder, name).found) continue;
         Ty const* prop = prop_type_by_name(me, member, name);
         if (!prop) continue;
         if (!first) first = prop;
