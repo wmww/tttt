@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Triage (2026-10-05, ninth window's todo entry 10, four sub-agents)
+Suite 13097 -> **13099** (0 lost). Corpora unchanged (effect 7, the rest 0), scenarios 214 / 0 failing. Instructions
+(callgrind, `./instrcount.sh`), 6f877de4 -> end: tsc 4.606 -> 4.607, type-fest 3.106 -> 3.110, valibot 3.861 -> 3.868,
+react 1.699 -> **1.618 (-4.8%**: deferred JSX checks change variance measurement order, perf_leads.md; -0.24% from
+guarding ty_string_index_only_key), nest 1.254 flat, webpack 3.829 -> 3.834, zod 4.467 -> 4.475, xstate 2.873 ->
+2.880, drizzle 13.291 -> 13.280, vue 7.674 -> 7.692 (+0.23%, lazy contextual name literals' second lookup), effect
+9.709 -> 9.719, vscode 31.964 -> 31.926. The deep-nesting mapped-type unwrap (520ddc17) is most of the +0.1-0.2% on
+valibot/zod/xstate (a correctness fix; tsc does the same work). webpack through a symlinked path (two copies of
+types.d.ts): ~60 s -> 1.5 s.
+
 ## Types/symbols tail fan-out (2026-10-05, todo entry 9, four sub-agents)
 Suite 12933 -> **13097** (0 lost); types component failing 488 -> 345, symbols 178 -> 131, errors 150 -> 147. Corpora
 unchanged (effect 7, the rest 0). Sweep 8575 -> 8579 / 8595 match (ember v3 x4, immediate, macrotask fixed; 0 crash,

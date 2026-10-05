@@ -35,6 +35,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 9. Done: types/symbols tail fan-out (four agents, then second lists: plan 44 causes, CommonJS aliases, binder
    merges). Suite 12933 -> 13097, types failing 488 -> 345, symbols 178 -> 131, 0 lost; corpora unchanged; sweep
    8579 / 8595; instructions flat (react +0.8%, effect -0.3%). Leftovers: plan 35 "Queue".
-10. **Triage.** Also: merge plan 35's old queue and the four "Left by fan-out agent" sections into one queue; the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (816 lines: merge
-   or delete entries whose code is gone).
+10. Done: triage (four agents). Suite 13097 -> 13099, 0 lost; corpora unchanged; react -4.8% instructions, the rest
+   within +0.24%. tsc's deferred checks ported (class expressions, JSX, `void`), has_inferable_index and union `this`
+   as tsc, deep nesting unwraps mapped types, webpack's double-loaded declarations 60 s -> 1.5 s (failures cached
+   after a depth overflow, TS2321). Plan 35 has one queue; hacks.md and bugs/*.md re-checked (816 -> 769,
+   750 -> 587 lines). triage.md empty.
 11. **Insights.**
