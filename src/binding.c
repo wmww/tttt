@@ -848,8 +848,8 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
             Ty const* t = prop_type(checker, prop);
             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
             bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
-            // (At the property's declaration in this literal: `a: null`, not just its name)
-            if (!inner && prop->decl->literal_own && prop->decl->decl_span_count && prop->decl->decl_spans[0].source) {
+            // (At the property's declaration, `a: null` and not just its name: tsc's valueDeclaration, a spread one's too)
+            if (!inner && prop->decl->decl_span_count && prop->decl->decl_spans[0].source) {
                 cstr name = ty_prop_name_cstr(checker, prop->name);
                 cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
                 error_ctx_error_d(errs, prop->decl->decl_spans[0], 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");

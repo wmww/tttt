@@ -23621,7 +23621,7 @@ const baselines = {
         types: true,
     },
     'noImplicitAnyUnionNormalizedObjectLiteral1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
