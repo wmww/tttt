@@ -1509,7 +1509,7 @@ static void report_arity(
         if (declared_by && args->len < declared_by->param_count) missing = &declared_by->params[args->len];
         if (missing && missing->decl) {
             Binding const* binding = &missing->decl->initializer.binding;
-            Span at = span_valid(missing->decl->jsdoc_span) ? missing->decl->jsdoc_span : missing->decl->span;
+            Span at = missing->decl->jsdoc_span ? *missing->decl->jsdoc_span : missing->decl->span;
             if (binding->tag != BINDING_IDENTIFIER) {
                 error_add_related_d(error, missing->decl->span, 6211, "An argument matching this binding pattern was not provided.");
             } else if (missing->rest) {

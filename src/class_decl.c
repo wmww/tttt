@@ -1517,8 +1517,8 @@ static void class_check_emit_helpers(ClassDecl* me, ErrorCtx* errs) {
         if (!legacy || !function || !function->has_body || my is_expression) continue;
         if (item->tag == CLASS_ITEM_METHOD && item->method.accessor == CLASS_ACCESSOR_GET) continue;
         for_each (arg, vec_function_arg, &function->args) {
-            if (!vec_expr_size(&arg->decorators)) continue;
-            Span at = decorator_span(vec_expr_at(&arg->decorators, 0));
+            if (!vec_expr_size(function_arg_decorators(arg))) continue;
+            Span at = decorator_span(vec_expr_at(function_arg_decorators(arg), 0));
             ty_check_emit_helpers(current_checker, at, EMIT_HELPER_DECORATE | EMIT_HELPER_PARAM, errs);
             if (options->emit_decorator_metadata) ty_check_emit_helpers(current_checker, at, EMIT_HELPER_METADATA, errs);
         }
@@ -1814,7 +1814,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
         for (isize a = 0; function && a < vec_function_arg_size(&function->args); a++) {
             FunctionArg const* arg = vec_function_arg_at(&function->args, a);
-            if (!vec_expr_size(&arg->decorators)) continue;
+            if (!vec_expr_size(function_arg_decorators(arg))) continue;
             bool getter = i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_GET;
             // (tsc's parameter index doesn't count a `this` parameter, which can't be decorated)
             FunctionArg const* first = vec_function_arg_at(&function->args, 0);
@@ -1826,7 +1826,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 at.sv = csview_from_n(span_start_ptr(arg->span), 1);
                 error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
             }
-            for_each (decorator, vec_expr, &arg->decorators) {
+            for_each (decorator, vec_expr, function_arg_decorators(arg)) {
                 if (valid && span_valid(arg->span) && !(has_this && a == 0)) {
                     ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i,
                         .param_index = (i32)(a - (has_this ? 1 : 0)), .at = decorator_span(decorator) }, errs);

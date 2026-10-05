@@ -23,27 +23,46 @@ typedef struct JsDocUnmatchedParam {
 
 typedef struct FunctionArg {
     Span span;
-    // Declared by a JSDoc `@type` signature of the function: that parameter (where messages point, like tsc's)
-    Span jsdoc_span;
     InitializedBinding initializer;
-    bool explicit_optional;
-    Span question_span; // `?`, invalid when the parameter has none (explicit_optional can come from JSDoc)
-    Span rest_span;
-    bool rest;
+    // Declared by a JSDoc `@type` signature of the function: that parameter (where messages point, like tsc's). Owned,
+    // null otherwise
+    Span* jsdoc_span;
+    // Of a class member's parameter: checked as calls by class_decl_typecheck(). Owned, null if there are none: read
+    // through function_arg_decorators()
+    VecExpr* decorators;
+    // `?` (explicit_optional can come from JSDoc) and `...`: where they are in `span`, see function_arg_question_span()
+    // and function_arg_rest_span()
+    u32 question_offset; // 0: none
+    u32 rest_length; // From the start of `span` to the end of the `...`, 0: not a rest parameter
+    bool explicit_optional : 1;
+    bool rest : 1;
     // A parameter of a signature in a type written as just a name that is a type (`(string) => void`), set when
     // resolving names: TS7051 instead of TS7006 (tsc's reportImplicitAny)
-    bool name_is_type;
-    bool jsdoc_variadic; // JavaScript `@param {...T} x` of a parameter that isn't a rest parameter (x is T)
-    VecExpr decorators; // Of a class member's parameter: checked as calls by class_decl_typecheck()
+    bool name_is_type : 1;
+    bool jsdoc_variadic : 1; // JavaScript `@param {...T} x` of a parameter that isn't a rest parameter (x is T)
     // `constructor(public x: T)`: also declares a property of the class
-    bool is_parameter_property;
-    bool is_readonly_property;
-    bool is_override_property; // `constructor(override x: T)`
+    bool is_parameter_property : 1;
+    bool is_readonly_property : 1;
+    bool is_override_property : 1; // `constructor(override x: T)`
+    bool jsdoc_this : 1; // The `this` parameter a JSDoc `@this {T}` declares (not in the baselines' walk)
     uint8_t access; // AccessModifier (class_decl.h) of a parameter property
-    bool jsdoc_this; // The `this` parameter a JSDoc `@this {T}` declares (not in the baselines' walk)
 } FunctionArg;
 
 void function_arg_drop(FunctionArg* me);
+// `?`, invalid when the parameter has none
+static inline Span function_arg_question_span(FunctionArg const* me) {
+    if (!me->question_offset) return span_null;
+    return (Span){ .source = me->span.source, .sv = { me->span.sv.buf + me->question_offset, 1 } };
+}
+// From the start of the parameter to the end of its `...`, invalid when it's not a rest parameter
+static inline Span function_arg_rest_span(FunctionArg const* me) {
+    if (!me->rest_length) return span_null;
+    return (Span){ .source = me->span.source, .sv = { me->span.sv.buf, me->rest_length } };
+}
+extern const VecExpr function_arg_no_decorators;
+static inline VecExpr const* function_arg_decorators(FunctionArg const* me) {
+    return me->decorators ? me->decorators : &function_arg_no_decorators;
+}
 
 #define g_class_key FunctionArg, function_arg
 #define g_no_clone

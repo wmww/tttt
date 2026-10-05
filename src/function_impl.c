@@ -10,8 +10,14 @@
 #include "unused.h"
 #include "class_decl.h"
 
+const VecExpr function_arg_no_decorators = {0};
+
 void function_arg_drop(FunctionArg* me) {
-    vec_expr_drop(&my decorators);
+    if (my decorators) {
+        vec_expr_drop(my decorators);
+        free(my decorators);
+    }
+    free(my jsdoc_span);
     initialized_binding_drop(&my initializer);
 }
 
@@ -182,7 +188,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     }
     Scope* decorator_names = nullptr;
     for_each (i, vec_function_arg, &my args) {
-        for_each (decorator, vec_expr, &i->decorators) {
+        for_each (decorator, vec_expr, function_arg_decorators(i)) {
             // (A class member's parameter decorators see the `this` outside the class, like the member's own)
             if (!decorator_names) {
                 decorator_names = scope_new(names, SCOPE_BLOCK);
@@ -419,11 +425,11 @@ static bool function_impl_check_grammar_parameters(FunctionImpl const* me, Error
         Span name = i->initializer.binding.content_span;
         if (i->rest) {
             if (i_index != vec_function_arg_size(&my args) - 1) {
-                error_ctx_grammar_error_d(errs, i->rest_span, 1014, "A rest parameter must be last in a parameter list.");
+                error_ctx_grammar_error_d(errs, function_arg_rest_span(i), 1014, "A rest parameter must be last in a parameter list.");
                 return true;
             }
-            if (span_valid(i->question_span)) {
-                error_ctx_grammar_error_d(errs, i->question_span, 1047, "A rest parameter cannot be optional.");
+            if (span_valid(function_arg_question_span(i))) {
+                error_ctx_grammar_error_d(errs, function_arg_question_span(i), 1047, "A rest parameter cannot be optional.");
                 return true;
             }
             if (has_initializer) {
@@ -432,7 +438,7 @@ static bool function_impl_check_grammar_parameters(FunctionImpl const* me, Error
             }
         } else if (i->explicit_optional) {
             seen_optional = true;
-            if (span_valid(i->question_span) && has_initializer) {
+            if (span_valid(function_arg_question_span(i)) && has_initializer) {
                 error_ctx_grammar_error_d(errs, name, 1015, "Parameter cannot have question mark and initializer.");
                 return true;
             }
@@ -469,11 +475,11 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
     }
     FunctionArg const* value = vec_function_arg_at(&my args, has_this ? 1 : 0);
     if (value->rest) {
-        error_ctx_grammar_error_d(errs, value->rest_span, 1053, "A 'set' accessor cannot have rest parameter.");
+        error_ctx_grammar_error_d(errs, function_arg_rest_span(value), 1053, "A 'set' accessor cannot have rest parameter.");
         return true;
     }
-    if (span_valid(value->question_span)) {
-        error_ctx_grammar_error_d(errs, value->question_span, 1051, "A 'set' accessor cannot have an optional parameter.");
+    if (span_valid(function_arg_question_span(value))) {
+        error_ctx_grammar_error_d(errs, function_arg_question_span(value), 1051, "A 'set' accessor cannot have an optional parameter.");
         return true;
     }
     if (initialized_binding_value(&value->initializer)->tag != EXPR_IMPLICIT_ANY) {
@@ -944,7 +950,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     bool class_member = !my is_expression && (span_valid(my member_name) || my constructed_class);
     for_each (i, vec_function_arg, &my args) {
         if (!class_member) {
-            for_each (decorator, vec_expr, &i->decorators) {
+            for_each (decorator, vec_expr, function_arg_decorators(i)) {
                 expr_typecheck(decorator, errs);
             }
         }

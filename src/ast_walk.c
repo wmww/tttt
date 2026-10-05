@@ -41,7 +41,7 @@ static bool walk_variables(VariableStatement const* me, AstExprVisit visit, void
 
 static bool walk_function(FunctionImpl const* me, AstExprVisit visit, void* arg) {
     for_each (i, vec_function_arg, &my args) {
-        if (walk_exprs(&i->decorators, visit, arg) || walk_initialized_binding(&i->initializer, visit, arg)) return true;
+        if (walk_exprs(function_arg_decorators(i), visit, arg) || walk_initialized_binding(&i->initializer, visit, arg)) return true;
     }
     return walk_block(&my body, visit, arg);
 }

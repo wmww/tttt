@@ -1889,7 +1889,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         }
         if (param->optional) out_lit(d, "?");
         // (A function expression's parameter typed by a JSDoc `@type` signature: tsc types it contextually)
-        bool contextual_jsdoc = function && function->is_expression && param->decl && span_valid(param->decl->jsdoc_span);
+        bool contextual_jsdoc = function && function->is_expression && param->decl && param->decl->jsdoc_span;
         out(reused_if(d, d.reused || (syntactic && param->decl && !contextual_jsdoc)), c_sv(": "));
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&

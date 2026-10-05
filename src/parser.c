@@ -4315,7 +4315,7 @@ static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function
         if (binding->has_explicit_type || !from->initializer.binding.has_explicit_type || from->rest != i->rest) continue;
         binding->explicit_type = from->initializer.binding.explicit_type;
         binding->explicit_type.from_jsdoc = true;
-        i->jsdoc_span = from->span;
+        i->jsdoc_span = c_new(Span, from->span);
         binding->explicit_type_span = tag->type_span;
         binding->has_explicit_type = true;
         from->initializer.binding.has_explicit_type = false;
@@ -5900,14 +5900,18 @@ static bool parse_function_args_inner(
                 }
 
                 initializer.is_rest_parameter = rest;
+                Span arg_span = span_from(arg_start);
+                VecExpr* boxed_decorators = nullptr;
+                if (vec_expr_size(&decorators)) boxed_decorators = c_new(VecExpr, decorators);
+                else vec_expr_drop(&decorators);
                 list_push(vec_function_arg, &ret->args, (FunctionArg){
-                    .span = span_from(arg_start),
-                    .rest_span = rest_span,
+                    .span = arg_span,
+                    .rest_length = rest ? (u32)rest_span.sv.size : 0,
                     .initializer = initializer,
                     .explicit_optional = explicit_optional,
-                    .question_span = question_span,
+                    .question_offset = span_valid(question_span) ? (u32)(question_span.sv.buf - arg_span.sv.buf) : 0,
                     .rest = rest,
-                    .decorators = decorators,
+                    .decorators = boxed_decorators,
                     .is_parameter_property = is_parameter_property,
                     .is_readonly_property = is_readonly_property,
                     .is_override_property = is_override_property,

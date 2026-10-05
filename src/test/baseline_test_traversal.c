@@ -1107,7 +1107,7 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
     generic_compile_test_info(&my generic, ctx);
     for_each (i, vec_function_arg, &my args) {
         if (i->jsdoc_this) continue;
-        for_each (decorator, vec_expr, &i->decorators) {
+        for_each (decorator, vec_expr, function_arg_decorators(i)) {
             expr_compile_test_info(decorator, ctx);
         }
         Span saved = ctx->parameter_property_class;
