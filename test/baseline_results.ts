@@ -24586,7 +24586,7 @@ const baselines = {
         types: true,
     },
     'operationsAvailableOnPromisedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

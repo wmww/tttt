@@ -1481,8 +1481,14 @@ static void suggest_await_for_invocation(Checker* me, Error* error, Ty const* ap
     if (!error) return;
     Ty const* awaited = ty_awaited(me, apparent);
     if (awaited == apparent) return;
-    Members const* members = ty_members(me, ty_apparent_type(me, awaited));
-    if (construct ? members->construct_count : members->call_count) {
+    // (A union's signatures: approximated by every member having some)
+    TyList parts = awaited->kind == TY_UNION ? awaited->composite.types : (TyList){ .data = &awaited, .len = 1 };
+    bool has = true;
+    for (u32 i = 0; i < parts.len && has; i++) {
+        Members const* members = ty_members(me, ty_apparent_type(me, parts.data[i]));
+        has = construct ? members->construct_count : members->call_count;
+    }
+    if (has) {
         error_add_related_d(error, expr_outer_span(&info->call->callable), 2773, "Did you forget to use 'await'?");
     }
 }
@@ -2348,6 +2354,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                         construct ? "construct" : "call", " signatures.");
                     cstr_drop(&member);
                 }
+                suggest_await_for_invocation(me, e, apparent, construct, info);
                 cstr_drop(&rendered);
             }
             return any;
