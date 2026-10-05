@@ -1146,12 +1146,18 @@ static Prop const* root_declaration(Prop const* prop) {
     return prop;
 }
 
+// An object type whose properties are known: not generic (TYF_COULD_CONTAIN_TYPE_VARIABLES says too little: a type
+// literal with a `typeof` in it has it)
+static bool is_known_object(Checker* me, Ty const* ty) {
+    return (ty->flags & TYF_OBJECT) && (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !ty_is_generic_object(me, ty));
+}
+
 // A property of types[i] that a later member declares separately, one of them privately (tsc's
 // isConflictingPrivateProperty: a synthetic property with no single value declaration that contains a private one)
 static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* const* types, u32 i, u32 len) {
     for (u32 j = i + 1; j < len; j++) {
         Ty const* b = types[j];
-        if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        if (!is_known_object(me, b)) continue;
         Prop const* other = ty_get_prop(me, b, prop->name);
         if (other && ((prop->flags | other->flags) & PROP_PRIVATE) && root_declaration(prop) != root_declaration(other)) {
             return true;
@@ -1167,13 +1173,13 @@ static bool has_conflicting_private(Checker* me, Prop const* prop, Ty const* con
 static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 len, bool* private_conflict) {
     u32 objects = 0;
     for (u32 i = 0; i < len; i++) {
-        if ((types[i]->flags & TYF_OBJECT) && !(types[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) objects++;
+        if (is_known_object(me, types[i])) objects++;
     }
     if (objects < 2) return nullptr;
     Atom const* private_name = nullptr;
     for (u32 i = 0; i < len; i++) {
         Ty const* a = types[i];
-        if (!(a->flags & TYF_OBJECT) || (a->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+        if (!is_known_object(me, a)) continue;
         Members const* members = ty_members(me, a);
         for (u32 p = 0; p < members->prop_count; p++) {
             Prop const* prop = members->props[p];
@@ -1182,7 +1188,7 @@ static Atom const* never_reduced_prop(Checker* me, Ty const* const* types, u32 l
             Ty const* a_type = nullptr;
             for (u32 j = i + 1; j < len; j++) {
                 Ty const* b = types[j];
-                if (!(b->flags & TYF_OBJECT) || (b->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
+                if (!is_known_object(me, b)) continue;
                 Prop const* other = ty_get_prop(me, b, prop->name);
                 if (!other || (other->flags & PROP_OPTIONAL)) continue;
                 if (!a_type) a_type = prop_type(me, prop);
