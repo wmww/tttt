@@ -57006,7 +57006,7 @@ const baselines = {
         types: true,
     },
     'parserExportAssignment5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57026,7 +57026,7 @@ const baselines = {
         types: true,
     },
     'parserExportAssignment9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

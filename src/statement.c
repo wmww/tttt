@@ -1552,6 +1552,18 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
+            // tsc's checkExportAssignment: neither belongs in a namespace, and
+            // what they name isn't resolved then
+            if (names->kind == SCOPE_NAMESPACE && !(names->container && (names->container->is_module || names->container->is_augmentation))) {
+                if (my export_equals) {
+                    error_ctx_error_d(errs, span_with_semicolon(my span), 1063, "An export assignment cannot be used in a namespace.");
+                } else {
+                    error_ctx_error_d(errs, span_with_semicolon(my span), 1319, "A default export can only be used in an "
+                        "ECMAScript-style module.");
+                }
+                expr_lookup_names(&my expr, names, nullptr);
+                break;
+            }
             // `export = x` doesn't use x before its declaration: the emit moves it (tsc)
             export_assignment_check_isolated(me, names, errs);
             bool saved_type_query = flow->in_type_query;

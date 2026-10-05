@@ -154,7 +154,8 @@ bool modifier_list_check_grammar(ModifierList const* me, ModifiedNode const* nod
                 break;
 
             case MODIFIER_EXPORT_DEFAULT:
-                if (node->parent == MODIFIED_IN_MODULE_BLOCK && node->parent_is_namespace) {
+                // (`export default e` is said by the checker, at the whole statement)
+                if (node->parent == MODIFIED_IN_MODULE_BLOCK && node->parent_is_namespace && node->kind != MODIFIED_EXPORT_ASSIGNMENT) {
                     REPORT(s, 1319, "A default export can only be used in an ECMAScript-style module.");
                 }
                 if (node->using_kind == 1) REPORT(s, 1491, "'default' modifier cannot appear on a 'using' declaration.");
