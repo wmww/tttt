@@ -1110,6 +1110,9 @@ static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
         TyList members = unions[u]->composite.types;
         for (u32 i = 0; i < members.len; i++) {
             Ty const* t = members.data[i];
+            // A member of the first union was decided there (tsc's `checked` set): without this `keyof (A | B | ...)`
+            // of many types sharing their keys was quadratic in the number of unions
+            if (u && union_contains(unions[0], t)) continue;
             bool everywhere = true;
             for (u32 other = 0; other < count && everywhere; other++) {
                 if (union_contains(unions[other], t)) continue;
