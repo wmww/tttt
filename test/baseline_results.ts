@@ -39743,7 +39743,7 @@ const baselines = {
     'es2022IntlAPIs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es2022LocalesObjectArgument': {
         errors: true,

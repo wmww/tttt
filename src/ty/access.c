@@ -428,6 +428,18 @@ Ty const* ty_access(Checker* me, Ty const* object, Ty const* index) {
     return access(me, object, ty_regular(me, index), 0, 0); // `o["a"]`: keys are regular
 }
 
+Ty const* ty_access_own_named_prop(Checker* me, Ty const* object, Atom const* name) {
+    if (object->kind == TY_UNION) return nullptr;
+    object = ty_apparent_type(me, object);
+    // (access()'s path for a name on a plain object type: lists read digits as elements, intersections and unions
+    // combine their members)
+    if (!(object->flags & TYF_OBJECT) || object->kind == TY_UNION || object->kind == TY_INTERSECTION) return nullptr;
+    if (ty_tuple_shape(object) || ty_is_array(me, object)) return nullptr;
+    FoundProp prop = ty_find_prop(me, object, name);
+    if (!prop.found) return nullptr;
+    return prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, prop.type) : prop.type;
+}
+
 Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
     return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
 }

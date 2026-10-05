@@ -578,6 +578,17 @@ static bool is_contextual_type_variable(Ty const* ty) {
 
 static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg);
 
+// What get_prop_context() looks for: a property by name, its literal type made only when needed (tsc's
+// getTypeOfPropertyOfContextualType: getStringLiteralType(name) only for index signatures and generic mapped types)
+typedef struct PropContextKey {
+    Atom const* name; // Null if the key is a type that names no property
+    Ty const* key; // The key type, if known
+} PropContextKey;
+
+static Ty const* prop_context_key(Checker* me, PropContextKey const* k) {
+    return k->key ? k->key : ty_prop_name_literal(me, k->name);
+}
+
 static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty const* key) {
     TyBuf parts = {0};
     TyBuf index_candidates = {0};
@@ -592,7 +603,8 @@ static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty con
         if (is_contextual_type_variable(member)) {
             member = ty_apparent_type(me, member);
             if (member->kind == TY_UNION || member->kind == TY_INTERSECTION) {
-                push_prop_context_part(me, &parts, context_map(me, member, get_prop_context, key));
+                PropContextKey member_key = { name, key };
+                push_prop_context_part(me, &parts, context_map(me, member, get_prop_context, &member_key));
                 continue;
             }
         }
@@ -623,6 +635,7 @@ static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty con
 }
 
 static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg) {
+    PropContextKey const* k = arg;
     // A type variable says what its constraint says, a generic mapped one included (tsc's
     // getApparentTypeOfContextualType)
     if (is_contextual_type_variable(object)) {
@@ -630,14 +643,27 @@ static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg
         if (is_nullable_or_primitive(object) || object->kind == TY_TYPE_PARAM) return nullptr;
     }
     if (object->kind == TY_INTERSECTION && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-        return intersection_prop_context(me, object, arg);
+        return intersection_prop_context(me, object, prop_context_key(me, k));
     }
-    Ty const* mapped = ty_generic_mapped_prop_context(me, object, arg);
-    return mapped ? mapped : ty_access(me, object, arg);
+    // A property the object has: no literal type for its name (not generic: a generic mapped type wants the key)
+    if (!k->key && !(object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        Ty const* own = ty_access_own_named_prop(me, object, k->name);
+        if (own) return own;
+    }
+    Ty const* key = prop_context_key(me, k);
+    Ty const* mapped = ty_generic_mapped_prop_context(me, object, key);
+    return mapped ? mapped : ty_access(me, object, key);
 }
 
 static Ty const* contextual_prop_type(Checker* me, Ty const* contextual, Ty const* key) {
-    return context_map(me, contextual, get_prop_context, key);
+    PropContextKey k = { nullptr, key };
+    return context_map(me, contextual, get_prop_context, &k);
+}
+
+// contextual_prop_type() of a property name
+static Ty const* contextual_named_prop_type(Checker* me, Ty const* contextual, Atom const* name) {
+    PropContextKey k = { name, nullptr };
+    return context_map(me, contextual, get_prop_context, &k);
 }
 
 typedef struct ElementContextArg {
@@ -3215,9 +3241,13 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // in X's initializer)
         Ty const* member_sig_context = nullptr;
         if ((ctx.contextual || ctx.sig_contextual) && !is_accessor) {
-            Ty const* key = name ? ty_prop_name_literal(me, name) : key_type;
-            if (key && ctx.contextual) member_context = contextual_prop_type(me, ctx.contextual, key);
-            if (key && ctx.sig_contextual) member_sig_context = contextual_prop_type(me, ctx.sig_contextual, key);
+            if (name) {
+                if (ctx.contextual) member_context = contextual_named_prop_type(me, ctx.contextual, name);
+                if (ctx.sig_contextual) member_sig_context = contextual_named_prop_type(me, ctx.sig_contextual, name);
+            } else if (key_type) {
+                if (ctx.contextual) member_context = contextual_prop_type(me, ctx.contextual, key_type);
+                if (ctx.sig_contextual) member_sig_context = contextual_prop_type(me, ctx.sig_contextual, key_type);
+            }
         }
         ExprCtx member_ctx = {
             .contextual = member_context, .sig_contextual = member_sig_context,
@@ -3623,7 +3653,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
             continue;
         }
         Atom const* name = checker_atom(me, i->name.sv);
-        Ty const* member_context = ctx.contextual ? contextual_prop_type(me, ctx.contextual, ty_prop_name_literal(me, name)) : nullptr;
+        Ty const* member_context = ctx.contextual ? contextual_named_prop_type(me, ctx.contextual, name) : nullptr;
         Ty const* type;
         switch (i->tag) {
             case JSX_ATTRIBUTE_NO_VALUE: type = ty_intrinsic(me, TY_TRUE); break; // `<a x />` is `<a x={true} />`
@@ -3656,7 +3686,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     if (child_count) {
         Atom const* children_name = ty_jsx_children_prop_name(me, element);
         Ty const* children_context = ctx.contextual && children_name && atom_sv(children_name).size ?
-            contextual_prop_type(me, ctx.contextual, ty_prop_name_literal(me, children_name)) : nullptr;
+            contextual_named_prop_type(me, ctx.contextual, children_name) : nullptr;
         TyBuf types = {0};
         u32 index = 0;
         for_each (i, vec_jsx_child, &element->children) {

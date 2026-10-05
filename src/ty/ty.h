@@ -1508,6 +1508,10 @@ bool ty_definitely_unassignable(Checker* me, Ty const* source, Ty const* target)
 // The type of `object[index]` (and `object.name`, the index being the name as a literal). Null if there's no such
 // property or the index isn't one that can be looked up
 Ty const* ty_access(Checker* me, Ty const* object, Ty const* index);
+// What ty_access() gives for the property `name` of a single object type that has it, without the name's literal type
+// (tsc makes that only for index signatures and mapped types, and when it's made is union order). Null when the object
+// isn't such a type (a union, intersection, list...) or lacks it: then ask ty_access() with ty_prop_name_literal()
+Ty const* ty_access_own_named_prop(Checker* me, Ty const* object, Atom const* name);
 // tsc's getNarrowedTypeOfSymbol: an element of a const (or unassigned parameter) pattern of a union, where control flow
 // narrows that union by the pattern's other elements (`const { kind, payload } = x; if (kind === "a") payload`). Null
 // if nothing narrows it
