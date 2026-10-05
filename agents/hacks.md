@@ -24,22 +24,17 @@ src` finds the code-side markers; every significant one has an entry here.
 - LazyType slots (`lazy_slot_new`): one process-wide counter, never reused, taken eagerly: sparse tables cost ~6% RSS,
   panic after 1G slots; per-file numbering would work. `lazy_type_drop` resets a slot if a checker is current
   (assumed a temporary); AST slots are dropped by `checker_drop` before the AST: an implicit ordering rule.
-- **Parallelism contract** (documentation.md "Resolve names"), what still writes shared state. Declare and link are
-  serial: script globals and `declare global` into `Binder.globals`, ambient modules, namespace exports shared by files.
-  The resolve walk (plan 45) is per file for TypeScript, with exceptions that are serial or deferred rather than
-  designed away: **JavaScript files walk serially** (nested `this.x =`, prototype and expando assignments declare into
-  other files' symbols and the walk reads them back: plan 45 stage 2); **files sharing merged type parameters**
-  (`binder_mark_serial_resolves()`: the first declaration's walk makes the symbols, `scope_new_generic_merged()`;
-  tsc makes them in its binder, which tttt could do in declare instead); **deferred events** replayed in program order
-  (suggestion counting; expandos into a non-private host: `expando_host_is_private()` is conservative). Cross-file
-  writes left by design: `Symbol.referenced` (atomic OR), `has_assignment_flow_containers` (atomic store),
-  `flow_start` (only the first declaring file writes it, and `outer_reference` treats a symbol first declared elsewhere
-  as outer without reading it). A walk's scratch `ErrorCtx` (two places drop errors) can't be a deferred report's
-  target: `shard_lasting_errs()` sends it to the shard's discarded one, which is right only while scratch contexts in
-  the walk are dropped, never merged. Check: per-checker `Checker.errs`; the program's ctx is `frozen` (during the
-  parallel walk too) and `Binder.frozen` set, so a report there, a new binder symbol or a first alias resolution
-  `log_error()`s. Runtime guards, not a proof: TSan on the corpora and on the suite with `TTTT_PARALLEL_RESOLVE=1
-  baseline_tests --threads 4` (2 minutes; `ulimit -s 4000000` first) is the other net.
+- **Parallelism contract** (documentation.md "Resolve names" has the design): what is serial or shared rather than
+  designed away. JavaScript files walk serially (assignment declarations write other files' symbols: plan 45 stage 2);
+  so do files sharing merged type parameters (`binder_mark_serial_resolves()`; tsc makes them in its binder, tttt could
+  in declare). Deferred events replayed in program order: suggestion counting, expandos into a non-private host
+  (`expando_host_is_private()` is conservative). Cross-file writes left by design: `Symbol.referenced` (atomic OR),
+  `has_assignment_flow_containers` (atomic store), `flow_start` (only the first declaring file writes it;
+  `outer_reference` treats a symbol first declared elsewhere as outer without reading it). A walk's scratch `ErrorCtx`
+  can't be a deferred report's target: `shard_lasting_errs()` sends it to the shard's discarded one, right only while
+  scratch contexts in the walk are dropped, never merged. Guards: the program's ctx is `frozen` and `Binder.frozen`
+  set during the walk, so a report there, a new binder symbol or a first alias resolution `log_error()`s. Not a
+  proof: TSan on the corpora and on `TTTT_PARALLEL_RESOLVE=1 baseline_tests --threads 4` (`ulimit -s 4000000`).
 - Load pool (`program_load_ahead_from()`): guesses what a file will load with a simplified copy of
   `program_load_module_ref()`/`program_handle_statement()`; a wrong guess only wastes a parse
   (`TTTT_LOAD_POOL_STATS=1`). Sizes from `stat()` in `main.c` (harness: FIFO).
