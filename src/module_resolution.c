@@ -145,8 +145,9 @@ cstr module_resolver_real_path_lenient(ModuleResolver* me, csview path) {
     return ret;
 }
 
-static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
-    if (!my realpath || !resolved->is_external_library || my options->preserve_symlinks) return;
+// Follows a resolved file's symlinks (tsc's getOriginalAndResolvedFileName)
+static void follow_symlinks(ModuleResolver* me, ResolvedModule* resolved) {
+    if (!my realpath || my options->preserve_symlinks) return;
     cstr real = module_resolver_real_path_lenient(me, cstr_sv(&resolved->path));
     if (cstr_size(&real)) {
         if (!cstr_eq(&real, &resolved->path)) cstr_take(&resolved->original_path, cstr_clone(resolved->path));
@@ -154,6 +155,11 @@ static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
     } else {
         cstr_drop(&real);
     }
+}
+
+// Modules are followed only out of node_modules
+static void apply_realpath(ModuleResolver* me, ResolvedModule* resolved) {
+    if (resolved->is_external_library) follow_symlinks(me, resolved);
 }
 
 void module_resolver_destroy(ModuleResolver* me) {
@@ -1639,12 +1645,14 @@ ResolvedModule module_resolver_resolve_type_reference(
         } else {
             resolved = load_from_nearest_node_modules(&state, state.containing_dir, name, EXT_DTS, &found) == SEARCH_FOUND;
         }
-        ret.is_external_library = resolved;
     }
     if (resolved) {
         ret.kind = found.kind;
         ret.path = found.path;
-        apply_realpath(me, &ret);
+        // A type root's directive is followed through symlinks too (tsc realpaths every resolved directive: a
+        // node_modules/@types that links to a workspace's types/ loads each file once)
+        ret.is_external_library = path_contains_node_modules(cstr_sv(&ret.path));
+        follow_symlinks(me, &ret);
     }
     cstr_drop(&containing_dir);
     return ret;

@@ -15,7 +15,8 @@ if test "${1:-}" = --relock; then RELOCK=1; fi
 # NAME URL COMMIT PROJECT_DIR [LINK] (PROJECT_DIR: the directory with the package.json the dependencies are installed
 # for, relative to the checkout; LINK: node_modules/NAME is a symlink to LINK, relative to node_modules, as a project
 # that imports its own package name gets from `yarn link` or a workspace; `workspace:GLOB` instead links every package
-# directory GLOB matches, relative to the checkout, under its package.json name, as a workspace install does). If corpora-locks/NAME.package.json exists, it
+# directory GLOB matches, relative to the checkout, under its package.json name, as a workspace install does; `alias:A=T`
+# links node_modules/A to T instead). If corpora-locks/NAME.package.json exists, it
 # replaces PROJECT_DIR/package.json before installing (a monorepo whose package manager npm can't read). The files under
 # corpora-locks/NAME.overlay/ are copied into the checkout (a tsconfig of our own, when upstream's doesn't fit)
 CORPORA=(
@@ -85,6 +86,12 @@ CORPORA=(
     # dependencies of effect, @effect/vitest and the root at pnpm-lock.yaml's versions, from
     # corpora-locks/effect.package.json; the workspace packages are linked into the root's node_modules
     "effect https://github.com/Effect-TS/effect.git e730f59d29db5f1e312be6476a95d07bcad45788 . workspace:packages/*"
+    # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (./sweep.py), every types/NAME with its own
+    # tsconfig and tests. DT's pnpm workspace links each @types/X to types/X: node_modules/@types -> ../types does the
+    # same for the latest version of each. The npm dependencies are the few non-@types ones that many packages need
+    # (undici-types for node, csstype for react...), from corpora-locks/DefinitelyTyped.package.json; packages that
+    # need others fail under tsc and are left out of the sweep
+    "DefinitelyTyped https://github.com/DefinitelyTyped/DefinitelyTyped.git ac3977d854a671215b8d3e2d5e4ced9c345bf00b . alias:@types=../types"
 )
 
 mkdir -p corpora
@@ -122,6 +129,11 @@ for ENTRY in "${CORPORA[@]}"; do
                 mkdir -p "$(dirname "$PROJECT/node_modules/$PACKAGE_NAME")"
                 ln -s "$(realpath --relative-to="$(dirname "$PROJECT/node_modules/$PACKAGE_NAME")" "$PACKAGE")" "$PROJECT/node_modules/$PACKAGE_NAME"
             done
+        elif test "${LINK#alias:}" != "$LINK"; then
+            ALIAS=${LINK#alias:}
+            rm -rf "$PROJECT/node_modules/${ALIAS%%=*}"
+            mkdir -p "$(dirname "$PROJECT/node_modules/${ALIAS%%=*}")"
+            ln -s "${ALIAS#*=}" "$PROJECT/node_modules/${ALIAS%%=*}"
         elif test -n "$LINK"; then ln -s "$LINK" "$PROJECT/node_modules/$NAME"; fi
     fi
 done
