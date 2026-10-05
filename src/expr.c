@@ -33,6 +33,7 @@ void identifier_expr_drop(IdentifierExpr* me) {
 
 // tsc's checkThisBeforeSuper: directly in the constructor of a derived class (not `extends null`), `this` and
 // `super.x` need a `super()` call on every way there. The flow graph behind the current node is complete already
+static bool is_valid_const_assertion_argument(Expr const* me);
 static bool check_before_super(IdentifierExpr const* me, Scope const* names, unsigned code, char const* what, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     if (!flow || flow->dead || !flow->constructor_of || !names->function || !names->function->is_constructor) return true;
@@ -4024,6 +4025,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         case EXPR_GENERIC_PARAMS: generic_params_expr_typecheck(my generic_params, errs); break;
 
         case EXPR_AS_TYPE:
+            if (as_type_is_const_assertion(my as_type) && !is_valid_const_assertion_argument(&my as_type->expr)) {
+                error_ctx_error_d(errs, expr_outer_span(&my as_type->expr), 1355, "A 'const' assertions can only be applied to "
+                    "references to enum members, or string, number, boolean, array, or object literals.");
+            }
             if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {
                 // The asserted type is the contextual type of the operand, which nobody has looked at yet
                 Ty const* asserted = ty_of_node(&my as_type->type);
@@ -4488,6 +4493,30 @@ IdentifierExpr const* expr_this_or_alias(Expr const* me) {
     Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
     bool is_this = init->tag == EXPR_IDENTIFIER && init->identifier.keyword == KEYWORD_IDENTIFIER_THIS && !expr_is_perenthisized(init);
     return is_this ? &init->identifier : nullptr;
+}
+
+// tsc's isValidConstAssertionArgument (parentheses are transparent)
+static bool is_valid_const_assertion_argument(Expr const* me) {
+    switch (my tag) {
+        case EXPR_LITERAL:
+            return my literal.tag == VALUE_NUMBER || my literal.tag == VALUE_STRING || my literal.tag == VALUE_BOOLEAN ||
+                my literal.tag == VALUE_BIGINT;
+        case EXPR_ARRAY: case EXPR_OBJECT: return true;
+        case EXPR_TEMPLATE: return !my template_->tag;
+        case EXPR_UNARY_OP: {
+            Expr const* operand = &my unary_op->expr;
+            if (expr_is_perenthisized(operand) || operand->tag != EXPR_LITERAL) return false;
+            return (my unary_op->op == UNARY_OP_MINUS && (operand->literal.tag == VALUE_NUMBER || operand->literal.tag == VALUE_BIGINT)) ||
+                (my unary_op->op == UNARY_OP_PLUS && operand->literal.tag == VALUE_NUMBER);
+        }
+        case EXPR_PROPERTY: {
+            Expr object = my property->expr;
+            object.paren_before = object.paren_after = 0; // (skipParentheses)
+            Symbol const* symbol = expr_is_entity_name(&object) ? expr_entity_name_symbol(&object) : nullptr;
+            return symbol && (symbol->flags & SYMBOL_ENUM);
+        }
+        default: return false;
+    }
 }
 
 Symbol const* expr_entity_name_symbol(Expr const* me) {
