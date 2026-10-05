@@ -8771,7 +8771,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitUnknownImport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

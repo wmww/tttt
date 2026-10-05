@@ -2867,7 +2867,21 @@ static Symbol* resolve_alias_target(Symbol* me) {
             if (is_global_declaration(my binder, found)) report_non_local_export(errs, item->source_name);
             unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
             item->source_symbol = found;
-            return resolve_if_pure_alias(found);
+            Symbol* target = resolve_if_pure_alias(found);
+            // An `import x = A.B` that resolves to nothing is exported as a value (tsc's checkExportSpecifier checks the
+            // name as an expression when the target is unknown, which checks A as a value: markAliasReferenced)
+            if ((!target || target->is_placeholder) && (found->flags & SYMBOL_ALIAS) && found->alias && found->alias->item &&
+                found->alias->item->tag == PORT_IMPORT_ALIAS && !found->alias->item->value_use_checked &&
+                vec_span_size(&found->alias->item->alias_path) && found->alias->scope
+            ) {
+                PortItem* alias_item = found->alias->item;
+                alias_item->value_use_checked = true;
+                Span first = *vec_span_front(&alias_item->alias_path);
+                if (first.sv.size && !scope_get_value(found->alias->scope, first.sv, nullptr)) {
+                    scope_report_value_not_found(found->alias->scope, first, false, found->alias->scope->binder->errs);
+                }
+            }
+            return target;
         }
 
         case PORT_IMPORT_GATHER:
