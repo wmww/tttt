@@ -65916,7 +65916,7 @@ const baselines = {
         types: false,
     },
     'intrinsicTypes': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
