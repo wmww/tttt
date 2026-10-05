@@ -52,6 +52,7 @@ void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCt
     FlowBuilder* flow = names->flow;
     for_each (i, vec_statement, &my statements) {
         flow->statement_list = is_block ? &my statements : nullptr;
+        flow->lookup_statements = &my statements;
         statement_resolve_names(i, names, errs);
     }
 }
@@ -161,7 +162,7 @@ Span block_first_token(Span at) {
 
 // tsc's checkGrammarStatementInAmbientContext: in an ambient context only declarations can be statements, which is
 // said once per block
-static bool is_ambient_disallowed(Statement const* me) {
+bool block_statement_is_ambient_disallowed(Statement const* me) {
     switch (my tag) {
         case STATEMENT_BLOCK:
         case STATEMENT_IF_ELSE:
@@ -200,7 +201,7 @@ void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     if (ctx.ambient && !ctx.ambient_reported) {
         for_each (i, vec_statement, &my statements) {
             // (A grammar error: not in a file with parse errors, like tsc's grammarErrorOnFirstToken)
-            if (!is_ambient_disallowed(i) || !i->span.source || i->span.source->has_parse_errors) continue;
+            if (!block_statement_is_ambient_disallowed(i) || !i->span.source || i->span.source->has_parse_errors) continue;
             error_ctx_error_d(errs, block_first_token(i->span), 1036, "Statements are not allowed in ambient contexts.");
             ctx.ambient_error_statement = i;
             break;

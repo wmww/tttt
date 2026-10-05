@@ -1371,6 +1371,17 @@ static void try_catch_resolve_names(TryCatchStatement* me, bool has_catch, bool 
 static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs);
 
 // label_count: how many labels the statement has
+// tsc's checkGrammarStatementInAmbientContext reports TS1036 at the first statement of a block an ambient context
+// doesn't allow, and that statement's own checks stop there (checkReturnStatement)
+static bool ambient_reported_at(Statement const* me, Scope const* names) {
+    VecStatement const* list = names->ambient && names->flow ? names->flow->lookup_statements : nullptr;
+    if (!list || !me->span.source || me->span.source->has_parse_errors) return false;
+    for_each (i, vec_statement, list) {
+        if (block_statement_is_ambient_disallowed(i)) return i == me;
+    }
+    return false;
+}
+
 static void statement_resolve_names_reachable(Statement* me, u32 label_count, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     if (statement_declares_name(my tag) || my tag == STATEMENT_IMPORT_EXPORT) {
@@ -1567,7 +1578,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (container && container->kind == SCOPE_STATIC_BLOCK) {
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 18041,
                     "A 'return' statement cannot be used inside a class static block.");
-            } else if (!container) {
+            } else if (!container && !ambient_reported_at(me, names)) {
                 // (grammarErrorOnFirstToken: the `return`, not reported in a file with parse errors)
                 error_ctx_grammar_error_d(errs, block_first_token(my span), 1108,
                     "A 'return' statement can only be used within a function body.");

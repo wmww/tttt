@@ -193,6 +193,8 @@ typedef struct FlowBuilder {
     bool nullish_condition; // The next expression is a condition by being the left side of `??`: FLOW_NULLISH
     // The statement list of the Block the next statement is a direct child of (TS7027 covers runs of statements there)
     VecStatement const* statement_list;
+    // The statement list the next statement is directly in, whatever kind of block (a file, a namespace body)
+    VecStatement const* lookup_statements;
     FlowStatementFrame const* statements;
     // The next expression walked is assigned to (FlowAssignmentKind). Taken like the targets
     uint8_t assignment_target;

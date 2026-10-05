@@ -53,6 +53,8 @@ bool block_has_export_declarations(Block const* me);
 // The resolve walk over the statements. is_block: a `{}` block or function body rather than the statements of a file
 // or namespace (tsc reports unreachable code differently)
 void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCtx* errs);
+/// A statement an ambient context doesn't allow (tsc's checkGrammarStatementInAmbientContext: TS1036)
+bool block_statement_is_ambient_disallowed(Statement const* me);
 // Same, as a control flow container of its own (flow.h): a file, a namespace body, a static block. `kind` and `name`
 // are for TTTT_DUMP_FLOW
 void block_lookup_names_container(Block const* me, bool is_block, csview kind, Span name, Scope* scope, ErrorCtx* errs);
