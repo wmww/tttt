@@ -3967,6 +3967,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
     if (!count) return TERNARY_FALSE;
 
     TyList members = object_target->composite.types;
+    bool require_optional = is_subtype_relation(st->relation) && requires_optional_properties(me, source);
     bool* matching = calloc(members.len, sizeof(bool));
     panic_if(!matching, "out of memory");
     Ternary result = TERNARY_TRUE;
@@ -4040,7 +4041,8 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                 if (!target_prop.found) continue;
                 FoundProp source_prop = find_prop(me, apparent, name, 0);
                 if (!source_prop.found) {
-                    if (!(target_prop.flags & PROP_OPTIONAL)) result = TERNARY_FALSE;
+                    // (Optional ones too for the subtype relations: tsc's propertiesRelatedTo, requireOptionalProperties)
+                    if (!(target_prop.flags & PROP_OPTIONAL) || require_optional) result = TERNARY_FALSE;
                     continue;
                 }
                 if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop.flags & PROP_OPTIONAL) && st->relation != TY_RELATION_COMPARABLE) {
