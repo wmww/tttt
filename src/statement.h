@@ -107,6 +107,7 @@ typedef struct NamespaceDecl {
     ModuleRef* module_ref; // Of an ambient module
     bool is_augmentation; // `declare module "./a" {}` in a module: adds to the module it names
     bool labeled; // The body of a labeled statement (a context it isn't allowed in, TS1234/TS1235)
+    bool jsdoc; // Of a dotted `@typedef` or `@callback` name (`A.B` of `A.B.C`): allowed anywhere, exported from a module
     Block contents;
     Scope* inner_scope;
     Symbol* symbol;

@@ -4984,7 +4984,15 @@ static void jsdoc_bind_comments(
                     break;
                 }
             }
-            if (!span_valid(i->name) || memchr(i->name.sv.buf, '.', (size_t)i->name.sv.size)) continue;
+            if (!span_valid(i->name)) continue;
+            // `@typedef {T} A.B.C` declares C in namespace A.B (tsc's JSDocNamespaceDeclaration)
+            Span full_name = i->name;
+            if (memchr(i->name.sv.buf, '.', (size_t)i->name.sv.size)) {
+                char const* last_dot = i->name.sv.buf + i->name.sv.size;
+                while (last_dot[-1] != '.') last_dot--;
+                i->name = span_make(i->name.source, last_dot, span_end_ptr(full_name));
+                if (!i->name.sv.size) continue;
+            }
             isize children = 0;
             while (i + 1 + children < tags.data + tags.size && i[1 + children].nested) children++;
             TypeNode type;
@@ -5036,6 +5044,25 @@ static void jsdoc_bind_comments(
                 }),
                 .span = span,
             });
+            // Wrapped in the namespaces of the dotted name, inside out
+            for (char const* end = span_start_ptr(i->name) - 1; end > span_start_ptr(full_name);) {
+                char const* start = end;
+                while (start > span_start_ptr(full_name) && start[-1] != '.') start--;
+                Block contents = {0};
+                vec_statement_push(&contents.statements, vec_statement_pull(out));
+                contents.statements.data[0].decl.props.exported = DECL_EXPORTED_YES;
+                // (The declaration starts at its part of the name: tsc's JSDocNamespaceDeclaration)
+                NamespaceDecl inner = {
+                    .name = span_make(full_name.source, start, end), .contents = contents, .jsdoc = true,
+                    .full_span = span_make(full_name.source, start, span_end_ptr(span)),
+                };
+                vec_statement_push(out, (Statement){
+                    .tag = STATEMENT_DECL_NAMESPACE,
+                    .decl.namespace = c_new(NamespaceDecl, inner),
+                    .span = span,
+                });
+                end = start - 1;
+            }
         }
         vec_jsdoc_tag_drop(&tags);
     }

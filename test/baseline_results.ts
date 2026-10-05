@@ -51126,9 +51126,9 @@ const baselines = {
         types: false,
     },
     'callbackTagNamespace': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackTagNestedParameter': {
         errors: true,
@@ -51601,9 +51601,9 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsImportNamespacedType': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsImportTypeBundled': {
         errors: true,

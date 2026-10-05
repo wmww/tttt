@@ -2976,6 +2976,8 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             break;
 
         case STATEMENT_DECL_NAMESPACE:
+            // (One a dotted JSDoc typedef name makes is in JSDoc, which tsc's walk doesn't go into)
+            if (my decl.namespace->jsdoc) break;
             namespace_decl_compile_test_info(my decl.namespace, ctx);
             break;
     }
