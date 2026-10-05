@@ -616,7 +616,7 @@ Ty const* ty_regular(Checker* me, Ty const* ty) {
     TyList members = ty->composite.types;
     TyBuf buf = {0};
     for (u32 i = 0; i < members.len; i++) ty_buf_push(&buf, ty_regular(me, members.data[i]));
-    Ty const* ret = ty_union(me, buf.data, buf.len, ty->alias, ty->alias_args);
+    Ty const* ret = ty_union(me, buf.data, buf.len, nullptr, (TyList){0});
     ty_buf_drop(&buf);
     *intern_slot(me, &my types, key, 2) = ret;
     return ret;
