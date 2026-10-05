@@ -11333,12 +11333,12 @@ const baselines = {
     'errorOnInitializerInInterfaceProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorOnInitializerInObjectTypeLiteralProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorOnUnionVsObjectShouldDeeplyDisambiguate': {
         errors: true,
@@ -16988,7 +16988,7 @@ const baselines = {
     'indexSignatureWithInitializer1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureWithTrailingComma': {
         errors: true,

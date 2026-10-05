@@ -5378,6 +5378,8 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         } else {
                             grammar_error(&p, expr_outer_span(&item.field.value), 1247, "A type literal property cannot have an initializer.");
                         }
+                        interface_member_accessor(vec_interface_member_back_mut(&members))->initializer = c_new(Expr, item.field.value);
+                        item.field.value = expr_implicit_any(span_null);
                     }
                     break;
 
@@ -7327,7 +7329,10 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         Expr initializer;
         bool has_initializer = parse_initialization(&p, expr_ctx_null, &initializer);
         if (has_initializer) {
-            expr_drop(&initializer);
+            isize n = vec_span_size(&ret->key.index->initialized);
+            ret->key.index->initializer_values = realloc(ret->key.index->initializer_values, sizeof(Expr*) * (size_t)(n + 1));
+            panic_if(!ret->key.index->initializer_values, "out of memory");
+            ret->key.index->initializer_values[n] = c_new(Expr, initializer);
             vec_span_push(&ret->key.index->initialized, span_from(param_start));
             hop_whitespace(&p);
         }

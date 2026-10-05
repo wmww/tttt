@@ -676,6 +676,15 @@ static void computed_member_name_compile_test_info(Expr* key, BaselineTestCase* 
     }
 }
 
+// The initializers of an index signature's parameter from `from` to `to` (null: the end)
+static void index_initializers_compile_test_info(InterfaceIndexKey const* key, const char* from, const char* to, BaselineTestCase* ctx) {
+    if (!from) return;
+    for (isize i = 0; i < vec_span_size(&key->initialized); i++) {
+        const char* at = span_start_ptr(*vec_span_at(&key->initialized, i));
+        if (at >= from && (!to || at < to)) expr_compile_test_info(key->initializer_values[i], ctx);
+    }
+}
+
 void interface_member_compile_test_info(InterfaceMember const* me, Span scope, BaselineTestCase* ctx) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: {
@@ -790,6 +799,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_type_node(ctx, my key.index->name, &my key.index->type);
             }
             type_compile_test_info(&my key.index->type, ctx);
+            index_initializers_compile_test_info(my key.index, span_valid(my key.index->decl) ? span_start_ptr(my key.index->decl) : nullptr,
+                vec_span_size(&my key.index->more_decls) ? span_start_ptr(*vec_span_at(&my key.index->more_decls, 0)) : nullptr, ctx);
             for (u32 k = 0; k < vec_span_size(&my key.index->more_names); k++) {
                 Span name = *vec_span_at(&my key.index->more_names, k);
                 TypeNode const* type = vec_type_at(&my key.index->more_types, k);
@@ -798,6 +809,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 });
                 baseline_test_case_add_type_node(ctx, name, type);
                 type_compile_test_info(type, ctx);
+                index_initializers_compile_test_info(my key.index, span_start_ptr(*vec_span_at(&my key.index->more_decls, k)),
+                    k + 1 < vec_span_size(&my key.index->more_decls) ? span_start_ptr(*vec_span_at(&my key.index->more_decls, k + 1)) : nullptr, ctx);
             }
             break;
 
@@ -848,6 +861,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
     }
     type_compile_test_info(&my type, ctx);
     if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
+    if (my accessor && my accessor->initializer) expr_compile_test_info(my accessor->initializer, ctx);
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {

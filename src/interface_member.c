@@ -19,6 +19,11 @@ void interface_member_drop(InterfaceMember* me) {
             type_drop(&my key.index->type);
             vec_span_drop(&my key.index->more_names);
             vec_span_drop(&my key.index->more_decls);
+            for (isize i = 0; i < vec_span_size(&my key.index->initialized); i++) {
+                expr_drop(my key.index->initializer_values[i]);
+                free(my key.index->initializer_values[i]);
+            }
+            free(my key.index->initializer_values);
             vec_span_drop(&my key.index->initialized);
             vec_type_drop(&my key.index->more_types);
             free(my key.index);
@@ -41,6 +46,10 @@ void interface_member_drop(InterfaceMember* me) {
     if (my accessor) {
         if (my has_write_type) type_drop(&my accessor->write_type);
         vec_span_drop(&my accessor->declarations);
+        if (my accessor->initializer) {
+            expr_drop(my accessor->initializer);
+            free(my accessor->initializer);
+        }
         free(my accessor);
     }
 }
@@ -65,6 +74,10 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
             type_lookup_names(&my key.index->type, names, errs);
             for_each (i, vec_type, &my key.index->more_types) type_lookup_names(i, names, errs);
             type_flow_restore(saved_flow);
+            // (Resolved silently: TS2371 said it all)
+            for (isize i = 0; i < vec_span_size(&my key.index->initialized); i++) {
+                expr_lookup_names(my key.index->initializer_values[i], names, nullptr);
+            }
         }   break;
         case INTERFACE_KEY_EXPR: {
             // (An interface's type parameters are out of reach of its members' names)
@@ -104,6 +117,8 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         type_lookup_names(&my type, names, errs);
     }
     if (my has_write_type) type_lookup_names(&my accessor->write_type, names, errs);
+    // (Resolved silently: the grammar error said it all)
+    if (my accessor && my accessor->initializer) expr_lookup_names(my accessor->initializer, names, nullptr);
 }
 
 // A method signature (written as one: not a property of a function type)

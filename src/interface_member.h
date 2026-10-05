@@ -15,6 +15,8 @@ typedef struct InterfaceIndexKey {
     VecTypeNode more_types;
     // The parameters with an initializer (TS2371), each up to its initializer's end
     VecSpan initialized;
+    // ... and the initializers (owned, as many), which tsc's types baseline shows
+    struct Expr** initializer_values;
     bool valid; // Exactly one parameter, with a type annotation: the signature makes an index info
     bool grammar_reported; // The parser reported a parameter grammar error: tsc's check stops there
     bool has_value_type;
@@ -44,6 +46,9 @@ typedef struct InterfaceAccessor {
     // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
     Span second_name;
     Span setter_param;
+    // Not an accessor's: `a: T = v` (TS1246/TS1247), an initializer tsc's parser keeps and its types baseline shows.
+    // Owned, null if none (the rare parts of a member live here)
+    struct Expr* initializer;
 } InterfaceAccessor;
 
 // PERF: the rare parts (index signatures, mapped types, accessors) are boxed: there are hundreds of thousands of these
