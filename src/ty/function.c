@@ -288,6 +288,14 @@ bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
 
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer);
 
+// The inferred return type if it is known already (tsc's signature.resolvedReturnType), else null
+Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
+    if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return nullptr;
+    u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
+    FunctionReturn const* memo = intern_get(&my links, key, 2);
+    return memo && memo->state == LAZY_STATE_DONE ? memo->type : nullptr;
+}
+
 // The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
 bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
     if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body || function_impl_rare(function)->setter_type) return false;

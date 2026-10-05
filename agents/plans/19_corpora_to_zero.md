@@ -151,7 +151,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (25; 6300 at pinning)
+### effect (21; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -187,17 +187,13 @@ Third pass: a generic call argument already resolved (under an earlier overload'
 candidate's first inference (tsc's getResolvedSignature cache beats SkipGenericFunctions), so `tap(acquireRelease(...),
 (q) => ...)` infers `Queue<A>` from it before typing the callback (stream.ts 5, probe
 `overload_generic_call_then_callback.ts`; the earlier attempt, skipping the sensitive arguments instead, was the wrong
-model).
+model). An inferred type predicate is only asked for while the function's return type isn't known to be other than
+boolean (tsc's `!signature.resolvedReturnType || boolean`; a function expression that has a contextual signature has
+its return type decided first, which tsc does at its contextual check): relating `dual<A, B>(arity, body)`'s body
+against DataFirst typed the returned `core.map(...)` without context (core-effect, metric, fiberRuntime: 4, probe
+`generic_arrow_predicate_poisons_return.ts`).
 
 Left, by cause (not reduced unless said):
-- **TS2769 on `dual<A, B>(arity, body)`** (core-effect 1834/1858, metric 542, fiberRuntime 3612: 4; probe
-  `generic_arrow_predicate_poisons_return.ts`, which fails): relating the generic body against DataFirst asks for its
-  type predicate (`infer_from_returns` -> `signature_predicate` -> `ty_infer_type_predicate`), which types the single
-  returned expression without context before the function's contextual check, so `[s, Option.none()]` inside
-  `core.map(...)` is an array, not the contextual tuple. tsc only infers a predicate when the resolved return type is
-  boolean. Gating `ty_infer_type_predicate` on the contextual return type admitting boolean (return null when
-  `ty_return_expressions_context()` is set and `boolean` isn't assignable to it) fixes these 4 but exposes the tap bug above
-  in stream.ts toQueue/toQueueOfElements (+6: TS2769/TS7006 through dual), so it waits for that one.
 - groupBy 258, Micro 2730, Schema.ts 4110, 4596/4629 (`a[0]` on
   `NonNullable<Type<S>>`), 9195/9373 (`.FiberId.map(fiberIdDecode)` from a Union's members).
 - **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses: dtslint TaggedClass 6, TaggedError 31,

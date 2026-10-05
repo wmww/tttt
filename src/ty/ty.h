@@ -1683,6 +1683,7 @@ Ty const* ty_element_before_widening(Checker* me, struct Binding const* element)
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function);
+Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function); // null if not inferred yet
 
 // tsc's pushTypeResolution/popTypeResolution: one stack of what is being resolved (a declaration's type, an inferred
 // return type, a property's type, an alias). When one of them is asked for again while in flight, it and everything

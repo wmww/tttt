@@ -3743,7 +3743,20 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
         // with getSignatureOfTypeTag), else one inferred from the body
         Signature const* tagged = jsdoc_tag_single_signature(me, sig->function);
         if (tagged && tagged != sig) sig->predicate = signature_predicate(me, tagged);
-        if (!sig->predicate && sig->param_count) sig->predicate = ty_infer_type_predicate(me, sig->function);
+        // (Only while the return type isn't known to be something other than boolean: tsc's getTypePredicateOfSignature
+        // asks `!signature.resolvedReturnType || boolean`. A function expression's is resolved by its first check with a
+        // contextual signature, which tttt leaves for later outside inference, so it's asked for now)
+        Ty const* known = nullptr;
+        if (!sig->predicate && sig->param_count) {
+            known = sig->ret_state == LAZY_STATE_DONE ? sig->ret : ty_function_return_known(me, sig->function);
+            if (!known && ty_function_assigned_contextual_signature(me, sig->function) &&
+                !ty_function_return_in_flight(me, sig->function)) {
+                known = ty_function_return_type(me, sig->function);
+            }
+        }
+        if (!sig->predicate && sig->param_count && (!known || (known->flags & TYF_BOOLEAN))) {
+            sig->predicate = ty_infer_type_predicate(me, sig->function);
+        }
     }
     return sig->predicate;
 }
