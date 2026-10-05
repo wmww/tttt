@@ -1213,6 +1213,9 @@ static Scope* branch_names_scope(Statement const* branch, Scope* names) {
         case STATEMENT_CONTINUE:
         case STATEMENT_RETURN_EXPR:
         case STATEMENT_THROW_EXPR:
+        // (A type alias or interface goes to tsc's blockScopeContainer, the scope around: TS1156 says it's misplaced)
+        case STATEMENT_DECL_TYPE:
+        case STATEMENT_DECL_INTERFACE:
             return names;
         default:
             return scope_new(names, SCOPE_BLOCK);
