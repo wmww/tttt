@@ -243,6 +243,8 @@ void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, boo
             break;
 
         case BINDING_ARRAY:
+            // (A lone rest element is `Iterable<any>` without looking at it: getTypeFromArrayBindingPattern)
+            if (vec_binding_size(&my array) == 1 && vec_binding_at(&my array, 0)->rest) break;
             for_each (i, vec_binding, &my array) {
                 binding_add_implicit_any_type_errors(i, span_null, bodiless, errs);
             }
@@ -250,6 +252,8 @@ void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, boo
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
+                // (An object rest element is an index signature to any: getTypeFromObjectBindingPattern)
+                if (i->target.rest) continue;
                 bool renaming = i->target.tag == BINDING_IDENTIFIER && !i->target.rest &&
                     !span_eq(i->source_span, i->target.content_span);
                 if (bodiless && renaming) continue;
