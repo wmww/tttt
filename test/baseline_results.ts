@@ -63761,12 +63761,12 @@ const baselines = {
         types: true,
     },
     'intersectionReduction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'intersectionReductionStrict': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

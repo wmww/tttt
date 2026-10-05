@@ -2326,7 +2326,8 @@ static void assignment_target_typecheck_of(
     ) {
         return;
     }
-    if (source && (source->flags & TYF_ANY)) source = nullptr;
+    // (Any fits everything but never: tsc's isSimpleTypeRelatedTo. `x1[k] = v as any` with a never write type is TS2322)
+    if (source && (source->flags & TYF_ANY) && !(source->flags & TYF_ERROR) && target->tag != EXPR_PROPERTY && target->tag != EXPR_IDENTIFIER) source = nullptr;
     // (A missing operand is tsc's missing identifier: a reference to nothing, not reported)
     if (target->tag == EXPR_IMPLICIT_ANY && target->missing) return;
     switch (target->tag) {
