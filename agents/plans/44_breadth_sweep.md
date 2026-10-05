@@ -74,9 +74,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **lib aliases, -TS2307 in 9 packages** (graphql-*, optics-agent, indy-sdk): `--lib esnext.asynciterable` /
-  `esnext.bigint` abort ("lib file not found") so nothing is checked. Port tsc's `libEntries` aliases
-  (commandLineParser.ts) in `compiler_options_lib_files()`, and report TS6046 for unknown names instead of aborting.
 - **-TS2339 at classes with an unresolved base** (12 packages; D/unresolvedBase.ts): `has_unresolved_base()`
   (members.c) is true for an *error-type* base too, so every member is any. tsc only gives a real-`any` base that. Skip
   TYF_ERROR bases (check that an unresolved import types as TY_ERROR), static side too.

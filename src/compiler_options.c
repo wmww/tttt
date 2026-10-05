@@ -338,9 +338,21 @@ cstr compiler_options_lib_files(CompilerOptions const* me) {
     while (rest.size) {
         isize end = csview_find_sv(rest, c_sv(","));
         csview single = csview_slice(rest, 0, end);
-        // The two names that aren't the file's name: lib.es6.d.ts and lib.es7.d.ts are default libraries of a target
-        if (csview_equals(single, "es6")) single = c_sv("es2015");
-        if (csview_equals(single, "es7")) single = c_sv("es2016");
+        // The names that aren't the file's name (tsc's libEntries): lib.es6.d.ts and lib.es7.d.ts are default
+        // libraries of a target, and the esnext features that made it into a year
+        static char const* const aliases[][2] = {
+            { "es6", "es2015" }, { "es7", "es2016" }, { "esnext.array", "es2023.array" },
+            { "esnext.symbol", "es2019.symbol" }, { "esnext.asynciterable", "es2018.asynciterable" },
+            { "esnext.bigint", "es2020.bigint" }, { "esnext.string", "es2024.string" },
+            { "esnext.promise", "es2024.promise" }, { "esnext.weakref", "es2021.weakref" },
+            { "esnext.object", "es2024.object" }, { "esnext.regexp", "es2024.regexp" },
+        };
+        for (u32 i = 0; i < c_arraylen(aliases); i++) {
+            if (csview_equals(single, aliases[i][0])) {
+                single = csview_from(aliases[i][1]);
+                break;
+            }
+        }
         if (csview_starts_with(single, "lib.") && csview_ends_with(single, ".d.ts")) {
             single = csview_subview(single, 4, single.size - 9);
         }
