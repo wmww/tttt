@@ -94,9 +94,6 @@ one commit each, `./sweep.py` before/after.
   (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
   signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
   `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
-- **Annotated parameters of nested context-sensitive functions aren't inferred from** (create-subscription, treeverse;
-  D/annotatedOrder.ts): `infer_from_annotated_params()` (call.c) only for a direct function argument; tsc does it in
-  contextuallyCheckFunctionExpressionOrObjectLiteralMethod.
 - **UMD global + `declare global` function merge** (namespace-js; B/nsjs): tsc merges the global function into the
   module symbol (mergeSymbol through the alias); `scope_add_port` PORT_EXPORT_AS_NAMESPACE doesn't.
 - **Class + interface member conflicts give no TS2300** (selenium-webdriver 22; D/dupMerge*.ts); plus a spurious TS2687

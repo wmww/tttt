@@ -712,6 +712,7 @@ Ty const* ty_instantiate_fixing(Checker* me, Ty const* type) {
 // A function gets its contextual signature while an argument of the call inferring now is checked: the type
 // parameters that the types it asks for mention are fixed (tsc's fixing mapper), and it gets the signature instantiated
 // with what they are fixed to
+static void infer_from_annotated_params_of(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual);
 Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, FunctionImpl const* function) {
     OuterInference* outer = my outer_inference;
     if (!outer || !outer->fixing || !ty_function_is_context_sensitive(function)) return sig;
@@ -725,6 +726,9 @@ Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, 
         signature_resolve(me, instantiated);
         return instantiated;
     }
+    // Its annotated parameters say something first, a function nested in a literal argument's too (tsc's
+    // inferFromAnnotatedParameters in contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
+    infer_from_annotated_params_of(me, inf, function, sig);
     TyMapper const* so_far = nullptr;
     for (u32 j = 0; j < inf->len; j++) {
         if (!inf->params[j].fixed && assignment_mentions(me, function, sig, outer->sig->type_params.data[j])) {
@@ -868,6 +872,10 @@ static bool returns_single_signature(Checker* me, Signature const* sig) {
 static void infer_from_annotated_params(Checker* me, Inference* inf, FunctionImpl const* function, Ty const* param_type) {
     Signature const* contextual = ty_function_contextual_signature(me, function, param_type);
     if (!contextual) return;
+    infer_from_annotated_params_of(me, inf, function, contextual);
+}
+
+static void infer_from_annotated_params_of(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual) {
     signature_resolve(me, contextual);
     for_each (i, vec_function_arg, &function->args) {
         if (i->rest) break;
