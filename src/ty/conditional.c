@@ -317,21 +317,6 @@ static bool definitely_related(Checker* me, Ty const* check_type, Ty const* exte
     if (!((check_type->flags | extends->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         return ty_is_related(me, check_type, extends, TY_RELATION_ASSIGNABLE);
     }
-    // An object type against primitives only is unrelated whatever type variables it mentions inside (its permissive
-    // instantiation is an object too), without walking its members: a method whose parameter is the mapped type being
-    // resolved (`[K in keyof T]: T[K] extends number ? K : never` over a class with `inc(key: Keys<this>)`) isn't
-    // resolved again (tsc instantiates signatures lazily)
-    if (check_type->kind == TY_ANONYMOUS || check_type->kind == TY_REFERENCE || check_type->kind == TY_DECLARED) {
-        u32 const primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL |
-            TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NULLABLE | TYF_VOID | TYF_NEVER;
-        TyList parts = extends->kind == TY_UNION ? extends->composite.types : (TyList){ .data = &extends, .len = 1 };
-        bool all_primitive = (check_type->flags & TYF_OBJECT) != 0;
-        for (u32 i = 0; i < parts.len && all_primitive; i++) {
-            all_primitive = parts.data[i]->kind != TY_UNION && (parts.data[i]->flags & primitive) &&
-                !(parts.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED));
-        }
-        if (all_primitive) return true;
-    }
     TyBuf params = {0};
     MentionWalk walk = { .collect = &params };
     bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
@@ -355,6 +340,26 @@ static bool definitely_related(Checker* me, Ty const* check_type, Ty const* exte
     return ret;
 }
 
+// An object type against primitives only is unrelated whatever type variables it mentions inside (its permissive
+// instantiation is an object too), without walking its members: a method whose parameter is the mapped type being
+// resolved (`[K in keyof T]: T[K] extends number ? K : never` over a class with `inc(key: Keys<this>)`) isn't resolved
+// again (tsc instantiates signatures lazily)
+static bool object_against_primitives(Ty const* check_type, Ty const* extends) {
+    if (!(check_type->flags & TYF_OBJECT)) return false;
+    if (check_type->kind != TY_ANONYMOUS && check_type->kind != TY_REFERENCE && check_type->kind != TY_DECLARED) return false;
+    u32 const primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL |
+        TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NULLABLE | TYF_VOID | TYF_NEVER;
+    TyList parts = extends->kind == TY_UNION ? extends->composite.types : (TyList){ .data = &extends, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        if (parts.data[i]->kind == TY_UNION || !(parts.data[i]->flags & primitive) ||
+            (parts.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED))
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 // Whether the check type isn't assignable to the extends type whatever the type variables in them turn out to be: not
 // even with each of them the wildcard, which relates to everything (tsc's getPermissiveInstantiation). When the walk
 // can't tell which type variables there are, it doesn't know
@@ -362,21 +367,7 @@ static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* ex
     if (!((check_type->flags | extends->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         return !ty_is_related(me, check_type, extends, TY_RELATION_ASSIGNABLE);
     }
-    // An object type against primitives only is unrelated whatever type variables it mentions inside (its permissive
-    // instantiation is an object too), without walking its members: a method whose parameter is the mapped type being
-    // resolved (`[K in keyof T]: T[K] extends number ? K : never` over a class with `inc(key: Keys<this>)`) isn't
-    // resolved again (tsc instantiates signatures lazily)
-    if (check_type->kind == TY_ANONYMOUS || check_type->kind == TY_REFERENCE || check_type->kind == TY_DECLARED) {
-        u32 const primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL |
-            TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_NULLABLE | TYF_VOID | TYF_NEVER;
-        TyList parts = extends->kind == TY_UNION ? extends->composite.types : (TyList){ .data = &extends, .len = 1 };
-        bool all_primitive = (check_type->flags & TYF_OBJECT) != 0;
-        for (u32 i = 0; i < parts.len && all_primitive; i++) {
-            all_primitive = parts.data[i]->kind != TY_UNION && (parts.data[i]->flags & primitive) &&
-                !(parts.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED));
-        }
-        if (all_primitive) return true;
-    }
+    if (object_against_primitives(check_type, extends)) return true;
     TyBuf params = {0};
     MentionWalk walk = { .collect = &params };
     bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
