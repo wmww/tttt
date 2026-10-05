@@ -19251,9 +19251,9 @@ const baselines = {
         types: true,
     },
     'jsFileCompilationBindDeepExportsAssignment': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'jsFileCompilationBindDuplicateIdentifier': {
         errors: true,

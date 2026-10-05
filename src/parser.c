@@ -435,6 +435,21 @@ static bool parse_template_type(Parser* parent, TypeNode* ret);
 static bool parse_type_predicate(Parser* parent, FunctionImpl* ret);
 static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret);
 static inline bool expect_expr(Parser* parent, ExprCtx ctx, Expr* ret);
+// `exports.a.b = v`: tsc's getAssignmentDeclarationPropertyAccessKind makes any static access chain from `exports` (or
+// `module.exports`) an ExportsProperty assignment, which makes the file CommonJS even when it declares nothing
+static bool is_deep_exports_assignment_target(Expr const* left) {
+    // (Names, not `#x`: tsc's isBindableStaticAccessExpression)
+    Span name = left->tag == EXPR_PROPERTY ? expr_static_property_name(left) : span_null;
+    if (!span_valid(name) || (name.sv.size && name.sv.buf[0] == '#')) return false;
+    Expr const* e = &left->property->expr;
+    while (e->tag == EXPR_PROPERTY && !expr_is_module_exports(e)) {
+        name = expr_static_property_name(e);
+        if (expr_is_perenthisized(e) || !span_valid(name) || (name.sv.size && name.sv.buf[0] == '#')) return false;
+        e = &e->property->expr;
+    }
+    return expr_is_module_exports(e) || (e->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(e) && span_equals(e->inner_span, "exports"));
+}
+
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret);
 static bool expr_ends_with_arrow(Expr const* e);
 static bool jsx_generic_arrow_start(Parser* parent);
@@ -8374,6 +8389,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
         mark_assigned_name(&right, named ? prop->inner_span : left_and_ret->inner_span);
     }
     if (op == BINARY_OP_EQUAL && p.shared->source->is_js && (expr_commonjs_target(left_and_ret, nullptr) ||
+        is_deep_exports_assignment_target(left_and_ret) ||
         (!p.shared->function_depth && span_valid(expr_static_property_name(left_and_ret)) &&
             is_exports_alias_name(&p, &left_and_ret->property->expr)))
     ) {
