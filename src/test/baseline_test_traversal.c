@@ -206,6 +206,28 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
         }
         return;
     }
+    // A method of an object literal: the literal's member the assignment declared (see add_this_literal_member())
+    FunctionImpl const* this_function = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) ?
+        identifier_this_function(this) : nullptr;
+    SymbolTable const* literal_members = this_function ? function_impl_rare(this_function)->this_literal_members : nullptr;
+    Symbol const* literal_member = literal_members ? symbol_table_get(literal_members, name.sv) : nullptr;
+    if (literal_member && ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
+        bool declares = false;
+        for (u32 i = 0; i < literal_member->decl_count; i++) declares |= span_eq(literal_member->decls[i].full, expr_outer_span(left));
+        if (declares) {
+            ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                .span = expr_outer_span(&left->property->prop), .text = cstr_from_sv(literal_member->name),
+                .declarations = symbol_declaration_spans(literal_member),
+            };
+            // (The access itself is what the literal's type has, nothing if it hasn't x)
+            if (ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
+                ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                    .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+                };
+            }
+        }
+        return;
+    }
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = symbol_rare(this->target)->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;

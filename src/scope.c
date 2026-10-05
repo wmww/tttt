@@ -5111,6 +5111,39 @@ void scope_add_this_declaration(Scope* me, Expr* access, TypeNode const* jsdoc_t
     add_this_property(me, access, access, jsdoc_type, 0);
 }
 
+// `this.x = v` in a method or accessor of an object literal (not `F.prototype = {...}`'s): tsc's
+// bindThisPropertyAssignment declares x in the literal's members, unless a member of the literal declared x before
+// (declareSymbol's isReplaceableByMethod returns that one). False if `function` isn't such a method
+static bool add_this_literal_member(Scope* me, FunctionImpl* function, Span name, Expr* left) {
+    Expr const* literal = function_impl_rare(function)->this_literal;
+    if (!literal || literal->tag != EXPR_OBJECT || function_impl_rare(function)->prototype_of) return false;
+    ObjectExprItem const* own = nullptr;
+    SymbolTable* table = nullptr;
+    for_each (i, vec_object_expr_item, &literal->object) {
+        if (i->value.tag != EXPR_FUNCTION) continue;
+        if (i->value.function == function) own = i;
+        if (!table) table = function_impl_rare(i->value.function)->this_literal_members;
+    }
+    if (!own || own->tag == OBJECT_ITEM_PROPERTY) return false; // (`a: function () {}`: the function's own members)
+    for_each (i, vec_object_expr_item, &literal->object) {
+        if (i->tag == OBJECT_ITEM_SPREAD || i->computed_key || !cstr_equals_sv(&i->name_string, name.sv)) continue;
+        if (span_start_ptr(i->span) < span_start_ptr(expr_outer_span(left))) return true;
+    }
+    if (!table) table = arena_new(binder_arena(my binder), SymbolTable);
+    function_impl_rare_mut(function)->this_literal_members = table;
+    bool merged;
+    Symbol* member = declare_symbol(me, table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
+    if (!merged) {
+        member->name = name.sv;
+        member->name_span = name;
+    }
+    symbol_add_decl(member, (SymbolDecl){
+        .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = ASSIGNMENT_DECL_THIS_IN_METHOD, .flags = SYMBOL_PROPERTY,
+        .name = expr_outer_span(left), .full = expr_outer_span(left),
+    });
+    return true;
+}
+
 static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const* jsdoc_type, uint8_t jsdoc_modifiers) {
     if (left->tag != EXPR_PROPERTY) return;
     Span name = expr_static_property_name(left);
@@ -5178,6 +5211,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
         case THIS_ANY: {
             FunctionImpl* this_function = (FunctionImpl*)identifier_this_function(this);
             if (!this_function || this_function != function) return;
+            if (add_this_literal_member(me, this_function, name, left)) return;
             // `X.prototype.m = function () { this.x = v }` declares x for X, else the function is a constructor
             Symbol* class_symbol = nullptr;
             AssignmentDeclKind kind = ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;

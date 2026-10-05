@@ -51142,7 +51142,7 @@ const baselines = {
     },
     'checkExportsObjectAssignProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkExportsObjectAssignPrototypeProperty': {
@@ -51312,7 +51312,7 @@ const baselines = {
     },
     'checkObjectDefineProperty': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'checkOtherObjectAssignProperty': {
@@ -51332,7 +51332,7 @@ const baselines = {
     },
     'constructorTagOnObjectLiteralMethod': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructorTagWithThisTag': {

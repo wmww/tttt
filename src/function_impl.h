@@ -128,6 +128,10 @@ typedef struct FunctionImplRare {
     // it is a method (or function-valued property) of, or the object of the property it is assigned to (`o.m = function`)
     struct Expr const* this_literal;
     struct Expr const* this_assigned_object;
+    // JavaScript: the members `this.x = v` declares in the methods and accessors of this_literal (tsc's binder declares
+    // them in the literal's members), one table shared by those functions. Symbols baseline only: the checker's
+    // object literal type has the literal's own properties
+    struct SymbolTable* this_literal_members;
     // JavaScript: F of `F.prototype.m = function` or `F.prototype = { m() {} }`, whose type parameters the JSDoc names
     // of the method may be (tsc's getAssignmentDeclarationLocation) and whose instance `this` is in it (tsc's
     // getClassNameFromPrototypeMethod). Set when resolving
