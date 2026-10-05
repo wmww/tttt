@@ -87,6 +87,46 @@ static int prop_cmp_name(void const* a, void const* b) {
     return a_name < b_name ? -1 : a_name > b_name;
 }
 
+// A member named by a computed name that isn't a string or numeric literal (`[Symbol.iterator]`, `[k]`): tsc's binder
+// leaves it to be late bound (getDeclarationName), and late-bound members come after all the early-bound ones of all
+// declarations (getResolvedMembersOrExportsOfSymbol's combineSymbolTables)
+static bool name_span_is_late_bound(Span name) {
+    csview sv = name.sv;
+    if (!span_valid(name) || sv.size < 2 || sv.buf[0] != '[') return false;
+    isize_t start = 1, end = sv.size - 1;
+    if (sv.buf[end] != ']') return false;
+    while (start < end && strchr(" \t\r\n", sv.buf[start])) start++;
+    while (end > start && strchr(" \t\r\n", sv.buf[end - 1])) end--;
+    if (start >= end) return false;
+    char c = sv.buf[start];
+    if (c == '"' || c == '\'' || c == '`') return sv.buf[end - 1] != c || end - start < 2;
+    if ((c == '-' || c == '+') && end - start > 1) c = sv.buf[++start];
+    if (c == '.' && end - start > 1) c = sv.buf[start + 1];
+    if (c < '0' || c > '9') return true;
+    for (isize_t i = start; i < end; i++) {
+        char d = sv.buf[i];
+        if (!((d >= '0' && d <= '9') || (d >= 'a' && d <= 'z') || (d >= 'A' && d <= 'Z') || d == '.' || d == '_')) return true;
+    }
+    return false;
+}
+
+// Moves the late-bound members after the others, keeping both groups' order
+static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
+    u32 late = 0;
+    for (u32 i = from; i < builder->props_count; i++) late += name_span_is_late_bound(builder->props[i]->decl->name_span);
+    if (!late || late == builder->props_count - from) return;
+    Prop** moved = malloc(sizeof(Prop*) * late);
+    panic_if(!moved, "out of memory");
+    u32 kept = from, m = 0;
+    for (u32 i = from; i < builder->props_count; i++) {
+        Prop* prop = builder->props[i];
+        if (name_span_is_late_bound(prop->decl->name_span)) moved[m++] = prop;
+        else builder->props[kept++] = prop;
+    }
+    memcpy(builder->props + kept, moved, sizeof(Prop*) * late);
+    free(moved);
+}
+
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     Members* ret = arena_new(&my arena, Members);
     if (builder->props_count > 8) {
@@ -1881,6 +1921,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                     builder_add_class_items(me, &builder, node->node, false, ctx, decl);
                 }
             }
+            builder_late_bound_last(&builder, 0);
             builder_add_assignment_members(me, &builder, decl);
             TyBuf bases = {0};
             bool dynamic = false;
@@ -1938,6 +1979,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind != SYMBOL_DECL_CLASS) continue;
                 builder_add_class_static_side(me, &builder, ty, node->node);
+                builder_late_bound_last(&builder, 0);
                 // `var C = class {}; C.x = 1`
                 Symbol const* host = ((ClassDecl const*)node->node)->expando_host;
                 if (host && host != decl) {
@@ -2921,6 +2963,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
             } else {
                 check(ty->anonymous.node->tag == TYPE_INTERFACE);
                 builder_add_interface(me, &builder, &ty->anonymous.node->interface, ty->anonymous.ctx, nullptr);
+                builder_late_bound_last(&builder, 0);
             }
             return builder_finish(me, &builder);
         }

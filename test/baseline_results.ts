@@ -20971,7 +20971,7 @@ const baselines = {
         types: false,
     },
     'mappedTypeWithAsClauseAndLateBoundProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
