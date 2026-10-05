@@ -284,6 +284,5 @@ Each named far enough to start from; tests are the examples still failing.
   for a namespace `prototype` merged into a class), typeAliasesDoNotMerge/multipleExportDefault3/enumAssignmentCompat6/
   expandoFunctionBlockShadowing/exportAssignmentOfExportNamespaceWithDefault (naming from a block scope or conflicting
   declarations, agent A's note), exportAssignmentMembersVisibleInAugmentation (augmentation into the export= target,
-  bugs/display.md), declarationEmitMappedTypeTemplateTypeofSymbol (`typeof x.Timestamp` reuse),
-  symbolDeclarationEmit12/privateNameDuplicateField (duplicate members), ramdaToolsNoInfinite2 (alias chosen),
+  bugs/display.md), symbolDeclarationEmit12/privateNameDuplicateField (duplicate members), ramdaToolsNoInfinite2 (alias chosen),
   typeParameterConstModifiers (queue item 6), jsxComplexSignatureHasApplicabilityError (T_1 + JSX props type).
