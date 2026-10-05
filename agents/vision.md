@@ -43,6 +43,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   First data point (2026-10-05): **Effect** had 6300 false errors at pinning, 63 after one session, and the suite
   moved by one component: generic calls returning generic functions as arguments and generic rest tuples (variadic,
   unions of tuples, const) were paths the suite barely tests. New corpora are where the bugs are.
+  Second data point (same day): the **breadth sweep** (plan 44, `./sweep.py`) checks all 8208 DefinitelyTyped
+  packages against tsc 5.8 in two minutes; 97% match exactly, and the rest is a long list of distinct bugs, missing
+  checks included (DT's 10k `@ts-expect-error`s). It is the third oracle: run it after every checker change.
 - **Finish what's planned before planning more mechanisms**: plan 42 stages 3-4, plan 43 (AST memory), then parallel
   name resolution (the serial phase left; the `-b` lever and a wall-time lever everywhere).
 - **Decided: the symbols harness's rebuilt member identity is an acceptable harness cost** (triage item from the

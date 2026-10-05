@@ -1,0 +1,1 @@
+{"compilerOptions":{"strict":true,"noEmit":true,"types":[],"module":"node16"},"files":["types.d.ts","test.ts"]}

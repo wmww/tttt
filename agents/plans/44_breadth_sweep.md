@@ -30,8 +30,10 @@ missing checks too.
   (tsc realpaths every resolved directive), so a `node_modules/@types` linked into a workspace loaded each file twice
   (thousands of TS2300/TS2451/TS2374 in ~30% of the packages). Any pnpm-style workspace hits this.
 
-## First numbers
-(See measurements.md "Breadth sweep" for the latest.)
+## First numbers (2026-10-05, measurements.md "Breadth sweep" has the latest)
+8208 packages (6968 tsc-clean): **7969 match**, spurious-only 123, missing-only 105, both 10, crash 1, timeout 0; 114 s
+wall at -j4, tttt 456 s CPU vs tsc 5314 s. Slower than tsc: carbon-components-react (25 s vs 5.9), d3-geo
+(bugs/sweep_perf.md).
 
 ## Stage 2: drain the ranking (corpus sessions)
 Work the table top-down like plan 19 does for the corpora: a root cause that spans packages first, single-package
@@ -66,4 +68,94 @@ causes have repros in triage.md / bugs/ / the list below. Every later session th
 next to the corpora (0 packages newly mismatching).
 
 ## Open root causes
-(Filled in from the first full run.)
+Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless said). Repros in `test/probes/sweep/{A,B,C,D}/`
+(single files: `FAST=1 ./filetest.sh FILE -d`; directories: `release/tttt -p DIR` vs `node thirdparty/tsc/lib/tsc.js
+-p DIR`). Packages = sweep packages affected. Ordered by value for effort within each group; **do the small ones first**,
+one commit each, `./sweep.py` before/after.
+
+### Crash
+- **react-relay SIGSEGV** (A/crash/crash2.ts): unbounded recursion `apparent_type_inner` (TY_CONDITIONAL ->
+  base_constraint = `Props<C> & {relay}` because C's constraint feeds its own `infer P`) <-> the intersection branch's
+  `apparent_type` of the generic member. tsc: pushTypeResolution -> circularConstraintType -> `unknown`. Fix: an
+  in-progress guard in apparent_type (or resolve intersection members through the depth-guarded base_constraint). ~20
+  lines.
+
+### Small (1-10 lines each)
+- **material-ui +TS2303 x2082** (3 packages; A/matui): in `scope_resolve` (scope.c) the module's `default` export check
+  runs `symbol_has_meaning` before the cheap name comparison, resolving the alias being resolved. Swap the operands
+  (tried in a worktree: all 2082 gone; suite not run).
+- **lib aliases, -TS2307 in 9 packages** (graphql-*, optics-agent, indy-sdk): `--lib esnext.asynciterable` /
+  `esnext.bigint` abort ("lib file not found") so nothing is checked. Port tsc's `libEntries` aliases
+  (commandLineParser.ts) in `compiler_options_lib_files()`, and report TS6046 for unknown names instead of aborting.
+- **-TS2339 at classes with an unresolved base** (12 packages; D/unresolvedBase.ts): `has_unresolved_base()`
+  (members.c) is true for an *error-type* base too, so every member is any. tsc only gives a real-`any` base that. Skip
+  TYF_ERROR bases (check that an unresolved import types as TY_ERROR), static side too.
+- **jest +TS2536** (12 packages; B/jest2.ts): a homomorphic mapped type over `keyof X` / a generic template literal /
+  string mapping must return the operand (tsc's instantiateConstituent maps only AnyOrUnknown, InstantiableNonPrimitive,
+  Object, Intersection). `instantiate_mapped_over_list` (instantiate.c) counts TYF_DEFERRED as mappable.
+- **-TS7006 under `Partial<Unresolved.X>`** (bootstrap, chrome-remote-interface; D/partialErr.ts): same function,
+  TY_ERROR must not be mappable either (tsc: isErrorType -> the error type, a union with it is any).
+- **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
+  `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
+  one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
+- **`export as namespace` counted as an export declaration** (fabric 18, pegjs; C/2339/j, d): `block_has_export_declarations`
+  (block.c) must skip PORT_EXPORT_AS_NAMESPACE (tsc's hasExportDeclarations: ExportDeclaration, ExportAssignment).
+  Also removes a spurious TS2395.
+- **A namespace re-exporting an `import x = require()` alias is non-instantiated** (gulp-run, iarna__toml; C/2339/b, c):
+  `statement_instance_state_of` (statement.c) must count PORT_IMPORT_GATHER with `is_require` as instantiated.
+- **Augmentation applied to the file instead of the ambient module** (yeoman-assert 21; C/2339/h): `augmented_module()`
+  (scope.c) should take `binder_module_of_ref()` (ambient module first, tsc's resolveExternalModule) before `ref->file`.
+- **`unknown[K]` with generic K stays deferred** (dynamodb; C/2339/i): `try_resolve_indexed` (checker.c) returns the
+  object for any but not for unknown in the generic branch (tsc's getIndexedAccessTypeOrUndefined: both).
+- **Empty member name `""` stored as the text `""`** (gettext.js, cookieclicker; C/2769 D): parser.c's missing-name
+  recovery fallback (`cstr_is_empty(&name_string)`, ~line 7410) also fires for an empty string literal: add
+  `&& !name_is_value`. Also removes a spurious TS1360.
+- **anyFunctionType lacks Function's members** (routie, browser-harness, benchmark; C/anyctx.ts): `ty_get_object_prop`
+  falls back to GLOBAL_FUNCTION for GLOBAL_ANY_FUNCTION (tsc ~15223).
+- **Union excess-property check ignores template/`string & {}` index keys** (dom-css, create-keyframe-animation;
+  C/unionidx*.ts): `prop_or_index_type` (relate.c) should use `ty_applicable_index_info`.
+- **A module nested in a `declare module` block is an augmentation** (i18next-sprintf-postprocessor; D/augm):
+  statement.c treats it as a global ambient module (`augmentation = scope->kind == SCOPE_MODULE` only).
+- **JSX factory from a UMD global gets no TS2686** (mdx 69; D/jsxumd): `jsx_reference_factory()` (expr.c) should call
+  `check_umd_global_use()`.
+- **Literal-keyof inference object is indexable** (rrdtool; D/literalKeyof.ts): `empty_object_from_string_literals()`
+  (infer.c) builds an anonymous type that `has_inferable_index` accepts; tsc's has no symbol, so no inferable index.
+  The wider "every anonymous type has an inferable index" rule is a hacks.md entry to file.
+- **`declare enum` member types lack Number's methods** (dymo-label-framework; C/2339/l): not pinned down, enums.c.
+
+### Medium (15-100 lines)
+- **three +TS2415** (8 packages; B/three3.ts): an intersection base's merged `this`-typed member gets `this` rebound to
+  the intersection (`find_prop_in` always `ty_with_this_arg`s; `builder_add_intersection_members`). tsc's
+  createUnionOrIntersectionProperty keeps each part's `this`. ~20 lines.
+- **Interface extending `any`** (koa family 5; B/koa8.ts, C/2339/k): `non_augmenting_base_uncached` (members.c) gates
+  on type params and on object bases, so `interface DS extends AnyAlias {}` isn't normalised to any; and an any base
+  gives no `[x: string]: any` (tsc's anyBaseTypeIndexInfo). Could replace the class-side `ty_has_unresolved_base` hack.
+- **Augmentation-only references load the target file** (ember-data + 4; A/augonly): tsc never adds a file to the
+  program for a module augmentation alone. Split resolution from loading in `program_load_module_ref` (program.c).
+  20-40 lines.
+- **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
+- **Construct signatures compared bivariantly under strictFunctionTypes** (react, react-redux; D/ctorOverloads.ts):
+  relate.c exempts every SIGNATURE_CONSTRUCT target; tsc only class `constructor` declarations. Expect suite movement.
+- **jsonld +TS2411** (9 packages; B/jsonld2.ts): tsc publishes an interface's declared properties before resolving its
+  index signatures, so a re-entrant `keyof C` sees the properties; tttt's in-flight members are empty. Publish partial
+  Members before lowering index signatures. 50-100 lines.
+- **Generic rest `[...AX, ...A]` implied arity** (call-bind; C/arity.ts): infer_to_tuple's "two variadic elements"
+  TODO (tsc ~26690) plus impliedArity. ~60 lines.
+- **Rest `TArgs` inferred from the callback's own parameters** (immediate, macrotask, node; D/restTArgs.ts): tsc drops
+  a self-referential tuple candidate (isTupleOfSelf) and keeps `TArgs[0]` where tttt has never.
+- **Annotated parameters of nested context-sensitive functions aren't inferred from** (create-subscription, treeverse;
+  D/annotatedOrder.ts): `infer_from_annotated_params()` (call.c) only for a direct function argument; tsc does it in
+  contextuallyCheckFunctionExpressionOrObjectLiteralMethod.
+- **UMD global + `declare global` function merge** (namespace-js; B/nsjs): tsc merges the global function into the
+  module symbol (mergeSymbol through the alias); `scope_add_port` PORT_EXPORT_AS_NAMESPACE doesn't.
+- **Class + interface member conflicts give no TS2300** (selenium-webdriver 22; D/dupMerge*.ts); plus a spurious TS2687
+  for an interface accessor merged with a property.
+
+### Large / elsewhere
+- **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md
+  `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
+- **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
+- Not investigated: mapbox, rangy, strophe (`declare global` namespace + UMD), prismjs (`"x/components/"` with a
+  trailing slash resolving to the file), stampit, alpinejs, google-apps-script (property named `''`), d3-dispatch,
+  ember (access-modifier, observable), function-bind, oidc-provider, d3-array, fabric's second `Image`, enzyme-async-helpers,
+  kefir, chai, fs-extra (only "the last overload" reported). `./sweep.py --last -k ...` lists each.

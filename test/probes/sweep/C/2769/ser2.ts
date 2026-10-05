@@ -1,0 +1,12 @@
+declare function s<T>(tasks: (() => T)[], callback: (results: T[]) => void): void;
+declare function s<T>(tasks: { [k: string]: () => T }, callback: (results: { [k: string]: T }) => void): void;
+s({ one: () => 1 }, results => {});
+declare function u(tasks: (() => number)[], callback: (results: number[]) => void): void;
+declare function u(tasks: { [k: string]: () => number }, callback: (results: string) => void): void;
+u({ one: () => 1 }, results => {});
+declare function w<T>(tasks: (() => T)[], callback: (results: T[]) => void): void;
+declare function w<T>(tasks: { [k: string]: () => T }, callback: (results: string) => void): void;
+w({ one: () => 1 }, results => {});
+declare function v<T>(tasks: ((x: number) => T)[], callback: (results: T[]) => void): void;
+declare function v<T>(tasks: { [k: string]: (x: number) => T }, callback: (results: string) => void): void;
+v({ one: x => 1 }, results => {});

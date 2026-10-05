@@ -26,3 +26,5 @@ missing_checks.md "Module and import checks", type_core.md "Circularity" (getter
   first (`if (arg->type) continue`), though its contextual type is now the candidate's rest element: with overloads
   whose rest types differ, a later candidate sees types checked against an earlier one. tsc re-checks per candidate
   (checkExpressionWithContextualType caches nothing across candidates for non-sensitive arguments).
+
+- `has_inferable_index()` (relate.c) grants every anonymous object type an implicit index signature; tsc only types with a symbol of the right kind (isObjectTypeWithInferableIndex). Found by the sweep (plan 44, rrdtool: D/literalKeyof.ts); check how much wider tttt's rule is and whether it hides errors elsewhere.

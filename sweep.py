@@ -206,6 +206,11 @@ def main():
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)
             print(f'\n{v.upper()} {p} ({r["status"]}):\n    ' + r['tail'].replace('\n', '\n    ')[-400:])
+    slow = sorted((r for r in results if r['wall'] > 0.5 and r['wall'] > oracle[r['package']]['ms'] / 1000),
+                  key=lambda r: -r['wall'])
+    if slow:
+        print('\nslower than tsc (perf bugs):\n' + '\n'.join(
+            f'  {r["package"]:40} tttt {r["wall"]:6.2f}s  tsc {oracle[r["package"]]["ms"] / 1000:6.2f}s' for r in slow[:args.n]))
     print(f'\nroot causes by packages (+ spurious, - missing; "only": packages it is the only mismatch of):')
     print(f'  {"pkgs":>5} {"only":>5} {"diags":>6}  key / example')
     for k, c in sorted(causes.items(), key=lambda kc: (-len(kc[1]['packages']), -kc[1]['diags']))[:args.n]:

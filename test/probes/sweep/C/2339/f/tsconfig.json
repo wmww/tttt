@@ -1,0 +1,1 @@
+{"compilerOptions":{"module":"node16","lib":["es6"],"strict":true,"noEmit":true,"types":[], "typeRoots":["/home/ai/tttt/thirdparty/corpora/DefinitelyTyped/types"]},"files":["test.ts"]}

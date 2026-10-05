@@ -1,0 +1,2 @@
+{ "compilerOptions": { "strict": true, "noEmit": true, "jsx": "react", "types": [], "lib": ["es6","dom"],
+  "baseUrl": ".", "paths": { "react": ["/home/ai/tttt/thirdparty/corpora/DefinitelyTyped/types/react"] } }, "files": ["a.tsx"] }

@@ -10,8 +10,9 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    +0.3%). Plan 42 is finished; the resolve_call HACK is gone.
 2. Done: Effect v3.22.2 pinned (core package src + test + dtslint, 299k lines, tsc-clean), 6300 -> 63 the same
    session (suite 12759, 0 lost; xstate +3.9% instructions, see measurements.md). The 63 by cause in plan 19 "effect".
-3. **Planning: plan 44 (breadth sweep)**. Prototype the tool and the first sample, then write the real plan. If the
-   tool is done in the session, record the first numbers and file the top root causes.
+3. Done: plan 44 stage 1, the breadth sweep (`./sweep.py`: all 8208 DefinitelyTyped packages in 2 minutes against
+   tsc 5.8's cached diagnostics). 7969 match exactly, 1 crash, 2 packages slower than tsc; a symlink resolution bug
+   fixed on the way (drizzle 6 -> 4). Root causes with repros in plan 44 "Open root causes".
 4. **Execution: plan 43** (AST and binder memory; nest <= 200 MB, webpack <= 300 MB at one checker). As many stages
    as fit in one session, and the rest stays in the plan.
 5. **Corpus: pin a large application for scale** (a real app of several hundred thousand lines or more, e.g. VS
@@ -22,7 +23,8 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 7. **Planning + execution: parallel name resolution** (plan 36's next step, and plan 41's `-b` lever). Write plan 45
    from what the binder still shares (hacks.md "Parallelism contract audit"), then execute stage 1 if it fits. Threads
    1/4 must stay byte-identical (`./threadcheck.sh`, `./checkerdiff.py`).
-8. **Corpus: whatever entries 2, 3 and 5 ranked first** (effect's top: return-type unions leaking a signature's own
+8. **Corpus: whatever entries 2, 3 and 5 ranked first** (the sweep's: plan 44 "Open root causes", react-relay's crash
+   and carbon's 25 s first) (effect's top: return-type unions leaking a signature's own
    type parameters, nested generic calls without contextual inference, plan 19) (sweep and corpus root causes, ahead of suite plans), toward 0.
 9. **Fan-out: types/symbols tail** (plan 35's queue, `./displaydiff.py --fine`, bugs/display.md), four sub-agents.
 10. **Triage.** Also: the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (725 lines: merge
