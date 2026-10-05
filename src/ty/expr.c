@@ -2397,6 +2397,8 @@ static Ty const* check_unary(Checker* me, UnaryOpExpr const* unary) {
 
         case UNARY_OP_PLUS:
         case UNARY_OP_MINUS:
+            // (tsc's checkPrefixUnaryExpression checks the operand first: `-1` makes the literal 1 before -1)
+            if (!expr_is_perenthisized(operand) && operand->tag == EXPR_LITERAL) ty_expr_type(me, operand);
             if (!expr_is_perenthisized(operand) && operand->tag == EXPR_LITERAL && operand->literal.tag == VALUE_NUMBER) {
                 Value value = value_number(unary->op == UNARY_OP_PLUS ? operand->literal.number : -operand->literal.number);
                 return ty_fresh_literal(me, ty_literal(me, &value));

@@ -3052,7 +3052,14 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_UNIQUE_SYMBOL: return ty_unique_symbol(me, &node->unique_symbol);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
         case TYPE_VALUE: {
-            // tsc checks the literal as an expression, which makes the fresh twin too (it's in the id order)
+            // tsc checks the literal as an expression, which makes the fresh twin too (it's in the id order). A negative
+            // one is `-` of the positive literal, which checkPrefixUnaryExpression checks first
+            if (node->value.tag == VALUE_NUMBER && node->value.number < 0) {
+                ty_fresh_literal(me, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = -node->value.number }));
+            } else if (node->value.tag == VALUE_BIGINT && node->value.bigint.negative) {
+                Value positive = value_bigint_negated(&node->value);
+                ty_fresh_literal(me, ty_literal(me, &positive));
+            }
             Ty const* ret = ty_literal(me, &node->value);
             ty_fresh_literal(me, ret);
             return ret;

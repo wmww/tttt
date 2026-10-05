@@ -1861,9 +1861,15 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     d.sibling_mentions_mapped = false;
     // (Unless its own type parameters were instantiated away: a call's candidate with what was inferred)
     bool own_instantiated = root->type_params.len && !sig->type_params.len;
-    if (root != sig && !this_only && !class_default && !own_instantiated && !sibling_mapped && !mentions_mapped(me, sig, root)) sig = root;
+    // (A merged declaration's type parameter may be referenced anywhere: tsc instantiates the whole member)
+    bool merged_mapped = root != sig && maps_merged_type_param(me, sig, root);
+    if (root != sig && !this_only && !class_default && !own_instantiated && !sibling_mapped && !merged_mapped &&
+        !mentions_mapped(me, sig, root)
+    ) {
+        sig = root;
+    }
     bool instantiated = root != sig;
-    bool fresh_anonymous = instantiated && maps_merged_type_param(me, sig, root);
+    bool fresh_anonymous = instantiated && merged_mapped;
     // (Added to an enclosing signature's: a function type in a parameter of `then<U>` of `P<number>` doesn't reuse a
     // `U` it mentions either)
     // (Instantiated for `this` only, it's the same: tsc instantiates a member that mentions `this` (a class or interface

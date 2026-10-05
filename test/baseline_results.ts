@@ -6878,7 +6878,7 @@ const baselines = {
     'controlFlowCaching': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowCommaExpressionAssertionMultiple': {
         errors: true,
