@@ -97,19 +97,9 @@ one commit each, `./sweep.py` before/after.
   (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
   signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
   `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
-- **TS2395 in an export-context declaration file** (selenium-webdriver; `export interface R {..}` + `declare class R
-  {..}` in a .d.ts without `export {}`/`export =`): the binder exports both (tsc's ExportContext), so tttt's
-  check_export_merge sees one symbol and returns, but tsc's getEffectiveDeclarationFlags only adds Export to an ambient
-  declaration *without* the `declare` modifier: the class counts as local, TS2395 on both names. Needs the explicit
-  `export`/`declare` of each declaration in check_export_merge (DeclStatementProps has them, SymbolDecl doesn't).
-
-### Large / elsewhere
 - **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md
   `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
 - **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
-- **mapbox**: `import * as Leaflet from "leaflet"` then `Leaflet.Map.MapOptions` (Map a class) where leaflet's UMD
-  global L got mapbox's `declare global { namespace L.mapbox }` merged in: tsc says TS2724 ''L' has no exported member
-  named 'Map'' (the merged clone's view), tttt TS2713. Not investigated further.
 - **d3-tip**: a `declare module "d3"` augmentation isn't visible through d3's UMD global in tsc (its
   getTargetOfNamespaceExportDeclaration -> resolveExternalModuleSymbol returns the *unmerged* module symbol when there
   is no `export =`: `getMergedSymbol(undefined) || moduleSymbol`), so `d3.Tooltip` is TS2694 there; tttt merges

@@ -329,9 +329,13 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     rare->first_value = scope_get_value(names, rare->namespaces.data[0].sv, &first_found);
                     decl = nullptr;
                 } else if (type) {
-                    // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
+                    // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it, unless
+                    // another export's name is close enough (TS2724 comes first there)
                     Span right = i + 1 < rare->namespaces.data + rare->namespaces.size ? i[1] : my name;
-                    error_ctx_error_d(errs, right, 2713, "Cannot access '", *i, ".", right, "' because '", *i,
+                    cstr qualified = symbol_fully_qualified_name(namespace);
+                    bool misspelled = scope_report_misspelled_export(namespace, *i, cstr_sv(&qualified), errs);
+                    cstr_drop(&qualified);
+                    if (!misspelled) error_ctx_error_d(errs, right, 2713, "Cannot access '", *i, ".", right, "' because '", *i,
                         "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
                         "' in '", *i, "' with '", *i, "[\"", right, "\"]'?");
                     decl = nullptr;
@@ -603,7 +607,12 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         u32 at = rare->value_member_at;
         Span member = rare->namespaces.data[at];
         Span right = (isize)at + 1 < count ? rare->namespaces.data[at + 1] : my name;
-        if (value) {
+        // (tsc's resolveEntityName: a close enough export's name first)
+        cstr container_name = symbol_fully_qualified_name(rare->value_member_of);
+        bool misspelled = scope_report_misspelled_export(rare->value_member_of, member, cstr_sv(&container_name), errs);
+        cstr_drop(&container_name);
+        if (misspelled) {
+        } else if (value) {
             cstr name = identifier_type_make_name_str(me);
             error_ctx_error_d(errs, span_between(rare->namespaces.data[0], my name), 2749, "'", name, "' refers to a value, "
                 "but is being used as a type here. Did you mean 'typeof ", name, "'?");
