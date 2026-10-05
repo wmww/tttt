@@ -1530,7 +1530,8 @@ static void report_arity(
 // Whether what `this` is in the call fits the `this` parameter of the candidate
 static bool this_fits(Checker* me, Candidate const* candidate, CallInfo const* info, TyRelation relation) {
     Ty const* this_type = candidate->sig->this_type;
-    if (!this_type || !info->this_arg || (info->this_arg->flags & TYF_ANY)) return true;
+    // (tsc's checkApplicableSignature: a declared `this: void` isn't checked, `ns.f()` calls it)
+    if (!this_type || (this_type->flags & TYF_VOID) || !info->this_arg || (info->this_arg->flags & TYF_ANY)) return true;
     return ty_is_related(me, info->this_arg, ty_instantiate(me, this_type, candidate->mapper), relation);
 }
 
