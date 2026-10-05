@@ -85,9 +85,6 @@ one commit each, `./sweep.py` before/after.
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
 
 ### Medium (15-100 lines)
-- **Augmentation-only references load the target file** (ember-data + 4; A/augonly): tsc never adds a file to the
-  program for a module augmentation alone. Split resolution from loading in `program_load_module_ref` (program.c).
-  20-40 lines.
 - **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
 - **Construct signatures compared bivariantly under strictFunctionTypes** (react, react-redux; D/ctorOverloads.ts):
   relate.c exempts every SIGNATURE_CONSTRUCT target; tsc only class `constructor` declarations. Expect suite movement.

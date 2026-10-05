@@ -571,6 +571,15 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
         resolved_module_drop(&resolved);
         return;
     }
+    // An augmentation doesn't load what it augments (see ModuleRef.augmented_path), what can't be loaded anyway goes
+    // the usual way (TS2665 for an untyped module)
+    bool loadable = resolved.kind == RESOLVED_TS || resolved.kind == RESOLVED_DTS || (resolved.kind == RESOLVED_JS && my options.allow_js);
+    if (ref->is_declaration && loadable) {
+        ref->file = program_find_source(me, cstr_sv(&resolved.path));
+        cstr_take(&ref->augmented_path, cstr_clone(resolved.path));
+        resolved_module_drop(&resolved);
+        return;
+    }
     bool is_new = resolved.kind != RESOLVED_NONE && !program_find_source(me, cstr_sv(&resolved.path));
     if (cstr_size(&resolved.alternate_result)) {
         cstr_take(&ref->alternate_result, program_path_for_message(me, cstr_sv(&resolved.alternate_result)));
@@ -2191,6 +2200,13 @@ void program_resolve_names(Program* me) {
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         source->scope = scope_new_file(my binder, source);
+        // What module augmentations augment, if something else brought it into the program
+        for (u32 j = 0; j < source->module_ref_count; j++) {
+            ModuleRef* ref = source->module_refs[j];
+            if (ref->is_declaration && !ref->file && cstr_size(&ref->augmented_path)) {
+                ref->file = program_find_source(me, cstr_sv(&ref->augmented_path));
+            }
+        }
     }
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;

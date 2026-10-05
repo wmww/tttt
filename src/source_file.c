@@ -117,6 +117,7 @@ void source_file_drop(SourceFile* me) {
         cstr_drop(&my module_refs[i]->resolved_path);
         cstr_drop(&my module_refs[i]->package_name);
         cstr_drop(&my module_refs[i]->alternate_result);
+        cstr_drop(&my module_refs[i]->augmented_path);
         free(my module_refs[i]);
     }
     free(my module_refs);

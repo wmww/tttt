@@ -43,6 +43,9 @@ typedef struct ModuleRef {
     bool type_only_import; // Of an `import type` declaration (TS1541 rather than TS1479)
     bool import_type; // Of an import type `import("m")` (TS1542 rather than TS1479)
     SourceFile* file; // What the program's module resolution found, may be null
+    // A module augmentation's: the file its name resolves to, which it doesn't add to the program (tsc's
+    // processImportedModules only loads `file.imports`). `file` is set from it once loading is over
+    cstr augmented_path;
     // The second copy of a package (same name and version) that `file`, the first, stands in for: messages name it
     // (tsc's redirect source file keeps its own fileName)
     SourceFile* redirected_from;
