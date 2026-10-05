@@ -768,10 +768,12 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     if (!found) return false;
     if (same_symbol(me, found, symbol)) return true;
     // (Another alias of the same thing: `m4.d` written under `import m4 = require("./m")` in one file is reused in
-    // another that imports the module as m4 too)
-    if (!(found->flags & SYMBOL_ALIAS)) return false;
+    // another that imports the module as m4 too; or the thing itself, where an imported name is printed in the file
+    // that declares it)
+    if (!(found->flags & SYMBOL_ALIAS) && !(symbol->flags & SYMBOL_ALIAS)) return false;
     Symbol const* target = symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias((Symbol*)symbol) : symbol;
-    return target && same_symbol(me, symbol_resolve_alias((Symbol*)found), target);
+    Symbol const* found_target = found->flags & SYMBOL_ALIAS ? symbol_resolve_alias((Symbol*)found) : found;
+    return target && found_target && same_symbol(me, found_target, target);
 }
 
 // A type of the uninstantiated signature at the root of `sig` as `sig` has it
