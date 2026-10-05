@@ -27838,7 +27838,7 @@ const baselines = {
     'reverseMappedTypeLimitedConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypePrimitiveConstraintProperty': {
         errors: true,
@@ -31453,7 +31453,7 @@ const baselines = {
     'typePredicateFreshLiteralWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typePredicateInLoop': {
         errors: true,
@@ -63518,7 +63518,7 @@ const baselines = {
     'inferTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypes2': {
         errors: true,

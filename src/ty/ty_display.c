@@ -1614,11 +1614,30 @@ static Ty const* single_return_keyword(Checker* me, FunctionImpl const* function
     return keyword;
 }
 
-static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable) {
+static void display_type_params(Checker* me, TyDisplay d, TyList params, bool reusable, bool syntactic) {
     if (!params.len) return;
     out_lit(d, "<");
     for (u32 i = 0; i < params.len; i++) {
         if (i) out_lit(d, ", ");
+        // (A function printed syntactically reuses its type parameter declarations whole)
+        Ty const* declared_param = params.data[i];
+        GenericItem const* own = syntactic && declared_param->kind == TY_TYPE_PARAM ? declared_param->param.state->item : nullptr;
+        if (own && !declared_param->param.state->clone_of && d.underline) {
+            TyDisplay whole = reused_if(d, true);
+            if (own->is_const) out_lit(whole, "const ");
+            if (own->is_in) out_lit(whole, "in ");
+            if (own->is_out) out_lit(whole, "out ");
+            ty_display(me, whole, declared_param);
+            if (own->extends_explicit) {
+                out_lit(whole, " extends ");
+                display_node(me, whole, &own->extends);
+            }
+            if (own->fallback) {
+                out_lit(whole, " = ");
+                display_node(me, whole, own->fallback);
+            }
+            continue;
+        }
         // The name of a declared type parameter is always reused, the constraint like any annotation (tsc never reuses
         // the default)
         // (A clone made by instantiating the signature has its original's declaration)
@@ -1842,7 +1861,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool reusable = d.underline && function;
     bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
     d.syntactic_function = nullptr;
-    display_type_params(me, d, sig->type_params, reusable);
+    display_type_params(me, d, sig->type_params, reusable, syntactic);
     out_lit(d, "(");
     u32 param_count = sig->param_count;
     SigParam const* params = expanded_params(me, sig, &param_count);
