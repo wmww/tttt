@@ -2594,13 +2594,14 @@ static bool namespace_import_resolves_type_members(PortItem const* item) {
 // tsc's resolveESModuleSymbol: an ES import of a module whose `export =` names neither a namespace nor a variable
 // (a class, a function) only works through the synthetic default (TS2497 on the module name)
 static void check_es_module_symbol(PortItem const* item, Symbol const* module, Symbol* assigned, ErrorCtx* errs) {
-    if (!assigned || assigned->is_placeholder || !item->module_ref) return;
+    // (An `export =` that resolves to nothing is tsc's unknownSymbol: neither a module nor a variable)
+    if (!assigned || (assigned->is_placeholder && !assigned->is_unresolved) || !item->module_ref) return;
     // (`module.exports = v` of a value that isn't a name is a ValueModule in tsc's bindModuleExportsAssignment)
     Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
     if (export_equals && export_equals->decl_count && export_equals->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
     Symbol const* target = symbol_resolve_alias(assigned);
-    if (!target || target->is_placeholder || target->is_module) return;
-    u32 flags = symbol_resolved_flags(assigned);
+    if (!target || (target->is_placeholder && !target->is_unresolved) || target->is_module) return;
+    u32 flags = target->is_placeholder ? 0 : symbol_resolved_flags(assigned);
     if (flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_FUNCTION_SCOPED_VARIABLE | SYMBOL_BLOCK_SCOPED_VARIABLE)) {
         return;
     }
@@ -2885,7 +2886,11 @@ static Symbol* resolve_alias_target(Symbol* me) {
             }
             Symbol* found = symbol_get_export(module, port_item_name(item->source_name));
             if (!found && assigned) {
-                if (assigned->is_placeholder) return nullptr;
+                if (assigned->is_placeholder) {
+                    // (tsc's unknownSymbol has no members)
+                    if (assigned->is_unresolved && !item->value_only) scope_report_non_exported_member(item, module, errs);
+                    return nullptr;
+                }
                 Symbol const* container = symbol_for_meaning(assigned, SYMBOL_NAMESPACE);
                 if (container) found = symbol_get_export(container, port_item_name(item->source_name));
                 // The properties of the value `export =` names are importable too (tsc's getExternalModuleMember).

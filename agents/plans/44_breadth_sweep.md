@@ -77,9 +77,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
-  `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
-  one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
 - **Methods of an object literal against a union with an index signature member get no contextual parameter types**
   (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
