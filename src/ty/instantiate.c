@@ -376,7 +376,10 @@ static bool literal_instance_is_itself(Checker* me, Ty const* target, TyMapper c
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* prop = members->props[i];
         if (prop->type_state != LAZY_STATE_DONE || !prop->type) return false;
-        if (prop->write_type && prop->write_type != prop->type) return false;
+        if (prop->write_type_known) {
+            Ty const* write = intern_get(&my links, (u64[]){ KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop }, 2);
+            if (write && write != prop->type) return false;
+        }
         if (ty_instantiate(me, prop->type, mapper) != prop->type) return false;
     }
     for (u32 i = 0; i < members->index_count; i++) {

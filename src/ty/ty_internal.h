@@ -53,6 +53,8 @@ enum {
     KEY_STRUCTURAL,     // Shape of an object literal -> Ty, see ty_object_literal()
     KEY_SIMPLIFIED, // (indexed access type id, writing) -> ty_simplified() of it; itself while in flight (relate.c)
     KEY_BASE_DISTRIBUTIVE, // (conditional type id) -> distributive_constraint_as(!immediate) at depth 0, the conditional itself for none (relate.c)
+    KEY_PROP_MAPPED_TYPE, // Prop with .mapped -> the mapped type it's a property of (members.c)
+    KEY_PROP_WRITE_TYPE, // Prop with .write_type_known -> prop_write_type() of it, null for none (members.c)
     KEY_BASE_CONSTRAINT, // type id -> base_constraint() of it at depth 0, the type itself for none, a sentinel while computed (relate.c)
     KEY_IMMEDIATE_DISTRIBUTIVE, // (conditional type id) -> distributive_constraint_as(immediate) of it, the conditional itself for none (relate.c)
     KEY_IMPLIED_CONSTRAINT, // TernaryType -> TyImplied of its (unary tuple-unwrapped) check and extends types (lower.c)

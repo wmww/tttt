@@ -2453,9 +2453,10 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     .flags = flags,
                     .target = template,
                     .mapper = mapper,
-                    .mapped_type = ty,
+                    .mapped = true,
                     .decl = prop_decl_none(),
                 };
+                *intern_slot(me, &my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2) = ty;
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
                 // the `as` clause renamed it (tsc: a remapping rather than a filtering `as` clause; approximated per key)
                 Prop const* declared = prop_name == key ? from : nullptr;
@@ -2929,7 +2930,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
             prop->circular = true;
             // (An instantiated property isn't resolved on its own: tsc's getTypeOfInstantiatedSymbol asks its target)
             for (Prop const* p = prop; ; p = p->target) {
-                if (!p->target || p->mapped_type) {
+                if (!p->target || p->mapped) {
                     ty_resolving_cycle(me, RESOLVING_PROP, p);
                     break;
                 }
@@ -2938,7 +2939,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         case LAZY_STATE_NOT_STARTED: break;
     }
     prop->type_state = LAZY_STATE_IN_FLIGHT;
-    bool resolving = !prop->target || prop->mapped_type;
+    bool resolving = !prop->target || prop->mapped;
     if (resolving) ty_resolving_push(me, RESOLVING_PROP, prop);
     Ty const* type;
     if (prop->flags & (PROP_GETTER | PROP_SETTER) && !prop->target) {
@@ -2974,12 +2975,12 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
     if (resolving && ty_resolving_pop(me)) prop->circular = true;
-    if (prop->circular && prop->mapped_type) {
+    if (prop->circular && prop->mapped) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails
         prop->type = ty_intrinsic(me, TY_ERROR);
         prop->type_state = LAZY_STATE_DONE;
         cstr name = ty_prop_name_cstr(me, prop->name);
-        cstr mapped = ty_to_cstr(me, prop->mapped_type);
+        cstr mapped = ty_to_cstr(me, intern_get(&my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2));
         ty_error_at_current_node_d(me, 2615, "Type of property '", name, "' circularly references itself in mapped type '",
             mapped, "'.");
         c_drop(cstr, &name, &mapped);
@@ -2987,7 +2988,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     }
     // A declared property (or accessor) whose annotation needs its own type (tsc's getTypeOfVariableOrParameterOrProperty
     // / getTypeOfAccessors when popTypeResolution fails). (What the annotation lowered to is already any-like)
-    if (prop->circular && !prop->target && !prop->mapped_type && span_valid(prop_annotation_circularity_span(prop))) {
+    if (prop->circular && !prop->target && !prop->mapped && span_valid(prop_annotation_circularity_span(prop))) {
         Span name = prop_annotation_circularity_span(prop);
         ty_error_at(me, name, 2502, cstr_d("'", name.sv, "' is referenced directly or indirectly in its own type annotation."));
     }
@@ -2998,7 +2999,8 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
 
 Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // Resolved lazily like the type
-    if (prop->write_type) return prop->write_type;
+    u64 key[2] = { KEY_PROP_WRITE_TYPE, (u64)(uintptr_t)prop };
+    if (prop->write_type_known) return intern_get(&my links, key, 2);
     Ty const* type = nullptr;
     if (prop->decl->write_node) {
         type = ty_from_node(me, prop->decl->write_node, prop->decl->ctx);
@@ -3008,7 +3010,8 @@ Ty const* prop_write_type(Checker* me, Prop const* const_prop) {
         type = prop_write_type(me, prop->target);
         if (type) type = ty_instantiate(me, type, prop->mapper);
     }
-    prop->write_type = type;
+    *intern_slot(me, &my links, key, 2) = type;
+    prop->write_type_known = true;
     return type;
 }
 

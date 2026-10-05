@@ -453,7 +453,7 @@ uint8_t ty_prop_name_form_of(Prop const* prop);
 
 // A property of an object type. Deliberately the seed of plan 03's persistent symbol.
 // What a declared property knows about its declaration. Instantiations (which follow `target`) and synthetic
-// properties share ty_prop_decl_none, all zero and read-only: a property is 80 bytes, not 200
+// properties share ty_prop_decl_none, all zero and read-only: a property is 56 bytes, not 250
 typedef struct PropDecl {
     // Exactly one source of the type (or it is known from the start): a node to lower, what the AST evaluates lazily
     // (an inferred class field, an accessor), a method, the overloads of a method, a symbol, a target to instantiate
@@ -493,18 +493,23 @@ extern PropDecl const ty_prop_decl_none;
 struct Prop {
     Atom const* name;
     u32 flags;
-    LazyState type_state;
+    uint8_t type_state; // LazyState
+    // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
+    bool thisless : 1;
+    bool circular : 1; // Its type needed its type (a mapped type property: TS2615 when done)
+    // A property of a mapped type: the (resolved) mapped type is in the checker's links (KEY_PROP_MAPPED_TYPE), for
+    // TS2615, see prop_type()
+    bool mapped : 1;
+    // prop_write_type() is known: in the checker's links (KEY_PROP_WRITE_TYPE), null there for none
+    bool write_type_known : 1;
     Symbol const* parent; // the declared type it was declared in, may be null
     Prop const* target;
     TyMapper const* mapper;
     Ty const* type;
-    Ty const* write_type; // See prop_write_type()
-    Ty const* mapped_type; // A property of this mapped type (the resolved one): for TS2615, see prop_type()
     PropDecl* decl; // Never null (ty_prop_decl_none)
-    // Its declaration can't mention `this` (tsc's isThisless*): instantiating only `this` leaves it as it is
-    bool thisless;
-    bool circular; // Its type needed its type (a mapped type property: TS2615 when done)
 };
+// (Millions of instantiated ones: zod's are 86 MB at 80 bytes)
+static_assert(sizeof(Prop) == 56);
 
 typedef enum SignatureFlags {
     SIGNATURE_CONSTRUCT = 1 << 0,
