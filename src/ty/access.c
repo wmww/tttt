@@ -242,6 +242,23 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         // What the index signatures say (any is assignable to every key type: the specific ones, else a string one,
         // tsc's getPropertyTypeForIndexType with getApplicableIndexInfo)
         Ty const* apparent = ty_apparent_type(me, object);
+        if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+            // A union's index signatures are those every member has, of the union of their types (tsc's
+            // resolveUnionTypeMembers)
+            TyList members = apparent->composite.types;
+            Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+            panic_if(!parts, "out of memory");
+            u32 len = 0;
+            for (u32 i = 0; i < members.len; i++) {
+                Ty const* member = ty_apparent_type(me, members.data[i]);
+                IndexInfo const* info = (member->flags & TYF_OBJECT) ? ty_applicable_index_info(me, member, index) : nullptr;
+                if (!info) break;
+                parts[len++] = info->value;
+            }
+            Ty const* ret = len == members.len ? ty_union(me, parts, len, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ANY);
+            free(parts);
+            return include_undefined && len == members.len ? with_missing(me, ret) : ret;
+        }
         IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return ty_intrinsic(me, TY_ANY);
         return include_undefined ? with_missing(me, info->value) : info->value;
