@@ -1749,7 +1749,8 @@ static bool is_narrowable_access(Expr const* expr) {
                 return true; // (`import` too: the object of `import.meta`)
             case EXPR_PROPERTY: {
                 Expr const* key = &expr->property->prop;
-                if (key->tag != EXPR_LITERAL && key->tag != EXPR_IDENTIFIER) return false;
+                // (`m[E.A]`: a dotted key names something too, see flow.c's is_constant_entity_name())
+                if (key->tag != EXPR_LITERAL && key->tag != EXPR_IDENTIFIER && !expr_is_entity_name(key)) return false;
                 expr = &expr->property->expr;
                 break;
             }

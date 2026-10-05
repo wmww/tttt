@@ -20858,7 +20858,7 @@ const baselines = {
     'mappedTypeGenericIndexedAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeGenericInstantiationPreservesHomomorphism': {
         errors: true,
@@ -31026,14 +31026,14 @@ const baselines = {
         types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty12': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardNarrowsIndexedAccessOfKnownProperty2': {
         errors: true,
