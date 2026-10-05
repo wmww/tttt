@@ -247,8 +247,15 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
             bool counting_required = shape.min == shape.count;
             for (u32 j = 0; j < elements.len; j++) {
                 if (tuple->flags[j] & TUPLE_ELEMENT_REST) {
-                    // Only a trailing one is understood
-                    shape.rest_element = ty_rest_element_type(me, elements.data[j]);
+                    // A trailing array is the element type of the arguments left; a variadic element (`[...M, P]`) or
+                    // elements after the rest one make the rest of the tuple a rest type of its own (tsc's
+                    // getEffectiveRestType slices the tuple after its fixed elements)
+                    if (j + 1 == elements.len && (ty_is_array(me, elements.data[j]) || ty_is_tuple(elements.data[j]) ||
+                        (elements.data[j]->flags & TYF_ANY))) {
+                        shape.rest_element = ty_rest_element_type(me, elements.data[j]);
+                    } else {
+                        shape.rest_variadic = ty_slice_tuple(me, tuple, elements, j, 0);
+                    }
                     break;
                 }
                 bool optional = (tuple->flags[j] & TUPLE_ELEMENT_OPTIONAL) != 0;
@@ -883,7 +890,8 @@ static void infer_rest_variadic(Checker* me, Inference* inf, ParamShape const* s
             // (Its contextual type is instantiated where it is looked at, as in the second pass)
             my outer_inference = self;
             self->fixing = true;
-            arg->type = ty_check_expr(me, arg->expr, ty_contextual_element_type(me, shape->rest_variadic, i - from));
+            arg->type = ty_check_expr(me, arg->expr,
+                ty_contextual_element_type_of(me, shape->rest_variadic, i - from, args->len - from));
             self->fixing = false;
             my outer_inference = nullptr;
         }

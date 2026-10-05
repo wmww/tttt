@@ -667,6 +667,11 @@ Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 inde
     return contextual_element_type(me, contextual, index);
 }
 
+Ty const* ty_contextual_element_type_of(Checker* me, Ty const* contextual, u32 index, u32 length) {
+    ElementContextArg arg = { index, length, UINT32_MAX, UINT32_MAX };
+    return context_map(me, contextual, get_element_context, &arg);
+}
+
 // tsc's isTupleLikeType past its "0" check: an array-like type (assignable to `readonly any[]`) whose length is number
 // literals
 static bool array_like_with_literal_length(Checker* me, Ty const* ty) {
