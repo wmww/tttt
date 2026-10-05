@@ -1776,9 +1776,29 @@ Signature const* ty_erased_signature(Checker* me, Signature const* sig) {
     return ret;
 }
 
+// A class's `constructor` declaration's signature with the class's type parameters erased: tsc gives a constructor's
+// signature the class's (getSignatureFromDeclaration), which getErasedSignature then makes any
+static Signature const* erase_constructor_class_params(Checker* me, Signature const* sig) {
+    if (!sig->function || !sig->function->is_constructor) return sig;
+    Symbol const* class_symbol = function_impl_rare(sig->function)->constructed_class;
+    if (!class_symbol) return sig;
+    TyList params = ty_local_type_params(ty_declared_type_of(me, class_symbol));
+    if (!params.len) return sig;
+    Ty const** anys = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) anys[i] = ty_intrinsic(me, TY_ANY);
+    Signature* ret = arena_new(&my arena, Signature);
+    *ret = (Signature){
+        .flags = sig->flags,
+        .target = sig,
+        .mapper = ty_mapper_new(me, params, (TyList){ .data = anys, .len = params.len }),
+    };
+    signature_resolve(me, ret);
+    return ret;
+}
+
 bool ty_implementation_compatible_with_overload(Checker* me, Signature const* implementation, Signature const* overload) {
-    Signature const* source = ty_erased_signature(me, implementation);
-    Signature const* target = ty_erased_signature(me, overload);
+    Signature const* source = erase_constructor_class_params(me, ty_erased_signature(me, implementation));
+    Signature const* target = erase_constructor_class_params(me, ty_erased_signature(me, overload));
     Ty const* source_return = signature_return_type(me, source);
     Ty const* target_return = signature_return_type(me, target);
     if (target_return != ty_intrinsic(me, TY_VOID) && !ty_is_related(me, target_return, source_return, TY_RELATION_ASSIGNABLE) &&
