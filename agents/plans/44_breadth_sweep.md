@@ -35,6 +35,9 @@ missing checks too.
 wall at -j4, tttt 456 s CPU vs tsc 5314 s. Slower than tsc: carbon-components-react (25 s vs 5.9), d3-geo
 (bugs/sweep_perf.md).
 
+Latest (2026-10-05, after the first batch of "Open root causes" below): **8015 match**, spurious-only 102,
+missing-only 81, both 9, crash 0, timeout 1 (carbon-components-react).
+
 ## Stage 2: drain the ranking (corpus sessions)
 Work the table top-down like plan 19 does for the corpora: a root cause that spans packages first, single-package
 causes by how many packages they're the only mismatch of. Per root cause: a small repro under `test/probes` or a
@@ -74,6 +77,8 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
+- **Unknown `--lib` name aborts** (left from the lib-aliases fix): `load_stdlib()` (main.c) fails with "lib file not
+  found" where tsc reports TS6046 (the list of valid names) and checks without it.
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
