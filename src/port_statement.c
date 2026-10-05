@@ -34,6 +34,10 @@ void port_statement_drop(PortStatement* me) {
     cstr_drop(&my target_path);
     import_attributes_free(my attributes);
     vec_expr_drop(&my decorators);
+    if (my bad_specifier) {
+        expr_drop(my bad_specifier);
+        free(my bad_specifier);
+    }
 }
 
 void import_attributes_free(ImportAttributes* me) {
@@ -131,6 +135,7 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
 
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs) {
     for_each (i, vec_expr, &my decorators) expr_lookup_names(i, scope, nullptr);
+    if (my bad_specifier) expr_lookup_names(my bad_specifier, scope, nullptr);
     // (the values of `with { type: "json" }` are expressions like any other: checkImportAttribute checks them)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) expr_lookup_names(&i->value, scope, errs);

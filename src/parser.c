@@ -11213,6 +11213,10 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 .ts_code = 1141,
                 .phase = ERROR_PHASE_TYPECHECK,
             });
+            if (path_expr.tag != EXPR_IDENTIFIER) {
+                statement.bad_specifier = c_new(Expr, path_expr);
+                path_expr = expr_implicit_any(span_null);
+            }
         }
         expr_drop(&path_expr);
         if (complete) statement.attributes = parse_import_attributes(&p);

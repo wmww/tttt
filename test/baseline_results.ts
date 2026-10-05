@@ -2372,7 +2372,7 @@ const baselines = {
     },
     'bigintArbirtraryIdentifier': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'bigintIndex': {
@@ -12123,7 +12123,7 @@ const baselines = {
     'es6ImportNamedImportParsingError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNamedImportWithExport': {
         errors: true,

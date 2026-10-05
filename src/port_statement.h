@@ -114,6 +114,9 @@ typedef struct PortStatement {
     // A module specifier tsc's types baseline shows as any: a missing expression (`import` then a reserved word), or
     // a name (`from Aaa`, `require(x)`: an identifier outside an expression context, errorType)
     Span missing_specifier;
+    // Any other expression as the module specifier (TS1141 from the checker: `import { * } from` parses `* }`): owned,
+    // walked by the baselines
+    struct Expr* bad_specifier;
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none
     bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)
