@@ -224,6 +224,34 @@ typedef struct SymbolModule {
     bool type_members_resolved;
 } SymbolModule;
 
+// What few symbols have (namespace imports, export defaults, JavaScript members...): behind Symbol.rare, read through
+// symbol_rare() (a zeroed one when absent), written through symbol_rare_mut() while binding (not once frozen)
+typedef struct SymbolRare {
+    // JavaScript classes and constructor functions: the instance members assignments declare (`this.x = v`,
+    // `F.prototype.x = v`), tsc's Symbol.members for them. Class members declared in the class body aren't in it
+    SymbolTable* members;
+    // `import * as ns`: the module whose exports are the members, see make_gather_target()
+    struct Symbol* gather_module;
+    // `import * as ns` of a CommonJS module into an ES module in Node.js: a `default` of its type (not of its exports)
+    // that is the module, an alias of it. Null otherwise
+    struct Symbol* synthetic_default;
+    // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's
+    // exportSymbol of a local symbol)
+    struct Symbol* export_symbol;
+    // A clone of what a module's `export =` assigns, with the module's other exports added to its exports (tsc's
+    // getCommonJsExportEquals: `module.exports = C; module.exports.x = 1`): the original. The checker sees the clone
+    // as the original except for its value (ty_type_of_symbol()) and what is looked up in it
+    struct Symbol* merged_export_equals_of;
+    // JavaScript members `this.x = v` declares in a class constructor: the first such `this.x` and the constructor,
+    // where the flow query of tsc's getFlowTypeInConstructor goes (lower.c's assignment_symbol_type)
+    struct Expr const* constructor_assigned;
+    FunctionImpl const* declaring_constructor;
+    // A JavaScript class's member `this[k] = v` declares with an entity name k (tsc's late bound assignment
+    // declarations): its name is what k's type names, known to the checker only. In Symbol.members as `[k]`
+    struct Expr const* late_bound_key;
+} SymbolRare;
+
+// PERF: ~80k of them on nest/webpack: keep it small (what few symbols have goes to SymbolRare)
 typedef struct Symbol {
     Binder* binder;
     u32 flags;
@@ -231,23 +259,26 @@ typedef struct Symbol {
     csview name;
     Symbol* parent; // The container: namespace, enum, module
     SymbolTable* exports; // Namespaces, enums, modules: one table, shared by all declaration blocks
-    // JavaScript classes and constructor functions: the instance members assignments declare (`this.x = v`,
-    // `F.prototype.x = v`), tsc's Symbol.members for them. Class members declared in the class body aren't in it
-    SymbolTable* members;
     Span name_span; // Of the first declaration
     SymbolDecl* decls; // Every declaration, in order
     u32 decl_count;
     u32 decl_cap;
-    bool exported;
-    // `import * as ns`: the module whose exports are the members, see make_gather_target()
-    Symbol* gather_module;
-    // `import * as ns` of a CommonJS module into an ES module in Node.js: a `default` of its type (not of its exports)
-    // that is the module, an alias of it. Null otherwise
-    Symbol* synthetic_default;
-
     SymbolAlias* alias; // Every symbol with SYMBOL_ALIAS has one
     SymbolModule* module; // Every is_module symbol has one
-
+    SymbolRare* rare; // Null: all zero
+    // Local variables and parameters (symbols one file owns), written by that file's resolve walk: what narrowing
+    // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
+    // namespace, class field initializer or static block)
+    FunctionImpl const* function;
+    // Variables: the start node of the flow container the (first) declaration is in, null if nothing flows there
+    struct FlowNode const* flow_start;
+    // Where the last assignment ends: a closure made after that sees the narrowed type (tsc's lastAssignmentPos).
+    // Null: not assigned. Assignments in nested functions or loops count as "anywhere" (the end of the file)
+    char const* last_assignment_end;
+    // tsc's isReferenced: the meanings the name was used with, see unused_mark_referenced(). Written by the resolve
+    // walk of the file that uses it, only under noUnusedLocals/noUnusedParameters
+    u32 referenced;
+    bool exported;
     bool is_module;
     // The symbol of a module augmentation's block (`declare module "./a" {}` in a module), which binder_link() merges
     // into the module: declares like a module (`export default`)
@@ -263,20 +294,6 @@ typedef struct Symbol {
     bool is_unresolved;
     // The `default` export of a module (named like its first declaration, `export default class A` is `A`)
     bool is_default_export;
-    // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's
-    // exportSymbol of a local symbol)
-    Symbol* export_symbol;
-    // A clone of what a module's `export =` assigns, with the module's other exports added to its exports (tsc's
-    // getCommonJsExportEquals: `module.exports = C; module.exports.x = 1`): the original. The checker sees the clone
-    // as the original except for its value (ty_type_of_symbol()) and what is looked up in it
-    struct Symbol* merged_export_equals_of;
-
-    // Local variables and parameters (symbols one file owns), written by that file's resolve walk: what narrowing
-    // inside closures depends on. `function` is the function the variable belongs to (null: top level of a file,
-    // namespace, class field initializer or static block)
-    FunctionImpl const* function;
-    // Variables: the start node of the flow container the (first) declaration is in, null if nothing flows there
-    struct FlowNode const* flow_start;
     bool is_local; // Declared in the locals of a scope: not a global, not an export
     bool is_const; // A `const` variable
     bool is_parameter;
@@ -284,20 +301,16 @@ typedef struct Symbol {
     bool is_assigned; // Somewhere other than its declaration
     bool is_definitely_assigned; // By `=`, a pattern or a for-in/of rather than only `+=` or `++`
     bool is_assigned_in_closure; // In another function than the one it belongs to
-    // Where the last assignment ends: a closure made after that sees the narrowed type (tsc's lastAssignmentPos).
-    // Null: not assigned. Assignments in nested functions or loops count as "anywhere" (the end of the file)
-    char const* last_assignment_end;
-    // tsc's isReferenced: the meanings the name was used with, see unused_mark_referenced(). Written by the resolve
-    // walk of the file that uses it, only under noUnusedLocals/noUnusedParameters
-    u32 referenced;
-    // JavaScript members `this.x = v` declares in a class constructor: the first such `this.x` and the constructor,
-    // where the flow query of tsc's getFlowTypeInConstructor goes (lower.c's assignment_symbol_type)
-    struct Expr const* constructor_assigned;
-    FunctionImpl const* declaring_constructor;
-    // A JavaScript class's member `this[k] = v` declares with an entity name k (tsc's late bound assignment
-    // declarations): its name is what k's type names, known to the checker only. In Symbol.members as `[k]`
-    struct Expr const* late_bound_key;
 } Symbol;
+
+extern SymbolRare const symbol_rare_none;
+static inline SymbolRare const* symbol_rare(Symbol const* me) {
+    return my rare ? my rare : &symbol_rare_none;
+}
+SymbolRare* symbol_rare_new(Symbol* me);
+static inline SymbolRare* symbol_rare_mut(Symbol* me) {
+    return my rare ? my rare : symbol_rare_new(me);
+}
 
 // The symbol that gives the name the given meaning: itself, or for an alias its target (null if there is none).
 // Placeholders mean everything
@@ -313,7 +326,7 @@ bool is_primitive_type_name(csview name);
 bool symbol_const_enum_is_ambient(Symbol const* me);
 // The symbol whose exports are the members of a namespace, enum or module symbol
 static inline Symbol const* symbol_members(Symbol const* me) {
-    return me && my gather_module ? my gather_module : me;
+    return me && symbol_rare(me)->gather_module ? symbol_rare(me)->gather_module : me;
 }
 // The first declaration of the given kind, null if there is none
 SymbolDecl const* symbol_find_decl(Symbol const* me, SymbolDeclKind kind);
@@ -637,7 +650,7 @@ static inline bool scope_is_var_container(Scope const* me) {
 // module_export_equals() makes is its original
 Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol);
 static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symbol) {
-    if (symbol && symbol->merged_export_equals_of) symbol = symbol->merged_export_equals_of;
+    if (symbol && symbol_rare(symbol)->merged_export_equals_of) symbol = symbol_rare(symbol)->merged_export_equals_of;
     // Nothing is ever written to a symbol of the parent, so there's no flag to test: programs that add to lib
     // symbols are rare, and only those pay for the lookup
     if (!symbol || symbol->binder == me) return symbol;

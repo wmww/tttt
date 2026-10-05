@@ -959,7 +959,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Symbol* assigned = module_export_equals(module);
     Ty const* exports;
     if (assigned != module) {
-        exports = assigned->merged_export_equals_of ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
+        exports = symbol_rare(assigned)->merged_export_equals_of ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
     } else if (symbol_table_get(module->exports, c_sv("export="))) {
         // `module.exports = window.nonprop`: an alias that resolves to nothing (tsc's unknownSymbol). One of the
         // module itself (`module.exports = exports` in a function) is the module's namespace, `typeof import("m")`
@@ -1395,12 +1395,12 @@ Ty const* ty_constructor_declared_flow_type(Checker* me, Symbol const* member, E
 // A member only `this.x = v` assignments declare, one of them in a class constructor: the type `this.x` has at the end of
 // the constructor (tsc's getFlowTypeInConstructor). Null if that is only null or undefined, or it isn't such a member
 static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
-    if (!symbol->constructor_assigned || !symbol->declaring_constructor || !symbol->declaring_constructor->return_flow) {
+    if (!symbol_rare(symbol)->constructor_assigned || !symbol_rare(symbol)->declaring_constructor || !symbol_rare(symbol)->declaring_constructor->return_flow) {
         return nullptr;
     }
-    Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol->constructor_assigned, symbol->declaring_constructor->return_flow);
+    Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol_rare(symbol)->constructor_assigned, symbol_rare(symbol)->declaring_constructor->return_flow);
     // Nothing but `[]` (tsc's autoArrayType, which never evolves here): any[], reported (getFlowTypeInConstructor)
-    SourceFile const* file = symbol->constructor_assigned->inner_span.source;
+    SourceFile const* file = symbol_rare(symbol)->constructor_assigned->inner_span.source;
     if (file && file->is_js && ret == ty_auto_array(me)) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)3;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
@@ -1561,7 +1561,7 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
-    if (symbol && symbol->merged_export_equals_of) return merged_export_equals_type(me, symbol, false);
+    if (symbol && symbol_rare(symbol)->merged_export_equals_of) return merged_export_equals_type(me, symbol, false);
     symbol = canonical(me, symbol);
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`. A shorthand ambient module is any
@@ -1622,10 +1622,10 @@ Ty const* ty_merged_value_type(Checker* me, Symbol const* symbol) {
 }
 
 u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) {
-    if (symbol->merged_export_equals_of) {
+    if (symbol_rare(symbol)->merged_export_equals_of) {
         *out = malloc(sizeof(Ty const*));
         panic_if(!*out, "out of memory");
-        (*out)[0] = ty_type_of_symbol(me, symbol->merged_export_equals_of);
+        (*out)[0] = ty_type_of_symbol(me, symbol_rare(symbol)->merged_export_equals_of);
         return 1;
     }
     return value_entries(me, symbol, out);
@@ -1639,9 +1639,9 @@ u32 ty_merged_value_entries(Checker* me, Symbol const* symbol, Ty const*** out) 
 // getCommonJsExportEquals' clone, where a variable keeps its own type: `module.exports = f; module.exports.x = 1` of a
 // `const f`)
 static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone, bool in_file) {
-    Ty const* original = ty_type_of_symbol(me, clone->merged_export_equals_of);
+    Ty const* original = ty_type_of_symbol(me, symbol_rare(clone)->merged_export_equals_of);
     if (!(original->flags & TYF_OBJECT)) return original;
-    Symbol const* original_symbol = clone->merged_export_equals_of;
+    Symbol const* original_symbol = symbol_rare(clone)->merged_export_equals_of;
     for (u32 i = 0; !in_file && i < original_symbol->decl_count; i++) {
         if (!(original_symbol->decls[i].flags & SYMBOL_VALUE)) continue;
         if (original_symbol->decls[i].kind == SYMBOL_DECL_VARIABLE) return original;

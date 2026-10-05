@@ -172,7 +172,7 @@ static Symbol const* export_equals_clone_of(Symbol const* function) {
     if (!module && block && block->kind == SCOPE_MODULE) module = block->container;
     if (!module || !module->is_module || !module->exports || !symbol_table_get(module->exports, c_sv("export="))) return nullptr;
     Symbol const* assigned = module_export_equals(module);
-    return assigned && assigned->merged_export_equals_of == function ? function : nullptr;
+    return assigned && symbol_rare(assigned)->merged_export_equals_of == function ? function : nullptr;
 }
 
 // A function with expando properties that is local (declared in a function or block): tsc prints a non-local one as
@@ -2731,7 +2731,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             }
             // A function a CommonJS module exports with the module's other exports merged in (tsc's
             // getCommonJsExportEquals clone, a ValueModule too)
-            Symbol const* exported = ty->anonymous.merged_value && !ty->anonymous.is_reverse ? ty->anonymous.merged_value->merged_export_equals_of : nullptr;
+            Symbol const* exported = ty->anonymous.merged_value && !ty->anonymous.is_reverse ? symbol_rare(ty->anonymous.merged_value)->merged_export_equals_of : nullptr;
             // (the function's own type too: tsc's clone is its merged symbol, recordMergedSymbol)
             if (!exported && ty->anonymous.function && !ty->anonymous.target) exported = export_equals_clone_of(ty->anonymous.function->symbol);
             if (exported && (exported->flags & SYMBOL_FUNCTION) && span_valid(exported->name_span)) {

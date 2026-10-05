@@ -758,7 +758,7 @@ static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 d
 static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
     Ty const* target = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
     Symbol const* decl = target->declared.symbol;
-    if (!decl || decl->members) return nullptr; // (JavaScript `this.x = v` members)
+    if (!decl || symbol_rare(decl)->members) return nullptr; // (JavaScript `this.x = v` members)
     // A class, or an interface that is a reference in tsc (generic, or mentioning `this`)
     bool is_class = target->declared.kind == TY_DECLARED_CLASS_INSTANCE;
     if (!is_class && !target->declared.type_params.len && !target->declared.this_param) return nullptr;
@@ -879,16 +879,16 @@ static Prop* builder_add_class_prop(
 // The members JavaScript assignments declare (`this.x = v`, `F.prototype.x = v`: Symbol.members). One the class body
 // declares keeps its declaration and type, the assignments are more declarations of it
 static void builder_add_assignment_members(Checker* me, MembersBuilder* builder, Symbol const* symbol) {
-    if (!symbol->members) return;
+    if (!symbol_rare(symbol)->members) return;
     u32 count;
-    SymbolEntry* entries = symbol_table_collect(symbol->members, &count);
+    SymbolEntry* entries = symbol_table_collect(symbol_rare(symbol)->members, &count);
     for (u32 i = 0; i < count; i++) {
         Symbol const* member = entries[i].symbol;
         Atom const* name;
-        if (member->late_bound_key) {
+        if (symbol_rare(member)->late_bound_key) {
             // (What the key's type names: a literal or unique symbol, else nothing)
             bool is_number = false;
-            name = ty_property_name_of_key(me, ty_expr_type(me, member->late_bound_key), &is_number);
+            name = ty_property_name_of_key(me, ty_expr_type(me, symbol_rare(member)->late_bound_key), &is_number);
             if (!name) continue;
         } else {
             name = checker_atom(me, entries[i].name);
@@ -1375,10 +1375,10 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (!member) return nullptr;
     Atom const* name = checker_atom(me, entry->name);
-    if (symbol->late_bound_key) {
+    if (symbol_rare(symbol)->late_bound_key) {
         // `f[k] = v` (What the key's type names: a literal or unique symbol, else nothing)
         bool is_number = false;
-        name = ty_property_name_of_key(me, ty_expr_type(me, symbol->late_bound_key), &is_number);
+        name = ty_property_name_of_key(me, ty_expr_type(me, symbol_rare(symbol)->late_bound_key), &is_number);
         if (!name) return nullptr;
     }
     Prop* prop = prop_new_declared(me);
@@ -1400,9 +1400,9 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     prop->decl->ctx = (LowerCtx){ .generic = true };
     prop->decl->name_span = symbol->name_span;
     // (Named by its key's type: `f[s] = v` with `s = "10"` is string named, `"10"`)
-    if (symbol->late_bound_key) {
-        prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, symbol->late_bound_key,
-            ty_expr_type(me, symbol->late_bound_key), false);
+    if (symbol_rare(symbol)->late_bound_key) {
+        prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, symbol_rare(symbol)->late_bound_key,
+            ty_expr_type(me, symbol_rare(symbol)->late_bound_key), false);
     }
     // `N.p` in the symbols baseline
     if (symbol->parent && !symbol->parent->is_module) prop->parent = symbol->parent;
@@ -1465,7 +1465,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
     free(entries);
     ty_buf_drop(&shared);
     // What a module's `export =` assigns, with the module's other exports (module_export_equals())
-    if (decl->merged_export_equals_of) {
+    if (symbol_rare(decl)->merged_export_equals_of) {
         for (u32 i = 0; i < decl->exports->count; i++) {
             SymbolEntry const* entry = &decl->exports->entries[i];
             Prop* existing = builder_find_prop(builder, checker_atom(me, entry->name));
@@ -1569,7 +1569,7 @@ static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 d
 // Whether a class or interface declares members of its own (tsc's getMembersOfSymbol(symbol).size: the instance side,
 // the constructor included)
 static bool declares_members(Symbol const* decl) {
-    if (decl->members && decl->members->count) return true;
+    if (symbol_rare(decl)->members && symbol_rare(decl)->members->count) return true;
     for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
         if (node->kind == SYMBOL_DECL_INTERFACE) {
             InterfaceDecl const* interface_decl = node->node;
@@ -1933,7 +1933,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (prop) builder_push(&builder, props, prop);
             }
             free(exports);
-            Symbol const* synthetic_default = ty->declared.namespace_symbol->synthetic_default;
+            Symbol const* synthetic_default = symbol_rare(ty->declared.namespace_symbol)->synthetic_default;
             if (synthetic_default) {
                 SymbolEntry entry = { .name = c_sv("default"), .hash = symbol_name_hash(c_sv("default")), .symbol = (Symbol*)synthetic_default };
                 Prop* prop = namespace_export_prop(me, &entry);
@@ -3214,7 +3214,7 @@ Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
     // (A named function expression tagged `@class` that isn't assigned to anything is a class of its own name)
     Symbol const* symbol = function->class_symbol ? function->class_symbol :
         function->is_expression && !function->jsdoc_class ? nullptr : function->symbol;
-    if (!symbol || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;
+    if (!symbol || !(symbol->flags & SYMBOL_CLASS) || !symbol_rare(symbol)->members) return nullptr;
     SourceFile const* file = function->full_span.source;
     return file && file->is_js ? symbol : nullptr;
 }

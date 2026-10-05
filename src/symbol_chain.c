@@ -145,11 +145,11 @@ static Symbol const* resolve_alias(Symbol const* symbol) {
 // named through (ChainCtx.container_lookup); the module's own type is printed through `ns` like tsc prints the
 // clone's. HACK
 static bool namespace_import_is_clone(Symbol const* symbol) {
-    if (!symbol->gather_module || !compiler_options()->es_module_interop || !symbol->decl_count) return false;
+    if (!symbol_rare(symbol)->gather_module || !compiler_options()->es_module_interop || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
     PortItem const* item = decl->kind == SYMBOL_DECL_ALIAS ? decl->node : nullptr;
     if (!item || item->tag != PORT_IMPORT_GATHER) return false;
-    Symbol* module = symbol->gather_module;
+    Symbol* module = symbol_rare(symbol)->gather_module;
     if (symbol_get_export(module, c_sv("default"))) return true;
     Symbol const* assigned = module->is_module ? module_export_equals(module) : module;
     if (assigned && assigned->flags & SYMBOL_ALIAS) assigned = resolve_alias(assigned);

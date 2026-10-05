@@ -139,7 +139,7 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Span name = expr_static_property_name(left);
     Expr* constructor = span_valid(name) ? expr_prototype_object(&left->property->expr) : nullptr;
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
-    Symbol const* member = symbol && symbol->members ? symbol_table_get(symbol->members, name.sv) : nullptr;
+    Symbol const* member = symbol && symbol_rare(symbol)->members ? symbol_table_get(symbol_rare(symbol)->members, name.sv) : nullptr;
     if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
     // (A class's `prototype` is its instance type, where the access finds the member)
     if (symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
@@ -183,11 +183,11 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
         return;
     }
     SymbolTable const* table = nullptr;
-    if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = this->target->members;
+    if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = symbol_rare(this->target)->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
     Symbol const* js_class = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && this->this_function ?
         ty_js_this_class(this->this_function) : nullptr;
-    if (js_class) table = js_class->members;
+    if (js_class) table = symbol_rare(js_class)->members;
     Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
     // (Not when the class body declares it)
     ClassDecl const* class_decl = this->target ? symbol_find_node(this->target, SYMBOL_DECL_CLASS) : nullptr;

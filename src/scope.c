@@ -199,6 +199,21 @@ Symbol* binder_new_symbol(Binder* me, csview name, u32 flags) {
     return ret;
 }
 
+SymbolRare const symbol_rare_none;
+
+SymbolRare* symbol_rare_new(Symbol* me) {
+    if (my binder->frozen) log_error("Symbol '", my name, "' given rare fields while typechecking: the checkers share it");
+    return my rare = arena_new(&my binder->arena, SymbolRare);
+}
+
+// After a struct copy of another symbol: a copy of its rare fields of its own
+static void symbol_own_rare(Symbol* me) {
+    if (!my rare) return;
+    SymbolRare* rare = arena_new(&my binder->arena, SymbolRare);
+    *rare = *my rare;
+    my rare = rare;
+}
+
 static void symbol_ensure_exports(Symbol* me) {
     if (!my exports) my exports = arena_new(&my binder->arena, SymbolTable);
 }
@@ -701,6 +716,7 @@ static Symbol* clone_parent_symbol(Binder* binder, Symbol const* original) {
     Binder* owner = ret->binder;
     *ret = *original;
     ret->binder = owner;
+    symbol_own_rare(ret);
     if (original->decl_count) {
         ret->decls = arena_new_n(&binder->arena, SymbolDecl, original->decl_cap);
         memcpy(ret->decls, original->decls, sizeof(SymbolDecl) * original->decl_count);
@@ -1063,7 +1079,7 @@ static void scope_declare_default_local(Scope* me, Symbol* symbol, Span name, u3
         local->is_local = true;
         local->referenced = SYMBOL_ANY_MEANING;
     }
-    if (!local->export_symbol) local->export_symbol = symbol;
+    if (!symbol_rare(local)->export_symbol) symbol_rare_mut(local)->export_symbol = symbol;
     SymbolDecl decl = symbol->decls[symbol->decl_count - 1];
     decl.flags = SYMBOL_NONE;
     symbol_add_decl(local, decl);
@@ -1122,7 +1138,7 @@ typedef struct PendingExportMerge {
 static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolve) {
     Symbol* exported = symbol_table_get(my container->exports, local->name);
     if (exported == local) exported = nullptr;
-    if (!exported && !local->export_symbol) return;
+    if (!exported && !symbol_rare(local)->export_symbol) return;
     Symbol* symbols[] = { local, exported };
     if (!resolve) {
         bool needs_target = false;
@@ -1519,7 +1535,7 @@ static void set_function_class_symbol(Expr* value, Symbol* symbol) {
 void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, FunctionImpl const* function) {
     if (!symbol || !function->jsdoc_class) return;
     symbol->flags |= SYMBOL_CLASS;
-    if (!symbol->members) symbol->members = arena_new(&binder->arena, SymbolTable);
+    if (!symbol_rare(symbol)->members) symbol_rare_mut(symbol)->members = arena_new(&binder->arena, SymbolTable);
 }
 
 static void declare_commonjs_export(
@@ -1838,7 +1854,8 @@ static Symbol* merged_export_equals(Symbol* module, Symbol* target) {
     Symbol* ret = binder_new_symbol(binder, target->name, target->flags);
     *ret = *target;
     ret->binder = binder;
-    ret->merged_export_equals_of = target;
+    symbol_own_rare(ret);
+    symbol_rare_mut(ret)->merged_export_equals_of = target;
     ret->flags |= SYMBOL_VALUE_MODULE; // (Something to look names up in)
     ret->exports = arena_new(&binder->arena, SymbolTable);
     ret->exports->parent = target->exports;
@@ -2221,9 +2238,9 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
         synthetic->alias->scope = my alias->scope;
         synthetic->alias->target = module;
         synthetic->alias->state = ALIAS_DONE;
-        ret->synthetic_default = synthetic;
+        symbol_rare_mut(ret)->synthetic_default = synthetic;
     } else {
-        ret->gather_module = module;
+        symbol_rare_mut(ret)->gather_module = module;
     }
     symbol_add_decl(ret, (SymbolDecl){
         .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_VALUE_MODULE, .node = item,
@@ -3835,7 +3852,7 @@ static Symbol* lookup_for_property_access(Scope* me, Expr const* entity) {
     if (entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return nullptr;
     Symbol* found = lookup_name_for_property_access(me, entity->identifier.name.sv);
     // The local `f` of `export default function f` is the default export
-    return found && found->export_symbol ? found->export_symbol : found;
+    return found && symbol_rare(found)->export_symbol ? symbol_rare(found)->export_symbol : found;
 }
 
 static Symbol* lookup_name_for_property_access(Scope* me, csview name) {
@@ -4111,7 +4128,7 @@ static void add_prototype_property(
         if (!found || found->is_placeholder || !(found->flags & SYMBOL_VARIABLE) || (found->flags & (SYMBOL_ALIAS | SYMBOL_CLASS))) return;
         SymbolDecl const* variable = symbol_find_decl(found, SYMBOL_DECL_VARIABLE);
         if (!variable || variable->full.source != file) return;
-        declare_assignment_member(me, &found->members, found, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
+        declare_assignment_member(me, &symbol_rare_mut(found)->members, found, name, left, value, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY, 0);
         return;
     }
     if (init && (init->tag != EXPR_FUNCTION || span_valid(init->function->arrow_span))) return;
@@ -4121,7 +4138,7 @@ static void add_prototype_property(
         value = &value->binary_op->right;
     }
     host->flags |= SYMBOL_CLASS;
-    declare_assignment_member(me, &host->members, host, name, left, value, jsdoc_type, kind, 0);
+    declare_assignment_member(me, &symbol_rare_mut(host)->members, host, name, left, value, jsdoc_type, kind, 0);
 }
 
 static Symbol* js_constructor_symbol(Symbol* symbol);
@@ -4254,7 +4271,7 @@ static void add_expando_member(
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
     }
-    if (late_bound_key && !member->late_bound_key) member->late_bound_key = late_bound_key;
+    if (late_bound_key && !symbol_rare(member)->late_bound_key) symbol_rare_mut(member)->late_bound_key = late_bound_key;
     if (left->tag == EXPR_PROPERTY) left->property->declares = member;
     if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
@@ -4267,7 +4284,7 @@ static void add_expando_member(
         !symbol_find_decl(host, SYMBOL_DECL_CLASS)
     ) {
         host->flags |= SYMBOL_CLASS;
-        if (!host->members) host->members = arena_new(&my binder->arena, SymbolTable);
+        if (!symbol_rare(host)->members) symbol_rare_mut(host)->members = arena_new(&my binder->arena, SymbolTable);
         if (init && init->tag == EXPR_FUNCTION) init->function->class_symbol = host;
     }
 }
@@ -4509,13 +4526,13 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             if (!class_symbol) return;
             AssignmentDeclKind kind = function && function->is_constructor ?
                 ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : ASSIGNMENT_DECL_THIS_IN_METHOD;
-            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
-            Symbol* member = (Symbol*)symbol_table_get(class_symbol->members, name.sv);
-            if (late_bound_key && member && !member->late_bound_key) member->late_bound_key = late_bound_key;
+            declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
+            Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
+            if (late_bound_key && member && !symbol_rare(member)->late_bound_key) symbol_rare_mut(member)->late_bound_key = late_bound_key;
             if (late_bound_key) break;
-            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !member->constructor_assigned) {
-                member->constructor_assigned = left;
-                member->declaring_constructor = function;
+            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned) {
+                symbol_rare_mut(member)->constructor_assigned = left;
+                symbol_rare_mut(member)->declaring_constructor = function;
             }
             // A field the class body declares without a type or initializer has the type the constructor assigns
             ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
@@ -4523,7 +4540,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && field && field->tag == CLASS_ITEM_FIELD &&
                 !field->field.has_explicit_type && field->field.value.tag == EXPR_IMPLICIT_ANY
             ) {
-                field->field.js_assigned = symbol_table_get(class_symbol->members, name.sv);
+                field->field.js_assigned = symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
             }
         }   break;
         case THIS_CLASS_STATIC: {
@@ -4571,15 +4588,15 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             }
             if (!class_symbol) return;
             class_symbol->flags |= SYMBOL_CLASS;
-            Symbol* existing = class_symbol->members ? (Symbol*)symbol_table_get(class_symbol->members, name.sv) : nullptr;
-            declare_assignment_member(me, &class_symbol->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
+            Symbol* existing = symbol_rare(class_symbol)->members ? (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv) : nullptr;
+            declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             // (Its type is what `this.x` is at the end of the constructor function: tsc's getFlowTypeInConstructor)
-            Symbol* member = (Symbol*)symbol_table_get(class_symbol->members, name.sv);
+            Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
             bool literal_method = !constructor && this_function->prototype_of && this_function->this_literal;
             if (member) member->prototype_literal_member = literal_method && (!existing || existing->prototype_literal_member);
-            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !member->constructor_assigned && function == this_function) {
-                member->constructor_assigned = left;
-                member->declaring_constructor = function;
+            if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned && function == this_function) {
+                symbol_rare_mut(member)->constructor_assigned = left;
+                symbol_rare_mut(member)->declaring_constructor = function;
             }
         }   break;
         default: break;

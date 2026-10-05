@@ -1038,7 +1038,7 @@ Symbol const* ty_js_this_class(FunctionImpl const* function) {
     Expr const* constructor = function->accessor ? nullptr : function->prototype_of;
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     SourceFile const* file = function->full_span.source;
-    if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol->members) return nullptr;
+    if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol_rare(symbol)->members) return nullptr;
     return symbol;
 }
 
@@ -3946,8 +3946,8 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     } else if (this->this_kind == THIS_ANY && this->this_function) {
         class_symbol = ty_js_constructor_class(this->this_function);
     }
-    if (!class_symbol || !class_symbol->members) return nullptr;
-    Symbol const* member = symbol_table_get(class_symbol->members, name);
+    if (!class_symbol || !symbol_rare(class_symbol)->members) return nullptr;
+    Symbol const* member = symbol_table_get(symbol_rare(class_symbol)->members, name);
     if (!member) return nullptr;
     if (!ty_is_constructor_declared(member)) return nullptr;
     // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
@@ -3969,7 +3969,7 @@ static Ty const* constructor_declared_read(Checker* me, Expr const* expr) {
     PropertyExpr const* access = expr->property;
     if (access->assignment_target || !access->flow) return nullptr;
     Symbol const* member = constructor_declared_member(access);
-    if (!member || !member->declaring_constructor || !member->declaring_constructor->return_flow) return nullptr;
+    if (!member || !symbol_rare(member)->declaring_constructor || !symbol_rare(member)->declaring_constructor->return_flow) return nullptr;
     if (expr_this_or_alias(&access->expr)->this_kind != THIS_CLASS_INSTANCE) return nullptr;
     return ty_constructor_declared_flow_type(me, member, expr, access->flow);
 }
