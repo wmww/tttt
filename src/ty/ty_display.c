@@ -824,8 +824,8 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     // A value used as a type (an expando `Outer.Inner = class {}`: tsc's getTypeFromJSDocValueReference) isn't found by
     // a type lookup, which reuse needs
     if (!(identifier->target->flags & (SYMBOL_TYPE | SYMBOL_ALIAS))) return false;
-    Symbol const* first = vec_span_size(&identifier->namespaces) ?
-        (vec_symbol_cptr_size(&identifier->namespace_symbols) ? *identifier->namespace_symbols.data : nullptr) : identifier->symbol;
+    Symbol const* first = identifier_type_namespace_count(identifier) ?
+        (vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ? *identifier->rare->namespace_symbols.data : nullptr) : identifier->symbol;
     if (first && first->flags & SYMBOL_ALIAS && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
         ((PortItem const*)first->decls[0].node)->jsdoc
     ) {
@@ -837,7 +837,7 @@ static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* n
     ) {
         return false;
     }
-    if (!vec_span_size(&identifier->namespaces)) {
+    if (!identifier_type_namespace_count(identifier)) {
         // (`array`, `promise` and `Object` mean something else only without type arguments and noImplicitAny)
         static char const* const intended[] = { "Function", "function", "array", "promise", "Object" };
         bool plain = !compiler_options()->no_implicit_any && !vec_spanned_type_size(&identifier->generic_params);
@@ -864,13 +864,13 @@ static Expr const* entity_leftmost(Expr const* expr);
 typedef enum IdentifierReuse { IDENTIFIER_REUSED, IDENTIFIER_RENAMED, IDENTIFIER_MAPPED, IDENTIFIER_FAILS } IdentifierReuse;
 static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
-    bool qualified = vec_span_size(&identifier->namespaces) > 0;
+    bool qualified = identifier_type_namespace_count(identifier) > 0;
     Symbol const* symbol = identifier->symbol;
     if (qualified) {
-        symbol = vec_symbol_cptr_size(&identifier->namespace_symbols) ?
-            *vec_symbol_cptr_at(&identifier->namespace_symbols, 0) : nullptr;
+        symbol = vec_symbol_cptr_size(identifier_type_namespace_symbols(identifier)) ?
+            *vec_symbol_cptr_at(identifier_type_namespace_symbols(identifier), 0) : nullptr;
     }
-    Span first = qualified ? *vec_span_at(&identifier->namespaces, 0) : identifier->name;
+    Span first = qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) : identifier->name;
     // (A type parameter that the instantiation maps: tsc's canReuseTypeNode)
     bool mapped = !qualified && d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) &&
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
@@ -891,7 +891,7 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
     switch (node->tag) {
         case TYPE_IDENTIFIER: {
             IdentifierType const* identifier = node->identifier;
-            if (identifier->keyword || identifier->jsdoc || identifier->import_ref || identifier->import_argument) return false;
+            if (identifier->keyword || identifier->jsdoc || identifier_type_import_ref(identifier) || identifier_type_import_argument(identifier)) return false;
             return identifier_reuse(me, d, node) == IDENTIFIER_FAILS;
         }
         case TYPE_TYPEOF: {
@@ -915,13 +915,13 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         display_node_fallback(me, d, node);
         return;
     }
-    if (identifier->import_ref || identifier->import_argument) {
-        if (identifier->import_typeof) out_lit(d, "typeof ");
+    if (identifier_type_import_ref(identifier) || identifier_type_import_argument(identifier)) {
+        if (identifier_type_import_typeof(identifier)) out_lit(d, "typeof ");
         out_lit(d, "import(");
-        if (identifier->import_ref) display_string_literal(d, cstr_sv(&identifier->import_ref->path));
-        else display_node(me, d, identifier->import_argument);
+        if (identifier_type_import_ref(identifier)) display_string_literal(d, cstr_sv(&identifier_type_import_ref(identifier)->path));
+        else display_node(me, d, identifier_type_import_argument(identifier));
         out_lit(d, ")");
-        for_each (i, vec_span, &identifier->namespaces) {
+        for_each (i, vec_span, identifier_type_namespaces(identifier)) {
             out_lit(d, ".");
             out(d, i->sv);
         }
@@ -932,7 +932,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         display_node_args(me, d, &identifier->generic_params);
         return;
     }
-    bool qualified = vec_span_size(&identifier->namespaces) > 0;
+    bool qualified = identifier_type_namespace_count(identifier) > 0;
     Symbol const* symbol = identifier->symbol;
     IdentifierReuse reuse = identifier_reuse(me, d, node);
     if (reuse != IDENTIFIER_REUSED) {
@@ -963,7 +963,7 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         }
         return;
     }
-    for_each (i, vec_span, &identifier->namespaces) {
+    for_each (i, vec_span, identifier_type_namespaces(identifier)) {
         out(d, i->sv);
         out_lit(d, ".");
     }

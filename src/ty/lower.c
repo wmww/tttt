@@ -106,7 +106,7 @@ static bool interface_has_this(Symbol const* symbol, u32 depth) {
         InterfaceDecl const* interface_decl = symbol->decls[i].node;
         if (interface_decl->contains_this) return true;
         for_each (extends, vec_spanned_type, &interface_decl->extends) {
-            if (extends->type.tag != TYPE_IDENTIFIER || extends->type.identifier->import_ref) continue;
+            if (extends->type.tag != TYPE_IDENTIFIER || identifier_type_import_ref(extends->type.identifier)) continue;
             Symbol const* base = extends->type.identifier->target;
             if (!base || !(base->flags & SYMBOL_INTERFACE) || (base->flags & SYMBOL_CLASS)) return true;
             if (base != symbol && interface_has_this(base, depth + 1)) return true;
@@ -190,7 +190,7 @@ static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
 
 // `type X = intrinsic` (the lib's Uppercase<S> & co.): the builtin name, not a type called `intrinsic`
 static bool is_intrinsic_body(TypeNode const* body) {
-    return body->tag == TYPE_IDENTIFIER && body->identifier->target && !vec_span_size(&body->identifier->namespaces) &&
+    return body->tag == TYPE_IDENTIFIER && body->identifier->target && !identifier_type_namespace_count(body->identifier) &&
         csview_equals(body->identifier->name.sv, "intrinsic") &&
         symbol_find_decl(body->identifier->target, SYMBOL_DECL_BUILTIN);
 }
@@ -385,7 +385,7 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
     // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
     if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.sv.size) return ty_intrinsic(me, TY_ERROR);
     cstr name = cstr_null;
-    for_each (i, vec_span, &identifier->namespaces) {
+    for_each (i, vec_span, identifier_type_namespaces(identifier)) {
         cstr_append_sv(&name, i->sv);
         cstr_append(&name, ".");
     }
@@ -426,19 +426,19 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         }
     }
     // (A JavaScript constructor function's `this` type)
-    if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && identifier->this_function) {
-        Ty const* js_this = ty_js_this_type(me, identifier->this_function);
+    if (identifier->keyword == KEYWORD_IDENTIFIER_THIS && identifier_type_this_function(identifier)) {
+        Ty const* js_this = ty_js_this_type(me, identifier_type_this_function(identifier));
         if (js_this) return js_this;
     }
     Symbol const* decl = canonical(me, identifier->target);
-    if (span_valid(identifier->import_span)) {
+    if (span_valid(identifier_type_import_span(identifier))) {
         // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)
         if (!decl || decl->is_placeholder) return ty_intrinsic(me, TY_ANY);
-        if (identifier->import_typeof || identifier->import_prop_start >= 0) {
+        if (identifier_type_import_typeof(identifier) || identifier->rare->import_prop_start >= 0) {
             Ty const* ret = ty_type_of_symbol(me, decl);
-            isize count = vec_span_size(&identifier->namespaces) + 1;
-            for (isize i = identifier->import_prop_start; i >= 0 && i < count; i++) {
-                Span name = i == count - 1 ? identifier->name : *vec_span_at(&identifier->namespaces, i);
+            isize count = identifier_type_namespace_count(identifier) + 1;
+            for (isize i = identifier->rare->import_prop_start; i >= 0 && i < count; i++) {
+                Span name = i == count - 1 ? identifier->name : *vec_span_at(identifier_type_namespaces(identifier), i);
                 Prop const* prop = ty_get_prop(me, ret, checker_atom(me, name.sv));
                 if (!prop && i == 0) {
                     // A property of what `module.exports =` assigns, like the names before it (tsc's
@@ -452,7 +452,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 ret = prop_type(me, prop);
             }
             // (A JSDoc `import("./m").C` of a class value means its instance, tsc's getTypeFromJSDocValueReference)
-            if (!identifier->import_typeof && ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_CLASS_STATIC &&
+            if (!identifier_type_import_typeof(identifier) && ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_CLASS_STATIC &&
                 ret->declared.symbol
             ) {
                 return ty_class_instance_type(me, ret->declared.symbol);
@@ -517,7 +517,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         Ty const* type = ty_type_of_symbol(me, decl);
         // `import("./m").C` of a value whose type is a class is the class (tsc's getTypeFromJSDocValueReference: the
         // type reference of the value type's symbol)
-        if (span_valid(identifier->import_span) && span_valid(identifier->name) && type->kind == TY_DECLARED &&
+        if (span_valid(identifier_type_import_span(identifier)) && span_valid(identifier->name) && type->kind == TY_DECLARED &&
             type->declared.kind == TY_DECLARED_CLASS_STATIC && canonical(me, type->declared.symbol) != decl
         ) {
             return ty_class_instance_type(me, type->declared.symbol);
@@ -584,7 +584,7 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
             case INFER_POSITION_TYPE_ARG: {
                 IdentifierType const* reference = inferred->reference;
                 Symbol const* decl = canonical(me, reference->target);
-                if (!decl || span_valid(reference->import_span) || reference->keyword) break;
+                if (!decl || span_valid(identifier_type_import_span(reference)) || reference->keyword) break;
                 TyList params = {0};
                 u32 outer = 0;
                 if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
@@ -2821,7 +2821,7 @@ static Ty const* deferred_interface_reference(
     Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args
 ) {
     IdentifierType const* identifier = node->identifier;
-    if (identifier->keyword || identifier->jsdoc_intrinsic || span_valid(identifier->import_span)) return nullptr;
+    if (identifier->keyword || identifier->jsdoc_intrinsic || span_valid(identifier_type_import_span(identifier))) return nullptr;
     Symbol const* decl = canonical(me, identifier->target);
     if (!decl || decl->is_placeholder || !(decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS))) return nullptr;
     Ty const* declared = ty_declared_type_of(me, decl);

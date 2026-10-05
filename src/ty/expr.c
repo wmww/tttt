@@ -3507,7 +3507,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
 bool as_type_is_const(AsTypeExpr const* as_type) {
     TypeNode const* type = &as_type->type;
     return type->tag == TYPE_IDENTIFIER && !type->identifier->target && span_equals(type->identifier->name, "const") &&
-        vec_span_is_empty(&type->identifier->namespaces);
+        !identifier_type_namespace_count(type->identifier);
 }
 
 // `Bar<string>` as a value: the object type with the type arguments applied to its generic signatures. Returns the

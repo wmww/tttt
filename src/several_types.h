@@ -6,42 +6,78 @@
 
 // Identifier
 
-// PERF: maybe split this into a simple version that fits in a type by value and a complex version with namespaces/
-// generic params/etc
-typedef struct IdentifierType {
+// What few type references have: qualified names, `import()` types, the error and JavaScript cases. Boxed out of
+// IdentifierType (owned by it), which is mostly a bare `Foo` or `Foo<T>`
+typedef struct IdentifierTypeRare {
     VecSpan namespaces;
     VecSymbolCPtr namespace_symbols; // What each of the namespaces resolved to (maybe an alias), shorter on failure
-    Span name;
-    KeywordIdentifier keyword;
-    // What the checker goes by: the symbol that has the meaning the name is used with (aliases resolved). Cached next
-    // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
-    Symbol const* target;
-    ThisKind this_kind;
     // A JavaScript `this` type outside a class: the function whose `this` it is, a constructor function or a method of
     // its prototype makes it the class's `this` (tsc's getThisType: isJSConstructor, getClassNameFromPrototypeMethod)
     struct FunctionImpl const* this_function;
-    Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
-    VecSpannedType generic_params;
     // `import("./a").A.B<T>`: names are looked up in the module's exports instead of the scope. `name` is null for a
     // bare `import("./a")`. With import_typeof it is a value (`typeof import("./a").x`)
     ModuleRef* import_ref;
     ImportAttributes* import_attributes; // Owned, `import("./a", { with: { ... } })`
     struct TypeNode* import_argument; // Owned: `import(T)`, an argument that isn't a string (TS1141, no module)
     Span import_argument_span;
-    bool import_typeof;
     Span import_span;
     // `typeof import("./a").A.foo`: from this index on (namespaces, then name) the names are properties of the type of
     // `target`, not exports. -1 if all are exports
     int import_prop_start;
+    bool import_typeof;
+    // `A.b` where A is only a type (tsc's checkAndReportErrorForUsingTypeAsNamespace): that type, TS2713 if it has a
+    // property b, else TS2702, said when checking (it takes the type's members)
+    Symbol const* type_as_namespace;
+} IdentifierTypeRare;
+
+typedef struct IdentifierType {
+    Span name;
+    // What the checker goes by: the symbol that has the meaning the name is used with (aliases resolved). Cached next
+    // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
+    Symbol const* target;
+    Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
+    VecSpannedType generic_params;
+    IdentifierTypeRare* rare; // Owned, null for a plain name (identifier_type_rare())
+    KeywordIdentifier keyword : 8;
+    ThisKind this_kind : 8;
     // Written in a JSDoc comment: tsc's JSDoc names (`String` is string, `Object` any...), see jsdoc_intrinsic
     bool jsdoc;
     // What a JSDoc name means instead of what it would find (tsc's getIntendedTypeFromJSDocTypeReference), set when
     // resolving: nothing is looked up then
     uint8_t jsdoc_intrinsic;
-    // `A.b` where A is only a type (tsc's checkAndReportErrorForUsingTypeAsNamespace): that type, TS2713 if it has a
-    // property b, else TS2702, said when checking (it takes the type's members)
-    Symbol const* type_as_namespace;
 } IdentifierType;
+
+// The rare part, made on demand
+static inline IdentifierTypeRare* identifier_type_rare(IdentifierType* me) {
+    if (!my rare) my rare = c_new(IdentifierTypeRare, { .import_prop_start = -1 });
+    return my rare;
+}
+static inline VecSpan const* identifier_type_namespaces(IdentifierType const* me) {
+    static const VecSpan empty = {0};
+    return my rare ? &my rare->namespaces : &empty;
+}
+static inline isize identifier_type_namespace_count(IdentifierType const* me) {
+    return my rare ? vec_span_size(&my rare->namespaces) : 0;
+}
+static inline VecSymbolCPtr const* identifier_type_namespace_symbols(IdentifierType const* me) {
+    static const VecSymbolCPtr empty = {0};
+    return my rare ? &my rare->namespace_symbols : &empty;
+}
+static inline Span identifier_type_import_span(IdentifierType const* me) {
+    return my rare ? my rare->import_span : span_null;
+}
+static inline bool identifier_type_import_typeof(IdentifierType const* me) {
+    return my rare && my rare->import_typeof;
+}
+static inline TypeNode const* identifier_type_import_argument(IdentifierType const* me) {
+    return my rare ? my rare->import_argument : nullptr;
+}
+static inline ModuleRef* identifier_type_import_ref(IdentifierType const* me) {
+    return my rare ? my rare->import_ref : nullptr;
+}
+static inline struct FunctionImpl const* identifier_type_this_function(IdentifierType const* me) {
+    return my rare ? my rare->this_function : nullptr;
+}
 
 typedef enum JsDocIntrinsic {
     JSDOC_INTRINSIC_NONE = 0,

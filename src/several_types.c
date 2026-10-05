@@ -15,14 +15,17 @@
 // Identifier
 
 void identifier_type_drop(IdentifierType* me) {
-    vec_span_drop(&my namespaces);
-    vec_symbol_cptr_drop(&my namespace_symbols);
     vec_spanned_type_drop(&my generic_params);
-    import_attributes_free(my import_attributes);
-    if (my import_argument) {
-        type_drop(my import_argument);
-        free(my import_argument);
+    IdentifierTypeRare* rare = my rare;
+    if (!rare) return;
+    vec_span_drop(&rare->namespaces);
+    vec_symbol_cptr_drop(&rare->namespace_symbols);
+    import_attributes_free(rare->import_attributes);
+    if (rare->import_argument) {
+        type_drop(rare->import_argument);
+        free(rare->import_argument);
     }
+    free(rare);
 }
 
 // Member of a namespace by meaning, TS2694 if there is none (TS2724 with a close enough name, when `suggest`: not in
@@ -58,7 +61,7 @@ static Symbol const* get_symbol_from_namespace(
 
 static cstr identifier_type_make_name_str(IdentifierType const* me) {
     cstr ret = cstr_null;
-    for_each (i, vec_span, &my namespaces) {
+    for_each (i, vec_span, identifier_type_namespaces(me)) {
         cstr_append_span(&ret, *i);
         cstr_append_lit(&ret, ".");
     }
@@ -68,28 +71,29 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
 
 // `import("./a").A.B`, `typeof import("./a")`: the names are members of the module
 static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
-    my import_prop_start = -1;
-    if (my import_argument) {
+    IdentifierTypeRare* rare = identifier_type_rare(me);
+    rare->import_prop_start = -1;
+    if (rare->import_argument) {
         // (tsc's checkImportType)
-        type_lookup_names(my import_argument, names, errs);
-        error_ctx_error_d(errs, my import_argument_span, 1141, "String literal expected.");
+        type_lookup_names(rare->import_argument, names, errs);
+        error_ctx_error_d(errs, rare->import_argument_span, 1141, "String literal expected.");
     }
-    if (!my import_ref) return; // The parser complained
-    Symbol* module = binder_module_of_ref(names->binder, my import_ref);
+    if (!rare->import_ref) return; // The parser complained
+    Symbol* module = binder_module_of_ref(names->binder, rare->import_ref);
     if (!module) {
-        if (my import_ref->file) {
-            cstr shown = module_ref_file_message_path(my import_ref);
-            error_ctx_error_d(errs, my import_ref->span, 2306, "File '", shown, "' is not a module.");
+        if (rare->import_ref->file) {
+            cstr shown = module_ref_file_message_path(rare->import_ref);
+            error_ctx_error_d(errs, rare->import_ref->span, 2306, "File '", shown, "' is not a module.");
             cstr_drop(&shown);
         } else {
-            module_ref_report_unresolved(my import_ref, errs);
+            module_ref_report_unresolved(rare->import_ref, errs);
         }
         return;
     }
     if (module->is_shorthand_module) return;
     Symbol const* container = module_export_equals(module);
     if (!span_valid(my name)) {
-        if (my import_typeof) {
+        if (rare->import_typeof) {
             my target = container;
             my symbol = container;
         } else if (container != module && symbol_for_meaning(container, SYMBOL_TYPE)) {
@@ -101,19 +105,19 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             my target = container;
             my symbol = container;
         } else {
-            error_ctx_error_d(errs, my import_span, 1340,
-                "Module '", my import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
-                my import_ref->path, "')'?");
+            error_ctx_error_d(errs, rare->import_span, 1340,
+                "Module '", rare->import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
+                rare->import_ref->path, "')'?");
         }
         return;
     }
-    if (my import_typeof) {
+    if (rare->import_typeof) {
         // A value: exports as far as they go, properties from there on
         Symbol const* current = container;
-        isize count = vec_span_size(&my namespaces) + 1;
+        isize count = vec_span_size(&rare->namespaces) + 1;
         for (isize i = 0; i < count; i++) {
             bool last = i == count - 1;
-            Span name = last ? my name : *vec_span_at(&my namespaces, i);
+            Span name = last ? my name : *vec_span_at(&rare->namespaces, i);
             Symbol const* members = symbol_for_meaning(current, SYMBOL_NAMESPACE);
             if (members && members->is_placeholder) return;
             Symbol const* member = members ? symbol_get_export(members, name.sv) : nullptr;
@@ -129,11 +133,11 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
                     cstr_drop(&container_name);
                     return;
                 }
-                my import_prop_start = (int)i;
+                rare->import_prop_start = (int)i;
                 break;
             }
             if (last) my symbol = member;
-            else vec_symbol_cptr_push(&my namespace_symbols, member);
+            else vec_symbol_cptr_push(&rare->namespace_symbols, member);
             current = value;
         }
         my target = symbol_for_meaning(current, SYMBOL_VALUE);
@@ -143,8 +147,8 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     if (container != module) {
         // A CommonJS module's other exports (its `@typedef`s) merge into what `module.exports =` assigns (tsc's
         // getCommonJsExportEquals)
-        bool qualified = vec_span_size(&my namespaces);
-        Symbol const* own = symbol_get_export(module, (qualified ? *my namespaces.data : my name).sv);
+        bool qualified = vec_span_size(&rare->namespaces);
+        Symbol const* own = symbol_get_export(module, (qualified ? *rare->namespaces.data : my name).sv);
         if (own && symbol_for_meaning(own, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) {
             container = module;
         } else if (my jsdoc && !qualified && !own && (container->flags & SYMBOL_VALUE)) {
@@ -153,7 +157,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             Symbol const* members = symbol_for_meaning(container, SYMBOL_NAMESPACE);
             Symbol const* member = members ? symbol_get_export(members, my name.sv) : nullptr;
             if (!symbol_for_meaning(member, SYMBOL_TYPE)) {
-                my import_prop_start = 0;
+                rare->import_prop_start = 0;
                 my target = (Symbol*)container;
                 my symbol = container;
                 return;
@@ -161,14 +165,14 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         }
     }
     Symbol const* shown = nullptr;
-    for_each (i, vec_span, &my namespaces) {
+    for_each (i, vec_span, &rare->namespaces) {
         Symbol const* found;
         container = get_symbol_from_namespace(container, shown, *i, SYMBOL_NAMESPACE, false, &found, errs);
         if (!container || container->is_placeholder) return;
-        vec_symbol_cptr_push(&my namespace_symbols, found);
+        vec_symbol_cptr_push(&rare->namespace_symbols, found);
         shown = found;
     }
-    my target = get_symbol_from_namespace(container, shown, my name, my import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false,
+    my target = get_symbol_from_namespace(container, shown, my name, rare->import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false,
         &my symbol, errs);
 }
 
@@ -263,21 +267,22 @@ _Thread_local TypeParamDefaultScope identifier_type_default_scope;
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
-    if (my import_ref || span_valid(my import_span)) {
+    if (my rare && (my rare->import_ref || span_valid(my rare->import_span))) {
         import_type_lookup_names(me, names, errs);
         for_each (i, vec_spanned_type, &my generic_params) {
             type_lookup_names(&i->type, names, errs);
         }
         return;
     }
-    if (!my keyword) scope_check_strict_identifier(names, vec_span_size(&my namespaces) ? *my namespaces.data : my name, true);
+    if (!my keyword) scope_check_strict_identifier(names, identifier_type_namespace_count(me) ? *my rare->namespaces.data : my name, true);
 
-    if (vec_span_size(&my namespaces)) {
+    if (identifier_type_namespace_count(me)) {
+        IdentifierTypeRare* rare = my rare;
         Symbol const* namespace = nullptr;
-        for_each (i, vec_span, &my namespaces) {
+        for_each (i, vec_span, &rare->namespaces) {
             Symbol const* decl;
             Symbol const* found;
-            if (i == my namespaces.data /* First namespaces */) {
+            if (i == rare->namespaces.data /* First namespaces */) {
                 decl = scope_get_namespace(names, i->sv, &found);
                 unused_mark_referenced(names, (Symbol*)found, SYMBOL_NAMESPACE);
                 if (decl && decl->is_placeholder) port_item_check_namespace_import_use(found, names);
@@ -295,7 +300,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     Symbol const* type_symbol = nullptr;
                     Symbol const* type = my jsdoc ? nullptr : scope_get_type(names, i->sv, &type_symbol);
                     if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
-                        my type_as_namespace = type;
+                        rare->type_as_namespace = type;
                     } else {
                         error_ctx_error_d(errs, *i, 2503, "Cannot find namespace '", *i, "'.");
                     }
@@ -307,7 +312,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     symbol_for_meaning(member, SYMBOL_TYPE) : nullptr;
                 if (type) {
                     // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
-                    Span right = i + 1 < my namespaces.data + my namespaces.size ? i[1] : my name;
+                    Span right = i + 1 < rare->namespaces.data + rare->namespaces.size ? i[1] : my name;
                     error_ctx_error_d(errs, right, 2713, "Cannot access '", *i, ".", right, "' because '", *i,
                         "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
                         "' in '", *i, "' with '", *i, "[\"", right, "\"]'?");
@@ -321,7 +326,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             if (!decl) {
                 break;
             }
-            vec_symbol_cptr_push(&my namespace_symbols, found);
+            vec_symbol_cptr_push(&rare->namespace_symbols, found);
         }
         if (namespace) {
             my target = get_symbol_from_namespace(namespace, nullptr, my name, SYMBOL_TYPE, true, &my symbol, errs);
@@ -349,7 +354,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             if (this_ref.interface) this_ref.interface->contains_this = true;
             if (names->file && names->file->is_js && this_ref.kind != THIS_CLASS_INSTANCE && this_ref.kind != THIS_INTERFACE) {
                 ThisRef value = scope_get_this(names, false);
-                if (value.kind == THIS_ANY) my this_function = value.function;
+                if (value.kind == THIS_ANY) identifier_type_rare(me)->this_function = value.function;
             }
         }
     } else {
@@ -383,7 +388,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     // (A value in JSDoc is its type: tsc's getTypeFromJSDocValueReference)
     if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE) && !my jsdoc) {
         cstr name_str = identifier_type_make_name_str(me);
-        Span error_span = span_between(vec_span_size(&my namespaces) ? *my namespaces.data : my name, my name);
+        Span error_span = span_between(identifier_type_namespace_count(me) ? *my rare->namespaces.data : my name, my name);
         error_ctx_error_d(errs, error_span, 2749,
             "'", name_str, "' refers to a value, but is being used as a type here. Did you mean 'typeof ",
             name_str, "'?");
@@ -432,8 +437,8 @@ static Generic const* declared_type_params(Symbol const* symbol, u32* min) {
 }
 
 Span identifier_type_span(IdentifierType const* me) {
-    if (my keyword || my import_ref || !span_valid(my name) || !my name.source) return my name;
-    char const* start = span_start_ptr(vec_span_is_empty(&my namespaces) ? my name : *vec_span_front(&my namespaces));
+    if (my keyword || identifier_type_import_ref(me) || !span_valid(my name) || !my name.source) return my name;
+    char const* start = span_start_ptr(!identifier_type_namespace_count(me) ? my name : *vec_span_front(&my rare->namespaces));
     char const* end = span_end_ptr(my name);
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
     if (arg_count) {
@@ -462,7 +467,7 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     // JSDoc's own names take no type arguments (tsc's checkNoTypeArguments in getIntendedTypeFromJSDocTypeReference)
     bool jsdoc_named = my jsdoc_intrinsic && my jsdoc_intrinsic != JSDOC_INTRINSIC_INDEX_SIGNATURE &&
         !(my jsdoc_intrinsic == JSDOC_INTRINSIC_ANY && vec_spanned_type_size(&my generic_params) == 2);
-    if (my jsdoc && !vec_span_size(&my namespaces) && (span_equals(my name, "Function") || span_equals(my name, "function"))) {
+    if (my jsdoc && !identifier_type_namespace_count(me) && (span_equals(my name, "Function") || span_equals(my name, "function"))) {
         jsdoc_named = true;
     }
     if (!jsdoc_named && (!symbol || symbol->is_placeholder)) return;
@@ -538,22 +543,23 @@ void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs) {
 }
 
 static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* errs) {
-    if (my import_attributes) import_attributes_resolution_mode(my import_attributes, errs); // tsc's checkImportType
+    IdentifierTypeRare const* rare = my rare;
+    if (rare && rare->import_attributes) import_attributes_resolution_mode(rare->import_attributes, errs); // tsc's checkImportType
     // (tsc's checkImportType doesn't check an import type's type arguments, only their constraints)
-    if (!my import_ref) {
+    if (!identifier_type_import_ref(me)) {
         for_each (i, vec_spanned_type, &my generic_params) type_typecheck(&i->type, errs);
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE &&
-        !(my this_function && ty_js_this_class(my this_function))
+        !(identifier_type_this_function(me) && ty_js_this_class(identifier_type_this_function(me)))
     ) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }
     identifier_type_check_arity(me, errs);
-    if (my type_as_namespace && vec_span_size(&my namespaces)) {
+    if (rare && rare->type_as_namespace && vec_span_size(&rare->namespaces)) {
         Checker* checker = current_checker;
-        Span left = my namespaces.data[0];
-        Span right = vec_span_size(&my namespaces) > 1 ? my namespaces.data[1] : my name;
-        Ty const* declared = ty_apparent_type(checker, ty_declared_type_of(checker, my type_as_namespace));
+        Span left = rare->namespaces.data[0];
+        Span right = vec_span_size(&rare->namespaces) > 1 ? rare->namespaces.data[1] : my name;
+        Ty const* declared = ty_apparent_type(checker, ty_declared_type_of(checker, rare->type_as_namespace));
         if (ty_property_of_type(checker, declared, checker_atom(checker, right.sv))) {
             error_ctx_error_d(errs, span_between(left, right), 2713, "Cannot access '", left, ".", right, "' because '", left,
                 "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
@@ -566,7 +572,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     if (my target && (my target->flags & SYMBOL_TYPE_ALIAS) && !my target->is_placeholder) ty_declared_type_of(current_checker, my target);
     // (And a referenced type parameter is made: after its type arguments, before the parameter whose constraint this
     // is, which decides union order: `U | T` for `<T extends Foo<U>, U>`)
-    if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER) && !vec_span_size(&my namespaces)) {
+    if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER) && !identifier_type_namespace_count(me)) {
         ty_declared_type_of(current_checker, my target);
     }
     if (my target) {

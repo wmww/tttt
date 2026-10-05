@@ -854,8 +854,8 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER:
-            if (my identifier->import_argument) { // (Nothing after an invalid argument is resolved)
-                type_compile_test_info(my identifier->import_argument, ctx);
+            if (identifier_type_import_argument(my identifier)) { // (Nothing after an invalid argument is resolved)
+                type_compile_test_info(identifier_type_import_argument(my identifier), ctx);
                 for_each (i, vec_spanned_type, &my identifier->generic_params) type_compile_test_info(&i->type, ctx);
                 break;
             }
@@ -875,20 +875,20 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             if (heritage) {
                 // A heritage clause's name is a property access to tsc's writer: `a.b.C` visits `a.b.C` (symbols only:
                 // the whole is part of the type) and `a.b` before `a`
-                isize_t count = vec_span_size(&my identifier->namespaces);
-                isize_t known = vec_symbol_cptr_size(&my identifier->namespace_symbols);
+                isize_t count = identifier_type_namespace_count(my identifier);
+                isize_t known = vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier));
                 Symbol const* named = shown_declaration(my identifier->symbol, my identifier->target);
                 if (count && span_valid(my identifier->name) && named && !named->is_placeholder) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declaration_get_spans(named),
                         .allow_declaration_empty = true,
-                        .span = span_between(*vec_span_at(&my identifier->namespaces, 0), my identifier->name),
+                        .span = span_between(*vec_span_at(identifier_type_namespaces(my identifier), 0), my identifier->name),
                         .text = symbol_text(ctx, named),
                     });
                 }
                 for (isize_t k = (count < known ? count : known) - 1; k >= 1; k--) {
-                    Symbol const* decl = *vec_symbol_cptr_at(&my identifier->namespace_symbols, k);
-                    Span prefix = span_between(*vec_span_at(&my identifier->namespaces, 0), *vec_span_at(&my identifier->namespaces, k));
+                    Symbol const* decl = *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), k);
+                    Span prefix = span_between(*vec_span_at(identifier_type_namespaces(my identifier), 0), *vec_span_at(identifier_type_namespaces(my identifier), k));
                     if (decl && !decl->is_placeholder) {
                         baseline_test_case_add_symbol(ctx, (BaselineSym){
                             .declarations = declaration_get_spans(decl),
@@ -907,10 +907,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 }
             }
             VecSpan so_far = vec_span_init();
-            for_each (i, vec_span, &my identifier->namespaces) {
+            for_each (i, vec_span, identifier_type_namespaces(my identifier)) {
                 intptr_t index = i_index;
-                Symbol const* decl = index < vec_symbol_cptr_size(&my identifier->namespace_symbols) ?
-                    *vec_symbol_cptr_at(&my identifier->namespace_symbols, index) :
+                Symbol const* decl = index < vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier)) ?
+                    *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), index) :
                     nullptr;
                 ctx->any_keeps_underline = true; // Part of a qualified name
                 if (heritage && decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
@@ -922,7 +922,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 }
                 if (heritage && !decl) break;
                 // (Nothing for a name an import type can't find: see below)
-                if (my identifier->import_ref && (!decl || decl->is_placeholder)) {
+                if (identifier_type_import_ref(my identifier) && (!decl || decl->is_placeholder)) {
                     vec_span_push(&so_far, *i);
                     continue;
                 }
@@ -937,7 +937,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             vec_span_drop(&so_far);
             if (!span_valid(my identifier->name)) break; // A bare `import("./a")`
-            if (!my identifier->name.sv.size && !my identifier->import_ref) {
+            if (!my identifier->name.sv.size && !identifier_type_import_ref(my identifier)) {
                 // A missing name (`a.` at the end of a line): tsc's unknownSymbol, shown where the next token starts
                 const char* at = my identifier->name.sv.buf;
                 while (*at == ' ' || *at == '\t' || *at == '\r' || *at == '\n') at++;
@@ -950,7 +950,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             Symbol const* shown = shown_declaration(my identifier->symbol, my identifier->target);
             // A value used as a type (TS2749) is tsc's unresolved symbol, which has no declarations
-            if (!heritage && !my identifier->jsdoc && !my identifier->keyword && !span_valid(my identifier->import_span) &&
+            if (!heritage && !my identifier->jsdoc && !my identifier->keyword && !span_valid(identifier_type_import_span(my identifier)) &&
                 my identifier->target &&
                 !my identifier->target->is_placeholder && !(my identifier->target->flags & SYMBOL_TYPE)
             ) {
@@ -958,9 +958,9 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             // (A name an import type can't find, in a module that doesn't resolve or doesn't export it, is nothing: tsc's
             // getSymbolAtLocation of an ImportTypeNode's qualifier resolves through the module)
-            bool unresolved_import = my identifier->import_ref && (!shown || shown->is_placeholder);
+            bool unresolved_import = identifier_type_import_ref(my identifier) && (!shown || shown->is_placeholder);
             if (!(heritage && !shown) && !unresolved_import) baseline_test_case_add_symbol(ctx, (BaselineSym){
-                .namespaces = vec_span_clone(my identifier->namespaces),
+                .namespaces = vec_span_clone(*identifier_type_namespaces(my identifier)),
                 .declarations = declaration_get_spans(shown),
                 .allow_declaration_empty = true,
                 .span = my identifier->name,

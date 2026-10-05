@@ -268,7 +268,7 @@ static void display_generic(Display d, Generic const* me) {
 }
 
 static void display_identifier_type(Display d, IdentifierType* me) {
-    for_each (i, vec_span, &my namespaces) {
+    for_each (i, vec_span, identifier_type_namespaces(me)) {
         display_colored_span(d, color_type, *i);
         display_lit(d, ".");
     }

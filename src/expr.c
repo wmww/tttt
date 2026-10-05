@@ -1023,7 +1023,7 @@ bool jsx_element_is_intrinsic(JsxElement const* me) {
 // `x as const` / `<const>x`: `const` isn't a type name (the new core checks the same, see is_const_assertion())
 static bool as_type_is_const_assertion(AsTypeExpr const* me) {
     return my type.tag == TYPE_IDENTIFIER && span_equals(my type.identifier->name, "const") &&
-        vec_span_is_empty(&my type.identifier->namespaces) && !vec_spanned_type_size(&my type.identifier->generic_params);
+        !identifier_type_namespace_count(my type.identifier) && !vec_spanned_type_size(&my type.identifier->generic_params);
 }
 
 // Control flow (flow.h). These follow the functions of the same names in tsc's binder

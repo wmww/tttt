@@ -2961,10 +2961,11 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
 
     p.pos = end;
     *ret = (IdentifierType){
-        .namespaces = namespaces,
         .name = name,
         .generic_params = generic_params,
     };
+    if (vec_span_size(&namespaces)) identifier_type_rare(ret)->namespaces = namespaces;
+    else vec_span_drop(&namespaces);
     return parse_success(&p);
 }
 
@@ -3024,8 +3025,9 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     Anchor a = anchor(&p);
 
     IdentifierType identifier = {0};
+    IdentifierTypeRare rare = { .import_prop_start = -1 };
     if (hop_start_if_ends_on_word_break(&p, "typeof")) {
-        identifier.import_typeof = true;
+        rare.import_typeof = true;
         hop_whitespace(&p);
     }
     if (!hop_start_if_ends_on_word_break(&p, "import")) {
@@ -3044,8 +3046,8 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         // Any type goes, the checker says TS1141 (tsc's parseImportType, checkImportType)
         TypeNode argument;
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &argument)) {
-            identifier.import_argument = c_new(TypeNode, argument);
-            identifier.import_argument_span = span_from(path_anchor);
+            rare.import_argument = c_new(TypeNode, argument);
+            rare.import_argument_span = span_from(path_anchor);
         } else {
             parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
         }
@@ -3070,7 +3072,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         Anchor body = anchor(&p);
         parse_import_attributes_body(&p, attributes);
         attributes->span = span_from(body);
-        identifier.import_attributes = attributes;
+        rare.import_attributes = attributes;
         hop_whitespace(&p);
         if (!hop_char(&p, '}')) {
             expect_char(&p, '}');
@@ -3092,7 +3094,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         if (!parse_identifier_or_keyword(&p, &name)) {
             expect_identifier(&p, &name);
         }
-        if (span_valid(identifier.name)) vec_span_push(&identifier.namespaces, identifier.name);
+        if (span_valid(identifier.name)) vec_span_push(&rare.namespaces, identifier.name);
         identifier.name = name;
         end = p.pos;
         hop_whitespace(&p);
@@ -3103,13 +3105,14 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     p.pos = end;
 
     if (has_path) {
-        identifier.import_ref = add_module_ref(&p, path, path_span);
-        identifier.import_ref->resolution_override = import_attributes_resolution_mode(identifier.import_attributes, nullptr);
+        rare.import_ref = add_module_ref(&p, path, path_span);
+        rare.import_ref->resolution_override = import_attributes_resolution_mode(rare.import_attributes, nullptr);
     } else {
         cstr_drop(&path);
     }
-    identifier.import_span = span_from(a);
+    rare.import_span = span_from(a);
     identifier.jsdoc = p.shared->in_jsdoc;
+    identifier.rare = c_new(IdentifierTypeRare, rare);
     *ret = type_identifier(c_new(IdentifierType, identifier));
     return parse_success(&p);
 }
@@ -4345,7 +4348,7 @@ static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array) {
         *array = true;
         type = type->array.element;
     }
-    return type->tag == TYPE_IDENTIFIER && !vec_span_size(&type->identifier->namespaces) &&
+    return type->tag == TYPE_IDENTIFIER && !identifier_type_namespace_count(type->identifier) &&
         !vec_spanned_type_size(&type->identifier->generic_params) &&
         (span_equals(type->identifier->name, "Object") || span_equals(type->identifier->name, "object"));
 }

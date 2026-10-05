@@ -1602,7 +1602,7 @@ static bool is_tsc_reference(Checker* me, Ty const* declared, u32 depth) {
         if (node->kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* interface_decl = node->node;
         for_each (extends, vec_spanned_type, &interface_decl->extends) {
-            if (extends->type.tag != TYPE_IDENTIFIER || extends->type.identifier->import_ref) continue;
+            if (extends->type.tag != TYPE_IDENTIFIER || identifier_type_import_ref(extends->type.identifier)) continue;
             Symbol const* base = extends->type.identifier->target;
             if (!base || base == symbol || !(base->flags & SYMBOL_INTERFACE)) continue;
             Ty const* base_declared = ty_declared_type_of(me, base);

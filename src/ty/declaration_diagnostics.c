@@ -901,7 +901,7 @@ static bool can_add_undefined(Walk* me, TypeNode const* type) {
 // tsc's isConstTypeReference: `as const`
 static bool is_const_type(TypeNode const* type) {
     return type->tag == TYPE_IDENTIFIER && span_equals(type->identifier->name, "const") &&
-        vec_span_is_empty(&type->identifier->namespaces) && !vec_spanned_type_size(&type->identifier->generic_params);
+        !identifier_type_namespace_count(type->identifier) && !vec_spanned_type_size(&type->identifier->generic_params);
 }
 
 // Where the type of a type assertion is written
@@ -1919,10 +1919,10 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
 
 // The first identifier of a written type reference, checked
 static void check_type_reference(Walk* me, IdentifierType const* type) {
-    if (type->import_ref || type->keyword || type->this_kind) return;
-    if (vec_span_size(&type->namespaces)) {
-        if (!vec_symbol_cptr_size(&type->namespace_symbols)) return;
-        check_entity_name(me, *vec_symbol_cptr_at(&type->namespace_symbols, 0), *vec_span_at(&type->namespaces, 0),
+    if (identifier_type_import_ref(type) || type->keyword || type->this_kind) return;
+    if (identifier_type_namespace_count(type)) {
+        if (!vec_symbol_cptr_size(identifier_type_namespace_symbols(type))) return;
+        check_entity_name(me, *vec_symbol_cptr_at(identifier_type_namespace_symbols(type), 0), *vec_span_at(identifier_type_namespaces(type), 0),
             SYMBOL_NAMESPACE);
         return;
     }
