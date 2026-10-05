@@ -754,6 +754,22 @@ static ClassDecl const* class_of_prop(Prop const* prop) {
     return prop->parent ? symbol_find_node(prop->parent, SYMBOL_DECL_CLASS) : nullptr;
 }
 
+// A base type of an interface merged with the class has a member of the name that isn't `prop` itself
+static bool merged_interface_base_has(Checker* checker, ClassDecl const* me, Prop const* prop) {
+    Symbol const* symbol = my symbol;
+    for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+        if (symbol->decls[i].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = symbol->decls[i].node;
+        for_each (extends, vec_spanned_type, &interface_decl->extends) {
+            Ty const* base = ty_from_node(checker, &extends->type, (LowerCtx){ .generic = true });
+            if (!(base->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+            Prop const* other = ty_get_prop(checker, base, prop->name);
+            if (other && other != prop) return true;
+        }
+    }
+    return false;
+}
+
 // tsc's checkKindsOfPropertyMemberOverrides(): what an instance member of the base class is overridden with (a
 // property with an accessor or the other way around, a method with an accessor...), and the abstract members a
 // class that isn't abstract inherits without implementing
@@ -789,8 +805,9 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
             ClassDecl const* derived_class = class_of_prop(derived_prop);
             if (!derived_class) continue;
             if (derived_class == base_class) {
-                // Inherited as it is: an abstract member has to be implemented
-                if (base_info.is_abstract && !my is_abstract) {
+                // Inherited as it is: an abstract member has to be implemented, unless another base (an interface
+                // merged with the class extends it) brings a member of the name (tsc's checkKindsOfPropertyMemberOverrides)
+                if (base_info.is_abstract && !my is_abstract && !merged_interface_base_has(checker, me, base_prop)) {
                     if (!missing_count) first_missing = base_prop->name;
                     if (missing_count < 5) {
                         if (missing_count == 4) five = base_prop->name;

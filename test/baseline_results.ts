@@ -50406,7 +50406,7 @@ const baselines = {
         types: true,
     },
     'mergedInheritedMembersSatisfyAbstractBase': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

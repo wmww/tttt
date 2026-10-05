@@ -124,7 +124,7 @@ static bool inherited_props_identical(
 // fit every base of every declaration, with that `this`
 static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
-    if (!symbol || (symbol->flags & SYMBOL_CLASS)) return;
+    if (!symbol) return;
     InterfaceDecl const* first = symbol_find_node(symbol, SYMBOL_DECL_INTERFACE);
     Span name = my name;
     if (first != me) {
@@ -150,6 +150,12 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     HeritageBase stack_bases[8];
     HeritageBase* bases = stack_bases;
     u32 base_count = 0, base_cap = c_arraylen(stack_bases);
+    // (Merged with a class: its base comes first, tsc's getBaseTypes: resolveBaseTypesOfClass, then the interfaces')
+    ClassDecl const* class_decl = symbol->flags & SYMBOL_CLASS ? symbol_find_node(symbol, SYMBOL_DECL_CLASS) : nullptr;
+    Ty const* class_base = class_decl ? ty_class_base_instance(checker, class_decl) : nullptr;
+    if (class_base && (class_base->flags & TYF_OBJECT)) {
+        bases[base_count++] = (HeritageBase){ class_base, this_param ? ty_with_this_arg(checker, class_base, this_param) : class_base };
+    }
     for (u32 d = 0; d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* decl = symbol->decls[d].node;
