@@ -314,8 +314,9 @@ src` finds the code-side markers; every significant one has an entry here.
   types at use; `apparent_contextual_type` maps only for `this` in literals. `context_map` drops `unknown` parts when
   others contribute (tsc: noReductions). Contextual union members are reduced (`string | "a"` is `string`).
   `discriminate_by_object_members` skips optional properties a literal omits.
-- Excess properties (`has_excess_properties`): generic mapped keys count as known; no nested re-check for
-  intersection targets; `discriminated_union_target` has no key-property map.
+- Excess properties (`has_excess_properties`): a generic mapped target knows the lower bound of its constraint's keys
+  (`generic_mapped_knows()`, a partial tsc's resolveMappedTypeMembers: no intersection/conditional lower bounds, no
+  keyofStringsOnly); no nested re-check for intersection targets; `discriminated_union_target` has no key-property map.
 - Destructuring assignments (`assignment_target_typecheck`): object rest unchecked; for-of destructuring (statement.c
   HACK) relates the regular element type (tsc: per property); array literal targets are arrays, not tuples.
 - `missing_property_type` (HACK): a failed access is errorType under conditions approximating check.c's reporting
@@ -525,6 +526,8 @@ src` finds the code-side markers; every significant one has an entry here.
   table has (the static `prototype`) without joining it; tsc's source of that TS2300 isn't pinned down, and tsc also
   reports an early `a` against a later `get [k]` (k = "a") at both, with the late text '[k]', which this doesn't.
 
+- `port_statement_typecheck()`: TS2837/TS2858 (non-string import attribute values) don't stop the import clause checks
+  that tsc's checkExternalImportOrExportDeclaration returning false skips.
 - `ty_check_destructured_member` (check.c, `from_this`): `({ m } = this)` inside method m isn't a read of private m (tsc's
   markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m, where
   tsc would count the read (its containing function is the nested one).
@@ -673,7 +676,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - Node reuse (`display_node()`/`display_annotated()`): `name_accessible()` resolves from `enclosing` only; signatures
   reuse the declaration when the mapper left it alone (`mentions()` conservative). `T_1` renaming (`TyParamNames`,
   `baseline_test_case_enter_generic()`) restates resolveName by hand. `display_node_identifier()` assumes ASCII module
-  names. Syntactic typing (`single_return_expr()`, `FunctionImpl.syntactically_contextual`): no JSX; index
+  names. Syntactic typing (`single_return_expr()`, `FunctionImpl.syntactically_contextual`, which counts any JSX
+  element as contextual; `single_return_keyword()` only does primitive literals of tsc's typeFromExpression); index
   signatures, tuple names, defaults always synthetic; enum member annotations print `E` (tsc: `E.x`).
 - `index_components_printed()` (HACK): isEntityNameVisible for `{ [k]: T }` approximated (function-declaration
   parameters visible even nested; no shadowing check since `TyDisplay.enclosing` misses enclosing parameters).

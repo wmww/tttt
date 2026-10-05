@@ -8133,7 +8133,7 @@ const baselines = {
     'declarationEmitForModuleImportingModuleAugmentationRetainsImport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitForTypesWhichNeedImportTypes': {
         errors: true,
@@ -8297,7 +8297,7 @@ const baselines = {
     },
     'declarationEmitLateBoundAssignments2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitLateBoundJSAssignments': {
@@ -16071,9 +16071,9 @@ const baselines = {
         types: true,
     },
     'importAssertionNonstring': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importDecl': {
         errors: true,
@@ -18758,7 +18758,7 @@ const baselines = {
     'isolatedDeclarationErrorsAugmentation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrorsClasses': {
         errors: true,
@@ -50346,14 +50346,14 @@ const baselines = {
         types: true,
     },
     'importAttributes6(module=node18)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importAttributes6(module=nodenext)': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importAttributes7': {
         errors: true,
