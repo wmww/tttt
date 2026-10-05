@@ -49,8 +49,8 @@ static void report_promise_missing(Checker* me, FunctionImpl const* function, Fu
 }
 
 Ty const* ty_promise_of(Checker* me, FunctionImpl const* function, Ty const* type) {
-    if (!function->promise_decl) return ty_intrinsic(me, TY_ANY);
-    Ty const* promise = ty_declared_type_of(me, function->promise_decl);
+    if (!function_impl_rare(function)->promise_decl) return ty_intrinsic(me, TY_ANY);
+    Ty const* promise = ty_declared_type_of(me, function_impl_rare(function)->promise_decl);
     if (promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return ty_intrinsic(me, TY_ANY);
     return ty_reference(me, promise, (TyList){ .data = &type, .len = 1 });
 }
@@ -61,9 +61,9 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
     TyIterationTypes const* context = ty_generator_context(me, function);
     TyBuf yields = {0};
     TyBuf nexts = {0};
-    for (u32 i = 0; i < function->yield_count; i++) {
-        UnaryOpExpr const* yield = function->yields[i]->unary_op;
-        ty_expr_type(me, function->yields[i]); // Checks the operand with the contextual type it gets from there
+    for (u32 i = 0; i < function_impl_rare(function)->yield_count; i++) {
+        UnaryOpExpr const* yield = function_impl_rare(function)->yields[i]->unary_op;
+        ty_expr_type(me, function_impl_rare(function)->yields[i]); // Checks the operand with the contextual type it gets from there
         if (yield->op == UNARY_OP_YIELD) {
             Ty const* sent = intern_get(&my links, (u64[]){ KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield }, 2);
             if (sent) ty_buf_push(&nexts, sent);
@@ -251,7 +251,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
         }
     }
-    if (function->is_async && !function->is_generator && !returned.len && function->promise_decl &&
+    if (function->is_async && !function->is_generator && !returned.len && function_impl_rare(function)->promise_decl &&
         !program_get_global(my program, c_sv("Promise"), SYMBOL_VALUE)
     ) {
         // tsc's createPromiseReturnType, which only the bodies that return no value get to: no Promise to make one
@@ -270,7 +270,7 @@ Ty const* ty_class_instance_type(Checker* me, Symbol const* class_symbol) {
 }
 
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function) {
-    if (function->constructed_class || function->ret_explicit || !function->has_body) return false;
+    if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body) return false;
     u64 key[2] = { KEY_FUNCTION_RETURN, (u64)(uintptr_t)function };
     FunctionReturn const* memo = intern_get(&my links, key, 2);
     return memo && memo->state == LAZY_STATE_IN_FLIGHT;
@@ -280,7 +280,7 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
 
 // The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
 bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
-    if (function->constructed_class || function->ret_explicit || !function->has_body || function->setter_type) return false;
+    if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body || function_impl_rare(function)->setter_type) return false;
     bool outer = return_type_speculative;
     return_type_speculative = true;
     ty_function_return_type(me, function);
@@ -299,11 +299,11 @@ Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
 }
 
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
-    if (function->constructed_class) return ty_class_instance_type(me, function->constructed_class);
+    if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
-    if (!function->ret_explicit && function->setter_type) return ty_from_node(me, function->setter_type, function_lower_ctx);
+    if (!function->ret_explicit && function_impl_rare(function)->setter_type) return ty_from_node(me, function_impl_rare(function)->setter_type, function_lower_ctx);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
-    if (function->jsdoc_signature_type || function->jsdoc_host_type) {
+    if (function_impl_rare(function)->jsdoc_signature_type || function_impl_rare(function)->jsdoc_host_type) {
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
         if (tagged) return tagged;
     }

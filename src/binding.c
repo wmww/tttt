@@ -652,7 +652,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION && !span_valid(initialized_binding_value(me)->function->arrow_span) &&
         names->file && names->file->is_js
     ) {
-        initialized_binding_value(me)->function->class_symbol = my binding.symbol;
+        function_impl_rare_mut(initialized_binding_value(me)->function)->class_symbol = my binding.symbol;
         scope_mark_jsdoc_class(names->binder, my binding.symbol, initialized_binding_value(me)->function);
     }
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)

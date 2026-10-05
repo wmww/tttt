@@ -2649,7 +2649,7 @@ static bool parse_jsdoc_function_type(Parser* parent, Anchor a, TypeNode* ret) {
         if (is_new) {
             // The type the construct signature makes
             function.is_constructor = true;
-            function.jsdoc_new = name;
+            function_impl_rare_mut(&function)->jsdoc_new = name;
             function.ret = type;
             function.ret_explicit = true;
         } else {
@@ -4252,7 +4252,7 @@ static u32 jsdoc_required_param_count(FunctionImpl const* function) {
 static void jsdoc_apply_type_signature(VecJsDocTag* tags, FunctionImpl* function, bool declaration) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_TYPE);
     if (!tag) return;
-    function->jsdoc_signature_span = tag->type_span;
+    function_impl_rare_mut(function)->jsdoc_signature_span = tag->type_span;
     FunctionImpl* signature = jsdoc_single_signature(&tag->type);
     if (!signature && tag->type.tag == TYPE_INTERFACE) {
         // (A type literal without a call signature)
@@ -4489,7 +4489,6 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
 static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
     if (function->jsdoc_params_checked) return;
     function->jsdoc_params_checked = true;
-    function->jsdoc_arguments_candidate = -1;
     Span objects[8]; // The chain of object tags the next child may be under
     u32 depth = 0;
     isize index = 0;
@@ -4499,10 +4498,10 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
             // (A missing name is an identifier '' to tsc, which no parameter has)
             if (!span_valid(i->missing_name) || i->name_first) continue;
             index++;
-            function->jsdoc_param_issues = realloc(function->jsdoc_param_issues,
-                sizeof(JsDocParamIssue) * (function->jsdoc_param_issue_count + 1));
-            panic_if(!function->jsdoc_param_issues, "out of memory");
-            function->jsdoc_param_issues[function->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->missing_name, span_null };
+            FunctionImplRare* rare = function_impl_rare_mut(function);
+            rare->jsdoc_param_issues = realloc(rare->jsdoc_param_issues, sizeof(JsDocParamIssue) * (rare->jsdoc_param_issue_count + 1));
+            panic_if(!rare->jsdoc_param_issues, "out of memory");
+            rare->jsdoc_param_issues[rare->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->missing_name, span_null };
             continue;
         }
         csview name = i->name.sv;
@@ -4539,22 +4538,21 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
             }
             if (found) continue;
         }
-        function->jsdoc_param_issues = realloc(function->jsdoc_param_issues,
-            sizeof(JsDocParamIssue) * (function->jsdoc_param_issue_count + 1));
-        panic_if(!function->jsdoc_param_issues, "out of memory");
-        function->jsdoc_param_issues[function->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->name, left };
+        FunctionImplRare* rare = function_impl_rare_mut(function);
+        rare->jsdoc_param_issues = realloc(rare->jsdoc_param_issues, sizeof(JsDocParamIssue) * (rare->jsdoc_param_issue_count + 1));
+        panic_if(!rare->jsdoc_param_issues, "out of memory");
+        rare->jsdoc_param_issues[rare->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->name, left };
         if (!dot && i->has_type) {
-            function->jsdoc_unmatched = realloc(function->jsdoc_unmatched,
-                sizeof(JsDocUnmatchedParam) * (function->jsdoc_unmatched_count + 1));
-            panic_if(!function->jsdoc_unmatched, "out of memory");
+            rare->jsdoc_unmatched = realloc(rare->jsdoc_unmatched, sizeof(JsDocUnmatchedParam) * (rare->jsdoc_unmatched_count + 1));
+            panic_if(!rare->jsdoc_unmatched, "out of memory");
             TypeNode type = jsdoc_take_type(i, nullptr);
             // (The last tag: the one `arguments` could be)
             bool last = true;
             for (JsDocTag const* j = i + 1; j < tags->data + tags->size && last; j++) {
                 last = !(j->kind == JSDOC_TAG_PARAM && !j->nested && !j->earlier);
             }
-            if (last) function->jsdoc_arguments_candidate = (int)function->jsdoc_unmatched_count;
-            function->jsdoc_unmatched[function->jsdoc_unmatched_count++] = (JsDocUnmatchedParam){
+            if (last) rare->jsdoc_arguments_candidate = rare->jsdoc_unmatched_count + 1;
+            rare->jsdoc_unmatched[rare->jsdoc_unmatched_count++] = (JsDocUnmatchedParam){
                 .name = i->name, .type = type, .variadic = i->variadic,
             };
         }
@@ -4568,7 +4566,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     // `@overload` tags (of every comment before the host), each a signature of their own: the function's, whose
     // implementation isn't one (tsc's getSignaturesOfSymbol). The comment's `@template`s are the overload's
     // (getEffectiveTypeParameterDeclarations of a JSDocSignature)
-    if (!function->jsdoc_overload_count) {
+    if (!function_impl_rare(function)->jsdoc_overload_count) {
         for_each (i, vec_jsdoc_tag, tags) {
             if (i->kind != JSDOC_TAG_OVERLOAD) continue;
             isize children = 0;
@@ -4586,9 +4584,10 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
                     });
                 }
             }
-            function->jsdoc_overloads = realloc(function->jsdoc_overloads, sizeof(TypeNode) * (function->jsdoc_overload_count + 1));
-            panic_if(!function->jsdoc_overloads, "out of memory");
-            function->jsdoc_overloads[function->jsdoc_overload_count++] = type;
+            FunctionImplRare* rare = function_impl_rare_mut(function);
+            rare->jsdoc_overloads = realloc(rare->jsdoc_overloads, sizeof(TypeNode) * (rare->jsdoc_overload_count + 1));
+            panic_if(!rare->jsdoc_overloads, "out of memory");
+            rare->jsdoc_overloads[rare->jsdoc_overload_count++] = type;
         }
     }
     jsdoc_apply_template(p, tags, &function->generic, false);
@@ -4696,10 +4695,10 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
     }
     // A `@type` that isn't a written signature: its signature is resolved by the checker
     if (type_tag && (declaration || (type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE)) &&
-        !function->jsdoc_signature_type
+        !function_impl_rare(function)->jsdoc_signature_type
     ) {
-        function->jsdoc_signature_span = type_tag->type_span;
-        function->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
+        function_impl_rare_mut(function)->jsdoc_signature_span = type_tag->type_span;
+        function_impl_rare_mut(function)->jsdoc_signature_type = c_new(TypeNode, jsdoc_take_type(type_tag, nullptr));
     }
     if (!function->ret_explicit && !function->is_constructor) {
         JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_RETURNS);
@@ -6449,7 +6448,7 @@ static bool parse_non_arrow_function(Parser* parent, FunctionFlags flags, Functi
     if (success) {
         ret->is_async = flags.is_async;
         ret->is_generator = flags.is_generator;
-        ret->asterisk = flags.asterisk;
+        if (span_valid(flags.asterisk)) function_impl_rare_mut(ret)->asterisk = flags.asterisk;
         js_syntax_function(parent, ret, true);
     }
     return success;
@@ -6718,7 +6717,8 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // `*` and `get`/`set` commit to a method (tsc's parseMethodDeclaration/parseAccessorDeclaration): the
         // parameter list is missing, a body may follow
         expected_token_error(&p, "(");
-        func = (FunctionImpl){ .is_generator = flags.is_generator, .asterisk = flags.asterisk };
+        func = (FunctionImpl){ .is_generator = flags.is_generator };
+        if (span_valid(flags.asterisk)) function_impl_rare_mut(&func)->asterisk = flags.asterisk;
         if (parse_block(&p, false, &func.body)) func.has_body = true;
         if (item.tag == OBJECT_ITEM_PROPERTY) item.tag = OBJECT_ITEM_METHOD;
         func.full_span = span_from(a);
@@ -12913,8 +12913,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 initializer->binding.explicit_type.from_jsdoc
             ) {
                 FunctionImpl const* signature = jsdoc_single_signature(&initializer->binding.explicit_type);
-                if (signature && signature->ret_explicit) function->jsdoc_tag_ret = &signature->ret;
-                function->jsdoc_host_type = &initializer->binding.explicit_type;
+                if (signature && signature->ret_explicit) function_impl_rare_mut(function)->jsdoc_tag_ret = &signature->ret;
+                function_impl_rare_mut(function)->jsdoc_host_type = &initializer->binding.explicit_type;
             }
             if (function) jsdoc_apply_function(p, &tags, function);
             if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl);

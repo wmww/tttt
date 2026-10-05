@@ -1808,13 +1808,13 @@ static bool same_signature_origin(Ty const* source, Ty const* target) {
 static int constructor_access(Signature const* sig) {
     while (sig && !sig->function && sig->target) sig = sig->target;
     FunctionImpl const* function = sig ? sig->function : nullptr;
-    return function && function->constructed_class && function->is_constructor ? function->constructor_access : -1;
+    return function && function_impl_rare(function)->constructed_class && function->is_constructor ? function_impl_rare(function)->constructor_access : -1;
 }
 
 // A signature declared by a class's `constructor` (tsc's declaration.kind === SyntaxKind.Constructor)
 static bool declared_constructor(Signature const* sig) {
     while (sig && !sig->function && sig->target) sig = sig->target;
-    return sig && sig->function && sig->function->constructed_class && sig->function->is_constructor;
+    return sig && sig->function && function_impl_rare(sig->function)->constructed_class && sig->function->is_constructor;
 }
 
 // Whether two object types have an ObjectFlags bit in common (tsc's `sourceObjectFlags & targetObjectFlags`), as far as

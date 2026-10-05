@@ -1395,10 +1395,10 @@ Ty const* ty_constructor_declared_flow_type(Checker* me, Symbol const* member, E
 // A member only `this.x = v` assignments declare, one of them in a class constructor: the type `this.x` has at the end of
 // the constructor (tsc's getFlowTypeInConstructor). Null if that is only null or undefined, or it isn't such a member
 static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
-    if (!symbol_rare(symbol)->constructor_assigned || !symbol_rare(symbol)->declaring_constructor || !symbol_rare(symbol)->declaring_constructor->return_flow) {
+    if (!symbol_rare(symbol)->constructor_assigned || !symbol_rare(symbol)->declaring_constructor || !function_impl_rare(symbol_rare(symbol)->declaring_constructor)->return_flow) {
         return nullptr;
     }
-    Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol_rare(symbol)->constructor_assigned, symbol_rare(symbol)->declaring_constructor->return_flow);
+    Ty const* ret = ty_constructor_declared_flow_type(me, symbol, symbol_rare(symbol)->constructor_assigned, function_impl_rare(symbol_rare(symbol)->declaring_constructor)->return_flow);
     // Nothing but `[]` (tsc's autoArrayType, which never evolves here): any[], reported (getFlowTypeInConstructor)
     SourceFile const* file = symbol_rare(symbol)->constructor_assigned->inner_span.source;
     if (file && file->is_js && ret == ty_auto_array(me)) {

@@ -1583,7 +1583,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     while (failed->target) failed = failed->target;
     if (!error || !failed->function) return;
     Symbol const* symbol = failed->function->symbol;
-    FunctionImpl const* impl = failed->function->overload_implementation;
+    FunctionImpl const* impl = function_impl_rare(failed->function)->overload_implementation;
     if (!impl && (!symbol || symbol->decl_count < 2)) return;
     for (u32 i = 0; symbol && i < symbol->decl_count && !impl; i++) {
         if (symbol->decls[i].kind != SYMBOL_DECL_FUNCTION) continue;

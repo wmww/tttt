@@ -1132,11 +1132,11 @@ static void builder_add_class_items(
                         functions[count++] = &other->method.func;
                     }
                     // JSDoc `@overload`s instead of the method's own signature
-                    if (count == 1 && functions[0]->jsdoc_overload_count) {
+                    if (count == 1 && function_impl_rare(functions[0])->jsdoc_overload_count) {
                         FunctionImpl const* method = functions[0];
-                        count = method->jsdoc_overload_count;
+                        count = function_impl_rare(method)->jsdoc_overload_count;
                         functions = arena_new_n(&my arena, FunctionImpl const*, count);
-                        for (u32 f = 0; f < count; f++) functions[f] = method->jsdoc_overloads[f].callable->function;
+                        for (u32 f = 0; f < count; f++) functions[f] = function_impl_rare(method)->jsdoc_overloads[f].callable->function;
                     }
                     Span* spans = arena_new_n(&my arena, Span, visible);
                     u32 span_count = 0;
@@ -2788,10 +2788,10 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
             } else if (ty->anonymous.function) {
                 FunctionImpl const* function = ty->anonymous.function;
                 Signature* sig = signature_from_function(me, function, ty->anonymous.ctx);
-                if (function->jsdoc_overload_count) {
+                if (function_impl_rare(function)->jsdoc_overload_count) {
                     // JSDoc `@overload`s instead of its own
-                    for (u32 i = 0; i < function->jsdoc_overload_count; i++) {
-                        builder_add_callable(me, &builder, function->jsdoc_overloads[i].callable->function, ty->anonymous.ctx);
+                    for (u32 i = 0; i < function_impl_rare(function)->jsdoc_overload_count; i++) {
+                        builder_add_callable(me, &builder, function_impl_rare(function)->jsdoc_overloads[i].callable->function, ty->anonymous.ctx);
                     }
                 } else if (sig->flags & SIGNATURE_CONSTRUCT) {
                     builder_push(&builder, construct, sig);
@@ -2809,7 +2809,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
                     builder_push(&builder, construct, construct);
                 }
                 // `const f = () => {}; f.x = 1` (tsc merges the variable's exports into the function's symbol)
-                Symbol const* host = ty->anonymous.function->expando_host;
+                Symbol const* host = function_impl_rare(ty->anonymous.function)->expando_host;
                 if (host) {
                     Members const* expandos = ty_members(me, ty_namespace_type(me, host));
                     for (u32 i = 0; i < expandos->prop_count; i++) builder_push(&builder, props, expandos->props[i]);
@@ -3210,9 +3210,9 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
 }
 
 Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
-    if (function->is_type || span_valid(function->arrow_span) || function->this_literal) return nullptr;
+    if (function->is_type || span_valid(function->arrow_span) || function_impl_rare(function)->this_literal) return nullptr;
     // (A named function expression tagged `@class` that isn't assigned to anything is a class of its own name)
-    Symbol const* symbol = function->class_symbol ? function->class_symbol :
+    Symbol const* symbol = function_impl_rare(function)->class_symbol ? function_impl_rare(function)->class_symbol :
         function->is_expression && !function->jsdoc_class ? nullptr : function->symbol;
     if (!symbol || !(symbol->flags & SYMBOL_CLASS) || !symbol_rare(symbol)->members) return nullptr;
     SourceFile const* file = function->full_span.source;
@@ -3244,7 +3244,7 @@ Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function) {
 }
 
 static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function) {
-    TypeNode const* node = function->jsdoc_signature_type ? function->jsdoc_signature_type : function->jsdoc_host_type;
+    TypeNode const* node = function_impl_rare(function)->jsdoc_signature_type ? function_impl_rare(function)->jsdoc_signature_type : function_impl_rare(function)->jsdoc_host_type;
     if (!node) return nullptr;
     Ty const* type = ty_of_node(node);
     if (!(type->flags & TYF_OBJECT)) return nullptr;
@@ -3314,7 +3314,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             // optional by the effective ones, tuple spreads expanded)
             bool iife = function->is_iife && !i->initializer.binding.has_explicit_type;
             if (iife && i_index >= iife_arg_count && !i->rest) param->optional = true;
-            bool past_written = iife && i_index >= function->iife_arg_count;
+            bool past_written = iife && i_index >= function_impl_rare(function)->iife_arg_count;
             if (!param->optional && !param->rest && !past_written) sig->min_args = (u32)i_index + 1;
         }
         for (u32 j = 0; j < sig->min_args; j++) {
@@ -3343,9 +3343,9 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
                 if (sig->min_args > count) sig->min_args = count;
             } else if (!count) {
                 // (Without parameters every `@param` tag is the last parameter's: the first `{...T}` among them)
-                for (u32 i = 0; i < function->jsdoc_unmatched_count && !variadic_tag; i++) {
-                    if (!function->jsdoc_unmatched[i].variadic) continue;
-                    element = ty_of_node(&function->jsdoc_unmatched[i].type);
+                for (u32 i = 0; i < function_impl_rare(function)->jsdoc_unmatched_count && !variadic_tag; i++) {
+                    if (!function_impl_rare(function)->jsdoc_unmatched[i].variadic) continue;
+                    element = ty_of_node(&function_impl_rare(function)->jsdoc_unmatched[i].type);
                     variadic_tag = true;
                 }
             }

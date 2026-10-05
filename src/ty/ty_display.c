@@ -1928,7 +1928,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TyPredicate const* predicate = signature_predicate(me, sig);
     Ty const* ret = signature_return_type(me, sig);
     TypeNode const* ret_annotation = !reusable || root->class_instance ? nullptr : function->ret_explicit ? &function->ret :
-        function->jsdoc_tag_ret ? function->jsdoc_tag_ret : single_return_assertion(me, function, signature_return_type(me, root));
+        function_impl_rare(function)->jsdoc_tag_ret ? function_impl_rare(function)->jsdoc_tag_ret : single_return_assertion(me, function, signature_return_type(me, root));
     bool reused = ret_annotation &&
         !mentions(me, ret, d.fresh_params) && (!instantiated || ret == signature_return_type(me, root));
     if (predicate) {
@@ -2703,7 +2703,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 }
                 // (and a static method as `typeof C.m`)
                 FunctionImpl const* method = ty->anonymous.function && !ty->anonymous.target ? ty->anonymous.function : nullptr;
-                Symbol const* owner = method ? method->static_method_of : nullptr;
+                Symbol const* owner = method ? function_impl_rare(method)->static_method_of : nullptr;
                 if (owner && span_valid(owner->name_span) && span_valid(method->member_name)) {
                     out_lit(d, "typeof ");
                     out_symbol_name(me, d, owner, SYMBOL_VALUE);

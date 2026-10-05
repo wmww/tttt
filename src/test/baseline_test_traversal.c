@@ -989,9 +989,9 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             u32 saved = baseline_test_case_enter_generic(ctx, &my callable->function->generic);
             generic_compile_test_info(&my callable->function->generic, ctx);
             FunctionImpl const* function = my callable->function;
-            if (span_valid(function->jsdoc_new)) { // (Outside JSDoc: `function(new: T)` in TypeScript)
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = function->jsdoc_new });
-                baseline_test_case_add_type(ctx, function->jsdoc_new, ty_of_node(&function->ret));
+            if (span_valid(function_impl_rare(function)->jsdoc_new)) { // (Outside JSDoc: `function(new: T)` in TypeScript)
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = function_impl_rare(function)->jsdoc_new });
+                baseline_test_case_add_type(ctx, function_impl_rare(function)->jsdoc_new, ty_of_node(&function->ret));
             }
             for_each (i, vec_function_arg, &my callable->function->args) {
                 // (A JSDoc function type's unnamed parameters are `argN`, written nowhere)
@@ -1111,9 +1111,9 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
             expr_compile_test_info(decorator, ctx);
         }
         Span saved = ctx->parameter_property_class;
-        if (i->is_parameter_property && my constructed_class && span_valid(my constructed_class->name_span)) {
-            ctx->parameter_property_class = my constructed_class->name_span;
-            ctx->parameter_property_symbol = my constructed_class;
+        if (i->is_parameter_property && function_impl_rare(me)->constructed_class && span_valid(function_impl_rare(me)->constructed_class->name_span)) {
+            ctx->parameter_property_class = function_impl_rare(me)->constructed_class->name_span;
+            ctx->parameter_property_symbol = function_impl_rare(me)->constructed_class;
             ctx->parameter_property_arg = i->span;
         }
         initialized_binding_compile_test_info(&i->initializer, ctx);
@@ -1892,7 +1892,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         SymbolDecl const* variable = symbol_find_decl(js_class, SYMBOL_DECL_VARIABLE);
         Expr const* init = variable ? initialized_binding_value(((InitializedBinding const*)variable->node)) : nullptr;
         // (A function expression assigned to a property, `exports.F = function () {}`, is declared by itself)
-        bool own = my this_function->class_symbol == js_class && my this_function->is_expression;
+        bool own = function_impl_rare(me->this_function)->class_symbol == js_class && my this_function->is_expression;
         // (Assigned to a property, `ns.F = function () {}`, the class is the function expression, named by itself or
         // the property: from its prototype's methods too)
         SymbolDecl const* assignment = variable ? nullptr : symbol_find_decl(js_class, SYMBOL_DECL_ASSIGNMENT);
@@ -1923,7 +1923,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             symbol = first->initializer.binding.symbol;
         }
         Ty const* type = symbol ? nullptr : ty_contextual_this_type(checker, my this_function);
-        Expr const* literal = my this_function->this_literal;
+        Expr const* literal = function_impl_rare(me->this_function)->this_literal;
         if (type && type->kind == TY_ANONYMOUS && type->anonymous.object_literal && literal) {
             // The object literal's own type (noImplicitThis): its symbol, `__object` or the variable's name
             bool named = literal == ctx->variable_literal;

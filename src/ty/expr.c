@@ -1035,7 +1035,7 @@ Symbol const* ty_js_this_class(FunctionImpl const* function) {
     if (js_class) return js_class;
     // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod: not an accessor of
     // `F.prototype = { get x() {} }`, whose `this` is the literal's)
-    Expr const* constructor = function->accessor ? nullptr : function->prototype_of;
+    Expr const* constructor = function->accessor ? nullptr : function_impl_rare(function)->prototype_of;
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     SourceFile const* file = function->full_span.source;
     if (!symbol || !file || !file->is_js || !(symbol->flags & SYMBOL_CLASS) || !symbol_rare(symbol)->members) return nullptr;
@@ -1073,15 +1073,15 @@ static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
 
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // A JavaScript `@type {F}` gives its signature's `this` (tsc's getThisTypeOfDeclaration of a type tag's signature)
-    if (function->jsdoc_signature_type) ty_function_apply_jsdoc_type(me, function, nullptr);
+    if (function_impl_rare(function)->jsdoc_signature_type) ty_function_apply_jsdoc_type(me, function, nullptr);
     u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
     Ty const* from_signature = intern_get(&my links, this_key, 2);
     if (from_signature) return from_signature;
     // (tsc's getContextualThisParameterType: the containing literal or assigned object with noImplicitThis, or in JS)
     bool in_js = function->full_span.source && function->full_span.source->is_js;
     if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
-    if (function->this_literal) {
-        Expr const* literal = function->this_literal;
+    if (function_impl_rare(function)->this_literal) {
+        Expr const* literal = function_impl_rare(function)->this_literal;
         u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)literal };
         Ty const* contextual = intern_get(&my links, context_key, 2);
         // A ThisType<T> marker in the contextual type of the literal or of the literals it is a property value of
@@ -1105,8 +1105,8 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
         }
         return ty_widened_for_declaration(me, ty_expr_type(me, literal), true);
     }
-    if (function->this_assigned_object) {
-        return ty_widened_for_declaration(me, ty_expr_type(me, function->this_assigned_object), true);
+    if (function_impl_rare(function)->this_assigned_object) {
+        return ty_widened_for_declaration(me, ty_expr_type(me, function_impl_rare(function)->this_assigned_object), true);
     }
     return nullptr;
 }
@@ -1232,10 +1232,10 @@ static void assign_contextual_signature_as(
 }
 
 void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, InitializedBinding const* evaluating) {
-    if (!function->jsdoc_signature_type) return;
+    if (!function_impl_rare(function)->jsdoc_signature_type) return;
     // A declaration's parameters take the types at their positions whatever its arity (tsc's getParameterTypeOfTypeTag
     // through getSignatureOfTypeTag, not a contextual signature)
-    Ty const* type = ty_of_node(function->jsdoc_signature_type);
+    Ty const* type = ty_of_node(function_impl_rare(function)->jsdoc_signature_type);
     assign_contextual_signature_as(me, function, type, nullptr, evaluating);
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
@@ -3660,14 +3660,14 @@ static EffectiveArg* effective_call_args(Checker* me, CallExpr const* call, u32*
 // How many arguments an immediately invoked function gets (tsc's getEffectiveCallArguments(iife).length): past them its
 // unannotated parameters are optional
 u32 ty_iife_effective_arg_count(Checker* me, FunctionImpl const* function) {
-    CallExpr const* call = function->iife_call;
-    if (!call) return function->iife_arg_count;
+    CallExpr const* call = function_impl_rare(function)->iife_call;
+    if (!call) return function_impl_rare(function)->iife_arg_count;
     bool spread = false;
     for_each (i, vec_expr, &call->args) spread |= i->tag == EXPR_SPREAD;
-    if (!spread) return function->iife_arg_count;
+    if (!spread) return function_impl_rare(function)->iife_arg_count;
     u32 count = 0;
     EffectiveArg* args = effective_call_args(me, call, &count);
-    if (!args) return function->iife_arg_count;
+    if (!args) return function_impl_rare(function)->iife_arg_count;
     free(args);
     return count;
 }
@@ -3969,7 +3969,7 @@ static Ty const* constructor_declared_read(Checker* me, Expr const* expr) {
     PropertyExpr const* access = expr->property;
     if (access->assignment_target || !access->flow) return nullptr;
     Symbol const* member = constructor_declared_member(access);
-    if (!member || !symbol_rare(member)->declaring_constructor || !symbol_rare(member)->declaring_constructor->return_flow) return nullptr;
+    if (!member || !symbol_rare(member)->declaring_constructor || !function_impl_rare(symbol_rare(member)->declaring_constructor)->return_flow) return nullptr;
     if (expr_this_or_alias(&access->expr)->this_kind != THIS_CLASS_INSTANCE) return nullptr;
     return ty_constructor_declared_flow_type(me, member, expr, access->flow);
 }

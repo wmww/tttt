@@ -31,16 +31,26 @@ void function_impl_drop(FunctionImpl* me) {
     }
     lazy_type_drop(&my lazy_type);
     block_drop(&my body);
-    free(my yields);
-    if (my jsdoc_signature_type) {
-        type_drop(my jsdoc_signature_type);
-        free(my jsdoc_signature_type);
+    FunctionImplRare* rare = my rare;
+    if (!rare) return;
+    free(rare->yields);
+    if (rare->jsdoc_signature_type) {
+        type_drop(rare->jsdoc_signature_type);
+        free(rare->jsdoc_signature_type);
     }
-    for (u32 i = 0; i < my jsdoc_overload_count; i++) type_drop(&my jsdoc_overloads[i]);
-    free(my jsdoc_overloads);
-    free(my jsdoc_param_issues);
-    for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_drop(&my jsdoc_unmatched[i].type);
-    free(my jsdoc_unmatched);
+    for (u32 i = 0; i < rare->jsdoc_overload_count; i++) type_drop(&rare->jsdoc_overloads[i]);
+    free(rare->jsdoc_overloads);
+    free(rare->jsdoc_param_issues);
+    for (u32 i = 0; i < rare->jsdoc_unmatched_count; i++) type_drop(&rare->jsdoc_unmatched[i].type);
+    free(rare->jsdoc_unmatched);
+    free(rare);
+}
+
+const FunctionImplRare function_impl_no_rare = {0};
+
+FunctionImplRare* function_impl_rare_mut(FunctionImpl* me) {
+    if (!my rare) my rare = c_new(FunctionImplRare, {0});
+    return my rare;
 }
 
 void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
@@ -184,7 +194,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     if (names->flow && names->flow->contextual_depth) my syntactically_contextual = true;
     my ambient = names->ambient;
     if (my is_async) {
-        my promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
+        function_impl_rare_mut(me)->promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
     }
     Scope* decorator_names = nullptr;
     for_each (i, vec_function_arg, &my args) {
@@ -210,7 +220,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     outer->next_function_is_iife = false;
     FlowBuilder flow;
     flow_builder_init(&flow, outer, names, me, errs);
-    flow.constructor_of = is_iife ? outer->constructor_of : my constructed_class;
+    flow.constructor_of = is_iife ? outer->constructor_of : function_impl_rare(me)->constructed_class;
     if (!is_iife) flow.container = me;
     if (is_iife) {
         // Part of the flow around it, a `return` is a jump to the end of the body
@@ -249,7 +259,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         type_params_scope = names;
     }
 
-    for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_lookup_names(&my jsdoc_unmatched[i].type, names, errs);
+    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_lookup_names(&function_impl_rare(me)->jsdoc_unmatched[i].type, names, errs);
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;
     if (type_params_scope) scope_rare_mut(type_params_scope)->type_params_function = function_scope;
@@ -300,17 +310,17 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     } else {
         type_lookup_names(&my ret, function_scope, errs);
     }
-    for (u32 i = 0; i < my jsdoc_overload_count; i++) {
-        for_each (item, vec_generic_item, &my jsdoc_overloads[i].callable->function->generic.items) {
+    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_overload_count; i++) {
+        for_each (item, vec_generic_item, &function_impl_rare(me)->jsdoc_overloads[i].callable->function->generic.items) {
             if (!item->jsdoc_shared) continue;
             for_each (own, vec_generic_item, &my generic.items) {
                 if (name_equals(own->name.sv, item->name.sv)) item->symbol_ref = own->owned_symbol;
             }
         }
-        type_lookup_names(&my jsdoc_overloads[i], function_scope, errs);
+        type_lookup_names(&function_impl_rare(me)->jsdoc_overloads[i], function_scope, errs);
     }
-    if (my jsdoc_signature_type) {
-        type_lookup_names(my jsdoc_signature_type, names, errs);
+    if (function_impl_rare(me)->jsdoc_signature_type) {
+        type_lookup_names(function_impl_rare(me)->jsdoc_signature_type, names, errs);
         for_each (i, vec_function_arg, &my args) initialized_binding_rare_mut(&i->initializer)->jsdoc_typed_by = me;
     }
     if (my predicate) {
@@ -330,13 +340,16 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     if (!flow_is_unreachable(flow.current) && my has_body) my end_flow = flow.current;
     my has_explicit_return = flow.has_explicit_return;
     my has_bare_return = flow.has_bare_return;
-    my yields = flow.yields;
-    my yield_count = flow.yield_count;
+    if (flow.yields || my rare) {
+        FunctionImplRare* rare = function_impl_rare_mut(me);
+        rare->yields = flow.yields;
+        rare->yield_count = flow.yield_count;
+    }
     flow.yields = nullptr;
     if (flow.return_target) {
         flow_add_antecedent(&flow, flow.return_target, flow.current);
         flow.current = flow_finish_label(flow.return_target);
-        if (my is_constructor || js_constructor_candidate) my return_flow = flow.current;
+        if (my is_constructor || js_constructor_candidate) function_impl_rare_mut(me)->return_flow = flow.current;
     }
     flow_builder_finish(&flow, c_sv("function"), span_valid(my name) ? my name : my full_span);
     if (is_iife && !outer->dead) {
@@ -390,8 +403,8 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
                 checker->return_context = both[1] ? ty_union(checker, both, 2, nullptr, (TyList){0}) : awaited;
             }
         }
-    } else if (my ret_explicit || my setter_type) {
-        Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : my setter_type, (LowerCtx){ .generic = true });
+    } else if (my ret_explicit || function_impl_rare(me)->setter_type) {
+        Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : function_impl_rare(me)->setter_type, (LowerCtx){ .generic = true });
         checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
     } else {
         checker->return_context = ty_return_expressions_context(checker, me);
@@ -412,7 +425,7 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
             rare->getter = getter;
             rare->getter_key = key;
         }
-        else if (!getter->ret_explicit) getter->setter_type = &i->initializer.binding.explicit_type;
+        else if (!getter->ret_explicit) function_impl_rare_mut(getter)->setter_type = &i->initializer.binding.explicit_type;
         return;
     }
 }
@@ -634,12 +647,12 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     if (!grammar_error && my accessor && span_valid(my member_name)) {
         grammar_error = function_impl_check_grammar_accessor(me, errs);
     }
-    if (!grammar_error && span_valid(my asterisk)) {
+    if (!grammar_error && span_valid(function_impl_rare(me)->asterisk)) {
         // tsc's checkGrammarForGenerator()
         if (my ambient) {
-            error_ctx_grammar_error_d(errs, my asterisk, 1221, "Generators are not allowed in an ambient context.");
+            error_ctx_grammar_error_d(errs, function_impl_rare(me)->asterisk, 1221, "Generators are not allowed in an ambient context.");
         } else if (!my has_body) {
-            error_ctx_grammar_error_d(errs, my asterisk, 1222, "An overload signature cannot be declared as a generator.");
+            error_ctx_grammar_error_d(errs, function_impl_rare(me)->asterisk, 1222, "An overload signature cannot be declared as a generator.");
         }
     }
 
@@ -744,7 +757,7 @@ bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, Ty const
 }
 
 FunctionImpl const* function_impl_jsdoc_tag_signature(FunctionImpl const* me) {
-    TypeNode const* tag = my jsdoc_signature_type ? my jsdoc_signature_type : my jsdoc_host_type;
+    TypeNode const* tag = function_impl_rare(me)->jsdoc_signature_type ? function_impl_rare(me)->jsdoc_signature_type : function_impl_rare(me)->jsdoc_host_type;
     if (!tag) return nullptr;
     if (tag->tag == TYPE_CALLABLE) return tag->callable->function;
     if (tag->tag == TYPE_INTERFACE && vec_interface_member_size(&tag->interface.members) == 1 &&
@@ -776,11 +789,11 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         type = ty_unwrapped_return_type(checker, me);
         if (!type && my is_async && !my is_generator) type = ty_intrinsic(checker, TY_ANY);
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
-    } else if (my accessor == 1 && my setter_type) {
+    } else if (my accessor == 1 && function_impl_rare(me)->setter_type) {
         // A getter's is its setter's parameter annotation (tsc's getReturnTypeFromAnnotation: getAnnotatedAccessorType)
-        type = ty_from_node(checker, my setter_type, (LowerCtx){ .generic = true });
+        type = ty_from_node(checker, function_impl_rare(me)->setter_type, (LowerCtx){ .generic = true });
         if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
-    } else if ((my jsdoc_signature_type || my jsdoc_host_type) && !my is_async && !my is_generator) {
+    } else if ((function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) && !my is_async && !my is_generator) {
         // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation), reported at
         // that signature's return type node if it's written (getJSDocReturnType)
         type = ty_jsdoc_tag_return_type(checker, me);
@@ -862,7 +875,7 @@ void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, 
 // tsc's getReturnTypeOfSignature when the inferred return type references itself: TS7023 at the name (a function
 // expression's is what it's assigned to, getNameOfDeclaration), TS7024 without one
 static void function_check_circular_return(FunctionImpl const* me, ErrorCtx* errs) {
-    if (!compiler_options()->no_implicit_any || !my has_body || my ret_explicit || my jsdoc_signature_type) return;
+    if (!compiler_options()->no_implicit_any || !my has_body || my ret_explicit || function_impl_rare(me)->jsdoc_signature_type) return;
     if (!ty_function_return_circular(current_checker, me)) return;
     Span name = span_valid(my name) ? my name : span_valid(my member_name) ? my member_name : my variable_name;
     if (span_valid(name)) {
@@ -879,7 +892,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
     if (!compiler_options()->no_implicit_any || my private_ambient || my jsdoc_type) return;
     for_each (i, vec_function_arg, &my args) {
         if (i->initializer.binding.has_explicit_type || initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) continue;
-        if (my jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
+        if (function_impl_rare(me)->jsdoc_signature_type) ty_function_apply_jsdoc_type(current_checker, me, nullptr);
         if (initialized_binding_getter(&i->initializer) || ty_contextual_parameter_type(current_checker, &i->initializer)) continue;
         if (i->name_is_type && my is_type && !my is_constructor) {
             error_ctx_error_d(errs, i->span, 7051, "Parameter has a name but no type. Did you mean 'arg", (u32)i_index, ": ",
@@ -947,7 +960,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_impl_typecheck_signature(me, false, errs);
     // (The parameter decorators of a class member are the class's to check: they are calls with synthetic arguments,
     // which is what gives them their contextual type)
-    bool class_member = !my is_expression && (span_valid(my member_name) || my constructed_class);
+    bool class_member = !my is_expression && (span_valid(my member_name) || function_impl_rare(me)->constructed_class);
     for_each (i, vec_function_arg, &my args) {
         if (!class_member) {
             for_each (decorator, vec_expr, function_arg_decorators(i)) {
@@ -968,27 +981,27 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     if (my ret_explicit) type_typecheck(&my ret, errs);
     ty_check_async_return_annotation(current_checker, me, errs);
     function_check_arguments_collision(me, errs);
-    for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_typecheck(&my jsdoc_unmatched[i].type, errs);
+    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_typecheck(&function_impl_rare(me)->jsdoc_unmatched[i].type, errs);
     // A declaration's `@type` needs a call signature that takes its parameters (not a function expression's, which is
     // checked as a value against it)
-    if (span_valid(my jsdoc_signature_span) && !my is_expression && my has_body) {
+    if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && !my is_expression && my has_body) {
         bool mismatch = my jsdoc_signature_mismatch;
-        if (!mismatch && my jsdoc_signature_type) {
-            mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(my jsdoc_signature_type), jsdoc_required_params(me));
+        if (!mismatch && function_impl_rare(me)->jsdoc_signature_type) {
+            mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(function_impl_rare(me)->jsdoc_signature_type), jsdoc_required_params(me));
         }
         if (mismatch) {
-            error_ctx_error_d(errs, my jsdoc_signature_span, 8030, "The type of a function declaration must match the function's signature.");
+            error_ctx_error_d(errs, function_impl_rare(me)->jsdoc_signature_span, 8030, "The type of a function declaration must match the function's signature.");
         }
     }
     // JSDoc `@overload`s: an overload without `@returns` implicitly returns any (TS7012, tsc's reportImplicitAny of a
     // JSDocSignature), and each has to fit the implementation (TS2394): both at the tag's name
-    if (my jsdoc_overload_count && my has_body) {
+    if (function_impl_rare(me)->jsdoc_overload_count && my has_body) {
         FunctionImpl const* overloads[32];
         Span names[32];
         u32 count = 0;
-        for (u32 i = 0; i < my jsdoc_overload_count && count < c_arraylen(overloads); i++) {
-            if (my jsdoc_overloads[i].tag != TYPE_CALLABLE) continue;
-            FunctionImpl const* overload = my jsdoc_overloads[i].callable->function;
+        for (u32 i = 0; i < function_impl_rare(me)->jsdoc_overload_count && count < c_arraylen(overloads); i++) {
+            if (function_impl_rare(me)->jsdoc_overloads[i].tag != TYPE_CALLABLE) continue;
+            FunctionImpl const* overload = function_impl_rare(me)->jsdoc_overloads[i].callable->function;
             Span full = overload->full_span;
             Span tag_name = span_valid(full) && full.sv.size > 1 ?
                 span_make(full.source, full.sv.buf + 1, full.sv.buf + full.sv.size) : full;
@@ -1003,8 +1016,9 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     }
     // (tsc's checkUnmatchedJSDocParameters: a body that uses `arguments` only has its last tag checked, which could
     // stand for it with an array type: a `{...T}` of a function without parameters is one)
-    if (my uses_arguments && my jsdoc_arguments_candidate >= 0 && (u32)my jsdoc_arguments_candidate < my jsdoc_unmatched_count) {
-        JsDocUnmatchedParam const* last = &my jsdoc_unmatched[my jsdoc_arguments_candidate];
+    u32 candidate = function_impl_rare(me)->jsdoc_arguments_candidate;
+    if (my uses_arguments && candidate && candidate - 1 < function_impl_rare(me)->jsdoc_unmatched_count) {
+        JsDocUnmatchedParam const* last = &function_impl_rare(me)->jsdoc_unmatched[candidate - 1];
         bool array = last->variadic ? !my jsdoc_indirect_host && !vec_function_arg_size(&my args) :
             ty_is_array(current_checker, ty_of_node(&last->type));
         if (!array) {
@@ -1012,8 +1026,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
                 "', but there is no parameter with that name. It would match 'arguments' if it had an array type.");
         }
     }
-    for (u32 i = 0; i < my jsdoc_param_issue_count && !my uses_arguments; i++) {
-        JsDocParamIssue const* issue = &my jsdoc_param_issues[i];
+    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_param_issue_count && !my uses_arguments; i++) {
+        JsDocParamIssue const* issue = &function_impl_rare(me)->jsdoc_param_issues[i];
         if (span_valid(issue->left)) {
             error_ctx_error_d(errs, issue->name, 8032, "Qualified name '", issue->name,
                 "' is not allowed without a leading '@param {object} ", issue->left, "'.");
@@ -1059,7 +1073,7 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // (A JSDoc `@type` signature's return type is the function's, what it returns is checked against it: tsc's
     // getReturnTypeFromAnnotation)
     Ty const* tagged_return = !my ret_explicit && !my is_generator &&
-        (my jsdoc_signature_type || my jsdoc_host_type) ? ty_jsdoc_tag_return_type(current_checker, me) : nullptr;
+        (function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) ? ty_jsdoc_tag_return_type(current_checker, me) : nullptr;
     // (An async function's returns are checked against what it awaits to)
     if (tagged_return && my is_async) tagged_return = ty_unwrap_return_type(current_checker, me, tagged_return);
     BlockTypecheckCtx ctx = {
@@ -1068,8 +1082,8 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
         .in_function = true,
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret :
-            my setter_type ? my setter_type : &type_any,
-        .constructed_class = my is_constructor ? my constructed_class : nullptr,
+            function_impl_rare(me)->setter_type ? function_impl_rare(me)->setter_type : &type_any,
+        .constructed_class = my is_constructor ? function_impl_rare(me)->constructed_class : nullptr,
         .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) :
             tagged_return,
         .await_returned = my is_async,

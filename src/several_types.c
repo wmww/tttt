@@ -245,7 +245,7 @@ static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
     Scope const* scope = names;
     while (scope && scope->kind != SCOPE_FUNCTION) scope = scope->parent;
     FunctionImpl const* function = scope ? scope->function : nullptr;
-    Expr const* constructor = function ? function->prototype_of : nullptr;
+    Expr const* constructor = function ? function_impl_rare(function)->prototype_of : nullptr;
     if (!constructor) return nullptr;
     Symbol const* symbol = expr_entity_name_symbol(constructor);
     Generic const* generic = nullptr;
@@ -343,7 +343,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 for (Scope const* s = names; s; s = s->parent) {
                     in_signature |= s->parameters || s->return_type;
                     if (s->kind == SCOPE_FUNCTION) {
-                        if (in_signature && s->function && s->function->is_constructor && s->function->constructed_class) {
+                        if (in_signature && s->function && s->function->is_constructor && function_impl_rare(s->function)->constructed_class) {
                             my this_kind = THIS_CLASS_STATIC;
                         }
                         break;

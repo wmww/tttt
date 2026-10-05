@@ -1526,9 +1526,9 @@ static Expr const* defaulted_initializer(Expr const* value);
 
 static void set_function_class_symbol(Expr* value, Symbol* symbol) {
     value = (Expr*)defaulted_initializer(value);
-    if (value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span) || value->function->class_symbol) return;
+    if (value->tag != EXPR_FUNCTION || span_valid(value->function->arrow_span) || function_impl_rare(value->function)->class_symbol) return;
     SourceFile const* file = value->inner_span.source;
-    if (file && file->is_js) value->function->class_symbol = symbol;
+    if (file && file->is_js) function_impl_rare_mut(value->function)->class_symbol = symbol;
     if (file && file->is_js && symbol) scope_mark_jsdoc_class(symbol->binder, symbol, value->function);
 }
 
@@ -3919,7 +3919,7 @@ static bool symbol_is_expando_host(Symbol const* found, SourceFile const* file, 
 }
 
 static void set_expando_initializer_host(Expr* init, Symbol* host) {
-    if (init && init->tag == EXPR_FUNCTION) init->function->expando_host = host;
+    if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->expando_host = host;
     if (init && init->tag == EXPR_CLASS_DECL) init->class_decl->expando_host = host;
 }
 
@@ -4133,7 +4133,7 @@ static void add_prototype_property(
     }
     if (init && (init->tag != EXPR_FUNCTION || span_valid(init->function->arrow_span))) return;
     if (!init && !(host->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS))) return;
-    if (init) init->function->class_symbol = host;
+    if (init) function_impl_rare_mut(init->function)->class_symbol = host;
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;
     }
@@ -4285,7 +4285,7 @@ static void add_expando_member(
     ) {
         host->flags |= SYMBOL_CLASS;
         if (!symbol_rare(host)->members) symbol_rare_mut(host)->members = arena_new(&my binder->arena, SymbolTable);
-        if (init && init->tag == EXPR_FUNCTION) init->function->class_symbol = host;
+        if (init && init->tag == EXPR_FUNCTION) function_impl_rare_mut(init->function)->class_symbol = host;
     }
 }
 
@@ -4564,7 +4564,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             // `X.prototype.m = function () { this.x = v }` declares x for X, else the function is a constructor
             Symbol* class_symbol = nullptr;
             AssignmentDeclKind kind = ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
-            Expr* assigned_to = (Expr*)this_function->this_assigned_object;
+            Expr* assigned_to = (Expr*)function_impl_rare(this_function)->this_assigned_object;
             Expr const* constructor = assigned_to ? expr_prototype_object(assigned_to) : nullptr;
             // (Not through an import: tsc's lookupSymbolForPropertyAccess finds the alias, which has no valueDeclaration)
             Expr const* root = constructor;
@@ -4575,15 +4575,15 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             if (constructor) {
                 class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(constructor));
                 kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
-            } else if (this_function->prototype_of && this_function->this_literal) {
+            } else if (function_impl_rare(this_function)->prototype_of && function_impl_rare(this_function)->this_literal) {
                 // A method of `F.prototype = { m() { this.x = v } }`: tsc declares x in the literal's members, which
                 // are F's instance members
-                class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(this_function->prototype_of));
+                class_symbol = js_constructor_symbol((Symbol*)expr_entity_name_symbol(function_impl_rare(this_function)->prototype_of));
                 kind = ASSIGNMENT_DECL_THIS_IN_METHOD;
-            } else if (this_function->class_symbol) {
-                class_symbol = this_function->class_symbol; // `ns.C = function () {}` with `ns.C.prototype.m = v`
+            } else if (function_impl_rare(this_function)->class_symbol) {
+                class_symbol = function_impl_rare(this_function)->class_symbol; // `ns.C = function () {}` with `ns.C.prototype.m = v`
             } else if (!assigned_to) {
-                class_symbol = this_function->class_symbol ? this_function->class_symbol :
+                class_symbol = function_impl_rare(this_function)->class_symbol ? function_impl_rare(this_function)->class_symbol :
                     this_function->is_expression ? nullptr : this_function->symbol;
             }
             if (!class_symbol) return;
@@ -4592,7 +4592,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             declare_assignment_member(me, &symbol_rare_mut(class_symbol)->members, class_symbol, name, left, value, jsdoc_type, kind, jsdoc_modifiers);
             // (Its type is what `this.x` is at the end of the constructor function: tsc's getFlowTypeInConstructor)
             Symbol* member = (Symbol*)symbol_table_get(symbol_rare(class_symbol)->members, name.sv);
-            bool literal_method = !constructor && this_function->prototype_of && this_function->this_literal;
+            bool literal_method = !constructor && function_impl_rare(this_function)->prototype_of && function_impl_rare(this_function)->this_literal;
             if (member) member->prototype_literal_member = literal_method && (!existing || existing->prototype_literal_member);
             if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR && member && !symbol_rare(member)->constructor_assigned && function == this_function) {
                 symbol_rare_mut(member)->constructor_assigned = left;

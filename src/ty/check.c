@@ -2298,7 +2298,7 @@ static bool check_accessibility(
     // An abstract property read through `this` while the class initializes (tsc's isNodeUsedDuringClassInitialization:
     // directly in a constructor, or a field's initializer)
     if (this_object && ((site->containing_function &&
-        site->containing_function->constructed_class) || site->initializer_context == INITIALIZER_INSTANCE_FIELD ||
+        function_impl_rare(site->containing_function)->constructed_class) || site->initializer_context == INITIALIZER_INSTANCE_FIELD ||
         site->initializer_context == INITIALIZER_STATIC_FIELD)
     ) {
         ClassDecl const* abstract_class = abstract_member_class(prop, false);
@@ -2932,7 +2932,7 @@ void ty_check_overloads_compatible(
     Checker* me, FunctionImpl const* implementation, Span implementation_name, FunctionImpl const* const* overloads,
     Span const* names, u32 count, ErrorCtx* errs
 ) {
-    Signature const* impl = implementation->jsdoc_overload_count ? ty_implementation_signature(me, implementation) :
+    Signature const* impl = function_impl_rare(implementation)->jsdoc_overload_count ? ty_implementation_signature(me, implementation) :
         ty_function_signature(me, implementation);
     if (!impl) return;
     for (u32 i = 0; i < count; i++) {
@@ -3549,13 +3549,13 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
 bool ty_constructor_accessible(Checker* me, CallExpr const* call, Signature const* sig, Span span, ErrorCtx* errs) {
     while (sig && !sig->function && sig->target) sig = sig->target;
     FunctionImpl const* function = sig ? sig->function : nullptr;
-    if (!function || !function->constructed_class || function->constructor_access == ACCESS_MODIFIER_PUBLIC) {
+    if (!function || !function_impl_rare(function)->constructed_class || function_impl_rare(function)->constructor_access == ACCESS_MODIFIER_PUBLIC) {
         return true;
     }
-    ClassDecl const* declaring = class_decl_of(function->constructed_class);
+    ClassDecl const* declaring = class_decl_of(function_impl_rare(function)->constructed_class);
     if (!declaring || is_within_class(call->enclosing_class, declaring)) return true;
-    Ty const* declaring_type = ty_declared_type_of(me, function->constructed_class);
-    bool is_private = function->constructor_access == ACCESS_MODIFIER_PRIVATE;
+    Ty const* declaring_type = ty_declared_type_of(me, function_impl_rare(function)->constructed_class);
+    bool is_private = function_impl_rare(function)->constructor_access == ACCESS_MODIFIER_PRIVATE;
     // A protected constructor is accessible from a derived class (tsc's typeHasProtectedAccessibleBase)
     if (!is_private && call->enclosing_class && call->enclosing_class->symbol &&
         ty_has_base_type(me, ty_declared_type_of(me, call->enclosing_class->symbol), declaring_type)

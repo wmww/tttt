@@ -3163,7 +3163,7 @@ static Ty const* refined_parameter_type(Checker* me, Expr const* expr, FlowNode*
 
 TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* function) {
     if (!function->has_body || function->is_type || function->is_async || function->is_generator ||
-        function->is_constructor || function->accessor || function->constructed_class
+        function->is_constructor || function->accessor || function_impl_rare(function)->constructed_class
     ) {
         return nullptr;
     }

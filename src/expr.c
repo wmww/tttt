@@ -493,9 +493,9 @@ static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, E
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
-            directly_in_constructor(names) && !span_valid(names->function->first_this_or_super)
+            directly_in_constructor(names) && !span_valid(function_impl_rare(names->function)->first_this_or_super)
         ) {
-            names->function->first_this_or_super = my name;
+            function_impl_rare_mut(names->function)->first_this_or_super = my name;
         }
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, false);
@@ -556,7 +556,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             }
             FunctionImpl const* function = scope && scope->kind == SCOPE_FUNCTION ? scope->function : nullptr;
             if (function && function->is_constructor) {
-                my target = function->constructed_class;
+                my target = function_impl_rare(function)->constructed_class;
             } else if (function && !function->is_method && !function->accessor && !span_valid(function->member_name)) {
                 my target = function->symbol;
                 my this_function = function;
@@ -1683,15 +1683,15 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (binary_op_is_assignment(op) && right->tag == EXPR_FUNCTION && !span_valid(right->function->arrow_span) &&
                 left->tag == EXPR_PROPERTY
             ) {
-                right->function->this_assigned_object = &left->property->expr;
+                function_impl_rare_mut(right->function)->this_assigned_object = &left->property->expr;
             }
             if (op == BINARY_OP_EQUAL && left->tag == EXPR_PROPERTY && left->inner_span.source && left->inner_span.source->is_js) {
                 Expr const* constructor = expr_prototype_object(&left->property->expr);
-                if (constructor && right->tag == EXPR_FUNCTION) right->function->prototype_of = constructor;
+                if (constructor && right->tag == EXPR_FUNCTION) function_impl_rare_mut(right->function)->prototype_of = constructor;
                 constructor = expr_prototype_object(left);
                 if (constructor && right->tag == EXPR_OBJECT) {
                     for_each (i, vec_object_expr_item, &right->object) {
-                        if (i->value.tag == EXPR_FUNCTION) i->value.function->prototype_of = constructor;
+                        if (i->value.tag == EXPR_FUNCTION) function_impl_rare_mut(i->value.function)->prototype_of = constructor;
                     }
                 }
             }
@@ -1943,7 +1943,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                         if (i->tag != OBJECT_ITEM_PROPERTY || i->computed_key || i->value.tag != EXPR_FUNCTION) continue;
                         if (!span_equals(i->name_span, "value") && !span_equals(i->name_span, "get") && !span_equals(i->name_span, "set")) continue;
                         if (span_valid(i->value.function->arrow_span)) continue;
-                        i->value.function->prototype_of = constructor;
+                        function_impl_rare_mut(i->value.function)->prototype_of = constructor;
                     }
                 }
             }
@@ -1965,8 +1965,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 }
                 flow->next_function_is_iife = !callee->function->is_async && !callee->function->is_generator;
                 callee->function->is_iife = true;
-                callee->function->iife_arg_count = (u32)vec_expr_size(&my call->args);
-                callee->function->iife_call = my call;
+                function_impl_rare_mut(callee->function)->iife_arg_count = (u32)vec_expr_size(&my call->args);
+                function_impl_rare_mut(callee->function)->iife_call = my call;
                 expr_lookup_names(&my call->callable, names, errs);
                 flow->next_function_is_iife = false;
                 break;
@@ -1974,10 +1974,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !my call->uses_new) {
                 callee->identifier.super_call = true;
                 // (tsc's findFirstSuperCall looks in the body only)
-                if (names->function && names->function->is_constructor && !names->function->first_super_call &&
+                if (names->function && names->function->is_constructor && !function_impl_rare(names->function)->first_super_call &&
                     names->no_super != NO_SUPER_CONSTRUCTOR_ARGS
                 ) {
-                    names->function->first_super_call = me;
+                    function_impl_rare_mut(names->function)->first_super_call = me;
                 }
             } else if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
                 // `new super()` isn't a super call: super is the base instance like in `super.x` (tsc's
@@ -2039,7 +2039,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // (`a: () => {}` is named by the property: tsc's getAssignedName)
                     else if (!expr_is_perenthisized(&i->value)) i->value.function->variable_name = i->name_span;
                     // tsc's getContainingObjectLiteral: methods, accessors, `a: function () {}` (not arrows)
-                    if (!span_valid(i->value.function->arrow_span)) i->value.function->this_literal = me;
+                    if (!span_valid(i->value.function->arrow_span)) function_impl_rare_mut(i->value.function)->this_literal = me;
                 }
                 // (A computed name pairs when late bound, an entity name or a literal, by its text like a class's)
                 Expr const* own_key = i->computed_key;

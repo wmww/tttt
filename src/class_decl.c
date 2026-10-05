@@ -112,7 +112,7 @@ static Ty const* field_type_from_assignments(Checker* checker, ClassItem const* 
             if (ret) return ret;
         }
         if (!my field.is_static && i->tag == CLASS_ITEM_CONSTRUCTOR && i->constructor.func.has_body) {
-            FlowNode const* end = i->constructor.func.return_flow;
+            FlowNode const* end = function_impl_rare(&i->constructor.func)->return_flow;
             return end ? field_flow_type(checker, my field.ts_assigned, end) : nullptr;
         }
     }
@@ -355,7 +355,7 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
                 scope->decorated_static_field = true;
             }
             if (static_members && i->tag == CLASS_ITEM_METHOD && !i->method.computed_key && !i->method.accessor) {
-                i->method.func.static_method_of = my symbol;
+                function_impl_rare_mut(&i->method.func)->static_method_of = my symbol;
             }
             if (i->tag == CLASS_ITEM_METHOD) i->method.func.in_class_expression = my is_expression;
             class_item_lookup_names(i, scope, errs);
@@ -423,7 +423,7 @@ static void link_overload_implementations(ClassDecl* me) {
                 j->tag == CLASS_ITEM_METHOD && j->method.func.has_body && j->symbol_first == i->symbol_first
             ) {
                 FunctionImpl* overload = is_constructor ? &i->constructor.func : &i->method.func;
-                overload->overload_implementation = is_constructor ? &j->constructor.func : &j->method.func;
+                function_impl_rare_mut(overload)->overload_implementation = is_constructor ? &j->constructor.func : &j->method.func;
                 break;
             }
         }
@@ -486,8 +486,8 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
             }
             check(i->constructor.func.ret.tag == TYPE_ANY);
             i->constructor.func.ret_explicit = false;
-            i->constructor.func.constructed_class = my symbol;
-            i->constructor.func.constructor_access = (uint8_t)i->access;
+            function_impl_rare_mut(&i->constructor.func)->constructed_class = my symbol;
+            function_impl_rare_mut(&i->constructor.func)->constructor_access = (uint8_t)i->access;
         }
     }
 
@@ -626,7 +626,7 @@ static bool contains_undefined(Ty const* ty) {
 static bool field_initialized_in_constructor(
     Checker* checker, ClassDecl const* me, ClassItem const* field, Ty const* type, ClassItem const* constructor
 ) {
-    FlowNode const* end = constructor->constructor.func.return_flow;
+    FlowNode const* end = function_impl_rare(&constructor->constructor.func)->return_flow;
     if (!end || flow_is_unreachable(end)) return true;
     Expr const* reference = field->field.ts_assigned;
     if (!reference && my computed_this_assignments.size) {
@@ -1050,15 +1050,15 @@ static void class_check_base_accessibility(ClassDecl* me, ErrorCtx* errs) {
     Signature const* sig = members->construct[0];
     while (sig && !sig->function && sig->target) sig = sig->target;
     FunctionImpl const* function = sig ? sig->function : nullptr;
-    if (!function || !function->constructed_class || function->constructor_access != ACCESS_MODIFIER_PRIVATE) return;
-    ClassDecl const* base = symbol_find_node(function->constructed_class, SYMBOL_DECL_CLASS);
+    if (!function || !function_impl_rare(function)->constructed_class || function_impl_rare(function)->constructor_access != ACCESS_MODIFIER_PRIVATE) return;
+    ClassDecl const* base = symbol_find_node(function_impl_rare(function)->constructed_class, SYMBOL_DECL_CLASS);
     if (base && span_valid(base->full_span) && base->full_span.source == extends->inner_span.source &&
         span_start_ptr(base->full_span) <= span_start_ptr(extends->inner_span) &&
         span_end_ptr(extends->inner_span) <= span_end_ptr(base->full_span)
     ) {
         return;
     }
-    cstr name = symbol_fully_qualified_name(function->constructed_class);
+    cstr name = symbol_fully_qualified_name(function_impl_rare(function)->constructed_class);
     error_ctx_error_d(errs, my extends.inner_span, 2675, "Cannot extend a class '", name,
         "'. Class constructor is marked as private.");
     cstr_drop(&name);
@@ -1216,7 +1216,7 @@ static void check_super_call_root(Span name, FunctionImpl const* func, Expr cons
             "identifiers.");
         return;
     }
-    Span first = func->first_this_or_super;
+    Span first = function_impl_rare(func)->first_this_or_super;
     Span body = block_span(&func->body);
     if (span_valid(first) && span_valid(body) && span_start_ptr(first) >= span_start_ptr(body) &&
         span_start_ptr(first) < span_start_ptr(statement->span)
@@ -1923,7 +1923,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 function_impl_typecheck(&i->constructor.func, errs);
                 // tsc's checkConstructorDeclaration
                 if (i->constructor.func.has_body && my extends.tag != EXPR_IMPLICIT_ANY) {
-                    Expr const* super_call = i->constructor.func.first_super_call;
+                    Expr const* super_call = function_impl_rare(&i->constructor.func)->first_super_call;
                     bool extends_null = my extends.tag == EXPR_LITERAL && my extends.literal.tag == VALUE_NULL;
                     if (super_call && extends_null) {
                         error_ctx_error_d(errs, super_call->inner_span, 17005,

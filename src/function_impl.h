@@ -82,35 +82,17 @@ typedef struct TypePredicateNode {
     Span span; // The whole predicate, `asserts` included
 } TypePredicateNode;
 
-typedef struct FunctionImpl {
-    Span name;
-    Span full_span;
-    Generic generic;
-    VecFunctionArg args;
-    Span args_span;
-    Span ret_span;
-    bool ret_explicit;
-    TypeNode ret;
-    TypePredicateNode* predicate; // Usually null
-    bool is_constructor;
-    bool is_method; // Declared with method syntax (parameters compare bivariantly)
-    bool is_async;
-    bool is_generator;
+// What few functions have: JavaScript and JSDoc, constructors, generators, IIFEs, methods' links set when resolving.
+// Read through function_impl_rare(), written through function_impl_rare_mut()
+typedef struct FunctionImplRare {
     Span asterisk; // The `*` of a generator
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
-    bool is_abstract_constructor;
     struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
     // A constructor: its first `this` or `super.x` (not `super(...)`), not in a nested function or arrow function
     Span first_this_or_super;
     Symbol const* constructed_class; // The constructor of a class: what it returns
     uint8_t constructor_access; // The constructor of a class: its AccessModifier (class_decl.h)
-    bool is_type; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
-    bool jsdoc_type; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
     Span jsdoc_new; // The `new` of a JSDoc `function(new: T, ...)` (what T is for), a parameter to tsc's baselines
-    bool jsdoc_unchecked; // In a tag tsc's checker doesn't visit (`@returns`): no TS7014
-    // A JSDoc `@callback`'s signature: tsc's isTypeParameterPossiblyReferenced finds no container on the way up from it
-    // (the template tags are its siblings), so it may reference every type parameter in scope
-    bool jsdoc_callback;
     // A function expression typed by the JSDoc `@type` of the variable it initializes: the return type node of that
     // signature, which tsc reuses when it prints the function's type (getReturnTypeOfTypeTag). Display only
     struct TypeNode const* jsdoc_tag_ret;
@@ -121,79 +103,27 @@ typedef struct FunctionImpl {
     // arguments as it needs: tsc's getContextualCallSignature in checkFunctionOrMethodDeclaration). The mismatch of a
     // written signature, which the parser moves into the function, is found by the parser
     Span jsdoc_signature_span;
-    bool jsdoc_signature_mismatch;
-    // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
-    // untyped signature whose arguments are all optional
-    bool jsdoc_typed;
-    // JavaScript: its JSDoc has `@class`/`@constructor`: a constructor function even without `this.x = v` (tsc's
-    // isJSConstructor: getJSDocClassTag)
-    bool jsdoc_class;
-    // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
-    bool uses_arguments;
-    LazyType lazy_type;
-    Symbol* symbol;
-    Span arrow_span;
-    // needed because TS1200 needs to be inserted in the typecheck phase for some reason
-    bool newline_before_arrow;
-    bool has_body;
-    // The parser lost the body's `{` (`function f() => 4`, tsc's missing Block): no body, but not an overload waiting
-    // for its implementation either (tsc checks `!body` there)
-    bool body_missing;
-    bool private_ambient; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
-    bool ambient; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
-    bool expression_body; // An arrow function whose body is an expression (a synthesized `return`)
-    // A declaration no type parameter list encloses (not an expression, whose context may have some, nor a method, nor
-    // JavaScript): its type mentions no type parameters but its own (tsc's getOuterTypeParameters is empty), so
-    // instantiating it is the identity. Set by the resolve walk
-    bool no_outer_type_params;
-    // No type parameter list encloses it, nor a class (whose `this` its type could mention), and it isn't JavaScript:
-    // unlike no_outer_type_params also for expressions and object literal methods. Their types mention no type
-    // parameters but those of their own signatures (tsc's getOuterTypeParameters is empty: instantiating one is the
-    // identity). Set by the resolve walk
-    bool no_enclosing_type_params;
-    Block body; // Initialized to empty block if has_body is false
-    // Control flow (flow.h), set by the resolve walk
-    FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
-    // A method or accessor of a class expression: narrowing continues into it like into a function expression (tsc's
-    // isObjectLiteralOrClassExpressionMethodOrAccessor), it has an outer_flow
-    bool in_class_expression;
-    FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
     FlowNode* return_flow; // Constructors: every way out
-    bool has_explicit_return; // A reachable `return`
-    bool has_bare_return; // A reachable `return;`
     struct Expr const** yields; // Generators: every `yield` of the body, in source order (malloc'd, owned)
     u32 yield_count;
     // JavaScript: the `@param` tags that name no parameter (tsc's checkUnmatchedJSDocParameters): TS8024 for a name,
     // TS8032 for a qualified name without its object (`left` valid). Found by the parser, reported when checking
-    struct JsDocParamIssue* jsdoc_param_issues; // Owned
     u32 jsdoc_param_issue_count;
-    bool jsdoc_params_checked;
+    struct JsDocParamIssue* jsdoc_param_issues; // Owned
     JsDocUnmatchedParam* jsdoc_unmatched; // Owned
     u32 jsdoc_unmatched_count;
-    // The last `@param` tag when it names no parameter (an index into jsdoc_unmatched, else -1): what `arguments` could
-    // be (tsc's checkUnmatchedJSDocParameters: TS8029 unless its type is an array)
-    int jsdoc_arguments_candidate;
-    // Its JSDoc is its return statement's: tsc's getHostSignatureFromJSDoc doesn't find it (a `{...T}` tag isn't an array)
-    bool jsdoc_indirect_host;
-    Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
+    // The last `@param` tag when it names no parameter (its index into jsdoc_unmatched plus one, else 0): what
+    // `arguments` could be (tsc's checkUnmatchedJSDocParameters: TS8029 unless its type is an array)
+    u32 jsdoc_arguments_candidate;
     // An overload signature of a class method or constructor: the first declaration of its symbol with a body (tsc's
     // addImplementationSuccessElaboration looks there). Set by the resolve walk
     struct FunctionImpl const* overload_implementation;
     struct Symbol const* static_method_of; // A static method's class (display: `typeof C.m`), set by the resolve walk
-    Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
-    uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
     // A getter without a return type annotation whose setter's parameter has one: that annotation, which is the
     // getter's return type (tsc's getReturnTypeFromAnnotation). Set by the resolve walk
     TypeNode const* setter_type;
-    bool is_expression; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
-    // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated
-    // parameters past the call's argument count are optional
-    bool is_iife;
-    u32 iife_arg_count;
+    u32 iife_arg_count; // See FunctionImpl.is_iife
     struct CallExpr const* iife_call; // The call it is the callee of, when is_iife
-    // Inside a call expression or an annotated declaration's initializer (FlowBuilder.contextual_depth): the types
-    // baseline doesn't type its single returned expression syntactically
-    bool syntactically_contextual;
     // What a `this` in it may be typed by (tsc's getContextualThisParameterType), set when resolving: the object literal
     // it is a method (or function-valued property) of, or the object of the property it is assigned to (`o.m = function`)
     struct Expr const* this_literal;
@@ -215,7 +145,90 @@ typedef struct FunctionImpl {
     // instead of its own (tsc's getSignaturesOfSymbol)
     TypeNode* jsdoc_overloads;
     u32 jsdoc_overload_count;
+} FunctionImplRare;
+
+typedef struct FunctionImpl {
+    Span name;
+    Span full_span;
+    Generic generic;
+    VecFunctionArg args;
+    Span args_span;
+    Span ret_span;
+    TypeNode ret;
+    TypePredicateNode* predicate; // Usually null
+    FunctionImplRare* rare; // Owned, null if none of its fields is set
+    LazyType lazy_type;
+    Symbol* symbol;
+    Span arrow_span;
+    Block body; // Initialized to empty block if has_body is false
+    // Control flow (flow.h), set by the resolve walk
+    FlowNode* outer_flow; // Function expressions, arrows, object literal methods: the flow of the container it's made in
+    FlowNode* end_flow; // The end of the body if control can get there (before typed reachability), else null
+    Span member_name; // Methods and accessors of classes and object literals (`name` is for what declares a symbol)
+    Span variable_name; // A function expression or arrow function that initializes a variable: its name (display)
+    uint8_t accessor; // 1: a getter, 2: a setter (of a class or an object literal)
+    bool ret_explicit : 1;
+    bool is_constructor : 1;
+    bool is_method : 1; // Declared with method syntax (parameters compare bivariantly)
+    bool is_async : 1;
+    bool is_generator : 1;
+    bool is_abstract_constructor : 1;
+    bool is_type : 1; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
+    bool jsdoc_type : 1; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
+    bool jsdoc_unchecked : 1; // In a tag tsc's checker doesn't visit (`@returns`): no TS7014
+    // A JSDoc `@callback`'s signature: tsc's isTypeParameterPossiblyReferenced finds no container on the way up from it
+    // (the template tags are its siblings), so it may reference every type parameter in scope
+    bool jsdoc_callback : 1;
+    bool jsdoc_signature_mismatch : 1; // See FunctionImplRare.jsdoc_signature_span
+    // JavaScript: its JSDoc has `@param` or `@type` tags (tsc's hasJSDocParameterTags || getJSDocType), so it isn't an
+    // untyped signature whose arguments are all optional
+    bool jsdoc_typed : 1;
+    // JavaScript: its JSDoc has `@class`/`@constructor`: a constructor function even without `this.x = v` (tsc's
+    // isJSConstructor: getJSDocClassTag)
+    bool jsdoc_class : 1;
+    // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
+    bool uses_arguments : 1;
+    // needed because TS1200 needs to be inserted in the typecheck phase for some reason
+    bool newline_before_arrow : 1;
+    bool has_body : 1;
+    // The parser lost the body's `{` (`function f() => 4`, tsc's missing Block): no body, but not an overload waiting
+    // for its implementation either (tsc checks `!body` there)
+    bool body_missing : 1;
+    bool private_ambient : 1; // A private method of an ambient class: no implicit any errors (tsc's isPrivateWithinAmbient)
+    bool ambient : 1; // Declared in an ambient context (`declare`, a declaration file), where it can't have a body
+    bool expression_body : 1; // An arrow function whose body is an expression (a synthesized `return`)
+    // A declaration no type parameter list encloses (not an expression, whose context may have some, nor a method, nor
+    // JavaScript): its type mentions no type parameters but its own (tsc's getOuterTypeParameters is empty), so
+    // instantiating it is the identity. Set by the resolve walk
+    bool no_outer_type_params : 1;
+    // No type parameter list encloses it, nor a class (whose `this` its type could mention), and it isn't JavaScript:
+    // unlike no_outer_type_params also for expressions and object literal methods. Their types mention no type
+    // parameters but those of their own signatures (tsc's getOuterTypeParameters is empty: instantiating one is the
+    // identity). Set by the resolve walk
+    bool no_enclosing_type_params : 1;
+    // A method or accessor of a class expression: narrowing continues into it like into a function expression (tsc's
+    // isObjectLiteralOrClassExpressionMethodOrAccessor), it has an outer_flow
+    bool in_class_expression : 1;
+    bool has_explicit_return : 1; // A reachable `return`
+    bool has_bare_return : 1; // A reachable `return;`
+    bool jsdoc_params_checked : 1;
+    // Its JSDoc is its return statement's: tsc's getHostSignatureFromJSDoc doesn't find it (a `{...T}` tag isn't an array)
+    bool jsdoc_indirect_host : 1;
+    bool is_expression : 1; // A function expression, arrow function or object literal method (FUNCTION_IS_EXPRESSION)
+    // The callee of a call (tsc's getImmediatelyInvokedFunctionExpression), set by the resolve walk: its unannotated
+    // parameters past the call's argument count are optional
+    bool is_iife : 1;
+    // Inside a call expression or an annotated declaration's initializer (FlowBuilder.contextual_depth): the types
+    // baseline doesn't type its single returned expression syntactically
+    bool syntactically_contextual : 1;
 } FunctionImpl;
+
+extern const FunctionImplRare function_impl_no_rare;
+static inline FunctionImplRare const* function_impl_rare(FunctionImpl const* me) {
+    return me->rare ? me->rare : &function_impl_no_rare;
+}
+// Allocates them if needed
+FunctionImplRare* function_impl_rare_mut(FunctionImpl* me);
 
 void function_impl_drop(FunctionImpl* me);
 // tsc's getErrorSpanForNode() of a function: its name, else an arrow function up to the end of its first line, else

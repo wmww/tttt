@@ -1674,7 +1674,7 @@ static bool is_class_overload_implementation(ClassDecl const* cls, FunctionImpl 
     for_each (i, vec_class_item, &cls->items) {
         FunctionImpl const* other = i->tag == CLASS_ITEM_METHOD ? &i->method.func :
             i->tag == CLASS_ITEM_CONSTRUCTOR ? &i->constructor.func : nullptr;
-        if (other && other != fn && other->overload_implementation == fn) return true;
+        if (other && other != fn && function_impl_rare(other)->overload_implementation == fn) return true;
     }
     return false;
 }
