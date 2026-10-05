@@ -50228,7 +50228,7 @@ const baselines = {
     'generatorYieldContextualType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParameterInDownlevelGenerator': {
         errors: true,

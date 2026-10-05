@@ -246,6 +246,8 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         if (!info) return ty_intrinsic(me, TY_ANY);
         return include_undefined ? with_missing(me, info->value) : info->value;
     }
+    // (A generic intersection, `keyof T & string`, is a generic index: the access is deferred, tsc's getIndexedAccessType)
+    if (index->kind == TY_INTERSECTION && ty_is_generic_index(index)) return nullptr;
     bool simple = (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM)) != 0;
     if (!simple) return nullptr;
 
