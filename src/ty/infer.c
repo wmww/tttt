@@ -1181,10 +1181,20 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         if (naked_count == 1 && !circularity) {
             if (unmatched_len) infer_from(me, inf, ty_union(me, unmatched, unmatched_len, nullptr, (TyList){0}), naked);
         } else {
-            // (A walk above was cut short, so which sources were used up isn't known: the whole source, less directly)
+            // (A walk above was cut short, so which sources were used up isn't known: the whole source, less directly.
+            // Less what matched a member above: tsc's inferFromTypes reduces the source before inferToMultipleTypes,
+            // `Promise<A> | A` to `T | U | Promise<T | U>` infers A to T and U)
+            Ty const* rest = source;
+            if (sources_left < sources.len) {
+                u32 len = 0;
+                for (u32 s = 0; s < sources.len; s++) {
+                    if (!source_done[s]) unmatched[len++] = sources.data[s];
+                }
+                rest = ty_union(me, unmatched, len, nullptr, (TyList){0});
+            }
             for (u32 t = 0; t < targets.len; t++) {
                 if (!target_done[t] && inference_param(inf, targets.data[t])) {
-                    infer_with_priority(me, inf, source, targets.data[t], INFER_PRIORITY_NAKED_TYPE_VARIABLE);
+                    infer_with_priority(me, inf, rest, targets.data[t], INFER_PRIORITY_NAKED_TYPE_VARIABLE);
                 }
             }
         }
