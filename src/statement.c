@@ -15,6 +15,8 @@ static cstr reference_path_for_message(csview containing, csview reference);
 #include "unused.h"
 #include "module_resolution.h"
 
+static void export_assignment_check_isolated(Statement const* me, Scope* names, ErrorCtx* errs);
+
 // Variable initialization
 
 void variable_statement_drop(VariableStatement* me) {
@@ -1496,6 +1498,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
 
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
             // `export = x` doesn't use x before its declaration: the emit moves it (tsc)
+            export_assignment_check_isolated(me, names, errs);
             bool saved_type_query = flow->in_type_query;
             if (my export_equals && my expr.tag == EXPR_IDENTIFIER) flow->in_type_query = true;
             flow->type_only_alias_ok = my expr.tag == EXPR_IDENTIFIER;
@@ -2473,4 +2476,122 @@ ForEachLoopStatement const* scope_for_in_loop_of(Scope const* names, Symbol cons
         if (symbol && symbol == variable && (symbol->flags & SYMBOL_VARIABLE)) return loop;
     }
     return nullptr;
+}
+
+// tsc's checkExportAssignment under isolatedModules/verbatimModuleSyntax: `export default x`/`export = x` of a type,
+// or of something imported or exported as a type only, which a transpiler can't tell from a value; `export default`
+// in a file emitted as CommonJS
+static void export_assignment_check_isolated(Statement const* me, Scope* names, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->isolated_modules && !options->verbatim_module_syntax) return;
+    SourceFile const* file = names->file;
+    if (!file) return;
+    bool ambient = file->is_declaration;
+    for (Scope const* scope = names; scope && !ambient; scope = scope->parent) ambient = scope->ambient;
+    if (ambient) return;
+    bool export_equals = my export_equals;
+    bool illegal_in_cjs = !export_equals && options->verbatim_module_syntax &&
+        source_file_emit_module_kind(file) == MODULE_KIND_COMMONJS;
+    if (illegal_in_cjs) {
+        error_ctx_error_d(errs, span_with_semicolon(my span), 1286,
+            "ESM syntax is not allowed in a CommonJS module when 'verbatimModuleSyntax' is enabled.");
+        return;
+    }
+    if (my expr.tag != EXPR_IDENTIFIER || my expr.identifier.keyword || expr_is_perenthisized(&my expr)) return;
+    Span id = my expr.identifier.name;
+    Symbol* symbol = scope_resolve(names, id.sv, SYMBOL_ANY_MEANING);
+    if (!symbol || symbol->is_placeholder) return;
+    // (tsc's getTypeOnlyAliasDeclaration(symbol, Value): only when what it names is a value)
+    PortItem const* type_only = symbol_type_only_declaration(symbol);
+    if (type_only) {
+        Symbol* named = type_only->symbol ? type_only->symbol : symbol;
+        if (named->flags & SYMBOL_ALIAS) named = symbol_resolve_alias(named);
+        if (!named || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) type_only = nullptr;
+    }
+    const char* what = export_equals ? "An 'export =' declaration" : "An 'export default'";
+    if (options->verbatim_module_syntax) {
+        if (!(symbol_resolved_flags(symbol) & SYMBOL_VALUE)) {
+            error_ctx_error_d(errs, id, export_equals ? 1282 : 1284, what, " must reference a value when "
+                "'verbatimModuleSyntax' is enabled, but '", id, "' only refers to a type.");
+        } else if (type_only) {
+            error_ctx_error_d(errs, id, export_equals ? 1283 : 1285, what, " must reference a real value when "
+                "'verbatimModuleSyntax' is enabled, but '", id, "' resolves to a type-only declaration.");
+        }
+    }
+    if (symbol->flags & SYMBOL_VALUE) return;
+    const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
+    Symbol const* target = symbol->flags & SYMBOL_ALIAS ? symbol_resolve_alias(symbol) : nullptr;
+    u32 non_local = target && !target->is_placeholder ? symbol_resolved_flags(target) : 0;
+    SourceFile const* type_only_file = type_only ? type_only->decl_name.source : nullptr;
+    bool elsewhere = type_only && type_only_file != file;
+    if (non_local & SYMBOL_TYPE && !(non_local & SYMBOL_VALUE) && (!type_only || elsewhere)) {
+        if (export_equals) {
+            error_ctx_error_d(errs, id, 1291, "'", id, "' resolves to a type and must be marked type-only in this file "
+                "before re-exporting when '", flag, "' is enabled. Consider using 'import type' where '", id, "' is imported.");
+        } else {
+            error_ctx_error_d(errs, id, 1292, "'", id, "' resolves to a type and must be marked type-only in this file "
+                "before re-exporting when '", flag, "' is enabled. Consider using 'export type { ", id, " as default }'.");
+        }
+    } else if (elsewhere) {
+        Error* error = export_equals ?
+            error_ctx_error_d(errs, id, 1289, "'", id, "' resolves to a type-only declaration and must be marked "
+                "type-only in this file before re-exporting when '", flag, "' is enabled. Consider using 'import type' "
+                "where '", id, "' is imported.") :
+            error_ctx_error_d(errs, id, 1290, "'", id, "' resolves to a type-only declaration and must be marked "
+                "type-only in this file before re-exporting when '", flag, "' is enabled. Consider using "
+                "'export type { ", id, " as default }'.");
+        port_item_add_type_only_related(error, type_only, id.sv);
+    }
+}
+
+// The `export` keyword of a declaration statement (after its decorators, if any)
+static Span export_keyword_of(Span statement) {
+    char const* start = span_start_ptr(statement);
+    char const* end = span_end_ptr(statement);
+    for (char const* p = start; p + 6 <= end; p++) {
+        if (memcmp(p, "export", 6) != 0) continue;
+        bool before = p > start && (isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '$');
+        bool after = p + 6 < end && (isalnum((unsigned char)p[6]) || p[6] == '_' || p[6] == '$');
+        if (!before && !after) return span_make(statement.source, p, p + 6);
+    }
+    return span_null;
+}
+
+void source_file_check_verbatim_exports(SourceFile const* file, ErrorCtx* errs) {
+    // tsc's checkGrammarModifiers and checkModuleDeclaration under verbatimModuleSyntax: a top-level `export` of
+    // something with a value can't be written as is in a file emitted as CommonJS (a namespace only when instantiated)
+    if (!compiler_options()->verbatim_module_syntax || file->is_declaration) return;
+    if (source_file_emit_module_kind(file) != MODULE_KIND_COMMONJS) return;
+    const char* message = "A top-level 'export' modifier cannot be used on value declarations in a CommonJS module when "
+        "'verbatimModuleSyntax' is enabled.";
+    for_each (i, vec_statement, &file->ast.statements) {
+        bool grammar = true;
+        switch (i->tag) {
+            case STATEMENT_DECL_VARIABLE:
+            case STATEMENT_DECL_FUNCTION:
+            case STATEMENT_DECL_CLASS:
+            case STATEMENT_DECL_ENUM:
+                if (i->decl.props.exported == DECL_EXPORTED_NO || i->decl.props.declared) continue;
+                break;
+            case STATEMENT_DECL_NAMESPACE:
+                if (i->decl.props.exported == DECL_EXPORTED_NO || i->decl.props.declared) continue;
+                if (i->decl.namespace.is_global || i->decl.namespace.is_ambient_module) continue;
+                if (!namespace_decl_is_instantiated(&i->decl.namespace)) continue;
+                grammar = false;
+                break;
+            case STATEMENT_IMPORT_EXPORT:
+                // (`export import a = N.b`)
+                if (!i->import_export->main.export_import || i->import_export->main.declared) continue;
+                break;
+            default:
+                continue;
+        }
+        Span at = export_keyword_of(i->span);
+        if (!span_valid(at)) continue;
+        if (grammar) {
+            error_ctx_grammar_error_d(errs, at, 1287, message);
+        } else {
+            error_ctx_error_d(errs, at, 1287, message);
+        }
+    }
 }

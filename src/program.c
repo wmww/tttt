@@ -2390,6 +2390,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
         checker->file_order = index - 1;
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
+        source_file_check_verbatim_exports(source, checker->errs);
         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
     }
     // After its files are checked: the checker marks members it reads

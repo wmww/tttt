@@ -3212,19 +3212,29 @@ void binder_link(Binder* me) {
         u32 excluded = (target_flags & SYMBOL_VALUE ? SYMBOL_VALUE : 0) |
             (target_flags & SYMBOL_TYPE ? SYMBOL_TYPE : 0) |
             (target_flags & SYMBOL_NAMESPACE ? SYMBOL_NAMESPACE : 0);
-        if (!(local_flags & excluded)) continue;
         PortItem const* item = symbol->alias->item;
         ErrorCtx* errs = symbol->alias->scope->errs;
+        // tsc reports on the import specifier (`a as b`), or the whole `import a = b.c`
+        Span at = item->decl_name;
+        if (item->tag == PORT_IMPORT_ALIAS) at = span_with_semicolon(item->full_span);
+        if (item->tag == PORT_IMPORT_SPECIFIC && span_valid(item->source_name)) {
+            at = span_between(item->source_name, item->decl_name);
+        }
+        if (!(local_flags & excluded)) {
+            // An import merged with a local value looks like a value to a transpiler (isolatedModules itself, not
+            // verbatimModuleSyntax, which says the import needs `type` anyway)
+            if (compiler_options()->isolated_modules && !port_item_is_export(item) && !item->type_only &&
+                !item->type_modifier && local_flags & SYMBOL_VALUE
+            ) {
+                error_ctx_error_d(errs, at, 2865, "Import '", item->decl_name, "' conflicts with local value, so must "
+                    "be declared with a type-only import when 'isolatedModules' is enabled.");
+            }
+            continue;
+        }
         if (port_item_is_export(item)) {
             error_ctx_error_d(errs, item->full_span, 2484,
                 "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
         } else {
-            // tsc reports on the import specifier (`a as b`), or the whole `import a = b.c`
-            Span at = item->decl_name;
-            if (item->tag == PORT_IMPORT_ALIAS) at = span_with_semicolon(item->full_span);
-            if (item->tag == PORT_IMPORT_SPECIFIC && span_valid(item->source_name)) {
-                at = span_between(item->source_name, item->decl_name);
-            }
             error_ctx_error_d(errs, at, 2440,
                 "Import declaration conflicts with local declaration of '", item->decl_name, "'.");
         }
