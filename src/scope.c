@@ -3290,11 +3290,21 @@ static void merge_into_exports(Binder* binder, Symbol* owner, csview name, Symbo
             return;
         }
     }
+    bool conflict = (existing->flags & excluded_flags(source->flags)) != 0;
     merge_symbol(binder, existing, source, errs);
     // (What `export *` brought is then the module's own export too, which the augmentation's blocks see: tsc's
-    // mergeModuleAugmentation merges into the resolved export, then the augmentation into the module)
-    if (from_star && existing->binder == binder && !(existing->flags & excluded_flags(source->flags))) {
+    // mergeModuleAugmentation merges into the resolved export, then the augmentation into the module. After a
+    // conflict, the augmentation's own declaration: mergeSymbolTable then adds the source)
+    if (from_star && existing->binder == binder && !conflict) {
         symbol_table_insert(owner->exports, binder_arena(binder), name, hash, existing);
+    } else if (from_star && conflict) {
+        symbol_table_insert(owner->exports, binder_arena(binder), name, hash, source);
+        if (owner->module->resolved_exports_state == ALIAS_DONE) {
+            i32 at = symbol_table_own_index(owner->module->resolved_exports, name, hash);
+            if (at >= 0) owner->module->resolved_exports->entries[at].symbol = source;
+            else symbol_table_insert(owner->module->resolved_exports, binder_arena(binder), name, hash, source);
+        }
+        source->parent = owner;
     }
 }
 
