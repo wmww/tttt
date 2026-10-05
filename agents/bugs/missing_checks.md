@@ -226,3 +226,27 @@ checked for union tag types or inside an overload chain; TS2604 on a union of ta
   `@ts-expect-error`). Not reduced.
 - mappedTypes6: `-?` template elaboration (tsc's NonNullable<T[P]> display and chain).
 
+
+## Errors tail, "both missing and spurious" list (fan-out 6, agent c, 2026-10-05)
+What was left of that list after its fixes, by root cause (the rest went to agent p, /tmp/fo6/p2.txt):
+- Local vs export symbol split: tsc keeps one local symbol per block for a name's exported and local declarations,
+  tttt two symbols (function_local_symbol_decls() and check_export_merge() patch over it). Still wrong:
+  multipleExports (`export {x}` in a namespace whose other block exports x: TS2484), conflictingDeclarationsImportFromNamespace1/2
+  (`import * as pick` + `export const pick` merge, tsc's TS7023 circularity), checkerInitializationCrash and
+  jsExportMemberMergedWithModuleAugmentation2 (duplicates across an import and a declaration: TS2300 vs our TS2440/TS2671),
+  overloadModifiersMustAgree/functionOverloadErrors types (tsc's local symbol has all of a block's overloads).
+- `export *` / `export =` interop: es6ExportEqualsInterop (TS2305 for `import { a }` of an interface `export =`, no
+  TS2308 between export= modules), exportAsNamespace_augment (TS2451 across a UMD global augmentation).
+- Circularity where tsc finds one: circularOptionalityRemoval (a parameter's default reading itself: TS2502),
+  limitDeepInstantiations (TS2589 at the reference, we say TS2502), circularInlineMappedGenericTupleTypeNoCrash (TS2589),
+  circularlyReferentialInterfaceAccessNoCrash (TS4109/TS4110 counts), circularConstraintYieldsAppropriateError (TS2310).
+- Type core (agents/bugs/type_core.md): distributiveConditionalTypeConstraints (constraint of a distributive conditional
+  type is `boolean`, we print `IsArray<T>`), mappedTypeNotMistakenlyHomomorphic (Gen2<ABC.A> vs B relation),
+  mappedTypeRecursiveInference (we hit TS2589), inferFromGenericFunctionReturnTypes3, baseConstraintOfDecorator,
+  contextuallyTypedParametersOptionalInJSDoc (JSDoc optional parameter contextual typing), mixinAccessModifiers
+  (protected members of `Protected & Protected2`: tsc names the intersection, no TS2415/TS2446 there).
+- declarationEmitBindingPatternsUnused: TS2842 only reported once by tsc, and `typeof alias` in a call signature's
+  return type should see the signature's binding pattern names (we say TS2304).
+- asyncFunctionDeclaration15_es5/16_es5: TS1055/TS1065 for a class annotation (`Thenable`) whose construct signature
+  isn't PromiseLike (check_es5_async_return_annotation).
+- libTypeScriptOverrideSimpleConfig/SubfileResolvingConfig: `@typescript/lib-*` package resolution of the lib.
