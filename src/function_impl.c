@@ -589,7 +589,9 @@ static void binding_check_unused_renamings(FunctionImpl const* function, Binding
                 continue;
             }
             if (target->symbol && (target->symbol->referenced || signature_queries(function, target->symbol))) continue;
-            Error* e = error_ctx_error_d(errs, target->content_span, 2842, "'", target->content_span,
+            // (declarationNameToString: a name recovery left missing is "(Missing)")
+            csview name = target->content_span.sv.size ? target->content_span.sv : c_sv("(Missing)");
+            Error* e = error_ctx_error_d(errs, target->content_span, 2842, "'", name,
                 "' is an unused renaming of '", i->source_span, "'. Did you intend to use it as a type annotation?");
             if (e && !arg->initializer.binding.has_explicit_type) {
                 Span end = { .source = arg->span.source, .sv = csview_from_n(arg->span.sv.buf + arg->span.sv.size, 0) };
@@ -929,7 +931,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
             error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
                 "' implicitly has an 'any[]' type.");
         } else {
-            binding_add_implicit_any_type_errors(&i->initializer.binding, i->span, errs);
+            binding_add_implicit_any_type_errors(&i->initializer.binding, i->span, !my has_body, errs);
         }
     }
 }

@@ -219,7 +219,9 @@ void binding_flow_assign(Binding const* me, Scope* names) {
 
 // tsc's getTypeFromBindingElement with reportErrors: an element with a default takes the default's type, so only the
 // elements without one (and the patterns without one, element by element) are implicitly any
-void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, ErrorCtx* errs) {
+// tsc's checkVariableLikeDeclaration doesn't check a renaming (`{ a: b }`) in the parameters of a signature without a
+// body at all (`bodiless`): only TS2842 is said about it
+void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, bool bodiless, ErrorCtx* errs) {
     bool toplevel = span_valid(parameter);
     if (!toplevel && my default_value) {
         // A default of null or undefined widens to any without strictNullChecks (tsc's reportErrorsFromWidening)
@@ -239,13 +241,16 @@ void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, Err
 
         case BINDING_ARRAY:
             for_each (i, vec_binding, &my array) {
-                binding_add_implicit_any_type_errors(i, span_null, errs);
+                binding_add_implicit_any_type_errors(i, span_null, bodiless, errs);
             }
             break;
 
         case BINDING_OBJECT:
             for_each (i, vec_object_binding_item, &my object) {
-                binding_add_implicit_any_type_errors(&i->target, span_null, errs);
+                bool renaming = i->target.tag == BINDING_IDENTIFIER && !i->target.rest &&
+                    !span_eq(i->source_span, i->target.content_span);
+                if (bodiless && renaming) continue;
+                binding_add_implicit_any_type_errors(&i->target, span_null, bodiless, errs);
             }
             break;
     }
