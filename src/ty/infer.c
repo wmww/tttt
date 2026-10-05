@@ -1425,7 +1425,16 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         if (source->kind == TY_INTERSECTION) source = ty_reduced(me, source); // (tsc's inferFromTypes)
         if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
             Ty const* apparent = ty_apparent_type(me, source);
-            if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) source = apparent;
+            if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) {
+                // One that isn't an object starts over: `EB extends Die | Fail<E>` to `Fail<E'>` infers from each member
+                // (tsc's inferFromTypes restarting with the apparent source)
+                if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+                    infer_from(me, inf, apparent, target);
+                    inf->depth--;
+                    return;
+                }
+                source = apparent;
+            }
         }
         bool same_reference = source->kind == TY_REFERENCE && target->kind == TY_REFERENCE &&
             source->reference.target == target->reference.target && !(source->reference.deferred && target->reference.deferred);
