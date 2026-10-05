@@ -8747,6 +8747,14 @@ static bool parse_numeric_value(Parser* parent, Value* ret) {
     return true;
 }
 
+// At a NUL byte: whether it is a character before the end of the file rather than the end (tsc's scanner takes it
+// as part of a string literal). Only in the file's own text: a sub-parser's buffer ends at its NUL
+__attribute__((noinline)) static bool nul_inside_file(Parser const* p) {
+    char const* file_start = cstr_str(&p->shared->source->contents);
+    char const* file_end = file_start + cstr_size(&p->shared->source->contents);
+    return p->pos >= file_start && p->pos < file_end;
+}
+
 // `report_escapes`: false in a tagged template, where invalid escapes are allowed
 static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escapes) {
     Parser p = parser(parent);
@@ -8758,13 +8766,8 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
     }
     p.pos++;
     cstr str = cstr_null;
-    // (A NUL character before the end of the file is part of the literal, like tsc's scanner's. Only in the file's
-    // own text: a sub-parser's buffer ends at its NUL)
-    char const* file_start = cstr_str(&p.shared->source->contents);
-    char const* file_end = file_start + cstr_size(&p.shared->source->contents);
-    bool in_file = p.pos >= file_start && p.pos < file_end;
     while (true) {
-        if ((!*p.pos && (!in_file || p.pos >= file_end)) || *p.pos == quote) {
+        if (*p.pos == quote || (!*p.pos && !nul_inside_file(&p))) {
             break;
         } else if ((*p.pos == '\n' || *p.pos == '\r') && quote != '`') {
             break;
@@ -8782,7 +8785,7 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
         } else {
             // The plain run up to whatever the loop has to look at, appended at once
             const char* run = p.pos++;
-            while ((*p.pos || (in_file && p.pos < file_end)) && *p.pos != quote && *p.pos != '\n' && *p.pos != '\\' && *p.pos != '\r') p.pos++;
+            while (*p.pos && *p.pos != quote && *p.pos != '\n' && *p.pos != '\\' && *p.pos != '\r') p.pos++;
             cstr_append_n(&str, run, p.pos - run);
             continue;
         }
