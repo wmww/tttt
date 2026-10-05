@@ -138,6 +138,37 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - Override and variance checks exist now (triage 2026-09-28); left: JSDoc `@template in/out/const` grammar errors
   (jsdocTemplateTag8), varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
 
+## Parser and TS1xxx leftovers (fan-out errors tail, list p, 2026-10-05: 67 of 88 fixed)
+Semantic:
+- TS1055 (async return type below ES2015 must name a Promise-compatible constructor value: asyncAliasReturnType_es5,
+  asyncFunctionDeclaration15/16_es5, errorOnFunctionReturnType): `ty_check_async_return_annotation` returns below
+  ES2015; needs a value lookup of the annotation's entity name and the PromiseConstructorLike relation with its
+  elaboration.
+- TS1539 and bigint literal property names (`{ 1n: x }` is the property "1n", TS2538 for bigint keys): bigintPropertyName.
+- exportEqualsDefaultProperty: a default import of an `export =` module whose value has a `default` property is
+  that property (tsc's resolveExportByName via getPropertyOfType); `resolve_default_target` reports TS1259 instead.
+  Needs the value's type during alias resolution, like the specific-import path's synthetic property symbol.
+- typeOnlyMerge3: an import merged with a namespace of the same name is TS2440 and two symbols in tsc, one in tttt,
+  so `symbol_type_only_declaration` stops at the merged value.
+- duplicatePackage(_withErrors): the second copy of a package (same name+version) is still parsed and checked (tsc
+  makes it a redirect to the first copy's AST), and the default-exported class prints `X`, not `default`, in
+  `import("...").default` (display).
+- TS1272 for parameter decorators (markDecoratorAliasReferenced's Parameter case) isn't covered.
+Parser recovery (plan 27 territory, each its own mechanism):
+- Error dedupe order at the end of the file: tsc reports two errors at the same EOF position because another error
+  came in between (labeledStatementDeclarationListInLoopNoCrash4: '}' expected + TS1160; jsxAndTypeAssertion: ':'
+  and '</' expected); tttt's last-error dedupe drops the second.
+- tsxAttributeInvalidNames: `<test1 32data={32} />` wants ';' expected and TS1351 at the same position (scanner
+  error order).
+- parserSkippedTokens20 (`X<T \`): tsc aborts the type argument list at an invalid character (all later errors
+  land on it and are deduped); tttt skips it and reports '>' expected at the end.
+- dontShowCompilerGeneratedMembers (`<-` in a type literal: a call signature whose type parameter list fails),
+  reservedNamesInAliases (`type void = I` is both a TS2457 alias and an expression statement), parseUnmatchedTypeAssertion,
+  esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`), jsdocFunctionTypeFalsePositive
+  (`@param {<} x`), scannerUnexpectedNullCharacter1 (a NUL outside a string ends tttt's parse: `*p.pos` is the EOF test
+  everywhere), conflictMarkerTrivia3, parser0_004152, jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative,
+  varianceAnnotationsWithCircularlyReferencesError.
+
 ## Module and import checks (triage 2026-10-05: default imports, isolatedModules/verbatimModuleSyntax done)
 - TS2866 (an import shadowing a global value the file uses as a value, under isolatedModules:
   isolatedModulesShadowGlobalTypeNotValue isolatedModules=true): tsc's resolveName side, not checkAliasSymbol.
