@@ -27588,7 +27588,7 @@ const baselines = {
     'resolveNameWithNamspace': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'resolveTypeAliasWithSameLetDeclarationName1': {
         errors: true,
@@ -60092,7 +60092,7 @@ const baselines = {
     },
     'commonJSImportNestedClassTypeReference': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'commonJSReexport': {

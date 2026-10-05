@@ -1260,6 +1260,14 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             if (symbol_decl_jsdoc_type(decl)) return ty_of_node(symbol_decl_jsdoc_type(decl));
             // A JSON file's value is widened, literals too (getTypeOfVariableOrParameterOrPropertyWorker)
             if (decl->full.source && decl->full.source->is_json) return ty_widened_for_declaration(me, ty_expr_type(me, decl->node), true);
+            // An alias of `a.b` that names no symbol (entity_value_symbol()): what checking it resolved, which for
+            // a property of any is nothing (tsc's getTargetOfAliasLikeExpression: unknownSymbol, errorType)
+            if (symbol->alias == nullptr && ((Expr const*)decl->node)->tag == EXPR_PROPERTY && expr_is_entity_name(decl->node) &&
+                !expr_is_perenthisized(decl->node) &&
+                (ty_expr_type(me, &((Expr const*)decl->node)->property->expr)->flags & TYF_ANY)
+            ) {
+                return ty_intrinsic(me, TY_ERROR);
+            }
             return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
         case SYMBOL_DECL_ASSIGNMENT:
             if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
