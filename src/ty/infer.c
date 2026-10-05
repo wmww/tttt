@@ -1126,6 +1126,24 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
         free(source_done);
         return;
     }
+    if (targets_left == 1 && (sources_left < sources.len || targets_left < targets.len)) {
+        // What is left of the target is no union any more: inferred to as a whole from what is left of the source
+        // (tsc's inferFromTypes goes on with both reduced: `(T & D) | null` from `A | B | null` infers A | B for T)
+        Ty const** left = malloc(sizeof(Ty const*) * sources_left);
+        u32 len = 0;
+        for (u32 s = 0; s < sources.len; s++) {
+            if (!source_done[s]) left[len++] = sources.data[s];
+        }
+        Ty const* rest_target = nullptr;
+        for (u32 t = 0; t < targets.len; t++) {
+            if (!target_done[t]) rest_target = targets.data[t];
+        }
+        Ty const* rest_source = ty_union(me, left, len, nullptr, (TyList){0});
+        free(left);
+        free(source_done);
+        infer_from(me, inf, rest_source, rest_target);
+        return;
+    }
 
     // To what isn't a naked type parameter first, every source that is left to every such target, remembering which
     // sources that used up for the naked type parameter
