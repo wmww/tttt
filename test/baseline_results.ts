@@ -36497,13 +36497,13 @@ const baselines = {
     },
     'privateNameInInExpression(target=es2022)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInInExpression(target=esnext)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'privateNameInInExpressionTransform(target=es2020)': {
         errors: true,

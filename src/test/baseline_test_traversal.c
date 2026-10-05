@@ -2588,7 +2588,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                 this_property_symbol_overrides(&my binary_op->left, ctx);
                 nested_expando_symbol_overrides(&my binary_op->left, ctx);
             }
-            ctx->private_name_in_left = my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME;
+            ctx->private_name_in_left = my binary_op->op == BINARY_OP_IN && my binary_op->left.tag == EXPR_PRIVATE_NAME &&
+                !expr_is_perenthisized(&my binary_op->left); // (`(#x) in v` is an error, no PrivateIdentifier to tsc)
             expr_compile_test_info(&my binary_op->left, ctx);
             ctx->private_name_in_left = false;
             while (ctx->symbol_override_count > overrides) {
@@ -2910,7 +2911,12 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), parenthesized, ty_regular(current_checker, expr_get_type(me)));
         }
     } else if (my tag == EXPR_PRIVATE_NAME && !ctx->private_name_in_left) {
-        // (tsc's isExpressionNode: a private name is an expression only as the left operand of `in`)
+        // (tsc's isExpressionNode: a private name is an expression only as the left operand of `in`. Parenthesized,
+        // `(#x) in v` (an error), the parentheses are one, of type any)
+        if (!span_eq(expr_outer_span(me), my inner_span)) {
+            ctx->any_keeps_underline = true;
+            baseline_test_case_add_type(ctx, expr_outer_span(me), ty_intrinsic(current_checker, TY_ANY));
+        }
     } else if (my tag == EXPR_GENERIC_PARAMS && my generic_params->heritage) {
         // (A class's `extends B<T>` is tsc's ExpressionWithTypeArguments, which the type writer skips)
     } else if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc && span_eq(expr_outer_span(me), expr_outer_span(&my as_type->expr))) {
