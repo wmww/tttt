@@ -1946,7 +1946,26 @@ static Candidate overload_failure_candidate(Checker* me, Signature const* sig, A
     return ret;
 }
 
+static Resolution resolve_with_signatures_inner(
+    Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
+    ErrorCtx* errs
+);
+
+// A call's own resolution isn't inferential because an outer call's inference asked for it: only its own inference
+// is (tsc's chooseOverload has argCheckMode of its own), so `outer(isSym(v) ? 1 : lit(v))` checks `v` against lit's
+// parameter as its narrowed constraint (narrowable_type())
 static Resolution resolve_with_signatures(
+    Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
+    ErrorCtx* errs
+) {
+    u32 saved = my inferential_depth;
+    my inferential_depth = 0;
+    Resolution ret = resolve_with_signatures_inner(me, signatures, count, args, info, call_span, errs);
+    my inferential_depth = saved;
+    return ret;
+}
+
+static Resolution resolve_with_signatures_inner(
     Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
     ErrorCtx* errs
 ) {

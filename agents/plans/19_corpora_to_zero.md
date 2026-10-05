@@ -151,7 +151,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (14; 6300 at pinning)
+### effect (13; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -198,10 +198,12 @@ anyFunctionType, which doesn't fit a parameter the skipping inference made `neve
 `T extends Record<string, unknown> ? ... : never`; Schema 9195/9373, probe `skipped_function_never_param.ts`). Inferring from a type parameter whose apparent type isn't an object (a union
 constraint) starts over from the apparent type (Micro 2730: `failCause(cause)` with `cause: EB extends MicroCause<E>`,
 probe `infer_from_param_with_union_constraint.ts`; its types still differ: tsc prints `cause` as its constraint there,
-getNarrowableTypeForReference's substitution with a contextual type that has no generic types).
+getNarrowableTypeForReference's substitution with a contextual type that has no generic types). A call resolved while
+an outer call infers isn't inferential itself (tsc's chooseOverload has its own argCheckMode): `Struct({ k: isSymbol(v)
+? .. : Literal(v) })` checks `v` against Literal's parameter as its narrowed constraint (Schema 4110, probe
+`nested_call_not_inferential.ts`).
 
 Left, by cause (not reduced unless said):
-- Schema.ts 4110.
 - **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses: dtslint TaggedClass 6, TaggedError 31,
   TaggedRequest 28 (Schema tagged classes without the Self type argument should be an error), Schema.ts 9010,
   fiberRuntime 1397.
