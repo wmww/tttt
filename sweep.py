@@ -13,6 +13,9 @@ shows up as a spurious TS2578.
   ./sweep.py -k 'TS2339'      # list the packages and diagnostics whose root-cause key contains this
   ./sweep.py --names spurious # the package names of a verdict (crash, timeout, spurious, missing, both, match)
   ./sweep.py --last ...       # reuse the last run's results (-k, --names) without running tttt again
+
+A package that wants an older major of a dependency gets it (test/sweep_links.py writes pnpm's links), and the
+versioned directories (types/NAME/vN) are packages of their own.
 """
 import argparse, collections, concurrent.futures, json, os, re, resource, subprocess, sys, time
 
@@ -102,7 +105,8 @@ def dependency(path):
     """The package a file outside the checked one belongs to: types/NAME, node_modules/[@scope/]NAME, or the file"""
     parts = path.split('/')
     if parts[0] == 'types' and len(parts) > 2:
-        return '/'.join(parts[:2])
+        versioned = len(parts) > 3 and re.fullmatch(r'v\d+(\.\d+)?', parts[2])
+        return '/'.join(parts[:3 if versioned else 2])
     if 'node_modules' in parts:
         i = parts.index('node_modules')
         return '/'.join(parts[:i + (3 if parts[i + 1:i + 2] and parts[i + 1].startswith('@') else 2)])
@@ -114,7 +118,7 @@ def root_cause(package, diag, spurious):
     package's own directory (a dependency, a lib) also the dependency: the same declaration of types/node wrong in
     2000 packages is one bug"""
     f, l, c = diag[:3]
-    where = '' if f.startswith(package + '/') else f' in {dependency(f)}'
+    where = '' if f.startswith(package + '/') and dependency(f) == package else f' in {dependency(f)}'
     return f'+TS{c}{where} {shape(diag[3])}' if spurious else f'-TS{c}{where}'
 
 
@@ -133,8 +137,19 @@ def main():
     args = ap.parse_args()
 
     subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-corpora.sh')], check=True)
-    packages = sorted('types/' + n for n in os.listdir(os.path.join(DT, 'types'))
-                      if os.path.exists(os.path.join(DT, 'types', n, 'tsconfig.json')))
+    # Older majors of dependencies where a package asks for them, as pnpm would link them (idempotent: writes nothing
+    # once they're there)
+    subprocess.run([sys.executable, os.path.join(ROOT, 'test/sweep_links.py'), DT], check=True)
+    # Every package, and every versioned directory of one (types/NAME/vN), which is a package of its own
+    packages = []
+    for n in os.listdir(os.path.join(DT, 'types')):
+        base = os.path.join(DT, 'types', n)
+        if os.path.exists(os.path.join(base, 'tsconfig.json')):
+            packages.append('types/' + n)
+        if os.path.isdir(base):
+            packages += [f'types/{n}/{v}' for v in os.listdir(base)
+                         if re.fullmatch(r'v\d+(\.\d+)?', v) and os.path.exists(os.path.join(base, v, 'tsconfig.json'))]
+    packages.sort()
     # The ~460 generated Google API wrappers (types/gapi.client.*) are one shape that needs npm-only typings: no signal
     packages = [p for p in packages if not p.startswith('types/gapi.client.')]
     if args.filter:
