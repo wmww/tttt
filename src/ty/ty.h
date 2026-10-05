@@ -324,29 +324,29 @@ struct Ty {
                 struct ReverseMapped const* reverse;
             };
             FunctionImpl const* const* overloads; // If set, the type of an overloaded method: its signatures
-            u32 overload_count;
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
             TyMapper const* mapper;
-            // An instantiation expression (`Bar<string>` as a value): target is any object type, and the mapper is
-            // about the type parameters of its signatures, which lose them
-            bool applies_type_args;
-            bool realiased; // the same type as `target` + `mapper` by another alias name, see ty_realias()
-            LowerCtx ctx;
             // Uninstantiated only: the type parameters declared outside the node that it mentions. Instantiation
             // only cares about these. If unknown (the node has parts that aren't syntax), assume every one in scope
             TyList free_params;
-            bool free_params_unknown;
+            TyObjectState* state;
+            uint16_t overload_count;
+            LowerCtx ctx;
+            // An instantiation expression (`Bar<string>` as a value): target is any object type, and the mapper is
+            // about the type parameters of its signatures, which lose them
+            bool applies_type_args : 1;
+            bool realiased : 1; // the same type as `target` + `mapper` by another alias name, see ty_realias()
+            bool free_params_unknown : 1;
             // A JSDoc node: tsc's isTypeParameterPossiblyReferenced walks up from it and never meets the `@template` tag
             // declaring a type parameter, so every type parameter in scope counts as referenced (see
             // assignment_mentions()). free_params still says what it really mentions
-            bool jsdoc_references_all;
-            bool object_literal; // Made by an object literal expression (ty_object_literal())
+            bool jsdoc_references_all : 1;
+            bool object_literal : 1; // Made by an object literal expression (ty_object_literal())
             // OBJECT_LITERAL_REGULAR: TYF_FRESH_OBJECT means it still widens, but it isn't fresh (ty_is_fresh_object())
-            bool regular;
-            bool jsx_attributes; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
-            bool js_literal; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
-            bool is_reverse; // `reverse` is set, not `merged_value`
-            TyObjectState* state;
+            bool regular : 1;
+            bool jsx_attributes : 1; // OBJECT_JSX_ATTRIBUTES(_FRESH): hyphenated names are never excess, and excess ones say so differently
+            bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
+            bool is_reverse : 1; // `reverse` is set, not `merged_value`
         } anonymous;
         struct {
             TyList types; // sorted by id, no duplicates
