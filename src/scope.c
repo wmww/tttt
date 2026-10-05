@@ -3232,6 +3232,20 @@ static void merge_augmentations(Binder* me) {
                     continue;
                 }
                 if (assigned->binder != me) continue; // TODO: a namespace of the shared lib program
+                // (tsc's mergeSymbol of the augmentation into it: one with values against a namespace merged with a
+                // variable conflicts, reported at the augmentation's name)
+                bool instantiated = false;
+                for (u32 k = 0; augmentation->exports && k < augmentation->exports->count && !instantiated; k++) {
+                    u32 flags = augmentation->exports->entries[k].symbol->flags;
+                    instantiated = (flags & SYMBOL_VALUE & ~SYMBOL_VALUE_MODULE) != 0;
+                }
+                if (instantiated && (assigned->flags & excluded_flags(SYMBOL_VALUE_MODULE))) {
+                    if (!augmentation->decl_count || augmentation->decls[0].node == decl) {
+                        error_ctx_error_d(errs, decl->module_ref->span, 2649, "Cannot augment module '", assigned->name,
+                            "' with value exports because it resolves to a non-module entity.");
+                    }
+                    continue;
+                }
                 module = assigned;
                 symbol_ensure_exports(module);
             }

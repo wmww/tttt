@@ -2036,7 +2036,7 @@ const baselines = {
         types: true,
     },
     'augmentExportEquals7': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
