@@ -307,3 +307,22 @@ By root cause (the tests list c2 took over aren't here):
 - **Printing order**: destructuringUnspreadableIntoRest has its errors since fdb9e3c4 but prints the omitted keys of
   `Omit<this, ...>` in another order (literal creation order, see "Alias/origin preservation" above).
 - moduleAugmentationImportsAndExports2 (TS2339 through an augmentation's re-exports): not investigated.
+Fan-out 6 list c2 (agent a's "only missing" tests handed to c), left over:
+- Complexity limits: relationComplexityError (TS2859: tsc counts each intersection-member/literal pair as a recursive
+  relation, 20002 x 10002 pairs; tttt short-circuits them), templateLiteralTypes1 (TS2590 at the type node: reporting it
+  from intersect_unions()/ty_template_literal() at the current node puts it at the wrong node and fires in tests tsc
+  doesn't, reverted), circularIndexedAccessErrors and recursivelyExpandingUnionNoStackoverflow (TS2589).
+- Resolution-order artifacts tsc reproduces on purpose: mixinWithBaseDependingOnSelfNoCrash1 (TS2345: BaseItem has no
+  construct signature while Item's base resolves), selfReferentialDefaultNoStackOverflow (TS7022 on `export default`
+  reaching itself through a self-import: the default export's type has no RESOLVING_DECLARATION frame),
+  functionImplementations (TS2403: `f()` inside f's own return makes tsc's return type Base, not any).
+- yieldExpressionInControlFlow: `o = yield* o` with an evolving `[]` isn't found circular (TS7034/TS7005).
+- destructuringParameterDeclaration9(strict=true): TS7031 in a JS file next to a JSDoc-typed sibling; the JSDoc nested
+  `@param {..} [config.additionalFiles]` binding type is wrong too (any[] | string[] for string[]).
+- tsxUnionElementType3/4: a union of class components gets its props from the union signature's parameters
+  intersected ({x: number} & {x: string}: x is never), tttt reads the union instance's props.
+- jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const), moduleExportDuplicateAlias
+  (`exports.apply = undefined` then `= a`: an alias and a property in one symbol, TS2722), declaration emit
+  diagnostics of jsDeclarationsCrossfileMerge (TS6232), jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005),
+  jsDeclarationsTypeReassignmentFromDeclaration2 (TS9006): plan 40.
+- checkJsxNamespaceNamesQuestionableForms: parser recovery after `</b:c.x>` (tsc resolves `x`).
