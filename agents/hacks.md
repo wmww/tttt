@@ -126,6 +126,15 @@ src` finds the code-side markers; every significant one has an entry here.
   resolves only its type's names.
 
 ## Binder and name resolution (`scope.c`)
+- `scope_release()` (plan 43): walk-only scopes (parameter list, return type, block statement, type literal, interface
+  `this`, computed name/decorator) are popped off the binder arena when still its latest allocation and no pending
+  report (`PendingNotFound`, `PendingExportMerge`) took them. The proof is "everything that can point at a scope is
+  allocated after it in the same arena": a new place that stores a `Scope*` outside the arena (AST, malloc'd lists)
+  must block the release like the pending reports do. Check by poisoning (memset 0xA5) instead of popping.
+- `if` branches that are blocks, loops, `switch`, `try`, `return`... get no block scope of their own
+  (`branch_names_scope()`); a `declare` declaration in an ambient context gets no `scope_new_self()` scope unless
+  unused checks are on; a JSDoc `@param` type flags the parameter list's scope (`jsdoc_parameter_type`) while it is
+  walked instead of a scope of its own. Scope chains are shorter than the AST's nesting.
 - `binder_redirect` / `Binder.overlays`: a program adding to a shared-lib symbol gets a clone (`clone_parent_symbol`);
   the checker maps through `canonical()` (`ty/lower.c`): anything new keyed by `Symbol*` must too. Fallout: an
   augmented `Console` shows both `log` signatures (wants getIntersectedSignatures).
