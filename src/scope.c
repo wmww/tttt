@@ -5286,6 +5286,20 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             } else if (!assigned_to) {
                 class_symbol = function_impl_rare(this_function)->class_symbol ? function_impl_rare(this_function)->class_symbol :
                     this_function->is_expression ? nullptr : this_function->symbol;
+                // (Not with a JSDoc `@this`: tsc binds the member too, but then reports nothing of it (webpack's
+                // `@this {Module} function errors() { this._errors = [] }`); unverified why, so not made at all)
+                if (!class_symbol && this_function->is_expression && !function_impl_is_arrow(this_function) && my file && my file->is_js &&
+                    this->this_kind != THIS_PARAMETER
+                ) {
+                    // A function expression of its own (an object literal's property, a callback): its own symbol is
+                    // the class (tsc's bindThisPropertyAssignment on the function's symbol), named where it is written
+                    Span own_name = this_function->name;
+                    if (!span_valid(own_name)) own_name = function_impl_rare(this_function)->assigned_name;
+                    class_symbol = binder_new_symbol(my binder, span_valid(own_name) ? own_name.sv : c_sv("(Anonymous function)"), SYMBOL_FUNCTION);
+                    class_symbol->name_span = own_name;
+                    function_impl_rare_mut(this_function)->class_symbol = class_symbol;
+                    function_impl_rare_mut(this_function)->own_class_symbol = true;
+                }
             }
             if (!class_symbol) return;
             class_symbol->flags |= SYMBOL_CLASS;

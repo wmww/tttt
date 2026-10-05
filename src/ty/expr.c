@@ -1106,10 +1106,18 @@ static Ty const* this_type_marker(Checker* me, Ty const* contextual) {
     return args.len == 1 ? args.data[0] : nullptr;
 }
 
+// The class a constructor function's `this` is the instance of: not that of an object literal's property, which is no
+// constructor to tsc's isJSConstructor unless tagged `@class` (its symbol's members still make its type a class)
+static Symbol const* js_constructor_for_this(FunctionImpl const* function) {
+    if (function_impl_rare(function)->own_class_symbol && function_impl_rare(function)->this_literal && !function->jsdoc_class) return nullptr;
+    return ty_js_constructor_class(function);
+}
+
 // tsc's getContextualThisParameterType: what `this` is in a function expression or object literal method that doesn't
 // declare it. Null: nothing says (it's any)
 Symbol const* ty_js_this_class(FunctionImpl const* function) {
-    Symbol const* js_class = ty_js_constructor_class(function);
+    // (A literal's function-valued property that is a class of its own still sees the literal)
+    Symbol const* js_class = js_constructor_for_this(function);
     if (js_class) return js_class;
     // A method of a constructor function's prototype (tsc's getClassNameFromPrototypeMethod: not an accessor of
     // `F.prototype = { get x() {} }`, whose `this` is the literal's)
@@ -4217,14 +4225,14 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
         if (!property_context(access)->in_constructor_of) return nullptr;
         class_symbol = this->target;
     } else if (this->this_kind == THIS_ANY && identifier_this_function(this)) {
-        class_symbol = ty_js_constructor_class(identifier_this_function(this));
+        class_symbol = js_constructor_for_this(identifier_this_function(this));
     }
     if (!class_symbol || !symbol_rare(class_symbol)->members) return nullptr;
     Symbol const* member = symbol_table_get(symbol_rare(class_symbol)->members, name);
     if (!member) return nullptr;
     if (!ty_is_constructor_declared(member)) return nullptr;
     // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
-    if (this->this_kind == THIS_ANY && ty_js_constructor_class(identifier_this_function(this)) != class_symbol) return nullptr;
+    if (this->this_kind == THIS_ANY && js_constructor_for_this(identifier_this_function(this)) != class_symbol) return nullptr;
     // Not when the class body declares it
     ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
     return !class_decl || !class_decl_find_member(class_decl, name, false) ? member : nullptr;

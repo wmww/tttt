@@ -142,6 +142,12 @@ typedef struct FunctionImplRare {
     // JavaScript: the variable a function expression initializes (`var F = function () {}`), whose symbol is the class
     // a constructor function makes (a function declaration's is its own symbol). Set by the resolve walk
     Symbol* class_symbol;
+    // JavaScript: class_symbol is the function expression's own (made by its `this.x = v`, tsc's symbol of the function
+    // expression, named by getAssignedName): a class whose `this` is still what the context says
+    bool own_class_symbol;
+    // JavaScript: the name an anonymous function expression is called by where it is written (tsc's getAssignedName:
+    // the variable, property or binding element it is directly the value of, the left of `=`), see mark_assigned_name()
+    Span assigned_name;
     // Owned, JavaScript: a JSDoc `@type {F}` on the function that isn't a written signature (`{Processor<A, B>}`): its
     // signature types the parameters like a contextual one (tsc's getSignatureOfTypeTag, ty_function_apply_jsdoc_type())
     TypeNode* jsdoc_signature_type;

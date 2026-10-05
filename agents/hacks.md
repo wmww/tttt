@@ -653,6 +653,13 @@ src` finds the code-side markers; every significant one has an entry here.
 - JS syntax errors (TS8xxx, `js_syntax_error()`) come from the parser; what tsc skips inside is erased after
   (`js_syntax_skip_since()`): every skipped construct needs its call. Node array spans run first to last element.
 
+- `add_this_property()` (scope.c): a JS function expression with `this.x = v` gets a class symbol of its own
+  (`own_class_symbol`, named by `assigned_name`), except when it has a JSDoc `@this`: tsc binds those members too but
+  webpack's `@this {Module} function errors() { this._errors = [] }` then got TS7008, which tsc doesn't report. Why
+  is unverified.
+- `exports.x = undefined` with later `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias (the
+  last one resolves), and the declarations' left sides are `any`; tttt keeps a property + alias symbol.
+
 ## Declaration diagnostics (`ty/declaration_diagnostics.c`, plan 40)
 - `fallback_begin`/`fallback_end`: where the syntactic builder falls back anywhere in a declaration (any `report()`,
   a literal it can't type), the *whole* declaration's checker type is printed for the tracker, not just the parts tsc

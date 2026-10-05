@@ -14043,7 +14043,7 @@ const baselines = {
     'functionExpressionNames': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'functionExpressionReturningItself': {
         errors: true,
@@ -24533,7 +24533,7 @@ const baselines = {
     'objectPropertyAsClass': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'objectRestBindingContextualInference': {
         errors: true,

@@ -3483,7 +3483,10 @@ bool ty_js_assigned_class_name(Symbol const* symbol, csview* name) {
 }
 
 Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
-    if (function->is_type || function_impl_is_arrow(function) || function_impl_rare(function)->this_literal) return nullptr;
+    if (function->is_type || function_impl_is_arrow(function) ||
+        (function_impl_rare(function)->this_literal && !function_impl_rare(function)->own_class_symbol)) {
+        return nullptr;
+    }
     // (A named function expression tagged `@class` that isn't assigned to anything is a class of its own name)
     Symbol const* symbol = function_impl_rare(function)->class_symbol ? function_impl_rare(function)->class_symbol :
         function->is_expression && !function->jsdoc_class ? nullptr : function->symbol;
