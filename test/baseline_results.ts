@@ -66271,7 +66271,7 @@ const baselines = {
         types: true,
     },
     'assignmentCompatWithDiscriminatedUnion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

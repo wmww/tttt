@@ -552,6 +552,13 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             // `(string & {}) | "-moz-initial"`. Only intersections: a union's own id rarely shows, and lowering every
             // union twice cost webpack 0.4% instructions
             if (my tag == TYPE_INTERSECTION && !current_checker->alias_body_walks) ty_of_node(me);
+            // But a union's literal members are made then, in order (tsc's getTypeFromUnionTypeNode): what a literal
+            // type's id is shows, `type T1 = { a: "a" | "b" }` before `{ b: 1 }` asks for "b" (typeSatisfaction)
+            if (my tag == TYPE_UNION) {
+                for_each (i, vec_type, &my composite) {
+                    if (i->tag == TYPE_VALUE) ty_of_node(i);
+                }
+            }
             break;
 
         case TYPE_TEMPLATE: template_type_typecheck(my template_, errs); break;
