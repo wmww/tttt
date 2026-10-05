@@ -1271,7 +1271,7 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         if (cached) return *cached;
         Ty const* stack_buf[16];
         u32 len = 0;
-        bool all_optional = true, any_member = false, all_readonly = true;
+        bool all_optional = true, any_member = false, all_readonly = true, any_public = false;
         u32 flags = 0;
         u32 optional_parts = 0; // (bit i: stack_buf[i] came from an optional property)
         // (The members' own properties first, Object's and Function's only if none has one)
@@ -1294,9 +1294,13 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             any_member |= class_member;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
             all_readonly &= (part.flags & PROP_READONLY) != 0;
+            any_public |= !(part.flags & (PROP_PRIVATE | PROP_PROTECTED));
         }
         // (Readonly only if every member's is: tsc's createUnionOrIntersectionProperty)
         if (!all_readonly) flags &= ~(u32)PROP_READONLY;
+        // (Private if any member's is, else public if any is: tsc's getDeclarationModifierFlagsFromSymbol of a synthetic
+        // property)
+        if (!(flags & PROP_PRIVATE) && any_public) flags &= ~(u32)PROP_PROTECTED;
         if (!len && own_only && !skip_augment) {
             own_only = false;
             goto again;

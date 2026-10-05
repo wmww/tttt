@@ -21386,7 +21386,7 @@ const baselines = {
         types: true,
     },
     'mixinPrivateAndProtected': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
