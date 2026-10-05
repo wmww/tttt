@@ -2330,10 +2330,39 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         my invalid_initializer_reference ? symbol_for_meaning(my symbol, SYMBOL_VALUE) :
         my namespace_as_value ? my symbol : nullptr;
     Symbol const* shown = target ? shown_declaration(my symbol, target) : nullptr;
+    // `export default Foo` of an exported value Foo and a local type Foo: tsc's local symbol, both (resolveEntityName
+    // with every meaning finds the locals' symbol, a type with the value's exportSymbol)
+    VecSpan declarations = {0};
+    bool merged_local = false;
+    if (shown && ctx->export_name && &ctx->export_name->identifier == me && shown->exported && (shown->flags & SYMBOL_VALUE) &&
+        ctx->enclosing
+    ) {
+        Symbol const* local = symbol_table_get(&ctx->enclosing->locals, identifier_expr_name(me).sv);
+        if (local && local != shown && !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE)) {
+            declarations = declaration_get_spans(local);
+            VecSpan own = declaration_get_spans(shown);
+            for_each (i, vec_span, &own) {
+                bool seen = false;
+                for_each (j, vec_span, &declarations) seen |= span_eq(*i, *j);
+                if (!seen) vec_span_push(&declarations, *i);
+            }
+            vec_span_drop(&own);
+            for (isize_t a = 1; a < vec_span_size(&declarations); a++) {
+                for (isize_t b = a; b > 0 && declarations.data[b].source == declarations.data[b - 1].source &&
+                    span_start_ptr(declarations.data[b]) < span_start_ptr(declarations.data[b - 1]); b--
+                ) {
+                    Span t = declarations.data[b];
+                    declarations.data[b] = declarations.data[b - 1];
+                    declarations.data[b - 1] = t;
+                }
+            }
+            merged_local = true;
+        }
+    }
     // (an alias of an anonymous declaration, `export default class {}`, has a name)
     if (shown && (span_valid(target->name_span) || span_valid(shown->name_span))) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = declaration_get_spans(shown),
+            .declarations = merged_local ? declarations : declaration_get_spans(shown),
             .span = identifier_expr_name(me),
             .text = symbol_text(ctx, shown),
             .allow_declaration_empty = shown->is_global_this, // (It has no declarations: `Symbol(globalThis)`)
@@ -2997,7 +3026,13 @@ void expr_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
         // The `import` of `import("m")` and `import.meta` isn't an expression of its own
     } else if (me == ctx->export_name && my identifier.target && (my identifier.target->flags & SYMBOL_VARIABLE)) {
-        baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, ty_type_of_symbol(current_checker, my identifier.target));
+        // (Of a local type and an exported value of the name: tsc's local symbol, whose declared type it is, see
+        // getTypeOfNode's isInRightSideOfImportOrExportAssignment)
+        Symbol const* local = ctx->enclosing ? symbol_table_get(&ctx->enclosing->locals, my inner_span.sv) : nullptr;
+        bool type_twin = local && local != my identifier.target && my identifier.target->exported &&
+            !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE);
+        baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, type_twin ?
+            ty_declared_type_of(current_checker, local) : ty_type_of_symbol(current_checker, my identifier.target));
     } else {
         // tsc prints an expression's regular type (getRegularTypeOfExpression)
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, ty_regular(current_checker, expr_get_type(me)));

@@ -9312,8 +9312,8 @@ const baselines = {
     },
     'defaultNamedExportWithType1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'defaultNamedExportWithType2': {
         errors: true,
@@ -9322,8 +9322,8 @@ const baselines = {
     },
     'defaultNamedExportWithType3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'defaultNamedExportWithType4': {
         errors: true,
@@ -16157,8 +16157,8 @@ const baselines = {
     },
     'importElisionExportNonExportAndDefault': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'importEqualsError45874': {
         errors: true,

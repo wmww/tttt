@@ -2893,12 +2893,19 @@ static Symbol* resolve_alias_target(Symbol* me) {
             found = file->scope->container;
         }
         if (found == me) return nullptr;
-        // A local type and an exported value of the name are one symbol in tsc (the local one has the exported one as
-        // its exportSymbol): `interface F {}` + `export const F = ...` + `export default F` exports both
+        // A local type and an exported value of the name are one symbol in tsc, the local one, which has the exported
+        // one as its exportSymbol: `interface F {}` + `export const F = ...` + `export default F` exports that local
+        // symbol, whose value meaning is only ExportValue: used as a value, the default is tsc's errorType, silently
+        // (getTypeOfAlias). A placeholder value_target (the error type) says so
         Symbol* container = my alias->scope->container;
         if (found && !(found->flags & SYMBOL_VALUE) && container && container->exports) {
             Symbol* value = symbol_table_get(container->exports, my alias->name.sv);
-            if (value && value != found && value != me && (value->flags & SYMBOL_VALUE)) my alias->value_target = value;
+            if (value && value != found && value != me && (value->flags & SYMBOL_VALUE)) {
+                Symbol* unknown = binder_new_placeholder(my binder, my alias->name, my alias->name);
+                unknown->is_unresolved = true;
+                unknown->flags |= SYMBOL_VALUE & value->flags;
+                my alias->value_target = unknown;
+            }
         }
         unused_mark_referenced(my alias->scope, found, SYMBOL_ANY_MEANING);
         return resolve_if_pure_alias(found);
