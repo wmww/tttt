@@ -439,6 +439,8 @@ void program_set_file_size(Program* me, i64 (*file_size)(void* ctx, csview path)
 // tsc names files by absolute path, and its test harness strips the directory the test's files are in: relative
 // below the working directory, absolute elsewhere
 static cstr program_path_for_message(Program const* me, csview absolute) {
+    // (The CLI's messages: absolute, like tsc's)
+    if (messages_use_absolute_paths()) return cstr_from_sv(absolute);
     csview cwd = program_cwd(me);
     bool below = cwd.size > 1 && absolute.size > cwd.size + 1 && !memcmp(absolute.buf, cwd.buf, (size_t)cwd.size) &&
         absolute.buf[cwd.size] == '/';

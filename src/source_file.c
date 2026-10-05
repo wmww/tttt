@@ -3,6 +3,7 @@
 #include "error.h"
 #include "string_helpers.h"
 #include "compiler_options.h"
+#include <cleat/filesystem.h>
 
 ModuleKind source_file_implied_format_for_emit(SourceFile const* me) {
     CompilerOptions const* o = compiler_options();
@@ -33,6 +34,21 @@ static bool has_other_line_breaks(const char* start, const char* end) {
         if (end - pos >= 3 && (unsigned char)pos[1] == 0x80 && ((unsigned char)pos[2] & 0xFE) == 0xA8) return true;
     }
     return false;
+}
+
+static cstr message_cwd;
+
+void source_file_set_message_cwd(csview cwd) {
+    cstr_assign_sv(&message_cwd, cwd);
+}
+
+bool messages_use_absolute_paths(void) {
+    return cstr_size(&message_cwd) > 0;
+}
+
+cstr path_for_message(csview path) {
+    if (!cstr_size(&message_cwd) || (path.size && path.buf[0] == '/')) return cstr_from_sv(path);
+    return absolute_path_of(cstr_sv(&message_cwd), path);
 }
 
 SourceFile source_file_make(cstr canonical_path, cstr contents) {

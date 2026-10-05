@@ -765,6 +765,12 @@ int main(int argc, const char** argv) {
         }
     }
 
+    {
+        // (tsc's CLI names files in message text by absolute path)
+        cstr cwd = cstr_null;
+        if (!fs_get_cwd(fs, &cwd).error) source_file_set_message_cwd(cstr_sv(&cwd));
+        cstr_drop(&cwd);
+    }
     try (int ret, opts.build ? build(&opts, &ret) : check_command_line(&opts, &ret)) if_err (e) {
         error_base_eprintln(e);
         current_error_destroy();

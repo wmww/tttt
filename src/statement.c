@@ -1616,9 +1616,11 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     error_ctx_error_d(errs, span, 2688,
                         "Cannot find type definition file for '", my source_directive->not_found, "'.");
                 } else {
-                    csview containing = names->file ? source_file_display_path(names->file) : c_sv("");
+                    cstr shown = names->file ? source_file_message_path(names->file) : cstr_null;
+                    csview containing = cstr_sv(&shown);
                     if (csview_starts_with(containing, "./")) containing = csview_slice(containing, 2, containing.size);
                     cstr path = reference_path_for_message(containing, cstr_sv(&my source_directive->not_found));
+                    cstr_drop(&shown);
                     if (my source_directive->not_found_extensionless) {
                         // (tsc's getSourceFileFromReferenceWorker lists every supported extension)
                         error_ctx_error_d(errs, span, 6231, "Could not resolve the path '", path,

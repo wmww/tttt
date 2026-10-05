@@ -215,9 +215,23 @@ static inline csview source_file_display_path(SourceFile const* me) {
     return my display_path_override ? csview_from(my display_path_override) : cstr_sv(&my canonical_path);
 }
 
+// tsc's CLI names files in messages by their absolute path: source_file_message_path() makes paths absolute from this
+// directory (the working directory, set by the CLI once before anything is loaded). Unset under the test harness,
+// which names files the way its baselines do itself (display_path_override)
+void source_file_set_message_cwd(csview cwd);
+bool messages_use_absolute_paths(void);
+// The absolute path for a path relative to the working directory, in the CLI (see source_file_set_message_cwd()), the
+// path itself otherwise
+cstr path_for_message(csview path);
+// How message text names the file (a module "from external module ...", TS2306's file): its display path, absolute in
+// the CLI
+static inline cstr source_file_message_path(SourceFile const* me) {
+    return path_for_message(source_file_display_path(me));
+}
+
 // How messages name the file a module name found (TS2306)
-static inline csview module_ref_file_display_path(ModuleRef const* me) {
-    return source_file_display_path(my redirected_from ? my redirected_from : my file);
+static inline cstr module_ref_file_message_path(ModuleRef const* me) {
+    return source_file_message_path(my redirected_from ? my redirected_from : my file);
 }
 
 // What there is to say about a module name that did find its file (TS5097)

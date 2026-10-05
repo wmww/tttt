@@ -78,8 +78,9 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     Symbol* module = binder_module_of_ref(names->binder, my import_ref);
     if (!module) {
         if (my import_ref->file) {
-            error_ctx_error_d(errs, my import_ref->span, 2306,
-                "File '", module_ref_file_display_path(my import_ref), "' is not a module.");
+            cstr shown = module_ref_file_message_path(my import_ref);
+            error_ctx_error_d(errs, my import_ref->span, 2306, "File '", shown, "' is not a module.");
+            cstr_drop(&shown);
         } else {
             module_ref_report_unresolved(my import_ref, errs);
         }

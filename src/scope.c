@@ -2233,7 +2233,8 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier) {
     if (!module->module->file) return cstr_from_sv(module->name);
     if (by_specifier) return cstr_d("\"", ref->path, "\"");
-    csview path = source_file_display_path(module->module->file);
+    cstr shown = source_file_message_path(module->module->file);
+    csview path = cstr_sv(&shown);
     // (`// @filename: ./a.ts` is the file `a.ts`: tsc's normalized name)
     while (csview_starts_with(path, "./")) path = csview_slice(path, 2, path.size);
     static const char* const extensions[] = { ".d.ts", ".d.mts", ".d.cts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs", ".json" };
@@ -2243,7 +2244,9 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
             break;
         }
     }
-    return cstr_d("\"", path, "\"");
+    cstr ret = cstr_d("\"", path, "\"");
+    cstr_drop(&shown);
+    return ret;
 }
 
 // tsc's getFullyQualifiedName: the containers too, a file module as its quoted name (`"file".A.B`)
@@ -2596,8 +2599,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
             // No file: TS2307 comes from the statement. (An `@import` tag's is only reported by a use of its names in
             // tsc, whose checkJSDocImportTag doesn't resolve them: not at all here)
             if (item->module_ref->file && !item->jsdoc) {
-                error_ctx_error_d(errs, item->module_ref->span, 2306,
-                    "File '", module_ref_file_display_path(item->module_ref), "' is not a module.");
+                cstr shown = module_ref_file_message_path(item->module_ref);
+                error_ctx_error_d(errs, item->module_ref->span, 2306, "File '", shown, "' is not a module.");
+                cstr_drop(&shown);
             }
             return nullptr;
         }
