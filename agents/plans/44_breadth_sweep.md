@@ -80,8 +80,6 @@ one commit each, `./sweep.py` before/after.
 - **-TS2497/-TS2305 at a circular or unresolved `export =`** (~65 webpack-plugin packages; A/cycle, A/cycle2):
   `check_es_module_symbol` returns on a placeholder target, `resolve_alias_target`'s PORT_IMPORT_SPECIFIC returns on
   one. tsc's unknownSymbol is neither Module nor Variable (TS2497) and has no members (TS2305).
-- **`unknown[K]` with generic K stays deferred** (dynamodb; C/2339/i): `try_resolve_indexed` (checker.c) returns the
-  object for any but not for unknown in the generic branch (tsc's getIndexedAccessTypeOrUndefined: both).
 - **Empty member name `""` stored as the text `""`** (gettext.js, cookieclicker; C/2769 D): parser.c's missing-name
   recovery fallback (`cstr_is_empty(&name_string)`, ~line 7410) also fires for an empty string literal: add
   `&& !name_is_value`. Also removes a spurious TS1360.

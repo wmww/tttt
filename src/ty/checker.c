@@ -2545,7 +2545,10 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     if (ty_is_tuple(object) && ty_is_generic_tuple(me, object) && index_less_than_fixed(me, object, index)) {
         return ty_access(me, object, index);
     }
-    if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0) || is_generic_reducible(me, object)) return nullptr;
+    if (is_generic_operand(me, object, 0) || is_generic_operand(me, index, 0) || is_generic_reducible(me, object)) {
+        // (`unknown[K]` with a generic K is unknown, like any's: tsc's getIndexedAccessTypeOrUndefined)
+        return object->flags & TYF_UNKNOWN ? object : nullptr;
+    }
     index = ty_string_index_only_key(me, object, index);
     Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
