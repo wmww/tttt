@@ -441,8 +441,9 @@ src` finds the code-side markers; every significant one has an entry here.
   id (`KEY_ALIAS_MARKER`).
 - Identity (`identity_structured`): differently shaped tuples never identical, no `infer` in the two-conditional rule.
   TS2403 (`check_subsequent_declaration`) uses it and exposes every approximation between two spellings.
-- Cache keys are (source id, target id) plus two intersection-state bits. `RelationState.overflow` (100 deep) reports
-  TS2589 (HACK; tsc TS2321).
+- Cache keys are (source id, target id) plus two intersection-state bits. `RelationState.overflow` reports TS2321
+  like tsc, but trips at 100 nested recursive_related() calls (`st->depth`), where tsc counts its source and target
+  stacks separately (a call that skips a push doesn't count): tttt overflows at least as early.
 - `this` types: `Prop.thisless` follows isThisless; a reference with a this-argument relates structurally.
 - Alias variance (`in out` annotations): the reporting pass falls back to the interface's own variances on an
   invariant failure only for two references to the same target; other shapes keep the old path. The null-base TS2417

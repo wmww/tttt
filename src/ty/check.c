@@ -675,7 +675,15 @@ static bool check_assignable(
 ) {
     u32 limit_hits = my instantiation_limit_hits;
     u32 complexity_hits = my relation_complexity_hits;
+    u32 depth_hits = my relation_depth_hits;
     if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) return true;
+    // A relation that only ran out of stack (TS2321, at the current node) is still elaborated, which may run out again
+    // deeper down, at the part's node (tsc's isTypeRelatedTo reports it, then checkTypeRelatedToAndOptionallyElaborate
+    // goes on). Not reported as unassignable otherwise
+    if (my instantiation_limit_hits - limit_hits == my relation_depth_hits - depth_hits && my relation_depth_hits != depth_hits) {
+        if (errs) elaborate_error(me, head, expr, source, target, errs);
+        return false;
+    }
     // (What ran into the instantiation limits has been reported as that, TS2589)
     if (my instantiation_limit_hits != limit_hits) {
         if (errs && my relation_complexity_hits != complexity_hits) {

@@ -5519,7 +5519,7 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
             maybe_truncate(st, maybe_start);
         }
     } else {
-        if (!st->overflow) relation_cache_put(cache, key, CACHE_FAILED | unreliable);
+        relation_cache_put(cache, key, CACHE_FAILED | unreliable);
         st->relation_count--;
         maybe_truncate(st, maybe_start);
     }
@@ -6250,20 +6250,19 @@ static bool check_related(
     my relating = st;
     Ternary result = is_related_to(me, st, source, target, st->reporting);
     my relating = st->outer;
-    if (st->overflow && st->relation_count <= 0) {
-        // (tsc reports it at the error node, else the current node)
+    if (st->overflow) {
+        // tsc's checkTypeRelatedTo: TS2859 when the relation count ran out, else TS2321 (the stack reached 100), at the
+        // error node, else the current node
+        bool complexity = st->relation_count <= 0;
         cstr source_str = ty_to_cstr(me, source);
         cstr target_str = ty_to_cstr(me, target);
-        ty_error_at_current_node_d(me, 2859, "Excessive complexity comparing types '", source_str, "' and '", target_str, "'.");
+        ty_error_at_current_node_d(me, complexity ? 2859 : 2321, complexity ? "Excessive complexity" : "Excessive stack depth",
+            " comparing types '", source_str, "' and '", target_str, "'.");
         c_drop(cstr, &source_str, &target_str);
         // (A limit like the instantiation ones: what it cut short says nothing more)
         my instantiation_limit_hits++;
-        my relation_complexity_hits++;
-        result = TERNARY_FALSE;
-    } else if (st->overflow) {
-        // HACK: tsc says TS2321 "Excessive stack depth comparing types" here (at the error node, else the current node);
-        // tttt's relation depth runs out where tsc's instantiations do
-        ty_instantiation_limit_reached(me);
+        if (complexity) my relation_complexity_hits++;
+        else my relation_depth_hits++;
         result = TERNARY_FALSE;
     }
     if (report_into && !result) {
