@@ -163,7 +163,7 @@ JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, JsxElement const* element, csvi
 
 JsxIntrinsic ty_jsx_intrinsic(Checker* me, JsxElement const* element) {
     if (element->tag_name.tag != EXPR_IDENTIFIER) return (JsxIntrinsic){ .elements = ty_jsx_type(me, element, c_sv("IntrinsicElements")) };
-    return ty_jsx_intrinsic_named(me, element, element->tag_name.identifier.name.sv);
+    return ty_jsx_intrinsic_named(me, element, element->tag_name.inner_span.sv);
 }
 
 // The errors of looking an intrinsic tag up, at the opening or closing tag (tsc checks both)
@@ -173,7 +173,7 @@ static void report_intrinsic_lookup(Checker* me, JsxElement const* element, JsxI
             error_ctx_error_d(errs, at, 7026, "JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.");
         }
     } else if (!intrinsic->props) {
-        error_ctx_error_d(errs, at, 2339, "Property '", element->tag_name.identifier.name.sv,
+        error_ctx_error_d(errs, at, 2339, "Property '", element->tag_name.inner_span.sv,
             "' does not exist on type 'JSX.IntrinsicElements'.");
     }
     (void)me;
@@ -333,7 +333,7 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
         check_value_tag(me, element, errs);
         return;
     }
-    check_element_type(me, element, ty_string_literal(me, element->tag_name.identifier.name.sv), errs);
+    check_element_type(me, element, ty_string_literal(me, element->tag_name.inner_span.sv), errs);
     if (!vec_spanned_type_is_empty(&element->type_args)) {
         // An intrinsic element takes no type arguments (resolveJsxOpeningLikeElement)
         // (the list, a trailing comma included)

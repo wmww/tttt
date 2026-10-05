@@ -161,11 +161,11 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             if (!expr->identifier.target || !(expr->identifier.target->flags & SYMBOL_ENUM_MEMBER)) {
                 // (The global ones, not a local of that name)
                 Symbol const* target = expr->identifier.target;
-                csview name = expr->identifier.name.sv;
+                csview name = expr->inner_span.sv;
                 bool global = !target || target == program_get_global(my program, name, SYMBOL_VALUE);
                 if (global && csview_equals(name, "NaN")) return enum_value_number(NAN);
                 if (global && csview_equals(name, "Infinity")) return enum_value_number(INFINITY);
-                return const_variable_value(me, expr->identifier.target, expr->identifier.name, depth);
+                return const_variable_value(me, expr->identifier.target, expr->inner_span, depth);
             }
             return member_value(me, expr->identifier.target);
 

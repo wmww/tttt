@@ -822,7 +822,7 @@ static bool js_file_assigns_namespace(SourceFile const* file, csview name) {
             Expr const* root = object;
             while (span_valid(expr_static_property_name(root))) root = &root->property->expr;
             if (root->tag == EXPR_IDENTIFIER && !root->identifier.keyword && !expr_is_perenthisized(root) &&
-                csview_equals_sv(root->identifier.name.sv, name) && expr_is_entity_name(object)
+                csview_equals_sv(root->inner_span.sv, name) && expr_is_entity_name(object)
             ) {
                 return true;
             }
@@ -1486,15 +1486,15 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         me, my container->exports, export_name, name, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS, !export_equals, &merged
     );
     if (!merged) {
-        symbol->name = alias ? expr->identifier.name.sv : export_name;
-        symbol->name_span = alias ? expr->identifier.name : statement;
+        symbol->name = alias ? expr->inner_span.sv : export_name;
+        symbol->name_span = alias ? expr->inner_span : statement;
         symbol->parent = my container;
         symbol->is_default_export = !export_equals;
     }
     if (alias) {
         if (!symbol->alias) symbol->alias = arena_new(&my binder->arena, SymbolAlias);
         symbol->alias->scope = me;
-        symbol->alias->name = expr->identifier.name;
+        symbol->alias->name = expr->inner_span;
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr_outer_span(expr), .full = statement,
             .js = symbol_decl_js(my binder, jsdoc_type, false),
@@ -1578,7 +1578,7 @@ static void declare_commonjs_export(
             symbol->alias->class_expr = class_decl;
             class_decl->commonjs_module = my container;
         } else {
-            symbol->alias->name = value->identifier.name;
+            symbol->alias->name = value->inner_span;
         }
         symbol_add_decl(symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = left, .full = statement,
@@ -1611,10 +1611,10 @@ static bool is_exports_alias(Scope* module, Expr const* e) {
     for (u32 steps = 0; head < tail && steps < 100; steps++) {
         Expr const* node = queue[head++];
         if (expr_is_perenthisized(node)) continue;
-        if (node->tag == EXPR_IDENTIFIER && !node->identifier.keyword && span_equals(node->identifier.name, "exports")) return true;
+        if (node->tag == EXPR_IDENTIFIER && !node->identifier.keyword && span_equals(node->inner_span, "exports")) return true;
         if (expr_is_module_exports(node)) return true;
         if (node->tag != EXPR_IDENTIFIER || node->identifier.keyword) continue;
-        Symbol const* symbol = symbol_table_get(&module->locals, node->identifier.name.sv);
+        Symbol const* symbol = symbol_table_get(&module->locals, node->inner_span.sv);
         Binding const* binding = symbol ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
         if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER) continue;
         Expr const* init = initialized_binding_value(((InitializedBinding const*)binding));
@@ -1665,7 +1665,7 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             if (op->op != BINARY_OP_EQUAL || !span_valid(name) || name.sv.buf[0] == '#') break;
             Expr const* object = &left->property->expr;
             if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || !is_exports_alias(me, object)) break;
-            if (span_equals(object->identifier.name, "exports")) break; // (binary_commonjs_declaration()'s)
+            if (span_equals(object->inner_span, "exports")) break; // (binary_commonjs_declaration()'s)
             left->property->commonjs_export_alias = true;
             declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, expr_outer_span(left), statement, ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY, top_level);
         }   break;
@@ -2577,7 +2577,7 @@ static Symbol* resolve_entity_alias(Symbol* me) {
     Expr const* e = my alias->entity;
     for (; e->tag == EXPR_PROPERTY && count < c_arraylen(names); e = &e->property->expr) names[count++] = e;
     if (e->tag != EXPR_IDENTIFIER) return entity_value_symbol(me);
-    Symbol* target = scope_resolve(my alias->scope, e->identifier.name.sv, SYMBOL_NAMESPACE);
+    Symbol* target = scope_resolve(my alias->scope, e->inner_span.sv, SYMBOL_NAMESPACE);
     if (!target || target == me) return entity_value_symbol(me);
     target = resolve_if_pure_alias(target);
     for (u32 i = count; i-- > 0;) {
@@ -3806,8 +3806,8 @@ static bool is_global_like_access(Expr const* access, Span name) {
     Expr const* object = &access->property->expr;
     if (object->tag != EXPR_IDENTIFIER || expr_is_perenthisized(object)) return false;
     if (object->identifier.keyword) return object->identifier.keyword == KEYWORD_IDENTIFIER_THIS;
-    return span_equals(object->identifier.name, "window") || span_equals(object->identifier.name, "self") ||
-        span_equals(object->identifier.name, "global");
+    return span_equals(object->inner_span, "window") || span_equals(object->inner_span, "self") ||
+        span_equals(object->inner_span, "global");
 }
 
 // The expression a variable of this initializer is an expando container of (tsc's getDeclaredExpandoInitializer):
@@ -3829,7 +3829,7 @@ Expr* expando_initializer(Expr* init, Span name, bool js) {
     ) {
         // `var ns = ns || {}`, `ns.a = ns.a || {}` (tsc's getDefaultedExpandoInitializer: the same name on the left)
         Expr const* left = &init->binary_op->left;
-        bool same = span_valid(name) ? (left->tag == EXPR_IDENTIFIER && name_equals(left->identifier.name.sv, name.sv)) ||
+        bool same = span_valid(name) ? (left->tag == EXPR_IDENTIFIER && name_equals(left->inner_span.sv, name.sv)) ||
             is_global_like_access(left, name) : left->tag == EXPR_PROPERTY || left->tag == EXPR_IDENTIFIER;
         if (!js || !same) return nullptr;
         init = &init->binary_op->right;
@@ -3858,7 +3858,7 @@ static Symbol* lookup_for_property_access(Scope* me, Expr const* entity) {
         return object && object->exports && !object->is_module ? symbol_table_get(object->exports, name.sv) : nullptr;
     }
     if (entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return nullptr;
-    Symbol* found = lookup_name_for_property_access(me, entity->identifier.name.sv);
+    Symbol* found = lookup_name_for_property_access(me, entity->inner_span.sv);
     // The local `f` of `export default function f` is the default export
     return found && symbol_rare(found)->export_symbol ? symbol_rare(found)->export_symbol : found;
 }
@@ -3958,7 +3958,7 @@ static bool is_global_expando_entity(Scope* me, Expr const* target) {
         entity = &entity->property->expr;
     }
     if (expr_is_perenthisized(entity) || entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword) return false;
-    csview name = entity->identifier.name.sv;
+    csview name = entity->inner_span.sv;
     // `exports.x =`, `module.exports =`, `module.exports.x =` are CommonJS exports (or nothing outside a CommonJS
     // module: tsc's getAssignmentDeclarationKind)
     if (csview_equals(name, "exports")) return false;
@@ -3976,7 +3976,7 @@ static bool is_global_expando_entity(Scope* me, Expr const* target) {
 static bool is_commonjs_root(Expr const* entity) {
     while (entity->tag == EXPR_PROPERTY) entity = &entity->property->expr;
     return entity->tag == EXPR_IDENTIFIER && !entity->identifier.keyword &&
-        (span_equals(entity->identifier.name, "exports") || span_equals(entity->identifier.name, "module"));
+        (span_equals(entity->inner_span, "exports") || span_equals(entity->inner_span, "module"));
 }
 
 // A global with expandos, whose variable initializers (in whichever file) get the members once every file is bound
@@ -4002,7 +4002,7 @@ static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
         table = parent->exports;
         name = expr_static_property_name(entity);
     } else {
-        name = entity->identifier.name;
+        name = entity->inner_span;
     }
     bool merged;
     Symbol* symbol = declare_symbol(me, table, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
@@ -4564,10 +4564,10 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
             declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, jsdoc_modifiers);
         }   break;
         case THIS_PARAMETER: // (Of a JSDoc `@this {T}`: tsc's binder doesn't look at it)
-            if (!this->this_function) break;
+            if (!identifier_this_function(this)) break;
             // fallthrough
         case THIS_ANY: {
-            FunctionImpl* this_function = (FunctionImpl*)this->this_function;
+            FunctionImpl* this_function = (FunctionImpl*)identifier_this_function(this);
             if (!this_function || this_function != function) return;
             // `X.prototype.m = function () { this.x = v }` declares x for X, else the function is a constructor
             Symbol* class_symbol = nullptr;

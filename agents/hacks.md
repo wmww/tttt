@@ -10,6 +10,10 @@ src` finds the code-side markers; every significant one has an entry here.
 - `shrink_list()` (`parser.c`): every parser list is shrunk when done (AST elements are big: a parameter is 568 bytes):
   -20% RSS for +1.5% instructions. Real fix: smaller nodes. PERF notes: `CallExpr` argument types recomputed per use,
   `Value.object` refcount churn, `CallableType`/`FunctionImpl` two allocations.
+- `identifier_expr_name()` (`expr.h`): an `IdentifierExpr` has no name of its own, it reads its `Expr`'s inner_span
+  through `offsetof` (an IdentifierExpr only ever lives inside an Expr: never copy one out on its own). Its rare
+  pointers (`module_ref_`, `this_function_`, `evolving_index_`, `extends_entity_`) share a union that the accessors
+  pick by keyword/require_call/evolving_op; a new writer must keep those discriminants exclusive
 - `current_checker` / `current_lazy_slots` (thread locals, `checker_make_current`): how the AST-side walk
   (`*_typecheck`, `*_evaluate_type`, `ty_of_node`) finds its checker; left set after `program_typecheck` for the test
   traversal. `compiler_options()` is a thread local too. Both want a passed check context (checker + errs + options).

@@ -535,7 +535,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     if (base->tag == EXPR_IDENTIFIER) base->identifier.class_base = true;
     Expr* head = base;
     while (head->tag == EXPR_PROPERTY && head->property->form == PROPERTY_EXPR_DOT) head = &head->property->expr;
-    if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword) head->identifier.extends_entity = base;
+    if (head->tag == EXPR_IDENTIFIER && !head->identifier.keyword) head->identifier.extends_entity_ = base;
     expr_lookup_names(&my extends, names, errs);
     if (my jsdoc_base) expr_lookup_names(my jsdoc_base, names, errs);
     for_each (i, vec_spanned_type, &my implements) {

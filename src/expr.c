@@ -20,7 +20,7 @@
 #include "ast_walk.h"
 
 // Expressions are stored inline everywhere: keep them small
-static_assert(sizeof(Expr) == 128, "Expr grew");
+static_assert(sizeof(Expr) == 88, "Expr grew");
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -40,7 +40,7 @@ static bool check_before_super(IdentifierExpr const* me, Scope const* names, uns
     if (!class_decl || class_decl->extends.tag == EXPR_IMPLICIT_ANY) return true;
     if (class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL) return true;
     if (flow_is_post_super(flow->current)) return true;
-    error_ctx_error_d(errs, my name, code, "'super' must be called before accessing ", what,
+    error_ctx_error_d(errs, identifier_expr_name(me), code, "'super' must be called before accessing ", what,
         " in the constructor of a derived class.");
     return false;
 }
@@ -148,7 +148,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
             } else if (member && function->is_expression) {
                 // An object literal's method: any
                 if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
-                    error_ctx_error_d(errs, my name, 2659, "'super' is only allowed in members of object literal "
+                    error_ctx_error_d(errs, identifier_expr_name(me), 2659, "'super' is only allowed in members of object literal "
                         "expressions when option 'target' is 'ES2015' or higher.");
                 }
                 return;
@@ -171,12 +171,12 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     if (!legal) {
         my super_invalid = true;
         if (in_computed_name) {
-            error_ctx_error_d(errs, my name, 2466, "'super' cannot be referenced in a computed property name.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 2466, "'super' cannot be referenced in a computed property name.");
         } else if (is_call) {
-            error_ctx_error_d(errs, my name, 2337,
+            error_ctx_error_d(errs, identifier_expr_name(me), 2337,
                 "Super calls are not permitted outside constructors or in nested functions inside constructors.");
         } else {
-            error_ctx_error_d(errs, my name, 2660,
+            error_ctx_error_d(errs, identifier_expr_name(me), 2660,
                 "'super' can only be referenced in members of derived classes or object literal expressions.");
         }
         return;
@@ -189,13 +189,13 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     if (!class_decl) return;
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) {
         my super_invalid = true;
-        error_ctx_error_d(errs, my name, 2335, "'super' can only be referenced in a derived class.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2335, "'super' can only be referenced in a derived class.");
         return;
     }
     if (!is_call) check_before_super(me, names, 17011, "a property of 'super'", errs);
     if (in_constructor_args) {
         my super_invalid = true;
-        error_ctx_error_d(errs, my name, 2336, "'super' cannot be referenced in constructor arguments.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2336, "'super' cannot be referenced in constructor arguments.");
         return;
     }
     my this_kind = scope_rare(scope)->this_ref.kind;
@@ -237,15 +237,15 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
         }
     }
     if (!decl || !decl->full.source) return;
-    bool other_file = decl->full.source != my name.source;
+    bool other_file = decl->full.source != identifier_expr_name(me).source;
     if (other_file) {
         // Only an outFile orders the files, and a module's declarations are only in scope once imported
         CompilerOptions const* options = compiler_options();
-        if (cstr_is_empty(&options->out_file) || !my name.source) return;
-        if (decl->full.source->is_module || my name.source->is_module) return;
-        if (decl->full.source->program_order <= my name.source->program_order) return;
+        if (cstr_is_empty(&options->out_file) || !identifier_expr_name(me).source) return;
+        if (decl->full.source->is_module || identifier_expr_name(me).source->is_module) return;
+        if (decl->full.source->program_order <= identifier_expr_name(me).source->program_order) return;
     }
-    if (!other_file && span_start_ptr(decl->full) <= span_start_ptr(my name)) {
+    if (!other_file && span_start_ptr(decl->full) <= span_start_ptr(identifier_expr_name(me))) {
         if (decl->kind == SYMBOL_DECL_CLASS) {
             // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
             bool in_computed_name = false;
@@ -266,7 +266,7 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             while (root->parent) root = root->parent;
             if (root != &names->flow->initializing->binding) return;
             // In the default of another element of the pattern it's initialized already (`{ a, b = a }`)
-            char const* at = span_start_ptr(my name);
+            char const* at = span_start_ptr(identifier_expr_name(me));
             bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
             Span element = binding->has_element_span ? binding_element_span(binding) : binding->content_span;
             if (binding->default_value) element = span_between(element, expr_outer_span(binding->default_value));
@@ -287,11 +287,11 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
     }
     Error* error;
     if (flags & SYMBOL_BLOCK_SCOPED_VARIABLE) {
-        error = error_ctx_error_d(errs, my name, 2448, "Block-scoped variable '", decl->name, "' used before its declaration.");
+        error = error_ctx_error_d(errs, identifier_expr_name(me), 2448, "Block-scoped variable '", decl->name, "' used before its declaration.");
     } else if (flags & SYMBOL_CLASS) {
-        error = error_ctx_error_d(errs, my name, 2449, "Class '", decl->name, "' used before its declaration.");
+        error = error_ctx_error_d(errs, identifier_expr_name(me), 2449, "Class '", decl->name, "' used before its declaration.");
     } else {
-        error = error_ctx_error_d(errs, my name, 2450, "Enum '", decl->name, "' used before its declaration.");
+        error = error_ctx_error_d(errs, identifier_expr_name(me), 2450, "Enum '", decl->name, "' used before its declaration.");
     }
     error_add_related_d(error, decl->name, 2728, "'", decl->name, "' is declared here.");
 }
@@ -305,12 +305,12 @@ static void check_parameter_reference(IdentifierExpr const* me, Scope const* nam
     Symbol const* symbol = my symbol;
     Span param_name = param->content_span;
     if (param->tag == BINDING_IDENTIFIER && symbol == param->symbol) {
-        error_ctx_error_d(errs, my name, 2372, "Parameter '", param_name, "' cannot reference itself.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2372, "Parameter '", param_name, "' cannot reference itself.");
     } else if (span_start_ptr(symbol->name_span) > span_start_ptr(param_name) && symbol->name_span.source == param_name.source &&
         flow->parameter_function_scope && scope_declares_symbol(flow->parameter_function_scope, symbol)
     ) {
-        error_ctx_error_d(errs, my name, 2373,
-            "Parameter '", param_name, "' cannot reference identifier '", my name, "' declared after it.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2373,
+            "Parameter '", param_name, "' cannot reference identifier '", identifier_expr_name(me), "' declared after it.");
     }
 }
 
@@ -431,9 +431,9 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     Symbol const* named = item && item->symbol ? item->symbol : found;
     if (!item || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) return;
     bool exported = port_item_is_export(item);
-    Error* error = error_ctx_error_d(errs, my name, exported ? 1362 : 1361, "'", my name, "' cannot be used as a value "
+    Error* error = error_ctx_error_d(errs, identifier_expr_name(me), exported ? 1362 : 1361, "'", identifier_expr_name(me), "' cannot be used as a value "
         "because it was ", exported ? "exported using 'export type'." : "imported using 'import type'.");
-    port_item_add_type_only_related(error, item, my name.sv);
+    port_item_add_type_only_related(error, item, identifier_expr_name(me).sv);
 }
 
 // What there is to say about a module name that an import-like construct uses
@@ -449,7 +449,7 @@ void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
 // What an entity name expression (`a`, `a.b.c`) names with `meaning`, quietly: null if nothing
 static Symbol const* entity_name_symbol(Scope* names, Expr const* expr, u32 meaning) {
     if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
-        return symbol_for_meaning(scope_resolve(names, expr->identifier.name.sv, meaning), meaning);
+        return symbol_for_meaning(scope_resolve(names, expr->inner_span.sv, meaning), meaning);
     }
     if (expr->tag != EXPR_PROPERTY || expr->property->form != PROPERTY_EXPR_DOT) return nullptr;
     Expr const* name = &expr->property->prop;
@@ -486,7 +486,7 @@ static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, E
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_ALIAS || !decl->node || ((PortItem const*)decl->node)->tag != PORT_EXPORT_AS_NAMESPACE) return;
     }
-    error_ctx_error_d(errs, my name, 2686, "'", my name, "' refers to a UMD global, but the current file is a module. ",
+    error_ctx_error_d(errs, identifier_expr_name(me), 2686, "'", identifier_expr_name(me), "' refers to a UMD global, but the current file is a module. ",
         "Consider adding an import instead.");
 }
 
@@ -495,13 +495,13 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
             directly_in_constructor(names) && !span_valid(function_impl_rare(names->function)->first_this_or_super)
         ) {
-            function_impl_rare_mut(names->function)->first_this_or_super = my name;
+            function_impl_rare_mut(names->function)->first_this_or_super = identifier_expr_name(me);
         }
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
             ThisRef this_ref = scope_get_this(names, false);
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;
-            my this_function = this_ref.function;
+            my this_function_ = this_ref.function;
             if (this_ref.kind == THIS_ANY) {
                 Scope const* container = names;
                 while (container && !scope_rare(container)->this_ref.kind) container = container->parent;
@@ -514,13 +514,13 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             for (Scope const* scope = names; scope && !scope_rare(scope)->this_ref.kind; scope = scope->parent) {
                 if (scope->kind == SCOPE_FUNCTION && !(scope->function && span_valid(scope->function->arrow_span))) break;
                 if (!scope->decorated_static_field) continue;
-                error_ctx_error_d(errs, my name, 2816, "Cannot use 'this' in a static property initializer of a decorated class.");
+                error_ctx_error_d(errs, identifier_expr_name(me), 2816, "Cannot use 'this' in a static property initializer of a decorated class.");
                 break;
             }
             // tsc's checkThisExpression: the this container (arrow functions count) is a class member's computed name
             for (Scope const* scope = names; scope && scope->kind != SCOPE_FUNCTION && !scope_rare(scope)->this_ref.kind; scope = scope->parent) {
                 if (scope->no_super != NO_SUPER_COMPUTED_NAME) continue;
-                error_ctx_error_d(errs, my name, 2465, "'this' cannot be referenced in a computed property name.");
+                error_ctx_error_d(errs, identifier_expr_name(me), 2465, "'this' cannot be referenced in a computed property name.");
                 break;
             }
             if (!this_ref.kind) {
@@ -559,54 +559,54 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
                 my target = function_impl_rare(function)->constructed_class;
             } else if (function && !function->is_method && !function->accessor && !span_valid(function->member_name)) {
                 my target = function->symbol;
-                my this_function = function;
+                my this_function_ = function;
             } else {
-                error_ctx_error_d(errs, my name, 17013, "Meta-property 'new.target' is only allowed in the body of a "
+                error_ctx_error_d(errs, identifier_expr_name(me), 17013, "Meta-property 'new.target' is only allowed in the body of a "
                     "function declaration, function expression, or constructor.");
             }
-        } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && my module_ref) {
+        } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && identifier_module_ref(me)) {
             // `import("./a")`
-            if (my module_ref->file) {
-                module_ref_report_resolved(my module_ref, false, errs);
-            } else if (!binder_module_of_ref(names->binder, my module_ref)) {
-                module_ref_report_unresolved(my module_ref, errs);
+            if (identifier_module_ref(me)->file) {
+                module_ref_report_resolved(identifier_module_ref(me), false, errs);
+            } else if (!binder_module_of_ref(names->binder, identifier_module_ref(me))) {
+                module_ref_report_unresolved(identifier_module_ref(me), errs);
             }
         }
         return;
     }
     // (`default` is a reserved word, which only `typeof default` looks up: never the module's default export, which
     // tsc keeps in the module's exports only)
-    my target = csview_equals(my name.sv, "default") ? nullptr : scope_get_value(names, my name.sv, &my symbol);
-    if (my target && names->file && names->file->is_commonjs && span_equals(my name, "exports") &&
-        my symbol == symbol_table_get(&names->binder->globals, my name.sv)
+    my target = csview_equals(identifier_expr_name(me).sv, "default") ? nullptr : scope_get_value(names, identifier_expr_name(me).sv, &my symbol);
+    if (my target && names->file && names->file->is_commonjs && span_equals(identifier_expr_name(me), "exports") &&
+        my symbol == symbol_table_get(&names->binder->globals, identifier_expr_name(me).sv)
     ) {
         // A global `exports` doesn't hide the module (tsc's resolveNameHelper tries the file before the globals)
         my target = my symbol = nullptr;
     }
     if (my require_call && my target && names->file && names->file->is_js && expr_symbol_is_commonjs_require(my target)) {
         // An ambient `require` (@types/node's) is tsc's requireSymbol too (isCommonJsRequire)
-        if (my require_call == 1) module_ref_report(my module_ref, names, errs);
+        if (my require_call == 1) module_ref_report(identifier_module_ref(me), names, errs);
         return;
     }
     if (!my target && names->file && names->file->is_js) {
         if (my require_call) {
             // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)
             my target = my symbol = binder_require_symbol(names->binder);
-            if (my require_call == 1) module_ref_report(my module_ref, names, errs);
+            if (my require_call == 1) module_ref_report(identifier_module_ref(me), names, errs);
             return;
         }
-        if (names->file->is_commonjs && span_equals(my name, "exports")) {
+        if (names->file->is_commonjs && span_equals(identifier_expr_name(me), "exports")) {
             // The module itself (tsc's resolveNameHelper: `exports` in a CommonJS file is the file's symbol)
             my target = my symbol = names->file->scope->container;
             return;
         }
     }
     if (my target) {
-        ClassItem const* field = scope_invalid_initializer_field(names, my name.sv, my symbol);
+        ClassItem const* field = scope_invalid_initializer_field(names, identifier_expr_name(me).sv, my symbol);
         if (field) {
             // Unresolved (any) like in tsc's resolveNameHelper, but the symbols baseline still shows what the name
             // finds (getSymbolAtLocation doesn't report)
-            scope_report_invalid_initializer_reference(field, my name, errs);
+            scope_report_invalid_initializer_reference(field, identifier_expr_name(me), errs);
             my target = nullptr;
             my invalid_initializer_reference = true;
             return;
@@ -617,10 +617,10 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_parameter_reference(me, names, errs);
         check_umd_global_use(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
-    } else if (span_equals(my name, "arguments") && scope_has_arguments(names)) {
+    } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
             // (tsc's checkIdentifier: the error type)
-            error_ctx_error_d(errs, my name, 2815, "'arguments' cannot be referenced in property initializers.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 2815, "'arguments' cannot be referenced in property initializers.");
             my invalid_initializer_reference = true;
         }
         // No symbol: ty_identifier_reference_type() makes it IArguments
@@ -629,44 +629,44 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         FunctionImpl const* container = names->function;
         if (compiler_options()->target < SCRIPT_TARGET_ES2015 && container) {
             if (span_valid(container->arrow_span)) {
-                error_ctx_error_d(errs, my name, 2496, "The 'arguments' object cannot be referenced in an arrow function in ES5. "
+                error_ctx_error_d(errs, identifier_expr_name(me), 2496, "The 'arguments' object cannot be referenced in an arrow function in ES5. "
                     "Consider using a standard function expression.");
             } else if (container->is_async) {
-                error_ctx_error_d(errs, my name, 2522, "The 'arguments' object cannot be referenced in an async function or "
+                error_ctx_error_d(errs, identifier_expr_name(me), 2522, "The 'arguments' object cannot be referenced in an async function or "
                     "method in ES5. Consider using a standard function or method.");
             }
         }
     } else if (names->flow && names->flow->type_only_alias_ok &&
-        (my symbol = scope_resolve(names, my name.sv, SYMBOL_ANY_MEANING))
+        (my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING))
     ) {
         // `export = N`, `export default N`: a name exports whatever it means (tsc's checkExportAssignment resolves it
         // with every meaning), a namespace or a type is fine. No target: it has no value type
-    } else if (my extends_entity && entity_names_interface(names, my extends_entity)) {
+    } else if (identifier_extends_entity(me) && entity_names_interface(names, identifier_extends_entity(me))) {
         // (tsc's checkAndReportErrorForExtendingInterface)
-        error_ctx_error_d(errs, my name, 2689, "Cannot extend an interface '", expr_outer_span(my extends_entity),
+        error_ctx_error_d(errs, identifier_expr_name(me), 2689, "Cannot extend an interface '", expr_outer_span(identifier_extends_entity(me)),
             "'. Did you mean 'implements'?");
-        my symbol = scope_resolve(names, my name.sv, SYMBOL_ANY_MEANING);
-        my namespace_as_value = my extends_entity->tag != EXPR_IDENTIFIER;
-    } else if (scope_resolve(names, my name.sv, SYMBOL_NAMESPACE_MODULE)) {
+        my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING);
+        my namespace_as_value = identifier_extends_entity(me)->tag != EXPR_IDENTIFIER;
+    } else if (scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_NAMESPACE_MODULE)) {
         // (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue)
-        error_ctx_error_d(errs, my name, 2708, "Cannot use namespace '", my name, "' as a value.");
-        my symbol = scope_resolve(names, my name.sv, SYMBOL_NAMESPACE_MODULE);
-    } else if (scope_get_type(names, my name.sv, nullptr)) {
+        error_ctx_error_d(errs, identifier_expr_name(me), 2708, "Cannot use namespace '", identifier_expr_name(me), "' as a value.");
+        my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_NAMESPACE_MODULE);
+    } else if (scope_get_type(names, identifier_expr_name(me).sv, nullptr)) {
         // (tsc's isES2015OrLaterConstructorName)
         static char const* const later[] = { "Promise", "Symbol", "Map", "WeakMap", "Set", "WeakSet" };
         bool later_lib = false;
-        for (u32 i = 0; i < c_arraylen(later); i++) later_lib |= csview_equals(my name.sv, later[i]);
+        for (u32 i = 0; i < c_arraylen(later); i++) later_lib |= csview_equals(identifier_expr_name(me).sv, later[i]);
         if (later_lib) {
-            error_ctx_error_d(errs, my name, 2585, "'", my name, "' only refers to a type, but is being used as a value "
+            error_ctx_error_d(errs, identifier_expr_name(me), 2585, "'", identifier_expr_name(me), "' only refers to a type, but is being used as a value "
                 "here. Do you need to change your target library? Try changing the 'lib' compiler option to es2015 or later.");
-        } else if (my class_base && is_primitive_type_name(my name.sv)) {
-            error_ctx_error_d(errs, my name, 2863, "A class cannot extend a primitive type like '", my name,
+        } else if (my class_base && is_primitive_type_name(identifier_expr_name(me).sv)) {
+            error_ctx_error_d(errs, identifier_expr_name(me), 2863, "A class cannot extend a primitive type like '", identifier_expr_name(me),
                 "'. Classes can only extend constructable values.");
         } else {
-            error_ctx_error_d(errs, my name, 2693, "'", my name, "' only refers to a type, but is being used as a value here.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 2693, "'", identifier_expr_name(me), "' only refers to a type, but is being used as a value here.");
         }
     } else if (!my shorthand_unchecked) {
-        scope_report_value_not_found(names, my name, my shorthand, errs);
+        scope_report_value_not_found(names, identifier_expr_name(me), my shorthand, errs);
     }
 }
 
@@ -692,7 +692,7 @@ static bool plausible_operand(Ty const* ty) {
 static bool report_invalid_assignment_target(IdentifierExpr const* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     if (!my assignment_target || !symbol || !my target || symbol->is_placeholder || my keyword) return false;
-    if (!(symbol->flags & SYMBOL_VARIABLE) && !(my name.source && my name.source->is_js && (symbol->flags & SYMBOL_VALUE_MODULE))) {
+    if (!(symbol->flags & SYMBOL_VARIABLE) && !(identifier_expr_name(me).source && identifier_expr_name(me).source->is_js && (symbol->flags & SYMBOL_VALUE_MODULE))) {
         char const* what = symbol->flags & SYMBOL_ENUM ? "an enum" : symbol->flags & SYMBOL_CLASS ? "a class" :
             symbol->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE) ? "a namespace" :
             symbol->flags & SYMBOL_FUNCTION ? "a function" : symbol->flags & SYMBOL_ALIAS ? "an import" : nullptr;
@@ -700,14 +700,14 @@ static bool report_invalid_assignment_target(IdentifierExpr const* me, ErrorCtx*
             symbol->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE) ? 2631 : symbol->flags & SYMBOL_FUNCTION ? 2630 :
             symbol->flags & SYMBOL_ALIAS ? 2632 : 2539;
         if (what) {
-            error_ctx_error_d(errs, my name, code, "Cannot assign to '", my name, "' because it is ", what, ".");
+            error_ctx_error_d(errs, identifier_expr_name(me), code, "Cannot assign to '", identifier_expr_name(me), "' because it is ", what, ".");
         } else {
-            error_ctx_error_d(errs, my name, code, "Cannot assign to '", my name, "' because it is not a variable.");
+            error_ctx_error_d(errs, identifier_expr_name(me), code, "Cannot assign to '", identifier_expr_name(me), "' because it is not a variable.");
         }
         return true;
     }
     if (symbol->is_const) {
-        error_ctx_error_d(errs, my name, 2588, "Cannot assign to '", my name, "' because it is a constant.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2588, "Cannot assign to '", identifier_expr_name(me), "' because it is a constant.");
         return true;
     }
     return false;
@@ -725,7 +725,7 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     switch (issue) {
         case IDENTIFIER_FLOW_OK: break;
         case IDENTIFIER_FLOW_UNASSIGNED:
-            error_ctx_error_d(errs, my name, 2454, "Variable '", my name, "' is used before being assigned.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 2454, "Variable '", identifier_expr_name(me), "' is used before being assigned.");
             break;
         case IDENTIFIER_FLOW_IMPLICIT_ANY:
         case IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY: {
@@ -733,44 +733,44 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
             char const* t = issue == IDENTIFIER_FLOW_IMPLICIT_ANY ? "any" : "any[]";
             Binding const* binding = symbol_find_node(my target, SYMBOL_DECL_VARIABLE);
             error_ctx_error_d(errs, binding->content_span, 7034,
-                "Variable '", my name, "' implicitly has type '", t, "' in some locations where its type cannot be determined.");
-            error_ctx_error_d(errs, my name, 7005, "Variable '", my name, "' implicitly has an '", t, "' type.");
+                "Variable '", identifier_expr_name(me), "' implicitly has type '", t, "' in some locations where its type cannot be determined.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 7005, "Variable '", identifier_expr_name(me), "' implicitly has an '", t, "' type.");
         }   break;
     }
     if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
         // tsc's checkGrammarMetaProperty: the name after `new.`
-        char const* end = span_end_ptr(my name);
+        char const* end = span_end_ptr(identifier_expr_name(me));
         char const* start = end;
-        while (start > span_start_ptr(my name) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
-        Span property = span_make(my name.source, start, end);
+        while (start > span_start_ptr(identifier_expr_name(me)) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
+        Span property = span_make(identifier_expr_name(me).source, start, end);
         if (!csview_equals(property.sv, "target")) {
             error_ctx_grammar_error_d(errs, property, 17012, "'", property,
                 "' is not a valid meta-property for keyword 'new'. Did you mean 'target'?");
         }
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_NAMESPACE) {
-        error_ctx_error_d(errs, my name, 2331, "'this' cannot be referenced in a module or namespace body.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2331, "'this' cannot be referenced in a module or namespace body.");
         // (Nor does it have a type: tsc's tryGetThisTypeAt of a namespace)
         if (compiler_options()->no_implicit_this) {
-            error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
         }
     }
     // (tsc's checkThisExpression: `typeof globalThis` through an arrow function)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_GLOBAL && my this_through_arrow &&
         compiler_options()->no_implicit_this
     ) {
-        error_ctx_error_d(errs, my name, 7041, "The containing arrow function captures the global value of 'this'.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 7041, "The containing arrow function captures the global value of 'this'.");
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ENUM) {
-        error_ctx_error_d(errs, my name, 2332, "'this' cannot be referenced in current location.");
+        error_ctx_error_d(errs, identifier_expr_name(me), 2332, "'this' cannot be referenced in current location.");
     }
     // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
-        !(my this_function && (ty_js_this_class(my this_function) || ty_contextual_this_type(current_checker, my this_function)))
+        !(identifier_this_function(me) && (ty_js_this_class(identifier_this_function(me)) || ty_contextual_this_type(current_checker, identifier_this_function(me))))
     ) {
-        Error* e = error_ctx_error_d(errs, my name, 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
-        if (my this_shadows_outer && my this_function) {
-            error_add_related_d(e, function_error_span(my this_function), 2738, "An outer value of 'this' is shadowed by this container.");
+        Error* e = error_ctx_error_d(errs, identifier_expr_name(me), 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
+        if (my this_shadows_outer && identifier_this_function(me)) {
+            error_add_related_d(e, function_error_span(identifier_this_function(me)), 2738, "An outer value of 'this' is shadowed by this container.");
         }
     }
 }
@@ -1007,7 +1007,7 @@ void jsx_element_drop(JsxElement* me) {
 bool jsx_element_is_intrinsic(JsxElement const* me) {
     if (my namespaced) return true;
     if (my tag_name.tag != EXPR_IDENTIFIER || my tag_name.identifier.keyword) return false;
-    csview name = my tag_name.identifier.name.sv;
+    csview name = my tag_name.inner_span.sv;
     u32 first = name.size ? (uint8_t)name.buf[0] : 0;
     if (first == '\\' && name.size > 2) {
         // `\u0061` / `\u{61}` (TS17021, but the name is still `a`)
@@ -1204,7 +1204,7 @@ static void identifier_mark_assigned(IdentifierExpr const* me, Scope const* name
         return;
     }
     // The end of the outermost statement around the assignment that starts after the declaration
-    char const* end = span_end_ptr(my name);
+    char const* end = span_end_ptr(identifier_expr_name(me));
     char const* declared_at = span_start_ptr(symbol->name_span);
     for (FlowStatementFrame const* i = names->flow->statements; i; i = i->parent) {
         if (span_start_ptr(i->span) <= declared_at) break;
@@ -1224,16 +1224,16 @@ static bool is_compound_like(Expr const* right) {
 static bool is_same_entity_name(Expr const* name, Expr const* init) {
     if (expr_is_perenthisized(name) || expr_is_perenthisized(init)) return false;
     if (name->tag == EXPR_IDENTIFIER && init->tag == EXPR_IDENTIFIER) {
-        return !name->identifier.keyword && !init->identifier.keyword && name_equals(name->identifier.name.sv, init->identifier.name.sv);
+        return !name->identifier.keyword && !init->identifier.keyword && name_equals(name->inner_span.sv, init->inner_span.sv);
     }
     Span init_name = expr_static_property_name(init);
     if (name->tag == EXPR_IDENTIFIER && span_valid(init_name)) {
         Expr const* object = &init->property->expr;
         bool global_like = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) &&
             (object->identifier.keyword == KEYWORD_IDENTIFIER_THIS || (!object->identifier.keyword &&
-                (span_equals(object->identifier.name, "window") || span_equals(object->identifier.name, "self") ||
-                    span_equals(object->identifier.name, "global"))));
-        return global_like && !name->identifier.keyword && name_equals(name->identifier.name.sv, init_name.sv);
+                (span_equals(object->inner_span, "window") || span_equals(object->inner_span, "self") ||
+                    span_equals(object->inner_span, "global"))));
+        return global_like && !name->identifier.keyword && name_equals(name->inner_span.sv, init_name.sv);
     }
     Span name_name = expr_static_property_name(name);
     return span_valid(name_name) && span_valid(init_name) && name_equals(name_name.sv, init_name.sv) &&
@@ -1350,7 +1350,7 @@ static void mark_indirect_call(Expr* callee) {
     ) {
         return;
     }
-    bool eval = right->tag == EXPR_IDENTIFIER && !right->identifier.keyword && csview_equals(right->identifier.name.sv, "eval");
+    bool eval = right->tag == EXPR_IDENTIFIER && !right->identifier.keyword && csview_equals(right->inner_span.sv, "eval");
     if (right->tag == EXPR_PROPERTY || eval) callee->binary_op->indirect_call = true;
 }
 
@@ -1518,10 +1518,10 @@ __attribute__((noinline)) static void jsx_lookup_names(Expr* me, Scope* names, E
                 // Only for the types baseline, which shows an intrinsic tag name as a value of that name (tsc's
                 // getTypeAtLocation checks it as an expression): no reference
                 IdentifierExpr* name = &my jsx->tag_name.identifier;
-                if (!name->keyword) name->target = scope_get_value(names, name->name.sv, &name->symbol);
+                if (!name->keyword) name->target = scope_get_value(names, identifier_expr_name(name).sv, &name->symbol);
                 IdentifierExpr* closing = &my jsx->closing_name.identifier;
                 if (my jsx->closing_name.tag == EXPR_IDENTIFIER && !closing->keyword) {
-                    closing->target = scope_get_value(names, closing->name.sv, &closing->symbol);
+                    closing->target = scope_get_value(names, identifier_expr_name(closing).sv, &closing->symbol);
                 }
             }
             for_each (i, vec_spanned_type, &my jsx->type_args) type_lookup_names(&i->type, names, errs);
@@ -1627,7 +1627,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         Symbol const* global = names->binder ? symbol_table_get(&names->binder->globals, my inner_span.sv) : nullptr;
         if (declared && declared != global) {
             Expr old = *me;
-            *me = expr_identifier((IdentifierExpr){ .name = old.inner_span });
+            *me = expr_identifier(old.inner_span, (IdentifierExpr){0});
             my paren_before = old.paren_before;
             my paren_after = old.paren_after;
             my lazy_type = old.lazy_type;
@@ -1650,7 +1650,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (assignment_target != FLOW_TARGET_DEFINITE || read_target) {
                 unused_mark_referenced(names, (Symbol*)my identifier.symbol, SYMBOL_VALUE);
             }
-            my identifier.flow = flow_builder_reference(flow, my identifier.name);
+            my identifier.flow = flow_builder_reference(flow, my inner_span);
             my identifier.assignment_target = assignment_target;
             my identifier.compound_like_target = compound_like_target;
             my identifier.assume_initialized = flow->in_type_query;
@@ -1666,8 +1666,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             }
             if (assignment_target) identifier_mark_assigned(&my identifier, names);
             if (!my identifier.keyword) {
-                scope_check_strict_identifier(names, my identifier.name, false);
-                if (assignment_target) scope_check_strict_eval_or_arguments(names, my identifier.name);
+                scope_check_strict_identifier(names, my inner_span, false);
+                if (assignment_target) scope_check_strict_eval_or_arguments(names, my inner_span);
             }
             break;
 
@@ -3269,7 +3269,7 @@ static bool is_literal_expression_of_object(Expr const* me) {
 // checkBinaryLikeExpression, whose checkAssignmentOperator is skipped then)
 // The global NaN (tsc's isGlobalNaN)
 static bool is_global_nan(Expr const* me) {
-    if (my tag != EXPR_IDENTIFIER || my identifier.keyword || !csview_equals(my identifier.name.sv, "NaN")) return false;
+    if (my tag != EXPR_IDENTIFIER || my identifier.keyword || !csview_equals(my inner_span.sv, "NaN")) return false;
     Symbol const* nan = ty_global_value_symbol(current_checker, c_sv("NaN"));
     return nan && my identifier.target == nan;
 }
@@ -4400,7 +4400,7 @@ void object_expr_item_drop(ObjectExprItem* me) {
 
 static bool expr_is_plain_identifier(Expr const* me, const char* name) {
     return my tag == EXPR_IDENTIFIER && !my identifier.keyword && !expr_is_perenthisized(me) &&
-        csview_equals(my identifier.name.sv, name);
+        csview_equals(my inner_span.sv, name);
 }
 
 // `a.b` or `a["b"]`: the name b, else an invalid span

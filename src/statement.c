@@ -2504,7 +2504,7 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
         return;
     }
     if (my expr.tag != EXPR_IDENTIFIER || my expr.identifier.keyword || expr_is_perenthisized(&my expr)) return;
-    Span id = my expr.identifier.name;
+    Span id = my expr.inner_span;
     Symbol* symbol = scope_resolve(names, id.sv, SYMBOL_ANY_MEANING);
     if (!symbol || symbol->is_placeholder) return;
     // (tsc's getTypeOnlyAliasDeclaration(symbol, Value): only when what it names is a value)

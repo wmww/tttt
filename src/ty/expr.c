@@ -1353,16 +1353,16 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     switch (identifier->this_kind) {
         case THIS_NONE: break;
         case THIS_ANY: {
-            Ty const* js_this = identifier->this_function ? ty_js_this_type(me, identifier->this_function) : nullptr;
+            Ty const* js_this = identifier_this_function(identifier) ? ty_js_this_type(me, identifier_this_function(identifier)) : nullptr;
             if (js_this) return js_this;
-            Ty const* contextual = identifier->this_function ? ty_contextual_this_type(me, identifier->this_function) : nullptr;
+            Ty const* contextual = identifier_this_function(identifier) ? ty_contextual_this_type(me, identifier_this_function(identifier)) : nullptr;
             return contextual ? contextual : any_type(me);
         }
         case THIS_PARAMETER: break;
         case THIS_CLASS_STATIC: return ty_type_of_symbol(me, decl); // (With what a namespace merges in)
         case THIS_INTERFACE: return any_type(me);
         case THIS_GLOBAL: return my binder->global_this ? ty_type_of_symbol(me, my binder->global_this) : any_type(me);
-        case THIS_COMMONJS: return ty_commonjs_exports_type(me, identifier->name.source);
+        case THIS_COMMONJS: return ty_commonjs_exports_type(me, identifier_expr_name(identifier).source);
         case THIS_NAMESPACE: case THIS_ENUM: return any_type(me);
         case THIS_CLASS_INSTANCE: {
             // The class's `this` type (else the instance type, for a generic class applied to its own parameters)
@@ -1377,7 +1377,7 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     if (identifier->keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
         // tsc's checkNewTargetMetaProperty(): the class of a constructor, else the function
         if (decl) return ty_type_of_symbol(me, decl);
-        return identifier->this_function ? ty_function_type(me, identifier->this_function) : ty_intrinsic(me, TY_ERROR);
+        return identifier_this_function(identifier) ? ty_function_type(me, identifier_this_function(identifier)) : ty_intrinsic(me, TY_ERROR);
     }
     if (!decl && identifier->is_arguments && !identifier->invalid_initializer_reference) {
         Symbol const* arguments = program_get_global(my program, c_sv("IArguments"), SYMBOL_TYPE);
@@ -1391,13 +1391,13 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     // tsc's checkIdentifier: assigning to what isn't a variable, or to a constant, is an error of type errorType
     // (A JavaScript file's `exports = ...` is no error)
     if (identifier_is_invalid_assignment_target(identifier) &&
-        !(identifier->name.source && identifier->name.source->is_js && (identifier->symbol->flags & SYMBOL_VALUE_MODULE))
+        !(identifier_expr_name(identifier).source && identifier_expr_name(identifier).source->is_js && (identifier->symbol->flags & SYMBOL_VALUE_MODULE))
     ) {
         return ty_intrinsic(me, TY_ERROR);
     }
     // `exports` of a CommonJS module that assigns `module.exports` is what it assigns (tsc's
     // getTypeOfFuncClassEnumModuleWorker of the file's symbol)
-    SourceFile const* file = identifier->name.source;
+    SourceFile const* file = identifier_expr_name(identifier).source;
     if (decl->is_module && file && file->is_commonjs && file->scope && file->scope->container == decl &&
         decl->exports && symbol_table_get(decl->exports, c_sv("export="))
     ) {
@@ -3603,7 +3603,7 @@ static Ty const* chain_object_type(Checker* me, Expr const* object_expr, bool is
 static bool is_symbol_call(Checker* me, CallExpr const* call) {
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_PROPERTY && span_equals(callee->property->prop.inner_span, "for")) callee = &callee->property->expr;
-    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(callee->identifier.name.sv, "Symbol")) return false;
+    if (callee->tag != EXPR_IDENTIFIER || !csview_equals(callee->inner_span.sv, "Symbol")) return false;
     Symbol const* global = program_get_global(my program, c_sv("Symbol"), SYMBOL_VALUE);
     return global && binder_redirect(my binder, callee->identifier.target) == global;
 }
@@ -3943,15 +3943,15 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     if (this->this_kind == THIS_CLASS_INSTANCE) {
         if (!property_context(access)->in_constructor_of) return nullptr;
         class_symbol = this->target;
-    } else if (this->this_kind == THIS_ANY && this->this_function) {
-        class_symbol = ty_js_constructor_class(this->this_function);
+    } else if (this->this_kind == THIS_ANY && identifier_this_function(this)) {
+        class_symbol = ty_js_constructor_class(identifier_this_function(this));
     }
     if (!class_symbol || !symbol_rare(class_symbol)->members) return nullptr;
     Symbol const* member = symbol_table_get(symbol_rare(class_symbol)->members, name);
     if (!member) return nullptr;
     if (!ty_is_constructor_declared(member)) return nullptr;
     // Only in the constructor (tsc: getThisContainer(node) === getDeclaringConstructor(prop))
-    if (this->this_kind == THIS_ANY && ty_js_constructor_class(this->this_function) != class_symbol) return nullptr;
+    if (this->this_kind == THIS_ANY && ty_js_constructor_class(identifier_this_function(this)) != class_symbol) return nullptr;
     // Not when the class body declares it
     ClassDecl const* class_decl = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
     return !class_decl || !class_decl_find_member(class_decl, name, false) ? member : nullptr;

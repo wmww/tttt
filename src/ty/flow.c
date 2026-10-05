@@ -233,7 +233,7 @@ bool ty_is_evolving_array_operation_target(Checker* me, Expr const* reference) {
     switch ((EvolvingArrayOp)reference->identifier.evolving_op) {
         case EVOLVING_OP_NONE: return false;
         case EVOLVING_OP_ACCESS: return true;
-        case EVOLVING_OP_ELEMENT_ASSIGNMENT: return is_number_like_index(me, reference->identifier.evolving_index);
+        case EVOLVING_OP_ELEMENT_ASSIGNMENT: return is_number_like_index(me, identifier_evolving_index(&reference->identifier));
     }
     impossible;
 }
@@ -800,7 +800,7 @@ Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow) {
         name_expr = &name_expr->property->expr;
     }
     if (name_expr->tag == EXPR_IDENTIFIER) {
-        csview name = name_expr->identifier.name.sv;
+        csview name = name_expr->inner_span.sv;
         if (csview_equals(name, "Symbol") || (name_expr == &call->callable && csview_equals(name, "require"))) {
             return nullptr;
         }
@@ -2877,7 +2877,7 @@ static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl 
     bool is_mutable_local = symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE);
     if (!symbol->is_parameter && !is_mutable_local) return false;
     // Past the last assignment
-    return !symbol->last_assignment_end || symbol->last_assignment_end < span_start_ptr(reference->identifier.name);
+    return !symbol->last_assignment_end || symbol->last_assignment_end < span_start_ptr(reference->inner_span);
 }
 
 // A call statement: an assertion narrows, after a call that never returns there is nothing. False: no effect
@@ -3191,7 +3191,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
             if (!init || (init->flags & TYF_BOOLEAN)) continue;
             Expr* reference = arena_new(&my arena, Expr);
             *reference = (Expr){ .tag = EXPR_IDENTIFIER, .inner_span = binding->content_span };
-            reference->identifier = (IdentifierExpr){ .name = binding->content_span, .target = symbol, .symbol = symbol };
+            reference->identifier = (IdentifierExpr){ .target = symbol, .symbol = symbol };
             Ty const* refined = refined_parameter_type(me, expr, antecedent, reference, init);
             if (!refined) continue;
             ret = arena_new(&my arena, TyPredicate);

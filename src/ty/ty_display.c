@@ -897,7 +897,7 @@ static bool simple_node_fails(Checker* me, TyDisplay d, TypeNode const* node) {
         case TYPE_TYPEOF: {
             Expr const* leftmost = entity_leftmost(node->typeof_->expr);
             return leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-                !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE);
+                !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE);
         }
         case TYPE_INDEXED: return simple_node_fails(me, d, &node->indexed->interface);
         case TYPE_KEYOF: return simple_node_fails(me, d, &node->keyof->interface);
@@ -1000,7 +1000,7 @@ static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
 static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) {
     Expr const* leftmost = entity_leftmost(node->typeof_->expr);
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE)
+        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
     ) {
         display_node_fallback(me, d, node);
         return;
@@ -1095,7 +1095,7 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
         d.tracker->track_computed_name(d.tracker, csview_slice(name.sv, 0, name.sv.size), name.source);
     }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
-        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->identifier.name.sv, SYMBOL_VALUE)
+        !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
     ) {
         Ty const* key = ty_expr_type(me, expr);
         if (key->kind == TY_LITERAL && key->literal.string && !(key->flags & TYF_UNIQUE_ES_SYMBOL)) {
@@ -2055,7 +2055,7 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
             if (span_valid(d.at) && !span_contains_span(symbol->function->full_span, d.at)) return false;
             continue;
         }
-        Symbol const* found = scope_resolve(d.enclosing, leftmost->identifier.name.sv, SYMBOL_VALUE);
+        Symbol const* found = scope_resolve(d.enclosing, leftmost->inner_span.sv, SYMBOL_VALUE);
         if (!found || !same_symbol(me, found, leftmost->identifier.symbol)) return false;
     }
     return true;

@@ -851,9 +851,9 @@ static bool is_global_symbol_reference(Walk* me, Expr const* expr) {
         bool symbol = prop->tag == EXPR_LITERAL && prop->literal.tag == VALUE_STRING &&
             cstr_equals(&prop->literal.string, "Symbol");
         IdentifierExpr const* global = &object->property->expr.identifier;
-        return symbol && csview_equals(global->name.sv, "globalThis") && global->target && global->target->is_global_this;
+        return symbol && csview_equals(identifier_expr_name(global).sv, "globalThis") && global->target && global->target->is_global_this;
     }
-    if (object->tag != EXPR_IDENTIFIER || !csview_equals(object->identifier.name.sv, "Symbol")) return false;
+    if (object->tag != EXPR_IDENTIFIER || !csview_equals(object->inner_span.sv, "Symbol")) return false;
     Symbol const* global = program_get_global(my checker->program, c_sv("Symbol"), SYMBOL_VALUE);
     return !object->identifier.target || object->identifier.target == global;
 }

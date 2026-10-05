@@ -285,7 +285,7 @@ static void mark_evolving_array_target(Expr* object, EvolvingArrayOp op, Expr co
     Expr* name = reference_root_name(object);
     if (!name) return;
     name->identifier.evolving_op = op;
-    if (op == EVOLVING_OP_ELEMENT_ASSIGNMENT) name->identifier.evolving_index = index;
+    if (op == EVOLVING_OP_ELEMENT_ASSIGNMENT) name->identifier.evolving_index_ = index;
 }
 
 // Only a variable declared without a type and with no initializer, null, undefined or `[]` can be auto-typed (tsc's

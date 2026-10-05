@@ -790,7 +790,7 @@ static void display_class_decl(Display d, ClassDecl const* me) {
 }
 
 static void display_identifier_expr(Display d, IdentifierExpr const* me) {
-    display_colored_span(d, color_name, my name);
+    display_colored_span(d, color_name, identifier_expr_name(me));
     if (d.debug) {
         if (!my target) {
             display_colored(d, color_error, " /* unresolved */");

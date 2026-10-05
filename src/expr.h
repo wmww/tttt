@@ -31,13 +31,12 @@ g_declare_vec(Expr, expr);
 
 typedef struct FlowNode FlowNode; // flow.h
 
+// Always an Expr's `identifier`: its name is the Expr's inner_span (identifier_expr_name())
 typedef struct IdentifierExpr {
-    Span name;
     // What the checker goes by: the symbol that has the meaning the name is used with (aliases resolved). Cached next
     // to `symbol` so that checking never chases alias chains. For `this`: see this_kind
     Symbol const* target;
     Symbol const* symbol; // The symbol the name found, which may be an alias (the symbols baseline shows that one)
-    ModuleRef* module_ref; // `import("./a")`: the module, the identifier is the `import` keyword
     // The control flow node that was current when the reference is evaluated (`this` and `super` have one too), null
     // in unreachable code
     FlowNode* flow;
@@ -82,13 +81,17 @@ typedef struct IdentifierExpr {
     // `this` of a function (THIS_ANY) inside a class member, a function with a `this` parameter or a CommonJS module:
     // TS2683 says the function shadows the outer `this` (tsc's checkThisExpression, tryGetThisTypeAt of the container)
     bool this_shadows_outer : 1;
-    // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
-    Expr const* extends_entity;
+    // What only some identifiers have, by what they are: read them with the accessors below, which know which one it is
     union {
+        // `import("./a")` (the identifier is the `import` keyword) or the callee of `require("./a")` in JavaScript
+        // (require_call): the module
+        ModuleRef* module_ref_;
         // `this` in a function that isn't a method or arrow function (THIS_ANY): that function, whose `this` may be
-        // contextually typed (ty_contextual_this_type())
-        FunctionImpl const* this_function;
-        struct Expr const* evolving_index; // EVOLVING_OP_ELEMENT_ASSIGNMENT: `i` of `x[i] = v` (never a keyword)
+        // contextually typed (ty_contextual_this_type()). `new.target`: the function it is in
+        FunctionImpl const* this_function_;
+        struct Expr const* evolving_index_; // EVOLVING_OP_ELEMENT_ASSIGNMENT: `i` of `x[i] = v` (never a keyword)
+        // The first name of the entity name a class's `extends` clause is (`M` of `extends M.I`), that entity name
+        struct Expr const* extends_entity_;
     };
 } IdentifierExpr;
 
@@ -100,6 +103,19 @@ typedef enum EvolvingArrayOp {
     EVOLVING_OP_ACCESS, // `x.length`, `x.push(...)`, `x.unshift(...)`
     EVOLVING_OP_ELEMENT_ASSIGNMENT, // `x[i] = v`: only if i is number-like (evolving_index)
 } EvolvingArrayOp;
+
+static inline ModuleRef* identifier_module_ref(IdentifierExpr const* me) {
+    return my keyword == KEYWORD_IDENTIFIER_IMPORT || my require_call ? my module_ref_ : nullptr;
+}
+static inline FunctionImpl const* identifier_this_function(IdentifierExpr const* me) {
+    return my keyword == KEYWORD_IDENTIFIER_THIS || my keyword == KEYWORD_IDENTIFIER_NEW_TARGET ? my this_function_ : nullptr;
+}
+static inline struct Expr const* identifier_evolving_index(IdentifierExpr const* me) {
+    return !my keyword && my evolving_op == EVOLVING_OP_ELEMENT_ASSIGNMENT ? my evolving_index_ : nullptr;
+}
+static inline struct Expr const* identifier_extends_entity(IdentifierExpr const* me) {
+    return !my keyword && !my require_call && my evolving_op != EVOLVING_OP_ELEMENT_ASSIGNMENT ? my extends_entity_ : nullptr;
+}
 
 void identifier_expr_drop(IdentifierExpr* me);
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs);
@@ -185,8 +201,12 @@ static inline Expr expr_literal(Span span, Value value) {
     return (Expr){ .tag = EXPR_LITERAL, .literal = value, EXPR_DEFAULT(span) };
 }
 
-static inline Expr expr_identifier(IdentifierExpr identifier_expr) {
-    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier = identifier_expr, EXPR_DEFAULT(identifier_expr.name) };
+static inline Expr expr_identifier(Span name, IdentifierExpr identifier_expr) {
+    return (Expr){ .tag = EXPR_IDENTIFIER, .identifier = identifier_expr, EXPR_DEFAULT(name) };
+}
+
+static inline Span identifier_expr_name(IdentifierExpr const* me) {
+    return ((Expr const*)((char const*)me - offsetof(Expr, identifier)))->inner_span;
 }
 
 static inline Expr expr_binary_op(Span span, BinaryOpExpr* op) {

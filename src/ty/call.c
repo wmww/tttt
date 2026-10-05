@@ -2687,7 +2687,7 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
     if (call->callable.tag != EXPR_IDENTIFIER || call->callable.identifier.keyword != KEYWORD_IDENTIFIER_IMPORT) {
         return nullptr;
     }
-    ModuleRef const* ref = call->callable.identifier.module_ref;
+    ModuleRef const* ref = identifier_module_ref(&call->callable.identifier);
     Ty const* module = ty_intrinsic(me, TY_ANY);
     if (ref && ref->module && !ref->module->is_shorthand_module) {
         module = ty_dynamic_import_module_type(me, ref->module, ref->span.source);
@@ -2710,7 +2710,7 @@ static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
 static Ty const* require_type(Checker* me, CallExpr const* call) {
     if (call->callable.tag != EXPR_IDENTIFIER || !call->callable.identifier.require_call) return nullptr;
     if (!expr_symbol_is_commonjs_require(call->callable.identifier.target)) return nullptr;
-    ModuleRef const* ref = call->callable.identifier.module_ref;
+    ModuleRef const* ref = identifier_module_ref(&call->callable.identifier);
     if (!ref || !ref->module || ref->module->is_shorthand_module) return ty_intrinsic(me, TY_ANY);
     return ty_type_of_symbol(me, module_export_equals(ref->module));
 }

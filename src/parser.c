@@ -3128,19 +3128,19 @@ static bool parse_new_target(Parser* parent, Expr* ret) {
     hop_whitespace(&p);
     // (Any name: tsc's checkGrammarMetaProperty says TS17012 for another one)
     if (!parse_identifier_or_keyword(&p, nullptr)) return parse_fail(&p);
-    *ret = expr_identifier((IdentifierExpr){ .name = span_from(a), .keyword = KEYWORD_IDENTIFIER_NEW_TARGET });
+    *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_NEW_TARGET });
     return parse_success(&p);
 }
 
 // The `import` of `import("./a")` and `import.meta`, as a keyword identifier (the call and the property access are
 // parsed like any other)
-static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
+static bool parse_import_keyword_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     if (!hop_start_if_ends_on_word_break(&p, "import")) {
         return parse_fail(&p);
     }
-    *ret = (IdentifierExpr){ .name = span_from(a), .keyword = KEYWORD_IDENTIFIER_IMPORT };
+    *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_IMPORT });
     Parser ahead = parser(&p);
     hop_whitespace(&ahead);
     if (*ahead.pos == '.') {
@@ -3161,8 +3161,8 @@ static bool parse_import_keyword_expr(Parser* parent, IdentifierExpr* ret) {
         // (a template with substitutions isn't a module name anyone can resolve)
         bool is_constant = csview_find_sv(path_span.sv, c_sv("${")) == c_NPOS || *path_span.sv.buf != '`';
         if (is_constant && (*ahead.pos == ')' || *ahead.pos == ',')) {
-            ret->module_ref = add_module_ref(&p, path, path_span);
-            ret->module_ref->syntax = MODULE_REF_DYNAMIC;
+            ret->identifier.module_ref_ = add_module_ref(&p, path, path_span);
+            ret->identifier.module_ref_->syntax = MODULE_REF_DYNAMIC;
         } else {
             cstr_drop(&path);
         }
@@ -3338,7 +3338,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         if (tok_is_word(t) && *t.start != '#' && !tok_is(t, "this") && is_reserved_word((csview){ t.start, t.end - t.start }) &&
             parse_identifier_or_keyword(&p, &name)
         ) {
-            expr = expr_identifier((IdentifierExpr){ .name = name });
+            expr = expr_identifier(name, (IdentifierExpr){0});
             expr.inner_span = span_from(expr_a);
             expr_clear_outer_span(&expr);
             while (parse_expr_right_side(&p, expr_ctx, &expr)) {}
@@ -4438,7 +4438,7 @@ static void jsdoc_apply_template(Parser* p, VecJsDocTag* tags, Generic* generic,
 // The rightmost name of an entity name expression (tsc's getIdentifierFromEntityNameExpression), null if it isn't one
 static Span jsdoc_entity_name_last(Expr const* expr) {
     if (expr->tag == EXPR_GENERIC_PARAMS) expr = &expr->generic_params->expr;
-    if (expr->tag == EXPR_IDENTIFIER) return expr->identifier.name;
+    if (expr->tag == EXPR_IDENTIFIER) return expr->inner_span;
     if (expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) return expr->property->prop.inner_span;
     return span_null;
 }
@@ -4459,7 +4459,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
                 expr_drop(class_decl->jsdoc_base);
                 free(class_decl->jsdoc_base);
             }
-            class_decl->jsdoc_base = c_new(Expr, name.sv.size ? expr_identifier((IdentifierExpr){ .name = name }) :
+            class_decl->jsdoc_base = c_new(Expr, name.sv.size ? expr_identifier(name, (IdentifierExpr){0}) :
                 expr_implicit_any(name));
         }
     }
@@ -6745,7 +6745,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // tsc's parseObjectLiteralElement: an identifier not followed by `:` is a shorthand property, whatever comes
         // next (`{ a; b }`, `{ a b }`: the list reports the missing comma)
         item.tag = OBJECT_ITEM_SHORTHAND;
-        item.value = expr_identifier((IdentifierExpr){ .name = item.name_span, .shorthand = true });
+        item.value = expr_identifier(item.name_span, (IdentifierExpr){ .shorthand = true });
         if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
             // `{ a = 1 }` is only valid as a destructuring assignment target
             Anchor equals = anchor(&p);
@@ -8179,7 +8179,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     if (logical_or_plain && left_and_ret->tag == EXPR_IDENTIFIER) mark_named_evaluation(&right, false);
     bool left_parenthesized = expr_outer_span(left_and_ret).sv.size != left_and_ret->inner_span.sv.size;
     if (left_and_ret->tag == EXPR_IDENTIFIER && !left_parenthesized) {
-        mark_assigned_name(&right, left_and_ret->identifier.name);
+        mark_assigned_name(&right, left_and_ret->inner_span);
     } else if (left_and_ret->tag == EXPR_PROPERTY && !left_parenthesized) {
         // `a.C = class {}`: C. `a["C"] = class {}`: "C". `a[k] = class {}`: a[k]
         Expr const* prop = &left_and_ret->property->prop;
@@ -8844,7 +8844,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             if (arg->tag == EXPR_LITERAL && arg->literal.tag == VALUE_STRING) {
                 ModuleRef* ref = add_module_ref(&p, cstr_clone(arg->literal.string), arg->inner_span);
                 ref->syntax = MODULE_REF_REQUIRE;
-                left_and_ret->call->callable.identifier.module_ref = ref;
+                left_and_ret->call->callable.identifier.module_ref_ = ref;
             }
         } else if (p.shared->source->is_js && expr_is_define_property_call(left_and_ret, nullptr) &&
             expr_is_exports_object(vec_expr_at(&left_and_ret->call->args, 0))
@@ -9279,7 +9279,7 @@ static bool parse_async_function_expr(Parser* parent, ExprCtx ctx, FunctionImpl*
     return parse_success(&p);
 }
 
-static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
+static bool parse_identifier_expr(Parser* parent, Expr* ret) {
     Parser p = parser(parent);
 
     Span name;
@@ -9289,7 +9289,7 @@ static bool parse_identifier_expr(Parser* parent, IdentifierExpr* ret) {
         return parse_fail(&p);
     }
     note_top_level_await_identifier(&p, name.sv);
-    *ret = (IdentifierExpr){ .name = name };
+    *ret = expr_identifier(name, (IdentifierExpr){0});
 
     return parse_success(&p);
 }
@@ -9375,18 +9375,18 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
     Span name;
     if (!parse_jsx_identifier(p, &name)) {
         parse_error(p, jsx_span_from_token(p), 1003, "Identifier expected.");
-        *ret = expr_identifier((IdentifierExpr){ .name = span_from_pos(p) });
+        *ret = expr_identifier(span_from_pos(p), (IdentifierExpr){0});
         return;
     }
     if (parse_jsx_namespace_rest(p)) {
         *namespaced = true;
-        *ret = expr_identifier((IdentifierExpr){ .name = span_from(a) });
+        *ret = expr_identifier(span_from(a), (IdentifierExpr){0});
         return;
     }
     if (span_equals(name, "this")) {
-        *ret = expr_identifier((IdentifierExpr){ .name = name, .keyword = KEYWORD_IDENTIFIER_THIS });
+        *ret = expr_identifier(name, (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_THIS });
     } else {
-        *ret = expr_identifier((IdentifierExpr){ .name = name });
+        *ret = expr_identifier(name, (IdentifierExpr){0});
     }
     while (true) {
         Parser dot = parser(p);
@@ -9448,7 +9448,7 @@ static bool jsx_tag_names_equal(Expr const* a, Expr const* b) {
     switch (a->tag) {
         case EXPR_IDENTIFIER: {
             if (a->identifier.keyword != b->identifier.keyword) return false;
-            csview x = a->identifier.name.sv, y = b->identifier.name.sv;
+            csview x = a->inner_span.sv, y = b->inner_span.sv;
             if (!csview_contains(x, "\\") && !csview_contains(y, "\\")) return csview_equals_sv(x, y);
             // (by the names' values: `<\u0061></a>` is fine)
             cstr cx = identifier_name_value(x), cy = identifier_name_value(y);
@@ -9707,11 +9707,9 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     if (!is_fragment) {
         parse_jsx_tag_name(&p, &el->tag_name, &el->namespaced, &el->tag_name_broken);
         const char* name_end = p.pos;
-        if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.identifier.name.sv.size) {
+        if (el->tag_name.tag == EXPR_IDENTIFIER && !el->tag_name.inner_span.sv.size) {
             // A missing name is where the trivia before it starts (tsc's missing node, its TS17008 is there)
-            el->tag_name = expr_identifier((IdentifierExpr){
-                .name = span_make(p.shared->source, name_full_start, name_full_start),
-            });
+            el->tag_name = expr_identifier(span_make(p.shared->source, name_full_start, name_full_start), (IdentifierExpr){0});
             name_end = name_full_start;
         }
         hop_whitespace(&p);
@@ -9786,14 +9784,14 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             // (the child reported it)
             el->closing_name = inner->closing_name;
             el->closing_span = inner->closing_span;
-            inner->closing_name = expr_identifier((IdentifierExpr){ .name = span_from_pos(&p) });
+            inner->closing_name = expr_identifier(span_from_pos(&p), (IdentifierExpr){0});
             inner->closing_span = span_from_pos(&p);
         } else {
             Anchor closing_a = anchor(&p);
             if (!hop_start(&p, "</")) {
                 parse_error(&p, span_from_pos(&p), 1005, "'</' expected.");
                 // tsc's parseJsxClosingElement goes on with a missing name
-                if (!is_fragment) el->closing_name = expr_identifier((IdentifierExpr){ .name = span_from_pos(&p) });
+                if (!is_fragment) el->closing_name = expr_identifier(span_from_pos(&p), (IdentifierExpr){0});
             } else if (is_fragment) {
                 hop_whitespace(&p);
                 if (!hop_char(&p, '>')) {
@@ -10007,21 +10005,15 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         *ret = expr_function(span_from(a), c_new(FunctionImpl, parsed.function));
         if (p.shared->source->is_js) jsdoc_apply_function_expression(&p, ret);
     } else if (hop_start_if_ends_on_word_break(&p, "this")) {
-        *ret = expr_identifier((IdentifierExpr){
-            .name = span_from(a),
-            .keyword = KEYWORD_IDENTIFIER_THIS,
-        });
+        *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_THIS });
     } else if (hop_start_if_ends_on_word_break(&p, "super")) {
-        *ret = expr_identifier((IdentifierExpr){
-            .name = span_from(a),
-            .keyword = KEYWORD_IDENTIFIER_SUPER,
-        });
+        *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_SUPER });
         // tsc's parseSuperExpression
         Parser args_p = parser(&p);
         hop_whitespace(&args_p);
         Anchor args_a = anchor(&args_p);
         VecSpannedType args;
-        const char* super_end = span_end_ptr(ret->identifier.name);
+        const char* super_end = span_end_ptr(ret->inner_span);
         if (*args_p.pos == '<' && parse_generic_params(&args_p, true, &args)) {
             vec_spanned_type_drop(&args);
             Span args_span = span_from(args_a);
@@ -10053,13 +10045,11 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         } else {
             parse_fail(&next_p);
         }
-    } else if (c == 'i' && parse_import_keyword_expr(&p, &ret->identifier)) {
-        *ret = expr_identifier(ret->identifier);
+    } else if (c == 'i' && parse_import_keyword_expr(&p, ret)) {
     } else if (c == 'i' && import_keyword_not_expr(&p)) {
         // `import` starts no other expression (tsc's parseMemberExpressionOrHigher: the expression is missing)
         return parse_fail(&p);
-    } else if (word && !yield_await_is_keyword_here(&p) && parse_identifier_expr(&p, &ret->identifier)) {
-        *ret = expr_identifier(ret->identifier);
+    } else if (word && !yield_await_is_keyword_here(&p) && parse_identifier_expr(&p, ret)) {
         inner_span_set = true;
     } else if ((*p.pos == '(' || *p.pos == '<') && (arrow_tristate = arrow_function_tristate(&p)) != TRISTATE_FALSE &&
         parse_arrow_function(&p, ctx, function_flags_null, arrow_tristate == TRISTATE_TRUE, &parsed.function)
@@ -11258,7 +11248,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
         value = &value->property->expr;
     }
     if (!expr_is_require_call(value) || expr_is_perenthisized(value)) return;
-    ModuleRef* ref = value->call->callable.identifier.module_ref;
+    ModuleRef* ref = identifier_module_ref(&value->call->callable.identifier);
     if (!ref) return;
     Binding const* binding = &initializer->binding;
     if (binding->tag == BINDING_OBJECT && span_valid(accessed)) return;
@@ -11303,7 +11293,7 @@ static void note_require_declaration(InitializedBinding* initializer) {
 static bool is_exports_alias_name(Parser const* p, Expr const* e) {
     if (e->tag != EXPR_IDENTIFIER || e->identifier.keyword || expr_is_perenthisized(e)) return false;
     for (u32 i = 0; i < p->shared->exports_alias_count; i++) {
-        if (csview_eq(&p->shared->exports_aliases[i], &e->identifier.name.sv)) return true;
+        if (csview_eq(&p->shared->exports_aliases[i], &e->inner_span.sv)) return true;
     }
     return false;
 }
@@ -11313,7 +11303,7 @@ static void note_exports_alias(Parser* p, InitializedBinding const* initializer)
     if (p->shared->function_depth || initializer->binding.tag != BINDING_IDENTIFIER) return;
     Expr const* value = initialized_binding_value(initializer);
     bool alias = expr_is_module_exports(value) || is_exports_alias_name(p, value) || (value->tag == EXPR_IDENTIFIER &&
-        !value->identifier.keyword && !expr_is_perenthisized(value) && span_equals(value->identifier.name, "exports"));
+        !value->identifier.keyword && !expr_is_perenthisized(value) && span_equals(value->inner_span, "exports"));
     if (!alias) return;
     ParserShared* shared = p->shared;
     if (shared->exports_alias_count == shared->exports_alias_cap) {
@@ -11627,9 +11617,9 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         is_for_each = true;
         // tsc's checkGrammarForInOrForOfStatement: `for (async of x)` reads like the start of an async arrow function
         if (!keyword_is_in && !is_await && statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER &&
-            !expr_is_perenthisized(&statement.expr) && span_equals(statement.expr.identifier.name, "async")
+            !expr_is_perenthisized(&statement.expr) && span_equals(statement.expr.inner_span, "async")
         ) {
-            parse_error(&p, statement.expr.identifier.name, 1106, "The left-hand side of a 'for...of' statement may not be 'async'.");
+            parse_error(&p, statement.expr.inner_span, 1106, "The left-hand side of a 'for...of' statement may not be 'async'.");
         }
         if (is_await && keyword_is_in) {
             // `for await (x in y)`: still a for-in loop
@@ -13078,7 +13068,7 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
         parse_comma_ops_right_side(&p, &ret->expr);
         if (ret->tag == STATEMENT_EXPR &&
             ret->expr.tag == EXPR_IDENTIFIER &&
-            span_equals(ret->expr.identifier.name, "static")
+            span_equals(ret->expr.inner_span, "static")
         ) {
             hop_whitespace(&p);
             if (p.whitespace != WHITESPACE_NEWLINE && *p.pos != ';' && *p.pos != '}') {

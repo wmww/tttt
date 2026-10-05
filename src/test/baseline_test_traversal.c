@@ -185,8 +185,8 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     SymbolTable const* table = nullptr;
     if (this->this_kind == THIS_CLASS_INSTANCE && this->target) table = symbol_rare(this->target)->members;
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
-    Symbol const* js_class = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && this->this_function ?
-        ty_js_this_class(this->this_function) : nullptr;
+    Symbol const* js_class = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && identifier_this_function(this) ?
+        ty_js_this_class(identifier_this_function(this)) : nullptr;
     if (js_class) table = symbol_rare(js_class)->members;
     Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
     // (Not when the class body declares it)
@@ -223,8 +223,8 @@ static void nested_expando_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Expr const* next_to_last = entity;
     while (next_to_last->property->expr.tag == EXPR_PROPERTY) next_to_last = &next_to_last->property->expr;
     Expr const* root = &next_to_last->property->expr;
-    bool exports_rooted = root->tag == EXPR_IDENTIFIER && (span_equals(root->identifier.name, "exports") ||
-        (span_equals(root->identifier.name, "module") && span_equals(expr_static_property_name(next_to_last), "exports")));
+    bool exports_rooted = root->tag == EXPR_IDENTIFIER && (span_equals(root->inner_span, "exports") ||
+        (span_equals(root->inner_span, "module") && span_equals(expr_static_property_name(next_to_last), "exports")));
     if (!exports_rooted) return;
     if (has_symbol_override(ctx, entity->inner_span)) return;
     add_symbol_override(ctx, entity->inner_span, left->property->declares);
@@ -1879,20 +1879,20 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         // (Declared by the JavaScript `globalThis.x = v` that give it expandos)
         Symbol const* global_this = checker->binder->global_this;
         baseline_test_case_add_symbol(ctx, (BaselineSym){
-            .declarations = global_this ? declaration_get_spans(global_this) : vec_span_init(), .span = my name,
+            .declarations = global_this ? declaration_get_spans(global_this) : vec_span_init(), .span = identifier_expr_name(me),
             .allow_declaration_empty = true, .text = cstr_lit("globalThis"),
         });
         return;
     }
     Symbol const* symbol = my target;
-    Symbol const* js_class = my this_kind == THIS_ANY && my this_function ? ty_js_this_class(my this_function) : nullptr;
+    Symbol const* js_class = my this_kind == THIS_ANY && identifier_this_function(me) ? ty_js_this_class(identifier_this_function(me)) : nullptr;
     if (js_class) {
         // A JavaScript constructor function's class: declared by the function (a function expression's own symbol
         // to tsc, named like the variable)
         SymbolDecl const* variable = symbol_find_decl(js_class, SYMBOL_DECL_VARIABLE);
         Expr const* init = variable ? initialized_binding_value(((InitializedBinding const*)variable->node)) : nullptr;
         // (A function expression assigned to a property, `exports.F = function () {}`, is declared by itself)
-        bool own = function_impl_rare(me->this_function)->class_symbol == js_class && my this_function->is_expression;
+        bool own = function_impl_rare(identifier_this_function(me))->class_symbol == js_class && identifier_this_function(me)->is_expression;
         // (Assigned to a property, `ns.F = function () {}`, the class is the function expression, named by itself or
         // the property: from its prototype's methods too)
         SymbolDecl const* assignment = variable ? nullptr : symbol_find_decl(js_class, SYMBOL_DECL_ASSIGNMENT);
@@ -1903,33 +1903,33 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = init ? vec_span_single(expr_outer_span(init)) :
                 assigned_class ? vec_span_single(assigned->function->full_span) :
-                own ? vec_span_single(my this_function->full_span) : declaration_get_spans(js_class),
-            .span = my name,
+                own ? vec_span_single(identifier_this_function(me)->full_span) : declaration_get_spans(js_class),
+            .span = identifier_expr_name(me),
             .text = named ? cstr_from_sv(class_name) : symbol_text(ctx, js_class),
         });
         return;
     }
-    if (!symbol && my this_kind == THIS_ANY && my this_function) {
-        Signature const* sig = ty_function_assigned_contextual_signature(checker, my this_function);
+    if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me)) {
+        Signature const* sig = ty_function_assigned_contextual_signature(checker, identifier_this_function(me));
         while (sig && sig->target) sig = sig->target;
         FunctionImpl const* function = sig ? sig->function : nullptr;
         // (Only a function expression's: a declaration's signature is its own, getSignatureFromDeclaration, which a
         // JSDoc `@type` gives no `this` parameter; its `this` is the symbol of its type)
-        FunctionArg const* first = function && my this_function->is_expression && vec_function_arg_size(&function->args) ?
+        FunctionArg const* first = function && identifier_this_function(me)->is_expression && vec_function_arg_size(&function->args) ?
             vec_function_arg_at(&function->args, 0) : nullptr;
         if (first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(first->initializer.binding.content_span, "this")
         ) {
             symbol = first->initializer.binding.symbol;
         }
-        Ty const* type = symbol ? nullptr : ty_contextual_this_type(checker, my this_function);
-        Expr const* literal = function_impl_rare(me->this_function)->this_literal;
+        Ty const* type = symbol ? nullptr : ty_contextual_this_type(checker, identifier_this_function(me));
+        Expr const* literal = function_impl_rare(identifier_this_function(me))->this_literal;
         if (type && type->kind == TY_ANONYMOUS && type->anonymous.object_literal && literal) {
             // The object literal's own type (noImplicitThis): its symbol, `__object` or the variable's name
             bool named = literal == ctx->variable_literal;
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(literal->inner_span),
-                .span = my name,
+                .span = identifier_expr_name(me),
                 .text = named ? cstr_from_sv(ctx->variable_literal_name.sv) : cstr_lit("__object"),
             });
             return;
@@ -1945,7 +1945,7 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         ) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(literal_type->anonymous.node->interface.span),
-                .span = my name,
+                .span = identifier_expr_name(me),
                 .text = cstr_lit("__type"),
             });
             return;
@@ -1967,12 +1967,12 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (symbol->is_parameter && span_valid(first) && first.source && first.sv.buf > source_file_start(first.source) &&
         first.sv.buf[-1] == '@'
     ) {
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true, .text = cstr_lit("this") });
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = identifier_expr_name(me), .allow_declaration_empty = true, .text = cstr_lit("this") });
         return;
     }
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = declaration_get_spans(symbol),
-        .span = my name,
+        .span = identifier_expr_name(me),
         .text = symbol_text(ctx, symbol),
     });
 }
@@ -2057,7 +2057,7 @@ static VecSpan object_member_symbol_decls(ObjectExpr const* object, ObjectExprIt
 // `new.target` in a function expression: the function's symbol (named like tsc's getNameOfSymbolAsWritten: the
 // variable it initializes, else `(Anonymous function)`), declared by the expression
 static void new_target_function_symbol(IdentifierExpr const* me, Span span, BaselineTestCase* ctx) {
-    FunctionImpl const* function = my this_function;
+    FunctionImpl const* function = identifier_this_function(me);
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = vec_span_single(function->full_span),
         .span = span,
@@ -2066,8 +2066,8 @@ static void new_target_function_symbol(IdentifierExpr const* me, Span span, Base
 }
 
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
-    if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET && !my target && my this_function) {
-        new_target_function_symbol(me, my name, ctx);
+    if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET && !my target && identifier_this_function(me)) {
+        new_target_function_symbol(me, identifier_expr_name(me), ctx);
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS) {
         this_compile_test_info(me, ctx);
@@ -2104,7 +2104,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
             if (span_valid(declared_at)) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = vec_span_single(declared_at),
-                    .span = my name,
+                    .span = identifier_expr_name(me),
                     .text = cstr_lit("__type"),
                 });
                 return;
@@ -2123,7 +2123,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         if (symbol && symbol->decl_count) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = declaration_get_spans(symbol),
-                .span = my name,
+                .span = identifier_expr_name(me),
                 .text = symbol_text(ctx, symbol),
             });
         }
@@ -2136,14 +2136,14 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declarations,
-            .span = my name,
+            .span = identifier_expr_name(me),
             .text = module_name_for_error(my target, nullptr, false),
         });
         return;
     }
     if (my require_call && my target && csview_equals(my target->name, "require") && !span_valid(my target->name_span)) {
         // tsc's requireSymbol, which has no declaration
-        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my name, .allow_declaration_empty = true });
+        baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = identifier_expr_name(me), .allow_declaration_empty = true });
         return;
     }
     // (A name an instance field can't use still shows what it finds)
@@ -2155,7 +2155,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
     if (shown && (span_valid(target->name_span) || span_valid(shown->name_span))) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declaration_get_spans(shown),
-            .span = my name,
+            .span = identifier_expr_name(me),
             .text = symbol_text(ctx, shown),
             .allow_declaration_empty = shown->is_global_this, // (It has no declarations: `Symbol(globalThis)`)
         });
@@ -2276,7 +2276,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
         }
         vec_span_drop(&info.declarations);
     } else if (intrinsic.index) {
-        index_symbol_compile_test_info(ctx, intrinsic.elements, ty_string_literal(checker, name->identifier.name.sv), name->inner_span, true);
+        index_symbol_compile_test_info(ctx, intrinsic.elements, ty_string_literal(checker, name->inner_span.sv), name->inner_span, true);
     }
     // tsc checks the name as an expression: what it is as a value here (see jsx_lookup_names()), else any
     Symbol const* value = name->tag == EXPR_IDENTIFIER ? name->identifier.target : nullptr;
@@ -2427,11 +2427,11 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             identifier_expr_compile_test_info(&my identifier, ctx);
             if (!my identifier.target && my identifier.is_arguments) {
                 // A function's `arguments` (tsc's argumentsSymbol, which has no declaration)
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my identifier.name, .allow_declaration_empty = true });
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
             }
             if (my identifier.keyword == KEYWORD_IDENTIFIER_NEW_TARGET) {
                 // tsc shows the `target` of `new.target` too, like the name of a property access
-                Span target = my identifier.name;
+                Span target = my inner_span;
                 char const* start = span_end_ptr(target);
                 while (start > span_start_ptr(target) && start[-1] != '.' && !isspace((unsigned char)start[-1])) start--;
                 target.sv = csview_from_range(start, span_end_ptr(target));
@@ -2442,7 +2442,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                         .span = target,
                         .name = my identifier.target->name_span,
                     });
-                } else if (my identifier.this_function && csview_equals(target.sv, "target")) {
+                } else if (identifier_this_function(&my identifier) && csview_equals(target.sv, "target")) {
                     new_target_function_symbol(&my identifier, target, ctx);
                 }
                 baseline_test_case_add_type(ctx, target, ty_regular(current_checker, expr_get_type(me)));
@@ -2537,7 +2537,7 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (my call->optional_chain && after_callee[0] == '?' && after_callee[1] == '.') expr_compile_test_info(&my call->callable, ctx);
             else callee_compile_test_info(&my call->callable, ctx);
             // The specifier of `import("./a")` names the module (tsc's getSymbolAtLocation of a module name)
-            ModuleRef const* ref = my call->callable.tag == EXPR_IDENTIFIER ? my call->callable.identifier.module_ref : nullptr;
+            ModuleRef const* ref = my call->callable.tag == EXPR_IDENTIFIER ? identifier_module_ref(&my call->callable.identifier) : nullptr;
             Symbol const* module = ref ? ref->module : nullptr;
             if (module && vec_expr_size(&my call->args) && vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL) {
                 // (a file's module is declared by the file, and named by its path without the extension)
@@ -2836,11 +2836,11 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                     Symbol const* shown = my expr.identifier.target ? my expr.identifier.target : type_symbol;
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declaration_get_spans(shown_declaration(my expr.identifier.symbol, shown)),
-                        .span = my expr.identifier.name,
+                        .span = my expr.inner_span,
                         .name = shown_declaration(my expr.identifier.symbol, shown)->name_span,
                     });
                     ctx->any_keeps_underline = true;
-                    baseline_test_case_add_type(ctx, my expr.identifier.name, ty_declared_type_of(current_checker, type_symbol));
+                    baseline_test_case_add_type(ctx, my expr.inner_span, ty_declared_type_of(current_checker, type_symbol));
                     break;
                 }
                 // A namespace without a value: its symbol, and the expression's any
@@ -2848,7 +2848,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                 if (namespace && !namespace->is_placeholder && !symbol_for_meaning(my expr.identifier.symbol, SYMBOL_VALUE)) {
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declaration_get_spans(shown_declaration(my expr.identifier.symbol, namespace)),
-                        .span = my expr.identifier.name,
+                        .span = my expr.inner_span,
                         .name = shown_declaration(my expr.identifier.symbol, namespace)->name_span,
                     });
                 }
