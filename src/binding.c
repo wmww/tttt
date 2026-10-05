@@ -723,6 +723,9 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     // (tsc's getNameOfSymbolAsWritten: an anonymous function is named by the variable it initializes)
     if (my binding.tag == BINDING_IDENTIFIER && initialized_binding_value(me)->tag == EXPR_FUNCTION) function_impl_set_variable_name(initialized_binding_value(me)->function, my binding.content_span);
     if (my value) expr_lookup_names(my value, names, errs);
+    if (my binding.has_explicit_type && my value && my value->tag == EXPR_UNARY_OP && my value->unary_op->op == UNARY_OP_YIELD) {
+        my value->unary_op->declared_context = &my binding.explicit_type;
+    }
     names->flow->contextual_depth -= my binding.has_explicit_type;
     names->flow->initializing = outer;
     if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);

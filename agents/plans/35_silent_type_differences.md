@@ -162,9 +162,9 @@ Mechanisms found but not fixed (types-semantics tail):
   `(onfinally?: () => void)`, not the written `(() => void) | undefined | null`; a local generic interface declared
   twice behaves the same, once it doesn't (probe: `interface Q<T> { fin(cb?: (() => void) | undefined | null): Q<T> }`
   plus `interface Q<T> { x: T }`). tsc's reason not found (canReuseTypeNodeAnnotation looked equal); instrument tsc.
-- **Contextual type of a `yield` is only known top-down** (generatorReturnTypeInference(NonStrict) g311): a generator
-  function *expression*'s TNext from `const y: string = yield` needs the statement checked before its return type is
-  inferred; tsc asks getContextualType(yield) bottom-up. Checking the body first risks circularities.
+- **Contextual type of a `yield` is only known top-down**: fixed for `const y: T = yield` (UnaryOpExpr.declared_context);
+  a yield as a call argument, assignment right side or return operand still gets its TNext only once the statement is
+  checked, which is after a function expression's type is asked when it's called right away.
 - **Static side resolution lowers the base's type arguments first** (cloduleGenericOnSelfMember,
   classDeclarationShouldBeOutOfScopeInComputedNames probably): `class S extends B<typeof S.Base>` reads `S.Base`
   through S's static members, which members.c builds after class_base() lowered the type arguments -> cycle -> any.

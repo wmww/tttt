@@ -567,6 +567,9 @@ typedef struct UnaryOpExpr {
     // `yield`: no type parameter list encloses it (its generator's included), so a type parameter as its contextual type
     // is one of a call's, set when resolving
     bool no_type_params_in_scope;
+    // `yield`: the annotation of the variable it initializes (`const y: string = yield`), its contextual type known
+    // without checking the statement (tsc's getContextualType walks up; tttt checks top-down). Set when resolving
+    struct TypeNode const* declared_context;
     // `!`: an access or call follows (`a?.b!.c`), so it's part of an optional chain its operand is part of (tsc's
     // tryReparseOptionalChain makes it a NonNullChain). Set by the parser
     bool continues_chain;

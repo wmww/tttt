@@ -71,6 +71,9 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
         ty_expr_type(me, function_impl_rare(function)->yields[i]); // Checks the operand with the contextual type it gets from there
         if (yield->op == UNARY_OP_YIELD) {
             Ty const* sent = intern_get(&my links, (u64[]){ KEY_YIELD_CONTEXT, (u64)(uintptr_t)yield }, 2);
+            // (Not checked with its context yet: the generator's type is asked before its body is checked, a function
+            // expression called right away)
+            if (!sent && yield->declared_context) sent = ty_from_node(me, yield->declared_context, (LowerCtx){ .generic = true });
             if (sent) ty_buf_push(&nexts, sent);
         } else if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
             // `yield*` missing its operand delegates to the error type, whose iteration types are any
