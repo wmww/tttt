@@ -38,7 +38,9 @@ bool block_has_export_declarations(Block const* me) {
     for_each (i, vec_statement, &my statements) {
         if (i->tag == STATEMENT_EXPORT_DEFAULT_EXPR) return true;
         if (i->tag == STATEMENT_IMPORT_EXPORT && span_equals(i->import_export->keyword_span, "export") &&
-            !i->import_export->main.export_import
+            !i->import_export->main.export_import &&
+            // (Not `export as namespace X`: tsc's hasExportDeclarations counts export declarations and assignments)
+            i->import_export->main.tag != PORT_EXPORT_AS_NAMESPACE
         ) {
             return true;
         }
