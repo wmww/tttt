@@ -61,8 +61,10 @@ TyList ty_type_params_of(Checker* me, Generic const* generic) {
 
 // The type parameters of a class or interface with several declarations (tsc's
 // getLocalTypeParametersOfClassOrInterfaceOrTypeAlias): the distinct names in the order the declarations introduce
-// them. A later declaration's parameter of a name already there is that same type (tsc's binder puts them in the
-// symbol's members, by name); `class C<P>` with `interface C<T>` is `C<P, T>` (TS2428)
+// them; `class C<P>` with `interface C<T>` is `C<P, T>` (TS2428). A later declaration's parameter of a name already
+// there is the same symbol already (scope_new_generic_merged(), like tsc's binder declaring them in the merged
+// symbol's members), except next to a declaration of the shared lib program (`interface Array<T>` in a program): that
+// one's own symbol is made to stand for the lib's type parameter here
 static TyList merged_local_type_params(Checker* me, Symbol const* symbol, Generic const* first) {
     TyList local = ty_type_params_of(me, first);
     for (u32 d = 0; d < symbol->decl_count; d++) {
@@ -76,6 +78,7 @@ static TyList merged_local_type_params(Checker* me, Symbol const* symbol, Generi
             for (u32 k = 0; k < local.len && !same; k++) if (local.data[k]->param.name == name) same = local.data[k];
             u64 key[2] = { KEY_TYPE_PARAM, (u64)(uintptr_t)i->symbol_ref };
             if (same) {
+                // (A no-op for a shared symbol: its slot is `same` already)
                 void const** slot = intern_slot(me, &my links, key, 2);
                 if (!*slot) *slot = same;
                 continue;
