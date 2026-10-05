@@ -341,16 +341,13 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
             if (!*found) return NON_INSTANTIATED;
             return block_is_instantiated(&my decl.namespace->contents, true, outer, depth + 1) ? INSTANTIATED : NON_INSTANTIATED;
         case STATEMENT_IMPORT_EXPORT: {
-            // A re-export of `import x = N.x` or `import x = require("m")` is instantiated, it's ambiguous. Other imports aren't
-            PortStatement const* port = my import_export;
-            bool is_export = span_equals(port->keyword_span, "export");
-            if (!is_export && csview_equals_sv(port_item_name(port->main.decl_name), name)) *found = true;
-            for_each (i, vec_port_item, &port->items) {
-                if (!is_export && csview_equals_sv(port_item_name(i->decl_name), name)) *found = true;
-            }
+            // A re-export of `import x = N.x` or `import x = require("m")` is instantiated, it's ambiguous. Other imports
+            // have no name to tsc's nodeHasName (an ImportDeclaration's names are in its clause): not found
             // (Any import-equals declaration, `import x = require("m")` too: tsc's ImportEqualsDeclaration)
+            PortStatement const* port = my import_export;
             bool import_equals = port->main.tag == PORT_IMPORT_ALIAS || (port->main.tag == PORT_IMPORT_GATHER && port->main.is_require);
-            return *found && import_equals ? INSTANTIATED : NON_INSTANTIATED;
+            *found = import_equals && csview_equals_sv(port_item_name(port->main.decl_name), name);
+            return *found ? INSTANTIATED : NON_INSTANTIATED;
         }
         default:
             return NON_INSTANTIATED;
