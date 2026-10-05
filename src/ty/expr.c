@@ -2698,6 +2698,9 @@ typedef struct SpreadAcc {
     u32 part_count;
     bool any; // Something `any` was spread: the whole literal is any
     bool readonly; // In a const context: what's spread is readonly
+    // The last thing spread was no object (TS2698): the literal is errorType (tsc's checkObjectLiteral; a spread after
+    // it makes any of it, getSpreadType)
+    bool error;
 } SpreadAcc;
 
 static void spread_acc_push_part(SpreadAcc* acc, SpreadPart part) {
@@ -2746,6 +2749,7 @@ static bool spreads_into_nothing(Checker* me, Ty const* ty) {
 
 // Something spread: `...x`
 static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
+    acc->error = false;
     if (type->flags & TYF_ANY) {
         acc->any = true;
         return;
@@ -2824,7 +2828,7 @@ static Ty const* spread_acc_objects(Checker* me, LiteralBuilder const* alts, u32
 static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* own, ObjectLiteralKind kind, Expr const* expr) {
     Ty const* ret;
     if (acc->any) {
-        ret = any_type(me);
+        ret = acc->error ? ty_intrinsic(me, TY_ERROR) : any_type(me);
     } else if (!acc->alt_count && !acc->part_count) {
         // (`{}`: a type of its own, see ty_object_literal_of())
         bool empty = !own->count && !own->index_count && expr && expr->tag == EXPR_OBJECT && !vec_object_expr_item_size(&expr->object);
@@ -3157,7 +3161,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 .skip_sensitive = ctx.skip_sensitive,
             });
             // (A spread of no object is TS2698 and makes the literal errorType, tsc's checkObjectLiteral)
-            if (!ty_is_valid_spread_type(me, spread_type)) spread.any = true;
+            if (!ty_is_valid_spread_type(me, spread_type)) spread.any = spread.error = true;
             else spread_acc_type(me, &spread, spread_type);
             continue;
         }

@@ -19593,7 +19593,7 @@ const baselines = {
     'jsFileImportPreservedWhenUsed': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFileMethodOverloads': {
         errors: true,
@@ -32413,7 +32413,7 @@ const baselines = {
     'unusedImportWithSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports1': {
         errors: true,
