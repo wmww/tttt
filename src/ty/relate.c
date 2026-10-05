@@ -679,12 +679,13 @@ static bool is_literal_type(Ty const* ty) {
 [[gnu::cold]] static void display_pair(Checker* me, Ty const* source, bool widen, Ty const* target, cstr* source_out, cstr* target_out) {
     // A widened literal source is shown by tsc's getTypeNameForErrorDisplay (reportRelationError's generalizedSource):
     // fully qualified, a unique symbol as `typeof sym`
+    // (Only a source made of literals is generalized: one with other members is shown as is)
     *source_out = widen && is_literal_type(source) ? display_fully_qualified(me, source, widen) :
-        display_for_report(me, source, widen);
+        display_for_report(me, source, false);
     *target_out = display_for_report(me, target, false);
     if (!cstr_eq(source_out, target_out)) return;
     c_drop(cstr, source_out, target_out);
-    *source_out = display_fully_qualified(me, source, widen);
+    *source_out = display_fully_qualified(me, source, widen && is_literal_type(source));
     *target_out = display_fully_qualified(me, target, false);
 }
 

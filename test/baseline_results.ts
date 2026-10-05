@@ -16786,7 +16786,7 @@ const baselines = {
         types: true,
     },
     'inDoesNotOperateOnPrimitiveTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
