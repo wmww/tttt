@@ -86,6 +86,7 @@ void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported export
 // into the function body, where the body's variables are in scope: temporaries of `?.` and `??` below ES2020, of an
 // object rest element below ES2017, the static fields of a class expression (unless class fields are standard).
 // Doesn't look into functions, nor into the values of object literal members and non-static class members
+static bool pattern_declares(Binding const* pattern, Span name);
 static bool expr_requires_scope_change(Expr const* me);
 
 static bool exprs_require_scope_change(VecExpr const* exprs) {
@@ -772,13 +773,38 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
                     errs);
             }
         } else {
-            bool any_pattern = false;
-            for_each (i, vec_function_arg, &my args) any_pattern |= i->initializer.binding.tag != BINDING_IDENTIFIER;
-            if (!any_pattern) {
+            bool in_pattern = false;
+            for_each (i, vec_function_arg, &my args) {
+                Binding const* binding = &i->initializer.binding;
+                if ((binding->tag == BINDING_ARRAY || binding->tag == BINDING_OBJECT) && pattern_declares(binding, predicate->name)) {
+                    error_ctx_error_d(errs, predicate->name, 1230, "A type predicate cannot reference element '", predicate->name,
+                        "' in a binding pattern.");
+                    in_pattern = true;
+                    break;
+                }
+            }
+            if (!in_pattern) {
                 error_ctx_error_d(errs, predicate->name, 1225, "Cannot find parameter '", predicate->name, "'.");
             }
         }
     }
+}
+
+// tsc's checkIfTypePredicateVariableIsDeclaredInBindingPattern: an element of the pattern (or a nested one) is named
+static bool pattern_declares(Binding const* pattern, Span name) {
+    if (pattern->tag == BINDING_ARRAY) {
+        for_each (i, vec_binding, &pattern->array) {
+            if (i->tag == BINDING_IDENTIFIER && csview_equals_sv(i->content_span.sv, name.sv)) return true;
+            if ((i->tag == BINDING_ARRAY || i->tag == BINDING_OBJECT) && pattern_declares(i, name)) return true;
+        }
+    } else if (pattern->tag == BINDING_OBJECT) {
+        for_each (i, vec_object_binding_item, &pattern->object) {
+            Binding const* target = &i->target;
+            if (target->tag == BINDING_IDENTIFIER && csview_equals_sv(target->content_span.sv, name.sv)) return true;
+            if ((target->tag == BINDING_ARRAY || target->tag == BINDING_OBJECT) && pattern_declares(target, name)) return true;
+        }
+    }
+    return false;
 }
 
 static bool ty_maybe_void(Ty const* type) {
