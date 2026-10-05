@@ -51,7 +51,7 @@ variables (`for_each_loop_statement_evaluate_var_type`), the object of a called/
 `isEmptyArrayLiteralType` (`[]` to `never[]` non-strict). Plus tsc's reportErrorsFromWidening under noImplicitAny
 (`report_errors_from_widening` in binding.c: TS7018 / TS7005 / TS7006).
 - **Stage 1 (1 session)**: land it; delete the `if (false)` branch and the dead helper the prototype left in the
-  test traversal; skip the flag ORs under strictNullChecks; delete hacks.md `widen_nullable`, bugs/display.md's `[]`
+  test traversal; skip the flag ORs under strictNullChecks; delete bugs/display.md's `[]`
   TS2345 entry; document `Ty.xflags` in documentation.md.
 - **Stage 2 (optional)**, the remaining widening errors, ~8-10 tests read from diffs: TS7031 on binding elements
   (wideningTuples5, noImplicitAnyDestructuring*), TS7010/7011/7025 on widened inferred returns (wideningTuples7,
@@ -109,7 +109,7 @@ tsc's returnOnlyType under SkipContextSensitive: a non-inferrable signature whos
 the contextual return, cached under `KEY_CONTEXT_FREE`; `infer_from_signatures` skips non-inferrable parameters.
 Fires in 6 suite tests, 0 corpus sites; +1 (badInferenceLowerPriorityThanGoodInference). Before landing: the shared
 `p37_returns` buffer is reset by recursion (collect into a local), async/generator functions should get it too, drop
-the getenv toggles. A side task for whichever session has room; deletes hacks.md "Skip-sensitive first pass"'s
+the getenv toggles. A side task for whichever session has room; deletes hacks.md "Skip-sensitive rounds"'
 returnOnlyType part and bugs/type_core.md "Context-free type of return-sensitive functions".
 
 ## Order and validation

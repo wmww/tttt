@@ -218,8 +218,9 @@ Spurious diagnostics in JS tests whose causes were investigated but not fixed:
 - **`@typedef` inside a class body** (jsdocTemplateClass): tsc binds it in the class (blockScopeContainer = the class,
   getEnclosingBlockScopeContainer of the host), where the class's `@template T` is visible; tttt's
   `jsdoc_bind_comments()` only lets statement lists claim comments, so the file claims it and `T` is TS2304.
-- **`Object.defineProperty(o, "p", {...})`** declares nothing (tsc's bindObjectDefinePropertyAssignment,
-  isBindableObjectDefinePropertyCall); 32 tests mention defineProperty.
+- **Spurious TS2339 in JS from binder gaps** (~15 tests when last counted, unverified since `Object.defineProperty`
+  got bound): class-static expandos, `var X = m.X = {}`, `exports["e"] =`, `module.exports.a.cat =`, prototype-literal
+  members seen from `this`.
 - **`this.x = v` at the top level of a CommonJS module** should declare an export (bindThisPropertyAssignment, SourceFile
   container with commonJsModuleIndicator); only the script (global) case is done (`add_global_this_chain()`).
 

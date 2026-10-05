@@ -26,9 +26,9 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
 - Barriers (`resolving_start`, tsc's `resolutionStart`): `resolve_call()` and `has_conflicting_discriminants()`.
   - tsc only sets it for a call's *first* resolution (nested ones get `resolvingSignature`). tttt resolves a call again
     inside itself (plan 38 stage 3), and doing tsc's rule made zod's recursive getter schemas TS7023 (`get children()
-    { return z.array(Node) }`). So every resolution sets it (hacks.md `resolve_call`). Cost: `res1` in
+    { return z.array(Node) }`). So every resolution sets it. Cost: `res1` in
     circularReferenceInReturnType (tsc's TS7022 at `const res1 = fn1(() => res1)`).
-  - The eager intersection reduction (hacks.md `has_conflicting_discriminants`) asks prop types tsc asks lazily; a
+  - The eager intersection reduction (`has_conflicting_discriminants`, since removed) asks prop types tsc asks lazily; a
     cycle found there marked arktype's mapped `sequence` prop (4 TS2615 in zod-root).
 
 ## Stage 2 (done, 2026-09-29): suite 12052 -> 12057, 0 lost, corpora unchanged, zod-root identical, +0.0..0.4% instr

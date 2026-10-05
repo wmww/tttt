@@ -267,7 +267,7 @@ constraints not instantiated (ty_conditional_resolve); execa's `result.stderr` w
 alias (`typeof CommonResult<false, O>`) left uninstantiated. Probes in `test/probes/plan19/zod/ark_*.ts` and
 `instantiation_expression_in_alias.ts`.
 
-### HACKs the zod fixes left (hacks.md "Inference" and "Mapped types")
+### HACKs the zod fixes left (hacks.md "Calls and inference" and "Type core")
 - Uninferred type parameters stay generic in the second pass's contextual type only where they'd be `unknown`
   (contextual types don't look through type parameters to constraints like getApparentTypeOfContextualType).
 

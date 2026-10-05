@@ -592,10 +592,11 @@ src` finds the code-side markers; every significant one has an entry here.
   `class_base()` resolves; the other readers of `ClassDecl.extends` (base constructor checks, arity, display) still
   see the clause. Dotted tag names (`@augments {ns.A}`) keep the clause.
 - JSDoc is consumed at parse time, not stored: `jsdoc_before()` re-parses the last comment before the host into
-  transient `JsDocTag`s; JSDoc parse errors dropped (no TS8032). `jsdoc_bind_comments()` parses every
-  `@typedef`/`@callback`/`@import` comment again and claims it by innermost statement list (claims from failed attempts
-  stay); `@import` only at list top level; dotted/nameless typedefs skipped; typedefs sharing a comment share its
-  templates. `ParserShared.jsdoc_enum` is a one-slot handoff that statements outside a list drop.
+  transient `JsDocTag`s (its parse errors kept for JS files through `ParserShared.jsdoc_errors`).
+  `jsdoc_bind_comments()` parses every `@typedef`/`@callback`/`@import` comment again and claims it by innermost
+  statement list (claims from failed attempts stay); `@import` only at list top level; dotted/nameless typedefs
+  skipped; typedefs sharing a comment share its templates. `ParserShared.jsdoc_enum` is a one-slot handoff that
+  statements outside a list drop.
 - `@type` on assignments reaches the symbol via `SymbolDecl.jsdoc_type`, threaded through every assignment-declaration
   site in scope.c (new sites must pass it; chains: outermost only). `jsdoc_apply_type_signature()` *moves* the
   TypeNodes of a written function type. `jsdoc_prototype_type_param()` sees F's type parameters anywhere in a
@@ -612,33 +613,29 @@ src` finds the code-side markers; every significant one has an entry here.
   lists merged after); only expression statements and `var` initializers are scanned. `Symbol.late_bound_key` keys
   `this[k] = v` by source text.
 - CommonJS: module indicator syntactic (`saw_commonjs`, failed attempts too). `exports.x =` from top-level statements
-  and their blocks (`add_nested_commonjs_exports()`), in functions only in IIFEs; `Object.defineProperty` only as a
-  statement; `is_exports_alias()` module-level only (queue of 16); `require()` is parser-synthesized `PortItem`s (flat
-  patterns only); `readonly_assignment()` never reports `exports.x =`. `export=` absorbs other exports in place (tsc
-  copies: typedefCrossModule3); `exports.x = a.b` isn't an alias; `import * as ns` of CommonJS has the module's type.
-  Exported class expressions alias the class (`scope_reparent`, top level only).
+  and their blocks (`add_nested_commonjs_exports()`), in functions only in IIFEs; `Object.defineProperty` only as an
+  expression statement; `is_exports_alias()` module-level only (queue of 16); `require()` is parser-synthesized
+  `PortItem`s (flat patterns only); `readonly_assignment()` never reports `exports.x =`. `export=` absorbs other
+  exports in place (tsc copies: typedefCrossModule3); `exports.x = a.b` isn't an alias; `import * as ns` of CommonJS
+  has the module's type. Exported class expressions alias the class (`scope_reparent`, top level only).
+  `exports.x = undefined` with later `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias (the
+  last one resolves), and the declarations' left sides are `any`; tttt keeps a property + alias symbol.
 - Constructor functions: function type plus a construct signature (`resolve_members()`, `ty_js_constructor_class()`
   prints `typeof F`). Its class symbol is the variable's/property's (`set_function_class_symbol()`; tsc: the function
   expression's), patched in `ty_js_assigned_class_name()`, `symbol_chain_append_entity()`,
-  `this_compile_test_info()`. Object-literal functions assigning `this.x` aren't classes (tsc: they are;
-  objectPropertyAsClass). `F.prototype = {...}` members are added at member resolution
+  `this_compile_test_info()`. `F.prototype = {...}` members are added at member resolution
   (`builder_add_assignment_members()`), not merged symbols (mergeJSSymbols): `F.prototype.m` and `this.m` are one
   member, prototype accessors don't merge with `this.x` (jsDeclarationsFunctionLikeClasses2). Reads in a constructor
   *function* aren't auto-typed (`constructor_declared_read()` is class-only); every plain JS function gets a return
   flow node in case it's a constructor. TS2417 doesn't see JS class expandos.
-- Spurious TS2339 in JS (~15 tests) from binder gaps: `Object.defineProperty` declarations, class-static expandos,
-  `var X = m.X = {}`, `exports["e"] =`, `module.exports.a.cat =`, prototype-literal members seen from `this`.
+- `add_this_property()` (scope.c): a JS function expression with `this.x = v` gets a class symbol of its own
+  (`own_class_symbol`, named by `assigned_name`), except when it has a JSDoc `@this`: tsc binds those members too, but
+  doing so gave webpack's `@this {Module} function errors() { this._errors = [] }` a TS7008 tsc doesn't report (why is
+  unverified).
 - TS2738 (`IdentifierExpr.this_shadows_outer`) is decided in the resolve walk. A JS literal assigned to an any-typed
   target is closed only for identifier targets (`check_binary`). `scope_add_port()`: no `export as namespace` in JS.
 - JS syntax errors (TS8xxx, `js_syntax_error()`) come from the parser; what tsc skips inside is erased after
   (`js_syntax_skip_since()`): every skipped construct needs its call. Node array spans run first to last element.
-
-- `add_this_property()` (scope.c): a JS function expression with `this.x = v` gets a class symbol of its own
-  (`own_class_symbol`, named by `assigned_name`), except when it has a JSDoc `@this`: tsc binds those members too but
-  webpack's `@this {Module} function errors() { this._errors = [] }` then got TS7008, which tsc doesn't report. Why
-  is unverified.
-- `exports.x = undefined` with later `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias (the
-  last one resolves), and the declarations' left sides are `any`; tttt keeps a property + alias symbol.
 
 ## Declaration diagnostics (`ty/declaration_diagnostics.c`, plan 40)
 - `fallback_begin`/`fallback_end`: where the syntactic builder falls back anywhere in a declaration (any `report()`,
@@ -662,8 +659,8 @@ src` finds the code-side markers; every significant one has an entry here.
   unions in conditional branches) isn't ported.
 - `symbol_chain.c` accessibility: `decl_visible()` fails open (visible) where it doesn't know a declaration's
   statement list (no `block`, an ambient module, a namespace block it can't match).
-- `namespace_import_is_clone()` (`symbol_chain.c`): under esModuleInterop tsc resolves `import * as ns` of a module with
-  a `default` (or signatures) to a clone, so `ns` doesn't name the module as a container
+- `namespace_import_is_clone()` (`symbol_chain.c`, HACK): under esModuleInterop tsc resolves `import * as ns` of a
+  module with a `default` (or signatures) to a clone, so `ns` doesn't name the module as a container
   (esModuleInteropDefaultImports). tttt types `ns` as the module itself, so the rule only applies to container lookups
   (`ChainCtx.container_lookup`); a module printed as `typeof ns` still goes through `ns`. A real clone symbol for such
   imports would remove the special case.
@@ -686,40 +683,37 @@ src` finds the code-side markers; every significant one has an entry here.
   compares roots by name, `path_root_of`); a real path type with roots would replace it if Windows ever matters.
 - `.js` files under allowJs are parsed as TypeScript; a `.js` root without allowJs (TS6504, `program_load`) and a
   refused import (`MODULE_REF_IS_JS`) are two paths.
-- `module_resolver_resolve` (HACK): node10 and export-map packages resolve in two passes (TypeScript extensions
-  first), reproducing tsc's selfNameModuleAugmentation behaviour (microsoft/TypeScript#50762) by other means.
-  `try_load_input_file_for_path` lets the TypeScript pass take a JavaScript input anyway (with allowJs), since tsc's
-  one pass maps an exports target to its input before the target's `.d.ts`: a patch on the patch.
-- `apply_realpath` loses the original path; no package ids (no duplicate-package handling).
+- `resolve_uncached()` (module_resolution.c HACK): node10 and export-map packages resolve in two passes (TypeScript
+  extensions first), reproducing tsc's selfNameModuleAugmentation behaviour (microsoft/TypeScript#50762) by other
+  means. `try_load_input_file_for_path` lets the TypeScript pass take a JavaScript input anyway (with allowJs), since
+  tsc's one pass maps an exports target to its input before the target's `.d.ts`: a patch on the patch.
 - `/// <reference lib>`: the CLI loads it after the program's files (`program_follow_lib_references()`; tsc: libs
   first; unknown names silently ignored, tsc TS2726). The harness adds it to the cached lib list up front by text scan
   (`load_test_source`); `@libReplacement: true` is unimplemented (libTypeScriptOverrideSimple & co.).
   `program_load_reference_path()` probes extensions by hand.
-- `tsconfig.c`: config errors are one `failable` message (no TS5xxx, no TS1005 for JSON syntax, a missing `extends`
-  fails the config where tsc says TS5083 and goes on); `include` globs always skip dot and package directories (tsc:
-  only under `**`). The walk runs before `compiler_options_resolve()`, so `allows_js()`/`resolves_json()` restate the
-  allowJs/resolveJsonModule defaults; `follow_links()` uses libc's realpath, not the `Fs` (the mock fs never links
-  configs).
-- Project references (`project.c`, plan 41): a `ProjectSet` reads every config twice (options, then root files with a
-  scratch `CompilerOptions`); the redirect map is rebuilt per program (cheap next to name resolution). `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is in the
-  program because: Matched by include pattern ..." chain (the program doesn't know which spec matched). Config
-  diagnostics of references are only for the program's own config's direct references (tsc walks them transitively,
-  reported on the parent config). `main.c` counts config diagnostics among the "parse errors" of its summary.
-- Reference sources' typed bodies (`skip_typed_body()`/`skip_balanced_braces()` in parser.c,
-  `function_impl_lookup_names_as()`'s `skip_body`, plan 41 stage 2): skipped by a hand scanner whose regex-or-division
-  rule is a heuristic (gives up after `)`/`}`/`++`/`--`; checked against the real parse on every corpus, see the
-  commit). What a skipped body would have done to the outside is lost: a `let` assigned only in it isn't
-  `is_assigned` (narrowing in an unannotated sibling closure of a reference source could differ), `Symbol.referenced`.
-  The parser can't tell an IIFE, so an annotated IIFE's body is skipped there (resolve then walks an empty body). The
-  real fix for the time it saves is cheaper ASTs (`bugs/perf_leads.md` "The AST"), not a better scanner.
-- `-b`'s `--build-jobs` default (`build()`, main.c) is 2 at 4 threads, picked by one corpus (tsc-src, best of 3: J=1 1.74 s /
-  540 MB, J=2 1.32 s / 785 MB, J=3 1.35 s / 930 MB, J=4 1.19 s / 1.2 GB): a memory-aware scheduler would size by
-  projects' file counts.
+- `tsconfig.c`: an unreadable root config is one `failable` message; `include` globs always skip dot and package
+  directories (tsc: only under `**`). The walk runs before `compiler_options_resolve()`, so
+  `allows_js()`/`resolves_json()` restate the allowJs/resolveJsonModule defaults; `follow_links()` uses libc's
+  realpath, not the `Fs` (the mock fs never links configs).
 - Config syntax (`json.c`'s recovery, `program_set_config_file()`): the config's syntax errors come from parsing it
   as a JSON source file with tttt's parser, while what's read comes from `json_parse()`, whose recovery (missing
   commas/colons, unquoted keys, unterminated strings and containers, non-values dropped) only approximates what tsc's
   parseJsonText recovers. Not reported: syntax errors in configs it extends (no SourceFile for them), tokens after
   the root value (tsc's TS1012 + TS5092), TS5092 for a non-object root.
+- Project references (`project.c`, plan 41): a `ProjectSet` reads every config twice (options, then root files with a
+  scratch `CompilerOptions`); the redirect map is rebuilt per program (cheap next to name resolution).
+  `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is in the program
+  because: Matched by include pattern ..." chain (the program doesn't know which spec matched). Config diagnostics of
+  references are only for the program's own config's direct references (tsc walks them transitively, reported on the
+  parent config). `main.c` counts config diagnostics among the "parse errors" of its summary.
+- Reference sources' typed bodies (`skip_typed_body()`/`skip_balanced_braces()` in parser.c,
+  `function_impl_lookup_names_as()`'s `skip_body`, plan 41 stage 2): skipped by a hand scanner whose regex-or-division
+  rule is a heuristic (gives up after `)`/`}`/`++`/`--`). What a skipped body would have done to the outside is lost:
+  a `let` assigned only in it isn't `is_assigned` (narrowing in an unannotated sibling closure of a reference source
+  could differ), `Symbol.referenced`. The parser can't tell an IIFE, so an annotated IIFE's body is skipped there
+  (resolve then walks an empty body).
+- `-b`'s `--build-jobs` default (`build()`, main.c) is 2 at 4+ threads, picked on one corpus (tsc-src); a memory-aware
+  scheduler would size by projects' file counts.
 - Message paths (`source_file_set_message_cwd()`, `path_for_message()`): the CLI sets a process-wide working directory
   once so message text names files absolutely like tsc's CLI (module names, TS2306, TS6053, resolved paths); unset, the
   harness's display paths are used. A global rather than per program because messages are built where no `Program` is
@@ -732,10 +726,10 @@ src` finds the code-side markers; every significant one has an entry here.
   declaration (the printed node's parent); the types baseline has no parent node, so "the literal is the annotation of
   the name at `at`" is decided from the source text between them (only `?`/`:`).
 - `symbol_chain.c` (getSymbolChain) sees only scopes the traversal tracks (`BaselineTestCase.enclosing`), so
-  function-local shadowing isn't qualified; `try_locals_with_exports()` merges by position; no alternative containing
-  modules, firstVariableMatch or accessibility cache. `append_qualified_name` always fully qualifies in messages.
-  `out_unique_symbol_name` (HACK) knows only the `XConstructor` variable pattern. `baseline_test_case_module_alias_text`
-  only handles chains ending at the export.
+  function-local shadowing isn't qualified; `try_locals_with_exports()` merges by position; no firstVariableMatch;
+  the accessibility memo exists only in declaration-diagnostics walks. `append_qualified_name` (ty/lower.c) always
+  fully qualifies in messages. `out_unique_symbol_name` (HACK) knows only the `XConstructor` variable pattern.
+  `baseline_test_case_module_alias_text` only handles chains ending at the export.
 - Node reuse (`display_node()`/`display_annotated()`): `name_accessible()` resolves from `enclosing` only; signatures
   reuse the declaration when the mapper left it alone (`mentions()` conservative). `T_1` renaming (`TyParamNames`,
   `baseline_test_case_enter_generic()`) restates resolveName by hand. `display_node_identifier()` assumes ASCII module
@@ -753,11 +747,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - The `any` underline rule reads whether tsc's `.errors.txt` exists; `BaselineTestCase.any_keeps_underline` leaks to
   the next line if no types line follows.
 - Symbols lines: container from the traversal or `Prop.parent`; `collect_prop_symbol()` skips non-object union members
-  (strict lost 40 tests by exposing narrowing gaps); `index_symbol_compile_test_info()` never for lib index signatures
-  (unexplained); `symbol_declaration_spans()` puts functions first per block (maybe redundant). Span-keyed overrides
-  (`commonjs_symbol_overrides()`, `prototype_symbol_overrides()`, `this_property_symbol_overrides()`) stand in for
-  getSpecialPropertyAssignmentSymbol. JSDoc tag Decls get no leading trivia (sniffed). A module's `default` export
-  symbol is named like its first declaration.
+  (the object of a property access is sometimes not narrowed as far as tsc's); `index_symbol_compile_test_info()`
+  never for lib index signatures (unexplained); `symbol_declaration_spans()` puts functions first per block (maybe
+  redundant). Span-keyed overrides (`commonjs_symbol_overrides()`, `prototype_symbol_overrides()`,
+  `this_property_symbol_overrides()`) stand in for getSpecialPropertyAssignmentSymbol. JSDoc tag Decls get no leading
+  trivia (sniffed). A module's `default` export symbol is named like its first declaration.
 - Class members aren't `Symbol`s, so tsc's member-table merges are rebuilt for the symbols baseline: a field and the
   parameter property/interface member of its name take the class type's `Prop` declarations
   (`class_prop_declarations()`), and a class/interface type parameter with an instance member of its name is one
@@ -775,17 +769,16 @@ src` finds the code-side markers; every significant one has an entry here.
 - `callee_compile_test_info`: `f<T>` gets its own line only when `?.` follows (source peek); `a<b>?.()` keeps an
   `EXPR_GENERIC_PARAMS` callee.
 - `render_types_or_symbols_file` drops one trailing line break per unit (a last unit before `// @link` lines is off).
-- `display_type` depth guard (`DISPLAY_TYPE_MAX_DEPTH`): probably dead; check and delete.
 
 ## Harness and tools
-- `apply_setting`: `@baselineFile`, `@fullEmitPaths`, bad values ignored; option diagnostics skipped when a
-  `tsconfig.json` unit exists.
+- `apply_setting`: `@baselineFile`, `@fullEmitPaths`, bad values ignored.
 - `mount_test_lib_folder` copies tsc's `tests/lib` per test; `baseline_test_cache_get_program_with_libs` keeps one lib
   `Program` per lib list, never evicted.
-- `@noTypesAndSymbols` counts symbols/types as passed (~900 free passes). `TTTT_IGNORE_UNDERLINES=1` is measurement
-  only.
+- `@noTypesAndSymbols` counts symbols/types as passed (free passes). `TTTT_IGNORE_UNDERLINES=1` is measurement only.
 - `engine.c` (reads `test/baseline_results.ts`): no let/const/var distinction, drops array property assignment,
-  `value_loose_eq` stringifies. `string_to_double()` (value.c) isn't correctly rounded.
+  `value_loose_eq` stringifies.
 - `failstats.py`'s `line_ratio` is multiset overlap, not a diff. `bench/make_corpus.py` replicates passing tests
   (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
+- `display_type()` (display.c, debug printing of `TypeNode` syntax): `DISPLAY_TYPE_MAX_DEPTH` guards against a
+  self-containing legacy type that can't exist anymore; delete the guard.

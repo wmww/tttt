@@ -102,7 +102,7 @@ children, `program_load_ahead()` queues libs, roots and automatic types up front
 - **Biggest file first** (a max-heap by `stat` size, `program_set_file_size()`): FIFO started tsc's `checker.ts` late
   and the loader then waited ~100 ms on it; now the load phase is about checker.ts's parse, the bound for whole files.
 - **The loader parses queued files while it waits** (and runs `program_parse_ahead()` itself then): measured better
-  than idling on every corpus, although it can pick up a big file and delay itself (hacks.md "Load pool guesses").
+  than idling on every corpus, although it can pick up a big file and delay itself (hacks.md "Load pool").
 - `compiler_options()` is thread-local; checker threads set it themselves. `Program.cwd` read once (`program_cwd()`,
   lazily: the harness sets the mock cwd after `program_new`). The harness's allocation counter is atomic.
 - Not done: **the lexical import pre-scan** (step 5). Workers were ~90% busy (`TTTT_LOAD_POOL_STATS=1`: busy vs

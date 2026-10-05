@@ -13,7 +13,7 @@ hosts), `this.x` members of JS classes and constructor functions (resolve walk, 
 constructor functions as classes (construct signature, `this`, `typeof F`), JS optional parameters, the TS callable
 TS2339 gate removed. Not done: `F.prototype = {...}`, `Object.defineProperty` declarations, `arguments` as a rest
 parameter (tsc only does that with a JSDoc `...T` now), JS widening of `null`/`[]` initializers, **the JS TS2339
-gate** (removing it still loses ~57 tests: hacks.md "Assignment declarations" lists why). `documentation.md`
+gate** (removing it still loses ~57 tests: hacks.md "JavaScript and JSDoc" lists why). `documentation.md`
 "Assignment declarations" describes what exists.
 **Stage 3 done** (2026-09-27, 6 commits, todo entry 5): JS tests passing 310 -> 375, suite 9091 -> 9156, webpack
 3981 -> 515. Built: `@typedef`/`@callback`/`@import`/`@enum` as synthesized declarations bound by the innermost statement
