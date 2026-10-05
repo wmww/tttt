@@ -6763,7 +6763,17 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         expected_token_error(&p, "(");
         func = (FunctionImpl){ .is_generator = flags.is_generator };
         if (span_valid(flags.asterisk)) function_impl_rare_mut(&func)->asterisk = flags.asterisk;
+        if (*p.pos == ':') {
+            // (tsc's parseReturnType still takes a return type: `async * x: 1;` is a method returning 1. Skipped:
+            // tsc doesn't check it against a generator without a body, tttt would)
+            p.pos++;
+            hop_whitespace(&p);
+            TypeNode ret;
+            if (parse_type(&p, TYPE_PRECEDENCE_NULL, &ret)) type_drop(&ret);
+            hop_whitespace(&p);
+        }
         if (parse_block(&p, false, &func.body)) func.has_body = true;
+        else if (*p.pos == ';') p.pos++; // (parseFunctionBlockOrSemicolon)
         if (item.tag == OBJECT_ITEM_PROPERTY) item.tag = OBJECT_ITEM_METHOD;
         func.full_span = span_from(a);
         item.value = expr_function(span_from(a), c_new(FunctionImpl, func));
@@ -10578,6 +10588,13 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
     }
     hop_whitespace(&p);
     if (span_equals(name, "type") && *p.pos != '=') {
+        // (`import type from "m"` imports a default named `type`: tsc's parseImportDeclarationOrImportEqualsDeclaration
+        // takes `type` as the modifier before `from` only if `from` or `=` follows that)
+        Tok t = tok_peek(&p);
+        if (tok_is(t, "from")) {
+            Tok next = tok_next(&p, t);
+            if (!tok_is(next, "from") && !tok_is(next, "=")) return parse_fail(&p);
+        }
         type_only = true;
         if (!parse_identifier(&p, &name)) {
             return parse_fail(&p);
@@ -10616,7 +10633,14 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                 }
                 value_drop(&path);
             } else {
-                parse_error(&require_p, span_from_token(&require_p), 1141, "String literal expected.");
+                // (tsc's parseModuleSpecifier takes any expression, which isn't a string literal)
+                Expr skipped;
+                if (parse_expr(&require_p, expr_ctx_null, &skipped)) {
+                    parse_error(&require_p, expr_outer_span(&skipped), 1141, "String literal expected.");
+                    expr_drop(&skipped);
+                } else {
+                    parse_error(&require_p, span_from_token(&require_p), 1141, "String literal expected.");
+                }
             }
             hop_whitespace(&require_p);
             expect_char(&require_p, ')');
@@ -10803,9 +10827,24 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     }
 
     a = anchor(&p);
-    if (hop_start_if_ends_on_word_break(&p, "type")) {
-        statement.main.type_only = true;
-        hop_whitespace(&p);
+    Parser type_p = parser(&p);
+    if (hop_start_if_ends_on_word_break(&type_p, "type")) {
+        hop_whitespace(&type_p);
+        // (Not `import type from "m"`, a default import named `type`, see parse_import_equals())
+        Tok t = tok_peek(&type_p);
+        bool default_named_type = false;
+        if (tok_is(t, "from")) {
+            Tok next = tok_next(&type_p, t);
+            default_named_type = !tok_is(next, "from") && !tok_is(next, "=");
+        }
+        if (default_named_type) {
+            parse_fail(&type_p);
+        } else {
+            parse_success(&type_p);
+            statement.main.type_only = true;
+        }
+    } else {
+        parse_fail(&type_p);
     }
 
     Anchor star = anchor(&p);

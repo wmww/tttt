@@ -49106,8 +49106,8 @@ const baselines = {
         types: true,
     },
     'importNonStringLiteral': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'importTsBeforeDTs': {
@@ -49726,9 +49726,9 @@ const baselines = {
         types: true,
     },
     'importDefaultNamedType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importDefaultNamedType2': {
         errors: true,
@@ -55861,8 +55861,8 @@ const baselines = {
         types: true,
     },
     'parser.asyncGenerators.objectLiteralMethods.es2018': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'parser.forAwait.es2018': {
