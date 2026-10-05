@@ -3534,6 +3534,10 @@ bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning,
     return report_misspelled(me, at, name, meaning, false, errs);
 }
 
+bool scope_report_misspelled_namespace(Scope const* me, Span at, ErrorCtx* errs) {
+    return report_misspelled(me, at, at.sv, SYMBOL_NAMESPACE, true, errs);
+}
+
 typedef struct PendingNotFound {
     Scope const* scope;
     Span name;

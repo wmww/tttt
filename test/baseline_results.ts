@@ -16761,7 +16761,7 @@ const baselines = {
         types: true,
     },
     'importedModuleAddToGlobal': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25751,7 +25751,7 @@ const baselines = {
         types: true,
     },
     'primaryExpressionMods': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51061,7 +51061,7 @@ const baselines = {
         types: true,
     },
     'invalidInstantiatedModule': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56971,7 +56971,7 @@ const baselines = {
         types: true,
     },
     'parserUnfinishedTypeNameBeforeKeyword1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58116,7 +58116,7 @@ const baselines = {
         types: true,
     },
     'parserindenter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

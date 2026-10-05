@@ -740,6 +740,8 @@ void add_duplicate_related(Error* error, Span at, Span other);
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs);
 // Its TS2552 half: `name`, which `at` needs, is misspelled (a spelling suggestion was found and reported)
 bool scope_report_misspelled(Scope const* me, Span at, csview name, u32 meaning, ErrorCtx* errs);
+// TS2833 rather than TS2503 for a namespace with a close name in scope (tsc's resolveEntityName with a namespace meaning)
+bool scope_report_misspelled_namespace(Scope const* me, Span at, ErrorCtx* errs);
 // The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that
 // waits for the checker
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs);
