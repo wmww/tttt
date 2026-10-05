@@ -321,6 +321,11 @@ typedef struct Symbol {
     bool is_assigned; // Somewhere other than its declaration
     bool is_definitely_assigned; // By `=`, a pattern or a for-in/of rather than only `+=` or `++`
     bool is_assigned_in_closure; // In another function than the one it belongs to
+    // several_types.c's declared_type_params(), once the declarations are all there (checking): 0 not known yet, 1 the
+    // first declaration's type parameters, 2 a merge by name of the class and interface declarations' (atomic: checkers)
+    uint8_t type_params_merge;
+    // The same: how many type parameters a reference may give, min | max << 6, plus 1 << 12 (0: not known yet)
+    uint16_t type_args_arity;
 } Symbol;
 
 extern SymbolRare const symbol_rare_none;

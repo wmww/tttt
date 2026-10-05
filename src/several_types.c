@@ -445,9 +445,15 @@ static Generic const* decl_generic(Symbol const* symbol, u32 d) {
 // The merged list: of class and interface declarations every distinct name, in the order they come (a later one's
 // parameter of a known name is the same one, tsc's binder merges them by name); else the first declaration's
 typedef struct MergedTypeParams {
-    GenericItem const* items[32];
+    Generic const* first;
+    GenericItem const* items[32]; // Only filled when `merged`: else the first's
     u32 count;
+    bool merged;
 } MergedTypeParams;
+
+static GenericItem const* merged_type_param(MergedTypeParams const* me, u32 i) {
+    return my merged ? my items[i] : vec_generic_item_at(&my first->items, i);
+}
 
 static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParams* out) {
     Generic const* first = nullptr;
@@ -462,31 +468,59 @@ static bool declared_type_params(Symbol const* symbol, u32* min, MergedTypeParam
         }
     }
     if (!first) return false;
-    for_each (i, vec_generic_item, &first->items) if (out->count < c_arraylen(out->items)) out->items[out->count++] = i;
-    bool merges = symbol->decls[first_d].kind == SYMBOL_DECL_CLASS || symbol->decls[first_d].kind == SYMBOL_DECL_INTERFACE;
-    for (u32 d = first_d + 1; merges && d < symbol->decl_count; d++) {
-        if (symbol->decls[d].kind != SYMBOL_DECL_CLASS && symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
-        for_each (i, vec_generic_item, &decl_generic(symbol, d)->items) {
-            bool known = false;
-            for (u32 k = 0; k < out->count && !known; k++) known = name_equals(out->items[k]->name.sv, i->name.sv);
-            if (!known && out->count < c_arraylen(out->items)) out->items[out->count++] = i;
-        }
-    }
-    for (u32 k = 0; k < out->count; k++) {
-        bool has_default = false;
-        for (u32 d = 0; d < symbol->decl_count; d++) {
-            Generic const* generic = decl_generic(symbol, d);
-            if (!generic) continue;
-            if (merges) {
-                for_each (i, vec_generic_item, &generic->items) {
-                    if (name_equals(i->name.sv, out->items[k]->name.sv)) has_default |= i->fallback_explicit;
-                }
-            } else if (k < (u32)vec_generic_item_size(&generic->items)) {
-                has_default |= vec_generic_item_at(&generic->items, k)->fallback_explicit;
+    out->first = first;
+    out->merged = false;
+    out->count = (u32)vec_generic_item_size(&first->items);
+    if (out->count > c_arraylen(out->items)) out->count = c_arraylen(out->items);
+    // One pass, by position (PERF: every type reference's arity check asks): the defaults, and whether a later class or
+    // interface declaration has type parameters the first doesn't have at the same position, which makes the list a
+    // merge by name (rare)
+    bool can_merge = symbol->decls[first_d].kind == SYMBOL_DECL_CLASS || symbol->decls[first_d].kind == SYMBOL_DECL_INTERFACE;
+    uint8_t memo = __atomic_load_n(&symbol->type_params_merge, __ATOMIC_RELAXED);
+    bool merges = memo == 2;
+    bool has_default[32] = {0};
+    if (!can_merge) memo = 1;
+    for (u32 d = 0; d < symbol->decl_count && !merges; d++) {
+        Generic const* generic = decl_generic(symbol, d);
+        if (!generic) continue;
+        u32 count = (u32)vec_generic_item_size(&generic->items);
+        bool mergeable = can_merge && d > first_d &&
+            (symbol->decls[d].kind == SYMBOL_DECL_CLASS || symbol->decls[d].kind == SYMBOL_DECL_INTERFACE);
+        if (mergeable && memo != 1 && count > out->count) merges = true;
+        for (u32 i = 0; i < count && i < out->count; i++) {
+            GenericItem const* item = vec_generic_item_at(&generic->items, i);
+            has_default[i] |= item->fallback_explicit;
+            if (mergeable && memo != 1 && !merges) {
+                csview a = item->name.sv, b = vec_generic_item_at(&first->items, i)->name.sv;
+                if ((a.size != b.size || memcmp(a.buf, b.buf, (size_t)a.size)) && !name_equals(a, b)) merges = true;
             }
         }
-        if (!has_default) *min = k + 1;
     }
+    if (!memo) __atomic_store_n(&((Symbol*)symbol)->type_params_merge, merges ? 2 : 1, __ATOMIC_RELAXED);
+    if (merges) {
+        out->merged = true;
+        for (u32 i = 0; i < out->count; i++) out->items[i] = vec_generic_item_at(&first->items, i);
+        for (u32 d = first_d + 1; d < symbol->decl_count; d++) {
+            if (symbol->decls[d].kind != SYMBOL_DECL_CLASS && symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+            for_each (i, vec_generic_item, &decl_generic(symbol, d)->items) {
+                bool known = false;
+                for (u32 k = 0; k < out->count && !known; k++) known = name_equals(out->items[k]->name.sv, i->name.sv);
+                if (!known && out->count < c_arraylen(out->items)) out->items[out->count++] = i;
+            }
+        }
+        // (By name then: a parameter's default may be written at another position)
+        for (u32 k = 0; k < out->count; k++) {
+            has_default[k] = false;
+            for (u32 d = 0; d < symbol->decl_count && !has_default[k]; d++) {
+                Generic const* generic = decl_generic(symbol, d);
+                if (!generic) continue;
+                for_each (i, vec_generic_item, &generic->items) {
+                    if (name_equals(i->name.sv, out->items[k]->name.sv)) has_default[k] |= i->fallback_explicit;
+                }
+            }
+        }
+    }
+    for (u32 k = 0; k < out->count; k++) if (!has_default[k]) *min = k + 1;
     return true;
 }
 
@@ -542,8 +576,17 @@ bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile co
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
     MergedTypeParams params;
-    if (!generic_kind || !declared_type_params(symbol, &min, &params)) return !arg_count || !(symbol->flags & SYMBOL_TYPE);
-    u32 count = params.count;
+    // (Asked for every type reference: remembered, see Symbol.type_args_arity)
+    uint16_t memo = generic_kind ? __atomic_load_n(&symbol->type_args_arity, __ATOMIC_RELAXED) : 0;
+    if (!memo && generic_kind) {
+        // (None at all is none allowed, which a class, interface or alias, all types, says the same way)
+        u32 count = declared_type_params(symbol, &min, &params) ? params.count : 0;
+        memo = (uint16_t)(1u << 12 | count << 6 | min);
+        __atomic_store_n(&((Symbol*)symbol)->type_args_arity, memo, __ATOMIC_RELAXED);
+    }
+    if (!memo) return !arg_count || !(symbol->flags & SYMBOL_TYPE);
+    min = memo & 63;
+    u32 count = (memo >> 6) & 63;
     // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
     // are any)
     // (Not for a type alias: tsc's getTypeFromTypeAliasReference has no such leniency)
@@ -569,7 +612,7 @@ bool several_types_check_arity(Symbol const* symbol, u32 arg_count, Span span, b
         cstr_append(&name, "<");
         for (u32 i = 0; i < count; i++) {
             if (i) cstr_append(&name, ", ");
-            cstr_append_sv(&name, params.items[i]->name.sv);
+            cstr_append_sv(&name, merged_type_param(&params, i)->name.sv);
         }
         cstr_append(&name, ">");
     }
