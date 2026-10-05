@@ -179,9 +179,10 @@ const: TS18042), importingExportingTypes (TS18043 for re-exported typedefs), ass
 classCanExtendConstructorFunction, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
 typeFromJSInitializer, typeFromPropertyAssignment32, templateInsideCallback, overloadTag2 (constructor `@overload`s:
 TS2394 and the arity of the merged signature), fixSignatureCaching (an expando-heavy JS-like file),
-jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const), jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError
-(the @ts-expect-error covers a declaration-emit error, plan 40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge
-(TS6232), jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
+jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
+jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan
+40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge (TS6232),
+jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
 (TS9006).
 
 ## Parser recovery (plan 27 territory, each its own mechanism)
