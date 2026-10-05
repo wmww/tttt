@@ -2859,7 +2859,7 @@ static Ty const* discriminate_by_items(Checker* me, Ty const* contextual, Discri
         if (include[i]) kept[len++] = types.data[i];
     }
     if (len == types.len || !len) return contextual;
-    return ty_union(me, kept, len, nullptr, (TyList){0});
+    return ty_union_unreduced(me, kept, len); // (tsc's filterType)
 }
 
 // The optional discriminant properties of a union contextual type that a literal doesn't have are undefined in it (the
@@ -3041,7 +3041,8 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
         changed |= apparent != part;
         ty_buf_push(&parts, apparent);
     }
-    Ty const* ret = changed ? ty_union(me, parts.data, parts.len, nullptr, (TyList){0}) : contextual;
+    // (Without reductions, mapType's noReductions: an `any` member doesn't absorb the others' properties)
+    Ty const* ret = changed ? ty_union_unreduced(me, parts.data, parts.len) : contextual;
     ty_buf_drop(&parts);
     return ret;
 }
