@@ -499,16 +499,18 @@ static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, E
 // import already): a global value found past an import of the same name in a module, which only brings a type or
 // namespace, would be shadowed once the import is gone (TS2866 at the import)
 static void check_isolated_global_shadow(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    // (Cheap tests first: most names are local, and most files don't set the option)
+    if (!symbol || symbol->is_local || symbol->parent) return;
     CompilerOptions const* options = compiler_options();
     if (!options->is_set[COMPILER_OPTION_isolated_modules] || !options->isolated_modules) return;
     if (!names->file || !names->file->is_module || !(names->flow && !names->flow->in_type_query)) return;
-    Symbol const* symbol = my symbol;
     csview name = identifier_expr_name(me).sv;
-    if (!symbol || symbol_table_get(&names->binder->globals, name) != symbol) return;
     Scope const* module = names;
     while (module && module->kind != SCOPE_MODULE) module = module->parent;
     Symbol const* local = module ? symbol_table_get(&module->locals, name) : nullptr;
-    if (!local || !(local->flags & SYMBOL_ALIAS) || !(symbol_resolved_flags(local) & ~SYMBOL_VALUE)) return;
+    if (!local || !(local->flags & SYMBOL_ALIAS) || symbol_table_get(&names->binder->globals, name) != symbol) return;
+    if (!(symbol_resolved_flags(local) & ~SYMBOL_VALUE)) return;
     for (u32 i = 0; i < local->decl_count; i++) {
         SymbolDecl const* decl = &local->decls[i];
         PortItem const* item = decl->kind == SYMBOL_DECL_ALIAS ? decl->node : nullptr;
