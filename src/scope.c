@@ -31,7 +31,7 @@ u64 symbol_name_hash(csview name) {
 }
 
 static inline bool entry_matches(SymbolEntry const* entry, csview name, u64 hash) {
-    return entry->hash == hash && entry->name.size == name.size && !memcmp(entry->name.buf, name.buf, (size_t)name.size);
+    return entry->hash == (u32)hash && entry->name_len == (u32)name.size && !memcmp(entry->name_buf, name.buf, (size_t)name.size);
 }
 
 static Symbol* symbol_table_get_own(SymbolTable const* me, csview name, u64 hash) {
@@ -69,13 +69,13 @@ static void symbol_table_index_insert(SymbolTable* me, u32 entry_index) {
 static void symbol_table_insert(SymbolTable* me, Arena* arena, csview name, u64 hash, Symbol* symbol) {
     name = name_cooked(name);
     if (my count == my cap) {
-        u32 cap = my cap ? my cap * 2 : 4;
+        u32 cap = my cap ? my cap * 2 : 1; // (Most scopes declare one or two names)
         SymbolEntry* entries = arena_new_n(arena, SymbolEntry, cap);
         if (my count) memcpy(entries, my entries, sizeof(SymbolEntry) * my count);
         my entries = entries;
         my cap = cap;
     }
-    my entries[my count++] = (SymbolEntry){ .hash = hash, .name = name, .symbol = symbol };
+    my entries[my count++] = symbol_entry_make(name, hash, symbol);
     if (my count > SYMBOL_TABLE_SCAN_MAX && my count * 2 > my index_cap) {
         my index_cap = my index_cap ? my index_cap * 2 : 32;
         my index = arena_new_n(arena, u32, my index_cap);
@@ -92,7 +92,7 @@ static void symbol_table_collect_into(SymbolTable const* me, SymbolTable const* 
     for (u32 i = 0; i < my count; i++) {
         bool shadowed = false;
         for (SymbolTable const* above = top; above != me && !shadowed; above = above->parent) {
-            shadowed = symbol_table_get_own(above, my entries[i].name, my entries[i].hash);
+            shadowed = symbol_table_get_own(above, symbol_entry_name(&my entries[i]), my entries[i].hash);
         }
         if (!shadowed) out[(*count)++] = my entries[i];
     }
@@ -1220,8 +1220,8 @@ static void check_export_equals_merge(Symbol const* module, Symbol* export_equal
     SymbolTable const* exports = module->exports;
     for (u32 i = 0; i < exports->count; i++) {
         Symbol const* source = exports->entries[i].symbol;
-        if (csview_equals(exports->entries[i].name, "export=")) continue;
-        Symbol* existing = symbol_table_get(target->exports, exports->entries[i].name);
+        if (csview_equals(symbol_entry_name(&exports->entries[i]), "export=")) continue;
+        Symbol* existing = symbol_table_get(target->exports, symbol_entry_name(&exports->entries[i]));
         if (!existing || existing == source) continue;
         Symbol const* resolved = existing->flags & SYMBOL_ALIAS ? symbol_resolve_alias(existing) : existing;
         if (!resolved || resolved->is_placeholder || !(resolved->flags & excluded_flags(source->flags))) continue;
@@ -1262,7 +1262,7 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
         for (u32 d = 0; d < symbol->decl_count; d++) {
             SymbolDecl const* decl = &symbol->decls[d];
             if (decl->kind == SYMBOL_DECL_FUNCTION && !((FunctionImpl const*)decl->node)->has_body) continue;
-            error_ctx_error_d(errs, symbol_decl_error_span(decl), 2323, "Cannot redeclare exported variable '", exports->entries[i].name,
+            error_ctx_error_d(errs, symbol_decl_error_span(decl), 2323, "Cannot redeclare exported variable '", symbol_entry_name(&exports->entries[i]),
                 "'.");
         }
     }
@@ -1861,8 +1861,8 @@ static Symbol* merged_export_equals(Symbol* module, Symbol* target) {
     ret->exports->parent = target->exports;
     for (u32 i = 0; i < module->exports->count; i++) {
         SymbolEntry const* entry = &module->exports->entries[i];
-        if (csview_equals(entry->name, "export=") || symbol_table_get(target->exports, entry->name)) continue;
-        symbol_table_insert(ret->exports, &binder->arena, entry->name, entry->hash, entry->symbol);
+        if (csview_equals(symbol_entry_name(entry), "export=") || symbol_table_get(target->exports, symbol_entry_name(entry))) continue;
+        symbol_table_insert(ret->exports, &binder->arena, symbol_entry_name(entry), entry->hash, entry->symbol);
     }
     module->module->merged_export_equals = ret;
     return ret;
@@ -1930,14 +1930,14 @@ static void extend_export_stars(ExportStarsCtx* ctx, Symbol* module, bool nested
     u32 count;
     SymbolEntry* own = symbol_table_collect(module->exports, &count);
     for (u32 i = 0; i < count; i++) {
-        if (nested && (csview_equals(own[i].name, "default") || csview_equals(own[i].name, "export="))) continue;
-        if (!symbol_table_get_own(ctx->target, own[i].name, own[i].hash)) {
-            symbol_table_insert(ctx->target, ctx->arena, own[i].name, own[i].hash, own[i].symbol);
+        if (nested && (csview_equals(symbol_entry_name(&own[i]), "default") || csview_equals(symbol_entry_name(&own[i]), "export="))) continue;
+        if (!symbol_table_get_own(ctx->target, symbol_entry_name(&own[i]), own[i].hash)) {
+            symbol_table_insert(ctx->target, ctx->arena, symbol_entry_name(&own[i]), own[i].hash, own[i].symbol);
         }
         if (type_only_star) {
-            i32 at = symbol_table_own_index(&ctx->type_only, own[i].name, own[i].hash);
+            i32 at = symbol_table_own_index(&ctx->type_only, symbol_entry_name(&own[i]), own[i].hash);
             if (at < 0) {
-                symbol_table_insert(&ctx->type_only, ctx->arena, own[i].name, own[i].hash, own[i].symbol);
+                symbol_table_insert(&ctx->type_only, ctx->arena, symbol_entry_name(&own[i]), own[i].hash, own[i].symbol);
                 at = (i32)ctx->type_only.count - 1;
                 if (ctx->type_only.count > ctx->type_only_star_cap) {
                     ctx->type_only_star_cap = ctx->type_only_star_cap ? ctx->type_only_star_cap * 2 : 16;
@@ -2002,7 +2002,7 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
     SymbolTable* symbols = arena_new(&walk->arena, SymbolTable);
     u32 count;
     SymbolEntry* own = symbol_table_collect(module->exports, &count);
-    for (u32 i = 0; i < count; i++) symbol_table_insert(symbols, &walk->arena, own[i].name, own[i].hash, own[i].symbol);
+    for (u32 i = 0; i < count; i++) symbol_table_insert(symbols, &walk->arena, symbol_entry_name(&own[i]), own[i].hash, own[i].symbol);
     free(own);
 
     SymbolTable nested = {0};
@@ -2018,10 +2018,10 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
         if (!exported) continue;
         SymbolEntry* entries = symbol_table_collect(exported, &count);
         for (u32 i = 0; i < count; i++) {
-            if (csview_equals(entries[i].name, "default")) continue;
-            i32 at = symbol_table_own_index(&nested, entries[i].name, entries[i].hash);
+            if (csview_equals(symbol_entry_name(&entries[i]), "default")) continue;
+            i32 at = symbol_table_own_index(&nested, symbol_entry_name(&entries[i]), entries[i].hash);
             if (at < 0) {
-                symbol_table_insert(&nested, &walk->arena, entries[i].name, entries[i].hash, entries[i].symbol);
+                symbol_table_insert(&nested, &walk->arena, symbol_entry_name(&entries[i]), entries[i].hash, entries[i].symbol);
                 if (nested.count > first_star_cap) {
                     first_star_cap = first_star_cap ? first_star_cap * 2 : 16;
                     first_star = realloc(first_star, sizeof(PortItem const*) * first_star_cap);
@@ -2039,20 +2039,20 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
     }
     for (u32 e = 0; e < nested.count && dup_count; e++) {
         SymbolEntry const* entry = &nested.entries[e];
-        if (csview_equals(entry->name, "export=") || symbol_table_get_own(symbols, entry->name, entry->hash)) continue;
+        if (csview_equals(symbol_entry_name(entry), "export=") || symbol_table_get_own(symbols, symbol_entry_name(entry), entry->hash)) continue;
         for (u32 d = 0; d < dup_count; d++) {
             if (dups[d].entry != e || !span_valid(dups[d].star->full_span)) continue;
             Span at = span_with_semicolon(dups[d].star->full_span);
             if (!at.source || at.source->is_stdlib) continue;
             error_ctx_error_d(walk->errs, at, 2308, "Module ", first_star[e]->module_ref->span,
-                " has already exported a member named '", entry->name,
+                " has already exported a member named '", symbol_entry_name(entry),
                 "'. Consider explicitly re-exporting to resolve the ambiguity.");
         }
     }
     for (u32 e = 0; e < nested.count; e++) {
         SymbolEntry const* entry = &nested.entries[e];
-        if (!symbol_table_get_own(symbols, entry->name, entry->hash)) {
-            symbol_table_insert(symbols, &walk->arena, entry->name, entry->hash, entry->symbol);
+        if (!symbol_table_get_own(symbols, symbol_entry_name(entry), entry->hash)) {
+            symbol_table_insert(symbols, &walk->arena, symbol_entry_name(entry), entry->hash, entry->symbol);
         }
     }
     free(first_star);
@@ -2082,12 +2082,12 @@ static SymbolTable const* module_resolved_exports(Symbol* me) {
         SymbolEntry const* entry = &ctx.type_only.entries[i];
         bool value = false;
         for (u32 m = 0; m < ctx.value_module_count && !value; m++) {
-            value = symbol_table_get_own(ctx.value_modules[m]->exports, entry->name, entry->hash);
+            value = symbol_table_get_own(ctx.value_modules[m]->exports, symbol_entry_name(entry), entry->hash);
         }
         if (value) continue;
         if (!my module->type_only_exports) my module->type_only_exports = arena_new(&my binder->arena, SymbolTable);
         SymbolTable* names = my module->type_only_exports;
-        symbol_table_insert(names, &my binder->arena, entry->name, entry->hash, entry->symbol);
+        symbol_table_insert(names, &my binder->arena, symbol_entry_name(entry), entry->hash, entry->symbol);
         if (names->count > my module->type_only_star_cap) {
             u32 cap = my module->type_only_star_cap ? my module->type_only_star_cap * 2 : 8;
             PortItem const** stars = arena_new_n(&my binder->arena, PortItem const*, cap);
@@ -2228,8 +2228,8 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
         u32 count;
         SymbolEntry* entries = symbol_collect_exports(module, &count);
         for (u32 i = 0; i < count; i++) {
-            if (csview_equals(entries[i].name, "default")) continue;
-            symbol_table_insert(ret->exports, &my binder->arena, entries[i].name, entries[i].hash, entries[i].symbol);
+            if (csview_equals(symbol_entry_name(&entries[i]), "default")) continue;
+            symbol_table_insert(ret->exports, &my binder->arena, symbol_entry_name(&entries[i]), entries[i].hash, entries[i].symbol);
         }
         free(entries);
         Symbol* synthetic = binder_new_symbol(my binder, c_sv("default"), SYMBOL_ALIAS);
@@ -2385,7 +2385,7 @@ bool scope_report_misspelled_export(Symbol const* container, Span name, csview c
     panic_if(!names, "out of memory");
     for (u32 i = 0; i < count; i++) {
         Symbol* symbol = entries[i].symbol;
-        csview candidate = entries[i].name;
+        csview candidate = symbol_entry_name(&entries[i]);
         bool fits = candidate.size && candidate.buf[0] != '"' && !csview_equals(candidate, "export=") &&
             !symbol->is_placeholder && ((symbol->flags & module_member) || (symbol_resolved_flags(symbol) & module_member));
         names[i] = fits ? candidate : (csview){0};
@@ -2393,7 +2393,7 @@ bool scope_report_misspelled_export(Symbol const* container, Span name, csview c
     isize best = spelling_suggestion(port_item_name(name), names, count);
     free(names);
     if (best >= 0) {
-        csview suggestion = entries[best].name;
+        csview suggestion = symbol_entry_name(&entries[best]);
         Error* error = error_ctx_error_d(errs, name, 2724, "'", container_name, "' has no exported member named '",
             name, "'. Did you mean '", suggestion, "'?");
         // (Its valueDeclaration: an alias has one, an interface or a type alias not)
@@ -2451,7 +2451,7 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
         SymbolTable const* exports = symbol_exports_table(module);
         csview exported_as = {0};
         for (u32 i = 0; exports && i < exports->count && !exported_as.size; i++) {
-            if (symbol_resolve_alias(exports->entries[i].symbol) == resolved) exported_as = exports->entries[i].name;
+            if (symbol_resolve_alias(exports->entries[i].symbol) == resolved) exported_as = symbol_entry_name(&exports->entries[i]);
         }
         Error* error = exported_as.size ?
             error_ctx_error_d(errs, name, 2460, "Module '", module_name, "' declares '", name,
@@ -2904,7 +2904,7 @@ static void merge_symbol(Binder* binder, Symbol* target, Symbol* source, ErrorCt
         symbol_ensure_exports(target);
         u32 count;
         SymbolEntry* entries = symbol_table_collect(source->exports, &count);
-        for (u32 i = 0; i < count; i++) merge_into_exports(binder, target, entries[i].name, entries[i].symbol, errs);
+        for (u32 i = 0; i < count; i++) merge_into_exports(binder, target, symbol_entry_name(&entries[i]), entries[i].symbol, errs);
         free(entries);
         source->exports = target->exports;
     }
@@ -3046,15 +3046,15 @@ static void merge_augmentations(Binder* me) {
             if (pass == 0) {
                 late_entries[i] = calloc(count ? count : 1, sizeof(bool));
                 panic_if(!late_entries[i], "out of memory");
-                for (u32 j = 0; j < count; j++) late_entries[i][j] = augmentation_entry_needs_resolving(module, entries[j].name);
+                for (u32 j = 0; j < count; j++) late_entries[i][j] = augmentation_entry_needs_resolving(module, symbol_entry_name(&entries[j]));
             }
             Symbol const* pattern = augmented_pattern(me, module);
             for (u32 j = 0; j < count; j++) {
                 bool late = export_equals || !late_entries[i] || late_entries[i][j];
                 if (late != (pass == 1)) continue;
-                bool shadows = pattern && !symbol_table_get_own(module->exports, entries[j].name, entries[j].hash);
-                merge_into_exports(me, module, entries[j].name, entries[j].symbol, errs);
-                if (shadows) add_pattern_declarations(entries[j].symbol, symbol_table_get(pattern->exports, entries[j].name));
+                bool shadows = pattern && !symbol_table_get_own(module->exports, symbol_entry_name(&entries[j]), entries[j].hash);
+                merge_into_exports(me, module, symbol_entry_name(&entries[j]), entries[j].symbol, errs);
+                if (shadows) add_pattern_declarations(entries[j].symbol, symbol_table_get(pattern->exports, symbol_entry_name(&entries[j])));
             }
             free(entries);
         }
@@ -3388,7 +3388,7 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, csview name
     }
     for (u32 i = 0; i < count; i++) {
         Symbol const* symbol = entries[i].symbol;
-        csview candidate = entries[i].name;
+        csview candidate = symbol_entry_name(&entries[i]);
         // (Keyword types like `unknown` are no symbols in tsc)
         bool builtin = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN;
         bool fits = !symbol->is_placeholder && !builtin && candidate.size && candidate.buf[0] != '"' && candidate.buf[0] != '\'' &&

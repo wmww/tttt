@@ -73,11 +73,20 @@ typedef enum SymbolFlags {
 // tsc's getExcludedSymbolFlags: what a declaration with these flags can't merge with
 u32 symbol_excludes(u32 includes);
 
+// (24 bytes: the name's length and the low half of its hash share a word)
 typedef struct SymbolEntry {
-    u64 hash;
-    csview name; // Points into the source (or a literal), never owned
+    char const* name_buf; // Points into the source (or a literal), never owned
+    u32 name_len;
+    u32 hash; // symbol_name_hash()'s low half: tables compare and index by that
     Symbol* symbol;
 } SymbolEntry;
+
+static inline csview symbol_entry_name(SymbolEntry const* me) {
+    return (csview){ .buf = my name_buf, .size = my name_len };
+}
+static inline SymbolEntry symbol_entry_make(csview name, u64 hash, Symbol* symbol) {
+    return (SymbolEntry){ .name_buf = name.buf, .name_len = (u32)name.size, .hash = (u32)hash, .symbol = symbol };
+}
 
 // Insertion ordered. Small tables (most blocks declare 0-3 names) are scanned, bigger ones get an index
 typedef struct SymbolTable {

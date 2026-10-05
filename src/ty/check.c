@@ -2547,7 +2547,7 @@ static void declare_namespace_exports(Checker* me, MemberTables* tables, Symbol 
             ) {
                 continue;
             }
-            declare_symbol_flags(tables, checker_atom(me, exports->entries[i].name), 1, decl->flags, decl->name, false, errs);
+            declare_symbol_flags(tables, checker_atom(me, symbol_entry_name(&exports->entries[i])), 1, decl->flags, decl->name, false, errs);
         }
     }
 }

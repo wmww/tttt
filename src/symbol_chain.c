@@ -336,7 +336,7 @@ static bool try_locals_with_exports(
     }
     for (u32 i = 0; i < exports->count; i++) {
         SymbolEntry const* entry = &exports->entries[i];
-        if (csview_equals(entry->name, "default") || csview_equals(entry->name, "export=")) continue;
+        if (csview_equals(symbol_entry_name(entry), "default") || csview_equals(symbol_entry_name(entry), "export=")) continue;
         if (is_export_specifier(entry->symbol) || has_port_tag(entry->symbol, PORT_REEXPORT_GATHER)) continue;
         char const* at = declared_at(entry->symbol, scope_table->file);
         if (!at) continue;
@@ -348,7 +348,7 @@ static bool try_locals_with_exports(
         SymbolEntry const* entry = entries[i].entry;
         if (entries[i].exported) {
             // (the local's exportSymbol)
-            if (csview_equals_sv(entry->name, symbol->name) &&
+            if (csview_equals_sv(symbol_entry_name(entry), symbol->name) &&
                 is_accessible(me, symbol, meaning, merged(me, entry->symbol), nullptr, false)
             ) {
                 out->len = 0;
@@ -356,7 +356,7 @@ static bool try_locals_with_exports(
                 ret = true;
             }
         } else {
-            ret = try_entry(me, symbol, meaning, entry->name, entry->symbol, false, true, out);
+            ret = try_entry(me, symbol, meaning, symbol_entry_name(entry), entry->symbol, false, true, out);
         }
     }
     free(entries);
@@ -379,7 +379,7 @@ static bool try_table(
     u32 count = aliases ? aliases->alias_count : table->count;
     for (u32 j = 0; j < count; j++) {
         SymbolEntry const* entry = &table->entries[aliases ? aliases->aliases[j] : j];
-        if (try_entry(me, symbol, meaning, entry->name, entry->symbol, ignore_qualification, local_lookup, out)) {
+        if (try_entry(me, symbol, meaning, symbol_entry_name(entry), entry->symbol, ignore_qualification, local_lookup, out)) {
             return true;
         }
     }

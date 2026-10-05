@@ -891,7 +891,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             name = ty_property_name_of_key(me, ty_expr_type(me, symbol_rare(member)->late_bound_key), &is_number);
             if (!name) continue;
         } else {
-            name = checker_atom(me, entries[i].name);
+            name = checker_atom(me, symbol_entry_name(&entries[i]));
         }
         VecSpan spans = symbol_declaration_spans(member);
         Prop* existing = builder_find_prop(builder, name);
@@ -1350,7 +1350,7 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry);
 // A type-only export of a namespace or module (`export type { A }`, or reached through `export type *`)
 static bool namespace_export_is_type_only(Symbol const* namespace, SymbolEntry const* entry) {
     return symbol_type_only_declaration(entry->symbol) ||
-        module_type_only_star((Symbol*)symbol_members(namespace), entry->name);
+        module_type_only_star((Symbol*)symbol_members(namespace), symbol_entry_name(entry));
 }
 
 Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom const* name) {
@@ -1359,7 +1359,7 @@ Prop const* ty_namespace_type_only_prop(Checker* me, Ty const* object, Atom cons
     csview sv = atom_sv(name);
     Symbol* symbol = symbol_get_export(namespace, sv);
     if (!symbol) return nullptr;
-    SymbolEntry entry = { .hash = symbol_name_hash(sv), .name = sv, .symbol = symbol };
+    SymbolEntry entry = symbol_entry_make(sv, symbol_name_hash(sv), symbol);
     if (!namespace_export_is_type_only(namespace, &entry)) return nullptr;
     u64 key[3] = { KEY_TYPE_ONLY_EXPORT, (u64)(uintptr_t)namespace, (u64)(uintptr_t)symbol };
     Prop const* existing = intern_get(&my links, key, 3);
@@ -1374,7 +1374,7 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Symbol const* symbol = entry->symbol;
     Symbol const* member = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (!member) return nullptr;
-    Atom const* name = checker_atom(me, entry->name);
+    Atom const* name = checker_atom(me, symbol_entry_name(entry));
     if (symbol_rare(symbol)->late_bound_key) {
         // `f[k] = v` (What the key's type names: a literal or unique symbol, else nothing)
         bool is_number = false;
@@ -1468,7 +1468,7 @@ static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbo
     if (symbol_rare(decl)->merged_export_equals_of) {
         for (u32 i = 0; i < decl->exports->count; i++) {
             SymbolEntry const* entry = &decl->exports->entries[i];
-            Prop* existing = builder_find_prop(builder, checker_atom(me, entry->name));
+            Prop* existing = builder_find_prop(builder, checker_atom(me, symbol_entry_name(entry)));
             if (existing) {
                 // `module.exports = { a: 1 }; module.exports.a = "s"` in one file: `a` is both (tsc's
                 // getInitializerTypeFromAssignmentDeclaration unions the two declarations' types)
@@ -1935,7 +1935,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
             free(exports);
             Symbol const* synthetic_default = symbol_rare(ty->declared.namespace_symbol)->synthetic_default;
             if (synthetic_default) {
-                SymbolEntry entry = { .name = c_sv("default"), .hash = symbol_name_hash(c_sv("default")), .symbol = (Symbol*)synthetic_default };
+                SymbolEntry entry = symbol_entry_make(c_sv("default"), symbol_name_hash(c_sv("default")), (Symbol*)synthetic_default);
                 Prop* prop = namespace_export_prop(me, &entry);
                 // (Named through the module in the symbols baseline: `d.default`)
                 if (prop) prop->decl->symbol = synthetic_default;
