@@ -105,12 +105,17 @@ like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType
   augmentations into the module's own exports. Would need the UMD view to skip names only augmentations add.
 - **dynmap**: tsc's TS2317 for jquery's 1-parameter `interface Iterable<T>` (es5 lib) comes from typeToString in an
   elaboration calling getGlobalIterableType: incidental, not worth chasing.
-- **react-relay** (TS2322/TS2344/TS2339 on never): `EntryPoint<C, P>` isn't assignable to `EntryPoint<any, any>`
-  (repro: import EntryPointTypes, `const r: Record<string, EntryPoint<any, any> | undefined> = { a: e }` with
-  `e: EntryPoint<EntryPointComponent<{}, {}, { onClick: () => void }, {}>, { author: string }>`). The chain ends in
-  the alias `EntryPointComponent` (= `ComponentType<EntryPointProps<...>>`): TTTT_DUMP_VARIANCES gives its #2/#3
-  (TRuntimeProps, TExtraProps) reliable invariant (0) while #0/#1 and ComponentClass's P are invariant+unreliable (8),
-  so `{ onClick }` vs `{}` fails without a structural fallback. Suspect: the unreliable marker of ComponentClass's
-  variance doesn't propagate into the alias's measurement for those parameters. Not confirmed against tsc.
+- **react-relay** (TS2322/TS2344/TS2339 on never): `EntryPoint<C, P>` isn't assignable to `EntryPoint<any, any>`.
+  Self-contained part (2026-10-05, agent A): `type EP<C> = Rep<C extends Comp<infer N> ? N : never>` with
+  `Comp<N extends Record<string, EP<any> | undefined>>`: `EP<any>`'s N is unknown in tttt, tsc gives the constraint
+  `Record<string, EP<any> | undefined>` (nothing inferred from any -> the implied constraint). Cause: the HACK in
+  ty_conditional_resolve skips a constraint flagged TYF_COULD_CONTAIN_TYPE_VARIABLES (an alias instantiation whose free
+  parameters aren't known), though it's concrete. Narrowing the skip to `ty_is_generic_type()` fixes the repro but
+  costs valibot +5% instructions (more constraints substituted), and react-relay still fails after it: then
+  `ComponentClass<EntryPointProps<.., { onClick }, ..>>` vs `ComponentClass<EntryPointProps<.., {}, ..>>` fails on
+  `getDerivedStateFromProps` (strict contravariance), which tsc must avoid through EntryPointComponent's alias
+  variances (TTTT_DUMP_VARIANCES: #2/#3 reliable invariant in tttt; tsc's not dumped yet, use ./tscinstcount.js
+  VARIANCES=1). Repro: /tmp-style dir with a tsconfig `paths` to DT's react/relay-runtime, importing
+  react-relay/relay-hooks/EntryPointTypes (see this commit's message).
 - Not investigated: google-apps-script (property named `''`), fabric's second `Image`, kefir; d3-tip and dynmap as
   above. `./sweep.py --last -k ...` lists each.
