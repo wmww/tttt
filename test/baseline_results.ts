@@ -2696,7 +2696,7 @@ const baselines = {
         types: true,
     },
     'builtinIterator': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -5856,8 +5856,8 @@ Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* targ
         if (candidate) return target;
         candidate = part;
     }
-    // (`boolean | undefined` is three members in tsc: true and false aren't one)
-    return candidate && !(candidate->flags & TYF_BOOLEAN_LITERAL) ? candidate : target;
+    // (`boolean | undefined` is three members in tsc: true and false aren't one. `false | undefined` is two)
+    return candidate && !(candidate->kind == TY_UNION && (candidate->flags & TYF_BOOLEAN)) ? candidate : target;
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
