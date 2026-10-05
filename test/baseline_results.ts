@@ -53393,7 +53393,7 @@ const baselines = {
     'tsxErrorRecovery1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'tsxErrorRecovery2': {
         errors: true,

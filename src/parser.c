@@ -9759,6 +9759,8 @@ static bool parse_jsx_braced_expr(Parser* p, bool allow_spread, bool* spread, Ex
         // Only an assignment expression is valid, but tsc parses (and later reports) a comma sequence
         has_expr = expect_expr(p, expr_ctx_null, ret);
         if (has_expr) parse_comma_ops_right_side(p, ret);
+        // (A missing expression is tsc's missing identifier, still the JSX expression's)
+        else has_expr = ret->tag == EXPR_IMPLICIT_ANY && ret->missing;
         hop_whitespace(p);
     }
     if (!hop_char(p, '}')) {
