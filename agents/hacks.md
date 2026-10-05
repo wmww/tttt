@@ -89,8 +89,7 @@ src` finds the code-side markers; every significant one has an entry here.
   `parse_binding_content()` stops at the first bad element; a committed arrow whose parameters fail falls back to a
   parenthesized expression. `tok_scan_end()` is a second cheap token notion next to `hop_token()`.
   `parse_jsx_attributes` approximates isInSomeParsingContext (`jsx_children_depth` + a character list).
-- Statements: `parse_if_else` still looks past a `;` for `else` although arms now take their own `;`
-  (`parse_statement_semicolon()`; the look-past may be dead, its comment is stale). `statement_takes_semicolon()` lists
+- Statements: `statement_takes_semicolon()` lists
   by tag who calls parseSemicolon(). Statement spans include the `;`, but port items' and class members' full spans
   don't (`span_with_semicolon()` at their error sites). `IfStatement` flattens `else if` (no `Statement` for the
   nested if: no TS7027 on it; `Statement.flow` costs 8 bytes per statement for TS7027 only, labeled statements have

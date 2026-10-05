@@ -11972,13 +11972,9 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
         list_push(vec_expr, &conditions, condition);
         list_push(vec_statement, &statements, statement);
 
-        // `if (a) b; else c;`: the `;` that ends the arm's statement doesn't end the if (statement terminators are
-        // otherwise left to parse_append_statement_sequence())
+        // (An arm's statement takes its own `;`, parse_statement_semicolon(): `if (a) b; else c`)
         Parser else_p = parser(&p);
         hop_whitespace(&else_p);
-        if (hop_char(&else_p, ';')) {
-            hop_whitespace(&else_p);
-        }
         if (!hop_start_if_ends_on_word_break(&else_p, "else")) {
             parse_fail(&else_p);
             break;
