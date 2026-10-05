@@ -2147,10 +2147,12 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
         assigned_context = nullptr;
     }
     if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
-        (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS
+        (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS && binary->right.tag != EXPR_CALL
     ) {
         // An object pattern's type is a pattern (tsc's checkObjectLiteral: `result.pattern = node`), unless a
-        // spread or computed name leaves its properties open
+        // spread or computed name leaves its properties open. HACK: not for a call, whose return type infers from
+        // it like from any contextual type (TYF_BINDING_PATTERN also means tsc's isFromBindingPattern, which an
+        // assignment pattern isn't): `({ promise: this.p } = withResolvers())`
         bool open = false;
         for_each (i, vec_object_expr_item, &binary->left.object) open |= i->tag == OBJECT_ITEM_SPREAD || i->computed_key;
         if (!open) assigned_context = ty_pattern_clone(me, left);

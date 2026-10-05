@@ -4460,8 +4460,7 @@ static void declare_assignment_member(
     }
 }
 
-void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
-    Expr const* left = &op->left;
+void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     if (left->tag != EXPR_PROPERTY) return;
     Span name = expr_static_property_name(left);
     Expr const* prop = &left->property->prop;

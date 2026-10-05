@@ -711,8 +711,9 @@ Expr* expando_initializer(Expr* init, Span name, bool js);
 // JavaScript `this.x = v` (`op`, whose left side was just resolved): declares x as an instance member of the class
 // `this` is of (a static member in a static method), or of the constructor function it is in (tsc's
 // bindThisPropertyAssignment)
-// TypeScript `this.x = v` in a constructor or static block: marks the field it types (ClassItem.field.ts_assigned)
-void scope_note_ts_this_assignment(Scope const* me, struct BinaryOpExpr const* op);
+// TypeScript `this.x = v` in a constructor or static block (`left` is `this.x`, also a target of a destructuring
+// assignment): marks the field it types (ClassItem.field.ts_assigned)
+void scope_note_ts_this_assignment(Scope const* me, struct Expr const* left);
 void scope_add_this_property(Scope* me, struct BinaryOpExpr* op);
 // JavaScript `/** @type {T} */ this.x;` (tsc's isSpecialPropertyDeclaration), after `this` is resolved
 void scope_add_this_declaration(Scope* me, struct Expr* access, struct TypeNode const* jsdoc_type);

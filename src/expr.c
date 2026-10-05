@@ -1139,6 +1139,22 @@ void expr_lookup_names_statement(Expr* me, Scope* names, ErrorCtx* errs) {
 
 static void flow_assignment_target(FlowBuilder* flow, Expr const* target, FlowAssign assign);
 
+// The `this.x` targets of a TypeScript destructuring assignment (`({ a: this.a } = e)`, `[this.b] = e`) assign their
+// fields like `this.x = v` does (see scope_note_ts_this_assignment())
+static void note_pattern_this_assignments(Scope const* names, Expr const* target) {
+    if (target->tag == EXPR_BINARY_OP && target->binary_op->op == BINARY_OP_EQUAL) target = &target->binary_op->left;
+    if (target->tag == EXPR_SPREAD) target = target->spread;
+    if (target->tag == EXPR_PROPERTY) {
+        scope_note_ts_this_assignment(names, target);
+    } else if (target->tag == EXPR_ARRAY) {
+        for_each (i, vec_expr, &target->array) note_pattern_this_assignments(names, i);
+    } else if (target->tag == EXPR_OBJECT) {
+        for_each (i, vec_object_expr_item, &target->object) {
+            if (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SPREAD) note_pattern_this_assignments(names, &i->value);
+        }
+    }
+}
+
 // An element of an assignment pattern, which may have a default: `[a = 1] = e`
 static void flow_destructuring_target(FlowBuilder* flow, Expr const* target, FlowAssign assign, FlowPatternPath path) {
     if (target->tag == EXPR_BINARY_OP && target->binary_op->op == BINARY_OP_EQUAL) {
@@ -1718,6 +1734,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 // TODO: when nested, tsc makes these nodes twice (here and from the outer pattern)
                 if (!assignment_target) {
                     flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_PATTERN, .assignment = me });
+                    if (names->file && !names->file->is_js) note_pattern_this_assignments(names, left);
                 }
             } else if (binary_op_is_assignment(op)) {
                 // `a = 1` as an element of a pattern is a target with a default: whoever walks the pattern assigns
@@ -1727,7 +1744,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (op == BINARY_OP_EQUAL) scope_add_nested_expando(names, my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) mark_defaulted_expando(my binary_op);
                 if (op == BINARY_OP_EQUAL && names->file && names->file->is_js) scope_add_this_property(names, my binary_op);
-                if (op == BINARY_OP_EQUAL && names->file && !names->file->is_js) scope_note_ts_this_assignment(names, my binary_op);
+                if (op == BINARY_OP_EQUAL && names->file && !names->file->is_js) scope_note_ts_this_assignment(names, left);
                 expr_lookup_names(right, names, errs);
                 if (!assignment_target) {
                     flow_assignment_target(flow, left, (FlowAssign){ .kind = FLOW_ASSIGN_EXPR, .assignment = me });

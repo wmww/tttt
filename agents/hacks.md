@@ -352,6 +352,9 @@ src` finds the code-side markers; every significant one has an entry here.
 - `PropertyExpr`'s four resolve-walk pointers cost 32 bytes per access; a `Scope const*` would do.
 - JSX: `jsx_signatures_of` types unknown intrinsic tags as error (tsc: TS2339); the head rule (`ty_jsx_skips_head` via
   `Checker.jsx_element`) only inside `ty_check_jsx_element`; attribute types skip the regular object literal state.
+- `assignment_value_context` (HACK): `TYF_BINDING_PATTERN` is both tsc's object literal `pattern` and
+  isFromBindingPattern, so an object assignment pattern only marks its context when the value isn't a call (else
+  `({ p: this.p } = f())` would infer nothing from it). A flag for "from a binding pattern" would separate them.
 - `contains_spread` (members.c HACK, ObjectFlags.ContainsSpread): `{ ...{} }` doesn't count.
 - `TY_RELATION_ASSIGNABLE_STRICT_NULLS` (ty.h HACK): the operator checks' "extends number" never takes nullables.
 - `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
