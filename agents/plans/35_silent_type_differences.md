@@ -137,6 +137,10 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
    member declared by `export const f = (o: T) => {}` prints its parameters syntactically: spread props don't keep the
    declaration). callbackTag4 (`@this {{...}}` members), jsdocPropertyTagInvalid (a JSDoc typedef of an imported JS file
    reused unqualified).
+   deeplyNestedMappedTypes (errors/symbols pass since triage 2026-10-05): tsc prints the property `static:
+   PropertiesReduce<T, this['params']>` expanded through the inner aliases (`Evaluate<Readonly<Partial<Pick<{ [K in
+   keyof T]: Static<...> }, ...>>> & ...>`), tttt keeps the outer alias name: when does tsc drop an alias whose body is
+   another alias applied to a generic mapped type?
 5. **`T_1` renaming**: inferredReturnTypeIncorrectReuse1 (`fn_1` from enterNewScope's params fake scope; mechanism not
    pinned down), jsxComplexSignatureHasApplicabilityError.
 6. **Clones per import** (resolveESModuleSymbol -> cloneTypeAsModuleType; members through

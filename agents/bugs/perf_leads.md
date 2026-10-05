@@ -22,6 +22,11 @@ and checker arenas by call site.
   at a time, tsc's getSignatureApplicabilityError). The rest is re-inference per overload round; only cheaper
   inference/argument checking in general would help (e.g. reusing a non-context-sensitive argument's type across
   candidates, beyond tsc, careful with freshness and contextual literal types).
+- **Variance measurement order changes its cost** (triage 2026-10-05): deferring JSX element checks made react -5%
+  with identical checks and identical variance results: react-hook-form's aliases (`FieldPathValue`, `DeepPartial`,
+  `Omit`...) measured earlier went deeper into the recursive `Path<T>` chains (164 extra marker relations, ~80M
+  instructions of instantiation/interning under `measure_variances`). Some depth limit or cache makes a measurement's
+  cost depend on what was measured before; finding which could make measurements cheaper in every order.
 
 ## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
 Measure with `./instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
