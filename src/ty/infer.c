@@ -1321,8 +1321,8 @@ static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
 
 // tsc's isDeeplyNestedType(type, stack, depth, 2) as inference's invokeOnce asks it: a type without a recursion identity
 // of its own (`any`) is its own identity there
-static bool infer_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth) {
-    if (ty_is_deeply_nested(ty, stack, depth, 2)) return true;
+static bool infer_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth) {
+    if (ty_is_deeply_nested(me, ty, stack, depth, 2)) return true;
     if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_DEFERRED)) return false;
     for (u32 i = 0; i < depth; i++) {
         if (stack[i] == ty) return true;
@@ -1423,8 +1423,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             return;
         }
         unsigned saved_expanding = inf->expanding;
-        if (!(inf->expanding & 1) && infer_deeply_nested(source, inf->object_sources, inf->object_depth)) inf->expanding |= 1;
-        if (!(inf->expanding & 2) && infer_deeply_nested(target, inf->object_targets, inf->object_depth)) inf->expanding |= 2;
+        if (!(inf->expanding & 1) && infer_deeply_nested(me, source, inf->object_sources, inf->object_depth)) inf->expanding |= 1;
+        if (!(inf->expanding & 2) && infer_deeply_nested(me, target, inf->object_targets, inf->object_depth)) inf->expanding |= 2;
         if (inf->expanding == 3) {
             inf->expanding = saved_expanding;
             inf->depth--;
@@ -1536,8 +1536,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
             unsigned saved_expanding = inf->expanding;
             // (Two of a kind already stop an inference walk, where relations take three: tsc's invokeOnce)
-            if (!(inf->expanding & 1) && ty_is_deeply_nested(source, inf->object_sources, inf->object_depth, 2)) inf->expanding |= 1;
-            if (!(inf->expanding & 2) && ty_is_deeply_nested(target, inf->object_targets, inf->object_depth, 2)) inf->expanding |= 2;
+            if (!(inf->expanding & 1) && ty_is_deeply_nested(me, source, inf->object_sources, inf->object_depth, 2)) inf->expanding |= 1;
+            if (!(inf->expanding & 2) && ty_is_deeply_nested(me, target, inf->object_targets, inf->object_depth, 2)) inf->expanding |= 2;
             if (inf->expanding != 3) {
                 inf->object_sources[inf->object_depth] = source;
                 inf->object_targets[inf->object_depth] = target;

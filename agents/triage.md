@@ -42,6 +42,9 @@ missing_checks.md "Known missing checks", type_core.md "Circularity" (getter_cyc
   not merged: it fixes 2 of 3 errors of deeplyNestedMappedTypes but no whole test, and costs +0.17% instructions on
   drizzle (+0.05% type-fest) because comparisons that stopped early now go on, as tsc's do. Recreate it from that
   description (isDeeplyNestedType's mapped-type identity) when the `Id2<Id2<...>>` case is understood too.
+- (same session) tripleSlashReferenceAbsoluteWindowsPath: d's fix was superseded by c's triple-slash change, which turns
+  `C:\a\b\c.ts` into `C:/a/b/c.ts`; tttt's path joining doesn't treat that as absolute (and the test's file keeps the
+  backslash name). Not lost against the session start, but it passed mid-session.
 - (same session) valgrind shows a "possibly lost" block from the thread-local `program_modules_exporting` /
   `program_containers` caches in `symbol_chain.c` (never freed), eg importElisionConstEnumMerge1. Pre-existing.
 - (2026-10-05 fan-out) The symbols harness's expression walk is near the stack limit on binderBinaryExpressionStress:
@@ -49,3 +52,9 @@ missing_checks.md "Known missing checks", type_core.md "Circularity" (getter_cyc
   over binary-expression left spines, as the checker presumably does.
 - `./scenarios.py`: 3 tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file* fail (missing
   TS6377 at src/main/tsconfig.json:6); already failing at dfde5fbc.
+- (2026-10-05 fan-out) react +0.8% instructions over the session from four small commits (a29ce0b2, 84b12f2b,
+  8619aacb, 5b06210a; measurements.md). Check whether the first two are real work on a hot path.
+- deeplyNestedMappedTypes passes errors and symbols but not types: tsc prints the interface property `static:
+  PropertiesReduce<T, this['params']>` as its expansion through the inner aliases (`Evaluate<Readonly<Partial<Pick<{ [K
+  in keyof T]: Static<...> }, ...>>> & ...>`), tttt keeps the outer alias name. An alias display question (when tsc
+  drops an alias whose body is another alias applied to a generic mapped type), plan 35 territory.

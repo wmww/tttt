@@ -532,6 +532,7 @@ static Ty const* instantiate_anonymous(Checker* me, Ty const* ty, TyMapper const
             );
             Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
             fresh->anonymous.target = target;
+            fresh->anonymous.mapped = target->anonymous.mapped;
             fresh->anonymous.mapper = composed;
             fresh->anonymous.ctx = target->anonymous.ctx;
             fresh->anonymous.state = arena_new(&my arena, TyObjectState);

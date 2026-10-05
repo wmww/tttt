@@ -349,6 +349,7 @@ struct Ty {
             bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
+            bool mapped : 1; // A mapped type node (`{ [K in C]: X }`) or an instantiation of one (tsc's ObjectFlags.Mapped)
         } anonymous;
         struct {
             TyList types; // sorted by id, no duplicates

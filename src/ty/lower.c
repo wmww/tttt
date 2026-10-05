@@ -963,6 +963,8 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
 
     Ty* ret = ty_alloc(me, TY_ANONYMOUS, TYF_OBJECT);
     ret->anonymous.node = node;
+    ret->anonymous.mapped = node->tag == TYPE_INTERFACE && vec_interface_member_size(&node->interface.members) == 1 &&
+        node->interface.members.data[0].key.tag == INTERFACE_KEY_MAPPED;
     ret->anonymous.ctx = ctx;
     ret->anonymous.state = arena_new(&my arena, TyObjectState);
     ret->alias = alias;

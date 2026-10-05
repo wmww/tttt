@@ -87,6 +87,10 @@ typedef struct RelationState {
     u32 maybe_count, maybe_cap;
     Ty const* source_stack[MAX_RELATION_DEPTH];
     Ty const* target_stack[MAX_RELATION_DEPTH];
+    // Each stack entry's recursion identity (ty_recursion_entry()), worked out once, when a deep nesting check first needs it
+    uintptr_t source_entries[MAX_RELATION_DEPTH];
+    uintptr_t target_entries[MAX_RELATION_DEPTH];
+    u32 source_entries_valid, target_entries_valid; // How many from the bottom are up to date: filled when looked at
     u32 depth;
     // The stacks deep nesting looks at (tsc's sourceStack/targetStack): a relation to a member of a union or intersection
     // pushes only the side that changes (tsc's RecursionFlags), see is_related_to_side()
@@ -4119,7 +4123,9 @@ static Ternary signatures_identical_in(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, bool partial, bool ignore_return
 );
 static Ternary recursive_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
-static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max);
+static bool relation_deeply_nested(
+    Checker* me, Ty const* ty, Ty const* const* stack, uintptr_t* entries, u32* valid, u32 depth, u32 max, bool pushing
+);
 
 static Ternary identity_related(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if ((source->flags ^ target->flags) & IDENTITY_FLAGS) return TERNARY_FALSE;
@@ -4789,7 +4795,7 @@ static Ternary structured_related_members(
         case TY_CONDITIONAL: {
             // Ten instantiations of this conditional type on the target stack: an infinitely expanding recursive
             // conditional type, assumed related (tsc's isDeeplyNestedType(target, targetStack, targetDepth, 10))
-            if (st->target_depth && is_deeply_nested_max(target, st->target_stack, st->target_depth - 1, 10)) return TERNARY_MAYBE;
+            if (st->target_depth && relation_deeply_nested(me, target, st->target_stack, st->target_entries, &st->target_entries_valid, st->target_depth - 1, 10, false)) return TERNARY_MAYBE;
             // Identical extends types, check types related one way or the other, and related branches (tsc's rule for
             // two conditional types). The source's own `infer` type parameters are inferred from the target's extends
             // type first: `HM extends Box<infer H> ? H : never` against another such alias
@@ -4959,7 +4965,7 @@ static Ternary structured_related_members(
         case TY_CONDITIONAL: {
             // Already checking this conditional type as a source further up: don't recurse (tsc's
             // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
-            if (st->source_depth && is_deeply_nested_max(source, st->source_stack, st->source_depth - 1, 10)) return TERNARY_MAYBE;
+            if (st->source_depth && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth - 1, 10, false)) return TERNARY_MAYBE;
             // Through the default constraint, the union of the branches (an any branch counts as never)
             Ty const* true_branch = inferred_true_branch(me, source);
             Ty const* false_branch = ty_conditional_branch(me, source, false);
@@ -5244,49 +5250,115 @@ static Ty const* recursion_identity(Ty const* ty) {
     }
 }
 
-// tsc's isDeeplyNestedType: `ty` (about to go on the stack) and at least two types further up with the same recursion
-// identity, each newer (a higher id) than the previous one
-bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
-    return is_deeply_nested_max(ty, stack, depth, max);
-}
-
-// An intersection has each of its members' identities (tsc's hasMatchingRecursionIdentity)
-static bool has_recursion_identity(Ty const* ty, Ty const* identity) {
-    if (ty->kind != TY_INTERSECTION) return recursion_identity(ty) == identity;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (has_recursion_identity(ty->composite.types.data[i], identity)) return true;
-    }
-    return false;
-}
-
-// Whether `identity_of`'s recursion identity is on the stack at least `max` times counting `ty` (the type about to go
-// on it), each newer than the one before
-static bool is_deeply_nested_as(Ty const* identity_of, Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
-    Ty const* identity = recursion_identity(identity_of);
-    if (!identity) return false;
-    u32 count = 0;
-    u32 last_id = 0;
-    for (u32 i = 0; i <= depth; i++) {
-        Ty const* other = i < depth ? stack[i] : ty;
-        if (!has_recursion_identity(other, identity)) continue;
-        if (other->id >= last_id && ++count >= max) return true;
-        last_id = other->id;
-    }
-    return false;
-}
-
-static bool is_deeply_nested_max(Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
-    if (depth + 1 < max) return false;
-    // An intersection is as deeply nested as its most deeply nested member: `C<T> & { a: 1 }` whose members return
-    // `this & { a: 1 }` grows a new intersection at each level, with C<T> in each
+// tsc's getMappedTargetWithSymbol: an instantiated mapped type stands for its modifiers type while that has a symbol
+// (an object type, a type parameter, or an intersection with one of those), so `Id<T> = { [K in keyof T]: Id<T[K]> }`
+// over nested type literals is a new identity at each level, and `Id2<Id2<T[K]>>` unwraps to the same literal as well
+static bool has_symbol_for_recursion(Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
             Ty const* member = ty->composite.types.data[i];
-            if (member->kind != TY_INTERSECTION && is_deeply_nested_as(member, ty, stack, depth, max)) return true;
+            if (member->kind != TY_INTERSECTION && has_symbol_for_recursion(member)) return true;
         }
         return false;
     }
-    return is_deeply_nested_as(ty, ty, stack, depth, max);
+    if (ty->kind == TY_REFERENCE) return ty->reference.target->declared.kind != TY_DECLARED_TUPLE_TARGET;
+    // (Not a type parameter, which tsc's has: a mapped type over one keeps the mapped type's identity)
+    return ty->kind == TY_DECLARED || ty->kind == TY_ANONYMOUS;
+}
+
+// (tsc's ObjectFlags.InstantiatedMapped)
+static inline bool is_mapped_instance(Ty const* ty) {
+    return ty->kind == TY_ANONYMOUS && ty->anonymous.mapped && ty->anonymous.target;
+}
+
+static Ty const* mapped_target_with_symbol(Checker* me, Ty const* ty) {
+    for (u32 depth = 0; depth < 64 && is_mapped_instance(ty); depth++) {
+        MappedInfo const* mapped = ty_mapped_info_unexpanded(me, ty);
+        if (!mapped || !mapped->modifiers_type || !has_symbol_for_recursion(mapped->modifiers_type)) break;
+        ty = mapped->modifiers_type;
+    }
+    return ty;
+}
+
+// What `ty` stands for in deep nesting: an instantiated mapped type unwrapped (mapped_target_with_symbol())
+static Ty const* recursion_key(Checker* me, Ty const* ty) {
+    return is_mapped_instance(ty) ? mapped_target_with_symbol(me, ty) : ty;
+}
+
+// A stack entry's recursion identity, worked out once when it's pushed: an intersection's key (tagged with bit 0) has
+// each of its members' (tsc's hasMatchingRecursionIdentity), anything else the one of its key or null
+uintptr_t ty_recursion_entry(Checker* me, Ty const* ty) {
+    Ty const* key = recursion_key(me, ty);
+    return key->kind == TY_INTERSECTION ? (uintptr_t)key | 1 : (uintptr_t)recursion_identity(key);
+}
+
+static bool intersection_has_identity(Checker* me, Ty const* key, Ty const* identity) {
+    for (u32 i = 0; i < key->composite.types.len; i++) {
+        Ty const* member = recursion_key(me, key->composite.types.data[i]);
+        if (member->kind == TY_INTERSECTION ? intersection_has_identity(me, member, identity) : recursion_identity(member) == identity) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Whether `identity` is on the stack at least `max` times counting `ty` (the type about to go on it, which has it),
+// each newer than the one before. `entries` are the stack's ty_recursion_entry(), null to work them out
+static bool is_deeply_nested_as(
+    Checker* me, Ty const* identity, Ty const* ty, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max
+) {
+    u32 count = 0;
+    u32 last_id = 0;
+    for (u32 i = 0; i < depth; i++) {
+        uintptr_t entry = entries ? entries[i] : ty_recursion_entry(me, stack[i]);
+        if (entry != (uintptr_t)identity && !((entry & 1) && intersection_has_identity(me, (Ty const*)(entry & ~(uintptr_t)1), identity))) {
+            continue;
+        }
+        if (stack[i]->id >= last_id && ++count >= max) return true;
+        last_id = stack[i]->id;
+    }
+    return ty->id >= last_id && ++count >= max;
+}
+
+// tsc's isDeeplyNestedType: `ty` (about to go on the stack, ty_recursion_entry() `entry`) and at least two types
+// further up with the same recursion identity, each newer (a higher id) than the previous one
+static bool is_deeply_nested_max(Checker* me, Ty const* ty, uintptr_t entry, Ty const* const* stack, uintptr_t const* entries, u32 depth, u32 max) {
+    if (depth + 1 < max) return false;
+    // An intersection is as deeply nested as its most deeply nested member: `C<T> & { a: 1 }` whose members return
+    // `this & { a: 1 }` grows a new intersection at each level, with C<T> in each
+    if (entry & 1) {
+        Ty const* key = (Ty const*)(entry & ~(uintptr_t)1);
+        for (u32 i = 0; i < key->composite.types.len; i++) {
+            Ty const* member = recursion_key(me, key->composite.types.data[i]);
+            Ty const* identity = member->kind != TY_INTERSECTION ? recursion_identity(member) : nullptr;
+            if (identity && is_deeply_nested_as(me, identity, ty, stack, entries, depth, max)) return true;
+        }
+        return false;
+    }
+    return entry && is_deeply_nested_as(me, (Ty const*)entry, ty, stack, entries, depth, max);
+}
+
+// A relation's stacks: the entries below `depth` not up to date yet are worked out first (`valid` of them are)
+static bool relation_deeply_nested(
+    Checker* me, Ty const* ty, Ty const* const* stack, uintptr_t* entries, u32* valid, u32 depth, u32 max, bool pushing
+) {
+    if (depth + 1 < max) return false;
+    for (u32 i = *valid; i < depth; i++) entries[i] = ty_recursion_entry(me, stack[i]);
+    uintptr_t entry = ty_recursion_entry(me, ty);
+    // (`pushing`: `ty` goes on the stack at `depth` next, its entry with it)
+    if (pushing) {
+        entries[depth] = entry;
+        *valid = depth + 1;
+    } else if (*valid < depth) {
+        *valid = depth;
+    }
+    return is_deeply_nested_max(me, ty, entry, stack, entries, depth, max);
+}
+
+// (Inference's stacks are short: their entries are worked out as they're scanned)
+bool ty_is_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth, u32 max) {
+    if (depth + 1 < max) return false;
+    return is_deeply_nested_max(me, ty, ty_recursion_entry(me, ty), stack, nullptr, depth, max);
 }
 
 // The weak type check of tsc's isRelatedTo, reported. Done once a pair isn't cached (the answer only depends on it)
@@ -5405,11 +5477,17 @@ static Ternary recursive_related(Checker* me, RelationState* st, Ty const* sourc
     bool push_source = !(st->skip_push & 1), push_target = !(st->skip_push & 2);
     st->skip_push = 0;
     if (push_source) {
-        if (!(st->expanding & 1) && ty_is_deeply_nested(source, st->source_stack, st->source_depth, 3)) st->expanding |= 1;
+        if (st->source_entries_valid > st->source_depth) st->source_entries_valid = st->source_depth;
+        if (!(st->expanding & 1) && st->source_depth >= 2 && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth, 3, true)) {
+            st->expanding |= 1;
+        }
         st->source_stack[st->source_depth++] = source;
     }
     if (push_target) {
-        if (!(st->expanding & 2) && ty_is_deeply_nested(target, st->target_stack, st->target_depth, 3)) st->expanding |= 2;
+        if (st->target_entries_valid > st->target_depth) st->target_entries_valid = st->target_depth;
+        if (!(st->expanding & 2) && st->target_depth >= 2 && relation_deeply_nested(me, target, st->target_stack, st->target_entries, &st->target_entries_valid, st->target_depth, 3, true)) {
+            st->expanding |= 2;
+        }
         st->target_stack[st->target_depth++] = target;
     }
     st->depth++;
@@ -6146,6 +6224,7 @@ static bool check_related(
     st->maybe_count = st->maybe_cap = 0;
     st->depth = 0;
     st->source_depth = st->target_depth = 0;
+    st->source_entries_valid = st->target_entries_valid = 0;
     st->skip_push = 0;
     st->expanding = 0;
     st->overflow = false;

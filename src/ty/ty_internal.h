@@ -270,7 +270,10 @@ Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call); // call.c:
 void ty_late_contextual_return(Checker* me, FunctionImpl const* function); // expr.c
 Ty const* ty_mapped_template_fresh(Checker* me, MappedInfo const* mapped); // relate.c
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
-bool ty_is_deeply_nested(Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference
+bool ty_is_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference
+// What a type on those stacks is compared by: its recursion identity, an instantiated mapped type's modifiers type's
+// (tsc's getMappedTargetWithSymbol), an intersection itself tagged with bit 0 (relate.c)
+uintptr_t ty_recursion_entry(Checker* me, Ty const* ty);
 void inference_drop(Inference* inf);
 void infer_types(Checker* me, Inference* inf, Ty const* source, Ty const* target, u32 priority);
 // What a call infers for parameter i: common supertype of the candidates, widened unless `keep_literals`. Null if
