@@ -45,10 +45,9 @@ filetest, the fix, `./sweep.py` before/after (0 newly mismatching packages), the
 open causes in plan 19's style in this file's "Open root causes" below (or bugs/ for big ones).
 
 ## Stage 3: widen the oracle (one session each, in order of value)
-1. **Versioned dependencies** (~370 packages): DT packages that depend on an older major (`@types/react@^16`,
-   `webpack@^4` -> `types/webpack/v4`) get the latest today. Do what pnpm does: before a run, a small node script
-   writes `types/X/node_modules/@types/Y -> ../../../Y/vN` for each dependency the latest doesn't satisfy (semver), and
-   the versioned directories (`types/*/vN`, 537 of them) become packages of their own. Rerun `--tsc` for the affected.
+1. **Versioned dependencies**: done (test/sweep_links.py, run by sweep.py; 1241 links, 387 versioned packages of
+   their own, oracle regenerated for the 584 affected with `./sweep.py --tsc -f` on `test/sweep_links.py --affected`).
+   After a DT pin change: rerun the links (sweep.py does) and `--tsc` for everything.
 2. **`$ExpectType`** (69.6k assertions in 2639 packages): a *types* oracle at breadth. dtslint compares
    `typeToString` of the expression on the assertion's line (no truncation, union order normalised) with the comment.
    tttt needs a mode printing the type of the expression on given lines (the baseline harness already prints every
@@ -75,6 +74,17 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 (single files: `FAST=1 ./filetest.sh FILE -d`; directories: `release/tttt -p DIR` vs `node thirdparty/tsc/lib/tsc.js
 -p DIR`). Packages = sweep packages affected. Ordered by value for effort within each group; **do the small ones first**,
 one commit each, `./sweep.py` before/after.
+
+### From the versioned packages (2026-10-05)
+Most mirror a latest package's open cause: node/v22, v24, v25 (node's TS2722/TS2345/TS2769/TS7006, more of them in
+v22/v24: not separated yet), react-redux/v5, v6 (like react-redux's TS2741), ember/v3 (observable-tests TS2615/TS2578
+like ember's), d3-array/v2 (like d3-array's TS7006), chai/v4 (TS2769 at chai-tests 1777, 1787: not investigated).
+- **ember-data__adapter/v3, ember-data__model/v3, ember-data__store/v3, ember__routing/v3**: +TS2717 at
+  types/ember__object/index.d.ts:140-141. The program has both ember__object (latest, through a `*` devDependency) and
+  ember__object/v3, and both augment the latest ember__utils's `TypeLookup` with `class: typeof EmberObject` and
+  `instance: EmberObject` of their own EmberObject. tsc finds the two identical (structurally, or Maybe through
+  recursion), tttt doesn't. Repro: a merged interface property typed with two structurally equal deep class
+  hierarchies from different declarations.
 
 ### Small (1-10 lines each)
 - **A context-sensitive function argument is skipped, not related as anyFunctionType, in the skip round**
