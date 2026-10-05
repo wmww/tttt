@@ -5367,8 +5367,8 @@ const baselines = {
     },
     'computedPropertiesWithSetterAssignment': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'computedPropertyNameAndTypeParameterConflict': {
         errors: true,
@@ -45202,7 +45202,7 @@ const baselines = {
     },
     'generatorTypeCheck38': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'generatorTypeCheck39': {

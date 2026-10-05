@@ -756,6 +756,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // declarations of its symbol, see builder_add_interface_member)
             VecSpan declarations = vec_span_init();
             Prop const* overloads = nullptr; // (Overloaded methods are one member, of all their signatures)
+            Prop const* accessor_pair = nullptr; // (`get [k]()` and `set [k](v)`: one member, of the getter's type)
             if (ctx->member_owner) {
                 Checker* checker = current_checker;
                 bool is_number = false;
@@ -767,6 +768,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 if (mine && prop->decl->decl_span_count > 1) {
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
                     if ((prop->flags & PROP_METHOD) && prop->decl->overload_count > 1) overloads = prop;
+                    if (my computed_accessor) accessor_pair = prop;
                 }
             }
             if (vec_span_is_empty(&declarations)) vec_span_push(&declarations, span_valid(my declaration) ? my declaration : my key.span);
@@ -776,8 +778,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             }, my key.expr.ref);
             baseline_test_case_add_type(ctx, my key.span, overloads ? prop_type(current_checker, overloads) :
-                optional_member_type(ty_of_node(&my type), my optional));
+                accessor_pair ? prop_type(current_checker, accessor_pair) : optional_member_type(ty_of_node(&my type), my optional));
             computed_member_name_compile_test_info(my key.expr.ref, ctx);
+            // (A lone setter `set [k](v: T)` declares its parameter)
+            Span setter_param = interface_member_setter_param(me);
+            if (span_valid(setter_param) && my computed_accessor == 2) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
+                baseline_test_case_add_type(ctx, setter_param, ty_of_node(&my type));
+            }
         }   break;
 
         case INTERFACE_KEY_MAPPED:

@@ -1788,7 +1788,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             }
             if (assignment_target) identifier_mark_assigned(&my identifier, names);
             if (!my identifier.keyword) {
-                scope_check_strict_identifier(names, my inner_span, false);
+                scope_check_strict_identifier(names, my inner_span, flow->in_type_query);
                 if (assignment_target) scope_check_strict_eval_or_arguments(names, my inner_span);
             }
             break;

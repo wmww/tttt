@@ -3378,7 +3378,9 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         Tok t = tok_peek(&p);
         Anchor expr_a = anchor(&p);
         Span name;
-        if (tok_is_word(t) && *t.start != '#' && !tok_is(t, "this") && is_reserved_word((csview){ t.start, t.end - t.start }) &&
+        // (`yield` and `await` too, which the expression parser would take for operators in a generator or async function)
+        if (tok_is_word(t) && *t.start != '#' && !tok_is(t, "this") &&
+            (is_reserved_word((csview){ t.start, t.end - t.start }) || tok_is(t, "yield") || tok_is(t, "await")) &&
             parse_identifier_or_keyword(&p, &name)
         ) {
             expr = expr_identifier(name, (IdentifierExpr){0});
@@ -7888,6 +7890,9 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     if (accessor->ret_explicit) type = type_move(&accessor->ret);
                 } else if (vec_function_arg_size(&accessor->args)) {
                     FunctionArg* arg = &accessor->args.data[0];
+                    if (arg->initializer.binding.tag == BINDING_IDENTIFIER) {
+                        interface_member_accessor(member)->setter_param = arg->initializer.binding.content_span;
+                    }
                     if (arg->initializer.binding.has_explicit_type) type = type_move(&arg->initializer.binding.explicit_type);
                 }
                 type_drop(&member->type);
