@@ -57,7 +57,7 @@ Left, every one reduced:
 - cleverMerge.js:355 `newFn[DYNAMIC_INFO] = ...`: late-bound expandos (plan 26 leftovers).
 
 
-### xstate (19)
+### xstate (2)
 Pinned 2026-09-28 (sixth window, todo entry 1) as the inference-heavy corpus: xstate core at f210b35 (last commit
 before TypeScript 6) with its vitest tests, through our `corpora-locks/xstate.overlay/packages/core/tsconfig.corpus.json`
 (lib es2024, src + test). tsc 5.8: 0 in 5.9 s. tttt went 394 -> 61 the same session (three sub-agents + main tree):
@@ -78,7 +78,26 @@ reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
   (deferred conditional rest parameter).
 - Determinism: 5 diagnostics only at `--checkers 1` (triage).
 
-### drizzle (8; 693 at pinning)
+2026-10-05 (vscode window, agent B), 7 -> 2: types 2634 (expand_mapped's keyed-intersection path skipped any
+intersection with TYF_COULD_CONTAIN_TYPE_VARIABLES, which every type literal with a `typeof` has), types 1662
+(never-reduced intersections had the same flag misuse, and tsc's isGenericReducibleType was missing: an indexed access
+of `(A | B) & { src: TSrc }` stays deferred until TSrc is known), setup.types 2787/2821/2822 (an overload failure's
+fallback inference skipped nested generic calls that were already resolved; HACK, hacks.md
+`overload_failure_inference`). Left, both investigated, probes in the commit messages' style below:
+- **types 870** (TS2345, `spawnChild('child', { id: 'ok1' })` in createMachine's `entry`): the argument tuple is
+  `["child", { id: string }]` in the final check, so 'ok1' was widened somewhere along the way while TActor came from
+  createMachine's return-type context. Reproduces only with the real createMachine (a stand-in `create<TActor>({ types,
+  entry: ActionFunction<..., TActor, ...> })` and spawnChild's real SpawnArguments shape pass): look at what contextual
+  type the literal gets in spawnChild's inference rounds under createMachine's `entry` (Actions<...> union) and
+  whether its widened type is the one remembered by resolve-once (plan 38 stage 3).
+- **setup.types 2951** (TS2578 unused @ts-expect-error: tsc reports TS2353 `nonexistent` in `after: { long: 'd',
+  nonexistent: 'd' }`). tsc reports it only when the same createMachine config also has `entry: [raise({ type: 'GO' },
+  { delay: 'long' })]` (without it tsc is silent too): its excess-property error names the constraint's
+  `DelayedTransitions<...>`, so tsc's `const TConfig` inference failed its constraint and the fresh literal was checked
+  against `MachineConfig<...>`. Why the inferred TConfig fails the constraint in tsc (the raise call?) and passes in
+  tttt is the open question; instrument tsc's getInferredType on it.
+
+### drizzle (0; 693 at pinning)
 Pinned 2026-09-29 (seventh window, todo entry 1): drizzle-orm at 15454dbe, the package's src and type-tests through
 `corpora-locks/drizzle.overlay/drizzle-orm/tsconfig.corpus.json` (upstream's type-tests tsconfig minus src/prisma,
 which needs a generated @prisma/client); devDependencies at pnpm-lock.yaml's versions (npm's own resolution of the
@@ -101,6 +120,13 @@ below took the 16 of mysql/singlestore select.ts + set-operators.ts, whose `$dyn
 - mysql/generated-columns.ts 102/122 (TS2345): `drizzle(pool, { schema: { users }, mode })` with an `any` client.
 - pg/with.ts 215-230 (6): `WithSubqueryWithSelection` of a `$with(...).as(select ... innerJoin)` selection, the mapped
   `{ [K in ... as ...] }` over the joins tuple.
+
+Both gone by 2026-10-05 (the last 4, pg/with.ts 217/230, were keyof of a concrete tuple kept deferred because the
+tuple had TYF_COULD_CONTAIN_TYPE_VARIABLES: only a generic tuple defers, tsc's shouldDeferIndexType). Seen on the way,
+not corpus-visible: keyof `{ [K in keyof Tuple as Tuple[K]['table']['_']['name']]: ... }` is string in tttt and
+unknown in tsc (the non-element keys such as 'length' name `number['table']`). Probing drizzle quickly: a tsconfig in
+/tmp that `extends` the corpus's tsconfig.corpus.json with `"files": [probe.ts]`, importing from the corpus by
+absolute path, checks in about a second.
 
 `src/` went 428 -> 14 the same day (probes `test/probes/plan19/drizzle/`, one commit each, with the type-tests agent's
 fixes merged in between): keyof/Partial skipping private members, a type assertion in a mutable location keeping
