@@ -9713,6 +9713,15 @@ static void parse_jsx_tag_name(Parser* p, Expr* ret, bool* namespaced, bool* bro
                 dot.pos++;
                 parse_identifier_or_keyword(&dot, nullptr);
                 parse_error(&dot, span_from_pos(&dot), 1003, "Identifier expected.");
+                // (the access has a missing name after it: `this.#prop` is a property access to the types baseline)
+                Span missing = span_from_pos(&dot);
+                parse_success(&dot);
+                *ret = expr_property(span_from(a), c_new(PropertyExpr, {
+                    .expr = *ret,
+                    .prop = expr_literal(missing, value_string(cstr_null)),
+                    .form = PROPERTY_EXPR_DOT,
+                }));
+                break;
             } else {
                 parse_error(&dot, span_from_token(&dot), 1003, "Identifier expected.");
             }

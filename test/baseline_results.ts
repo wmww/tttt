@@ -26058,7 +26058,7 @@ const baselines = {
     'privateNameJsx': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameWeakMapCollision': {
         errors: true,
