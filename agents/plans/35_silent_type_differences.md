@@ -286,3 +286,13 @@ Each named far enough to start from; tests are the examples still failing.
   declarations, agent A's note), exportAssignmentMembersVisibleInAugmentation (augmentation into the export= target,
   bugs/display.md), symbolDeclarationEmit12/privateNameDuplicateField (duplicate members), ramdaToolsNoInfinite2 (alias chosen),
   typeParameterConstModifiers (queue item 6), jsxComplexSignatureHasApplicabilityError (T_1 + JSX props type).
+Second round (same day): done since: CommonJS entity-name aliases, recovery initializers, `<this.#prop />`,
+`import { * }`, comma continuation after a missing operand, JS function expressions as classes of their own. Left:
+- moduleExportDuplicateAlias{,2,3}: every `exports.x = undefined`/`= a` is an alias in tsc (last one resolves) and the
+  declarations' left sides are `any`, while a single `exports.f = a` has its alias type on the left: tried making them
+  aliases, the left-side typing (and TS2322 on `= undefined`) didn't follow; see hacks.md.
+- Module elements in a function/block (moduleElementsInWrongContext{,2,3}, plainJSGrammarErrors): tsc binds them
+  anyway (export specifiers resolve locals, imports are aliases); tttt's `wrong_context` declares nothing.
+- moduleExportAssignment4 (`module.exports = exports['default']`): tsc's circularity is errorType, tttt any.
+- JS this-members merged with `F.prototype = {...}` accessors (jsDeclarationsFunctionLikeClasses2,
+  checkExportsObjectAssignPrototypeProperty); `@enum` on `exports.a = {}` (enumTagOnExports, symbols too).
