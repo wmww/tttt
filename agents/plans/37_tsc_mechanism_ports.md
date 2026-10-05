@@ -110,7 +110,7 @@ the contextual return, cached under `KEY_CONTEXT_FREE`; `infer_from_signatures` 
 Fires in 6 suite tests, 0 corpus sites; +1 (badInferenceLowerPriorityThanGoodInference). Before landing: the shared
 `p37_returns` buffer is reset by recursion (collect into a local), async/generator functions should get it too, drop
 the getenv toggles. A side task for whichever session has room; deletes hacks.md "Skip-sensitive rounds"'
-returnOnlyType part and bugs/type_core.md "Context-free type of return-sensitive functions".
+returnOnlyType part (the bugs/type_core.md entry it also deleted is gone already).
 
 ## Order and validation
 A, then B (they touch the same `intern_composite`: A ORs flags there, B adds the origin key; whichever lands second
