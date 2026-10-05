@@ -8,6 +8,8 @@ typedef struct LazyMemo {
     bool is_self_referential;
     bool reevaluating; // Evaluated again from below a call's barrier, see lazy_type_evaluate_inner()
     bool done;
+    // A destructuring pattern found circular once: not remembered, see lazy_type_evaluate_inner()
+    bool pattern_retried;
     unsigned char hits; // Expressions: re-entrant evaluations so far
     struct Ty const* evaluated;
     // Expressions: the contextual type `evaluated` was computed with, see ty_check_expr()

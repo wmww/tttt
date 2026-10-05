@@ -41612,12 +41612,12 @@ const baselines = {
     },
     'destructuringObjectBindingPatternAndAssignment1ES5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment1ES6': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment3': {

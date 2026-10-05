@@ -203,6 +203,14 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     }
     if (isolate) ty_flow_restore(current_checker, isolation);
     if (resolving && ty_resolving_pop(current_checker)) {
+        // A pattern's type isn't memoized by tsc (getTypeForBindingElementParent): the names that made it circular
+        // are, and so is the initializer, so asked again later it is what the initializer evaluated to (`var { a: { b }
+        // } = { a: { b } }` destructures `{ a: { b: any } }`). Evaluated again once at most
+        if (lazy_type_pattern_root(me) && !state->pattern_retried) {
+            state->pattern_retried = true;
+            state->evaluation_started = false;
+            return ty_intrinsic(current_checker, TY_CIRCULAR);
+        }
         // Part of a cycle: any, and the declaration reports it (tsc's reportCircularityError), whatever it evaluated to
         state->evaluated = ty_intrinsic(current_checker, TY_CIRCULAR);
         state->done = true;
