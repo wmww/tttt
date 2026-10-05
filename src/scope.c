@@ -2746,7 +2746,8 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 } else if (item->source_name.sv.size && (*item->source_name.sv.buf == '"' || *item->source_name.sv.buf == '\'')) {
                     // `export { "x" }` (tsc's checkExportSpecifier skips it: the parser's TS1003)
                 } else {
-                    error_ctx_error_d(errs, item->source_name, 2304, "Cannot find name '", item->source_name, "'.");
+                    // (tsc's resolveName for the export specifier: with spelling suggestions)
+                    scope_report_not_found(my alias->scope, item->source_name, SYMBOL_ANY_MEANING, false, errs);
                 }
                 return nullptr;
             }

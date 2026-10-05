@@ -10256,7 +10256,7 @@ const baselines = {
         types: true,
     },
     'duplicateErrorNameNotFound': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
