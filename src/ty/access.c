@@ -278,6 +278,9 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         for (u32 i = 0; i < object->composite.types.len && !missing; i++) {
             Ty const* member = object->composite.types.data[i];
             if (member->flags & TYF_NULLABLE) continue;
+            // (Nor an intersection that is never once apparent, `undefined & M` with M an object: tsc's
+            // createUnionOrIntersectionProperty skips members whose apparent type is never)
+            if (member->kind == TY_INTERSECTION && (ty_reduced(me, ty_apparent_type(me, member))->flags & TYF_NEVER)) continue;
             Ty const* part = access(me, member, index, depth + 1, flags);
             // A tuple too short to have the element has undefined there when others have it (tsc's
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
