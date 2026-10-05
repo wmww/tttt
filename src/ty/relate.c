@@ -1289,7 +1289,7 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
         if (cached) return *cached;
         Ty const* stack_buf[16];
         u32 len = 0;
-        bool all_optional = true, any_member = false, all_readonly = true, any_public = false;
+        bool all_optional = true, any_member = false, any_non_member = false, all_readonly = true, any_public = false;
         u32 flags = 0;
         u32 optional_parts = 0; // (bit i: stack_buf[i] came from an optional property)
         // (The members' own properties first, Object's and Function's only if none has one)
@@ -1314,6 +1314,7 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             bool class_member = !part.prop || !part.prop->decl->symbol;
             if (class_member) all_optional &= (part.flags & PROP_OPTIONAL) != 0;
             any_member |= class_member;
+            any_non_member |= !class_member;
             flags |= part.flags & ~(u32)PROP_OPTIONAL;
             all_readonly &= (part.flags & PROP_READONLY) != 0;
             any_public |= !(part.flags & (PROP_PRIVATE | PROP_PROTECTED));
@@ -1343,6 +1344,22 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             }
             ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
             ret.flags = flags | (all_optional && any_member ? PROP_OPTIONAL : 0);
+            // An optional member's property next to one that isn't a member's (a namespace's function: `typeof f &
+            // { m?: X }`) is optional, but its type is `F & (X | undefined)`, without undefined: as readers add it to
+            // an optional property's type, it is required to them
+            if (optional_result && any_non_member && optional_adds_undefined()) {
+                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
+                bool keeps_undefined = true;
+                for (u32 i = 0; i < len && keeps_undefined; i++) {
+                    Ty const* part = stack_buf[i];
+                    keeps_undefined = (optional_parts & (1u << i)) ||
+                        (part->flags & (TYF_ANY | TYF_UNKNOWN | TYF_UNDEFINED | TYF_VOID | TYF_TYPE_PARAM | TYF_DEFERRED));
+                    for (u32 j = 0; part->kind == TY_UNION && j < part->composite.types.len && !keeps_undefined; j++) {
+                        keeps_undefined = part->composite.types.data[j] == undefined;
+                    }
+                }
+                if (!keeps_undefined) ret.flags &= ~(u32)PROP_OPTIONAL;
+            }
         }
         FoundProp* memo = arena_new(&my arena, FoundProp);
         *memo = ret;

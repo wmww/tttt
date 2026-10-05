@@ -389,6 +389,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
 
 ## Relations (`ty/relate.c`)
+- `find_prop()` of an intersection: tttt keeps optional properties' types without undefined and has readers add it,
+  where tsc's getTypeOfSymbol includes it. An intersection property that is optional (all its *members'* properties
+  are) but has a non-member part (a namespace's function, `typeof f & { m?: X }`) is `F & (X | undefined)` = `F & X`
+  in tsc, without undefined; tttt drops PROP_OPTIONAL from it then (decided by flags, not a relation), which also
+  makes it required as a target (tsc: optional). Real fix: optional property types that carry their undefined.
 - relate.c sits at GCC's `inline-unit-growth` limit: code added anywhere in it can cost a hot inlining elsewhere
   (`find_prop` into `props_related_impl`, `global_type` into `apparent_type`: +0.4% instructions on vue from a
   never-executed loop). The reporting helpers (`report_line`, `display_for_report`...) are `[[gnu::cold]]` so the
