@@ -811,8 +811,25 @@ void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member) {
             if (inner.buf[i] == '\\' && i + 1 < inner.size) i++;
             // (the printer escapes the text again)
             if (inner.buf[i] == '\\' || inner.buf[i] == quote) cstr_push(out, "\\");
-            char c[2] = { inner.buf[i], 0 };
-            cstr_push(out, c);
+            unsigned char b = (unsigned char)inner.buf[i];
+            if (b < 0x80) {
+                cstr_append_n(out, &inner.buf[i], 1);
+                continue;
+            }
+            // (non-ASCII as \uXXXX UTF-16 escapes, like the printer does a string literal node it made)
+            u32 len = b >= 0xF0 ? 4 : b >= 0xE0 ? 3 : b >= 0xC0 ? 2 : 1;
+            if (i + len > inner.size) len = 1;
+            u32 code = len == 1 ? b : b & (0xFF >> (len + 1));
+            for (u32 k = 1; k < len; k++) code = code << 6 | ((unsigned char)inner.buf[i + k] & 0x3F);
+            i += len - 1;
+            char buf[16];
+            if (code >= 0x10000) {
+                code -= 0x10000;
+                snprintf(buf, sizeof buf, "\\u%04X\\u%04X", 0xD800 + (code >> 10), 0xDC00 + (code & 0x3FF));
+            } else {
+                snprintf(buf, sizeof buf, "\\u%04X", code);
+            }
+            cstr_append(out, buf);
         }
         cstr_push(out, quote == '\'' ? "'" : "\"");
     } else {

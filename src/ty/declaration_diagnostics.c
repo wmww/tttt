@@ -356,7 +356,7 @@ static void append_message(cstr* out, char const* template, csview const* args, 
             c += 2;
             continue;
         }
-        cstr_push(out, (char[]){ *c, 0 });
+        cstr_append_n(out, c, 1);
     }
 }
 

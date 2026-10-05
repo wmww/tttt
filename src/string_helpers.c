@@ -125,7 +125,7 @@ const char* string_to_double(
     // The parts only delimit the literal: strtod rounds correctly (and 1e999 is Infinity)
     cstr digits = cstr_init();
     for (const char* c = start; c < p; c++) {
-        if (*c != '_') cstr_push(&digits, (char[]){ *c, 0 });
+        if (*c != '_') cstr_append_n(&digits, c, 1);
     }
     double value = strtod(cstr_str(&digits), nullptr);
     cstr_drop(&digits);

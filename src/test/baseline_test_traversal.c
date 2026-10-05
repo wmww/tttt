@@ -1823,8 +1823,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
                 csview path = cstr_sv(&my module_ref->path);
                 for (isize k = 0; k < path.size; k++) {
                     if (path.buf[k] == '\\' || path.buf[k] == '"') cstr_push(&file_name, "\\");
-                    char c[2] = { path.buf[k], 0 };
-                    cstr_push(&file_name, c);
+                    cstr_append_n(&file_name, &path.buf[k], 1);
                 }
                 cstr_push(&file_name, "\"");
             } else {

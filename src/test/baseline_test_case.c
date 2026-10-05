@@ -1426,7 +1426,7 @@ static void append_span_contents_without_newlines(cstr* target, Span span) {
     // tsc's `sourceText.replace(/\r?\n/g, "")`: a lone \r stays
     for (const char* c = start; c < end; c++) {
         if (*c == '\n' || (*c == '\r' && c + 1 < end && c[1] == '\n')) continue;
-        cstr_push(target, c);
+        cstr_append_n(target, c, 1);
     }
 }
 
@@ -1534,7 +1534,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
             cstr fixed = cstr_from_sv(csview_from_n(cstr_str(&text), from));
             for (const char* c = cstr_str(&text) + from; *c; c++) {
                 if (c[0] == '\r' && c[1] == '\n') continue;
-                cstr_push(&fixed, c);
+                cstr_append_n(&fixed, c, 1);
             }
             cstr_drop(&text);
             text = fixed;
