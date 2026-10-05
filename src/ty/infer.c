@@ -979,10 +979,21 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         return;
     }
     if (!(ty_is_tuple(source) && ty_is_tuple(target)) && types_definitely_unrelated(me, source, target)) return;
+    bool optional_adds_undefined = compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types;
     for (u32 i = 0; i < target_members->prop_count; i++) {
         Prop const* target_prop = target_members->props[i];
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
-        if (source_prop.found) infer_from(me, inf, source_prop.type, prop_type(me, target_prop));
+        if (!source_prop.found) continue;
+        // An optional property's type has its undefined, except under exactOptionalPropertyTypes (tsc's
+        // inferFromProperties: removeMissingType of getTypeOfSymbol): `{ a: undefined }` to `{ a?: T }` matches
+        // undefined with undefined and infers nothing for T
+        Ty const* source_type = source_prop.type;
+        Ty const* target_type = prop_type(me, target_prop);
+        if (optional_adds_undefined) {
+            if (source_prop.flags & PROP_OPTIONAL) source_type = ty_optional_prop_type(me, source_type);
+            if (target_prop->flags & PROP_OPTIONAL) target_type = ty_optional_prop_type(me, target_type);
+        }
+        infer_from(me, inf, source_type, target_type);
     }
     Members const* source_members = ty_members(me, source);
     // (An intersection's are its members', see resolve_intersection_members())
