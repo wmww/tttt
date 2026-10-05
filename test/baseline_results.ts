@@ -9131,7 +9131,7 @@ const baselines = {
         types: true,
     },
     'decoratorMetadataWithImportDeclarationNameCollision4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12346,9 +12346,9 @@ const baselines = {
         types: true,
     },
     'esmModeDeclarationFileWithExportAssignment': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'esmNoSynthesizedDefault(module=esnext)': {
         errors: true,
@@ -18886,12 +18886,12 @@ const baselines = {
         types: true,
     },
     'isolatedModulesExportDeclarationType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesExportImportUninstantiatedNamespace': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18976,7 +18976,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesReExportType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18991,7 +18991,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=false,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19011,17 +19011,17 @@ const baselines = {
         types: true,
     },
     'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=false,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=true,verbatimmodulesyntax=false)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=true,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -22006,9 +22006,9 @@ const baselines = {
         types: true,
     },
     'modulePreserve4': {
-        errors: false,
+        errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'modulePreserve5': {
         errors: true,
@@ -23401,7 +23401,7 @@ const baselines = {
         types: false,
     },
     'noCrashWithVerbatimModuleSyntaxAndImportsNotUsedAsValues': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49581,7 +49581,7 @@ const baselines = {
         types: true,
     },
     'exportDeclaration(isolatedmodules=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -49826,7 +49826,7 @@ const baselines = {
         types: true,
     },
     'preserveValueImports_errors(isolatedmodules=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50021,22 +50021,22 @@ const baselines = {
         types: true,
     },
     'verbatimModuleSyntaxInternalImportEquals': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'verbatimModuleSyntaxNoElisionCJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'verbatimModuleSyntaxNoElisionESM': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'verbatimModuleSyntaxRestrictionsCJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

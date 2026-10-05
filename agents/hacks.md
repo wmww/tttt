@@ -486,6 +486,7 @@ src` finds the code-side markers; every significant one has an entry here.
   conditional instance is re-reported only within its epoch; later hits only bump `instantiation_limit_hits`.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
+- `source_file_check_verbatim_exports()` (TS1287) finds the `export` keyword by scanning the statement text (`export_keyword_of()`): statements don't keep their modifiers' spans. `check_alias_isolated_modules()` puts a default import's error on its name where tsc spans the whole import clause (`A, { b }`).
 - `ty_check_static_heritage()` relates to a synthetic object literal (tsc's getTypeWithoutSignatures, which keeps the
   class symbol and so prints `typeof Base`); `Checker.display_of`/`display_as` make messages print the named static
   side for it while explaining. A synthetic anonymous type that remembers the symbol it prints as would replace it.

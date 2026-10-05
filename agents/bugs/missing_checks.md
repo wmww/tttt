@@ -138,6 +138,17 @@ statuses checked 2026-09-27 (triage, suite 8952); buckets refreshed 2026-09-28 (
 - Override and variance checks exist now (triage 2026-09-28); left: JSDoc `@template in/out/const` grammar errors
   (jsdocTemplateTag8), varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
 
+## Module and import checks (triage 2026-10-05: default imports, isolatedModules/verbatimModuleSyntax done)
+- TS2866 (an import shadowing a global value the file uses as a value, under isolatedModules:
+  isolatedModulesShadowGlobalTypeNotValue isolatedModules=true): tsc's resolveName side, not checkAliasSymbol.
+- TS1280/TS1281 (instantiated namespaces and enums of global scripts under isolatedModules, cross-file unqualified
+  member references): isolatedModulesGlobalNamespacesAndEnums. TS1280 belongs in `namespace_decl_typecheck()`.
+- nodeModulesJson: TS1543/TS1544 (JSON imports under node18/nodenext need `with { type: "json" }`, only a default
+  import). typeOnlyESMImportFromCJS(module=node18): TS1541/TS1542 (type-only imports of ESM from CJS need
+  `resolution-mode`) where tttt reports TS1479.
+- The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and now TS1479/TS1471, not the
+  other resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
+
 ## JavaScript binder leftovers (suite checker bugs 5, 2026-09-28)
 Spurious diagnostics in JS tests whose causes were investigated but not fixed:
 - **Class members aren't binder symbols**, so `Clazz.method.prop = 5` (a static method as an expando host, tsc's
