@@ -1899,7 +1899,8 @@ typedef enum JsxComponentCheck {
 bool ty_is_generic_object(Checker* me, Ty const* ty); // tsc's isGenericObjectType, roughly (check.c)
 bool ty_is_generic_type(Checker* me, Ty const* ty); // tsc's isGenericType (expr.c)
 // A function expression without a contextual signature, or one with a generic return type (TS7010/TS7011 from widening)
-bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function);
+bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield);
+Ty const* ty_generator_return_before_widening(Checker* me, FunctionImpl const* function); // A generator's returns, if they widen to any
 bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs);
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
 Ty const* ty_of_node(TypeNode const* node); // A written type, by the current checker

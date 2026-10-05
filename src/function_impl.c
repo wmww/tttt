@@ -977,23 +977,15 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
 // strictNullChecks (`return null`, `return [null]`, `return { a: null }`). TS7018 at the object literal properties
 // that do, else TS7010 (TS7011 for an unnamed function expression) with the widened type. A contextually typed
 // function only if the contextual return type is generic (shouldReportErrorsFromWideningWithContextualSignature)
-static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs) {
-    CompilerOptions const* options = compiler_options();
-    if (!options->no_implicit_any || options->strict_null_checks || my ret_explicit || !my has_body) return;
-    // (A getter too, unless its type is its setter's parameter annotation: tsc's reportImplicitAny for a GetAccessor)
-    if (my is_constructor || my accessor == 2 || (my accessor && function_impl_rare(me)->setter_type) || my jsdoc_typed) return;
-    Checker* checker = current_checker;
-    Ty const* unwidened = ty_function_return_before_widening(checker, me);
-    if (!unwidened) return;
-    if (my is_expression && !ty_function_widening_reportable(checker, me)) return;
+// tsc's reportErrorsFromWidening: inside the type if it can (object literal properties), else at the function
+// (WideningKind.GeneratorYield for a generator's yields, else FunctionReturn)
+static void report_widened_return(FunctionImpl const* me, Span name, Ty const* unwidened, bool yield, ErrorCtx* errs) {
     if (binding_report_widening_errors_in_type(unwidened, errs)) return;
-    cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty_widened_objects(checker, unwidened)));
-    Span name = span_valid(my name) ? my name : function_impl_member_name(me);
-    if (my is_generator && span_valid(name)) {
-        // (Of a generator: its yield type, tsc's WideningKind.GeneratorYield)
+    cstr type = ty_to_cstr(current_checker, ty_widened_nullable(current_checker, ty_widened_objects(current_checker, unwidened)));
+    if (yield && span_valid(name)) {
         error_ctx_error_d(errs, name, 7055, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
             "' yield type.");
-    } else if (my is_generator) {
+    } else if (yield) {
         error_ctx_error_d(errs, function_error_span(me), 7025, "Generator implicitly has yield type '", type,
             "'. Consider supplying a return type annotation.");
     } else if (span_valid(name)) {
@@ -1004,6 +996,24 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
             "Function expression, which lacks return-type annotation, implicitly has an '", type, "' return type.");
     }
     cstr_drop(&type);
+}
+
+static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->no_implicit_any || options->strict_null_checks || my ret_explicit || !my has_body) return;
+    // (A getter too, unless its type is its setter's parameter annotation: tsc's reportImplicitAny for a GetAccessor)
+    if (my is_constructor || my accessor == 2 || (my accessor && function_impl_rare(me)->setter_type) || my jsdoc_typed) return;
+    Checker* checker = current_checker;
+    Span name = span_valid(my name) ? my name : function_impl_member_name(me);
+    // (A generator's yields, then its returns: tsc's getReturnTypeFromBody)
+    Ty const* unwidened = ty_function_return_before_widening(checker, me);
+    if (unwidened && (!my is_expression || ty_function_widening_reportable(checker, me, my is_generator))) {
+        report_widened_return(me, name, unwidened, my is_generator, errs);
+    }
+    Ty const* returned = my is_generator ? ty_generator_return_before_widening(checker, me) : nullptr;
+    if (returned && (!my is_expression || ty_function_widening_reportable(checker, me, false))) {
+        report_widened_return(me, name, returned, false, errs);
+    }
 }
 
 // The parameters a call has to pass (tsc's isAritySmaller of the target): up to the first optional one, `this` aside

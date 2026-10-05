@@ -15891,7 +15891,7 @@ const baselines = {
         types: true,
     },
     'implicitAnyGenericTypeInference': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45336,7 +45336,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck62': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -114,6 +114,10 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
         // (tsc's reportErrorsFromWidening with WideningKind.GeneratorYield)
         *intern_slot(me, &my links, (u64[]){ KEY_YIELD_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = yield_type;
     }
+    if (return_type && !compiler_options()->strict_null_checks && (return_type->xflags & TYX_CONTAINS_WIDENING)) {
+        // (WideningKind.FunctionReturn, after the yields: see ty_generator_return_before_widening())
+        *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = return_type;
+    }
     if (yield_type) yield_type = ty_widened_return_type(me, yield_type, context ? context->yield_type : nullptr);
     if (return_type) return_type = ty_widened_return_type(me, return_type, context ? context->return_type : nullptr);
     // (tsc: the intersection of what the yields are expected to produce, widened, else the context's)
@@ -158,6 +162,11 @@ Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual) {
 
 Ty const* ty_element_before_widening(Checker* me, Binding const* element) {
     return intern_get(&my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)element }, 2);
+}
+
+Ty const* ty_generator_return_before_widening(Checker* me, FunctionImpl const* function) {
+    ty_function_return_type(me, function);
+    return intern_get(&my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2);
 }
 
 Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* function) {

@@ -1230,6 +1230,7 @@ static void assign_contextual_signature_as(
     Signature const* unfixed = sig;
     sig = ty_fix_contextual_signature(me, sig, function);
     *intern_slot(me, &my links, done_key, 2) = sig;
+    if (sig != unfixed) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2) = unfixed;
     if (sig->this_type) {
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
         *intern_slot(me, &my links, this_key, 2) = sig->this_type;
@@ -1487,14 +1488,25 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
     return is_generic_type(me, ty);
 }
 
-// tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn: a function expression's
-// contextual signature, if it has one, has a generic return type
-bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function) {
-    Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
-    Signature const* sig = contextual ? ty_function_contextual_signature(me, function, contextual) : nullptr;
+// tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn (GeneratorYield with
+// `yield`): a function expression's contextual signature, if it has one, has a generic return type (a generator's: the
+// return or yield type it iterates with)
+bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield) {
+    // (The first contextual signature, which tsc's getReturnTypeFromBody reports with: while a call infers, its type
+    // parameters are still there)
+    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
+    if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
+    if (!sig) {
+        Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
+        sig = contextual ? ty_function_contextual_signature(me, function, contextual) : nullptr;
+    }
     if (!sig) return true;
     Ty const* ret = signature_return_type(me, sig);
-    if (function->is_async) {
+    if (function->is_generator) {
+        TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, function->is_async);
+        if (yield) return types && types->yield_type && is_generic_type(me, types->yield_type);
+        if (types && types->return_type) ret = types->return_type;
+    } else if (function->is_async) {
         Ty const* awaited = ty_awaited_no_alias(me, ret);
         if (awaited) ret = awaited;
     }

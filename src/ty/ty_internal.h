@@ -96,6 +96,7 @@ enum {
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
+    KEY_CONTEXT_UNFIXED, // FunctionImpl -> that signature before ty_fix_contextual_signature(), when that changed it
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
     KEY_FLOW_EXPR,      // Expr -> Ty, see ty_flow_expr_type()
