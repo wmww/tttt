@@ -2234,7 +2234,7 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
         ty_buf_drop(&parts);
         return ret;
     }
-    if (!(operand->flags & TYF_OBJECT) || (ty_is_tuple(operand) && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
+    if (!(operand->flags & TYF_OBJECT) || ty_is_generic_tuple(me, operand)) {
         return ty_keyof(me, operand);
     }
     Members const* members = ty_members(me, operand);
@@ -2332,7 +2332,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
     }
     // The property names of `List<T>` or `{ a: T }` don't depend on T: only type variables and generic mapped types
     // (members->mapped) defer, like tsc's isGenericObjectType
-    bool known_names = !ty_is_tuple(operand) || !(operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    bool known_names = !ty_is_generic_tuple(me, operand); // (tsc's shouldDeferIndexType: isGenericTupleType)
     if (!defer && (operand->flags & TYF_OBJECT) && known_names) {
         // A generic mapped type's keys are its constraint, read from the declaration without expanding it (tsc's
         // getIndexTypeForMappedType)
