@@ -95,12 +95,6 @@ like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType
   `{ bar: number }` from the factory's return; tttt lowers the factory's return type eagerly, MapStateToProps gets the
   lower id and wins with `() => { bar: number }`: TS2741 at every `<Test foo="bar" />`). Swapping the union's
   declaration order flips tsc's answer too. Part of the union-order family (displaydiff `union order`).
-- **Rest `TArgs` inferred from the callback's own parameters** (immediate, macrotask, node; D/restTArgs.ts): tsc drops
-  a self-referential tuple candidate (isTupleOfSelf) and keeps `TArgs[0]` where tttt has never. Tried (fan-out session): adding isTupleOfSelf to
-  infer_from's candidate push is easy but doesn't help, because the callback's parameter isn't `TArgs[0]` in tttt
-  (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
-  signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
-  `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
 - **Generic overloads skip the whole context-sensitive literal** (async, steed, chai, mithril's `m(Comp2, { title,
   onremove(vnode) {} })` against `<A, S>(component, ...args: Children[])` first; C/2769 B): hacks.md
   `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).

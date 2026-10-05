@@ -1044,6 +1044,13 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             Value value = value_number(index - i);
             return ty_indexed(me, param->type, ty_literal(me, &value));
         }
+        TupleShape const* shape = ty_tuple_shape(param->type);
+        if (shape) {
+            // Past the end of a tuple without rest elements: nothing (tsc's tryGetTypeAtPosition)
+            bool variable = false;
+            for (u32 k = 0; k < shape->arity; k++) variable |= (shape->flags[k] & TUPLE_ELEMENT_REST) != 0;
+            if (!variable && index - i >= shape->arity) return nullptr;
+        }
         if (ty_is_tuple(param->type)) {
             Value value = value_number(index - i);
             return ty_access(me, param->type, ty_literal(me, &value));
@@ -1270,8 +1277,10 @@ void ty_late_contextual_return(Checker* me, FunctionImpl const* function) {
 }
 
 // `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
+// `raw`: the contextual type before a generic call's inference instantiated it (null: the same)
 static void assign_contextual_signature_as(
-    Checker* me, FunctionImpl const* function, Ty const* contextual, Signature const* given, InitializedBinding const* evaluating
+    Checker* me, FunctionImpl const* function, Ty const* contextual, Signature const* given, InitializedBinding const* evaluating,
+    Ty const* raw_contextual
 ) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
@@ -1303,6 +1312,13 @@ static void assign_contextual_signature_as(
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
         if (param_memo && param_memo->evaluation_started && &i->initializer != evaluating) continue;
         Ty const* type = signature_type_at(me, sig, at, i->rest);
+        if (!type && !given) {
+            // Nothing there once instantiated (`(...args: TArgs)` with TArgs inferred as []): the parameter's own type
+            // asks the contextual signature again, uninstantiated (tsc's assignParameterType without a type ->
+            // getContextuallyTypedParameterType), `TArgs[0]`
+            Signature const* raw = unfixed != sig ? unfixed : contextual_signature(me, raw_contextual ? raw_contextual : contextual, function, 0);
+            if (raw && raw != sig) type = signature_type_at(me, raw, at, i->rest);
+        }
         if (!type) continue;
         // (A rest parameter's contextual type is array-like already when it's the rest parameter's, a union of tuples too)
         // (Nor a generic one, a conditional type that makes a tuple: tsc's getRestTypeAtPosition takes it as it is)
@@ -1341,13 +1357,13 @@ void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, Ini
     // A declaration's parameters take the types at their positions whatever its arity (tsc's getParameterTypeOfTypeTag
     // through getSignatureOfTypeTag, not a contextual signature)
     Ty const* type = ty_of_node(function_impl_rare(function)->jsdoc_signature_type);
-    assign_contextual_signature_as(me, function, type, nullptr, evaluating);
+    assign_contextual_signature_as(me, function, type, nullptr, evaluating, nullptr);
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
     // (One the arity rules out as a contextual signature: more parameters than it has)
     Members const* members = ty_members(me, type);
     if (members->call_count == 1 && !members->construct_count && !members->call[0]->type_params.len) {
-        assign_contextual_signature_as(me, function, type, members->call[0], evaluating);
+        assign_contextual_signature_as(me, function, type, members->call[0], evaluating, nullptr);
     }
 }
 
@@ -4440,7 +4456,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
                 u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
                 bool assigned = intern_get(&my links, done_key, 2) != nullptr;
-                assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr);
+                assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr,
+                    ctx.raw_contextual);
                 // (Only one that isn't context sensitive: tttt checks those in places tsc skips them, or with other
                 // contextual types, so their parameters would miss what tsc gives them)
                 if (!assigned && my resolving_call && !intern_get(&my links, done_key, 2) &&

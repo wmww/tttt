@@ -26163,7 +26163,7 @@ const baselines = {
     'promiseTry': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'promiseType': {
         errors: true,
