@@ -372,6 +372,16 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     return ret;
 }
 
+ScopePendingMark scope_pending_mark(Binder const* binder) {
+    return (ScopePendingMark){ binder->pending_not_found_count, binder->pending_export_merge_count };
+}
+
+void scope_release(Scope* me, ScopePendingMark pending_mark) {
+    ScopePendingMark now = scope_pending_mark(my binder);
+    if (my rare || now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges) return;
+    arena_pop_last(&my binder->arena, me, sizeof(Scope));
+}
+
 void scope_reparent(Scope* me, Scope* parent) {
     my parent = parent;
     my ambient = parent->ambient;

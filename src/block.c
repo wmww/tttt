@@ -99,9 +99,11 @@ void block_lookup_names_container(Block const* me, bool is_block, csview kind, S
 }
 
 void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs) {
+    ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     block_add_names(me, scope);
     block_lookup_names_as(me, true, scope, errs);
+    scope_release(scope, pending_mark);
 }
 
 void block_collect_return_types(Block const* me, TyBuf* out) {

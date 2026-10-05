@@ -308,6 +308,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     if (!skip_body) block_add_names(&my body, function_scope);
 
     function_scope->no_super = my is_constructor ? NO_SUPER_CONSTRUCTOR_ARGS : NO_SUPER_NONE;
+    ScopePendingMark pending_mark = scope_pending_mark(function_scope->binder);
     Scope* parameter_scope = scope_new(function_scope, SCOPE_BLOCK);
     parameter_scope->parameters = true;
     parameter_scope->parameters_see_body = my has_body && parameters_see_body(me);
@@ -315,13 +316,16 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, errs);
     }
+    scope_release(parameter_scope, pending_mark);
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
     // (Not a JSDoc `@returns`, which sees the body's types: tsc's resolveNameHelper exempts a JSDoc lastLocation)
     if (my has_body && !(names->file && names->file->is_js)) {
+        ScopePendingMark return_mark = scope_pending_mark(function_scope->binder);
         Scope* return_scope = scope_new(function_scope, SCOPE_BLOCK);
         return_scope->return_type = true;
         type_lookup_names(&my ret, return_scope, errs);
+        scope_release(return_scope, return_mark);
     } else {
         type_lookup_names(&my ret, function_scope, errs);
     }

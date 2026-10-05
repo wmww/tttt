@@ -86,6 +86,15 @@ void* arena_alloc(Arena* me, size_t size) {
     return ret;
 }
 
+bool arena_pop_last(Arena* me, void* ptr, size_t size) {
+    size = (size + 7) & ~(size_t)7;
+    if (!my head || my head->used < size || (char*)ptr != my head->data + my head->used - size) return false;
+    memset(ptr, 0, size);
+    my head->used -= size;
+    my total -= size;
+    return true;
+}
+
 void arena_drop(Arena* me) {
     ArenaChunk* i = my head;
     while (i) {
