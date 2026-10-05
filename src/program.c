@@ -149,7 +149,8 @@ static void program_add_builtins(Program* me) {
     GLOBAL_TYPE("boolean", type_boolean);
     GLOBAL_TYPE("number", type_number);
     GLOBAL_TYPE("string", type_string);
-    GLOBAL_TYPE("intrinsic", type_any);
+    // (Named so that no lookup finds it: a type alias body `intrinsic` is it, see IdentifierType.intrinsic_keyword)
+    GLOBAL_TYPE("#intrinsic", type_any);
 }
 
 static SourceFile* program_add_source_idempotent(Program* me, csview path);

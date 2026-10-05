@@ -1733,8 +1733,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 vec_spanned_type_is_empty(&body->identifier->generic_params) && !body->identifier->jsdoc
             ) {
                 body->identifier->intrinsic_keyword = true; // (tsc's parseTypeAliasDeclaration)
+                body->identifier->target = body->identifier->symbol = symbol_table_get(&names->binder->globals, c_sv("#intrinsic"));
+            } else {
+                type_lookup_names(body, generic_scope, errs);
             }
-            type_lookup_names(body, generic_scope, errs);
         }   break;
 
         case STATEMENT_DECL_INTERFACE:
