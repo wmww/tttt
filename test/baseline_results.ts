@@ -24283,7 +24283,7 @@ const baselines = {
     'objectAssignLikeNonUnionResult': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectBindingPatternContextuallyTypesArgument': {
         errors: true,
