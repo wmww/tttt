@@ -1846,6 +1846,11 @@ static void declare_commonjs_export(
             .full = statement, .js = symbol_decl_js(my binder, jsdoc_type, true),
         });
         set_function_class_symbol(value, symbol);
+        // `exports.s = Symbol()` makes a unique symbol of the export (tsc's isValidESSymbolDeclaration:
+        // isCommonJsExportPropertyAssignment)
+        if (kind == ASSIGNMENT_DECL_PROPERTY && entity_ok && !csview_equals(name, "export=") && !jsdoc_type) {
+            unique_symbol_decl_mark((UniqueSymbolDecl){ .key = symbol, .owner = symbol }, nullptr, value);
+        }
     }
 }
 

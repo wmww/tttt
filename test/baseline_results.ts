@@ -19183,7 +19183,7 @@ const baselines = {
     'jsExportAssignmentNonMutableLocation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsExportMemberMergedWithModuleAugmentation': {
         errors: true,
