@@ -7,9 +7,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `reexec_with_huge_pages` (`main.c`): glibc reads `GLIBC_TUNABLES` only at startup, so tttt re-execs itself with
   `glibc.malloc.hugetlb=1` (not under valgrind or `TTTT_NO_REEXEC`): 5-20% wall time. An own malloc / AST arenas that
   madvise like the checker arena would remove it (`bugs/perf_leads.md`).
-- `shrink_list()` (`parser.c`): every parser list is shrunk when done (AST elements are big: a parameter is 568 bytes):
-  -20% RSS for +1.5% instructions. Real fix: smaller nodes. PERF notes: `CallExpr` argument types recomputed per use,
-  `Value.object` refcount churn, `CallableType`/`FunctionImpl` two allocations.
+- `shrink_list()`/`list_push()` (`parser.c`): finished parser lists give back their slack (a realloc), and their pushes
+  reserve one element on the first push (most lists have one) where the vec's own push reserves 4. Costs ~0.7% of
+  nest's instructions (two-element lists grow 1 -> 6 and shrink); per-file node arenas with lists built in a scratch
+  stack and copied out exact would make it free (plan 43 lever 7, a parser time lever). PERF notes: `CallExpr`
+  argument types recomputed per use, `Value.object` refcount churn.
 - `identifier_expr_name()` (`expr.h`): an `IdentifierExpr` has no name of its own, it reads its `Expr`'s inner_span
   through `offsetof` (an IdentifierExpr only ever lives inside an Expr: never copy one out on its own). Its rare
   pointers (`module_ref_`, `this_function_`, `evolving_index_`, `extends_entity_`) share a union that the accessors

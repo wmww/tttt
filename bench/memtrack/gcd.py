@@ -1,7 +1,8 @@
 import sys,subprocess,collections,math
+import os; BIN = os.environ.get('MEMTRACK_BIN', 'release/tttt')
 rows=[l.split() for l in open(sys.argv[1])]
 addrs=sorted({r[0] for r in rows if r[0]!='0'})
-out=subprocess.run(['addr2line','-f','-e','release/tttt']+['0x'+a for a in addrs],capture_output=True,text=True).stdout.split('\n')
+out=subprocess.run(['addr2line','-f','-e',BIN]+['0x'+a for a in addrs],capture_output=True,text=True).stdout.split('\n')
 sym={a:out[2*i] for i,a in enumerate(addrs)}
 # per (function, gcd class) : group sizes by gcd with most frequent size
 by=collections.defaultdict(collections.Counter)

@@ -95,7 +95,18 @@ static long resident_mb() {
 
 // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
 // program_load() does both (and chases imports) in one go
+// ./memtrack.sh's LD_PRELOADed live-heap tracker (bench/memtrack/memtrack.c), absent otherwise
+void memtrack_dump(char const* name) __attribute__((weak));
+void memtrack_scan(char const* name) __attribute__((weak));
 static void phase_done(Options const* opts, Output* out, const char* name, double* last) {
+    if (memtrack_dump && getenv("MEMTRACK")) {
+        char phase[64];
+        size_t i = 0;
+        for (; name[i] && i < sizeof(phase) - 1; i++) phase[i] = name[i] == ' ' || name[i] == '+' ? '_' : name[i];
+        phase[i] = 0;
+        memtrack_dump(phase);
+        memtrack_scan(phase);
+    }
     const double now = now_ms();
     if (opts->time) out_eprintln(out, "time: ", name, " ", now - *last, " ms (resident ", resident_mb(), " MB)");
     *last = now;

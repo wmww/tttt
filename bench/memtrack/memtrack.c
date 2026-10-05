@@ -1,8 +1,8 @@
-// Live-heap tracker for plan 43 (LD_PRELOAD). Build: gcc -O2 -shared -fPIC memtrack.c -o /tmp/memtrack.so
-// Apply main_hooks.patch (phase_done() calls memtrack_dump/memtrack_scan when MEMTRACK is set), then
-//   MEMTRACK=1 TTTT_NO_REEXEC=1 LD_PRELOAD=/tmp/memtrack.so release/tttt --checkers 1 --threads 1 -q --keep-going -p DIR
-// writes /tmp/memtrack-dump-<phase>.txt (size, usable size, 3 caller offsets per live block: an.py FILE f0|f01|size|sizef)
-// and /tmp/memtrack-scan-<phase>.txt (non-null Spans and all-zero words per block: scan.py FILE; gcd.py FILE: sizes per site).
+// Live-heap tracker (LD_PRELOAD), run through ../../memtrack.sh. main.c's phase_done() calls memtrack_dump() and
+// memtrack_scan() (weak symbols) when MEMTRACK is set; each writes $MEMTRACK_DIR/memtrack-dump-<phase>.txt (size, usable
+// size, 3 caller offsets per live block: an.py FILE f0|f01|size|sizef) and memtrack-scan-<phase>.txt (non-null Spans and
+// all-zero words per block: scan.py FILE; gcd.py FILE: sizes per site). A Span is recognised as a word pointing at a
+// block of sizeof(SourceFile) bytes (MEMTRACK_SOURCE_FILE_SIZE, see memtrack.sh), then a pointer, then a small length.
 // Not thread-safe beyond a spinlock, backtrace() per malloc: ~10x slower than a normal run
 #define _GNU_SOURCE
 #include <stdio.h>
@@ -33,11 +33,12 @@ void* realloc(void*o,size_t s){ del(o); void* p=__libc_realloc(o,s); ins(p,s); r
 
 static int cmpp(const void*a,const void*b){ uintptr_t x=*(uintptr_t*)a,y=*(uintptr_t*)b; return x<y?-1:x>y; }
 void memtrack_scan(const char* name){
+  size_t source_file_size = getenv("MEMTRACK_SOURCE_FILE_SIZE") ? strtoul(getenv("MEMTRACK_SOURCE_FILE_SIZE"), 0, 10) : 440;
   inside=1; lock();
   size_t nc=0; uintptr_t* cand=__libc_malloc(sizeof(uintptr_t)*(1<<20));
-  for(size_t i=0;i<CAP;i++) if(tab[i].p && tab[i].p!=(void*)1 && tab[i].size==440) cand[nc++]=(uintptr_t)tab[i].p;
+  for(size_t i=0;i<CAP;i++) if(tab[i].p && tab[i].p!=(void*)1 && tab[i].size==source_file_size) cand[nc++]=(uintptr_t)tab[i].p;
   qsort(cand,nc,sizeof *cand,cmpp);
-  char fn[256]; snprintf(fn,256,"/tmp/memtrack-scan-%s.txt",name); FILE* f=fopen(fn,"w");
+  char fn[256]; snprintf(fn,256,"%s/memtrack-scan-%s.txt",getenv("MEMTRACK_DIR")?getenv("MEMTRACK_DIR"):"/tmp",name); FILE* f=fopen(fn,"w");
   for(size_t i=0;i<CAP;i++) if(tab[i].p && tab[i].p!=(void*)1){ E*e=&tab[i]; uintptr_t* w=e->p; size_t n=e->size/8, sp=0, z=0, nullsp=0;
     for(size_t k=0;k<n;k++){ if(!w[k]){ z++; if(k+2<n && !w[k+1] && !w[k+2]) {} continue; }
       if(k+2<n && bsearch(&w[k],cand,nc,sizeof *cand,cmpp) && w[k+1] && w[k+2]<(1u<<24)){ sp++; k+=2; } }
@@ -45,7 +46,7 @@ void memtrack_scan(const char* name){
     fprintf(f,"%lx %u %zu %zu\n",off,e->size,sp,z); }
   fclose(f); __libc_free(cand); unlock(); inside=0; }
 void memtrack_dump(const char* name){
-  inside=1; char fn[256]; snprintf(fn,256,"/tmp/memtrack-dump-%s.txt",name); FILE* f=fopen(fn,"w"); lock();
+  inside=1; char fn[256]; snprintf(fn,256,"%s/memtrack-dump-%s.txt",getenv("MEMTRACK_DIR")?getenv("MEMTRACK_DIR"):"/tmp",name); FILE* f=fopen(fn,"w"); lock();
   Dl_info di; dladdr((void*)memtrack_dump,&di);
   for(size_t i=0;i<CAP;i++) if(tab[i].p && tab[i].p!=(void*)1){ E*e=&tab[i]; fprintf(f,"%u %zu",e->size,malloc_usable_size(e->p));
      for(int k=0;k<3;k++){ Dl_info d; if(e->f[k] && dladdr(e->f[k],&d)) fprintf(f," %lx",(unsigned long)((char*)e->f[k]-(char*)d.dli_fbase)); else fprintf(f," 0"); } fprintf(f,"\n"); }

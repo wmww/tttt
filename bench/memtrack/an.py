@@ -1,8 +1,9 @@
 import sys,subprocess,collections
+import os; BIN = os.environ.get('MEMTRACK_BIN', 'release/tttt')
 fn=sys.argv[1]; mode=sys.argv[2] if len(sys.argv)>2 else 'f0'
 rows=[l.split() for l in open(fn)]
 addrs=sorted({a for r in rows for a in r[2:5] if a!='0'})
-out=subprocess.run(['addr2line','-f','-e','release/tttt']+['0x'+a for a in addrs],capture_output=True,text=True).stdout.split('\n')
+out=subprocess.run(['addr2line','-f','-e',BIN]+['0x'+a for a in addrs],capture_output=True,text=True).stdout.split('\n')
 sym={a:out[2*i] for i,a in enumerate(addrs)}
 S=lambda a: sym.get(a,'?') if a!='0' else '-'
 tot=collections.Counter(); chunk=collections.Counter(); cnt=collections.Counter()
