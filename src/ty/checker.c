@@ -107,6 +107,9 @@ void arena_drop(Arena* me) {
 
 // Intern table
 
+#define INTERN_LONG_KEY 0xffffu
+
+// The hash with the word count in the top 16 bits (see InternEntry)
 static u64 hash_words(u64 const* words, u32 count) {
     u64 h = 0x9e3779b97f4a7c15ull ^ count;
     for (u32 i = 0; i < count; i++) {
@@ -114,20 +117,25 @@ static u64 hash_words(u64 const* words, u32 count) {
         h *= 0xff51afd7ed558ccdull;
         h ^= h >> 29;
     }
-    return h ? h : 1;
+    // (Bit 47 keeps it from being 0 without touching the bits that index the table)
+    return (h & 0x00007fffffffffffull) | 1ull << 47 | (u64)(count < INTERN_LONG_KEY ? count : INTERN_LONG_KEY) << 48;
 }
 
 static InternEntry* intern_find(InternTable const* me, u64 hash, u64 const* words, u32 count) {
     if (!my cap) return nullptr;
     u32 mask = my cap - 1;
+    // (The hash has the count: the same hash is the same count, but a long key's count is in its block)
+    bool long_key = count >= INTERN_LONG_KEY;
     for (u32 i = (u32)hash & mask;; i = (i + 1) & mask) {
         InternEntry* entry = &my entries[i];
         if (!entry->hash) return entry;
-        if (entry->hash == hash && entry->key[0] == count &&
-            memcmp(entry->key + 1, words, sizeof(u64) * count) == 0
-        ) {
-            return entry;
-        }
+        if (entry->hash != hash) continue;
+        u64 const* key = (u64 const*)(entry->block + 1);
+        if (long_key && *key++ != count) continue;
+        // (Keys are a few words: a loop beats memcmp()'s call)
+        u32 k = 0;
+        while (k < count && key[k] == words[k]) k++;
+        if (k == count) return entry;
     }
 }
 
@@ -135,18 +143,22 @@ static void intern_grow(InternTable* me) {
     InternTable bigger = { .cap = my cap ? my cap * 2 : 64, .len = my len };
     bigger.entries = zeroed_table(bigger.cap, sizeof(InternEntry));
     panic_if(!bigger.entries, "out of memory");
+    u32 mask = bigger.cap - 1;
     for (u32 i = 0; i < my cap; i++) {
         InternEntry* entry = &my entries[i];
         if (entry->hash) {
-            *intern_find(&bigger, entry->hash, entry->key + 1, (u32)entry->key[0]) = *entry;
+            // (Keys are distinct: the first empty slot)
+            u32 j = (u32)entry->hash & mask;
+            while (bigger.entries[j].hash) j = (j + 1) & mask;
+            bigger.entries[j] = *entry;
         }
     }
     free(my entries);
     *me = bigger;
 }
 
-// The returned slot is null if the key is new. It's only valid until the next intern_slot() call on the same table,
-// so anything that interns while computing the value has to look the slot up again afterwards.
+// The returned slot is null if the key is new. It is in the key's arena block, so it stays valid (callers that intern
+// while computing the value look it up again all the same, from when the slots were in the table).
 void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 count) {
     if ((table->len + 1) * 4 > table->cap * 3) {
         intern_grow(table);
@@ -154,23 +166,24 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
     u64 hash = hash_words(words, count);
     InternEntry* entry = intern_find(table, hash, words, count);
     if (!entry->hash) {
-        u64* key = arena_new_n(&my arena, u64, count + 1);
+        bool long_key = count >= INTERN_LONG_KEY;
+        u64* block = arena_new_n(&my arena, u64, 1 + long_key + count);
 #ifdef TTTT_ARENA_SITES
-        key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (count + 1);
+        key_kind_bytes[count ? words[0] & 255 : 0] += sizeof(u64) * (1 + long_key + count);
         key_kind_count[count ? words[0] & 255 : 0]++;
 #endif
-        key[0] = count;
-        memcpy(key + 1, words, sizeof(u64) * count);
+        if (long_key) block[1] = count;
+        memcpy(block + 1 + long_key, words, sizeof(u64) * count);
         entry->hash = hash;
-        entry->key = key;
+        entry->block = (void const**)block;
         table->len++;
     }
-    return &entry->value;
+    return entry->block;
 }
 
 void const* intern_get(InternTable const* table, u64 const* words, u32 count) {
     InternEntry* entry = intern_find(table, hash_words(words, count), words, count);
-    return entry ? entry->value : nullptr;
+    return entry && entry->hash ? entry->block[0] : nullptr;
 }
 
 Atom const* checker_atom(Checker* me, csview sv) {
@@ -208,11 +221,11 @@ Atom const* checker_atom(Checker* me, csview sv) {
             atom->len = (u32)sv.size;
             memcpy(atom->str, sv.buf, (size_t)sv.size);
             entry->hash = hash;
-            entry->value = atom;
+            entry->block = (void const**)atom; // (The Atom itself: no word key)
             table->len++;
             return atom;
         }
-        Atom const* atom = entry->value;
+        Atom const* atom = (Atom const*)entry->block;
         if (entry->hash == hash && atom->len == (u32)sv.size && memcmp(atom->str, sv.buf, (size_t)sv.size) == 0) {
             return atom;
         }

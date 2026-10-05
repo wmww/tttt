@@ -40,12 +40,14 @@ typedef struct Atom {
 } Atom;
 static inline csview atom_sv(Atom const* me) { return me ? csview_from_n(my str, my len) : c_sv(""); }
 
-// Intern table: open addressing, keys are arena-allocated arrays of u64 words (a kind tag followed by ids/pointers/
-// bits), values are pointers. Used for every kind of identity in the checker.
+// Intern table: open addressing, keys are arrays of u64 words (a kind tag followed by ids/pointers/bits), values are
+// pointers. Used for every kind of identity in the checker.
 typedef struct InternEntry {
+    // The key's hash (never 0: 0 is an empty slot), its top 16 bits the key's word count (INTERN_LONG_KEY: in the block)
     u64 hash;
-    u64 const* key; // key[0] is the number of words that follow
-    void const* value;
+    // Arena-allocated: the value, then the key's words (after the word count when it's INTERN_LONG_KEY or more). The
+    // atoms table has the Atom here instead
+    void const** block;
 } InternEntry;
 
 typedef struct InternTable {
