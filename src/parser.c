@@ -2286,9 +2286,12 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
 
     TypeNode fallback = type_any;
     bool fallback_explicit = false;
+    Span fallback_span = span_null;
     if (hop_start(&p, "=")) {
         hop_whitespace(&p);
+        Anchor fallback_a = anchor(&p);
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &fallback)) {
+            fallback_span = span_from(fallback_a);
             fallback_explicit = true;
         } else {
             fallback = type_any;
@@ -2306,6 +2309,7 @@ static bool parse_generic_decl_item(Parser* parent, TypeParamOwner owner, Generi
         .extends_span = extends_span,
         .fallback_explicit = fallback_explicit,
         .fallback = fallback_explicit ? c_new(TypeNode, fallback) : nullptr,
+        .fallback_span = fallback_span,
     };
     return parse_success(&p);
 }

@@ -5059,7 +5059,7 @@ static Ternary structured_related_members(
                 // The this-argument is one more covariant type argument, compared only when both have one (tsc's
                 // typeArgumentsRelatedTo goes as far as the shorter list: a written reference `C<X>` has none). A
                 // class or interface's own declared type stands for its own `this`
-                Ty const* source_this = source->kind == TY_REFERENCE ? source->reference.this_arg : source;
+                Ty const* source_this = source->kind == TY_REFERENCE ? source->reference.this_arg : nullptr;
                 Ty const* target_this = target->kind == TY_REFERENCE ? target->reference.this_arg : target;
                 if (related && source_target->declared.this_param && source_this && target_this &&
                     (source_this != source || target_this != target) && source_this != target_this

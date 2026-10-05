@@ -19,6 +19,7 @@ typedef struct GenericItem {
     TypeNode extends;
     Span extends_span; // Null for a JSDoc `@template`
     TypeNode* fallback; // Owned, the default (`= T`); null without one
+    Span fallback_span; // Null for a JSDoc `@template`
     Symbol* owned_symbol;
     Symbol const* symbol_ref;
     // A JSDoc `@template`'s whole tag, which the type parameters of the tag share (tsc's JSDocTemplateTag, where

@@ -14946,7 +14946,7 @@ const baselines = {
         types: false,
     },
     'genericDefaultsErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

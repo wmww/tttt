@@ -43,6 +43,28 @@ void generic_lookup_names(Generic const* me, Scope* names, ErrorCtx* errs) {
     }
 }
 
+// tsc's checkTypeParameter: a default that reaches itself (TS2716), and the default against the constraint with the
+// parameter replaced by the default (TS2344)
+static void generic_check_default(GenericItem const* item, Ty const* param, ErrorCtx* errs) {
+    Checker* checker = current_checker;
+    if (!param) param = ty_type_param(checker, item->symbol_ref);
+    if (param->kind != TY_TYPE_PARAM) return;
+    Ty const* fallback = ty_param_default(checker, param);
+    if (param->param.state->fallback_circular) {
+        error_ctx_error_d(errs, item->fallback_span, 2716, "Type parameter '", item->name, "' has a circular default.");
+    }
+    Ty const* constraint = fallback ? ty_param_constraint(checker, param) : nullptr;
+    if (!constraint || (fallback->flags & TYF_ERROR)) return;
+    TyMapper const* mapper = ty_mapper_new(checker, (TyList){ .data = &param, .len = 1 }, (TyList){ .data = &fallback, .len = 1 });
+    Ty const* target = ty_with_this_arg(checker, ty_instantiate(checker, constraint, mapper), fallback);
+    if (ty_is_related(checker, fallback, target, TY_RELATION_ASSIGNABLE)) return;
+    cstr source_str, target_str;
+    ty_report_pair_cstr(checker, fallback, target, &source_str, &target_str);
+    ty_report_unassignable_with_head(checker, fallback, target, 2344, cstr_d(
+        "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."), item->fallback_span, errs);
+    c_drop(cstr, &source_str, &target_str);
+}
+
 // `own_params`: the declaration's type parameters are its own (not merged with other declarations' like an interface's
 // or class's), so they can be made here, in tsc's order
 void generic_typecheck(Generic const* me, bool own_params, ErrorCtx* errs) {
@@ -57,6 +79,7 @@ void generic_typecheck(Generic const* me, bool own_params, ErrorCtx* errs) {
         if (circularity && param && ty_param_constraint_is_circular(current_checker, param)) {
             error_ctx_error_d(errs, i->extends_span, 2313, "Type parameter '", i->name, "' has a circular constraint.");
         }
+        if (i->fallback_explicit && span_valid(i->fallback_span) && i->symbol_ref) generic_check_default(i, param, errs);
         if (found_optional && !i->fallback_explicit) {
             error_ctx_error_d(
                 errs, i->full_span, 2706,

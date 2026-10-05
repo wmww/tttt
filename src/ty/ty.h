@@ -231,6 +231,7 @@ typedef struct TyParamState {
     LazyState constraint_state;
     Ty const* constraint; // null if unconstrained
     LazyState fallback_state;
+    bool fallback_circular; // Its default reaches itself (TS2716): then it has none
     Ty const* fallback;
     bool is_infer; // declared by `infer X` in the extends type of a conditional type
     bool is_this; // The `this` type of a class or interface (Ty.declared.this_param), prints as `this`

@@ -4245,7 +4245,11 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
         if (state->item && state->item->fallback_explicit) {
             state->fallback = ty_from_node(me, state->item->fallback, (LowerCtx){ .generic = true });
         }
+        // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
+        if (state->fallback_circular) state->fallback = nullptr;
         state->fallback_state = LAZY_STATE_DONE;
+    } else if (state->fallback_state == LAZY_STATE_IN_FLIGHT && !state->clone_of) {
+        state->fallback_circular = true;
     }
     return state->fallback_state == LAZY_STATE_DONE ? state->fallback : nullptr;
 }
