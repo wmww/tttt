@@ -124,7 +124,21 @@ static bool inherited_props_identical(
 // fit every base of every declaration, with that `this`
 static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
-    if (!symbol || symbol_find_node(symbol, SYMBOL_DECL_INTERFACE) != me || (symbol->flags & SYMBOL_CLASS)) return;
+    if (!symbol || (symbol->flags & SYMBOL_CLASS)) return;
+    InterfaceDecl const* first = symbol_find_node(symbol, SYMBOL_DECL_INTERFACE);
+    Span name = my name;
+    if (first != me) {
+        // Lib files are never checked here: when tsc checks them, their first declaration's check is done by the first
+        // user one
+        if (!first || !first->name.source || !first->name.source->is_stdlib || !lib_files_checked()) return;
+        for (u32 d = 0; d < symbol->decl_count; d++) {
+            SymbolDecl const* decl = &symbol->decls[d];
+            if (decl->kind != SYMBOL_DECL_INTERFACE || !decl->name.source || decl->name.source->is_stdlib) continue;
+            if (decl->node != me) return;
+            break;
+        }
+        name = first->name;
+    }
     Checker* checker = current_checker;
     Ty const* declared = ty_declared_type_of(checker, symbol);
     if (declared->kind != TY_DECLARED) return;
@@ -155,15 +169,15 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
             bases[base_count++] = (HeritageBase){ base, this_param ? ty_with_this_arg(checker, base, this_param) : base };
         }
     }
-    if (inherited_props_identical(checker, symbol, type_with_this, bases, base_count, my name, errs)) {
+    if (inherited_props_identical(checker, symbol, type_with_this, bases, base_count, name, errs)) {
         for (u32 b = 0; b < base_count; b++) {
             ty_check_heritage(checker, type_with_this, bases[b].with_this, nullptr, 0, 2430, "Interface", "incorrectly extends interface",
-                my name, errs);
+                name, errs);
         }
         Ty const* written[32];
         u32 written_count = 0;
         for (u32 b = 0; b < base_count && written_count < c_arraylen(written); b++) written[written_count++] = bases[b].written;
-        ty_check_index_constraints(checker, declared, symbol, false, written, written_count, my name, errs);
+        ty_check_index_constraints(checker, declared, symbol, false, written, written_count, name, errs);
     }
     if (bases != stack_bases) free(bases);
 }

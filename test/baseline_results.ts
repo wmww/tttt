@@ -64286,7 +64286,7 @@ const baselines = {
         types: true,
     },
     'objectTypeHidingMembersOfExtendedObject': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64366,7 +64366,7 @@ const baselines = {
         types: true,
     },
     'objectTypeWithStringIndexerHidingObjectIndexer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

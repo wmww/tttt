@@ -3038,8 +3038,9 @@ void ty_check_index_constraints(
             cstr type_str = ty_to_cstr(me, prop_ty);
             cstr key_str = ty_to_cstr(me, info->key);
             cstr value_str = ty_to_cstr(me, info->value);
-            Error* e = error_ctx_error_d(errs, at, 2411, "Property '", prop_str, "' of type '", type_str,
-                "' is not assignable to '", key_str, "' index type '", value_str, "'.");
+            // (A lib's declarations: only when lib files are checked, the caller's business)
+            Error* e = (at.source->is_stdlib ? error_ctx_lib_error_s : error_ctx_error_s)(errs, at, 2411, cstr_d("Property '",
+                prop_str, "' of type '", type_str, "' is not assignable to '", key_str, "' index type '", value_str, "'."));
             // (Reported elsewhere than at a property with a computed name: where it is declared. tsc also does it for
             // JavaScript assignment declarations, TODO)
             bool computed = span_valid(root->decl->name_span) && root->decl->name_span.sv.buf[0] == '[';
