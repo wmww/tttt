@@ -1768,9 +1768,25 @@ static bool is_comparable_or_coercible(Checker* me, Ty const* member, void const
     return ty_is_comparable_either_way(me, member, value) || is_coercible_under_double_equals(member, value);
 }
 
+// tsc's isUnitLikeType: a unit type, or an intersection with one (a tagged literal, `"a" & { tag: 1 }`), of the base
+// constraint
+static bool is_unit_like_type(Checker* me, Ty const* ty) {
+    if (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
+        Ty const* constraint = ty_base_constraint(me, ty);
+        if (constraint) ty = constraint;
+    }
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            if (is_unit_type(ty->composite.types.data[i])) return true;
+        }
+        return false;
+    }
+    return is_unit_type(ty);
+}
+
 static bool is_not_unit_comparable_to(Checker* me, Ty const* member, void const* arg) {
     Ty const* value = arg;
-    return !(is_unit_type(member) && ty_is_comparable_either_way(me, member, value));
+    return !(is_unit_like_type(me, member) && ty_is_comparable_either_way(me, member, value));
 }
 
 typedef struct ExtractKindArg {
