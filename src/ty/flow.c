@@ -2567,11 +2567,22 @@ static bool typeof_switch_has_witnesses(SwitchStatement const* switch_) {
     return true;
 }
 
+// A case whose string an earlier case has: no witness (tsc's getSwitchClauseTypeOfWitnesses)
+static bool typeof_case_is_duplicate(SwitchStatement const* switch_, u32 index) {
+    SwitchCase const* c = switch_case_at(switch_, index);
+    if (!c->is_pattern) return false;
+    for (u32 i = 0; i < index; i++) {
+        SwitchCase const* other = switch_case_at(switch_, i);
+        if (other->is_pattern && cstr_eq(&other->pattern.literal.string, &c->pattern.literal.string)) return true;
+    }
+    return false;
+}
+
 // What is known when none of the cases outside of [start, end) matched
 static u32 typeof_switch_not_equal_facts(SwitchStatement const* switch_, u32 start, u32 end) {
     u32 facts = 0;
     for_each (i, vec_switch_case, &switch_->cases) {
-        if (i->is_pattern && ((u32)i_index < start || (u32)i_index >= end)) {
+        if (i->is_pattern && ((u32)i_index < start || (u32)i_index >= end) && !typeof_case_is_duplicate(switch_, (u32)i_index)) {
             facts |= typeof_ne_facts(cstr_sv(&i->pattern.literal.string));
         }
     }
@@ -2595,7 +2606,9 @@ static Ty const* narrow_by_switch_on_typeof(FlowQuery* q, Ty const* type, FlowSw
     }
     TyBuf parts = {0};
     for (u32 i = clause->clause_start; i < clause->clause_end; i++) {
-        ty_buf_push(&parts, narrow_by_type_name(me, type, cstr_sv(&switch_case_at(switch_, i)->pattern.literal.string)));
+        // (A repeated case can't be reached by its string: never)
+        ty_buf_push(&parts, typeof_case_is_duplicate(switch_, i) ? ty_intrinsic(me, TY_NEVER) :
+            narrow_by_type_name(me, type, cstr_sv(&switch_case_at(switch_, i)->pattern.literal.string)));
     }
     Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
     ty_buf_drop(&parts);
@@ -2687,6 +2700,15 @@ static bool is_exhaustive_switch(Checker* me, SwitchStatement const* switch_) {
     if (is_typeof_expr(needle)) {
         if (typeof_switch_has_witnesses(switch_)) {
             Ty const* operand = non_nullable_constraint_or(me, ty_flow_expr_type(me, &needle->unary_op->expr));
+            // (A union's base constraint is its members': `X | Y` of type parameters)
+            if (operand->kind == TY_UNION && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+                TyBuf parts = {0};
+                for (u32 i = 0; i < operand->composite.types.len; i++) {
+                    ty_buf_push(&parts, non_nullable_constraint_or(me, operand->composite.types.data[i]));
+                }
+                operand = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+                ty_buf_drop(&parts);
+            }
             u32 facts = typeof_switch_not_equal_facts(switch_, 0, 0);
             if (operand->flags & (TYF_ANY | TYF_UNKNOWN)) {
                 // (tsc's AllTypeofNE: the seven names and "undefined")

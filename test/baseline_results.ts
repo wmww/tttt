@@ -22856,7 +22856,7 @@ const baselines = {
         types: true,
     },
     'narrowingByTypeofInSwitch': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
