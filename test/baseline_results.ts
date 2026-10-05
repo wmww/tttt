@@ -37916,9 +37916,9 @@ const baselines = {
         types: true,
     },
     'controlFlowOptionalChain': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowOptionalChain2': {
         errors: true,

@@ -649,7 +649,11 @@ static Symbol const* access_key_symbol(PropertyExpr const* access) {
     Expr const* key = &access->prop;
     if (access->form != PROPERTY_EXPR_BRACKET || key->tag != EXPR_IDENTIFIER || key->identifier.keyword) return nullptr;
     Symbol const* symbol = key->identifier.target;
-    return symbol && (symbol->is_const || !symbol->is_assigned) ? symbol : nullptr;
+    if (!symbol) return nullptr;
+    if (symbol->is_const) return symbol;
+    // (A `let` of a script's top level is a global, not a mutable local: tsc's isMutableLocalVariableDeclaration)
+    bool mutable_local = symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE);
+    return (symbol->is_parameter || mutable_local) && !symbol->is_assigned ? symbol : nullptr;
 }
 
 static bool is_matching_reference(Checker* me, Expr const* source, Expr const* target) {
