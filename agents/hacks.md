@@ -209,6 +209,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - Assertion signatures: a callee name without explicit type is silently not an assertion (no TS2775/TS2776).
 
 ## Declarations and bindings (AST-side walk)
+- Plan 43 side structs (`InitializedBindingRare`, `FunctionImplRare`, `initialized_binding_value()`): absent ones read
+  as shared read-only statics (`initialized_binding_no_value` is an EXPR_IMPLICIT_ANY living in rodata, so a stray
+  write through it segfaults rather than corrupting); `*_rare_mut()` allocates on first write, also from the resolve
+  walk, which is only safe while one thread resolves a given AST. Packed spans (`FunctionSpan`, `Binding`'s
+  `explicit_type_*`/`element_*`) are offsets in one file and panic if set from another.
 - Old type world leftovers: `owned_symbol` + `symbol_ref` on `GenericItem`/`InferredType`/mapped keys,
   `key.expr.owned` + `ref` on interface members; `LAZY_TYPE_FUNCTION` memoises the already interned
   `ty_function_type()`.
