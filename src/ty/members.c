@@ -1482,7 +1482,9 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     Prop* prop = prop_new_declared(me);
     prop->name = name;
     prop->decl->symbol = member;
-    if (member->is_const) prop->flags |= PROP_READONLY; // tsc's isReadonlySymbol: a `const` variable
+    // tsc's isReadonlySymbol: a `const` variable. Not through an alias (`export { c }`, `export default c`, `export
+    // import c = require(...)`): the property is the alias symbol, which has no Variable flag
+    if (member->is_const && member == symbol) prop->flags |= PROP_READONLY;
     // (`Object.defineProperty(o, "x", { value: 1 })`: isReadonlyAssignmentDeclaration)
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
         member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && expr_define_property_readonly(member->decls[0].node)
