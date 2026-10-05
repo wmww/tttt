@@ -35,8 +35,8 @@ missing checks too.
 wall at -j4, tttt 456 s CPU vs tsc 5314 s. Slower than tsc: carbon-components-react (25 s vs 5.9), d3-geo
 (bugs/sweep_perf.md).
 
-Latest (2026-10-05, after the first batch of "Open root causes" below): **8015 match**, spurious-only 102,
-missing-only 81, both 9, crash 0, timeout 1 (carbon-components-react).
+Latest (2026-10-05, after the "Small" root causes but the circular `export =` one): **8036 match**, spurious-only
+83, missing-only 81, both 7, crash 0, timeout 1 (carbon-components-react).
 
 ## Stage 2: drain the ranking (corpus sessions)
 Work the table top-down like plan 19 does for the corpora: a root cause that spans packages first, single-package
