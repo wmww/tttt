@@ -8312,7 +8312,7 @@ const baselines = {
     },
     'declarationEmitLocalClassHasRequiredDeclare': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'declarationEmitMappedPrivateTypeTypeParameter': {
@@ -30167,7 +30167,7 @@ const baselines = {
     },
     'targetTypeTest1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'targetTypeTest2': {
@@ -63687,7 +63687,7 @@ const baselines = {
     },
     'importTypeInJSDoc': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importTypeLocal': {

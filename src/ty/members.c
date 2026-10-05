@@ -1352,16 +1352,27 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
 
     builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
     // A static member and a type the class's namespace exports of its name are one symbol in tsc (both in the class's
-    // exports): symbols baseline only, the type stays a type
+    // exports): symbols baseline only, the type stays a type. Same for an expando assignment of a static property
     if (instance_decl->exports) {
         for (u32 i = 0; i < builder->props_count; i++) {
             Prop* prop = builder->props[i];
             if (prop == prototype || !(prop->flags & PROP_STATIC)) continue;
             Symbol const* exported = symbol_table_get(instance_decl->exports, atom_sv(prop->name));
-            if (!exported || (exported->flags & SYMBOL_VALUE) || !exported->decl_count) continue;
+            // (An expando assignment `C.x = v` too, a property, which a static property joins: not a method)
+            u32 value = exported ? exported->flags & SYMBOL_VALUE : 0;
+            if (!exported || !exported->decl_count || (value && (value != SYMBOL_PROPERTY || (prop->flags & PROP_METHOD)))) continue;
             VecSpan spans = symbol_declaration_spans(exported);
             prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
             vec_span_drop(&spans);
+            // (In the order the binder met them: the namespace may come first. The list was just made)
+            Span* all = (Span*)prop->decl->decl_spans;
+            for (u32 a = 1; a < prop->decl->decl_span_count; a++) {
+                for (u32 b = a; b > 0 && all[b].source == all[b - 1].source && span_start_ptr(all[b]) < span_start_ptr(all[b - 1]); b--) {
+                    Span t = all[b];
+                    all[b] = all[b - 1];
+                    all[b - 1] = t;
+                }
+            }
         }
     }
 
