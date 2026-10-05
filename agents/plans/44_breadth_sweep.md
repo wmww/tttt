@@ -77,9 +77,13 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **Methods of an object literal against a union with an index signature member get no contextual parameter types**
-  (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
-  any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
+- **A context-sensitive function argument is skipped, not related as anyFunctionType, in the skip round**
+  (`first_unfit_argument_skipping`/`check_args_until_unfit` `skipped_arg`): tsc relates anyFunctionType (`{}`, but
+  signatures always fit, checker.ts ~23891) to the parameter, so `c.query("SELECT", (err, r) => ...)` fails pg's
+  `(config, values?: QueryConfigValues<I>)` overload in that round and the arrow isn't typed against it for good. Left
+  alone in session 8 (the effect agent owned the skip logic); pg matches since, re-check with
+  /tmp-style probes `declare function q(a: string, v?: number[]): void; declare function q(a: string, cb: (e: Error)
+  => void): void; q("x", e => {})`. The literal case is the Large item below.
 
 - **TS2303 on the import instead of the `export =` of a self-importing module** (koa-webpack, react-loadable;
   `types/webpack/index.d.ts`: `import webpack = require("webpack"); export = webpack;`): which alias of the cycle
@@ -89,15 +93,22 @@ one commit each, `./sweep.py` before/after.
 
 ### Medium (15-100 lines)
 - **Named import of a type-only member through `export =` used as a value: no TS2693** (node; D/typeAsValue).
-- **Generic rest `[...AX, ...A]` implied arity** (call-bind; C/arity.ts): infer_to_tuple's "two variadic elements"
-  TODO (tsc ~26690) plus impliedArity. ~60 lines.
+- **`[...T, ...rest]` / `[...rest, ...T]` in the middle of a target tuple** (infer_to_tuple's remaining TODO, tsc
+  ~26699: T sliced by its constraint's fixed arity). `[...T, ...U]` (impliedArity) is done.
+- **Inference candidate order follows union member order, which follows type creation order** (react-redux:
+  `MapStateToPropsParam = MapStateToPropsFactory<TS, TO> | MapStateToProps<TS, TO> | ...`; tsc creates the factory's
+  alias instantiation first (its function type's members are lazy) so `connect(() => () => ({ bar: 1 }))` infers TS =
+  `{ bar: number }` from the factory's return; tttt lowers the factory's return type eagerly, MapStateToProps gets the
+  lower id and wins with `() => { bar: number }`: TS2741 at every `<Test foo="bar" />`). Swapping the union's
+  declaration order flips tsc's answer too. Part of the union-order family (displaydiff `union order`).
 - **Rest `TArgs` inferred from the callback's own parameters** (immediate, macrotask, node; D/restTArgs.ts): tsc drops
   a self-referential tuple candidate (isTupleOfSelf) and keeps `TArgs[0]` where tttt has never. Tried (fan-out session): adding isTupleOfSelf to
   infer_from's candidate push is easy but doesn't help, because the callback's parameter isn't `TArgs[0]` in tttt
   (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
   signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
   `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
-- **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md
+- **Generic overloads skip the whole context-sensitive literal** (async, steed, chai, mithril's `m(Comp2, { title,
+  onremove(vnode) {} })` against `<A, S>(component, ...args: Children[])` first; C/2769 B): hacks.md
   `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
 - **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
 - **d3-tip**: a `declare module "d3"` augmentation isn't visible through d3's UMD global in tsc (its
@@ -110,6 +121,9 @@ one commit each, `./sweep.py` before/after.
   interface; tttt keeps the first declaration's list, reports TS2428 at both and then TS2415/TS2430.
 - **dynmap**: tsc's TS2317 for jquery's 1-parameter `interface Iterable<T>` (es5 lib) comes from typeToString in an
   elaboration calling getGlobalIterableType: incidental, not worth chasing.
-- Not investigated: stampit, alpinejs, google-apps-script (property named `''`), d3-dispatch,
-  ember (access-modifier, observable), function-bind, oidc-provider, d3-array, fabric's second `Image`, enzyme-async-helpers,
-  kefir, chai, fs-extra (only "the last overload" reported). `./sweep.py --last -k ...` lists each.
+- Not investigated: google-apps-script (property named `''`), ember (TS2615 `decrementProperty` circular in a mapped
+  type, observable-tests; two TS2578), function-bind (TS2578 at 31, 69-78: missing checks), d3-array (TS2345 on
+  `group(objArray, ...keys)` with `...keys: { [I in keyof TKeys]: (value, index, values) => TKeys[I] }`, TS7006 in
+  `cross([2, 3], [5, 6], (a, b) => ...)` against `[...iterables: { [K in keyof T]: Iterable<T[K]> }, reducer:
+  (...values: T) => U]`), react-relay (EntryPoint types: TS2344/TS2339 on never), fabric's second `Image`, kefir.
+  `./sweep.py --last -k ...` lists each.
