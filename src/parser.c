@@ -7524,6 +7524,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 js_syntax_skip_since(&p, mark);
                 js_syntax_error(&p, name_span, 8017, "Signature declarations can only be used in TypeScript files.");
             }
+            func.is_abstract_member = modifiers.includes[MODIFIER_ABSTRACT];
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_METHOD,
                 .method = {

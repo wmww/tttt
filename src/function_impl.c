@@ -496,6 +496,14 @@ static bool is_this_parameter(FunctionArg const* arg) {
 // tsc's checkGrammarAccessor(), the parameter part
 static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCtx* errs) {
     bool is_getter = my accessor == 1;
+    if (my has_body && my is_abstract_member) {
+        error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1318, "An abstract accessor cannot have an implementation.");
+        return true;
+    }
+    if (!generic_empty(&my generic)) {
+        error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1094, "An accessor cannot have type parameters.");
+        return true;
+    }
     isize count = vec_function_arg_size(&my args);
     isize expected = is_getter ? 0 : 1;
     bool has_this = count == expected + 1 && is_this_parameter(vec_function_arg_at(&my args, 0));
@@ -522,7 +530,7 @@ static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCt
         return true;
     }
     if (initialized_binding_value(&value->initializer)->tag != EXPR_IMPLICIT_ANY) {
-        error_ctx_grammar_error_d(errs, value->initializer.binding.content_span, 1052,
+        error_ctx_grammar_error_d(errs, function_impl_member_name(me), 1052,
             "A 'set' accessor parameter cannot have an initializer.");
         return true;
     }

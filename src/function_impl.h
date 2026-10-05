@@ -181,6 +181,7 @@ typedef struct FunctionImpl {
     bool is_async : 1;
     bool is_generator : 1;
     bool is_abstract_constructor : 1;
+    bool is_abstract_member : 1; // An `abstract` method or accessor of a class
     bool is_type : 1; // Written as a type (function_impl_into_type()): owned by a CallableType, no body to infer from
     bool jsdoc_type : 1; // A JSDoc `function(...)` type: its parameters are unnamed (`argN`)
     bool jsdoc_unchecked : 1; // In a tag tsc's checker doesn't visit (`@returns`): no TS7014
