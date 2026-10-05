@@ -65766,7 +65766,7 @@ const baselines = {
         types: true,
     },
     'restTupleElements1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

@@ -2541,7 +2541,8 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             elem.optional = true;
         }
         // Likewise outside JSDoc, where `T?` is a TYPE_JSDOC (tsc's parseTupleElementType; after a name it's TS5086)
-        if (!type_rest && elem.type.tag == TYPE_JSDOC && elem.type.jsdoc->postfix && !elem.type.jsdoc->non_null &&
+        // (Not `...T?`: tsc's RestTypeNode takes the whole `T?`, TS17019)
+        if (!type_rest && !(elem.rest && !named) && elem.type.tag == TYPE_JSDOC && elem.type.jsdoc->postfix && !elem.type.jsdoc->non_null &&
             span_start_ptr(elem.type.jsdoc->span) == type_start
         ) {
             if (named) {
