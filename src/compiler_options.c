@@ -436,6 +436,22 @@ cstr compiler_options_lib_names_message(void) {
     return ret;
 }
 
+// The names that aren't the file's name (tsc's libMap, built from libEntries: where a name is there twice, the later
+// entry wins): lib.es6.d.ts and lib.es7.d.ts are default libraries of a target, and the esnext features that made it
+// into a year. For `lib` and `/// <reference lib>` alike
+csview compiler_options_lib_file_name(csview name) {
+    static char const* const aliases[][2] = {
+        { "es6", "es2015" }, { "es7", "es2016" }, { "esnext.symbol", "es2019.symbol" },
+        { "esnext.asynciterable", "es2018.asynciterable" }, { "esnext.bigint", "es2020.bigint" },
+        { "esnext.string", "es2024.string" }, { "esnext.weakref", "es2021.weakref" },
+        { "esnext.object", "es2024.object" }, { "esnext.regexp", "es2024.regexp" },
+    };
+    for (u32 i = 0; i < c_arraylen(aliases); i++) {
+        if (csview_iequals(name, aliases[i][0])) return csview_from(aliases[i][1]);
+    }
+    return name;
+}
+
 cstr compiler_options_lib_files(CompilerOptions const* me) {
     if (my no_lib) return cstr_null;
     if (!cstr_size(&my lib)) {
@@ -455,21 +471,7 @@ cstr compiler_options_lib_files(CompilerOptions const* me) {
     while (rest.size) {
         isize end = csview_find_sv(rest, c_sv(","));
         csview single = csview_slice(rest, 0, end);
-        // The names that aren't the file's name (tsc's libEntries): lib.es6.d.ts and lib.es7.d.ts are default
-        // libraries of a target, and the esnext features that made it into a year
-        static char const* const aliases[][2] = {
-            { "es6", "es2015" }, { "es7", "es2016" }, { "esnext.array", "es2023.array" },
-            { "esnext.symbol", "es2019.symbol" }, { "esnext.asynciterable", "es2018.asynciterable" },
-            { "esnext.bigint", "es2020.bigint" }, { "esnext.string", "es2024.string" },
-            { "esnext.promise", "es2024.promise" }, { "esnext.weakref", "es2021.weakref" },
-            { "esnext.object", "es2024.object" }, { "esnext.regexp", "es2024.regexp" },
-        };
-        for (u32 i = 0; i < c_arraylen(aliases); i++) {
-            if (csview_equals(single, aliases[i][0])) {
-                single = csview_from(aliases[i][1]);
-                break;
-            }
-        }
+        single = compiler_options_lib_file_name(single);
         if (csview_starts_with(single, "lib.") && csview_ends_with(single, ".d.ts")) {
             single = csview_subview(single, 4, single.size - 9);
         }

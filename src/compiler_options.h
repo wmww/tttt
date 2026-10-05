@@ -218,6 +218,8 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
 // A name `lib` takes (case insensitive), and TS6046's message listing them
 bool compiler_options_lib_name_valid(csview name);
 cstr compiler_options_lib_names_message(void);
+// The file a lib name means (lib.NAME.d.ts), lowercase or not: `esnext.bigint` is es2020.bigint
+csview compiler_options_lib_file_name(csview name);
 // One entry of `paths` (there is no way to write them as a single string). Replaces an entry with the same pattern
 void compiler_options_add_path(CompilerOptions* me, csview pattern, StrList substitutions);
 void compiler_options_clear_paths(CompilerOptions* me);
