@@ -117,7 +117,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (63; 6300 at pinning)
+### effect (31; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -142,30 +142,40 @@ first check. Also `readonly ಠ_ಠ` (a modifier before a non-ASCII name).
 fiberRuntime 3612, Sink racing/zipping 57/73, vitest internal 175 and three only at K=1. Order-dependent checking,
 like xstate's earlier (triage).
 
+2026-10-05, second pass (63 -> 31, probes in `test/probes/plan19/effect/`, one commit each): a generic call as an
+argument infers from the raw parameter type, not one instantiated with the outer call's return mapper (Cause.test 8,
+Stream/constructors 4); a conditional's branches and `||`/`??`/`&&`/comma operands get the contextual type as written
+(Sink racing/zipping 6); `x[key]` with a non-literal key is a constraint position (vitest internal.ts 6); the base
+constraint of a union keeps member intersections that have nothing to replace (LayerMap 402/403); a lone spread of an
+`any` argument is any for a generic rest parameter (Schema 944/1004/1005, layer 1161).
+
 Left, by cause (not reduced unless said):
-- **Return type unions of generic and instantiated signatures** (~12, Stream/constructors 353-368, Sink racing/zipping
-  53-86): `Stream.unfoldEffect(0, (n) => n < 10 ? Effect.succeed(Option.some([n, n + 1])) : Effect.succeed(Option.none()))`
-  infers `Effect<Option<readonly [A, S]>>` in one branch: apparently unfoldEffect's own `A, S` leak into the arrow's
-  inferred return type.
-  Then `Effect.gen` around it is `Effect<void, unknown, unknown>` (TS2375).
-- **Cause.test 546-567** (8): `Cause.flipCauseOption(Cause.sequential(Cause.fail(Option.some("e")), Cause.fail(Option.none())))`:
-  `Option.none()`'s `Option<E>` stays generic (nested generic calls as arguments, no contextual inference).
-- **vitest internal.ts 139/175** (6, TS7053): `arbitraries[key]` with `key: string` on a type parameter
-  `Arbitraries extends ...`: for-in key narrowing over a generic object.
-- **TS2769 on `dual<A, B>(arity, body)`** (core-effect 1834/1858, metric 542, fiberRuntime 3612): explicit type
-  arguments plus a body whose parameters are contextually typed from DataFirst.
-- **`"lookup" in options` on a type parameter** (LayerMap 402/403): `in` narrowing of a type parameter whose
-  constraint is a union of NoExcessProperties intersections.
-- **ReadonlyMailbox members** (stream.ts 3038-3040), runtime.ts 69/74 (FiberRefs dual with `this`), groupBy 258,
-  Micro 2730, Schema.ts 1004/1005 (variadic mapped rest `...typeParameters`), 4110, 4596/4629 (`a[0]` on
-  `NonNullable<Type<S>>`), 9195/9373 (`.FiberId.map(fiberIdDecode)` from a Union's members), TS2556 x2 (spread of
-  `as any` into a rest parameter: tsc accepts any).
+- **`tap(acquireRelease(...), (q) => ...)` picks up the contextual return type** (stream.ts 3038-3040, 7165, 7192: 5;
+  probe `overload_generic_call_then_callback.ts`, which fails): with an overloaded callee whose first overload fits the
+  skip-sensitive round, `resolve_signatures` clears `skip_sensitive` for every later candidate, so a later candidate's
+  first inference (skip_generic_functions only) types the context-sensitive callback while the generic-call argument
+  (`generic_call`) is still left out: the callback's parameter is fixed to what the contextual return type says
+  (`Dequeue<A>` for `Queue<A>`). tsc's argCheckMode does the same reset, yet gets `Queue<A>`: its parameter types are
+  assigned lazily (getContextuallyTypedParameterType at first use), which tttt doesn't model. Skipping the sensitive
+  arguments in that first inference when a `generic_call` argument is skipped fixes the probe but regresses ~10 tests
+  and the corpora badly (tsc 87, effect 376): understand why before retrying.
+- **TS2769 on `dual<A, B>(arity, body)`** (core-effect 1834/1858, metric 542, fiberRuntime 3612: 4; probe
+  `generic_arrow_predicate_poisons_return.ts`, which fails): relating the generic body against DataFirst asks for its
+  type predicate (`infer_from_returns` -> `signature_predicate` -> `ty_infer_type_predicate`), which types the single
+  returned expression without context before the function's contextual check, so `[s, Option.none()]` inside
+  `core.map(...)` is an array, not the contextual tuple. tsc only infers a predicate when the resolved return type is
+  boolean. Gating `ty_infer_type_predicate` on the contextual return type admitting boolean (return null when
+  `ty_return_expressions_context()` is set and `boolean` isn't assignable to it) fixes these 4 but exposes the tap bug above
+  in stream.ts toQueue/toQueueOfElements (+6: TS2769/TS7006 through dual), so it waits for that one.
+- groupBy 258, Micro 2730, Schema.ts 4110, 4596/4629 (`a[0]` on
+  `NonNullable<Type<S>>`), 9195/9373 (`.FiberId.map(fiberIdDecode)` from a Union's members).
 - **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses: dtslint TaggedClass 6, TaggedError 31,
   TaggedRequest 28 (Schema tagged classes without the Self type argument should be an error), Schema.ts 9010,
   fiberRuntime 1397.
 - Tests: Match 887/888 (`M.tag("A", () => "a")` inside `M.discriminators`), query 51, traversing 444
   (`Effect.mergeAll(() => 1, ...)` zero literal), SchemaUserland 12, dtslint Effect 736 (`Effect.fn` generator as
   catchTag handler).
+- `x[key]` constraint position: only an identifier object so far (`a.b[key]` isn't, TODO in expr.c).
 
 ### vscode (0; 129 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 5) as the large application: VS Code at 156e400b (2025-03-28, the last
