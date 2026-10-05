@@ -133,6 +133,16 @@ static bool same_symbol(Checker* me, Symbol const* a, Symbol const* b) {
     return binder_redirect(binder, a) == binder_redirect(binder, b);
 }
 
+static bool name_taken_by_type_param(TyParamNames const* names, csview name) {
+    for (u32 i = 0; i < names->in_scope.len; i++) {
+        if (csview_equals_sv(atom_sv(names->in_scope.data[i]->param.name), name)) return true;
+    }
+    for (u32 i = 0; i < names->len; i++) {
+        if (csview_equals_sv(atom_sv(names->given[i].name), name)) return true;
+    }
+    return false;
+}
+
 static bool global_shadowed_by_type_param(Checker* me, TyParamNames const* names, Symbol const* symbol) {
     if (!(symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS | SYMBOL_ENUM))) return false;
     Binder const* binder = program_get_binder(my program);
@@ -267,6 +277,15 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     // the type parameter first in the declaration's locals, then the global in globalThis's exports)
     if (!start && chain.len && meaning == SYMBOL_TYPE && d.param_names && global_shadowed_by_type_param(me, d.param_names, chain.items[0])) {
         out_lit(d, "globalThis.");
+    } else if (!start && chain.len == 1 && meaning == SYMBOL_TYPE && d.param_names && chain.items[0]->parent &&
+        chain.items[0]->parent->is_module && !(chain.items[0]->flags & SYMBOL_TYPE_PARAMETER) &&
+        name_taken_by_type_param(d.param_names, chain.items[0]->name)
+    ) {
+        // A module's export whose name a type parameter in scope takes (`type T<T> = ...` printed in itself) is named
+        // from the module, like any inaccessible one (tsc's getSymbolChain finds the type parameter first). Only a
+        // bare name: the first part of `E.Whatever` is looked up as a namespace, which no type parameter is
+        out_module_import(d, chain.items[0]->parent);
+        out_lit(d, ".");
     }
     cstr text = cstr_init();
     SymbolChain rest = { .len = chain.len - start };

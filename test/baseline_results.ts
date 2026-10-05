@@ -7663,7 +7663,7 @@ const baselines = {
     'declarationEmitBundleWithAmbientReferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitBundlerConditions': {
         errors: true,
