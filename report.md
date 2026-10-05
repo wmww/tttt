@@ -132,3 +132,19 @@ two more projects that exercise what the current ones don't: Effect, a library t
 a large application for scale. It also plans a "breadth sweep" that runs tttt over hundreds of small typed packages
 at once. The rest of the window finishes the planned work: the remaining laziness stages, memory for the two
 projects still above tsgo, and parallel name resolution.
+
+## 2026-10-05 — insights (after the ninth window)
+Another clean window: ten sessions, all committed, nothing lost. The suite went 12753 -> 13099 of 13540 (96.7%). The
+bet from last time paid off. Effect (299k lines) started with 6300 false errors and is down to 7. VS Code's source
+(1.39M lines) started with 129 and is now at 0, and tttt checks it in 2.2 s and 2.1 GB, against 6.75 s and 3.7 GB for
+tsgo. A new "breadth sweep" runs tttt on all ~8600 DefinitelyTyped packages in a few minutes: 99.8% now match tsc
+exactly, up from 97%. Memory use is now below tsgo's on every project.
+
+The concern now is what these tests can't see. Every real project we test on compiles cleanly under tsc, so all they
+can catch is tttt reporting errors that don't exist. They can't catch tttt missing an error, which is what matters
+most to anyone relying on it. This session tried a cheap fix: recheck the same clean projects with stricter compiler
+flags, which turns them into thousands of real errors. On TypeScript's own sources, tttt matched about 98% of these,
+and the rest were genuine bugs (one flag's two specific error codes are never reported at all). The next window
+builds that into a tool, and considers "mutation testing" (breaking clean code on purpose and comparing). It also
+builds a similar check for inferred types across DefinitelyTyped. It plans one compiler mechanism that the codebase
+currently works around with hacks, pins two new kinds of real projects, and includes a perf session.
