@@ -3914,6 +3914,9 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     // An incomplete `never` of control flow calls to nothing (tsc's silentNeverSignature)
     if (callee_type == ty_intrinsic(me, TY_SILENT_NEVER)) return callee_type;
+    if ((callee_type->flags & TYF_UNKNOWN) && !call->is_extends && compiler_options()->strict_null_checks) {
+        callee_type = ty_intrinsic(me, TY_ERROR); // (See expr_typecheck(): TS18046)
+    }
     if (!call->uses_new && !call->is_extends) callee_type = ty_check_non_null_callee(me, callee_type, span_null, nullptr);
     Ty const* ret = ty_call_return_type(me, callee_type, call, call_span, ctx.raw_contextual);
     if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {

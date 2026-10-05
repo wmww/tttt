@@ -3627,11 +3627,12 @@ static bool binary_op_typecheck(
                 }
                 cstr left_str, right_str;
                 ty_display_pair_cstr(current_checker, left, right, &left_str, &right_str);
-                Error* e = error_ctx_error_d(errs, expr_outer_span(expr), 2367,
+                // (At the binary expression, inside its parentheses)
+                Error* e = error_ctx_error_d(errs, expr->inner_span, 2367,
                     "This comparison appears to be unintentional because the types '", left_str,
                     "' and '", right_str, "' have no overlap.");
                 c_drop(cstr, &left_str, &right_str);
-                if (with_await) error_add_related_d(e, expr_outer_span(expr), 2773, "Did you forget to use 'await'?");
+                if (with_await) error_add_related_d(e, expr->inner_span, 2773, "Did you forget to use 'await'?");
             }
             break;
 
@@ -4195,6 +4196,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             Ty const* callee_type = ty_expr_type(checker, callee);
             // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended
             callee_type = ty_optional_expression_type(checker, callee_type, my call->optional_chain, nullptr);
+            // (tsc's checkNonNullExpression of the callee, for `new` too: unknown is TS18046, then the error type)
+            if ((callee_type->flags & TYF_UNKNOWN) && !my call->is_extends && compiler_options()->strict_null_checks) {
+                ty_check_non_null_type(checker, callee_type, callee, errs);
+                callee_type = ty_intrinsic(checker, TY_ERROR);
+            }
             if (!my call->uses_new && !my call->is_extends) {
                 callee_type = ty_check_non_null_callee(checker, callee_type, expr_outer_span(callee), errs);
             }

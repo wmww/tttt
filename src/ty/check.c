@@ -1974,6 +1974,8 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
 // method to call instead), TS2551, TS2576, and TS2339 on an object literal expression
 void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty const* object, Span span, ErrorCtx* errs) {
     if (access->form != PROPERTY_EXPR_BRACKET) return;
+    // (unknown was TS18046/TS2571, then the error type: tsc's checkNonNullExpression)
+    if ((object->flags & TYF_UNKNOWN) && compiler_options()->strict_null_checks) return;
     if (is_global_this(object)) {
         // `globalThis["x"]` for a block scoped x (tsc's getPropertyTypeForIndexType), with or without noImplicitAny
         Ty const* key = ty_regular(me, ty_access_key_type(me, access));
