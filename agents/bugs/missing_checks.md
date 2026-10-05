@@ -250,3 +250,35 @@ What was left of that list after its fixes, by root cause (the rest went to agen
 - asyncFunctionDeclaration15_es5/16_es5: TS1055/TS1065 for a class annotation (`Thenable`) whose construct signature
   isn't PromiseLike (check_es5_async_return_annotation).
 - libTypeScriptOverrideSimpleConfig/SubfileResolvingConfig: `@typescript/lib-*` package resolution of the lib.
+## Fan-out list d (spurious or text-only diffs), what's left (2026-10-05)
+About 50 of 83 still fail errors; by root cause:
+- **Node reuse in error messages**: tsc's typeToString reuses syntactic nodes even without an enclosing declaration
+  (a single `return x as T` prints `() => T` as written: baseClassImprovedMismatchErrors; an arrow's return type from a
+  JSDoc `@type`'s signature: propertyAssignmentUseParentType2). tttt reuses nodes only for the types baseline
+  (`d.underline && d.enclosing`); error display would need the reuse path without name-accessibility checks.
+- **Alias/origin preservation**: `keyof Props` printed as `"when" | "error"` (reactDefaultPropsInferenceSuccess);
+  literal creation order puts `1 | 4` where tsc says `4 | 1` (assignmentCompatWithDiscriminatedUnion: tsc creates the
+  literal 4 first, from an earlier alias).
+- **Harness pre/post-emit counts (TS-1)**: parserStatementIsNotAMemberVariableDeclaration1,
+  parseErrorIncorrectReturnToken, multiLinePropertyAccessAndArrowFunctionIndent1, unicodeEscapesInNames02: the emit
+  resolver checks names in code the checker skips (a top-level `return`'s expression); emulating it means knowing what
+  declaration emit would resolve.
+- **Inference**: contravariantOnlyInferenceFromAnnotatedFunction (A from an annotated arrow inside a reverse mapped
+  type's source: tsc infers string, tttt unknown; mechanism not found), objectLiteralExcessProperties (`prop: true`
+  kept literal against `T & { prop: boolean }`, tsc widens), tsxStatelessFunctionComponentsWithTypeArguments4,
+  intraExpressionInferencesJsx, unionAndIntersectionInference3, mappedTypeRecursiveInference2, variadicTuples1,
+  genericRestParameters3, genericCallWithGenericSignatureArguments3 (not investigated).
+- **Elaboration chains** (plan 34): indexedAccessRelation, jsxExcessPropsAndAssignability (an intersection target
+  `T["x"] & string` elaborated through the intersection), invariantGenericErrorElaboration, keyofAndIndexedAccessErrors,
+  conditionalTypes1/2, flatArrayNoExcessiveStackDepth, aliasInstantiationExpressionGenericIntersectionNoCrash1,
+  bigintWithLib, recursiveConditionalTypes, mappedTypeInferenceErrors.
+- **JS**: jsdocTemplateClass (typedef in a class body, above); jsDeclarationsClassStaticMethodAugmentation (expando
+  `Clazz.method.prop = 5` on a static method); moduleExportDuplicateAlias3 (`exports.x = a` with `a` a function
+  declaration is missing from the union, and a require of the module sees the last assignment's type in tsc);
+  jsdocParamTagTypeLiteral; typeFromPropertyAssignment18 (`var G = m.G = {}` expandos through both names);
+  jsDeclarationsImportAliasExposedWithinNamespace (TS18042 missing); jsDocDeclarationEmitDoesNotUseNodeModulesPath
+  WithoutError (the @ts-expect-error covers a declaration-emit error, plan 40).
+- **Other**: infiniteConstraints (spurious TS2589), manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!`
+  mid-line, list p), APILibCheck (the harness's built `/.ts/*.internal.d.ts`), tripleSlashReferenceAbsoluteWindowsPath
+  (passed, regressed on ai-main by backslash normalization: `C:/a/b/c.ts` isn't rooted for tttt's path joining and the
+  mock file is named `C:\a\b\c.ts`), `while (a) const x = 1;` still scopes x to the loop (tsc: enclosing block).
