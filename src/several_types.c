@@ -404,7 +404,12 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     }
 
     // (A value in JSDoc is its type: tsc's getTypeFromJSDocValueReference)
-    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE) && !my jsdoc) {
+    // (A property of what `export =` names may be a type: the checker decides, lower_identifier())
+    bool export_equals_property = my target && my target->decl_count &&
+        my target->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY && !identifier_type_namespace_count(me);
+    if (my target && !my this_kind && !my target->is_placeholder && !(my target->flags & SYMBOL_TYPE) && !my jsdoc &&
+        !export_equals_property
+    ) {
         cstr name_str = identifier_type_make_name_str(me);
         Span error_span = span_between(identifier_type_namespace_count(me) ? *my rare->namespaces.data : my name, my name);
         error_ctx_error_d(errs, error_span, 2749,

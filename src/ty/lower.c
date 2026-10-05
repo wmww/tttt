@@ -402,6 +402,29 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
     return ret;
 }
 
+// `import { X } from "m"` of a property of what m's `export =` names, used as a type: tsc's getExternalModuleMember
+// takes the property's own symbol, which is a type too when it's a namespace export the value's type has as a
+// property (a class merged with a namespace, or a base class of one: node's `stream` and its `EventEmitter`). The
+// binder can't know, so the type side is decided here (resolve_alias_target(), identifier_type_lookup_names()).
+// Null for none: missing (TS2305 comes from the import) or a value only (TS2749 here)
+static Symbol const* export_equals_property_type(Checker* me, Symbol const* property, IdentifierType const* identifier) {
+    Ty const* assigned = ty_type_of_symbol(me, property->decls[0].node);
+    if (assigned->flags & TYF_ERROR) return nullptr;
+    Ty const* holder = assigned->flags & (TYF_OBJECT | TYF_INTERSECTION) ? assigned : ty_apparent_type(me, assigned);
+    Prop const* prop = holder->kind == TY_UNION || holder->kind == TY_INTERSECTION ? nullptr :
+        ty_get_prop(me, holder, checker_atom(me, property->name));
+    while (prop && prop->target) prop = prop->target;
+    Symbol* symbol = prop ? (Symbol*)prop->decl->symbol : nullptr;
+    if (symbol && symbol_resolved_flags(symbol) & SYMBOL_TYPE) {
+        Symbol const* type = symbol_for_meaning(symbol, SYMBOL_TYPE);
+        if (type && !type->is_placeholder) return canonical(me, type);
+    }
+    if (ty_type_of_symbol(me, property)->flags & TYF_ERROR) return nullptr;
+    ty_error_at(me, identifier->name, 2749, cstr_d("'", identifier->name.sv,
+        "' refers to a value, but is being used as a type here. Did you mean 'typeof ", identifier->name.sv, "'?"));
+    return nullptr;
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     switch ((JsDocIntrinsic)identifier->jsdoc_intrinsic) {
         case JSDOC_INTRINSIC_NONE: break;
@@ -429,6 +452,12 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         if (js_this) return js_this;
     }
     Symbol const* decl = canonical(me, identifier->target);
+    if (decl && decl->decl_count && decl->decls[0].kind == SYMBOL_DECL_EXPORT_EQUALS_PROPERTY && !identifier->jsdoc &&
+        !identifier_type_namespace_count(identifier) && !span_valid(identifier_type_import_span(identifier))
+    ) {
+        decl = export_equals_property_type(me, decl, identifier);
+        if (!decl) return ty_intrinsic(me, TY_ERROR);
+    }
     if (span_valid(identifier_type_import_span(identifier))) {
         // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)
         if (!decl || decl->is_placeholder) return ty_intrinsic(me, TY_ANY);
