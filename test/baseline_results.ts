@@ -20428,7 +20428,7 @@ const baselines = {
     'lateBoundDestructuringImplicitAnyError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'lateBoundFunctionMemberAssignmentDeclarations': {
         errors: true,

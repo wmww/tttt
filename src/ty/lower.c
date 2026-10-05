@@ -2709,6 +2709,12 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         Ty const* key = item->computed_key ? ty_regular(me, ty_expr_type(me, item->computed_key)) : ty_literal(me, &item->source);
         // (A generic key is a deferred `T[K]`: tsc's getIndexedAccessType)
         ret = item->computed_key && ty_is_generic_index(key) ? ty_indexed(me, object, key) : ty_access_reading(me, object, key);
+        if (!ret && item->computed_key && (key->flags & TYF_ES_SYMBOL_LIKE)) {
+            // A symbol key falls back to a string index signature (TS2538, tsc's getPropertyTypeForIndexType)
+            Ty const* apparent = ty_apparent_type(me, object);
+            IndexInfo const* index = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_STRING)) : nullptr;
+            if (index) ret = index->value;
+        }
         // A property an object literal lacks is undefined when there's a default, which decides (tsc's
         // AccessFlags.AllowMissing)
         if (!ret && binding->default_value && object->kind == TY_ANONYMOUS && object->anonymous.object_literal) {
