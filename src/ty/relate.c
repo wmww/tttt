@@ -2407,6 +2407,11 @@ static Ternary index_signatures_related(
         if (source_members->mapped && target_has_string_index) {
             MappedInfo const* mapped = source_members->mapped;
             Ty const* template = ty_instantiate(me, ty_mapped_template(me, mapped), mapped_key_param_mapper(me, mapped));
+            // (With the mapped type's `?`, its undefined: tsc's getTemplateTypeFromMappedType, see expand_mapped())
+            if (mapped->optional > 0 && compiler_options()->strict_null_checks) {
+                Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
+                template = ty_union(me, parts, 2, nullptr, (TyList){0});
+            }
             Ternary related = is_related_to(me, st, template, target_info->value, report);
             if (!related) return TERNARY_FALSE;
             result &= related;

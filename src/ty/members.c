@@ -2126,6 +2126,12 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         return expand_generic_intersection_homomorphic(me, members, mapped->modifiers_type->composite.types);
     }
     Ty const* apparent = ty_apparent_type(me, mapped->modifiers_type);
+    // (A generic mapped type is its own apparent type, and has the properties of the lower bound of its keys:
+    // `Partial<M<T>>` with `M<T> = { [K in keyof T]: T[K] }` has T's constraint's, tsc's resolveMappedTypeMembers over
+    // getPropertiesOfType of its modifiers type)
+    if (apparent == mapped->modifiers_type && apparent->kind == TY_ANONYMOUS && ty_members(me, apparent)->mapped) {
+        return expand_generic_intersection_homomorphic(me, members, (TyList){ .data = &apparent, .len = 1 });
+    }
     if (apparent == mapped->modifiers_type || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return members;
     // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
     if (apparent->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
@@ -2364,8 +2370,14 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     bool generic = false;
     Ty const* keyed = mapped->modifiers_type;
     if (ty_is_generic_index(constraint)) {
-        if (mapped->keyof_constraint && !mapped->name_type) return expand_generic_homomorphic(me, members);
-        if (mapped->keyof_constraint) {
+        // (Over a T constrained to a union, `T extends A | B`, the properties of the union, which are those of the
+        // lower bound of the keys `keyof (A | B)` below, with the union's modifiers)
+        Ty const* keyed_apparent = mapped->keyof_constraint && keyed && keyed->kind == TY_TYPE_PARAM ?
+            ty_apparent_type(me, keyed) : nullptr;
+        bool over_union = keyed_apparent && keyed_apparent->kind == TY_UNION &&
+            !(keyed_apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+        if (mapped->keyof_constraint && !mapped->name_type && !over_union) return expand_generic_homomorphic(me, members);
+        if (mapped->keyof_constraint && mapped->name_type) {
             // With an `as` clause, the names of the keys of the constraint of T (`[K in keyof T as `slot-${K & string}`]`
             // with `T extends { foo: X }` has slot-foo, tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType
             // over the type parameter's properties)
@@ -2508,6 +2520,22 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     prop->decl->decl_span_count = declared->decl->decl_span_count;
                     prop->decl->name_is_value = declared->decl->name_is_value;
                     prop_decl_rare_mut(me, prop->decl)->mapped_from = declared;
+                    // (Of a union, declared where each member's property is: tsc's union property symbol)
+                    if (modifiers->kind == TY_UNION) {
+                        for (u32 m = 0; m < modifiers->composite.types.len; m++) {
+                            Ty const* member = ty_apparent_type(me, modifiers->composite.types.data[m]);
+                            Prop const* other = (member->flags & TYF_OBJECT) ? ty_get_prop(me, member, name) : nullptr;
+                            while (other && other->target && !other->decl->decl_span_count) other = other->target;
+                            if (!other || other == declared) continue;
+                            for (u32 k = 0; k < other->decl->decl_span_count; k++) {
+                                bool seen = false;
+                                for (u32 q = 0; q < prop->decl->decl_span_count && !seen; q++) {
+                                    seen = span_eq(prop->decl->decl_spans[q], other->decl->decl_spans[k]);
+                                }
+                                if (!seen) prop_add_decl_spans(me, prop, &other->decl->decl_spans[k], 1);
+                            }
+                        }
+                    }
                 }
                 builder_push(&builder, props, prop);
             } else {
