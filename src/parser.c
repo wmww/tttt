@@ -5785,7 +5785,9 @@ static bool parse_function_args_inner(
 
     if (parse_generic_decl(&p, TYPE_PARAM_OF_FUNCTION, &ret->generic)) {
         hop_whitespace(&p);
-        is_definitely_function = true;
+        // An arrow function's type parameters don't commit it (tsc's parseParenthesizedArrowFunctionExpression
+        // without allowAmbiguity): `<T>(x => y)` is a type assertion of a parenthesized arrow function
+        is_definitely_function = parse_abstract_and_new || parse_type_return_syntax || commit_on_paren;
     } else {
         ret->generic = (Generic){0};
     }
@@ -5909,6 +5911,17 @@ static bool parse_function_args_inner(
                             *p.pos == ',')))
                 ) {
                     is_definitely_function = true;
+                }
+
+                // tsc's isUnambiguouslyStartOfFunctionType and isParenthesizedArrowFunctionExpression: a first
+                // parameter that didn't commit must be followed by `,` or `)` (`(readonly T[]) => {` in a return type
+                // is a parenthesized type; an expression's modifier commits, a type's doesn't)
+                if (vec_function_arg_is_empty(&ret->args) && !is_definitely_function && *p.pos != ',' && *p.pos != ')' &&
+                    (parse_type_return_syntax || first_modifier_end == nullptr)
+                ) {
+                    vec_expr_drop(&decorators);
+                    initialized_binding_drop(&initializer);
+                    goto drop_and_fail;
                 }
 
                 initializer.is_rest_parameter = rest;

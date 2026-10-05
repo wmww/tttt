@@ -86,6 +86,12 @@ CORPORA=(
     # dependencies of effect, @effect/vitest and the root at pnpm-lock.yaml's versions, from
     # corpora-locks/effect.package.json; the workspace packages are linked into the root's node_modules
     "effect https://github.com/Effect-TS/effect.git e730f59d29db5f1e312be6476a95d07bcad45788 . workspace:packages/*"
+    # VS Code (Mar 2025, todo entry 5 of the ninth window): the last commit before its move to TypeScript 5.9 nightlies,
+    # the large application (4.5k files, 1.39M lines in src/ with monaco.d.ts and vscode.d.ts): the workbench, editor,
+    # platform services with decorator-based dependency injection (experimentalDecorators), browser + node + electron
+    # code in one program, nodenext, noImplicitOverride, useDefineForClassFields off. Checked through upstream's
+    # src/tsconfig.json (the extensions are separate projects, left out). The lock is upstream's
+    "vscode https://github.com/microsoft/vscode.git 156e400b9d45c29eb9975b4ee01e72cf22c3549a ."
     # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (./sweep.py), every types/NAME with its own
     # tsconfig and tests. DT's pnpm workspace links each @types/X to types/X: node_modules/@types -> ../types does the
     # same for the latest version of each. The npm dependencies are the few non-@types ones that many packages need
