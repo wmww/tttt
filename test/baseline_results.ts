@@ -9246,7 +9246,7 @@ const baselines = {
         types: true,
     },
     'deeplyNestedMappedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
