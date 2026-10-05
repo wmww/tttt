@@ -377,8 +377,8 @@ static bool is_identifier_char(char c) {
         (unsigned char)c >= 0x80;
 }
 
-// HACK: tsc resolves the names of JSDoc `{@link X}` tags, which makes them uses. tttt doesn't parse JSDoc, so the
-// source is scanned for the tags and their first names are looked up from the file's scope (not from where the
+// HACK: tsc resolves the names of JSDoc `{@link X}` tags, which makes them uses. tttt keeps no JSDoc tags (they are
+// parsed on demand for their host, jsdoc_before()), so the source is scanned for the tags and their first names are looked up from the file's scope (not from where the
 // comment is: a local only a link names still counts as unused)
 void unused_mark_jsdoc_links(SourceFile const* file) {
     if (!unused_enabled()) return;

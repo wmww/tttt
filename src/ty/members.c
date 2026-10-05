@@ -696,7 +696,7 @@ bool ty_is_valid_base_type(Checker* me, Ty const* ty) {
 // The class a class extends: its instance type (with the written type arguments) and its declaration. False if
 // there's none. HACK: a class name (`extends Name`, `extends Name<Args>`, `extends A.B.Name`) is found syntactically;
 // any other expression is the return type of its first construct signature that takes the written type arguments
-// (tsc also checks that they all construct the same type, TS2510)
+// (that they all construct the same type, TS2510, is ty_class_base_constructors_differ()'s)
 static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, Ty const** instance, Symbol const** base_decl) {
     Expr const* extends = &class_decl->extends;
     SourceFile const* file = extends->inner_span.source;

@@ -493,8 +493,7 @@ src` finds the code-side markers; every significant one has an entry here.
   probably that constraint (`T[string]` of a union of index-signature objects should be the union of their values).
 - `ty_indexed` stays deferred beyond props, index signatures and list elements.
 - `class_base()` (members.c HACK): base class names found syntactically; other expressions take the first fitting
-  construct signature (TS2510 by `ty_class_base_constructors_differ()`; the HACK comment's "tsc also checks" is
-  stale). A base constructing `any` is no base; `ty_has_unresolved_base()` gates TS2339/TS7053 instead (tsc: `[x:
+  construct signature (TS2510 by `ty_class_base_constructors_differ()`). A base constructing `any` is no base; `ty_has_unresolved_base()` gates TS2339/TS7053 instead (tsc: `[x:
   string]: any`). Type-parameter bases take the constraint's members at declaration. `ty_non_augmenting_base()` from
   syntax. See also `ClassDecl.jsdoc_base` (JavaScript).
 - A bare `C`/`this` inside generic `C` isn't its own instantiation (lower.c TODO).
@@ -567,8 +566,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - Emit helpers (`ty_check_emit_helpers`): spans by hand (`decorator_span()`, `function_error_span()`); "ambient"
   approximated per site (`ClassDecl.is_ambient`, `Binding.ambient`, `BlockTypecheckCtx.ambient`; want
   NodeFlags.Ambient); `for await` unchecked.
-- `unused_mark_jsdoc_links()` (HACK): `{@link X}` is a use by text scan, looked up from the file's scope (JSDoc is
-  parsed now: resolve from tags; the code comment saying it isn't is stale). Member reads are a table keyed by
+- `unused_mark_jsdoc_links()` (HACK): `{@link X}` is a use by text scan, looked up from the file's scope (real fix:
+  resolve them from parsed tags). Member reads are a table keyed by
   declaration span start (`ty_mark_member_referenced`).
 - `for_in_accepts`: type parameters and deferred types accepted outright (TS2407 missed).
 - `program_apply_comment_directives`: suppression by tttt's error *phase*, not tsc's diagnostic kind; `\n` and ASCII

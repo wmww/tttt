@@ -20,8 +20,8 @@
 // them (KEY_CONTEXT_PARAM links, read back by the parameter's own lazy type), while object and array literals are
 // simply checked again when the contextual type changes (overload candidates, inference passes).
 //
-// Not here: fresh/regular literal type pairs. Every literal type that comes out of an expression counts as fresh, ie
-// it widens at a mutable location (see hacks.md).
+// Literal types that come out of an expression are fresh (TYF_FRESH_LITERAL, ty_fresh_literal()): they widen at a
+// mutable location, and ty_regular() gives the regular twin, like tsc's fresh/regular literal type pairs.
 
 static const LowerCtx expr_lower_ctx = { .generic = true };
 
