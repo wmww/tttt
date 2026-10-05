@@ -65733,7 +65733,7 @@ const baselines = {
     'namedTupleMembersErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'partiallyNamedTuples': {
         errors: true,

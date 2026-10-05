@@ -160,6 +160,7 @@ typedef struct TupleElement {
     TypeNode type;
     bool rest;
     bool optional;
+    bool rest_in_type; // `a: ...T` (TS5087): the `...` belongs to the type, a Required named member to tsc
 } TupleElement;
 
 static inline void tuple_element_drop(TupleElement* me) { type_drop(&my type); }

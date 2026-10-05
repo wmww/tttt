@@ -2542,6 +2542,7 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         if (named && hop_start(&p, "...")) {
             type_rest = true;
             elem.rest = true;
+            elem.rest_in_type = true;
             hop_whitespace(&p);
         }
         char const* type_start = p.pos;
