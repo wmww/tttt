@@ -268,12 +268,13 @@ struct Ty {
             TyParamState* state;
         } param;
         struct {
-            TyDeclaredKind kind;
-            Symbol const* symbol; // null for tuple targets and synthetics
-            struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module
+            uint8_t kind; // TyDeclaredKind
             // TY_DECLARED_NAMESPACE of a CommonJS module as its `module.exports` (tsc's synthetic symbol of that name):
             // named `name` wherever it's printed
             bool commonjs_exports;
+            u32 outer_count; // See type_params
+            Symbol const* symbol; // null for tuple targets and synthetics
+            struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module
             // Set if this is the value of a declaration with several value declarations (a namespace merged with a
             // function, class or enum): the members are those of all of them, see ty_merged_value_type()
             Symbol const* merged_value;
@@ -282,7 +283,6 @@ struct Ty {
             // local class or interface is declared in, see OuterGenerics) and then its own (localTypeParameters),
             // which are what type arguments are written for. The static side of a class has only the outer ones
             TyList type_params;
-            u32 outer_count;
             OuterGenerics const* outer; // Where the outer ones come from (display: `f<number>.C`)
             // Classes, and interfaces that mention `this` (tsc's isThislessInterface): the polymorphic `this` type, a
             // type parameter constrained to the type itself. Null otherwise
@@ -388,6 +388,9 @@ struct Ty {
         } string_mapping;
     };
 };
+
+// (Hundreds of thousands per checker; the union is as big as `declared`)
+static_assert(sizeof(Ty) == 136);
 
 struct TyCondBranch {
     Ty const* type; // null until lowered if `node` or `source` is set
@@ -540,6 +543,20 @@ typedef struct TyPredicate {
 
 struct Signature {
     u32 flags;
+    // Resolved lazily by signature_resolve()
+    uint8_t state; // LazyState
+    // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
+    // that is in the middle of being checked
+    uint8_t ret_state; // LazyState
+    bool predicate_done;
+    bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
+    // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
+    // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
+    // its own, fresh ones (see clone_type_params())
+    bool instantiates_own_params;
+    LowerCtx ctx;
+    u32 param_count;
+    u32 min_args;
     // Exactly one source: a function (a declaration/expression, or a function type node, see FunctionImpl.is_type)
     // or a target to instantiate
     FunctionImpl const* function;
@@ -552,28 +569,15 @@ struct Signature {
     // A combination of signatures (tsc's combineSignaturesOfUnionMembers): the one whose declaration it has, whose
     // parameters' declarations its own (synthesized) parameters don't have
     struct Signature const* declared_by;
-    bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
-    // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
-    // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're
-    // its own, fresh ones (see clone_type_params())
-    bool instantiates_own_params;
-    LowerCtx ctx;
     Signature const* target;
     TyMapper const* mapper;
-    // Resolved lazily by signature_resolve()
-    LazyState state;
     TyList type_params;
     SigParam const* params;
-    u32 param_count;
-    u32 min_args;
     Ty const* this_type; // `this: T`, not among params. Null if not declared
-    // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
-    // that is in the middle of being checked
-    LazyState ret_state;
     Ty const* ret;
     TyPredicate const* predicate; // Use signature_predicate()
-    bool predicate_done;
 };
+static_assert(sizeof(Signature) == 176);
 
 // A member with a computed name that an object literal's index signature was made of (`[a]: 1`)
 typedef struct IndexComponent {
