@@ -1047,8 +1047,8 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
         !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
     ) {
         // tsc's tryVisitTypeQuery: a name that means something else here is named anew where its symbol is accessible
-        // (serializeTypeName), in a node with the query's range: `typeof import("a").x` reuses all but `"a"`, `typeof
-        // a.x` (through a namespace import) only `typeof `. Only for a plain name
+        // (serializeTypeName), in a node with the query's range: `typeof import("a").x` reuses `typeof import(` and
+        // `).`, `typeof a.x` (through a namespace import) only `typeof `. Only for a plain name
         Symbol const* symbol = leftmost == node->typeof_->expr ? leftmost->identifier.symbol : nullptr;
         if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias((Symbol*)symbol);
         if (symbol && !symbol->is_local && !symbol->is_parameter && !symbol->is_placeholder && symbol->parent &&
@@ -1064,8 +1064,7 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
             if (close && d.reused) {
                 char* underline = (char*)cstr_str(d.underline) + underline_start;
                 memset(underline, ' ', strlen("import("));
-                isize_t from = (close + 1 - text) + extra;
-                memset(underline + from, ' ', (size_t)(cstr_size(d.underline) - underline_start - from));
+                memset(underline + (close + 1 - text) + extra, ' ', 2);
             }
             return;
         }

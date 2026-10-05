@@ -8478,7 +8478,7 @@ const baselines = {
     'declarationEmitPartialNodeReuseTypeOf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPartialNodeReuseTypeReferences': {
         errors: true,
@@ -29813,7 +29813,7 @@ const baselines = {
     'symlinkedWorkspaceDependenciesNoDirectLinkGeneratesDeepNonrelativeName': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'symlinkedWorkspaceDependenciesNoDirectLinkGeneratesNonrelativeName': {
         errors: true,
