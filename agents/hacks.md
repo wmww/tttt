@@ -593,6 +593,13 @@ src` finds the code-side markers; every significant one has an entry here.
   markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m, where
   tsc would count the read (its containing function is the nested one).
 
+- `interface_declaration_kind()` (check.c): whether an interface member declaration is a `get`/`set` accessor is
+  read from its declaration span's text; InterfaceMember has no flag for a lone getter (the parser folds accessors into
+  property-like members).
+- `merge_into_umd_globals()` (scope.c): declarations merged into a UMD global move into its module whatever the file
+  order (tsc drops the UMD global when a script declared the name first) and skip a conflicting target silently (tsc
+  reports it against the resolved target).
+
 ## JavaScript and JSDoc (plan 26)
 - `ClassDecl.jsdoc_base` (a mismatched or empty `@augments`, tsc's getEffectiveBaseTypeNode) is only what
   `class_base()` resolves; the other readers of `ClassDecl.extends` (base constructor checks, arity, display) still
