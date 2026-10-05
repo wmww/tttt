@@ -8946,6 +8946,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     ) {
         goto operators;
     }
+    bool missing_call_args = false;
     if (p.pos[0] == '?' && p.pos[1] == '.' && (p.pos[2] == '(' || p.pos[2] == '[')) {
         optional_chain = true;
         p.pos += 2;
@@ -8959,13 +8960,19 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         VecSpannedType params;
         if (parse_generic_params(&q, true, &params)) {
             hop_whitespace(&q);
-            if (*q.pos == '(') {
+            // (tsc's canFollowTypeArgumentsInExpression: then the type arguments make a call, its `(` maybe missing)
+            Tok next = tok_peek(&q);
+            bool can_follow = *q.pos == '(' || *q.pos == '`' || (!tok_is(next, "<") && !tok_is(next, ">") &&
+                !tok_is(next, "+") && !tok_is(next, "-") && (q.whitespace == WHITESPACE_NEWLINE ||
+                tok_is_binary_operator(next) || !tok_is_start_of_expression(&q, next)));
+            if (can_follow && *q.pos != '`') {
                 *left_and_ret = expr_generic_params(span_from(args_a), c_new(GenericParamsExpr, {
                     .expr = *left_and_ret,
                     .params = params,
                 }));
                 parse_success(&q);
                 optional_chain = true;
+                missing_call_args = *p.pos != '(';
             } else {
                 vec_spanned_type_drop(&params);
                 parse_fail(&q);
@@ -8975,7 +8982,12 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
     }
 
-    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && parse_call_args(&p, &parsed.args)) {
+    if (missing_call_args) {
+        // `f?.<T>;`: a call missing its argument list (tsc's parseArgumentList: '(' expected)
+        expected_token_error(&p, "(");
+        parsed.args = (VecExpr){0};
+    }
+    if (!ctx.entity_name && new_keyword_precedence > ctx.min_precedence && (missing_call_args || parse_call_args(&p, &parsed.args))) {
         mark_chain_continues(left_and_ret);
         *left_and_ret = expr_call(
             span_from(a),

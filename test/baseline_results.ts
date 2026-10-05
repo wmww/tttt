@@ -66006,7 +66006,7 @@ const baselines = {
         types: true,
     },
     'instantiationExpressionErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
