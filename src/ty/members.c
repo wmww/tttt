@@ -2359,6 +2359,17 @@ static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
     return ty;
 }
 
+// An intersection member that is a type variable or a still generic mapped type (tsc's isGenericObjectType)
+static bool intersection_has_generic_part(Checker* me, Ty const* intersection) {
+    for (u32 i = 0; i < intersection->composite.types.len; i++) {
+        Ty const* part = intersection->composite.types.data[i];
+        if (part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED)) return true;
+        if (part->kind == TY_ANONYMOUS && (part->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, part)->mapped) return true;
+        if (!(part->flags & TYF_OBJECT)) return true;
+    }
+    return false;
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -2404,7 +2415,10 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     u32 key_count;
     union_members(&constraint, &keys, &key_count);
     Ty const** member_keys = nullptr;
-    bool keyed_intersection = keyed && keyed->kind == TY_INTERSECTION && !(keyed->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    // (An intersection of object types that aren't generic: TYF_COULD_CONTAIN_TYPE_VARIABLES says too little, any type
+    // literal with a `typeof` in it has it)
+    bool keyed_intersection = keyed && keyed->kind == TY_INTERSECTION &&
+        (!(keyed->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || !intersection_has_generic_part(me, keyed));
     if (mapped->keyof_constraint && keyed && ((keyed->flags & TYF_OBJECT) || keyed_intersection)) {
         // `[K in keyof T]` goes by the members of T (tsc's forEachMappedTypePropertyKeyTypeAndIndexSignatureKeyType):
         // a string index is the key `string` alone, and the property names aren't absorbed by it like in `keyof T`.
