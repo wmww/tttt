@@ -3,8 +3,9 @@ Planned 2026-09-29 (todo entry 9 of the seventh window). Three stages, stage 1 i
 
 ## Status (2026-10-04)
 **All three stages done** (todo entry 6 of the eighth window): tsc-src and typescript-eslint at 0 under `-b`;
-`./scenarios.py` 208 pass / 10 fail (TS1005 in tsconfig, TS5083 missing `extends`, TS6377 out of scope, the CLI's phase
-gating, TS2613/TS1192, TS1479: triage.md). What remains is perf (parallel name resolution of referenced sources, the
+`./scenarios.py` 213 pass / 5 fail (TS6377 out of scope, TS2613/TS1192, TS1479: triage.md; the CLI's phase gating,
+config syntax errors and a missing `extends` were fixed 2026-10-05: `diagnostic_kind()` in main.c,
+`program_set_config_file()`, `tsconfig_load_diagnosed()`; leftovers in hacks.md "Config syntax"). What remains is perf (parallel name resolution of referenced sources, the
 biggest phase of `-b` on both corpora). The stage notes below are as they were written.
 
 **Stage 1 done** in one session (todo entry 3 of the eighth window): `src/project.{h,c}`, the redirects, `-p`/`-b`,
@@ -15,8 +16,9 @@ biggest phase of `-b` on both corpora). The stage notes below are as they were w
   3.65 s wall, 755 MB peak (tsc -b 15.6 s); threads 1 and 4 byte-identical.
 - `./scenarios.py`: 199 pass, 19 fail, 82 skipped with reasons. The 19: TS1005 in tsconfig (tttt's JSON reader
   doesn't report syntax errors), TS4023/TS4094 (plan 40: a declaration walk gap, and none at all with `--noCheck`),
-  TS6377 (tsbuildinfo, out of scope), extends of a missing file (tsc: TS5083 and goes on; tttt fails the config),  TS2613/TS1192 and an ESM-to-ESM synthetic default under bundler, TS1479 on a JSX
-  runtime import, `--composite null`. All in triage.md.
+  TS6377 (tsbuildinfo, out of scope), extends of a missing file (tsc: TS5083 and goes on; tttt fails the config), the
+  CLI's phase gating, TS2613/TS1192 and an ESM-to-ESM synthetic default under bundler, TS1479 on a JSX runtime import,
+  `--composite null`. All in triage.md.
 - Stage 2's profile (`--time`, summed over the 13 programs): resolve names 1.48 s, load+parse 0.78 s, typecheck
   0.55 s, libs 0.05 s. **Name resolution of referenced projects' files, redone in every program, is the cost**; checking
   only the project's own files already made typecheck small. Teardown between programs isn't visible in the total.
