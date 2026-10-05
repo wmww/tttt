@@ -506,25 +506,7 @@ static void display_ternary_type(Display d, TernaryType* me) {
     display_type(d, &my if_false);
 }
 
-// A legacy structural type can contain itself (a module that imports its own namespace), and nothing here tracks what
-// is being printed already. tsc prints such a type by name or as "...", we just stop. Goes away with the legacy display
-static thread_local int display_type_depth = 0;
-enum { DISPLAY_TYPE_MAX_DEPTH = 100 };
-
-static void display_type_inner(Display d, TypeNode const* me);
-
 void display_type(Display d, TypeNode const* me) {
-    if (display_type_depth >= DISPLAY_TYPE_MAX_DEPTH) {
-        display_lit(d, "...");
-        return;
-    }
-    display_type_depth++;
-    display_type_inner(d, me);
-    display_type_depth--;
-}
-
-static void display_type_inner(Display d, TypeNode const* me) {
-
     switch (my tag) {
         case TYPE_ANY: display_colored(d, color_type, "any"); break;
         case TYPE_UNKNOWN: display_colored(d, color_type, "unknown"); break;
