@@ -1520,6 +1520,18 @@ static u32 min_argument_count(Checker* me, Signature const* sig) {
     return min;
 }
 
+// tsc's getMinArgumentCount with the required elements of a rest tuple (`(...args: [a: A]) => R` takes one)
+static u32 tuple_min_argument_count(Checker* me, Signature const* sig) {
+    u32 min = min_argument_count(me, sig);
+    if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return min;
+    TupleShape const* shape = ty_tuple_shape(sig->params[sig->param_count - 1].type);
+    if (!shape) return min;
+    u32 required = 0;
+    while (required < shape->arity && !(shape->flags[required] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) required++;
+    u32 with_rest = sig->param_count - 1 + required;
+    return required && with_rest > min ? with_rest : min;
+}
+
 // `return_code`: what failing return types say (tsc's incompatibleErrorReporter), 0 for nothing: 2202-2205, see
 // report_incompatible()
 // tsc's getNonArrayRestType
@@ -1695,8 +1707,8 @@ static Ternary compare_signatures(
         if (!source_type || !target_type) break;
         // (With strict arity an optional source parameter against a required one fails even of the same type: tsc's
         // `sourceType !== targetType || checkMode & StrictArity`)
-        bool arity_check = st->relation == TY_RELATION_STRICT_SUBTYPE && i >= min_argument_count(me, source) &&
-            i < min_argument_count(me, target);
+        bool arity_check = st->relation == TY_RELATION_STRICT_SUBTYPE && i >= tuple_min_argument_count(me, source) &&
+            i < tuple_min_argument_count(me, target);
         if (source_type == target_type && !arity_check) continue;
         if (arity_check) {
             // `(x?: T) => void` isn't a strict subtype of `(x: T | undefined) => void`, the other way around it is
