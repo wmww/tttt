@@ -352,7 +352,7 @@ static u32 bigint_limbs(BigintValue value, u32** out) {
     char const* p = value.text;
     char const* end = value.text + value.len;
     u32 base = 10;
-    if (end - p > 2 && p[0] == '0' && strchr("xXoObB", p[1])) {
+    if (end - p >= 2 && p[0] == '0' && strchr("xXoObB", p[1])) {
         base = (p[1] == 'x' || p[1] == 'X') ? 16 : (p[1] == 'o' || p[1] == 'O') ? 8 : 2;
         p += 2;
     }
