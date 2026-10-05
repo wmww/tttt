@@ -551,25 +551,74 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
     return true;
 }
 
-// The annotation of an async function names the global Promise, from ES2015 on (tsc's checkAsyncFunctionReturnType;
-// TODO: below ES2015, what it names has to be a Promise-compatible constructor value, TS1055)
+// tsc's reportErrorForInvalidReturnType: at the annotation, or where a JavaScript function's `@type` tag names the
+// signature whose return type it is, with the annotation's message as related information there
+static void report_invalid_async_return(ErrorCtx* errs, Span location, Span ret_span, unsigned code, cstr message) {
+    if (span_eq(location, ret_span)) {
+        error_ctx_error_s(errs, ret_span, code, message);
+    } else {
+        Error* error = error_ctx_error_d(errs, location, 1065, "The return type of an async function or method must be the "
+            "global Promise<T> type.");
+        error_add_related_s(error, ret_span, code, message);
+    }
+}
+
+// Below ES2015 the annotation of an async function names a Promise constructor value (tsc's
+// checkAsyncFunctionReturnType). TODO: that value's type has to be PromiseConstructorLike (TS1055 too)
+static void check_es5_async_return_annotation(TypeNode const* node, Ty const* ret, Span location, Span ret_span,
+    Ty const* promise, ErrorCtx* errs
+) {
+    IdentifierType const* id = node->tag == TYPE_IDENTIFIER ? node->identifier : nullptr;
+    char const* message = "' is not a valid async function return type in ES5 because it does not refer to a Promise-compatible "
+        "constructor value.";
+    if (!id || id->keyword || (id->rare && id->rare->import_ref)) {
+        report_invalid_async_return(errs, location, ret_span, 1055, cstr_d("Type '", ret, message));
+        return;
+    }
+    // (Its value meaning: the symbol it names merged with a value)
+    Symbol const* target = id->target;
+    if (target && target->flags & SYMBOL_VALUE) return;
+    bool qualified = id->rare && vec_span_size(&id->rare->namespaces);
+    Span name = qualified ? span_between(*vec_span_at(&id->rare->namespaces, 0), id->name) : id->name;
+    if (!qualified && span_equals(id->name, "Promise") && promise && ret->kind == TY_REFERENCE && ret->reference.target == promise) {
+        error_ctx_error_d(errs, location, 2705, "An async function or method in ES5 requires the 'Promise' constructor.  Make "
+            "sure you have a declaration for the 'Promise' constructor or include 'ES2015' in your '--lib' option.");
+        return;
+    }
+    report_invalid_async_return(errs, location, ret_span, 1055, cstr_d("Type '", name, message));
+}
+
+// The annotation of an async function names the global Promise, from ES2015 on (tsc's checkAsyncFunctionReturnType)
 void ty_check_async_return_annotation(Checker* me, FunctionImpl const* function, ErrorCtx* errs) {
     if (!function->is_async || function->is_generator) return;
     // (Or the written return type of a JSDoc `@type` signature: tsc's getEffectiveReturnTypeNode)
     FunctionImpl const* tag = function->ret_explicit ? nullptr : function_impl_jsdoc_tag_signature(function);
+    // (A JavaScript `@type` naming a type with a single call signature: that signature's declaration)
+    TypeNode const* tag_type = function_impl_rare(function)->jsdoc_signature_type;
+    if (!function->ret_explicit && !tag && tag_type && tag_type->tag == TYPE_IDENTIFIER) {
+        Ty const* named = ty_from_node(me, tag_type, (LowerCtx){ .generic = true });
+        Members const* members = named->flags & TYF_OBJECT ? ty_members(me, named) : nullptr;
+        if (members && members->call_count == 1 && !members->construct_count) tag = members->call[0]->function;
+    }
     if (!function->ret_explicit && !(tag && tag->ret_explicit && span_valid(function_impl_ret_span(tag)))) return;
-    if (compiler_options()->target < SCRIPT_TARGET_ES2015) return;
     Ty const* ret = tag ? ty_jsdoc_tag_return_type(me, function) : ty_from_node(me, &function->ret, (LowerCtx){ .generic = true });
     if (!ret) return;
     Span ret_span = tag ? function_impl_ret_span(tag) : function_impl_ret_span(function);
+    // (A `@type` tag's type is where errors go: tsc's checkFunctionOrMethodDeclaration, returnTypeErrorLocation)
+    Span location = tag && span_valid(function_impl_rare(function)->jsdoc_signature_span) ?
+        function_impl_rare(function)->jsdoc_signature_span : ret_span;
     if (ret->flags & TYF_ERROR) return;
     Symbol const* promise_symbol = program_get_global(my program, c_sv("Promise"), SYMBOL_TYPE);
     Ty const* promise = promise_symbol ? ty_declared_type_of(me, promise_symbol) : nullptr;
+    if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
+        check_es5_async_return_annotation(tag ? &tag->ret : &function->ret, ret, location, ret_span, promise, errs);
+        return;
+    }
     if (!promise || promise->kind != TY_DECLARED || promise->declared.type_params.len != 1) return;
     if (ret == promise || (ret->kind == TY_REFERENCE && ret->reference.target == promise)) return;
     Ty const* awaited = ty_awaited_no_alias(me, ret);
-    error_ctx_error_d(errs, ret_span, 1064, "The return type of an async function or method must be the global "
-        "Promise<T> type. Did you mean to write 'Promise<", awaited ? awaited : ty_intrinsic(me, TY_VOID), ">'?");
+    report_invalid_async_return(errs, location, ret_span, 1064, cstr_d("The return type of an async function or method must be "
+        "the global Promise<T> type. Did you mean to write 'Promise<", awaited ? awaited : ty_intrinsic(me, TY_VOID), ">'?"));
 }
 
 // A function (or class) whose call (construction) would fit: the whole error, plus a hint

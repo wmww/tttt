@@ -1921,7 +1921,7 @@ const baselines = {
         types: true,
     },
     'asyncFunctionReturnExpressionErrorSpans': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33946,7 +33946,7 @@ const baselines = {
         types: true,
     },
     'asyncAliasReturnType_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -51836,7 +51836,7 @@ const baselines = {
         types: true,
     },
     'errorOnFunctionReturnType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
