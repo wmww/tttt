@@ -3662,7 +3662,7 @@ const baselines = {
     },
     'classExtendsInterfaceInModule': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'classExtendsInterfaceThatExtendsClassWithPrivates1': {
@@ -31637,12 +31637,12 @@ const baselines = {
     },
     'typeValueConflict1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeValueConflict2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeVariableConstraintIntersections': {
@@ -65237,7 +65237,7 @@ const baselines = {
     },
     'genericTypeReferenceWithoutTypeArgument2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'genericTypeReferenceWithoutTypeArgument3': {

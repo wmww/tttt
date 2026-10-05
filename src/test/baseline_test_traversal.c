@@ -1714,10 +1714,51 @@ static void heritage_type_compile_test_info(TypeNode const* type, BaselineTestCa
     ctx->heritage_type = false;
 }
 
+// An entity name `A.B.C` a class extends that the checker couldn't make a base of: tsc's getSymbolAtLocation resolves
+// it as an entity name (isHeritageClauseElementIdentifier): every name but the last with a namespace meaning (`M1` of
+// `M1.A` is the namespace even where a variable M1 shadows it), the whole with a value meaning. Overrides the lines
+// of what resolves, see add_symbol_override()
+static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
+    Expr* nodes[16];
+    u32 n = 0;
+    Expr* e = base;
+    while (e->tag == EXPR_PROPERTY && e->property->form == PROPERTY_EXPR_DOT && !e->property->optional_chain &&
+        !expr_is_perenthisized(e) && e->property->prop.tag == EXPR_LITERAL && n < c_arraylen(nodes)
+    ) {
+        nodes[n++] = e;
+        e = &e->property->expr;
+    }
+    if (!n || e->tag != EXPR_IDENTIFIER || expr_is_perenthisized(e) || e->identifier.keyword || !ctx->enclosing) return;
+    Symbol const* found = scope_resolve(ctx->enclosing, e->inner_span.sv, SYMBOL_NAMESPACE);
+    if (!found || found->is_placeholder || !symbol_for_meaning(found, SYMBOL_NAMESPACE)) return;
+    if (!e->identifier.target && !e->identifier.namespace_as_value && !e->identifier.invalid_initializer_reference) {
+        // (Not a value: the identifier shows nothing of its own, `M` of `extends M.C` with an uninstantiated M)
+        baseline_test_case_add_symbol(ctx, (BaselineSym){
+            .declarations = declaration_get_spans(found),
+            .span = e->inner_span,
+            .text = symbol_text(ctx, found),
+        });
+    } else if (found != e->identifier.symbol) {
+        add_symbol_override(ctx, e->inner_span, found);
+    }
+    for (u32 k = n; k-- > 0;) {
+        Symbol const* container = symbol_for_meaning(found, SYMBOL_NAMESPACE);
+        if (!container || container->is_placeholder) return;
+        csview name = expr_outer_span(&nodes[k]->property->prop).sv;
+        Symbol const* next = symbol_get_export(container, name);
+        if (!next || !symbol_for_meaning(next, k ? SYMBOL_NAMESPACE : SYMBOL_VALUE)) return;
+        add_symbol_override(ctx, nodes[k]->inner_span, next);
+        add_symbol_override(ctx, expr_outer_span(&nodes[k]->property->prop), next);
+        found = next;
+    }
+}
+
 // An element of a class's `extends` clause: the base type (instance) if there is one, else the expression's
 static void class_extends_compile_test_info(Expr* extends, Ty const* instance, BaselineTestCase* ctx) {
     bool generic = extends->tag == EXPR_GENERIC_PARAMS;
     Expr* base = generic ? &extends->generic_params->expr : extends;
+    u32 overrides = ctx->symbol_override_count;
+    if (!instance || (instance->flags & TYF_ANY)) heritage_entity_overrides(base, ctx);
     if (instance && !(instance->flags & TYF_ANY)) {
         // (Only the clause's expression itself is the base type: what's parenthesized in it is an expression like
         // any other, `class D extends (await p)` has `await p : typeof C`)
@@ -1735,6 +1776,11 @@ static void class_extends_compile_test_info(Expr* extends, Ty const* instance, B
         expr_compile_test_info_inner(base, ctx);
     } else {
         expr_compile_test_info(base, ctx);
+    }
+    while (ctx->symbol_override_count > overrides) {
+        ctx->symbol_override_count--;
+        cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
+        vec_span_drop(&ctx->symbol_overrides[ctx->symbol_override_count].declarations);
     }
     if (generic) {
         for_each (i, vec_spanned_type, &extends->generic_params->params) type_compile_test_info(&i->type, ctx);
