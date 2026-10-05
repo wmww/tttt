@@ -65911,7 +65911,7 @@ const baselines = {
         types: true,
     },
     'intrinsicKeyword': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

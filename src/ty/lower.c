@@ -190,9 +190,7 @@ static Ty const* enum_member_type(Checker* me, Symbol const* symbol) {
 
 // `type X = intrinsic` (the lib's Uppercase<S> & co.): the builtin name, not a type called `intrinsic`
 static bool is_intrinsic_body(TypeNode const* body) {
-    return body->tag == TYPE_IDENTIFIER && body->identifier->target && !identifier_type_namespace_count(body->identifier) &&
-        csview_equals(body->identifier->name.sv, "intrinsic") &&
-        symbol_find_decl(body->identifier->target, SYMBOL_DECL_BUILTIN);
+    return body->tag == TYPE_IDENTIFIER && body->identifier->intrinsic_keyword;
 }
 
 // The type a symbol stands for in a type position: the symbol must be the one that has the type meaning (what

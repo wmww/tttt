@@ -284,6 +284,17 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
         ty_declared_type_of(current_checker, my symbol);
         ty_leave_node(current_checker, saved);
     }
+    // (tsc's checkTypeAliasDeclaration: only the compiler's intrinsic types, with one type parameter)
+    if (my type.tag == TYPE_IDENTIFIER && my type.identifier->intrinsic_keyword) {
+        static char const* const kinds[] = { "Uppercase", "Lowercase", "Capitalize", "Uncapitalize", "NoInfer" };
+        bool known = false;
+        for (u32 i = 0; i < c_arraylen(kinds) && !known; i++) known = csview_equals(my name.sv, kinds[i]);
+        isize count = vec_generic_item_size(&my generic.items);
+        if (count == 0 ? !csview_equals(my name.sv, "BuiltinIteratorReturn") : count != 1 || !known) {
+            error_ctx_error_d(errs, my type.identifier->name, 2795,
+                "The 'intrinsic' keyword can only be used to declare compiler provided intrinsic types.");
+        }
+    }
     current_checker->alias_body_walks++;
     type_typecheck(&my type, errs);
     current_checker->alias_body_walks--;
@@ -1712,7 +1723,14 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             my decl.type->outer_generics = names->generics;
             my decl.type->local |= names->kind == SCOPE_BLOCK || names->kind == SCOPE_FUNCTION || names->kind == SCOPE_STATIC_BLOCK;
             Scope* generic_scope = scope_new_generic(self_scope, &my decl.type->generic, my decl.type->name, span_null, errs);
-            type_lookup_names(&my decl.type->type, generic_scope, errs);
+            TypeNode* body = &my decl.type->type;
+            if (body->tag == TYPE_IDENTIFIER && !body->parenthesized && !body->identifier->keyword &&
+                span_equals(body->identifier->name, "intrinsic") && !identifier_type_namespace_count(body->identifier) &&
+                vec_spanned_type_is_empty(&body->identifier->generic_params) && !body->identifier->jsdoc
+            ) {
+                body->identifier->intrinsic_keyword = true; // (tsc's parseTypeAliasDeclaration)
+            }
+            type_lookup_names(body, generic_scope, errs);
         }   break;
 
         case STATEMENT_DECL_INTERFACE:

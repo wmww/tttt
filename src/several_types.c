@@ -274,6 +274,11 @@ static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
 
 _Thread_local TypeParamDefaultScope identifier_type_default_scope;
 
+// The global `intrinsic` tttt declares for the lib's intrinsic aliases (program.c's GLOBAL_TYPE)
+static bool is_builtin_intrinsic(Symbol const* symbol) {
+    return csview_equals(symbol->name, "intrinsic") && symbol_find_decl(symbol, SYMBOL_DECL_BUILTIN);
+}
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
@@ -309,6 +314,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 if (!decl) {
                     Symbol const* type_symbol = nullptr;
                     Symbol const* type = my jsdoc ? nullptr : scope_get_type(names, i->sv, &type_symbol);
+                    if (type && i->sv.size == 9 && is_builtin_intrinsic(type)) type = nullptr;
                     if (type && !(type->flags & SYMBOL_NAMESPACE) && !type->is_placeholder) {
                         rare->type_as_namespace = type;
                     } else if (!scope_report_misspelled_namespace(names, *i, errs)) {
@@ -374,8 +380,12 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 if (value.kind == THIS_ANY) identifier_type_rare(me)->this_function = value.function;
             }
         }
+    } else if (my intrinsic_keyword) {
+        my target = my symbol = symbol_table_get(&names->binder->globals, my name.sv);
     } else {
         my target = scope_get_type(names, my name.sv, &my symbol);
+        // (The builtin `intrinsic` is only the keyword of an alias body, see IdentifierType.intrinsic_keyword)
+        if (my target && my name.sv.size == 9 && is_builtin_intrinsic(my target)) my target = my symbol = nullptr;
         // A namespace isn't a type (tsc's checkAndReportErrorForUsingNamespaceAsTypeOrValue, before TS2749)
         if (!my target && !my jsdoc && scope_resolve(names, my name.sv, SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE)) {
             error_ctx_error_d(errs, my name, 2709, "Cannot use namespace '", my name, "' as a type.");

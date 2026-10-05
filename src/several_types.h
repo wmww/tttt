@@ -53,6 +53,9 @@ typedef struct IdentifierType {
     // What a JSDoc name means instead of what it would find (tsc's getIntendedTypeFromJSDocTypeReference), set when
     // resolving: nothing is looked up then
     uint8_t jsdoc_intrinsic;
+    // The whole body of a type alias written `intrinsic`: tsc's IntrinsicKeyword (the lib's Uppercase<S> & co.), not a
+    // name. Anywhere else `intrinsic` is a name like any other (TS2304)
+    bool intrinsic_keyword;
 } IdentifierType;
 
 // The rare part, made on demand
