@@ -302,7 +302,16 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
     }
     if (ctx.generic_mode) {
         // Literals pass it on, and aren't remembered like this; anything else is a member it may apply to
-        if (expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY) return compute(me, expr, ctx);
+        if (expr->tag == EXPR_ARRAY) return compute(me, expr, ctx);
+        if (expr->tag == EXPR_OBJECT) {
+            // (Nor is the contextual type its methods' `this` goes by: the check against the call's chosen candidate,
+            // which a remembered type may answer without checking again, is what tsc's resolved signature says)
+            u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)expr };
+            Ty const* recorded = intern_get(&my links, context_key, 2);
+            Ty const* ret = compute(me, expr, ctx);
+            if (recorded) *intern_slot(me, &my links, context_key, 2) = recorded;
+            return ret;
+        }
         GenericFunctionMode* mode = ctx.generic_mode;
         ctx.generic_mode = nullptr;
         if (!mode->sig && ty_calls_generic_function_returning_function(me, expr)) {
