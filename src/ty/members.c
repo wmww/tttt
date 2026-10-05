@@ -1771,7 +1771,14 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
         if (class_decl->jsdoc_base && class_decl->jsdoc_base->tag == EXPR_IMPLICIT_ANY) continue;
         Ty const* base = nullptr;
         Symbol const* base_decl = nullptr;
-        if (!class_base(me, class_decl, ctx, &base, &base_decl)) return true;
+        if (!class_base(me, class_decl, ctx, &base, &base_decl)) {
+            // (Only a base that constructs a real any: an unresolved name or import is the error type, a base without
+            // members, tsc's isErrorType in getBaseConstructorTypeOfClass)
+            Expr const* extends = &class_decl->extends;
+            if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
+            if (!class_decl->jsdoc_base && (ty_expr_type(me, extends)->flags & TYF_ERROR)) continue;
+            return true;
+        }
         if (base != ty && has_unresolved_base(me, base, depth + 1)) return true;
     }
     return false;

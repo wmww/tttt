@@ -74,9 +74,6 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 one commit each, `./sweep.py` before/after.
 
 ### Small (1-10 lines each)
-- **-TS2339 at classes with an unresolved base** (12 packages; D/unresolvedBase.ts): `has_unresolved_base()`
-  (members.c) is true for an *error-type* base too, so every member is any. tsc only gives a real-`any` base that. Skip
-  TYF_ERROR bases (check that an unresolved import types as TY_ERROR), static side too.
 - **jest +TS2536** (12 packages; B/jest2.ts): a homomorphic mapped type over `keyof X` / a generic template literal /
   string mapping must return the operand (tsc's instantiateConstituent maps only AnyOrUnknown, InstantiableNonPrimitive,
   Object, Intersection). `instantiate_mapped_over_list` (instantiate.c) counts TYF_DEFERRED as mappable.
