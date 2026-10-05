@@ -542,6 +542,8 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_check_element_implicit_any` (TS7053, HACK) skips generic mapped types and unresolved bases.
 - `ty_check_type_reference_constraints` (HACK): deferred conditional arguments aren't checked for TS2344 (default
   constraint lacks inferConditionalConstraintMappedMember; 2000 conditionals vs a 2000-member union exhaust the budget).
+  `generic_check_default()` (generic.c, same HACK) skips a deferred conditional type parameter default against its
+  constraint: costly (type-fest's arithmetic types) and the same missing inference.
 - `ty_check_index_constraints` on type literals only when syntactically needed: evaluating a literal early changes
   union order and loses the alias name.
 - Syntactic stand-ins: overload grouping (`statements_check_overloads`, `class_check_overloads`), TS2729

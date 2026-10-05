@@ -282,3 +282,28 @@ About 50 of 83 still fail errors; by root cause:
   mid-line, list p), APILibCheck (the harness's built `/.ts/*.internal.d.ts`), tripleSlashReferenceAbsoluteWindowsPath
   (passed, regressed on ai-main by backslash normalization: `C:/a/b/c.ts` isn't rooted for tttt's path joining and the
   mock file is named `C:\a\b\c.ts`), `while (a) const x = 1;` still scopes x to the loop (tsc: enclosing block).
+
+### What's left of the fan-out's "only missing diagnostics" list (fo6-a, 2026-10-05)
+By root cause (the tests list c2 took over aren't here):
+- **Fragments as calls of the fragment factory** (plan 22 stage 4, `ty/jsx.c`): jsxFragmentWrongType (TS2322 for
+  `<>{fn}</>` against React.Fragment's props).
+- **libReplacement / `@typescript/lib-*`**: libTypeScriptOverrideSimple, libTypeScriptSubfileResolving (a test's
+  `/// <reference lib>` can't add to the harness's shared lib program either).
+- **Circularity tsc finds and tttt doesn't**: circularBaseTypes (TS2313 for a mapped type's `K in keyof T` with T the
+  interface whose base is being resolved), circularTypeArgumentsLocalAndOuterNoCrash1 (TS4109),
+  exportAsNamespaceConflict and pushTypeGetTypeOfAlias (TS2303: an `export as namespace` alias merged with a
+  `declare global` namespace; a CommonJS `exports.blah = exports.someProp`), exportAssignmentImportMergeNoCrash,
+  ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge.
+- **Limits**: excessivelyLargeTupleSpread (TS2799 for a tuple type alias body: TypeNodes have no span, so no current
+  node), recursiveConditionalCrash4 and circularIndexedAccessErrors (TS2589), normalizedIntersectionTooComplex
+  (TS2590), relationComplexityError (TS2859), largeControlFlowGraph (TS2563, not implemented).
+- **Relations**: deeplyNestedMappedTypes (`Id2<T> = { [K in keyof T]: Id2<Id2<T[K]>> }` still ends in a Maybe;
+  `Id<T>` works since cf5f800d), reactReduxLikeDeferredInferenceAllowsAssignment and
+  circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),
+  mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`), awaitedTypeNoLib,
+  instantiationExpressionErrorNoCrash (TS2344 + TS2635).
+- **Declaration emit**: arrayFakeFlatNoCrashInferenceDeclarations (TS5088), declarationEmitPrivatePromiseLikeInterface
+  (TS7056).
+- **Printing order**: destructuringUnspreadableIntoRest has its errors since fdb9e3c4 but prints the omitted keys of
+  `Omit<this, ...>` in another order (literal creation order, see "Alias/origin preservation" above).
+- moduleAugmentationImportsAndExports2 (TS2339 through an augmentation's re-exports): not investigated.
