@@ -4356,6 +4356,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             if (seen) continue;
             // (Only the members' own properties, not Object's: tsc's skipObjectFunctionPropertyAugment)
             Ty const* parts[16];
+            Prop const* part_props[16];
             u32 part_count = 0;
             bool all_optional = true;
             u32 optional_parts = 0;
@@ -4363,9 +4364,14 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                 Prop const* part = ty_get_prop(me, members.data[j], name);
                 if (!part) continue;
                 if (part->flags & PROP_OPTIONAL) optional_parts |= 1u << part_count;
-                parts[part_count++] = prop_type(me, part);
+                part_props[part_count++] = part;
                 all_optional &= (part->flags & PROP_OPTIONAL) != 0;
             }
+            // The source's own property, which only one member has: the same symbol, nothing to relate (tsc's
+            // propertiesRelatedTo skips `sourceProp === targetProp`; its type may still be being computed: a class's
+            // static `create = f(C)` relating `typeof C` to `C & ...`)
+            if (part_count == 1 && source->flags & TYF_OBJECT && ty_get_prop(me, apparent_type(me, source), name) == part_props[0]) continue;
+            for (u32 j = 0; j < part_count; j++) parts[j] = prop_type(me, part_props[j]);
             // (An optional part's undefined counts when the property is required: see find_prop_in())
             if (optional_parts && !all_optional && optional_adds_undefined()) {
                 Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
