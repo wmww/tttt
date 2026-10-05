@@ -2597,7 +2597,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             bool declared_here = false;
             for (u32 i = 0; i < d.infer_params.len; i++) declared_here |= d.infer_params.data[i] == ty;
             if (declared_here) out_lit(d, "infer ");
-            out_type_param_name(me, d, ty, false);
+            // (Declared here, the name gets its declaration's range: tsc's typeParameterToName, reused)
+            out_type_param_name(me, declared_here ? reused_if(d, true) : d, ty, false);
             if (declared_here && ty->param.state->constraint_node) {
                 out_lit(d, " extends ");
                 TyDisplay inner = d;

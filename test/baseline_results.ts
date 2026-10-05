@@ -5498,7 +5498,7 @@ const baselines = {
     'conditionalTypeAssignabilityWhenDeferred': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conditionalTypeBasedContextualTypeReturnTypeWidening': {
         errors: true,
@@ -15718,7 +15718,7 @@ const baselines = {
     'identicalGenericConditionalsWithInferRelated': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'identicalTypesNoDifferByCheckOrder': {
         errors: true,
@@ -63523,7 +63523,7 @@ const baselines = {
     'inferTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypesInvalidExtendsDeclaration': {
         errors: true,
