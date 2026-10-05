@@ -847,7 +847,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
             error_ctx_error_d(
                 scope->binder->errs,
                 initializer->binding.content_span,
-                2404,
+                my keyword == FOR_EACH_LOOP_OF ? 2483 : 2404,
                 "The left-hand side of a 'for...",
                 for_each_loop_statement_keyword_str(me).str,
                 "' statement cannot use a type annotation."
