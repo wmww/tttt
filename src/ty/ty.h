@@ -650,15 +650,16 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, struct ObjectL
 Ty const* ty_mapped_template_instantiated(Checker* me, MappedInfo const* mapped, TyMapper const* mapper);
 
 struct Members {
+    // (The counts are packed in pairs: there are tens of thousands of these)
     Prop* const* props; // declaration order
     u32 prop_count;
+    u32 call_count;
     Prop* const* props_by_name; // sorted by name atom address, for lookup. Null for small tables
     Signature* const* call;
-    u32 call_count;
     Signature* const* construct;
     u32 construct_count;
-    IndexInfo const* index;
     u32 index_count;
+    IndexInfo const* index;
     // Non-null for a mapped type whose keys aren't known. It has no other members, except `{ [K in keyof T]: X }` with T
     // generic: a property per property of T's constraint (see expand_generic_homomorphic())
     MappedInfo const* mapped;
