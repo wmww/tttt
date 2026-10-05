@@ -83,8 +83,6 @@ one commit each, `./sweep.py` before/after.
 - **Methods of an object literal against a union with an index signature member get no contextual parameter types**
   (C/unionidx.ts, unionidx3.ts: TS7006 on `setup(data, ns) {}` against `{ noBubble } | { setup(...) } | { [k: string]:
   any }`; tsc types them from the `setup` member). Not investigated; no package found failing on it alone.
-- **A module nested in a `declare module` block is an augmentation** (i18next-sprintf-postprocessor; D/augm):
-  statement.c treats it as a global ambient module (`augmentation = scope->kind == SCOPE_MODULE` only).
 - **JSX factory from a UMD global gets no TS2686** (mdx 69; D/jsxumd): `jsx_reference_factory()` (expr.c) should call
   `check_umd_global_use()`.
 - **Literal-keyof inference object is indexable** (rrdtool; D/literalKeyof.ts): `empty_object_from_string_literals()`
