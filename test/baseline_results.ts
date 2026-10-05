@@ -65912,13 +65912,13 @@ const baselines = {
     },
     'intrinsicKeyword': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'intrinsicTypes': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'reservedNamesInAliases': {
         errors: false,

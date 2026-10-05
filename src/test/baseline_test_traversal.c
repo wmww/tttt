@@ -899,6 +899,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 break;
             }
             if (my identifier->keyword == KEYWORD_IDENTIFIER_THIS) break; // A `this` type isn't an identifier to tsc
+            if (my identifier->intrinsic_keyword) break; // (Nor `type T = intrinsic`: a keyword)
             // (An alias of an anonymous class, `import C = require()` of `export = class {}`, is shown)
             if (my identifier->target && !span_valid(my identifier->target->name_span) &&
                 !(my identifier->symbol && my identifier->symbol != my identifier->target &&
@@ -1837,10 +1838,13 @@ void type_decl_compile_test_info(TypeDecl const* me, BaselineTestCase* ctx) {
         .text = baseline_test_case_module_alias_text(ctx, my symbol),
     });
     // The declared type as the new core knows it, which carries the alias name where tsc would
-    baseline_test_case_add_type(
-        ctx, my name,
-        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_intrinsic(current_checker, TY_ANY)
-    );
+    Ty const* declared = my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_intrinsic(current_checker, TY_ANY);
+    if (my type.tag == TYPE_IDENTIFIER && my type.identifier->intrinsic_keyword && (declared->flags & TYF_ANY)) {
+        // `type X = intrinsic` that isn't one of the lib's: tsc's intrinsicMarkerType, an any named `intrinsic`
+        baseline_test_case_add_type_text(ctx, my name, c_sv("intrinsic"));
+    } else {
+        baseline_test_case_add_type(ctx, my name, declared);
+    }
     generic_compile_test_info(&my generic, ctx);
     type_compile_test_info(&my type, ctx);
     baseline_test_case_leave_generic(ctx, saved_generic);
