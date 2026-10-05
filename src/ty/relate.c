@@ -3459,12 +3459,13 @@ static Ternary generic_mapped_target_related(
         mapped_info_of(me, source, &generic_source);
     }
     if (generic_source) return mapped_related(me, st, ty_members(me, source)->mapped, mapped, report);
+    // (Not with `-?`: tsc skips the target's rules for MappedTypeModifiers.ExcludeOptional, T isn't Required<T>)
+    if (mapped->optional < 0) return TERNARY_FALSE;
     if (!mapped->name_type && template->kind == TY_INDEXED && template->indexed.object == source &&
         template->indexed.index == mapped->type_param
     ) {
         return TERNARY_TRUE;
     }
-    if (mapped->optional < 0) return TERNARY_FALSE;
     Ty const* target_keys = mapped->name_type ? mapped->name_type : mapped->constraint;
     // (The source's property names: its index signatures don't make it have every key, IndexFlags.NoIndexSignatures)
     Ty const* source_keys = ty_keyof_without_index_signatures(me, source);
