@@ -71,7 +71,7 @@ static Ty const* missing_property_type(Checker* me, Expr const* expr, Ty const* 
     if ((object->flags & TYF_ANY) || global_this || ty_has_unresolved_base(me, object)) return any_type(me);
     // What a JavaScript object literal made has every property, except in a JavaScript file that isn't checked (tsc's
     // checkPropertyAccessExpressionOrQualifiedName: isUncheckedJSSuggestion makes it a suggestion and errorType)
-    SourceFile const* file = expr->outer_span.source;
+    SourceFile const* file = expr_outer_span(expr).source;
     bool unchecked_js = file && file->is_js && file->unchecked;
     // (Not when what it's a property of was declared in another global file: approximated by the object's name)
     Expr const* object_expr = &expr->property->expr;
@@ -1572,8 +1572,8 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         Binding const* binding = symbol_find_node(identifier->target, SYMBOL_DECL_VARIABLE);
         Binding const* pattern = binding ? binding->parent : nullptr;
         for (u32 i = 0; pattern && i < my contextual_pattern_count; i++) {
-            if (my contextual_patterns[i] == pattern && span_start_ptr(pattern->content_span) <= span_start_ptr(expr->outer_span) &&
-                span_end_ptr(expr->outer_span) <= span_end_ptr(pattern->content_span)
+            if (my contextual_patterns[i] == pattern && span_start_ptr(pattern->content_span) <= span_start_ptr(expr_outer_span(expr)) &&
+                span_end_ptr(expr_outer_span(expr)) <= span_end_ptr(pattern->content_span)
             ) {
                 return ty_intrinsic(me, TY_ANY);
             }
@@ -2003,7 +2003,7 @@ static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
     if (binary_commonjs_declaration(binary, nullptr) != COMMONJS_TARGET_NONE) return true;
     // `module.exports = v` of any JavaScript file, an ES module's too (tsc's getAssignmentDeclarationKind is syntactic:
     // AssignmentDeclarationKind.ModuleExports), unless v is `void 0`
-    SourceFile const* file = binary->left.outer_span.source;
+    SourceFile const* file = expr_outer_span(&binary->left).source;
     if (!file || !file->is_js || binary->op != BINARY_OP_EQUAL || expr_is_perenthisized(&binary->left) ||
         !expr_is_module_exports(&binary->left)
     ) {
@@ -2022,7 +2022,7 @@ static bool is_commonjs_declaration(BinaryOpExpr const* binary) {
 static bool is_js_container_declaration(BinaryOpExpr const* binary) {
     Expr const* left = &binary->left;
     if (left->tag != EXPR_PROPERTY) return false;
-    SourceFile const* file = left->outer_span.source;
+    SourceFile const* file = expr_outer_span(left).source;
     if (!file || !file->is_js) return false;
     Symbol const* symbol = left->property->declares;
     // (A CommonJS export: `module.exports.A = {}; module.exports.A.B = 1`)
@@ -2048,7 +2048,7 @@ static bool is_js_container_declaration(BinaryOpExpr const* binary) {
 // the export's value declaration (the first assignment that declares it), else none
 static Ty const* commonjs_declaration_context(BinaryOpExpr const* binary) {
     if (binary->jsdoc_type) return ty_of_node(binary->jsdoc_type);
-    SourceFile const* file = binary->left.outer_span.source;
+    SourceFile const* file = expr_outer_span(&binary->left).source;
     Symbol const* module = file && file->scope ? file->scope->container : nullptr;
     if (!module || !module->exports) return nullptr;
     Span name = span_null;
@@ -3282,7 +3282,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             }
             continue;
         }
-        if (compiler_options()->exact_optional_property_types && i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
+        if (compiler_options()->exact_optional_property_types && i->tag == EXPR_LITERAL && expr_outer_span(i).sv.size == 0) {
             // A hole is an optional element that isn't there (tsc's checkArrayLiteral with an OmittedExpression)
             (void)ty_expr_type(me, i);
             has_omitted = true;

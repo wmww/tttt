@@ -185,12 +185,12 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             initialized_binding_value(i)->tag != EXPR_IMPLICIT_ANY
         ) {
             if (i->binding.has_explicit_type || !variable_statement_is_const(me)) {
-                error_ctx_error_d(errs, initialized_binding_value(i)->outer_span, 1039,
+                error_ctx_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
                 bool valid = expr_is_ambient_const_initializer(initialized_binding_value(i));
                 if (!valid) {
-                    error_ctx_error_d(errs, initialized_binding_value(i)->outer_span, 1254,
+                    error_ctx_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1254,
                         "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
                 if (valid) variable_statement_check_let_names(me, i, errs);
@@ -204,7 +204,7 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             // tsc widens it first: no excess property checks
             Ty const* type = ty_widened_objects(current_checker, expr_get_type(initialized_binding_value(i)));
             ty_check_using_initializer(current_checker, type, my keyword == VAR_INIT_AWAIT_USING,
-                initialized_binding_value(i)->outer_span, errs);
+                expr_outer_span(initialized_binding_value(i)), errs);
         }
     }
 }
@@ -629,7 +629,7 @@ Ty const* for_each_loop_statement_evaluate_var_type(ForEachLoopStatement* me) {
 
         case FOR_EACH_LOOP_OF:
             return ty_widened_nullable(checker, ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable,
-                my iterable.outer_span, nullptr));
+                expr_outer_span(&my iterable), nullptr));
     }
     impossible;
 }
@@ -639,7 +639,7 @@ Ty const* for_each_loop_statement_pattern_source_type(ForEachLoopStatement const
     Ty const* var_type = lazy_type_get((LazyType*)&my var_type);
     if (my keyword != FOR_EACH_LOOP_OF || var_type == ty_intrinsic(checker, TY_CIRCULAR)) return var_type;
     return ty_iterated_type(checker, my is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
-        ty_expr_type(checker, (Expr*)&my iterable), my iterable.outer_span, nullptr);
+        ty_expr_type(checker, (Expr*)&my iterable), expr_outer_span(&my iterable), nullptr);
 }
 
 // What `for (k in x)` takes: object types and type parameters (every member of a union, some member of an
@@ -2202,7 +2202,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                             ) {
                                 error_ctx_error_d(
                                     errs,
-                                    my for_each_loop->variable.expr.outer_span,
+                                    expr_outer_span(&my for_each_loop->variable.expr),
                                     2491,
                                     "The left-hand side of a 'for...in' statement cannot be a destructuring pattern."
                                 );
@@ -2213,7 +2213,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     // tsc's checkForInStatement: null and undefined are removed first (getNonNullableTypeIfNeeded)
                     Ty const* right_type = ty_non_nullable_if_needed(current_checker, iterable_type);
                     if ((right_type->flags & TYF_NEVER) || !for_in_accepts(current_checker, right_type)) {
-                        error_ctx_error_d(errs, my for_each_loop->iterable.outer_span, 2407,
+                        error_ctx_error_d(errs, expr_outer_span(&my for_each_loop->iterable), 2407,
                             "The right-hand side of a 'for...in' statement must be of type 'any', an object type "
                             "or a type parameter, but here has type '", right_type, "'.");
                     }
@@ -2222,7 +2222,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 case FOR_EACH_LOOP_OF:
                     if (!for_of_checks_iterable(my for_each_loop)) break;
                     ty_iterated_type(checker, my for_each_loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
-                        iterable_type, my for_each_loop->iterable.outer_span, errs);
+                        iterable_type, expr_outer_span(&my for_each_loop->iterable), errs);
                     break;
             }
 
@@ -2262,7 +2262,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         if (!ty_is_related(checker, keys,
                                 expr_get_type(&my for_each_loop->variable.expr), TY_RELATION_ASSIGNABLE)
                         ) {
-                            error_ctx_error_d(errs, my for_each_loop->variable.expr.outer_span, 2405,
+                            error_ctx_error_d(errs, expr_outer_span(&my for_each_loop->variable.expr), 2405,
                                 "The left-hand side of a 'for...in' statement must be of type 'string' or 'any'.");
                         } else {
                             expr_check_reference_is_reference(&my for_each_loop->variable.expr, 2406,
@@ -2276,7 +2276,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         // so the elements get no excess property checks
                         ty_widened_objects(checker, lazy_type_get(&my for_each_loop->var_type)),
                         expr_get_type(&my for_each_loop->variable.expr),
-                        my for_each_loop->variable.expr.outer_span,
+                        expr_outer_span(&my for_each_loop->variable.expr),
                         &my for_each_loop->iterable,
                         errs
                     );
@@ -2304,7 +2304,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     // comparable to the case's, or else the case's to the switch's (checkTypeComparableTo, reported)
                     if (!(pattern_type->flags & TYF_NULLABLE)
                         && !ty_is_comparable_either_way(current_checker, needle_type, pattern_type)) {
-                        ty_check_comparable(current_checker, pattern_type, needle_type, i->pattern.outer_span, errs);
+                        ty_check_comparable(current_checker, pattern_type, needle_type, expr_outer_span(&i->pattern), errs);
                     }
                 } else {
                     default_count++;
@@ -2371,7 +2371,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 Ty const* declared = ty_of_node(my expr_jsdoc_type);
                 Ty const* type = ty_check_expr(current_checker, &my expr, declared);
                 expr_typecheck(&my expr, errs);
-                ty_check_assignable(current_checker, type, declared, my expr.outer_span, errs);
+                ty_check_assignable(current_checker, type, declared, expr_outer_span(&my expr), errs);
                 break;
             }
             expr_typecheck_export_assignment(&my expr, errs);

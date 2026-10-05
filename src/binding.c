@@ -346,7 +346,7 @@ static Ty const* element_parent_type(Binding const* me, Expr const* initializer)
 
 // tsc's checkGrammarBindingElement: a rest element's initializer, at its `=`
 static void binding_report_rest_initializer(Binding const* element, ErrorCtx* errs) {
-    Span value = element->default_value->outer_span;
+    Span value = expr_outer_span(element->default_value);
     if (!span_valid(value)) return;
     char const* at = span_start_ptr(value);
     char const* start = span_start_ptr(element->content_span);
@@ -544,13 +544,13 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     if (parent && !i->target.rest && !(i->target.default_value && parent->kind == TY_ANONYMOUS &&
                         parent->anonymous.object_literal)
                     ) {
-                        Span key_span = i->computed_key->outer_span;
+                        Span key_span = expr_outer_span(i->computed_key);
                         ty_check_destructuring_indexed_access(current_checker, parent, expr_get_type(i->computed_key),
                             key_span, errs);
                     }
                     if (parent && !i->target.rest) {
                         ty_check_destructured_member(current_checker, parent, ty_regular(current_checker,
-                            expr_get_type(i->computed_key)), span_valid(i->source_span) ? i->source_span : i->computed_key->outer_span,
+                            expr_get_type(i->computed_key)), span_valid(i->source_span) ? i->source_span : expr_outer_span(i->computed_key),
                             from_this, my access_site, errs);
                     }
                 } else if (!i->target.rest && (i->source.tag == VALUE_STRING || i->source.tag == VALUE_NUMBER)) {

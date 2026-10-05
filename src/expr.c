@@ -20,7 +20,7 @@
 #include "ast_walk.h"
 
 // Expressions are stored inline everywhere: keep them small
-static_assert(sizeof(Expr) == 144, "Expr grew");
+static_assert(sizeof(Expr) == 128, "Expr grew");
 
 const Expr expr_implicit_any_no_span = { .tag = EXPR_IMPLICIT_ANY };
 const int as_type_precedence = 90;
@@ -269,7 +269,7 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             char const* at = span_start_ptr(my name);
             bool in_pattern = at >= span_start_ptr(root->content_span) && at < span_end_ptr(root->content_span);
             Span element = span_valid(binding->element_span) ? binding->element_span : binding->content_span;
-            if (binding->default_value) element = span_between(element, binding->default_value->outer_span);
+            if (binding->default_value) element = span_between(element, expr_outer_span(binding->default_value));
             // (the element starts at its property name: `{ [a]: a }`)
             if (span_start_ptr(decl->full) < span_start_ptr(element)) element = span_between(decl->full, element);
             if (in_pattern && !(at >= span_start_ptr(element) && at < span_end_ptr(element))) return;
@@ -643,7 +643,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // with every meaning), a namespace or a type is fine. No target: it has no value type
     } else if (my extends_entity && entity_names_interface(names, my extends_entity)) {
         // (tsc's checkAndReportErrorForExtendingInterface)
-        error_ctx_error_d(errs, my name, 2689, "Cannot extend an interface '", my extends_entity->outer_span,
+        error_ctx_error_d(errs, my name, 2689, "Cannot extend an interface '", expr_outer_span(my extends_entity),
             "'. Did you mean 'implements'?");
         my symbol = scope_resolve(names, my name.sv, SYMBOL_ANY_MEANING);
         my namespace_as_value = my extends_entity->tag != EXPR_IDENTIFIER;
@@ -1466,7 +1466,7 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
 // tsc's checkJsxExpression: `{a, b}` in an attribute or child (a parenthesized one is fine)
 static void jsx_check_comma_expression(Expr const* expr, ErrorCtx* errs) {
     if (expr->tag != EXPR_BINARY_OP || expr->binary_op->op != BINARY_OP_COMMA || expr_is_perenthisized(expr)) return;
-    error_ctx_grammar_error_d(errs, expr->outer_span, 18007,
+    error_ctx_grammar_error_d(errs, expr_outer_span(expr), 18007,
         "JSX expressions may not use the comma operator. Did you mean to write an array?");
 }
 
@@ -1628,7 +1628,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
         if (declared && declared != global) {
             Expr old = *me;
             *me = expr_identifier((IdentifierExpr){ .name = old.inner_span });
-            my outer_span = old.outer_span;
+            my paren_before = old.paren_before;
+            my paren_after = old.paren_after;
             my lazy_type = old.lazy_type;
         }
     }
@@ -1828,7 +1829,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_PROPERTY:
             // Also when it can't be narrowed (`f().x`): the checker finds out when it makes the reference key
-            my property->flow = flow_builder_reference(flow, my outer_span);
+            my property->flow = flow_builder_reference(flow, expr_outer_span(me));
             flow_length_access(me);
             my property->assignment_target = assignment_target;
             my property->compound_like_target = compound_like_target;
@@ -1859,8 +1860,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 Symbol* declared = (Symbol*)my property->declares;
                 for (u32 d = 0; d < declared->decl_count; d++) {
                     SymbolDecl* decl = &declared->decls[d];
-                    if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(my outer_span) &&
-                        decl->name.source == my outer_span.source
+                    if (decl->kind == SYMBOL_DECL_ASSIGNMENT && span_start_ptr(decl->name) == span_start_ptr(expr_outer_span(me)) &&
+                        decl->name.source == expr_outer_span(me).source
                     ) {
                         decl->flow_container = flow->container;
                         names->binder->has_assignment_flow_containers = true;
@@ -2014,7 +2015,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             for_each (i, vec_object_expr_item, &my object) {
                 if (!my assignment_pattern || i->tag != OBJECT_ITEM_SPREAD) continue;
                 if (i->value.tag != EXPR_OBJECT && i->value.tag != EXPR_ARRAY) continue;
-                error_ctx_grammar_error_d(errs, i->value.outer_span, 2501, "A rest element cannot contain a binding pattern.");
+                error_ctx_grammar_error_d(errs, expr_outer_span(&i->value), 2501, "A rest element cannot contain a binding pattern.");
                 break;
             }
             flow->object_literal_depth++;
@@ -2046,7 +2047,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->tag == OBJECT_ITEM_SETTER && (!own_key || own_key->tag == EXPR_LITERAL || expr_is_entity_name(own_key))) {
                     for_each (other, vec_object_expr_item, &my object) {
                         if (other->tag == OBJECT_ITEM_GETTER && !other->computed_key == !own_key && (own_key ?
-                            csview_equals_sv(other->computed_key->outer_span.sv, own_key->outer_span.sv) :
+                            csview_equals_sv(expr_outer_span(other->computed_key).sv, expr_outer_span(own_key).sv) :
                             cstr_eq(&other->name_string, &i->name_string))
                         ) {
                             function_impl_pair_setter(i->value.function, other->value.function, own_key);
@@ -2189,7 +2190,7 @@ bool expr_check_reference_is_reference(Expr const* target, unsigned code, char c
     if (((reference->tag != EXPR_IDENTIFIER || reference->identifier.keyword) && reference->tag != EXPR_PROPERTY) ||
         ty_is_import_meta(reference)
     ) {
-        error_ctx_error_d(errs, target->outer_span, code, message);
+        error_ctx_error_d(errs, expr_outer_span(target), code, message);
         return false;
     }
     return true;
@@ -2198,7 +2199,7 @@ bool expr_check_reference_is_reference(Expr const* target, unsigned code, char c
 bool expr_check_reference_not_optional(Expr const* target, unsigned code, char const* message, ErrorCtx* errs) {
     Expr const* reference = skip_outer_expressions(target);
     if (reference->tag != EXPR_PROPERTY || !expr_is_optional_chain(reference)) return true;
-    error_ctx_error_d(errs, target->outer_span, code, message);
+    error_ctx_error_d(errs, expr_outer_span(target), code, message);
     return false;
 }
 
@@ -2230,10 +2231,10 @@ static void assignment_target_typecheck(
             if (source && target->identifier.target) {
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
                 if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);
-                ty_check_assignable_expr(checker, source, declared, target->outer_span, source_expr, errs);
+                ty_check_assignable_expr(checker, source, declared, expr_outer_span(target), source_expr, errs);
             } else if (source && target->identifier.is_arguments) {
                 // `arguments = x` in a function: the arguments object (IArguments)
-                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), target->outer_span, source_expr, errs);
+                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), expr_outer_span(target), source_expr, errs);
             }
             return;
 
@@ -2244,7 +2245,7 @@ static void assignment_target_typecheck(
             if (target->property->assignment_target == FLOW_TARGET_COMPOUND) {
                 target_type = ty_compound_assignee_type(checker, target, target_type);
             }
-            ty_check_assignable_to_access(checker, source, target_type, target->outer_span, source_expr, target, errs);
+            ty_check_assignable_to_access(checker, source, target_type, expr_outer_span(target), source_expr, target, errs);
         }   return;
 
         case EXPR_UNARY_OP:
@@ -2256,7 +2257,7 @@ static void assignment_target_typecheck(
         case EXPR_AS_TYPE:
             // `(x as T) = 1`: T is what's assigned to
             if (source && !target->as_type->is_satisfies) {
-                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), target->outer_span, source_expr, errs);
+                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), expr_outer_span(target), source_expr, errs);
             }
             return;
 
@@ -2273,12 +2274,12 @@ static void assignment_target_typecheck(
             bool array_like = source && !(source->flags & TYF_NEVER) && ty_extends_array(checker, source);
             // What isn't an array has to be iterable (tsc's checkArrayLiteralAssignment)
             Ty const* iterated = source && !array_like ?
-                ty_iterated_type(checker, ITERATION_DESTRUCTURING, source, target->outer_span, errs) : nullptr;
+                ty_iterated_type(checker, ITERATION_DESTRUCTURING, source, expr_outer_span(target), errs) : nullptr;
             u32 index = 0;
             for_each (i, vec_expr, &target->array) {
                 Ty const* element = iterated;
                 if (i->tag == EXPR_SPREAD && i_index + 1 < vec_expr_size(&target->array)) {
-                    error_ctx_error_d(errs, i->outer_span, 2462, "A rest element must be last in a destructuring pattern.");
+                    error_ctx_error_d(errs, expr_outer_span(i), 2462, "A rest element must be last in a destructuring pattern.");
                 } else if (i->tag == EXPR_SPREAD) {
                     // The rest of a tuple, else an array of the elements (tsc's checkArrayLiteralDestructuringElementAssignment)
                     Ty const* rest = nullptr;
@@ -2290,7 +2291,7 @@ static void assignment_target_typecheck(
                         }
                     }
                     assignment_target_typecheck(i->spread, rest, nullptr, site, errs);
-                } else if (i->tag == EXPR_LITERAL && i->outer_span.sv.size == 0) {
+                } else if (i->tag == EXPR_LITERAL && expr_outer_span(i).sv.size == 0) {
                     // A hole
                 } else {
                     // Past the end of a tuple (tsc's checkArrayLiteralDestructuringElementAssignment: TS2493, TS2339 for
@@ -2300,7 +2301,7 @@ static void assignment_target_typecheck(
                     if (array_like && !has_default) {
                         Value key = value_number(index);
                         ErrorCtx found = error_ctx_scratch(errs);
-                        ty_check_property_access(checker, source, ty_literal(checker, &key), span_null, i->outer_span, false,
+                        ty_check_property_access(checker, source, ty_literal(checker, &key), span_null, expr_outer_span(i), false,
                             false, &found);
                         past_end = !error_ctx_empty(&found);
                         error_ctx_merge(errs, &found);
@@ -2358,7 +2359,7 @@ static void assignment_target_typecheck(
                     bool has_default = i->shorthand_default ||
                         (i->value.tag == EXPR_BINARY_OP && i->value.binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(&i->value));
                     Ty const* key = ty_regular(checker, ty_expr_type(checker, i->computed_key));
-                    Span key_span = i->computed_key->outer_span;
+                    Span key_span = expr_outer_span(i->computed_key);
                     if (!(has_default && source->kind == TY_ANONYMOUS && source->anonymous.object_literal)) {
                         ty_check_destructuring_indexed_access(checker, source, key, key_span, errs);
                     }
@@ -2413,7 +2414,7 @@ static void assignment_target_typecheck(
         default:
             break;
     }
-    error_ctx_error_d(errs, target->outer_span, 2364,
+    error_ctx_error_d(errs, expr_outer_span(target), 2364,
         "The left-hand side of an assignment expression must be a variable or a property access.");
 }
 
@@ -2472,7 +2473,7 @@ static PredicateSemantics truthy_semantics(Expr const* me) {
 static Span node_error_span(Expr const* me);
 
 Span expr_error_span(Expr const* me) {
-    return expr_is_perenthisized(me) ? my outer_span : node_error_span(me);
+    return expr_is_perenthisized(me) ? expr_outer_span(me) : node_error_span(me);
 }
 
 Span expr_error_span_skip_parens(Expr const* me) {
@@ -2807,7 +2808,7 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     isize count = vec_expr_size(args);
     bool node = module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT;
     if (!node && module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE && count > 1) {
-        error_ctx_grammar_error_d(errs, vec_expr_at(args, 1)->outer_span, 1324,
+        error_ctx_grammar_error_d(errs, expr_outer_span(vec_expr_at(args, 1)), 1324,
             "Dynamic imports only support a second argument when the '--module' option is set to 'esnext', 'node16', "
             "'node18', 'nodenext', or 'preserve'.");
         return;
@@ -2819,7 +2820,7 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     }
     for_each (i, vec_expr, args) {
         if (i->tag != EXPR_SPREAD) continue;
-        error_ctx_grammar_error_d(errs, i->outer_span, 1325, "Argument of dynamic import cannot be spread element.");
+        error_ctx_grammar_error_d(errs, expr_outer_span(i), 1325, "Argument of dynamic import cannot be spread element.");
         return;
     }
 }
@@ -2830,8 +2831,8 @@ static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
         Expr const* operand = operands[i];
         if (operand->tag != EXPR_BINARY_OP || expr_is_perenthisized(operand)) continue;
         BinaryOp op = operand->binary_op->op;
-        if ((op != BINARY_OP_OR_OR && op != BINARY_OP_AND_AND) || !operand->outer_span.source || operand->outer_span.source->has_parse_errors) continue;
-        error_ctx_error_d(errs, operand->outer_span, 5076, "'", binary_op_get_zv(op).str,
+        if ((op != BINARY_OP_OR_OR && op != BINARY_OP_AND_AND) || !expr_outer_span(operand).source || expr_outer_span(operand).source->has_parse_errors) continue;
+        error_ctx_error_d(errs, expr_outer_span(operand), 5076, "'", binary_op_get_zv(op).str,
             "' and '?" "?' operations cannot be mixed without parentheses.");
     }
     Expr const* left = skip_outer_expressions(&my binary_op->left);
@@ -2901,7 +2902,7 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
 
 // tsc's checkGrammarObjectLiteralExpression: a name can be one property, one method or one get/set pair
 static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
-    if (!my outer_span.source || my outer_span.source->has_parse_errors || is_destructuring_target(me)) return;
+    if (!expr_outer_span(me).source || expr_outer_span(me).source->has_parse_errors || is_destructuring_target(me)) return;
     enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
     ObjectExpr const* object = &my object;
     isize count = vec_object_expr_item_size(object);
@@ -3081,7 +3082,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
     bool async = generator->is_async;
     if (yield->op == UNARY_OP_YIELD_STAR) {
         ScriptTarget target = compiler_options()->target;
-        Span keyword = my outer_span; // (what tsc reports it at)
+        Span keyword = expr_outer_span(me); // (what tsc reports it at)
         if (keyword.sv.size > 5) keyword.sv.size = 5;
         if (async && target < SCRIPT_TARGET_ES2018) {
             ty_check_emit_helpers(checker, keyword,
@@ -3092,7 +3093,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
         }
     }
     Ty const* yielded;
-    Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? my outer_span : yield->expr.outer_span;
+    Span span = yield->expr.tag == EXPR_IMPLICIT_ANY ? expr_outer_span(me) : expr_outer_span(&yield->expr);
     if (yield->op == UNARY_OP_YIELD_STAR) {
         u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
         yielded = ty_iterated_type(checker, use, ty_expr_type(checker, &yield->expr), span, errs);
@@ -3109,7 +3110,7 @@ static void yield_typecheck(Expr const* me, ErrorCtx* errs) {
         // while inferring: the resolved signature has it inferred from this yield, which is any)
         bool call_type_param = contextual && contextual->kind == TY_TYPE_PARAM && yield->no_type_params_in_scope;
         if (!context && (!contextual || (contextual->flags & TYF_ANY) || call_type_param)) {
-            Span keyword = my outer_span; // (the `yield`)
+            Span keyword = expr_outer_span(me); // (the `yield`)
             if (keyword.sv.size > 5) keyword.sv.size = 5;
             error_ctx_error_d(errs, keyword, 7057, "'yield' expression implicitly results in an 'any' type because "
                 "its containing generator lacks a return-type annotation.");
@@ -3181,7 +3182,7 @@ static void check_overshift(Checker* checker, Expr const* expr, ErrorCtx* errs) 
     cstr amount_str = cstr_null;
     cstr_append_value_js(&amount_str, &remainder);
     Error* e = error_ctx_error_d(errs, expr->inner_span, 6807, "This operation can be simplified. This shift is identical to `",
-        expr->binary_op->left.outer_span, " ", binary_op_get_zv(expr->binary_op->op).str, " ", amount_str, "`.");
+        expr_outer_span(&expr->binary_op->left), " ", binary_op_get_zv(expr->binary_op->op).str, " ", amount_str, "`.");
     if (e && !in_enum) e->suggestion = true;
     cstr_drop(&amount_str);
 }
@@ -3255,7 +3256,7 @@ static bool check_symbol_operands(Ty const* left, Ty const* right, Expr const* e
 }
 // An object made where it is compared (tsc's isLiteralExpressionOfObject): not parenthesized, arrow functions aren't
 static bool is_literal_expression_of_object(Expr const* me) {
-    if (!span_eq(my inner_span, my outer_span)) return false;
+    if (!span_eq(my inner_span, expr_outer_span(me))) return false;
     switch (my tag) {
         case EXPR_OBJECT: case EXPR_ARRAY: case EXPR_REGEX: case EXPR_CLASS_DECL: return true;
         case EXPR_FUNCTION: return !span_valid(my function->arrow_span);
@@ -3283,11 +3284,11 @@ static void nan_equality_typecheck(Expr const* me, ErrorCtx* errs) {
     if (!left_nan && !right_nan) return;
     BinaryOp op = my binary_op->op;
     bool eq = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
-    Error* error = error_ctx_error_d(errs, my outer_span, 2845, "This condition will always return '", eq ? "false" : "true", "'.");
+    Error* error = error_ctx_error_d(errs, expr_outer_span(me), 2845, "This condition will always return '", eq ? "false" : "true", "'.");
     if (left_nan && right_nan) return;
     Expr const* other = left_nan ? right : left;
     csview name = expr_is_entity_name(other) ? other->inner_span.sv : c_sv("...");
-    error_add_related_d(error, other->outer_span, 1369, "Did you mean '", eq ? "" : "!", "Number.isNaN(", name, ")'?");
+    error_add_related_d(error, expr_outer_span(other), 1369, "Did you mean '", eq ? "" : "!", "Number.isNaN(", name, ")'?");
 }
 
 static bool binary_op_typecheck(
@@ -3362,7 +3363,7 @@ static bool binary_op_typecheck(
                     "The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
                 Ty const* awaited = e ? ty_awaited_of_promise(checker, left) : nullptr;
                 if (awaited && ty_is_related(checker, awaited, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-                    error_add_related_d(e, expr->binary_op->left.outer_span, 2773, "Did you forget to use 'await'?");
+                    error_add_related_d(e, expr_outer_span(&expr->binary_op->left), 2773, "Did you forget to use 'await'?");
                 }
                 operands_ok = false;
             }
@@ -3371,7 +3372,7 @@ static bool binary_op_typecheck(
                     "The right-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.");
                 Ty const* awaited = e ? ty_awaited_of_promise(checker, right) : nullptr;
                 if (awaited && ty_is_related(checker, awaited, number_or_bigint, TY_RELATION_ASSIGNABLE)) {
-                    error_add_related_d(e, expr->binary_op->right.outer_span, 2773, "Did you forget to use 'await'?");
+                    error_add_related_d(e, expr_outer_span(&expr->binary_op->right), 2773, "Did you forget to use 'await'?");
                 }
                 operands_ok = false;
             }
@@ -3427,7 +3428,7 @@ static bool binary_op_typecheck(
         }   break;
 
         case BINARY_OP_EQUAL:
-            if (right && expr->outer_span.source && expr->outer_span.source->is_js) {
+            if (right && expr_outer_span(expr).source && expr_outer_span(expr).source->is_js) {
                 commonjs_typedef_conflicts(expr->binary_op, right, errs);
             }
             if (is_container_declaration(expr->binary_op)) break;
@@ -3452,7 +3453,7 @@ static bool binary_op_typecheck(
                 (!l->inner_span.source || !l->inner_span.source->is_js || strict_op)
             ) {
                 bool eq = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_TRIPLE_EQUAL;
-                error_ctx_error_d(errs, expr->outer_span, 2839, "This condition will always return '", eq ? "false" : "true",
+                error_ctx_error_d(errs, expr_outer_span(expr), 2839, "This condition will always return '", eq ? "false" : "true",
                     "' since JavaScript compares objects by reference, not value.");
             }
             nan_equality_typecheck(expr, errs);
@@ -3474,11 +3475,11 @@ static bool binary_op_typecheck(
                 }
                 cstr left_str, right_str;
                 ty_display_pair_cstr(current_checker, left, right, &left_str, &right_str);
-                Error* e = error_ctx_error_d(errs, expr->outer_span, 2367,
+                Error* e = error_ctx_error_d(errs, expr_outer_span(expr), 2367,
                     "This comparison appears to be unintentional because the types '", left_str,
                     "' and '", right_str, "' have no overlap.");
                 c_drop(cstr, &left_str, &right_str);
-                if (with_await) error_add_related_d(e, expr->outer_span, 2773, "Did you forget to use 'await'?");
+                if (with_await) error_add_related_d(e, expr_outer_span(expr), 2773, "Did you forget to use 'await'?");
             }
             break;
 
@@ -3537,7 +3538,7 @@ static bool binary_op_typecheck(
             Expr const* target = skip_outer_expressions(&expr->binary_op->left);
             if (target->tag == EXPR_ARRAY || target->tag == EXPR_OBJECT) {
                 if (binary_op_typecheck(left, without_assignment, right, expr, errs)) {
-                    error_ctx_error_d(errs, expr->binary_op->left.outer_span, 2364,
+                    error_ctx_error_d(errs, expr_outer_span(&expr->binary_op->left), 2364,
                         "The left-hand side of an assignment expression must be a variable or a property access.");
                 }
                 break;
@@ -3574,8 +3575,8 @@ static bool private_names_lowered(void) {
 static void private_access_check_emit_helpers(Expr const* me, ErrorCtx* errs) {
     if (!private_names_lowered()) return;
     uint8_t target = my property->assignment_target;
-    if (target != FLOW_TARGET_NONE) ty_check_emit_helpers(current_checker, my outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_SET, errs);
-    if (target != FLOW_TARGET_DEFINITE) ty_check_emit_helpers(current_checker, my outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_GET, errs);
+    if (target != FLOW_TARGET_NONE) ty_check_emit_helpers(current_checker, expr_outer_span(me), EMIT_HELPER_CLASS_PRIVATE_FIELD_SET, errs);
+    if (target != FLOW_TARGET_DEFINITE) ty_check_emit_helpers(current_checker, expr_outer_span(me), EMIT_HELPER_CLASS_PRIVATE_FIELD_GET, errs);
 }
 
 // Not inlined into expr_typecheck(), whose frame deeply nested expressions pay for (binderBinaryExpressionStress)
@@ -3627,7 +3628,7 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
                 }
                 if (i->tag == JSX_ATTRIBUTE_SPREAD) {
                     Ty const* type = expr_get_type(&i->value);
-                    ty_check_spread_type(current_checker, type, i->value.outer_span, errs);
+                    ty_check_spread_type(current_checker, type, expr_outer_span(&i->value), errs);
                     ty_check_spread_overrides(current_checker, type, written, written_count, i->span, errs);
                 } else {
                     written = realloc(written, sizeof(TyWrittenProp) * (written_count + 1));
@@ -3687,7 +3688,7 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
         SymbolDecl const* decl = &member->decls[i];
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
         if (!first) first = decl;
-        if (span_eq(decl->full, op->left.outer_span)) own = decl;
+        if (span_eq(decl->full, expr_outer_span(&op->left))) own = decl;
     }
     if (!own || !own->node) return;
     int kind = ty_js_assignment_implicit_any(current_checker, member, own->node);
@@ -3714,7 +3715,7 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     ) {
         // The one place `#x` is an expression
         if (private_names_lowered()) {
-            ty_check_emit_helpers(current_checker, my binary_op->left.outer_span, EMIT_HELPER_CLASS_PRIVATE_FIELD_IN, errs);
+            ty_check_emit_helpers(current_checker, expr_outer_span(&my binary_op->left), EMIT_HELPER_CLASS_PRIVATE_FIELD_IN, errs);
         }
         expr_typecheck(&my binary_op->right, errs);
         ty_check_in_expression(current_checker, &my binary_op->left, &my binary_op->right, errs);
@@ -3766,7 +3767,7 @@ static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
 static void commonjs_typedef_conflicts(BinaryOpExpr const* assignment, Ty const* right, ErrorCtx* errs) {
     Expr const* left = &assignment->left;
     if (!(right->flags & TYF_OBJECT) || expr_is_perenthisized(left) || !expr_is_module_exports(left)) return;
-    SourceFile const* file = left->outer_span.source;
+    SourceFile const* file = expr_outer_span(left).source;
     Symbol const* module = file && file->scope ? file->scope->container : nullptr;
     if (!module || !module->exports) return;
     Checker* checker = current_checker;
@@ -3947,8 +3948,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 current_checker,
                 expr_type,
                 ty_access_key_type(current_checker, my property),
-                my property->expr.outer_span,
-                my property->prop.outer_span,
+                expr_outer_span(&my property->expr),
+                expr_outer_span(&my property->prop),
                 // (In a `typeof a.b.c` type the object is a qualified name, an entity name expression only when it's an
                 // identifier, `this` included: tsc's isEntityNameExpression)
                 my property->qualified_name ?
@@ -3957,10 +3958,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 error_if_not_found,
                 &found
             );
-            if (unwidened != expr_type && error_if_not_found && error_ctx_find(&found, my property->prop.outer_span, 2339)) {
+            if (unwidened != expr_type && error_if_not_found && error_ctx_find(&found, expr_outer_span(&my property->prop), 2339)) {
                 error_ctx_clear(&found);
                 ty_report_no_property(current_checker, unwidened, ty_access_key_type(current_checker, my property),
-                    my property->prop.outer_span, errs);
+                    expr_outer_span(&my property->prop), errs);
             }
             error_ctx_merge(errs, &found);
             error_ctx_drop(&found);
@@ -4024,7 +4025,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             // `f?.()` doesn't call the undefined, and neither does `a?.b()` the undefined of a chain that ended
             callee_type = ty_optional_expression_type(checker, callee_type, my call->optional_chain, nullptr);
             if (!my call->uses_new && !my call->is_extends) {
-                callee_type = ty_check_non_null_callee(checker, callee_type, callee->outer_span, errs);
+                callee_type = ty_check_non_null_callee(checker, callee_type, expr_outer_span(callee), errs);
             }
             // `import("m", options)`: the options are ImportCallOptions
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
@@ -4149,12 +4150,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             Checker* checker = current_checker;
             bool target = expr_is_destructuring_target(my spread);
             if (!target && compiler_options()->target < SCRIPT_TARGET_ES2015) {
-                ty_check_emit_helpers(checker, my outer_span,
+                ty_check_emit_helpers(checker, expr_outer_span(me),
                     EMIT_HELPER_SPREAD_ARRAY | (compiler_options()->downlevel_iteration ? EMIT_HELPER_READ : 0), errs);
             }
             Ty const* operand = expr_get_type(my spread);
             if (!target && !(operand->flags & TYF_ANY) && !ty_extends_array(checker, operand)) {
-                ty_iterated_type(checker, ITERATION_SPREAD, operand, my spread->outer_span, errs);
+                ty_iterated_type(checker, ITERATION_SPREAD, operand, expr_outer_span(my spread), errs);
             }
         }   break;
 

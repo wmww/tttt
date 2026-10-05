@@ -110,7 +110,6 @@ bool identifier_is_invalid_assignment_target(IdentifierExpr const* me);
 
 typedef struct Expr {
     Span inner_span; // Just the content (also does not include identifier generic params)
-    Span outer_span; // Includes parentheses
     enum {
         EXPR_IMPLICIT_ANY = 0,
         EXPR_LITERAL,
@@ -148,6 +147,10 @@ typedef struct Expr {
     // `undefined = x`, `undefined++`: an assignment to tsc's undefinedSymbol, which isn't a variable (errorType). Set by
     // expr_lookup_names()
     bool undefined_assigned : 1;
+    // The parentheses around it: how many bytes the outer span (expr_outer_span()) starts before inner_span and ends
+    // after it. Set with expr_set_outer_span()
+    u32 paren_before;
+    u32 paren_after;
     union {
         Value literal;
         IdentifierExpr identifier;
@@ -176,7 +179,6 @@ typedef struct Expr {
 
 #define EXPR_DEFAULT(span) \
     .inner_span = span, \
-    .outer_span = span, \
     .lazy_type.tag = LAZY_TYPE_EXPR
 
 static inline Expr expr_literal(Span span, Value value) {
@@ -251,15 +253,40 @@ static inline Expr expr_implicit_any(Span span) {
     return (Expr){
         .tag = EXPR_IMPLICIT_ANY,
         .inner_span = span,
-        .outer_span = span,
         .lazy_type.tag = LAZY_TYPE_EVALUATED
     };
 }
 
 #undef EXPR_DEFAULT
 
+// Includes the parentheses around it, if any
+static inline Span expr_outer_span(Expr const* me) {
+    if (!(my paren_before | my paren_after)) return my inner_span;
+    return (Span){
+        .source = my inner_span.source,
+        .sv = csview_from_n(my inner_span.sv.buf - my paren_before, my inner_span.sv.size + my paren_before + my paren_after),
+    };
+}
+
+// `outer` must contain inner_span (set that first), or be it
+static inline void expr_set_outer_span(Expr* me, Span outer) {
+    if (span_eq(outer, my inner_span)) {
+        my paren_before = my paren_after = 0;
+        return;
+    }
+    panic_if(!span_contains_span(outer, my inner_span) || outer.source != my inner_span.source,
+        "expr_set_outer_span(): the outer span doesn't contain the inner one");
+    my paren_before = (u32)(span_start_ptr(my inner_span) - span_start_ptr(outer));
+    my paren_after = (u32)(span_end_ptr(outer) - span_end_ptr(my inner_span));
+}
+
+// Clears the parentheses (an expression that moves into a node that has them)
+static inline void expr_clear_outer_span(Expr* me) {
+    my paren_before = my paren_after = 0;
+}
+
 static inline bool expr_is_perenthisized(Expr const* me) {
-    return span_start_ptr(my inner_span) != span_start_ptr(my outer_span);
+    return my paren_before != 0;
 }
 
 // What there is to say about a module name that an import-like construct uses (TS2307 & co.)

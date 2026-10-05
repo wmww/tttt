@@ -233,7 +233,7 @@ void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, E
             for_each (i, vec_expr, &expr->template_->substitutions) ty_check_enum_initializer_references(me, member, i, errs);
             break;
         case EXPR_IDENTIFIER:
-            check_enum_reference(member, expr->identifier.target, expr->outer_span, errs);
+            check_enum_reference(member, expr->identifier.target, expr_outer_span(expr), errs);
             break;
         case EXPR_PROPERTY: {
             PropertyExpr const* property = expr->property;
@@ -241,7 +241,7 @@ void ty_check_enum_initializer_references(Checker* me, EnumCase const* member, E
             if (!enum_decl || !(enum_decl->flags & SYMBOL_ENUM)) break;
             if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) break;
             check_enum_reference(member, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)),
-                expr->outer_span, errs);
+                expr_outer_span(expr), errs);
             break;
         }
         default:

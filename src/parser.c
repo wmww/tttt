@@ -458,7 +458,7 @@ static void mark_named_evaluation(Expr* value, bool computed_key) {
 // property assignment, binding element or the right operand of a binary expression is called by that name
 static void mark_assigned_name(Expr* value, Span name) {
     if (value->tag != EXPR_CLASS_DECL || span_valid(value->class_decl->name)) return;
-    if (value->outer_span.sv.size != value->inner_span.sv.size) return;
+    if (expr_outer_span(value).sv.size != value->inner_span.sv.size) return;
     value->class_decl->assigned_name = name;
 }
 
@@ -3339,7 +3339,8 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
             parse_identifier_or_keyword(&p, &name)
         ) {
             expr = expr_identifier((IdentifierExpr){ .name = name });
-            expr.inner_span = expr.outer_span = span_from(expr_a);
+            expr.inner_span = span_from(expr_a);
+            expr_clear_outer_span(&expr);
             while (parse_expr_right_side(&p, expr_ctx, &expr)) {}
         } else if (!tok_is_word(t) || *t.start == '#' || !parse_expr(&p, expr_ctx, &expr)) {
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
@@ -4217,7 +4218,7 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
 
 // The function an expression is, directly (tsc: a parenthesized one has no JSDoc host above it)
 static FunctionImpl* jsdoc_function_of(Expr* expr) {
-    if (expr->tag != EXPR_FUNCTION || expr->outer_span.sv.size != expr->inner_span.sv.size) return nullptr;
+    if (expr->tag != EXPR_FUNCTION || expr_outer_span(expr).sv.size != expr->inner_span.sv.size) return nullptr;
     return expr->function;
 }
 
@@ -4478,7 +4479,7 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     VecSpannedType params = tag->type.identifier->generic_params;
     tag->type.identifier->generic_params = (VecSpannedType){0};
     for_each (i, vec_spanned_type, &params) i->type.from_jsdoc = true;
-    Span span = class_decl->extends.outer_span;
+    Span span = expr_outer_span(&class_decl->extends);
     class_decl->extends = expr_generic_params(span, c_new(GenericParamsExpr, { .expr = class_decl->extends, .params = params }));
 }
 
@@ -5025,7 +5026,7 @@ static void jsdoc_bind_comments(
 // A function or arrow function expression is a JSDoc host of its own (`f(/** @param {T} x */ (x) => {})`)
 static void jsdoc_apply_function_expression(Parser* p, Expr* function) {
     VecJsDocTag tags = {0};
-    if (jsdoc_before(p, span_start_ptr(function->outer_span), &tags)) jsdoc_apply_function(p, &tags, function->function);
+    if (jsdoc_before(p, span_start_ptr(expr_outer_span(function)), &tags)) jsdoc_apply_function(p, &tags, function->function);
     vec_jsdoc_tag_drop(&tags);
 }
 
@@ -5806,7 +5807,7 @@ static bool parse_function_args_inner(
                 parse_modifier_list(&p, true, &modifier_list);
                 // The end of the first decorator or modifier (tsc's parseParameterWorker reports it on a `this`)
                 const char* first_modifier_end = vec_expr_size(&decorators) ?
-                    span_end_ptr(vec_expr_at(&decorators, 0)->outer_span) :
+                    span_end_ptr(expr_outer_span(vec_expr_at(&decorators, 0))) :
                     vec_spanned_modifier_size(&modifier_list.spanned) ?
                     span_end_ptr(vec_spanned_modifier_at(&modifier_list.spanned, 0)->span) : nullptr;
                 bool is_readonly_property = modifier_list.includes[MODIFIER_READONLY];
@@ -7227,7 +7228,7 @@ static void parse_computed_key_comma(Parser* p, Expr* key) {
     parse_fail(&comma);
     if (!is_comma) return;
     parse_comma_ops_right_side(p, key);
-    parse_error(p, key->outer_span, 1171, "A comma expression is not allowed in a computed property name.");
+    parse_error(p, expr_outer_span(key), 1171, "A comma expression is not allowed in a computed property name.");
 }
 
 static bool parse_class_computed_key(Parser* parent, Expr** ret) {
@@ -8151,12 +8152,12 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     // Only a left-hand side expression is assigned to (tsc's parseAssignmentExpressionOrHigher: isLeftHandSideExpression);
     // `await x = 1`, `a + b = c`, `x as T = y` end before the `=`
     if (precedence == binary_op_get_precedence(BINARY_OP_EQUAL) &&
-        left_and_ret->outer_span.sv.size == left_and_ret->inner_span.sv.size &&
+        expr_outer_span(left_and_ret).sv.size == left_and_ret->inner_span.sv.size &&
         ((left_and_ret->tag == EXPR_UNARY_OP && left_and_ret->unary_op->op != UNARY_OP_RIGHT_BANG) ||
             left_and_ret->tag == EXPR_BINARY_OP ||
             // (A JSDoc `/** @type {T} */ (x)` is tsc's ParenthesizedExpression: its type comes before the expression)
             (left_and_ret->tag == EXPR_AS_TYPE &&
-                span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(left_and_ret->outer_span)))) {
+                span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(expr_outer_span(left_and_ret))))) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -8170,7 +8171,7 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
     bool logical_or_plain = op == BINARY_OP_EQUAL || op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL ||
         op == BINARY_OP_EH_EH_EQUAL;
     if (logical_or_plain && left_and_ret->tag == EXPR_IDENTIFIER) mark_named_evaluation(&right, false);
-    bool left_parenthesized = left_and_ret->outer_span.sv.size != left_and_ret->inner_span.sv.size;
+    bool left_parenthesized = expr_outer_span(left_and_ret).sv.size != left_and_ret->inner_span.sv.size;
     if (left_and_ret->tag == EXPR_IDENTIFIER && !left_parenthesized) {
         mark_assigned_name(&right, left_and_ret->identifier.name);
     } else if (left_and_ret->tag == EXPR_PROPERTY && !left_parenthesized) {
@@ -8184,13 +8185,13 @@ static bool parse_binary_op_expr(Parser* parent, ExprCtx ctx, Expr* left_and_ret
             is_exports_alias_name(&p, &left_and_ret->property->expr)))
     ) {
         p.shared->saw_commonjs = true;
-        note_commonjs_start(p.shared, span_start_ptr(left_and_ret->outer_span));
+        note_commonjs_start(p.shared, span_start_ptr(expr_outer_span(left_and_ret)));
     }
     expr_mark_binary_operand(left_and_ret);
     expr_mark_binary_operand(&right);
     // (A missing right operand ends the expression where its token's trivia starts, see expect_expr())
-    Span right_end = right.missing ? span_from_pos(&p) : right.outer_span;
-    *left_and_ret = expr_binary_op(span_between(left_and_ret->outer_span, right_end), c_new(BinaryOpExpr, {
+    Span right_end = right.missing ? span_from_pos(&p) : expr_outer_span(&right);
+    *left_and_ret = expr_binary_op(span_between(expr_outer_span(left_and_ret), right_end), c_new(BinaryOpExpr, {
         .left = *left_and_ret,
         .op = op,
         .right = right,
@@ -8310,8 +8311,8 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     } else if (in_parameters && op == UNARY_OP_AWAIT) {
         // (tsc's checkAwaitExpression: the whole expression, a missing operand being a zero-width node before the
         // trivia)
-        bool operand = span_valid(expr.outer_span) && expr.outer_span.sv.size;
-        parse_error(&p, operand ? span_between(op_span, expr.outer_span) : op_span, 2524,
+        bool operand = span_valid(expr_outer_span(&expr)) && expr_outer_span(&expr).sv.size;
+        parse_error(&p, operand ? span_between(op_span, expr_outer_span(&expr)) : op_span, 2524,
             "'await' expressions cannot be used in a parameter initializer.");
     }
 
@@ -8325,7 +8326,7 @@ static bool parse_left_unary_op_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         parse_fail(&lookahead);
         if (exponent) {
             csview op_text = csview_trim(zsview_sv(unary_op_get_zv(op)));
-            parse_error(&p, span_between(op_span, expr.outer_span), 17006, "An unary expression with the '",
+            parse_error(&p, span_between(op_span, expr_outer_span(&expr)), 17006, "An unary expression with the '",
                 op_text, "' operator is not allowed in the left-hand side of an exponentiation expression. "
                 "Consider enclosing the expression in parentheses.");
         }
@@ -8747,7 +8748,7 @@ static void mark_chain_continues(Expr* object) {
 
 static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_ret) {
     Parser p = parser(parent);
-    Anchor a = span_starting_at(&p, left_and_ret->outer_span);
+    Anchor a = span_starting_at(&p, expr_outer_span(left_and_ret));
 
     hop_whitespace(&p);
     bool hit_newline = p.whitespace == WHITESPACE_NEWLINE;
@@ -8831,7 +8832,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         if (p.shared->source->is_js && !optional_chain && expr_is_require_call(left_and_ret)) {
             // tsc's collectRequireCalls: `require("m")` names a module in a JavaScript file, wherever it is
             p.shared->saw_commonjs = true;
-            note_commonjs_start(p.shared, span_start_ptr(left_and_ret->outer_span));
+            note_commonjs_start(p.shared, span_start_ptr(expr_outer_span(left_and_ret)));
             left_and_ret->call->callable.identifier.require_call = true;
             Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
             if (arg->tag == EXPR_LITERAL && arg->literal.tag == VALUE_STRING) {
@@ -8844,7 +8845,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         ) {
             // `Object.defineProperty(exports, "x", {...})` makes it CommonJS too (tsc's bindObjectDefinePropertyExport)
             p.shared->saw_commonjs = true;
-            note_commonjs_start(p.shared, span_start_ptr(left_and_ret->outer_span));
+            note_commonjs_start(p.shared, span_start_ptr(expr_outer_span(left_and_ret)));
         }
         return parse_success(&p);
     }
@@ -8890,9 +8891,9 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             !parsed.optional_chain
         ) {
             // `f<T>.x` (tsc's parsePropertyAccessExpressionRest): over the type arguments, `<` to `>`
-            const char* open = span_end_ptr(left_and_ret->generic_params->expr.outer_span);
+            const char* open = span_end_ptr(expr_outer_span(&left_and_ret->generic_params->expr));
             while (*open && *open != '<') open++;
-            parse_error(&p, span_make(p.shared->source, open, span_end_ptr(left_and_ret->outer_span)), 1477,
+            parse_error(&p, span_make(p.shared->source, open, span_end_ptr(expr_outer_span(left_and_ret))), 1477,
                 "An instantiation expression cannot be followed by a property access.");
         }
         mark_chain_continues(left_and_ret);
@@ -8958,7 +8959,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
 
     if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>' && !ctx.entity_name) {
         Parser sub_p = parser(&p);
-        sub_p.pos = span_start_ptr(left_and_ret->outer_span);
+        sub_p.pos = span_start_ptr(expr_outer_span(left_and_ret));
 
         if (parse_arrow_function(&sub_p, ctx, function_flags_null, false, &parsed.function)) {
             parse_success(&sub_p);
@@ -9034,7 +9035,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                         left_and_ret->tag == EXPR_TERNARY ||
                         // (Not a JSDoc assertion, `/** @type {T} */ (x)++`: parenthesized, its type comes first)
                         (left_and_ret->tag == EXPR_AS_TYPE && span_start_ptr(left_and_ret->as_type->keyword_span) >
-                            span_start_ptr(left_and_ret->as_type->expr.outer_span))))))
+                            span_start_ptr(expr_outer_span(&left_and_ret->as_type->expr)))))))
         ) {
             if (parsed.unary == UNARY_OP_RIGHT_BANG) {
                 js_syntax_error(&p, span_from(a), 8013, "Non-null assertions can only be used in TypeScript files.");
@@ -9072,7 +9073,7 @@ operators:
 
 static bool parse_comma_ops_right_side(Parser* parent, Expr* left_and_ret) {
     Parser p = parser(parent);
-    Anchor a = span_starting_at(&p, left_and_ret->outer_span);
+    Anchor a = span_starting_at(&p, expr_outer_span(left_and_ret));
     Expr expr;
     bool parsed_commas = false;
 
@@ -9170,7 +9171,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
 // Zero or more decorators (`@a @b.c(d)`), fails if there are none. Whitespace after them is hopped
 // The `?.` after an expression
 static Span question_dot_after(Parser* p, Expr const* e) {
-    const char* c = span_end_ptr(e->outer_span);
+    const char* c = span_end_ptr(expr_outer_span(e));
     while (*c && *c != '?') c++;
     return span_make(p->shared->source, c, c + 2);
 }
@@ -9189,7 +9190,7 @@ static void decorator_check_grammar(Parser* p, Expr const* decorator) {
         } else if (!paren && node->tag == EXPR_UNARY_OP && node->unary_op->op == UNARY_OP_RIGHT_BANG) {
             node = &node->unary_op->expr;
         } else if (!paren && node->tag == EXPR_CALL && !node->call->uses_new) {
-            if (!can_call) error_at = node->outer_span;
+            if (!can_call) error_at = expr_outer_span(node);
             if (node->call->optional_chain) error_at = question_dot_after(p, &node->call->callable);
             node = &node->call->callable;
             can_call = false;
@@ -9198,12 +9199,12 @@ static void decorator_check_grammar(Parser* p, Expr const* decorator) {
             node = &node->property->expr;
             can_call = false;
         } else {
-            if (paren || node->tag != EXPR_IDENTIFIER || node->identifier.keyword) error_at = node->outer_span;
+            if (paren || node->tag != EXPR_IDENTIFIER || node->identifier.keyword) error_at = expr_outer_span(node);
             break;
         }
     }
     if (!span_valid(error_at)) return;
-    Error* e = grammar_error(p, decorator->outer_span, 1497,
+    Error* e = grammar_error(p, expr_outer_span(decorator), 1497,
         "Expression must be enclosed in parentheses to be used as a decorator.");
     error_add_related_d(e, error_at, 1498, "Invalid syntax in decorator.");
 }
@@ -9622,7 +9623,7 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
                 parse_error(p, span_make(p->shared->source, fragment_start, span_end_ptr(el->opening_span)), 17014,
                     "JSX fragment has no corresponding closing tag.");
             } else {
-                parse_error(p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
+                parse_error(p, expr_outer_span(&el->tag_name), 17008, "JSX element '", expr_outer_span(&el->tag_name),
                     "' has no corresponding closing tag.");
             }
             return;
@@ -9760,7 +9761,6 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         .tag = EXPR_JSX_ATTRIBUTES,
         .jsx_attributes = attributes,
         .inner_span = span_from(attributes_a),
-        .outer_span = span_from(attributes_a),
     };
     el->opening_span = span_from(a);
 
@@ -9804,11 +9804,11 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
                 if (!jsx_tag_names_equal(&el->tag_name, &el->closing_name)) {
                     if (enclosing && jsx_tag_names_equal(&el->closing_name, &enclosing->tag_name)) {
                         // Our parent's closing tag: the error is ours
-                        parse_error(&p, el->tag_name.outer_span, 17008, "JSX element '", el->tag_name.outer_span,
+                        parse_error(&p, expr_outer_span(&el->tag_name), 17008, "JSX element '", expr_outer_span(&el->tag_name),
                             "' has no corresponding closing tag.");
                     } else {
-                        parse_error(&p, el->closing_name.outer_span, 17002,
-                            "Expected corresponding JSX closing tag for '", el->tag_name.outer_span, "'.");
+                        parse_error(&p, expr_outer_span(&el->closing_name), 17002,
+                            "Expected corresponding JSX closing tag for '", expr_outer_span(&el->tag_name), "'.");
                     }
                 }
             }
@@ -9820,7 +9820,6 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         .tag = is_fragment ? EXPR_JSX_FRAGMENT : EXPR_JSX_ELEMENT,
         .jsx = el,
         .inner_span = span_from(a),
-        .outer_span = span_from(a),
     };
 
     // `<a></a><b></b>` where an expression is expected: the second element is parsed too, and the two are a comma
@@ -9835,7 +9834,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
             hop_whitespace(&p);
             Expr invalid;
             parse_jsx_element(&p, true, nullptr, false, top, &invalid);
-            parse_error(&p, span_make(p.shared->source, top, span_end_ptr(invalid.outer_span)), 2657,
+            parse_error(&p, span_make(p.shared->source, top, span_end_ptr(expr_outer_span(&invalid))), 2657,
                 "JSX expressions must have one parent element.");
             *ret = expr_binary_op(span_from(a), c_new(BinaryOpExpr, {
                 .op = BINARY_OP_COMMA,
@@ -9894,7 +9893,7 @@ static void jsdoc_apply_parenthesized(Parser* p, const char* start, Span span, E
     if (tag) {
         // (The parentheses are the assertion's: tsc's ParenthesizedExpression has the asserted type)
         Expr inner = *ret;
-        inner.outer_span = inner.inner_span;
+        expr_clear_outer_span(&inner);
         *ret = expr_as_type(span, c_new(AsTypeExpr, {
             .expr = inner,
             // (Where tsc reports what's wrong with a JSDoc assertion: its type; a `@satisfies` its tag)
@@ -9983,7 +9982,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         if (chain_p.pos[0] == '?' && chain_p.pos[1] == '.' && !(chain_p.pos[2] >= '0' && chain_p.pos[2] <= '9')) {
             // (tsc's parseNewExpressionOrNewDotTarget: `new A?.b()` is `(new A)?.b()`)
             parse_error(&chain_p, span_make(p.shared->source, chain_p.pos, chain_p.pos + 2), 1209,
-                "Invalid optional chain from new expression. Did you mean to call '", call.callable.outer_span, "()'?");
+                "Invalid optional chain from new expression. Did you mean to call '", expr_outer_span(&call.callable), "()'?");
             parse_success(&chain_p);
         } else {
             parse_fail(&chain_p);
@@ -10091,7 +10090,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         Expr e;
         ExprCtx operand_ctx = ctx;
         operand_ctx.min_precedence = unary_op_get_precedence(UNARY_OP_LEFT_BANG);
-        if (!expect_expr(&p, operand_ctx, &e) && e.outer_span.sv.size == 0 && p.pos == span_start_ptr(e.outer_span)) {
+        if (!expect_expr(&p, operand_ctx, &e) && expr_outer_span(&e).sv.size == 0 && p.pos == span_start_ptr(expr_outer_span(&e))) {
             p.pos = after_gt; // A missing operand ends the assertion at its `>` (tsc's missing node)
         }
         *ret = expr_as_type(span_from(a), c_new(AsTypeExpr, {
@@ -10122,7 +10121,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
     if (!inner_span_set) {
         ret->inner_span = span_from(a);
     }
-    ret->outer_span = span_from(a);
+    expr_set_outer_span(ret, span_from(a));
 
     ret->lazy_type = (LazyType){0};
 
@@ -12256,7 +12255,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                     hop_whitespace(&p);
                     Expr initializer;
                     if (expect_expr(&p, expr_ctx_null, &initializer)) {
-                        parse_error(&p, initializer.outer_span, 1197, "Catch clause variable cannot have an initializer.");
+                        parse_error(&p, expr_outer_span(&initializer), 1197, "Catch clause variable cannot have an initializer.");
                     }
                     try_catch.catch_initializer = c_new(Expr, initializer);
                     hop_whitespace(&p);
@@ -12822,7 +12821,7 @@ static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, Init
         return;
     }
     Expr inner = *value;
-    *value = expr_as_type(inner.outer_span, c_new(AsTypeExpr, {
+    *value = expr_as_type(expr_outer_span(&inner), c_new(AsTypeExpr, {
         .expr = inner,
         .keyword_span = tag->tag_name,
         .type = jsdoc_take_type(tag, nullptr),
@@ -12987,8 +12986,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, Statement* state
                 Expr* e = &statement->expr;
                 if (tag && expr_is_perenthisized(e) && !(e->tag == EXPR_AS_TYPE && e->as_type->is_jsdoc)) {
                     Expr inner = *e;
-                    inner.outer_span = inner.inner_span;
-                    *e = expr_as_type(e->outer_span, c_new(AsTypeExpr, {
+                    expr_clear_outer_span(&inner);
+                    *e = expr_as_type(expr_outer_span(e), c_new(AsTypeExpr, {
                         .expr = inner,
                         .keyword_span = tag->type_span,
                         .type = jsdoc_take_type(tag, nullptr),
@@ -13162,7 +13161,7 @@ static bool is_grammar_code(unsigned code) {
 // tsc's convertToJson over a JSON file's value (parseSourceFile adds its errors to the parse diagnostics): only
 // double-quoted strings, numbers (maybe negated), true, false, null, objects of property assignments and arrays
 static void json_check_value(Parser* p, Expr const* value) {
-    Span span = value->outer_span;
+    Span span = expr_outer_span(value);
     bool plain = !expr_is_perenthisized(value);
     if (plain && value->tag == EXPR_LITERAL) {
         switch (value->literal.tag) {

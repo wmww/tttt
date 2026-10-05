@@ -3190,7 +3190,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
             Ty const* init = ty_type_of_symbol(me, symbol);
             if (!init || (init->flags & TYF_BOOLEAN)) continue;
             Expr* reference = arena_new(&my arena, Expr);
-            *reference = (Expr){ .tag = EXPR_IDENTIFIER, .inner_span = binding->content_span, .outer_span = binding->content_span };
+            *reference = (Expr){ .tag = EXPR_IDENTIFIER, .inner_span = binding->content_span };
             reference->identifier = (IdentifierExpr){ .name = binding->content_span, .target = symbol, .symbol = symbol };
             Ty const* refined = refined_parameter_type(me, expr, antecedent, reference, init);
             if (!refined) continue;

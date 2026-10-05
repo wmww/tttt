@@ -76,7 +76,7 @@ ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes cons
     if (csview_equals(value, "import")) return IMPORT_RESOLUTION_IMPORT;
     if (csview_equals(value, "require")) return IMPORT_RESOLUTION_REQUIRE;
     if (errs) {
-        error_ctx_grammar_error_d(errs, element->value.outer_span, 1453, "`resolution-mode` should be either `require` or `import`.");
+        error_ctx_grammar_error_d(errs, expr_outer_span(&element->value), 1453, "`resolution-mode` should be either `require` or `import`.");
     }
     return IMPORT_RESOLUTION_DEFAULT;
 }
@@ -290,11 +290,11 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         // (a string literal: not a template, which isStringLiteral isn't)
         for_each (i, vec_import_attribute, &my attributes->elements) {
             Expr const* value = &i->value;
-            if (is_string_literal(value) && value->outer_span.sv.size && value->outer_span.sv.buf[0] != '`') continue;
+            if (is_string_literal(value) && expr_outer_span(value).sv.size && expr_outer_span(value).sv.buf[0] != '`') continue;
             if (my attributes->is_assert) {
-                error_ctx_error_d(errs, value->outer_span, 2837, "Import assertion values must be string literal expressions.");
+                error_ctx_error_d(errs, expr_outer_span(value), 2837, "Import assertion values must be string literal expressions.");
             } else {
-                error_ctx_error_d(errs, value->outer_span, 2858, "Import attribute values must be string literal expressions.");
+                error_ctx_error_d(errs, expr_outer_span(value), 2858, "Import attribute values must be string literal expressions.");
             }
         }
     }

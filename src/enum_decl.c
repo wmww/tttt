@@ -111,7 +111,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         if (i->value.tag == EXPR_IMPLICIT_ANY || !i->symbol) continue;
         ty_check_enum_initializer_references(current_checker, i, &i->value, errs);
         Ty const* member = ty_declared_type_of(current_checker, i->symbol);
-        Span at = i->value.outer_span;
+        Span at = expr_outer_span(&i->value);
         if (member->flags & TYF_NUMBER_LITERAL) {
             double value = member->literal.value.number;
             if (my is_const && isnan(value)) {

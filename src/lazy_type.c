@@ -76,7 +76,7 @@ static thread_local CycleTrace cycle_trace;
 static void cycle_trace_print(LazyType* lazy) {
     switch (lazy->tag) {
         case LAZY_TYPE_EXPR: {
-            Span span = c_container_of(lazy, Expr, lazy_type)->outer_span;
+            Span span = expr_outer_span(c_container_of(lazy, Expr, lazy_type));
             log_warn("  expression, line ", span_line_index(span) + 1, ": ", span);
         }   break;
         case LAZY_TYPE_INITIALIZED_BINDING: {

@@ -477,13 +477,13 @@ static void dump_node(FlowNode const* node) {
     if (node->flags & FLOW_SHARED) print(" shared");
     if (node->flags & FLOW_NULLISH) print(" nullish");
     if (node->flags & (FLOW_CONDITION | FLOW_CALL)) {
-        print("  `", dump_text(((Expr const*)node->node)->outer_span), "`");
+        print("  `", dump_text(expr_outer_span((Expr const*)node->node)), "`");
     } else if (node->flags & FLOW_START) {
         if (node->flags & FLOW_CONTINUES_OUTSIDE) print("  (continues outside)");
     } else if (node->flags & FLOW_SWITCH_CLAUSE) {
         FlowSwitchClause const* clause = node->node;
         print("  clauses [", clause->clause_start, ", ", clause->clause_end, ") of `switch (",
-            dump_text(clause->switch_->needle.outer_span), ")`");
+            dump_text(expr_outer_span(&clause->switch_->needle)), ")`");
     } else if (node->flags & FLOW_REDUCE_LABEL) {
         FlowReduceLabel const* reduce = node->node;
         print("  ");
@@ -494,12 +494,12 @@ static void dump_node(FlowNode const* node) {
         FlowAssign const* assign = node->node;
         switch (assign->kind) {
             case FLOW_ASSIGN_DECLARATION: print("  declaration `", dump_text(assign->binding->content_span), "`"); break;
-            case FLOW_ASSIGN_EXPR: print("  `", dump_text(assign->assignment->outer_span), "`"); break;
-            case FLOW_ASSIGN_UPDATE: print("  update `", dump_text(assign->assignment->outer_span), "`"); break;
-            case FLOW_ASSIGN_DELETE: print("  `", dump_text(assign->assignment->outer_span), "`"); break;
-            case FLOW_ASSIGN_FOR_EACH: print("  for-each `", dump_text(assign->target->outer_span), "`"); break;
+            case FLOW_ASSIGN_EXPR: print("  `", dump_text(expr_outer_span(assign->assignment)), "`"); break;
+            case FLOW_ASSIGN_UPDATE: print("  update `", dump_text(expr_outer_span(assign->assignment)), "`"); break;
+            case FLOW_ASSIGN_DELETE: print("  `", dump_text(expr_outer_span(assign->assignment)), "`"); break;
+            case FLOW_ASSIGN_FOR_EACH: print("  for-each `", dump_text(expr_outer_span(assign->target)), "`"); break;
             case FLOW_ASSIGN_PATTERN: {
-                print("  `", dump_text(assign->target->outer_span), "` = value");
+                print("  `", dump_text(expr_outer_span(assign->target)), "` = value");
                 // Innermost first
                 for (FlowPatternPath const* path = assign->path; path; path = path->parent) {
                     switch (path->kind) {
@@ -507,7 +507,7 @@ static void dump_node(FlowNode const* node) {
                         case FLOW_PATH_PROPERTY: print(" <- .", dump_text(path->item->name_span)); break;
                         case FLOW_PATH_REST: print(" <- ...rest(", path->index, ")"); break;
                     }
-                    if (path->default_value) print(" ?? `", dump_text(path->default_value->outer_span), "`");
+                    if (path->default_value) print(" ?? `", dump_text(expr_outer_span(path->default_value)), "`");
                 }
             }   break;
         }

@@ -370,7 +370,7 @@ void display_interface_member(Display d, InterfaceMember const* me) {
 
         case INTERFACE_KEY_EXPR:
             display_lit(d, "[");
-            display_colored_span(d, color_type, my key.expr.ref->outer_span);
+            display_colored_span(d, color_type, expr_outer_span(my key.expr.ref));
             display_lit(d, "]");
             break;
 
@@ -801,7 +801,7 @@ static void display_identifier_expr(Display d, IdentifierExpr const* me) {
 void display_expr(Display d, Expr const* me) {
     intptr_t paren_depth = 0;
     bool display_implicit_peren = false;
-    for (const char* c = span_start_ptr(my outer_span); c < span_start_ptr(my inner_span); c++) {
+    for (const char* c = span_start_ptr(expr_outer_span(me)); c < span_start_ptr(my inner_span); c++) {
         if (*c == '(') paren_depth++;
     }
 

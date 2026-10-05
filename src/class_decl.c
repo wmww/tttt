@@ -268,7 +268,7 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
                 }
                 names->flow = &flow;
                 expr_lookup_names(&my field.value, names, errs);
-                flow_builder_finish(&flow, c_sv("field"), my field.value.outer_span);
+                flow_builder_finish(&flow, c_sv("field"), expr_outer_span(&my field.value));
                 names->flow = outer;
             }
             break;
@@ -1112,7 +1112,7 @@ static void class_heritage_typecheck(ClassDecl* me, ErrorCtx* errs) {
         cstr why;
         if (never_base && ty_never_intersection_elaboration(checker, never_base, &code, &why)) {
             Expr const* extends = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
-            Error* error = error_ctx_error_d(errs, extends->outer_span, 2509, "Base constructor return type 'never' is not an "
+            Error* error = error_ctx_error_d(errs, expr_outer_span(extends), 2509, "Base constructor return type 'never' is not an "
                 "object type or intersection of object types with statically known members.");
             if (error) error_sub_error_s(error, (Span){0}, code, why); else cstr_drop(&why);
         }
@@ -1211,7 +1211,7 @@ static void check_super_call_root(Span name, FunctionImpl const* func, Expr cons
         }
     }
     if (!statement) {
-        error_ctx_error_d(errs, super_call->outer_span, 2401, "A 'super' call must be a root-level statement within a ",
+        error_ctx_error_d(errs, expr_outer_span(super_call), 2401, "A 'super' call must be a root-level statement within a ",
             "constructor of a derived class that contains initialized properties, parameter properties, or private ",
             "identifiers.");
         return;
@@ -1418,7 +1418,7 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
 
 // A decorator, from its `@`
 static Span decorator_span(Expr const* decorator) {
-    Span ret = decorator->outer_span;
+    Span ret = expr_outer_span(decorator);
     const char* start = span_start_ptr(ret);
     const char* file_start = source_file_start(ret.source);
     while (start > file_start && start[-1] != '@') start--;
@@ -1560,7 +1560,7 @@ static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, b
     Expr const* base = &my extends;
     *arg_count = 0;
     // (tsc's getTypeFromClassOrInterfaceReference: the clause itself rather than an `@extends` tag's type)
-    *missing_extends = my extends.outer_span.source && my extends.outer_span.source->is_js;
+    *missing_extends = expr_outer_span(&my extends).source && expr_outer_span(&my extends).source->is_js;
     if (base->tag == EXPR_GENERIC_PARAMS) {
         SpannedType const* first = vec_spanned_type_size(&base->generic_params->params) ?
             vec_spanned_type_at(&base->generic_params->params, 0) : nullptr;
@@ -1592,7 +1592,7 @@ bool class_decl_base_arity_fits(ClassDecl const* me) {
     bool missing_extends;
     Symbol const* target = class_base_reference(me, &arg_count, &missing_extends);
     // (In JavaScript the reference is still made, the missing arguments any: tsc's getTypeFromClassOrInterfaceReference)
-    SourceFile const* source = my extends.outer_span.source;
+    SourceFile const* source = expr_outer_span(&my extends).source;
     return !target || (source && source->is_js) || several_types_arity_fits(target, arg_count, source);
 }
 
@@ -1612,16 +1612,16 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
             if (instance->kind == TY_DECLARED && !instance->declared.outer_count) target = constructor->declared.symbol;
         }
         if (!target && (constructor->flags & (TYF_OBJECT | TYF_INTERSECTION)) &&
-            !ty_base_constructors_fit(checker, constructor, arg_count, my extends.outer_span.source->is_js)
+            !ty_base_constructors_fit(checker, constructor, arg_count, expr_outer_span(&my extends).source->is_js)
         ) {
-            error_ctx_error_d(errs, base->outer_span, 2508, "No base constructor has the specified number of type arguments.");
+            error_ctx_error_d(errs, expr_outer_span(base), 2508, "No base constructor has the specified number of type arguments.");
             return;
         }
     }
     if (!target) return;
     // (An `@augments` tag is the heritage clause: its type arguments, reported at it)
     if (span_valid(my jsdoc_extends)) missing_extends = false;
-    several_types_check_arity(target, arg_count, span_valid(my jsdoc_extends) ? my jsdoc_extends : my extends.outer_span,
+    several_types_check_arity(target, arg_count, span_valid(my jsdoc_extends) ? my jsdoc_extends : expr_outer_span(&my extends),
         missing_extends, errs);
 }
 
@@ -1756,11 +1756,11 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         if (!decorator_error && i->tag == CLASS_ITEM_FIELD && (my is_ambient || i->field.is_declare) && i->field.value.tag != EXPR_IMPLICIT_ANY) {
             if (i->field.is_readonly && !i->field.has_explicit_type) {
                 if (!expr_is_ambient_const_initializer(&i->field.value)) {
-                    error_ctx_grammar_error_d(errs, i->field.value.outer_span, 1254,
+                    error_ctx_grammar_error_d(errs, expr_outer_span(&i->field.value), 1254,
                         "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
             } else {
-                error_ctx_grammar_error_d(errs, i->field.value.outer_span, 1039, "Initializers are not allowed in ambient contexts.");
+                error_ctx_grammar_error_d(errs, expr_outer_span(&i->field.value), 1039, "Initializers are not allowed in ambient contexts.");
             }
         }
         // tsc's checkAccessorDeclaration: a getter and setter pair agree on abstract (TS2676), and the getter is at least
@@ -1858,10 +1858,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             CallExpr call_expr = {
                 .uses_new = true,
                 .is_extends = true,
-                .callable = expr_implicit_any(my extends.outer_span),
+                .callable = expr_implicit_any(expr_outer_span(&my extends)),
                 .args = vec_expr_init(),
             };
-            ty_call_typecheck(current_checker, extends_type, &call_expr, nullptr, my extends.outer_span, errs);
+            ty_call_typecheck(current_checker, extends_type, &call_expr, nullptr, expr_outer_span(&my extends), errs);
         }
     }
 
@@ -2032,7 +2032,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         }
     }
     for (u32 i = 0; i < my invalid_implements_checked; i++) {
-        error_ctx_error_d(errs, my invalid_implements.data[i].outer_span, 2500,
+        error_ctx_error_d(errs, expr_outer_span(&my invalid_implements.data[i]), 2500,
             "A class can only implement an identifier/qualified-name with optional type arguments.");
     }
     class_check_base_arity(me, errs);

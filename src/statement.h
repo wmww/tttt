@@ -250,7 +250,7 @@ void statement_collect_return_types(Statement const* me, TyBuf* out);
 static inline bool statement_is_bare_return(Statement const* me) {
     // The parser gives `return;` an `undefined` literal that spans the keyword
     return my tag == STATEMENT_RETURN_EXPR && my expr.tag == EXPR_LITERAL && my expr.literal.tag == VALUE_UNDEFINED &&
-        csview_starts_with(my expr.outer_span.sv, "return");
+        csview_starts_with(expr_outer_span(&my expr).sv, "return");
 }
 // Whether pred holds for the expression of some non-bare `return` (not looking into nested functions, tsc's
 // forEachReturnStatement)

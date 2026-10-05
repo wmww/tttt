@@ -338,7 +338,7 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
             (isize_t)target->reference.target->declared.tuple->arity)) {
             continue;
         }
-        if (!i->outer_span.sv.size) continue; // omitted
+        if (!expr_outer_span(i).sv.size) continue; // omitted
         Expr const* check_node = expr_effective_check_node(i);
         Value index = value_number((double)i_index);
         ElaborationItem item = {
@@ -516,7 +516,7 @@ static bool elaborate_arrow_function(Checker* me, Expr const* expr, Ty const* so
     if (ty_is_related(me, source_ret, target_ret, TY_RELATION_ASSIGNABLE)) return false;
     Expr const* body = &vec_statement_at(&function->body.statements, 0)->expr;
     if (elaborate_error(me, HEAD_TYPE, body, source_ret, target_ret, errs)) return true;
-    Error* error = report_unassignable(me, HEAD_TYPE, source_ret, target_ret, body->outer_span, errs);
+    Error* error = report_unassignable(me, HEAD_TYPE, source_ret, target_ret, expr_outer_span(body), errs);
     if (!error) return true;
     if (target->kind != TY_UNION) {
         // (Also in a lib file: tsc's elaborateArrowFunction doesn't check hasNoDefaultLib)
@@ -576,8 +576,8 @@ static bool elaborate_did_you_mean_to_call(
             fits = !(ret->flags & (TYF_ANY | TYF_NEVER)) && ty_is_related(me, ret, target, TY_RELATION_ASSIGNABLE);
         }
         if (!fits) continue;
-        Error* error = report_unassignable(me, head, source, target, expr->outer_span, errs);
-        error_add_related_s(error, expr->outer_span, construct ? 6213 : 6212, construct ?
+        Error* error = report_unassignable(me, head, source, target, expr_outer_span(expr), errs);
+        error_add_related_s(error, expr_outer_span(expr), construct ? 6213 : 6212, construct ?
             cstr_lit("Did you mean to use 'new' with this expression?") : cstr_lit("Did you mean to call this expression?"));
         return true;
     }
@@ -627,7 +627,7 @@ static bool check_assignable(
     // (The head is about the target as relations see it: a substitution type's base, getNormalizedType)
     while (target->kind == TY_SUBSTITUTION) target = target->substitution.base;
     // An arrow function whose block body spans lines is reported on its first line (tsc's getErrorSpanForArrowFunction)
-    if (expr && expr->tag == EXPR_FUNCTION && span_valid(expr->function->arrow_span) && span_eq(span, expr->outer_span) &&
+    if (expr && expr->tag == EXPR_FUNCTION && span_valid(expr->function->arrow_span) && span_eq(span, expr_outer_span(expr)) &&
         !expr_is_perenthisized(expr)
     ) {
         span = function_error_span(expr->function);
@@ -970,7 +970,7 @@ void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx
         return;
     }
     cstr shown = ty_to_cstr(me, type);
-    error_ctx_error_d(errs, specifier->outer_span, 7036, "Dynamic import's specifier must be of type 'string', but here ",
+    error_ctx_error_d(errs, expr_outer_span(specifier), 7036, "Dynamic import's specifier must be of type 'string', but here ",
         "has type '", shown, "'.");
     cstr_drop(&shown);
 }
@@ -979,7 +979,7 @@ void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* er
     Ty const* target = global_import_type(me, "ImportCallOptions");
     if (!target) return;
     Ty const* source = ty_check_expr(me, options, target);
-    ty_check_assignable(me, source, with_undefined(me, target), options->outer_span, errs);
+    ty_check_assignable(me, source, with_undefined(me, target), expr_outer_span(options), errs);
 }
 
 // tsc's getGlobalDisposableType(/*reportErrors*/ true) & co: TS2318 once when the lib doesn't have it
@@ -1725,7 +1725,7 @@ void ty_check_generic_index_write(Checker* me, PropertyExpr const* access, Ty co
     Ty const* key = ty_access_key_type(me, access);
     if (!ty_generic_write_index_info(me, access, object, key)) return;
     if (access->form == PROPERTY_EXPR_DOT) {
-        report_no_property(me, object, ty_regular(me, key), 2339, access->prop.outer_span, false, errs);
+        report_no_property(me, object, ty_regular(me, key), 2339, expr_outer_span(&access->prop), false, errs);
         return;
     }
     cstr object_str = ty_to_cstr(me, object);
@@ -1842,12 +1842,12 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL) &&
             !ty_access(me, object, key)
         ) {
-            report_no_property(me, object, key, 2339, access->prop.outer_span, false, errs);
+            report_no_property(me, object, key, 2339, expr_outer_span(&access->prop), false, errs);
         }
         return;
     }
     if (!compiler_options()->no_implicit_any) return;
-    Span index_span = access->prop.outer_span;
+    Span index_span = expr_outer_span(&access->prop);
     Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
     u32 key_like = TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     // (`any` is a key like any other: tsc's isTypeAssignableToKind)
@@ -2110,7 +2110,7 @@ static bool is_namespace_import(Expr const* expr) {
 // tsc's isAssignmentToReadonlyEntity for a property
 // `exports.x = v` in a CommonJS file declares x (whatever else declares it: the target of an alias export is a const)
 static bool is_commonjs_export_assignment(PropertyExpr const* access) {
-    SourceFile const* file = access->prop.outer_span.source;
+    SourceFile const* file = expr_outer_span(&access->prop).source;
     if (!file || !file->is_commonjs) return false;
     Expr left = { .tag = EXPR_PROPERTY, .property = (PropertyExpr*)access };
     return expr_commonjs_target(&left, nullptr) == COMMONJS_TARGET_EXPORTS_PROPERTY;
@@ -3167,7 +3167,7 @@ static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview nam
 static void check_used_before_initialization(Checker* me, PropertyExpr const* access, Prop const* prop, ErrorCtx* errs) {
     PropertyContext const* site = property_context(access);
     while (prop->target) prop = prop->target;
-    if (!span_valid(prop->decl->name_span) || prop->decl->name_span.source != access->prop.outer_span.source) return;
+    if (!span_valid(prop->decl->name_span) || prop->decl->name_span.source != expr_outer_span(&access->prop).source) return;
     // A JavaScript assignment declaration (`this.x = v` declares x from where it starts)
     if (prop->decl->symbol && prop->decl->symbol->decl_count && prop->decl->symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT) return;
     ClassDecl* class_decl = prop->parent && (prop->parent->flags & SYMBOL_CLASS) ? (ClassDecl*)class_decl_of(prop->parent) : nullptr;
@@ -3192,7 +3192,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
 
     Span declaration = item ? item->span : parameter ? parameter->span : prop->decl->name_span;
     char const* declared_at = span_start_ptr(declaration);
-    char const* used_at = span_start_ptr(access->expr.outer_span);
+    char const* used_at = span_start_ptr(expr_outer_span(&access->expr));
     bool same_class = class_decl && site->enclosing_class == class_decl;
     bool this_access = access->expr.tag == EXPR_IDENTIFIER && access->expr.identifier.keyword == KEYWORD_IDENTIFIER_THIS;
     bool initialized = is_field && (item->field.value.tag != EXPR_IMPLICIT_ANY || *span_end_ptr(item->field.name_span) == '!');
@@ -3220,7 +3220,7 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
         fine = !(emit_standard && (is_field || parameter) &&
             (within_declaration || (site->initializer_field && same_class) ||
                 site->initializer_context == INITIALIZER_STATIC_BLOCK) &&
-            span_end_ptr(access->prop.outer_span) <= span_end_ptr(declaration));
+            span_end_ptr(expr_outer_span(&access->prop)) <= span_end_ptr(declaration));
     } else {
         fine = false;
     }
@@ -3272,7 +3272,7 @@ void ty_check_index_signature_dot_access(Checker* me, PropertyExpr const* access
         if (!ty_applicable_index_info(me, member, key)) return;
     }
     // (tsc's checkPropertyAccessExpressionOrQualifiedName, at the name)
-    error_ctx_error_d(errs, access->prop.outer_span, 4111, "Property '", atom_sv(name),
+    error_ctx_error_d(errs, expr_outer_span(&access->prop), 4111, "Property '", atom_sv(name),
         "' comes from an index signature, so it must be accessed with ['", atom_sv(name), "'].");
 }
 
@@ -3283,7 +3283,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     if (is_global_this(object) && access->assignment_target && access->form == PROPERTY_EXPR_DOT &&
         span_equals(access->prop.inner_span, "globalThis")
     ) {
-        error_ctx_error_d(errs, access->prop.outer_span, 2540, "Cannot assign to 'globalThis' because it is a read-only property.");
+        error_ctx_error_d(errs, expr_outer_span(&access->prop), 2540, "Cannot assign to 'globalThis' because it is a read-only property.");
     }
     if ((object->flags & TYF_ANY) || is_global_this(object)) return;
     Atom const* name = access_name(me, access);
@@ -3329,7 +3329,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
                 .this_parameter = site->this_parameter, .this_function = site->this_function,
                 .initializer_context = site->initializer_context,
             };
-            if (!check_accessibility(me, &access_site, access->prop.outer_span, is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
+            if (!check_accessibility(me, &access_site, expr_outer_span(&access->prop), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
                 access->assignment_target, refs.props[i], refs.objects[i], is_super, errs)
             ) {
                 break;
@@ -3338,7 +3338,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
     refs.len = 0;
     if (readonly_assignment(me, access, object, &refs)) {
-        error_ctx_error_d(errs, access->prop.outer_span, 2540,
+        error_ctx_error_d(errs, expr_outer_span(&access->prop), 2540,
             "Cannot assign to '", atom_sv(name), "' because it is a read-only property.");
     }
 }
@@ -3510,7 +3510,7 @@ bool ty_check_private_name_access(Checker* me, PropertyExpr const* access, Ty co
         }
         if (setter && !getter && access->assignment_target != FLOW_TARGET_DEFINITE) {
             // The whole access (tsc's error(node))
-            Span at = span_make(name.source, span_start_ptr(access->expr.outer_span), span_end_ptr(name));
+            Span at = span_make(name.source, span_start_ptr(expr_outer_span(&access->expr)), span_end_ptr(name));
             error_ctx_error_d(errs, at, 2806, "Private accessor was defined without a getter.");
         }
         return false;

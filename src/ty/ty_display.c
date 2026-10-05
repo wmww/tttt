@@ -1091,7 +1091,7 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
     if (d.tracker && leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
         (ty_expr_type(me, expr)->flags & TYF_UNIQUE_ES_SYMBOL)
     ) {
-        Span name = expr->outer_span;
+        Span name = expr_outer_span(expr);
         d.tracker->track_computed_name(d.tracker, csview_slice(name.sv, 0, name.sv.size), name.source);
     }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
@@ -1120,7 +1120,7 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
         }
     }
     out_lit(d, "[");
-    out(d, expr->outer_span.sv);
+    out(d, expr_outer_span(expr).sv);
     out_lit(d, "]");
 }
 
@@ -2170,12 +2170,12 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 // (The member is its declaration reused, the type is made: the baseline's `^` line)
                 TyDisplay reused = reused_if(d, true);
                 if (d.tracker) {
-                    Span name = component->name->outer_span;
+                    Span name = expr_outer_span(component->name);
                     d.tracker->track_computed_name(d.tracker, name.sv, name.source);
                 }
                 if (info->readonly) out_lit(reused, "readonly ");
                 out_lit(reused, "[");
-                out(reused, component->name->outer_span.sv);
+                out(reused, expr_outer_span(component->name).sv);
                 out_lit(reused, "]: ");
                 ty_display(me, d, component->type);
                 out_lit(reused, ";");

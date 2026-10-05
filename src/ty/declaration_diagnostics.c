@@ -911,7 +911,7 @@ static Span assertion_type_span(Expr const* expr) {
     char const* start = span_end_ptr(as->keyword_span);
     if (as->angle_bracket_syntax) {
         start = span_start_ptr(expr->inner_span) + 1;
-        end = span_start_ptr(as->expr.outer_span);
+        end = span_start_ptr(expr_outer_span(&as->expr));
         while (end > start && end[-1] != '>') end--;
         if (end > start) end--;
     }
@@ -1175,7 +1175,7 @@ static void check_parameter(Walk* me, FunctionImpl const* fn, FunctionArg const*
     // (createParameterError asks again, with the function as the enclosing declaration)
     add_undefined = requires_adding_undefined(me, fn, arg, true);
     if (!add_undefined && init->tag != EXPR_IMPLICIT_ANY) {
-        report_expression(me, init->outer_span, (Place){ .near = near, .direct = true }, 0, nullptr);
+        report_expression(me, expr_outer_span(init), (Place){ .near = near, .direct = true }, 0, nullptr);
         return;
     }
     if (add_undefined) {
@@ -1250,12 +1250,12 @@ static void type_of_function_expression(Walk* me, FunctionImpl const* fn, Place 
 // typeFromArrayLiteral
 static void type_of_array(Walk* me, Expr const* expr, Place place, bool const_context) {
     if (!const_context) {
-        report_with_near(me, expr->outer_span, place, 9017, "Only const arrays can be inferred with --isolatedDeclarations.");
+        report_with_near(me, expr_outer_span(expr), place, 9017, "Only const arrays can be inferred with --isolatedDeclarations.");
         return;
     }
     for_each (i, vec_expr, &expr->array) {
         if (i->tag == EXPR_SPREAD) {
-            report_with_near(me, i->outer_span, place, 9018,
+            report_with_near(me, expr_outer_span(i), place, 9018,
                 "Arrays with spread elements can't inferred with --isolatedDeclarations.");
             return;
         }
@@ -1264,7 +1264,7 @@ static void type_of_array(Walk* me, Expr const* expr, Place place, bool const_co
     element.direct = false;
     for_each (i, vec_expr, &expr->array) {
         if (i->tag == EXPR_IMPLICIT_ANY) continue; // (an omitted expression)
-        if (type_of_expression(me, i, element, true, false, false)) report_expression(me, i->outer_span, element, 0, nullptr);
+        if (type_of_expression(me, i, element, true, false, false)) report_expression(me, expr_outer_span(i), element, 0, nullptr);
     }
 }
 
@@ -1325,7 +1325,7 @@ static void type_of_object(Walk* me, Expr const* expr, Place place, bool const_c
             }
             case OBJECT_ITEM_PROPERTY:
                 if (type_of_expression(me, &i->value, inner, const_context, false, false)) {
-                    report_expression(me, i->value.outer_span, inner, 0, nullptr);
+                    report_expression(me, expr_outer_span(&i->value), inner, 0, nullptr);
                 }
                 break;
             case OBJECT_ITEM_GETTER:
@@ -1792,7 +1792,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
     bool is_null = base->tag == EXPR_LITERAL && base->literal.tag == VALUE_NULL;
     if (base->tag == EXPR_IMPLICIT_ANY || is_null) return;
     Emitting saved = emit_enter(me, EMIT_EXTENDS, SIG_CLASS, cls->name,
-        span_valid(cls->extends_clause) ? cls->extends_clause : cls->extends.outer_span);
+        span_valid(cls->extends_clause) ? cls->extends_clause : expr_outer_span(&cls->extends));
     my emitting.fallback = block_first_token(statement);
     if (is_entity_name_expression(base)) {
         check_entity_expression(me, base);
@@ -1800,7 +1800,7 @@ static void check_class(Walk* me, ClassDecl const* cls, Span statement) {
         // (written as a variable `_base` of the expression's type)
         bool outer = fallback_begin(me);
         Place heritage = { .heritage = true };
-        if (type_of_expression(me, base, heritage, false, false, false)) report_heritage(me, base->outer_span);
+        if (type_of_expression(me, base, heritage, false, false, false)) report_heritage(me, expr_outer_span(base));
         my fell_back = true;
         fallback_end(me, outer, lazy_type_get((LazyType*)&base->lazy_type));
     }
@@ -2215,7 +2215,7 @@ static void check_statement_now(Walk* me, Statement const* statement, Container 
             Emitting saved = emit_enter(me, EMIT_DEFAULT_EXPORT, SIG_FUNCTION, span_null, statement->span);
             bool outer = fallback_begin(me);
             if (type_of_expression(me, expr, place_at(near, true), false, false, true)) {
-                report_expression(me, expr->outer_span, place_at(near, true), 0, nullptr);
+                report_expression(me, expr_outer_span(expr), place_at(near, true), 0, nullptr);
             }
             fallback_end(me, outer, lazy_type_get((LazyType*)&expr->lazy_type));
             emit_leave(me, saved);

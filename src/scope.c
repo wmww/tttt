@@ -1466,13 +1466,13 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     if (my kind == SCOPE_NAMESPACE && my file && !my file->is_module && my container->module) {
         my container->module->has_export_assignment = true;
     }
-    Span name = alias ? expr->outer_span : statement;
-    if (expr->tag == EXPR_IMPLICIT_ANY && span_valid(expr->outer_span) && !expr->outer_span.sv.size) {
+    Span name = alias ? expr_outer_span(expr) : statement;
+    if (expr->tag == EXPR_IMPLICIT_ANY && span_valid(expr_outer_span(expr)) && !expr_outer_span(expr).sv.size) {
         // A missing expression is a missing identifier to tsc, at its full start (the end of `default`)
-        char const* at = span_start_ptr(expr->outer_span);
+        char const* at = span_start_ptr(expr_outer_span(expr));
         char const* file_start = span_start_ptr(statement);
         while (at > file_start && (at[-1] == ' ' || at[-1] == '\t')) at--;
-        name = span_make(expr->outer_span.source, at, at);
+        name = span_make(expr_outer_span(expr).source, at, at);
     }
     Symbol* symbol = declare_symbol(
         me, my container->exports, export_name, name, includes, SYMBOL_ANY_MEANING | SYMBOL_ALIAS, !export_equals, &merged
@@ -1488,7 +1488,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         symbol->alias->scope = me;
         symbol->alias->name = expr->identifier.name;
         symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr->outer_span, .full = statement,
+            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = expr_outer_span(expr), .full = statement,
             .jsdoc_type = jsdoc_type,
         });
     } else if (entity || class_alias) {
@@ -1630,7 +1630,7 @@ static Scope* commonjs_module_scope(Scope* me) {
 static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
     Span name;
     if (!expr_is_define_property_call(call, &name) || !expr_is_exports_object(vec_expr_at(&call->call->args, 0))) return;
-    declare_commonjs_export(me, name.sv, name, call, nullptr, call->outer_span, call->outer_span, ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level);
+    declare_commonjs_export(me, name.sv, name, call, nullptr, expr_outer_span(call), expr_outer_span(call), ASSIGNMENT_DECL_DEFINE_PROPERTY, top_level);
     call->call->declares = symbol_table_get(my container->exports, name.sv);
 }
 
@@ -1647,7 +1647,7 @@ void scope_add_commonjs_export(Scope* me, Expr* assignment) {
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
 static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, bool in_function) {
     BinaryOpExpr* op = assignment->binary_op;
-    Span statement = assignment->outer_span;
+    Span statement = expr_outer_span(assignment);
     Span name = span_null;
     switch (binary_commonjs_declaration(op, &name)) {
         case COMMONJS_TARGET_NONE: {
@@ -1659,13 +1659,13 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             if (object->tag != EXPR_IDENTIFIER || object->identifier.keyword || !is_exports_alias(me, object)) break;
             if (span_equals(object->identifier.name, "exports")) break; // (binary_commonjs_declaration()'s)
             left->property->commonjs_export_alias = true;
-            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, left->outer_span, statement, ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY, top_level);
+            declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, expr_outer_span(left), statement, ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY, top_level);
         }   break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY: {
             // (`exports["b"] = v` is named `"b"` where it's shown, like tsc's symbol of a string literal name)
             Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
                 op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
-            declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
+            declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level);
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
@@ -1684,7 +1684,7 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
                     break;
                 }
             }
-            declare_commonjs_export(me, c_sv("export="), op->left.outer_span, value, op->jsdoc_type, op->left.outer_span, statement, ASSIGNMENT_DECL_PROPERTY, top_level);
+            declare_commonjs_export(me, c_sv("export="), expr_outer_span(&op->left), value, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level);
         }   break;
     }
 }
@@ -4006,7 +4006,7 @@ static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
     }
     if (symbol->flags & SYMBOL_ALIAS) return nullptr;
     symbol_ensure_exports(symbol);
-    Span decl_name = entity->tag == EXPR_PROPERTY ? entity->property->prop.outer_span : entity->outer_span;
+    Span decl_name = entity->tag == EXPR_PROPERTY ? expr_outer_span(&entity->property->prop) : expr_outer_span(entity);
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = decl_name, .full = decl_name,
     });
@@ -4057,7 +4057,7 @@ static void add_expando_namespace_decls(Scope* me, Expr const* entity, bool top_
         }
     }
     if (!symbol) return;
-    Span name = entity->tag == EXPR_PROPERTY ? entity->property->prop.outer_span : entity->outer_span;
+    Span name = entity->tag == EXPR_PROPERTY ? expr_outer_span(&entity->property->prop) : expr_outer_span(entity);
     symbol_ensure_exports(symbol);
     symbol->flags |= SYMBOL_VALUE_MODULE;
     bool has_expando = false;
@@ -4094,7 +4094,7 @@ static void add_commonjs_export_namespace_decls(Scope* module, Expr const* entit
     add_commonjs_export_namespace_decls(module, &entity->property->expr);
     symbol_ensure_exports(symbol);
     symbol->flags |= SYMBOL_VALUE_MODULE;
-    Span name = entity->property->prop.outer_span;
+    Span name = expr_outer_span(&entity->property->prop);
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = name, .full = name,
     });
@@ -4168,7 +4168,7 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
     ) {
         late_bound_key = &left->property->prop;
-        name = span_make(left->outer_span.source, span_end_ptr(object->outer_span), span_end_ptr(left->outer_span));
+        name = span_make(expr_outer_span(left).source, span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
         if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
     }
     if (!span_valid(name)) return;
@@ -4276,7 +4276,7 @@ static void add_expando_member(
     if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
-        .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type,
+        .name = expr_outer_span(left), .full = expr_outer_span(left), .jsdoc_type = jsdoc_type,
     });
     set_function_class_symbol(value, member);
     // JavaScript `F.prototype = { ... }` makes F a class (tsc's bindPrototypeAssignment: containerIsClass)
@@ -4352,8 +4352,8 @@ static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
         }
         left->property->declares = symbol;
         symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = value, .name = left->outer_span,
-            .full = left->outer_span, .jsdoc_type = e->binary_op->jsdoc_type,
+            .kind = SYMBOL_DECL_ASSIGNMENT, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = value, .name = expr_outer_span(left),
+            .full = expr_outer_span(left), .jsdoc_type = e->binary_op->jsdoc_type,
             // (Not in a constructor: possibly undefined, tsc's getWidenedTypeForAssignmentDeclaration definedInMethod)
             .assignment = ASSIGNMENT_DECL_THIS_IN_METHOD,
         });
@@ -4419,7 +4419,7 @@ static void declare_assignment_member(
     if (left->tag == EXPR_CALL) left->call->declares = member;
     symbol_add_decl(member, (SymbolDecl){
         .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
-        .name = left->outer_span, .full = left->outer_span, .jsdoc_type = jsdoc_type, .jsdoc_modifiers = jsdoc_modifiers,
+        .name = expr_outer_span(left), .full = expr_outer_span(left), .jsdoc_type = jsdoc_type, .jsdoc_modifiers = jsdoc_modifiers,
     });
     // In source order, like tsc's one binder walk (`F.prototype.x = v` is declared before the walk reaches a
     // `this.x = v` above it)
@@ -4459,7 +4459,7 @@ void scope_note_ts_this_assignment(Scope const* me, BinaryOpExpr const* op) {
     for_each (i, vec_class_item, &class_decl->items) {
         if (field) break;
         if (i->tag == CLASS_ITEM_FIELD && i->field.computed_key && i->field.is_static == is_static &&
-            csview_equals_sv(i->field.computed_key->outer_span.sv, prop->outer_span.sv)
+            csview_equals_sv(expr_outer_span(i->field.computed_key).sv, expr_outer_span(prop).sv)
         ) {
             field = (ClassItem*)i;
         }
@@ -4505,7 +4505,7 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
         !expr_is_perenthisized(left) && expr_is_entity_name(&left->property->prop)
     ) {
         late_bound_key = &left->property->prop;
-        name = span_make(left->outer_span.source, span_end_ptr(object->outer_span), span_end_ptr(left->outer_span));
+        name = span_make(expr_outer_span(left).source, span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
         if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
     }
     // (Private names must be declared, even in JavaScript)

@@ -1381,14 +1381,14 @@ static Span overload_error_span(CallInfo const* info) {
 static Span invocation_error_span(CallInfo const* info) {
     Expr const* callee = &info->call->callable;
     if (info->jsx || info->tagged_template || info->decorator || info->call->uses_new || info->call->is_extends) {
-        return callee->outer_span;
+        return expr_outer_span(callee);
     }
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
         return callee->property->prop.inner_span;
     }
     // (type arguments belong to tsc's call node, not its expression)
-    return callee->outer_span;
+    return expr_outer_span(callee);
 }
 
 // Whether a line break comes after `span`, before anything but whitespace and comments (tsc's skipTrivia with
@@ -1420,7 +1420,7 @@ static void suggest_await_for_invocation(Checker* me, Error* error, Ty const* ap
     if (awaited == apparent) return;
     Members const* members = ty_members(me, ty_apparent_type(me, awaited));
     if (construct ? members->construct_count : members->call_count) {
-        error_add_related_d(error, info->call->callable.outer_span, 2773, "Did you forget to use 'await'?");
+        error_add_related_d(error, expr_outer_span(&info->call->callable), 2773, "Did you forget to use 'await'?");
     }
 }
 
@@ -1446,7 +1446,7 @@ static Ty const* resolved_return_type(Checker* me, Candidate const* candidate) {
 }
 
 static Span span_of_args(Args const* args, u32 from, u32 to) {
-    return span_between(args->data[from].expr->outer_span, args->data[to].expr->outer_span);
+    return span_between(expr_outer_span(args->data[from].expr), expr_outer_span(args->data[to].expr));
 }
 
 // `mapper`: the signatures instantiated with it (the one candidate whose instantiated rest type didn't fit)
@@ -1478,7 +1478,7 @@ static void report_arity(
     }
     Span name_span = callee_span(info);
     if (args->spread_index >= 0) {
-        error_ctx_error_d(errs, args->data[args->spread_index].expr->outer_span, 2556,
+        error_ctx_error_d(errs, expr_outer_span(args->data[args->spread_index].expr), 2556,
             "A spread argument must either have a tuple type or be passed to a rest parameter.");
     } else if (count > 1 && !has_rest && any_below && min_above != UINT32_MAX) {
         error_ctx_error_d(errs, name_span, 2575,
@@ -1489,7 +1489,7 @@ static void report_arity(
         Error* error;
         if (info->decorator) {
             // (tsc's getArgumentArityError for a decorator: too many at the expression, too few at the decorator)
-            span = args->len > max && !has_rest ? info->call->callable.outer_span : info->call_span;
+            span = args->len > max && !has_rest ? expr_outer_span(&info->call->callable) : info->call_span;
             error = error_ctx_error_d(errs, span, has_rest ? 1279 : 1278, "The runtime will invoke the decorator with ", args->len,
                 " arguments, but the decorator expects ", has_rest ? "at least " : "", min);
             if (!has_rest && min != max) cstr_append_d(&error->message, DEFAULT_DISPLAY, "-", max);
@@ -2061,7 +2061,7 @@ static Ty const* this_argument(Checker* me, CallExpr const* call, Span call_span
         return ty_intrinsic(me, TY_VOID);
     }
     PropertyExpr const* property = callee->property;
-    *span_out = property->expr.outer_span;
+    *span_out = expr_outer_span(&property->expr);
     return ty_optional_expression_type(me, ty_expr_type(me, &property->expr), property->optional_chain, nullptr);
 }
 
@@ -2327,7 +2327,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             // Reported by the typecheck pass
         } else if (call->is_extends) {
             cstr rendered = ty_to_cstr(me, callee);
-            error_ctx_error_d(errs, call->callable.outer_span, 2507, "Type '", rendered, "' is not a constructor function type.");
+            error_ctx_error_d(errs, expr_outer_span(&call->callable), 2507, "Type '", rendered, "' is not a constructor function type.");
             cstr_drop(&rendered);
         } else if (call->uses_new && other_count) {
             if (compiler_options()->no_implicit_any) {
@@ -2348,7 +2348,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 }
             }
         } else if (call->uses_new) {
-            Error* e = error_ctx_error_d(errs, call->callable.outer_span, 2351, "This expression is not constructable.");
+            Error* e = error_ctx_error_d(errs, expr_outer_span(&call->callable), 2351, "This expression is not constructable.");
             // (tsc's invocationErrorDetails: about the apparent type)
             cstr rendered = ty_to_cstr(me, apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
@@ -2368,9 +2368,9 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             suggest_await_for_invocation(me, e, apparent, false, info);
             // `f()` then `(x)` on the next line: one call (tsc's resolveCallExpression)
             if (e && !info->tagged_template && !info->decorator && !info->jsx && vec_expr_size(&info->call->args) == 1 &&
-                line_break_follows(info->call->callable.outer_span)
+                line_break_follows(expr_outer_span(&info->call->callable))
             ) {
-                error_add_related_d(e, info->call->callable.outer_span, 2734, "Are you missing a semicolon?");
+                error_add_related_d(e, expr_outer_span(&info->call->callable), 2734, "Are you missing a semicolon?");
             }
         }
         return ret;
@@ -2805,12 +2805,12 @@ static CallExpr tagged_template_call(Expr const* template) {
 
 Ty const* ty_tagged_template_return_type(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual) {
     CallExpr call = tagged_template_call(template);
-    return call_return_type(me, callee, &call, template, template, contextual, template->outer_span);
+    return call_return_type(me, callee, &call, template, template, contextual, expr_outer_span(template));
 }
 
 void ty_tagged_template_typecheck(Checker* me, Ty const* callee, Expr const* template, Ty const* contextual, ErrorCtx* errs) {
     CallExpr call = tagged_template_call(template);
-    call_typecheck(me, callee, &call, template, template, contextual, template->outer_span, errs);
+    call_typecheck(me, callee, &call, template, template, contextual, expr_outer_span(template), errs);
 }
 
 static Symbol const* awaited_alias(Checker* me) {
@@ -3198,7 +3198,7 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
     error_ctx_drop(&lib_errors);
     if (!has_call || (apparent->flags & TYF_ANY) || apparent == ty_intrinsic(me, TY_ERROR)) return;
     // tsc's isPotentiallyUncalledDecorator: `@f` where `@f()` was meant (not when parenthesized)
-    if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && span_eq(decorator->outer_span, decorator->inner_span)) {
+    if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && span_eq(expr_outer_span(decorator), decorator->inner_span)) {
         Members const* members = ty_members(me, apparent);
         bool uncalled = members->call_count > 0;
         for (u32 i = 0; i < members->call_count && uncalled; i++) {
@@ -3249,5 +3249,5 @@ void ty_check_decorator(Checker* me, Expr const* decorator, DecoratorSite site, 
         cstr_d("Decorator function return type is '", source_str, "' but is expected to be 'void' or 'any'.") :
         cstr_d("Decorator function return type '", source_str, "' is not assignable to type '", target_str, "'.");
     c_drop(cstr, &source_str, &target_str);
-    ty_report_unassignable_with_head(me, ret, dc.ret, dc.void_only ? 1271 : 1270, head, decorator->outer_span, errs);
+    ty_report_unassignable_with_head(me, ret, dc.ret, dc.void_only ? 1271 : 1270, head, expr_outer_span(decorator), errs);
 }
