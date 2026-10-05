@@ -1211,6 +1211,8 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
     csview package_name = package_name_of(name, &rest);
     cstr package_dir = join(node_modules, package_name);
     Search result = SEARCH_CONTINUE;
+    // `pkg/dir/`: tsc's loadModuleFromFile adds extensions to the path with its slash, which finds no file
+    bool directory_only = ends_with(name, "/");
 
     PackageJson const* package = directory_exists(me, cstr_sv(&candidate)) ? package_json_of(me, cstr_sv(&candidate)) : nullptr;
     PackageJson const* root_package = rest.size ? package_json_of(me, cstr_sv(&package_dir)) : package;
@@ -1220,7 +1222,7 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
 
     if (rest.size && package && !exports_rule) {
         // A nested package.json: `node_modules/foo/bar/package.json`
-        bool found = load_file(me, cstr_sv(&candidate), extensions, out) ||
+        bool found = (!directory_only && load_file(me, cstr_sv(&candidate), extensions, out)) ||
             load_directory(me, cstr_sv(&candidate), package, extensions, out);
         result = found ? SEARCH_FOUND : SEARCH_CONTINUE;
     } else if (exports_rule) {
@@ -1240,7 +1242,7 @@ static Search load_from_node_modules_dir(State* me, csview node_modules, csview 
             if (result == SEARCH_STOP) result = SEARCH_CONTINUE;
         }
         if (!versioned && directory_exists(me, parent_of(cstr_sv(&candidate)))) {
-            bool found = (rest.size || !my esm_mode) && load_file(me, cstr_sv(&candidate), extensions, out);
+            bool found = (rest.size || !my esm_mode) && !directory_only && load_file(me, cstr_sv(&candidate), extensions, out);
             if (!found && directory_exists(me, cstr_sv(&candidate))) {
                 found = load_directory(me, cstr_sv(&candidate), package, extensions, out);
                 if (!found && !rest.size && package && my esm_mode) {

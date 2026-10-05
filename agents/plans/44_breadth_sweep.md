@@ -114,7 +114,6 @@ one commit each, `./sweep.py` before/after.
   augmentations into the module's own exports. Would need the UMD view to skip names only augmentations add.
 - **dynmap**: tsc's TS2317 for jquery's 1-parameter `interface Iterable<T>` (es5 lib) comes from typeToString in an
   elaboration calling getGlobalIterableType: incidental, not worth chasing.
-- Not investigated: prismjs (`"x/components/"` with a
-  trailing slash resolving to the file), stampit, alpinejs, google-apps-script (property named `''`), d3-dispatch,
+- Not investigated: stampit, alpinejs, google-apps-script (property named `''`), d3-dispatch,
   ember (access-modifier, observable), function-bind, oidc-provider, d3-array, fabric's second `Image`, enzyme-async-helpers,
   kefir, chai, fs-extra (only "the last overload" reported). `./sweep.py --last -k ...` lists each.
