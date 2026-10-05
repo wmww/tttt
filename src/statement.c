@@ -1677,6 +1677,13 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_SOURCE_DIRECTIVE:
+            if (my source_directive->self_reference) {
+                Span span = my source_directive->path_span;
+                if (span.sv.size >= 2 && (*span.sv.buf == '"' || *span.sv.buf == '\'')) {
+                    span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
+                }
+                error_ctx_error_d(errs, span, 1006, "A file cannot have a reference to itself.");
+            }
             if (cstr_size(&my source_directive->not_found)) {
                 // Without the quotes
                 Span span = my source_directive->path_span;

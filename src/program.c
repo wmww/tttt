@@ -710,11 +710,14 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
             switch (statement->source_directive->tag) {
                 case SOURCE_DIRECTIVE_REFERENCE_PATH:
                     if (my options.no_resolve) break;
-                    if (!program_load_reference_path(
+                    SourceFile const* referenced = program_load_reference_path(
                         me,
                         statement->source_directive->path_span,
                         cstr_sv(&statement->source_directive->path)
-                    )) {
+                    );
+                    // (tsc's getSourceFileFromReferenceWorker)
+                    if (referenced == source) statement->source_directive->self_reference = true;
+                    if (!referenced) {
                         // Reported when names are resolved (it is no reason not to typecheck), named after the file's
                         // name as messages have it by then
                         cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
