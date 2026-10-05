@@ -169,6 +169,22 @@ Parser recovery (plan 27 territory, each its own mechanism):
   everywhere), conflictMarkerTrivia3, parser0_004152, jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative,
   varianceAnnotationsWithCircularlyReferencesError.
 
+## Fan-out list p2 leftovers (2026-10-05: 11 of 32 fixed)
+- Type core: mappedTypeRelationships (tsc substitutes `Partial<T>[K]` with `T[K] | undefined`, and TS2542 for
+  writes through a `Readonly<T>` index), mappedTypeConstraints2 (indexed accesses of mapped types with template-
+  literal keys: spurious TS2536), mappedTypeErrors (TS2339 on `Pick<T, K>.foo`: check_access() skips generic mapped
+  types), recursiveMappedTypes (TS2502/TS2615 circularity in a mapped type over keyof), controlFlowGenericTypes
+  (`Box<T>` vs `Box<unknown>` display, a TS2536 at line 218), strictBindCallApply1 (bind/call/apply inference with
+  the `this` parameter: TS2684 instead of TS2345), variadicTuples2 (spread arguments against variadic rest tuples),
+  interfaceExtendsObjectIntersectionErrors (heritage errors name the alias, not the resolved base),
+  assertionTypePredicates1 (TS2775/TS2776 for assertion calls through non-annotated names).
+- JavaScript (plan 26): jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with
+  an exported const: TS18042), importingExportingTypes (TS18043 for re-exported typedefs), typedefCrossModule2,
+  assignmentToVoidZero2, classCanExtendConstructorFunction, lateBoundAssignmentDeclarationSupport4,
+  moduleExportWithExportPropertyAssignment4, typeFromJSInitializer, typeFromPropertyAssignment32,
+  templateInsideCallback, overloadTag2 (constructor `@overload`s: TS2394 and the arity of the merged signature),
+  fixSignatureCaching (an expando-heavy JS-like file).
+
 ## Module and import checks (triage 2026-10-05: default imports, isolatedModules/verbatimModuleSyntax done)
 - TS2866 (an import shadowing a global value the file uses as a value, under isolatedModules:
   isolatedModulesShadowGlobalTypeNotValue isolatedModules=true): tsc's resolveName side, not checkAliasSymbol.
