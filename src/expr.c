@@ -225,7 +225,7 @@ static bool class_decorator_runs_first(Scope const* names, void const* class_dec
 
 // tsc's checkResolvedBlockScopedVariable / isBlockScopedNameDeclaredBeforeUse: a `let`/`const`, class or enum used
 // (as a value) before its declaration, unless the use is deferred: in a function, in an instance member
-static void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+__attribute__((always_inline)) static inline void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
     u32 flags = symbol->flags;
     if (!(flags & (SYMBOL_BLOCK_SCOPED_VARIABLE | SYMBOL_CLASS | SYMBOL_ENUM)) || symbol->is_ambient) return;
@@ -530,11 +530,10 @@ static void check_isolated_global_shadow(IdentifierExpr const* me, Scope const* 
 }
 
 // tsc's resolveNameHelper at an enum: a member of the enum declared in another file, unqualified, under isolatedModules
-static void check_isolated_enum_member(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+// (Called only for an enum member under isolatedModules: the common path pays one flag test)
+__attribute__((noinline, cold)) static void check_isolated_enum_member(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
-    if (!(symbol->flags & SYMBOL_ENUM_MEMBER)) return;
     CompilerOptions const* options = compiler_options();
-    if (!options->isolated_modules && !options->verbatim_module_syntax) return;
     Scope const* enum_scope = names;
     while (enum_scope && enum_scope->kind != SCOPE_ENUM) enum_scope = enum_scope->parent;
     if (!enum_scope || enum_scope->ambient || !enum_scope->container) return;
@@ -671,7 +670,11 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
         check_umd_global_use(me, names, errs);
-        check_isolated_enum_member(me, names, errs);
+        if (__builtin_expect(my symbol->flags & SYMBOL_ENUM_MEMBER, 0) &&
+            (compiler_options()->isolated_modules || compiler_options()->verbatim_module_syntax)
+        ) {
+            check_isolated_enum_member(me, names, errs);
+        }
         check_isolated_global_shadow(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->container_start != my target->flow_start;
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
