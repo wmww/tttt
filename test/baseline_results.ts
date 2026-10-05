@@ -2186,7 +2186,7 @@ const baselines = {
         types: true,
     },
     'awaitCallExpressionInSyncFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
