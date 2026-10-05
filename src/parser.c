@@ -5115,12 +5115,12 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         }
                         if (existing) {
                             vec_span_push(&existing->declarations, item.span);
-                            existing->second_name = item.method.name_span;
-                            if (!is_getter) existing->setter_param = setter_param;
+                            interface_member_accessor(existing)->second_name = item.method.name_span;
+                            if (!is_getter) existing->accessor->setter_param = setter_param;
                             // The setter's parameter type is what writes are checked against (tsc's getWriteTypeOfSymbol)
                             if (is_getter) {
                                 if (existing->setter_first && !existing->has_write_type) {
-                                    existing->write_type = existing->type;
+                                    existing->accessor->write_type = existing->type;
                                     existing->has_write_type = true;
                                 } else {
                                     type_drop(&existing->type);
@@ -5128,7 +5128,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                                 existing->type = type;
                                 existing->setter_first = false;
                             } else if (typed_setter && !existing->has_write_type) {
-                                existing->write_type = type;
+                                existing->accessor->write_type = type;
                                 existing->has_write_type = true;
                                 existing->readonly = false;
                             } else {
@@ -5147,7 +5147,7 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                                 type
                             );
                             member.setter_first = typed_setter;
-                            member.setter_param = setter_param;
+                            if (span_valid(setter_param)) interface_member_accessor(&member)->setter_param = setter_param;
                             list_push(vec_interface_member, &members, member);
                         }
                         break;
@@ -6896,36 +6896,37 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     *ret = (InterfaceMember){
         .key.tag = INTERFACE_KEY_MAPPED,
     };
+    InterfaceMappedKey m = {0};
 
     if (hop_char(&p, '+')) {
-        ret->key.mapped.readonly = 1;
+        m.readonly = 1;
         hop_whitespace(&p);
     } else if (hop_char(&p, '-')) {
-        ret->key.mapped.readonly = -1;
+        m.readonly = -1;
         hop_whitespace(&p);
     }
 
     if (hop_start_if_ends_on_word_break(&p, "readonly")) {
-        if (ret->key.mapped.readonly == 0) {
-            ret->key.mapped.readonly = 1;
+        if (m.readonly == 0) {
+            m.readonly = 1;
         }
         hop_whitespace(&p);
-    } else if (ret->key.mapped.readonly != 0) {
+    } else if (m.readonly != 0) {
         return parse_fail(&p);
     }
 
-    if (!expect_char(&p, '[') && ret->key.mapped.readonly == 0) {
+    if (!expect_char(&p, '[') && m.readonly == 0) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
-    if (!expect_identifier(&p, &ret->key.mapped.type_name) && ret->key.mapped.readonly == 0) {
+    if (!expect_identifier(&p, &m.type_name) && m.readonly == 0) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
 
     if (!hop_start_if_ends_on_word_break(&p, "in")) {
-        if (ret->key.mapped.readonly == 0) {
+        if (m.readonly == 0) {
             return parse_fail(&p);
         } else {
             expected_token_error(&p, "in");
@@ -6934,17 +6935,17 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     hop_whitespace(&p);
 
     Anchor in_type_a = anchor(&p);
-    expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.in_type);
-    ret->key.mapped.in_type_span = span_from(in_type_a);
+    expect_type(&p, TYPE_PRECEDENCE_NULL, &m.in_type);
+    m.in_type_span = span_from(in_type_a);
     hop_whitespace(&p);
 
     if (hop_start_if_ends_on_word_break(&p, "as")) {
         hop_whitespace(&p);
-        ret->key.mapped.has_as_type = true;
+        m.has_as_type = true;
 
         Anchor as_type_a = anchor(&p);
-        expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->key.mapped.as_type);
-        ret->key.mapped.as_type_span = span_from(as_type_a);
+        expect_type(&p, TYPE_PRECEDENCE_NULL, &m.as_type);
+        m.as_type_span = span_from(as_type_a);
         hop_whitespace(&p);
     }
 
@@ -6953,18 +6954,18 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
     hop_whitespace(&p);
 
    if (hop_char(&p, '+')) {
-        ret->key.mapped.optional = 1;
+        m.optional = 1;
         ret->key.span = span_from(a);
         hop_whitespace(&p);
     } else if (hop_char(&p, '-')) {
-        ret->key.mapped.optional = -1;
+        m.optional = -1;
         ret->key.span = span_from(a);
         hop_whitespace(&p);
     }
 
-    if (ret->key.mapped.optional == 0) {
+    if (m.optional == 0) {
         if (hop_char(&p, '?')) {
-            ret->key.mapped.optional = 1;
+            m.optional = 1;
         }
     } else {
         expect_char(&p, '?');
@@ -6981,6 +6982,7 @@ static bool parse_mapped_interface_member(Parser* parent, InterfaceMember* ret) 
         ret->type.parsed = false;
     }
 
+    ret->key.mapped = c_new(InterfaceMappedKey, m);
     return parse_success(&p);
 }
 
@@ -7010,7 +7012,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     if (!is_index_signature_start(parent)) return false;
     Parser p = parser(parent);
     Anchor a = anchor(&p);
-    *ret = (InterfaceMember){ .key.tag = INTERFACE_KEY_INDEX };
+    *ret = (InterfaceMember){ .key.tag = INTERFACE_KEY_INDEX, .key.index = c_new(InterfaceIndexKey, {0}) };
     p.pos++;
     hop_whitespace(&p);
 
@@ -7072,24 +7074,24 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         bool has_initializer = parse_initialization(&p, expr_ctx_null, &initializer);
         if (has_initializer) {
             expr_drop(&initializer);
-            vec_span_push(&ret->key.index.initialized, span_from(param_start));
+            vec_span_push(&ret->key.index->initialized, span_from(param_start));
             hop_whitespace(&p);
         }
 
         if (count == 0) {
-            ret->key.index.name = name;
-            ret->key.index.decl = span_make(p.shared->source, param_start.start, span_end_ptr(name));
-            ret->key.index.type = type;
+            ret->key.index->name = name;
+            ret->key.index->decl = span_make(p.shared->source, param_start.start, span_end_ptr(name));
+            ret->key.index->type = type;
             first_rest = rest;
             if (has_modifiers) first_modifier_name = name;
-            if (is_property) ret->key.index.parameter_property = span_from(param_start);
+            if (is_property) ret->key.index->parameter_property = span_from(param_start);
             first_question = question;
             first_has_initializer = has_initializer;
             first_has_type = has_type;
         } else {
-            vec_span_push(&ret->key.index.more_names, name);
-            vec_span_push(&ret->key.index.more_decls, span_make(p.shared->source, param_start.start, span_end_ptr(name)));
-            vec_type_push(&ret->key.index.more_types, type);
+            vec_span_push(&ret->key.index->more_names, name);
+            vec_span_push(&ret->key.index->more_decls, span_make(p.shared->source, param_start.start, span_end_ptr(name)));
+            vec_type_push(&ret->key.index->more_types, type);
         }
         count++;
 
@@ -7108,7 +7110,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     char const* bracket_end = p.pos; // (the trivia after it is no part of the node)
     hop_whitespace(&p);
 
-    Span name = ret->key.index.name;
+    Span name = ret->key.index->name;
     bool reported = true;
     if (count != 1) {
         // (At the whole signature for `[]`: the span is finished below)
@@ -7131,25 +7133,25 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
             reported = false;
         }
     }
-    ret->key.index.valid = count == 1 && first_has_type;
-    ret->key.index.grammar_reported = reported;
+    ret->key.index->valid = count == 1 && first_has_type;
+    ret->key.index->grammar_reported = reported;
     ret->key.span = span_make(p.shared->source, a.start, bracket_end);
 
     if (hop_char(&p, ':')) {
         hop_whitespace(&p);
         expect_type(&p, TYPE_PRECEDENCE_NULL, &ret->type);
-        ret->key.index.has_value_type = true;
+        ret->key.index->has_value_type = true;
     }
 
     // The node ends after the member's `;` or `,` (tsc's parseTypeMemberSemicolon)
-    Span node = ret->key.index.has_value_type ? span_from(a) : ret->key.span;
+    Span node = ret->key.index->has_value_type ? span_from(a) : ret->key.span;
     {
         Parser q = parser(&p);
         hop_whitespace(&q);
         if (*q.pos == ';' || *q.pos == ',') node = span_make(q.shared->source, a.start, q.pos + 1);
         parse_fail(&q);
     }
-    ret->key.index.node = node;
+    ret->key.index->node = node;
     if (count == 0) parse_error(&p, node, 1096, "An index signature must have exactly one parameter.");
 
     return parse_success(&p);
@@ -7663,8 +7665,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 member->is_method = false;
                 member->computed_accessor = is_getter ? 1 : 2;
             }
-            if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped.readonly) {
-                member->key.mapped.readonly = 1;
+            if (member->key.tag == INTERFACE_KEY_MAPPED && member->readonly && !member->key.mapped->readonly) {
+                member->key.mapped->readonly = 1;
             }
         } else if (parse_function_args(&p, true, false, true, false, &func)) {
             if (is_type) signature_arrow_return_type(&p, &func);

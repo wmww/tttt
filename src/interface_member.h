@@ -2,15 +2,65 @@
 
 #include "type.h"
 
+// tsc parses an index signature's brackets as a parameter list and checks it in checkGrammarIndexSignatureParameters.
+// name/type are the first parameter (the key), `any` (`any[]` for a rest) where it has no annotation
+typedef struct InterfaceIndexKey {
+    Span name; // Null for `[]`
+    TypeNode type;
+    Span node; // The whole signature, its `;`/`,` included (TS1021)
+    Span parameter_property; // A first parameter with `public`/`readonly`... (TS2369)
+    Span decl; // The first parameter from its modifiers or `...` (its symbol's declaration)
+    VecSpan more_names; // The parameters after the first, for the baselines
+    VecSpan more_decls;
+    VecTypeNode more_types;
+    // The parameters with an initializer (TS2371), each up to its initializer's end
+    VecSpan initialized;
+    bool valid; // Exactly one parameter, with a type annotation: the signature makes an index info
+    bool grammar_reported; // The parser reported a parameter grammar error: tsc's check stops there
+    bool has_value_type;
+} InterfaceIndexKey;
+
+typedef struct InterfaceMappedKey {
+    Span type_name;
+    TypeNode in_type;
+    Span in_type_span;
+    TypeNode as_type;
+    Span as_type_span;
+    Symbol* owned_symbol;
+    Symbol const* symbol_ref;
+    TypeFlow template_flow[2]; // What the template's nodes have as TypeNode.flow, as TernaryType.true_flow
+    bool has_as_type;
+    signed char readonly; // -1 for remove, +1 for add
+    signed char optional; // -1 for remove, +1 for add
+} InterfaceMappedKey;
+
+// What only a `get`/`set` pair in a type literal or an interface has
+typedef struct InterfaceAccessor {
+    // `get x(): T` with `set x(v: U)`: writes are checked against U (tsc's write type of a divergent accessor), when
+    // InterfaceMember.has_write_type
+    TypeNode write_type;
+    // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
+    Span second_name;
+    Span setter_param;
+} InterfaceAccessor;
+
+// PERF: the rare parts (index signatures, mapped types, accessors) are boxed: there are hundreds of thousands of these
 typedef struct InterfaceMember {
     VecSpan declarations;
     // The original declared interface this member came from, used by the tests. Can be null.
     Symbol const* origin_interface;
-    bool readonly; // NOT used for mapped types
-    bool optional; // NOT used for mapped types
-    bool is_method;
     struct {
         Span span;
+        union {
+            cstr name_string; // INTERFACE_KEY_NAME
+            InterfaceIndexKey* index; // Owned
+            struct {
+                Expr* ref;
+                // Only the initial interface parsed into the AST will own an expr
+                Expr* owned;
+            } expr;
+            InterfaceMappedKey* mapped; // Owned
+        };
         enum {
             INTERFACE_KEY_NAME,
             INTERFACE_KEY_INDEX,
@@ -18,62 +68,36 @@ typedef struct InterfaceMember {
             INTERFACE_KEY_MAPPED,
             INTERFACE_KEY_CALLABLE, // No key data, and type must be callable
         } tag;
-        union {
-            struct {
-                cstr name_string;
-                bool name_is_value;
-                bool name_is_member_function;
-            };
-            // tsc parses the brackets as a parameter list and checks it in checkGrammarIndexSignatureParameters.
-            // name/type are the first parameter (the key), `any` (`any[]` for a rest) where it has no annotation
-            struct {
-                Span name; // Null for `[]`
-                TypeNode type;
-                Span node; // The whole signature, its `;`/`,` included (TS1021)
-                Span parameter_property; // A first parameter with `public`/`readonly`... (TS2369)
-                Span decl; // The first parameter from its modifiers or `...` (its symbol's declaration)
-                VecSpan more_names; // The parameters after the first, for the baselines
-                VecSpan more_decls;
-                VecTypeNode more_types;
-                bool valid; // Exactly one parameter, with a type annotation: the signature makes an index info
-                bool grammar_reported; // The parser reported a parameter grammar error: tsc's check stops there
-                bool has_value_type;
-                // The parameters with an initializer (TS2371), each up to its initializer's end
-                VecSpan initialized;
-            } index;
-            struct {
-                Expr* ref;
-                // Only the initial interface parsed into the AST will own an expr
-                Expr* owned;
-            } expr;
-            struct {
-                Span type_name;
-                TypeNode in_type;
-                Span in_type_span;
-                TypeNode as_type;
-                Span as_type_span;
-                bool has_as_type;
-                signed char readonly; // -1 for remove, +1 for add
-                signed char optional; // -1 for remove, +1 for add
-                Symbol* owned_symbol;
-                Symbol const* symbol_ref;
-                TypeFlow template_flow[2]; // What the template's nodes have as TypeNode.flow, as TernaryType.true_flow
-            } mapped;
-        };
+        bool name_is_value : 1; // INTERFACE_KEY_NAME
+        bool name_is_member_function : 1; // INTERFACE_KEY_NAME
     } key;
     TypeNode type;
-    bool implicit_any; // A property signature without a type annotation
-    // `get x(): T` with `set x(v: U)`: writes are checked against U (tsc's write type of a divergent accessor)
-    TypeNode write_type;
-    bool has_write_type;
-    bool setter_first; // Parser only: `type` is a typed setter's parameter type until a getter shows up
+    // Owned, null unless the member is an accessor pair or a setter (interface_member_accessor())
+    InterfaceAccessor* accessor;
+    bool readonly : 1; // NOT used for mapped types
+    bool optional : 1; // NOT used for mapped types
+    bool is_method : 1;
+    bool implicit_any : 1; // A property signature without a type annotation
+    bool has_write_type : 1; // accessor->write_type is set
+    bool setter_first : 1; // Parser only: `type` is a typed setter's parameter type until a getter shows up
     // `get [k](): T` / `set [k](v: T)` (a computed key): `type` is the getter's return or the setter's parameter type,
     // a getter and a setter of the same key make one property (members.c). 0 none, 1 get, 2 set
-    unsigned char computed_accessor;
-    // An accessor pair's second name, and a setter's parameter name (for the types and symbols baselines)
-    Span second_name;
-    Span setter_param;
+    unsigned char computed_accessor : 2;
 } InterfaceMember;
+
+// The accessor side of a member, made on demand (parser)
+static inline InterfaceAccessor* interface_member_accessor(InterfaceMember* me) {
+    if (!my accessor) {
+        my accessor = c_new(InterfaceAccessor, {0});
+    }
+    return my accessor;
+}
+static inline Span interface_member_second_name(InterfaceMember const* me) {
+    return my accessor ? my accessor->second_name : span_null;
+}
+static inline Span interface_member_setter_param(InterfaceMember const* me) {
+    return my accessor ? my accessor->setter_param : span_null;
+}
 
 // `#x: T` in an interface or a type literal: TS18016, and no member of the type (tsc's binder gives it no name outside
 // a class)

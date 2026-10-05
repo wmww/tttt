@@ -1177,21 +1177,21 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
-                if (i->key.mapped.readonly) out(d, i->key.mapped.readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
+                if (i->key.mapped->readonly) out(d, i->key.mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
                 out_lit(d, "[");
-                if (d.param_names && i->key.mapped.symbol_ref) {
-                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped.symbol_ref), true);
+                if (d.param_names && i->key.mapped->symbol_ref) {
+                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped->symbol_ref), true);
                 } else {
-                    out(d, i->key.mapped.type_name.sv);
+                    out(d, i->key.mapped->type_name.sv);
                 }
                 out_lit(d, " in ");
-                display_node(me, d, &i->key.mapped.in_type);
-                if (i->key.mapped.has_as_type) {
+                display_node(me, d, &i->key.mapped->in_type);
+                if (i->key.mapped->has_as_type) {
                     out_lit(d, " as ");
-                    display_node(me, d, &i->key.mapped.as_type);
+                    display_node(me, d, &i->key.mapped->as_type);
                 }
                 out_lit(d, "]");
-                if (i->key.mapped.optional) out(d, i->key.mapped.optional > 0 ? c_sv("?") : c_sv("-?"));
+                if (i->key.mapped->optional) out(d, i->key.mapped->optional > 0 ? c_sv("?") : c_sv("-?"));
                 out_lit(d, ": ");
                 if (i->type.parsed) display_node(me, d, &i->type);
                 else out(reused_if(d, false), c_sv("any"));
@@ -1200,9 +1200,9 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             case INTERFACE_KEY_INDEX:
                 if (i->readonly) out_lit(d, "readonly ");
                 out_lit(d, "[");
-                out(d, i->key.index.name.sv);
+                out(d, i->key.index->name.sv);
                 out_lit(d, ": ");
-                display_node(me, d, &i->key.index.type);
+                display_node(me, d, &i->key.index->type);
                 out_lit(d, "]: ");
                 display_node(me, d, &i->type);
                 break;

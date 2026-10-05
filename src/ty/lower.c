@@ -348,8 +348,8 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
 static bool is_homomorphic_mapped_node(TypeNode const* node) {
     if (node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return false;
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
-    if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped.in_type.tag != TYPE_KEYOF) return false;
-    TypeNode const* operand = &member->key.mapped.in_type.keyof->interface;
+    if (member->key.tag != INTERFACE_KEY_MAPPED || member->key.mapped->in_type.tag != TYPE_KEYOF) return false;
+    TypeNode const* operand = &member->key.mapped->in_type.keyof->interface;
     return operand->tag == TYPE_IDENTIFIER && operand->identifier->target &&
         (operand->identifier->target->flags & SYMBOL_TYPE_PARAMETER);
 }
@@ -747,14 +747,14 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                         // A computed name in a type has a literal or unique symbol type (TS1170): no type parameter
                         break;
                     case INTERFACE_KEY_INDEX:
-                        collect_free_params(me, &i->key.index.type, out);
+                        collect_free_params(me, &i->key.index->type, out);
                         break;
                     case INTERFACE_KEY_MAPPED:
-                        if (i->key.mapped.symbol_ref) {
-                            free_params_bind(out, ty_type_param(me, i->key.mapped.symbol_ref));
+                        if (i->key.mapped->symbol_ref) {
+                            free_params_bind(out, ty_type_param(me, i->key.mapped->symbol_ref));
                         }
-                        collect_free_params(me, &i->key.mapped.in_type, out);
-                        if (i->key.mapped.has_as_type) collect_free_params(me, &i->key.mapped.as_type, out);
+                        collect_free_params(me, &i->key.mapped->in_type, out);
+                        if (i->key.mapped->has_as_type) collect_free_params(me, &i->key.mapped->as_type, out);
                         break;
                 }
                 collect_free_params(me, &i->type, out);
@@ -2782,8 +2782,8 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
         case TYPE_INTERFACE:
             for_each (i, vec_interface_member, &node->interface.members) {
                 if (i->key.tag == INTERFACE_KEY_MAPPED) {
-                    collect_declared_infers(me, &i->key.mapped.in_type, out);
-                    if (i->key.mapped.has_as_type) collect_declared_infers(me, &i->key.mapped.as_type, out);
+                    collect_declared_infers(me, &i->key.mapped->in_type, out);
+                    if (i->key.mapped->has_as_type) collect_declared_infers(me, &i->key.mapped->as_type, out);
                 }
                 collect_declared_infers(me, &i->type, out);
             }
@@ -2884,13 +2884,13 @@ static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ter
 // In the template of a homomorphic mapped type `{ [K in keyof T]: ... }` over a T constrained to arrays and tuples, K
 // is also `number | `${number}`` (the other half of tsc's getConditionalFlowTypeOfType). Null if `ty` isn't that K
 static Ty const* mapped_key_flow_constraint(Checker* me, InterfaceMember const* mapped, Ty const* ty, Ty const** actual) {
-    if (ty->kind != TY_TYPE_PARAM || !mapped->key.mapped.symbol_ref || mapped->key.mapped.in_type.tag != TYPE_KEYOF) {
+    if (ty->kind != TY_TYPE_PARAM || !mapped->key.mapped->symbol_ref || mapped->key.mapped->in_type.tag != TYPE_KEYOF) {
         return nullptr;
     }
     if (!*actual) *actual = ty_actual_type_variable(me, ty);
-    if (*actual != ty_type_param(me, mapped->key.mapped.symbol_ref)) return nullptr;
+    if (*actual != ty_type_param(me, mapped->key.mapped->symbol_ref)) return nullptr;
     // (getHomomorphicTypeVariable: the constraint is `keyof T` for a type parameter T)
-    Ty const* keys = ty_from_node(me, &mapped->key.mapped.in_type, (LowerCtx){ .generic = true });
+    Ty const* keys = ty_from_node(me, &mapped->key.mapped->in_type, (LowerCtx){ .generic = true });
     if (keys->kind != TY_KEYOF) return nullptr;
     Ty const* variable = ty_actual_type_variable(me, keys->keyof.operand);
     if (variable->kind != TY_TYPE_PARAM) return nullptr;
@@ -3048,9 +3048,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // whatever is being resolved, an alias's declaration for one)
             if (vec_interface_member_size(&node->interface.members) == 1) {
                 InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
-                if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped.symbol_ref) {
+                if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped->symbol_ref) {
                     Ty const* ret = ty_anonymous_from_node(me, node, ctx, alias, alias_args);
-                    ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped.symbol_ref));
+                    ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped->symbol_ref));
                     return ret;
                 }
             }

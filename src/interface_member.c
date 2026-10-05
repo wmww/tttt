@@ -16,11 +16,13 @@ void interface_member_drop(InterfaceMember* me) {
     switch (my key.tag) {
         case INTERFACE_KEY_NAME: cstr_drop(&my key.name_string); break;
         case INTERFACE_KEY_INDEX:
-            type_drop(&my key.index.type);
-            vec_span_drop(&my key.index.more_names);
-            vec_span_drop(&my key.index.more_decls);
-            vec_span_drop(&my key.index.initialized);
-            vec_type_drop(&my key.index.more_types);
+            if (!my key.index) break;
+            type_drop(&my key.index->type);
+            vec_span_drop(&my key.index->more_names);
+            vec_span_drop(&my key.index->more_decls);
+            vec_span_drop(&my key.index->initialized);
+            vec_type_drop(&my key.index->more_types);
+            free(my key.index);
             break;
         case INTERFACE_KEY_EXPR:
             if (my key.expr.owned) {
@@ -29,13 +31,18 @@ void interface_member_drop(InterfaceMember* me) {
             }
             break;
         case INTERFACE_KEY_MAPPED:
-            type_drop(&my key.mapped.in_type);
-            type_drop(&my key.mapped.as_type);
+            if (!my key.mapped) break;
+            type_drop(&my key.mapped->in_type);
+            type_drop(&my key.mapped->as_type);
+            free(my key.mapped);
             break;
         case INTERFACE_KEY_CALLABLE: break;
     }
     type_drop(&my type);
-    if (my has_write_type) type_drop(&my write_type);
+    if (my accessor) {
+        if (my has_write_type) type_drop(&my accessor->write_type);
+        free(my accessor);
+    }
 }
 
 bool interface_member_is_misplaced_mapped(InterfaceMember const* me) {
@@ -55,8 +62,8 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         case INTERFACE_KEY_INDEX: {
             // (The key is a parameter)
             TypeFlow const* saved_flow = type_flow_enter_parameter();
-            type_lookup_names(&my key.index.type, names, errs);
-            for_each (i, vec_type, &my key.index.more_types) type_lookup_names(i, names, errs);
+            type_lookup_names(&my key.index->type, names, errs);
+            for_each (i, vec_type, &my key.index->more_types) type_lookup_names(i, names, errs);
             type_flow_restore(saved_flow);
         }   break;
         case INTERFACE_KEY_EXPR: {
@@ -71,23 +78,23 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         }   break;
 
         case INTERFACE_KEY_MAPPED:
-            type_lookup_names(&my key.mapped.in_type, names, errs);
+            type_lookup_names(&my key.mapped->in_type, names, errs);
             names = scope_new(names, SCOPE_BLOCK);
-            scope_init_declaration(names, &my key.mapped.owned_symbol, (DeclProps){
-                .name = my key.mapped.type_name,
-                .full = my key.mapped.type_name,
+            scope_init_declaration(names, &my key.mapped->owned_symbol, (DeclProps){
+                .name = my key.mapped->type_name,
+                .full = my key.mapped->type_name,
                 .kind = SYMBOL_DECL_MAPPED_KEY,
                 .node = me,
             });
-            my key.mapped.symbol_ref = my key.mapped.owned_symbol;
+            my key.mapped->symbol_ref = my key.mapped->owned_symbol;
             // The `as` clause sees the key parameter
-            type_lookup_names(&my key.mapped.as_type, names, errs);
+            type_lookup_names(&my key.mapped->as_type, names, errs);
             break;
 
         case INTERFACE_KEY_CALLABLE: break;
     }
 
-    if (my key.tag == INTERFACE_KEY_MAPPED && !my key.mapped.has_as_type) {
+    if (my key.tag == INTERFACE_KEY_MAPPED && !my key.mapped->has_as_type) {
         // (The key has an implied constraint in there: conditional_flow_type(), lower.c)
         TypeFlow const* saved_flow = type_flow_enter_mapped_template(me);
         type_lookup_names(&my type, names, errs);
@@ -95,7 +102,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
     } else {
         type_lookup_names(&my type, names, errs);
     }
-    if (my has_write_type) type_lookup_names(&my write_type, names, errs);
+    if (my has_write_type) type_lookup_names(&my accessor->write_type, names, errs);
 }
 
 // A method signature (written as one: not a property of a function type)
@@ -140,20 +147,20 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
 
         case INTERFACE_KEY_INDEX: {
-            type_typecheck(&my key.index.type, errs);
-            for_each (i, vec_type, &my key.index.more_types) type_typecheck(i, errs);
-            if (span_valid(my key.index.parameter_property)) {
-                error_ctx_error_d(errs, my key.index.parameter_property, 2369,
+            type_typecheck(&my key.index->type, errs);
+            for_each (i, vec_type, &my key.index->more_types) type_typecheck(i, errs);
+            if (span_valid(my key.index->parameter_property)) {
+                error_ctx_error_d(errs, my key.index->parameter_property, 2369,
                     "A parameter property is only allowed in a constructor implementation.");
             }
             // (tsc's checkVariableLikeDeclaration of a parameter of a signature without a body)
-            for_each (i, vec_span, &my key.index.initialized) {
+            for_each (i, vec_span, &my key.index->initialized) {
                 error_ctx_error_d(errs, *i, 2371, "A parameter initializer is only allowed in a function or constructor implementation.");
             }
             // tsc's checkGrammarIndexSignatureParameters after what the parser reported (the parameter list's shape)
-            if (my key.index.grammar_reported) break;
+            if (my key.index->grammar_reported) break;
             Checker* checker = current_checker;
-            Ty const* key = ty_of_node(&my key.index.type);
+            Ty const* key = ty_of_node(&my key.index->type);
             TyList parts = key->kind == TY_UNION ? key->composite.types : (TyList){ .data = &key, .len = 1 };
             bool literal = false, valid = true;
             for (u32 i = 0; i < parts.len; i++) {
@@ -161,13 +168,13 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
                 valid &= ty_is_valid_index_key(parts.data[i]);
             }
             if (literal || ty_is_generic_object(checker, key) || ty_is_generic_index(key)) {
-                error_ctx_grammar_error_d(errs, my key.index.name, 1337, "An index signature parameter type cannot be a "
+                error_ctx_grammar_error_d(errs, my key.index->name, 1337, "An index signature parameter type cannot be a "
                     "literal type or generic type. Consider using a mapped object type instead.");
             } else if (!valid) {
-                error_ctx_grammar_error_d(errs, my key.index.name, 1268,
+                error_ctx_grammar_error_d(errs, my key.index->name, 1268,
                     "An index signature parameter type must be 'string', 'number', 'symbol', or a template literal type.");
-            } else if (!my key.index.has_value_type) {
-                error_ctx_grammar_error_d(errs, my key.index.node, 1021, "An index signature must have a type annotation.");
+            } else if (!my key.index->has_value_type) {
+                error_ctx_grammar_error_d(errs, my key.index->node, 1021, "An index signature must have a type annotation.");
             }
         }   break;
 
@@ -199,13 +206,13 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
 
         case INTERFACE_KEY_MAPPED:
-            type_typecheck(&my key.mapped.in_type, errs);
-            if (span_valid(my key.mapped.in_type_span) && my key.mapped.symbol_ref &&
-                ty_param_constraint_is_circular(current_checker, ty_type_param(current_checker, my key.mapped.symbol_ref))
+            type_typecheck(&my key.mapped->in_type, errs);
+            if (span_valid(my key.mapped->in_type_span) && my key.mapped->symbol_ref &&
+                ty_param_constraint_is_circular(current_checker, ty_type_param(current_checker, my key.mapped->symbol_ref))
             ) {
-                error_ctx_error_d(errs, my key.mapped.in_type_span, 2313, "Type parameter '", my key.mapped.type_name, "' has a circular constraint.");
+                error_ctx_error_d(errs, my key.mapped->in_type_span, 2313, "Type parameter '", my key.mapped->type_name, "' has a circular constraint.");
             }
-            type_typecheck(&my key.mapped.as_type, errs);
+            type_typecheck(&my key.mapped->as_type, errs);
             break;
 
         case INTERFACE_KEY_CALLABLE:
@@ -224,5 +231,5 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, ErrorCtx*
             break;
     }
     type_typecheck(&my type, errs);
-    if (my has_write_type) type_typecheck(&my write_type, errs);
+    if (my has_write_type) type_typecheck(&my accessor->write_type, errs);
 }

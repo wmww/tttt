@@ -2439,8 +2439,8 @@ void ty_check_duplicate_index_signatures(Checker* me, InterfaceMember const* con
     u32 entry_count = 0;
     for (u32 i = 0; i < count; i++) {
         InterfaceMember const* member = members[i];
-        if (member->key.tag != INTERFACE_KEY_INDEX || !member->key.index.valid) continue;
-        Ty const* key = ty_of_node(&member->key.index.type);
+        if (member->key.tag != INTERFACE_KEY_INDEX || !member->key.index->valid) continue;
+        Ty const* key = ty_of_node(&member->key.index->type);
         TyList keys = key->kind == TY_UNION ? key->composite.types : (TyList){ .data = &key, .len = 1 };
         for (u32 k = 0; k < keys.len && entry_count < c_arraylen(entries); k++) {
             entries[entry_count++] = (Entry){ keys.data[k], member };

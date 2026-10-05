@@ -362,9 +362,9 @@ void display_interface_member(Display d, InterfaceMember const* me) {
 
         case INTERFACE_KEY_INDEX:
             display_lit(d, "[");
-            display_colored_span(d, color_type, my key.index.name);
+            display_colored_span(d, color_type, my key.index->name);
             display_lit(d, ": ");
-            display_type(d, &my key.index.type);
+            display_type(d, &my key.index->type);
             display_lit(d, "]");
             break;
 
@@ -375,8 +375,8 @@ void display_interface_member(Display d, InterfaceMember const* me) {
             break;
 
         case INTERFACE_KEY_MAPPED:
-            if (my key.mapped.readonly) {
-                if (my key.mapped.readonly > 0) {
+            if (my key.mapped->readonly) {
+                if (my key.mapped->readonly > 0) {
                     display_lit(d, "+");
                 } else {
                     display_lit(d, "-");
@@ -384,17 +384,17 @@ void display_interface_member(Display d, InterfaceMember const* me) {
                 display_lit(d, "readonly ");
             }
             display_lit(d, "[");
-            display_colored_span(d, color_type, my key.mapped.type_name);
+            display_colored_span(d, color_type, my key.mapped->type_name);
             display_lit(d, " in ");
-            display_type(d, &my key.mapped.in_type);
-            if (my key.mapped.has_as_type) {
+            display_type(d, &my key.mapped->in_type);
+            if (my key.mapped->has_as_type) {
                 display_lit(d, " as ");
-                display_type(d, &my key.mapped.as_type);
+                display_type(d, &my key.mapped->as_type);
             }
             display_lit(d, "]");
-            if (my key.mapped.optional > 0) {
+            if (my key.mapped->optional > 0) {
                 display_lit(d, "+?");
-            } else if (my key.mapped.optional < 0) {
+            } else if (my key.mapped->optional < 0) {
                 display_lit(d, "-?");
             }
             break;

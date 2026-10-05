@@ -1856,15 +1856,15 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
         }
         if (i->key.tag == INTERFACE_KEY_MAPPED) {
             Emitting saved = emit_enter_nested(me, EMIT_TYPE_PARAMETER, SIG_MAPPED, i->key.span, i->key.span);
-            check_written_type(me, &i->key.mapped.in_type);
-            if (i->key.mapped.has_as_type) check_written_type(me, &i->key.mapped.as_type);
+            check_written_type(me, &i->key.mapped->in_type);
+            if (i->key.mapped->has_as_type) check_written_type(me, &i->key.mapped->as_type);
             emit_leave(me, saved);
             check_written_type(me, &i->type);
             continue;
         }
         if (i->key.tag == INTERFACE_KEY_INDEX) {
-            Emitting saved = emit_enter_nested(me, EMIT_PARAMETER, SIG_INDEX, i->key.index.name, i->key.index.name);
-            check_written_type(me, &i->key.index.type);
+            Emitting saved = emit_enter_nested(me, EMIT_PARAMETER, SIG_INDEX, i->key.index->name, i->key.index->name);
+            check_written_type(me, &i->key.index->type);
             emit_leave(me, saved);
             saved = emit_enter_nested(me, EMIT_RETURN, SIG_INDEX, span_null, at);
             check_written_type(me, &i->type);

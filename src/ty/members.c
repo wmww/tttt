@@ -300,8 +300,8 @@ static void builder_add_interface_member(
                 prop->parent = i->origin_interface ? i->origin_interface : parent;
                 prop->decl->node = &i->type;
                 if (i->has_write_type) {
-                    prop->decl->write_node = &i->write_type;
-                    prop->decl->setter_param = i->setter_param;
+                    prop->decl->write_node = &i->accessor->write_type;
+                    prop->decl->setter_param = i->accessor->setter_param;
                 }
                 prop->decl->ctx = ctx;
                 prop->decl->ctx.method = is_method;
@@ -321,12 +321,12 @@ static void builder_add_interface_member(
 
             case INTERFACE_KEY_INDEX: {
                 // (tsc's getIndexInfosOfIndexSymbol: only a signature with exactly one typed parameter)
-                if (!i->key.index.valid) break;
+                if (!i->key.index->valid) break;
                 // TODO: index signature value types are lowered eagerly, unlike property types
                 IndexInfo info = {
-                    .key = ty_from_node(me, &i->key.index.type, ctx),
+                    .key = ty_from_node(me, &i->key.index->type, ctx),
                     .value = ty_from_node(me, &i->type, ctx),
-                    .param_name = checker_atom(me, i->key.index.name.sv),
+                    .param_name = checker_atom(me, i->key.index->name.sv),
                     .readonly = i->readonly,
                     .decl_span = vec_span_size(&i->declarations) ? *vec_span_at(&i->declarations, 0) : (Span){0},
                 };
@@ -349,21 +349,21 @@ static void builder_add_interface_member(
                 LowerCtx mapped_ctx = ctx;
                 mapped_ctx.generic = true;
                 MappedInfo* mapped = arena_new(&my arena, MappedInfo);
-                mapped->type_param = i->key.mapped.symbol_ref ?
-                    ty_type_param(me, i->key.mapped.symbol_ref) :
-                    ty_synthetic_type_param(me, i->key.mapped.type_name.sv);
-                mapped->constraint = ty_from_node(me, &i->key.mapped.in_type, mapped_ctx);
+                mapped->type_param = i->key.mapped->symbol_ref ?
+                    ty_type_param(me, i->key.mapped->symbol_ref) :
+                    ty_synthetic_type_param(me, i->key.mapped->type_name.sv);
+                mapped->constraint = ty_from_node(me, &i->key.mapped->in_type, mapped_ctx);
                 // `[P in any]` is over tsc's keyofConstraintType (getConstraintFromTypeParameter)
                 if (mapped->constraint == ty_intrinsic(me, TY_ANY)) {
                     Ty const* parts[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
                     mapped->constraint = ty_union(me, parts, 3, nullptr, (TyList){0});
                 }
-                if (i->key.mapped.has_as_type) {
-                    mapped->name_type = ty_from_node(me, &i->key.mapped.as_type, mapped_ctx);
+                if (i->key.mapped->has_as_type) {
+                    mapped->name_type = ty_from_node(me, &i->key.mapped->as_type, mapped_ctx);
                 }
                 mapped->template_node = &i->type;
                 mapped->template_ctx = mapped_ctx;
-                TypeNode const* in_type = &i->key.mapped.in_type;
+                TypeNode const* in_type = &i->key.mapped->in_type;
                 if (in_type->tag == TYPE_KEYOF) {
                     mapped->modifiers_type = ty_from_node(me, &in_type->keyof->interface, mapped_ctx);
                     mapped->keyof_constraint = true;
@@ -372,8 +372,8 @@ static void builder_add_interface_member(
                     Ty const* constraint = ty_param_constraint(me, mapped->constraint);
                     if (constraint && constraint->kind == TY_KEYOF) mapped->modifiers_type = constraint->keyof.operand;
                 }
-                mapped->readonly = i->key.mapped.readonly;
-                mapped->optional = i->key.mapped.optional;
+                mapped->readonly = i->key.mapped->readonly;
+                mapped->optional = i->key.mapped->optional;
                 builder->mapped = mapped;
             }   break;
 

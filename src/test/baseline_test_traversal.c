@@ -704,26 +704,27 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             if (method) baseline_test_case_leave_generic(ctx, saved);
             // `get x(): T; set x(v: U)`: the second accessor names the same member, the setter declares its parameter.
             // In source order: the first accessor's types come before the second's name
-            bool pair = span_valid(my second_name);
-            bool setter_first = pair && span_valid(my setter_param) && my setter_param.sv.buf < my second_name.sv.buf;
+            Span second_name = interface_member_second_name(me), setter_param = interface_member_setter_param(me);
+            bool pair = span_valid(second_name);
+            bool setter_first = pair && span_valid(setter_param) && setter_param.sv.buf < second_name.sv.buf;
             if (pair && !setter_first) type_compile_test_info(&my type, ctx);
-            if (span_valid(my setter_param) && setter_first) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my setter_param });
-                baseline_test_case_add_type(ctx, my setter_param, my has_write_type ? ty_of_node(&my write_type) : type);
-                if (my has_write_type) type_compile_test_info(&my write_type, ctx);
+            if (span_valid(setter_param) && setter_first) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
+                baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
+                if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
             }
             if (pair) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = vec_span_clone(my declarations),
-                    .span = my second_name,
-                    .text = member_text(ctx, ctx->member_container, scope, my second_name.sv, false),
+                    .span = second_name,
+                    .text = member_text(ctx, ctx->member_container, scope, second_name.sv, false),
                 });
-                baseline_test_case_add_type(ctx, my second_name, type);
+                baseline_test_case_add_type(ctx, second_name, type);
             }
-            if (span_valid(my setter_param) && !setter_first) {
-                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my setter_param });
-                baseline_test_case_add_type(ctx, my setter_param, my has_write_type ? ty_of_node(&my write_type) : type);
-                if (pair && my has_write_type) type_compile_test_info(&my write_type, ctx);
+            if (span_valid(setter_param) && !setter_first) {
+                baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = setter_param });
+                baseline_test_case_add_type(ctx, setter_param, my has_write_type ? ty_of_node(&my accessor->write_type) : type);
+                if (pair && my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
             }
             if (pair) {
                 if (setter_first) type_compile_test_info(&my type, ctx);
@@ -732,18 +733,18 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         }   break;
 
         case INTERFACE_KEY_INDEX:
-            if (span_valid(my key.index.name)) {
+            if (span_valid(my key.index->name)) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .span = my key.index.name, .declarations = vec_span_single(my key.index.decl),
+                    .span = my key.index->name, .declarations = vec_span_single(my key.index->decl),
                 });
-                baseline_test_case_add_type_node(ctx, my key.index.name, &my key.index.type);
+                baseline_test_case_add_type_node(ctx, my key.index->name, &my key.index->type);
             }
-            type_compile_test_info(&my key.index.type, ctx);
-            for (u32 k = 0; k < vec_span_size(&my key.index.more_names); k++) {
-                Span name = *vec_span_at(&my key.index.more_names, k);
-                TypeNode const* type = vec_type_at(&my key.index.more_types, k);
+            type_compile_test_info(&my key.index->type, ctx);
+            for (u32 k = 0; k < vec_span_size(&my key.index->more_names); k++) {
+                Span name = *vec_span_at(&my key.index->more_names, k);
+                TypeNode const* type = vec_type_at(&my key.index->more_types, k);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .span = name, .declarations = vec_span_single(*vec_span_at(&my key.index.more_decls, k)),
+                    .span = name, .declarations = vec_span_single(*vec_span_at(&my key.index->more_decls, k)),
                 });
                 baseline_test_case_add_type_node(ctx, name, type);
                 type_compile_test_info(type, ctx);
@@ -780,15 +781,15 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
         }   break;
 
         case INTERFACE_KEY_MAPPED:
-            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.mapped.type_name });
-            type_compile_test_info(&my key.mapped.in_type, ctx);
-            type_compile_test_info(&my key.mapped.as_type, ctx);
+            baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my key.mapped->type_name });
+            type_compile_test_info(&my key.mapped->in_type, ctx);
+            type_compile_test_info(&my key.mapped->as_type, ctx);
             break;
 
         case INTERFACE_KEY_CALLABLE: break;
     }
     type_compile_test_info(&my type, ctx);
-    if (my has_write_type) type_compile_test_info(&my write_type, ctx);
+    if (my has_write_type) type_compile_test_info(&my accessor->write_type, ctx);
 }
 
 void interface_compile_test_info(Interface const* me, Span scope, BaselineTestCase* ctx) {

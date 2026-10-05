@@ -195,9 +195,9 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
         case TYPE_INTERFACE:
             for_each (i, vec_interface_member, &my interface.members) {
                 if (i->key.tag == INTERFACE_KEY_MAPPED) {
-                    type_add_inferred_names_at(&i->key.mapped.in_type, scope, INFER_POSITION_MAPPED_KEY, nullptr, 0);
-                    if (i->key.mapped.has_as_type) {
-                        type_add_inferred_names_at(&i->key.mapped.as_type, scope, INFER_POSITION_OTHER, nullptr, 0);
+                    type_add_inferred_names_at(&i->key.mapped->in_type, scope, INFER_POSITION_MAPPED_KEY, nullptr, 0);
+                    if (i->key.mapped->has_as_type) {
+                        type_add_inferred_names_at(&i->key.mapped->as_type, scope, INFER_POSITION_OTHER, nullptr, 0);
                     }
                 }
                 type_add_inferred_names_at(&i->type, scope, INFER_POSITION_OTHER, nullptr, 0);
@@ -271,14 +271,14 @@ static thread_local TypeFlow const* current_flow;
 
 static TypeFlow const* flow_flipped(TypeFlow const* flow) {
     if (!flow) return nullptr;
-    return flow->ternary ? &flow->ternary->true_flow[flow->covariant] : &flow->mapped->key.mapped.template_flow[flow->covariant];
+    return flow->ternary ? &flow->ternary->true_flow[flow->covariant] : &flow->mapped->key.mapped->template_flow[flow->covariant];
 }
 
 TypeFlow const* type_flow_enter_mapped_template(InterfaceMember* mapped) {
     TypeFlow const* saved = current_flow;
-    mapped->key.mapped.template_flow[0] = (TypeFlow){ .mapped = mapped, .covariant = true, .outer = current_flow };
-    mapped->key.mapped.template_flow[1] = (TypeFlow){ .mapped = mapped, .covariant = false, .outer = flow_flipped(current_flow) };
-    current_flow = &mapped->key.mapped.template_flow[0];
+    mapped->key.mapped->template_flow[0] = (TypeFlow){ .mapped = mapped, .covariant = true, .outer = current_flow };
+    mapped->key.mapped->template_flow[1] = (TypeFlow){ .mapped = mapped, .covariant = false, .outer = flow_flipped(current_flow) };
+    current_flow = &mapped->key.mapped->template_flow[0];
     return saved;
 }
 
@@ -449,15 +449,15 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                 vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED
             ) {
                 InterfaceMember const* mapped = vec_interface_member_at(&my interface.members, 0);
-                bool as = mapped->key.mapped.has_as_type;
-                Ty const* keys = ty_of_node(as ? &mapped->key.mapped.as_type : &mapped->key.mapped.in_type);
+                bool as = mapped->key.mapped->has_as_type;
+                Ty const* keys = ty_of_node(as ? &mapped->key.mapped->as_type : &mapped->key.mapped->in_type);
                 Checker* checker = current_checker;
                 Ty const* all[3] = { ty_intrinsic(checker, TY_STRING), ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_ES_SYMBOL) };
                 // (A circular key constraint is the error type: tsc's getConstraintTypeFromMappedType)
-                if (as || !mapped->key.mapped.symbol_ref ||
-                    !ty_param_constraint_is_circular(checker, ty_type_param(checker, mapped->key.mapped.symbol_ref))) {
+                if (as || !mapped->key.mapped->symbol_ref ||
+                    !ty_param_constraint_is_circular(checker, ty_type_param(checker, mapped->key.mapped->symbol_ref))) {
                     ty_check_assignable(checker, keys, ty_union(checker, all, 3, nullptr, (TyList){0}),
-                        as ? mapped->key.mapped.as_type_span : mapped->key.mapped.in_type_span, errs);
+                        as ? mapped->key.mapped->as_type_span : mapped->key.mapped->in_type_span, errs);
                 }
             }
             {
