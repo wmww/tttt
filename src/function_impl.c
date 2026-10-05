@@ -193,7 +193,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             if (!decorator_names) {
                 decorator_names = scope_new(names, SCOPE_BLOCK);
                 decorator_names->member_decorator = true;
-                decorator_names->decorated_function = me;
+                scope_rare_mut(decorator_names)->decorated_function = me;
             }
             expr_lookup_names(decorator, decorator_names, errs);
         }
@@ -252,11 +252,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     for (u32 i = 0; i < my jsdoc_unmatched_count; i++) type_lookup_names(&my jsdoc_unmatched[i].type, names, errs);
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;
-    if (type_params_scope) type_params_scope->type_params_function = function_scope;
+    if (type_params_scope) scope_rare_mut(type_params_scope)->type_params_function = function_scope;
     function_scope->function = me;
     function_scope->strict |= my has_body && block_has_use_strict(&my body);
 
-    if (this_is_any) function_scope->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me, .type_boundary = true };
+    if (this_is_any) scope_rare_mut(function_scope)->this_ref = (ThisRef){ .kind = THIS_ANY, .function = me, .type_boundary = true };
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
@@ -271,7 +271,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             span_equals(i->initializer.binding.content_span, "this")
         ) {
             if (!i->initializer.binding.has_explicit_type && !i->jsdoc_this) initialized_binding_rare_mut(&i->initializer)->this_of = me;
-            function_scope->this_ref = (ThisRef){
+            scope_rare_mut(function_scope)->this_ref = (ThisRef){
                 .kind = THIS_PARAMETER, .symbol = i->initializer.binding.symbol, .type_boundary = this_is_any,
                 // (A JavaScript `@this {T}`: `this.x = v` still declares x, see scope_add_this_property())
                 .function = i->jsdoc_this ? me : nullptr,

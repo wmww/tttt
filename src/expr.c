@@ -106,10 +106,10 @@ void report_emit_name_collisions(Scope const* names, char const* name, bool priv
                 }
             }
             if (private_names) {
-                error_ctx_error_d(scope->errs, at, 18027, "Compiler reserves name '", name,
+                error_ctx_error_d(scope->binder->errs, at, 18027, "Compiler reserves name '", name,
                     "' when emitting private identifier downlevel.");
             } else {
-                error_ctx_error_d(scope->errs, at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
+                error_ctx_error_d(scope->binder->errs, at, 2818, "Duplicate identifier 'Reflect'. Compiler reserves name ",
                     "'Reflect' when emitting 'super' references in static initializers.");
             }
         }
@@ -136,7 +136,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
             continue;
         }
         if (skip_class) {
-            skip_class = scope->this_ref.kind != THIS_CLASS_INSTANCE && scope->this_ref.kind != THIS_CLASS_STATIC;
+            skip_class = scope_rare(scope)->this_ref.kind != THIS_CLASS_INSTANCE && scope_rare(scope)->this_ref.kind != THIS_CLASS_STATIC;
             continue;
         }
         if (scope->kind == SCOPE_FUNCTION && scope->function) {
@@ -158,11 +158,11 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
             break;
         }
         // A static block, or a property initializer: the class's own scope
-        if (scope->kind == SCOPE_STATIC_BLOCK || scope->this_ref.kind == THIS_CLASS_INSTANCE ||
-            scope->this_ref.kind == THIS_CLASS_STATIC
+        if (scope->kind == SCOPE_STATIC_BLOCK || scope_rare(scope)->this_ref.kind == THIS_CLASS_INSTANCE ||
+            scope_rare(scope)->this_ref.kind == THIS_CLASS_STATIC
         ) {
             legal = !is_call;
-            if (legal && (scope->kind == SCOPE_STATIC_BLOCK || scope->this_ref.kind == THIS_CLASS_STATIC)) {
+            if (legal && (scope->kind == SCOPE_STATIC_BLOCK || scope_rare(scope)->this_ref.kind == THIS_CLASS_STATIC)) {
                 check_reflect_collisions(names);
             }
             break;
@@ -182,10 +182,10 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
         return;
     }
     bool in_constructor_args = scope->no_super == NO_SUPER_CONSTRUCTOR_ARGS;
-    while (scope && scope->this_ref.kind != THIS_CLASS_INSTANCE && scope->this_ref.kind != THIS_CLASS_STATIC) {
+    while (scope && scope_rare(scope)->this_ref.kind != THIS_CLASS_INSTANCE && scope_rare(scope)->this_ref.kind != THIS_CLASS_STATIC) {
         scope = scope->parent;
     }
-    ClassDecl const* class_decl = scope ? scope->this_ref.class_decl : nullptr;
+    ClassDecl const* class_decl = scope ? scope_rare(scope)->this_ref.class_decl : nullptr;
     if (!class_decl) return;
     if (class_decl->extends.tag == EXPR_IMPLICIT_ANY) {
         my super_invalid = true;
@@ -198,8 +198,8 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
         error_ctx_error_d(errs, my name, 2336, "'super' cannot be referenced in constructor arguments.");
         return;
     }
-    my this_kind = scope->this_ref.kind;
-    my target = scope->this_ref.symbol;
+    my this_kind = scope_rare(scope)->this_ref.kind;
+    my target = scope_rare(scope)->this_ref.symbol;
 }
 
 // Whether a use of a class is in an ES decorator of the class or of one of its members, not deferred by a function
@@ -208,11 +208,11 @@ static bool class_decorator_runs_first(Scope const* names, void const* class_dec
     if (compiler_options()->experimental_decorators) return false;
     for (Scope const* i = names; i; i = i->parent) {
         if (i->kind == SCOPE_FUNCTION && !(i->function && i->function->is_iife)) return false;
-        if (i->decorator_of) return i->decorator_of == class_decl;
+        if (scope_rare(i)->decorator_of) return scope_rare(i)->decorator_of == class_decl;
         if (i->no_super == NO_SUPER_DECORATOR) {
             Scope const* class_scope = i;
-            while (class_scope && !class_scope->this_ref.class_decl) class_scope = class_scope->parent;
-            return class_scope && class_scope->this_ref.class_decl == class_decl;
+            while (class_scope && !scope_rare(class_scope)->this_ref.class_decl) class_scope = class_scope->parent;
+            return class_scope && scope_rare(class_scope)->this_ref.class_decl == class_decl;
         }
     }
     return false;
@@ -250,10 +250,10 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             // Declared before, but used in a computed name of its own members (`class A { [A.p]() {} }`)
             bool in_computed_name = false;
             Scope const* i = names;
-            for (; i && i->kind != SCOPE_FUNCTION && !i->this_ref.class_decl; i = i->parent) {
+            for (; i && i->kind != SCOPE_FUNCTION && !scope_rare(i)->this_ref.class_decl; i = i->parent) {
                 in_computed_name |= i->no_super == NO_SUPER_COMPUTED_NAME;
             }
-            if (in_computed_name && i && i->this_ref.class_decl == decl->node) {
+            if (in_computed_name && i && scope_rare(i)->this_ref.class_decl == decl->node) {
                 // (reported below)
             } else if (!class_decorator_runs_first(names, decl->node)) {
                 return;
@@ -281,8 +281,8 @@ static void check_declared_before_use(IdentifierExpr const* me, Scope const* nam
             if (i->kind == SCOPE_FUNCTION) return;
             // A computed member name runs with the class, the members don't
             if (i->no_super == NO_SUPER_COMPUTED_NAME) through_computed_name = true;
-            if (i->this_ref.kind == THIS_CLASS_INSTANCE && !through_computed_name) return;
-            if (i->this_ref.class_decl) through_computed_name = false;
+            if (scope_rare(i)->this_ref.kind == THIS_CLASS_INSTANCE && !through_computed_name) return;
+            if (scope_rare(i)->this_ref.class_decl) through_computed_name = false;
         }
     }
     Error* error;
@@ -415,7 +415,7 @@ static void check_unresolved_import_alias_value(IdentifierExpr const* me, Scope 
     item->value_use_checked = true;
     Span first = *vec_span_front(&item->alias_path);
     if (!first.sv.size || scope_get_value(scope, first.sv, nullptr)) return;
-    scope_report_value_not_found(scope, first, false, scope->errs);
+    scope_report_value_not_found(scope, first, false, scope->binder->errs);
 }
 
 static void check_type_only_value(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
@@ -504,21 +504,21 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             my this_function = this_ref.function;
             if (this_ref.kind == THIS_ANY) {
                 Scope const* container = names;
-                while (container && !container->this_ref.kind) container = container->parent;
+                while (container && !scope_rare(container)->this_ref.kind) container = container->parent;
                 ThisKind outer = container && container->parent ? scope_get_this(container->parent, false).kind : THIS_NONE;
                 my this_shadows_outer = outer == THIS_CLASS_INSTANCE || outer == THIS_CLASS_STATIC || outer == THIS_PARAMETER ||
                     outer == THIS_COMMONJS;
             }
             check_before_super(me, names, 17009, "'this'", errs);
             // tsc's checkThisInStaticClassFieldInitializerInDecoratedClass: up to the this container (through arrows)
-            for (Scope const* scope = names; scope && !scope->this_ref.kind; scope = scope->parent) {
+            for (Scope const* scope = names; scope && !scope_rare(scope)->this_ref.kind; scope = scope->parent) {
                 if (scope->kind == SCOPE_FUNCTION && !(scope->function && span_valid(scope->function->arrow_span))) break;
                 if (!scope->decorated_static_field) continue;
                 error_ctx_error_d(errs, my name, 2816, "Cannot use 'this' in a static property initializer of a decorated class.");
                 break;
             }
             // tsc's checkThisExpression: the this container (arrow functions count) is a class member's computed name
-            for (Scope const* scope = names; scope && scope->kind != SCOPE_FUNCTION && !scope->this_ref.kind; scope = scope->parent) {
+            for (Scope const* scope = names; scope && scope->kind != SCOPE_FUNCTION && !scope_rare(scope)->this_ref.kind; scope = scope->parent) {
                 if (scope->no_super != NO_SUPER_COMPUTED_NAME) continue;
                 error_ctx_error_d(errs, my name, 2465, "'this' cannot be referenced in a computed property name.");
                 break;
@@ -2001,7 +2001,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Scope* name_scope = names;
             if (span_valid(my function->name)) {
                 name_scope = scope_new(names, SCOPE_BLOCK);
-                name_scope->expression_name_of = my function;
+                scope_rare_mut(name_scope)->expression_name_of = my function;
                 function_impl_add_names(my function, name_scope, DECL_EXPORTED_NO, false, false);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;

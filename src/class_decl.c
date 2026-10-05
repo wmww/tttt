@@ -202,7 +202,7 @@ static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, Er
     scope->no_super = why;
     if (why == NO_SUPER_COMPUTED_NAME) {
         ClassDecl const* class_decl = scope_enclosing_class(names);
-        scope->computed_name_of = class_decl ? &class_decl->generic : nullptr;
+        if (class_decl) scope_rare_mut(scope)->computed_name_of = &class_decl->generic;
     }
     uint8_t initializer_context = names->flow->initializer_context;
     names->flow->initializer_context = INITIALIZER_NONE;
@@ -332,7 +332,7 @@ static Span const* constructor_locals(ClassDecl const* me, Arena* arena, u32* co
 
 static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs, bool static_members) {
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
-    this_scope->this_ref = (ThisRef){
+    scope_rare_mut(this_scope)->this_ref = (ThisRef){
         .kind = static_members ? THIS_CLASS_STATIC : THIS_CLASS_INSTANCE, .symbol = my symbol, .class_decl = me
     };
     this_scope->strict = true;
@@ -344,9 +344,9 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
             Scope* scope = this_scope;
             if (local_count && i->tag == CLASS_ITEM_FIELD) {
                 scope = scope_new(this_scope, SCOPE_BLOCK);
-                scope->instance_field = i;
-                scope->constructor_locals = locals;
-                scope->constructor_local_count = local_count;
+                scope_rare_mut(scope)->instance_field = i;
+                scope_rare_mut(scope)->constructor_locals = locals;
+                scope_rare_mut(scope)->constructor_local_count = local_count;
             }
             if (static_members && i->tag == CLASS_ITEM_FIELD && !vec_expr_is_empty(&my decorators) &&
                 compiler_options()->experimental_decorators
@@ -461,7 +461,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
     }
     if (vec_expr_size(&my decorators)) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
-        scope->decorator_of = me;
+        scope_rare_mut(scope)->decorator_of = me;
         for_each (i, vec_expr, &my decorators) {
             expr_lookup_names(i, scope, errs);
         }

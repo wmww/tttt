@@ -113,7 +113,7 @@ SymbolEntry* symbol_table_collect(SymbolTable const* me, u32* count) {
 Binder* binder_new(ErrorCtx* errs) {
     Binder* me = c_new(Binder, { .errs = errs });
     my global_scope = arena_new(&my arena, Scope);
-    *my global_scope = (Scope){ .kind = SCOPE_GLOBAL, .binder = me, .errs = errs };
+    *my global_scope = (Scope){ .kind = SCOPE_GLOBAL, .binder = me };
     return me;
 }
 
@@ -322,9 +322,15 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
 
 // Scopes
 
+ScopeRare const scope_rare_none;
+
+ScopeRare* scope_rare_new(Scope* me) {
+    return my rare = arena_new(&my binder->arena, ScopeRare);
+}
+
 struct FunctionImpl const* scope_containing_function(Scope const* me) {
     for (Scope const* scope = me; scope && scope->kind != SCOPE_FUNCTION; scope = scope->parent) {
-        if (scope->decorated_function) return scope->decorated_function;
+        if (scope_rare(scope)->decorated_function) return scope_rare(scope)->decorated_function;
     }
     return my function;
 }
@@ -334,7 +340,6 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
     ret->parent = parent;
     ret->kind = kind;
     ret->binder = parent->binder;
-    ret->errs = parent->errs;
     ret->ambient = parent->ambient;
     ret->flow = parent->flow;
     ret->file = parent->file;
@@ -346,7 +351,6 @@ Scope* scope_new(Scope* parent, ScopeKind kind) {
 
 void scope_reparent(Scope* me, Scope* parent) {
     my parent = parent;
-    my errs = parent->errs;
     my ambient = parent->ambient;
     my flow = parent->flow;
     my file = parent->file;
@@ -371,7 +375,7 @@ bool block_has_use_strict(Block const* block) {
 // 2: in a class, 1: in a module (which says why the code is strict), else 0
 static int strict_reason(Scope const* me) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (scope->this_ref.class_decl) return 2;
+        if (scope_rare(scope)->this_ref.class_decl) return 2;
     }
     return my file && my file->is_module ? 1 : 0;
 }
@@ -392,9 +396,9 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
         // the outer one otherwise)
         bool await_context = false, yield_context = false, top_level = true;
         for (Scope const* scope = me; scope; scope = scope->parent) {
-            if (scope->expression_name_of) {
-                await_context |= scope->expression_name_of->is_async;
-                yield_context |= scope->expression_name_of->is_generator;
+            if (scope_rare(scope)->expression_name_of) {
+                await_context |= scope_rare(scope)->expression_name_of->is_async;
+                yield_context |= scope_rare(scope)->expression_name_of->is_generator;
                 continue;
             }
             if (scope->kind == SCOPE_FUNCTION && scope->function) {
@@ -402,30 +406,30 @@ void scope_check_strict_identifier(Scope const* me, Span name, bool in_type) {
                 yield_context |= scope->function->is_generator;
             } else if (scope->kind == SCOPE_STATIC_BLOCK) {
                 await_context = true;
-            } else if (!scope->this_ref.class_decl) {
+            } else if (!scope_rare(scope)->this_ref.class_decl) {
                 continue;
             }
             top_level = false;
             break;
         }
         if (await && my file && my file->is_module && top_level && !await_context) {
-            error_ctx_error_d(my errs, name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
+            error_ctx_error_d(my binder->errs, name, 1262, "Identifier expected. '", name, "' is a reserved word at the top-level of a module.");
         } else if ((await && await_context) || (yield && yield_context)) {
-            error_ctx_error_d(my errs, name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
+            error_ctx_error_d(my binder->errs, name, 1359, "Identifier expected. '", name, "' is a reserved word that cannot be used here.");
         }
         return;
     }
     switch (strict_reason(me)) {
         case 2:
-            error_ctx_error_d(my errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+            error_ctx_error_d(my binder->errs, name, 1213, "Identifier expected. '", name, "' is a reserved word in strict mode. "
                 "Class definitions are automatically in strict mode.");
             break;
         case 1:
-            error_ctx_error_d(my errs, name, 1214, "Identifier expected. '", name, "' is a reserved word in strict mode. "
+            error_ctx_error_d(my binder->errs, name, 1214, "Identifier expected. '", name, "' is a reserved word in strict mode. "
                 "Modules are automatically in strict mode.");
             break;
         default:
-            error_ctx_error_d(my errs, name, 1212, "Identifier expected. '", name, "' is a reserved word in strict mode.");
+            error_ctx_error_d(my binder->errs, name, 1212, "Identifier expected. '", name, "' is a reserved word in strict mode.");
     }
 }
 
@@ -433,15 +437,15 @@ void scope_check_strict_eval_or_arguments(Scope const* me, Span name) {
     if (!my strict || !span_valid(name) || (!csview_equals(name.sv, "eval") && !csview_equals(name.sv, "arguments"))) return;
     switch (strict_reason(me)) {
         case 2:
-            error_ctx_error_d(my errs, name, 1210, "Code contained in a class is evaluated in JavaScript's strict mode which "
+            error_ctx_error_d(my binder->errs, name, 1210, "Code contained in a class is evaluated in JavaScript's strict mode which "
                 "does not allow this use of '", name, "'. For more information, see "
                 "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode.");
             break;
         case 1:
-            error_ctx_error_d(my errs, name, 1215, "Invalid use of '", name, "'. Modules are automatically in strict mode.");
+            error_ctx_error_d(my binder->errs, name, 1215, "Invalid use of '", name, "'. Modules are automatically in strict mode.");
             break;
         default:
-            error_ctx_error_d(my errs, name, 1100, "Invalid use of '", name, "' in strict mode.");
+            error_ctx_error_d(my binder->errs, name, 1100, "Invalid use of '", name, "' in strict mode.");
     }
 }
 
@@ -450,15 +454,15 @@ void scope_check_strict_block_function(Scope const* me, Span name) {
     if (compiler_options()->target >= SCRIPT_TARGET_ES2015) return;
     switch (strict_reason(me)) {
         case 2:
-            error_ctx_error_d(my errs, name, 1251, "Function declarations are not allowed inside blocks in strict mode when "
+            error_ctx_error_d(my binder->errs, name, 1251, "Function declarations are not allowed inside blocks in strict mode when "
                 "targeting 'ES5'. Class definitions are automatically in strict mode.");
             break;
         case 1:
-            error_ctx_error_d(my errs, name, 1252, "Function declarations are not allowed inside blocks in strict mode when "
+            error_ctx_error_d(my binder->errs, name, 1252, "Function declarations are not allowed inside blocks in strict mode when "
                 "targeting 'ES5'. Modules are automatically in strict mode.");
             break;
         default:
-            error_ctx_error_d(my errs, name, 1250,
+            error_ctx_error_d(my binder->errs, name, 1250,
                 "Function declarations are not allowed inside blocks in strict mode when targeting 'ES5'.");
     }
 }
@@ -771,7 +775,7 @@ static void check_require_exports_collision(Scope* me, Span name) {
     // (tsc's errorSkippedOn("noEmit"))
     if (compiler_options()->no_emit || source_file_emit_module_kind(my file) >= MODULE_KIND_ES2015) return;
     error_ctx_error_d(
-        my errs, name, 2441, "Duplicate identifier '", name, "'. Compiler reserves name '", name,
+        my binder->errs, name, 2441, "Duplicate identifier '", name, "'. Compiler reserves name '", name,
         "' in top level scope of a module."
     );
 }
@@ -834,7 +838,7 @@ static Symbol* declare_symbol(
         Symbol* inherited = symbol_table_lookup(table->parent, name, hash);
         if (inherited) {
             if (inherited->flags & excludes) {
-                report_conflicts(scope->errs, inherited, name_span, includes, false, (csview){0});
+                report_conflicts(scope->binder->errs, inherited, name_span, includes, false, (csview){0});
                 return binder_new_symbol(binder, name, includes);
             }
             existing = clone_parent_symbol(binder, inherited);
@@ -849,8 +853,8 @@ static Symbol* declare_symbol(
         if (existing->flags & excludes && !(expando_only && table == &binder->globals) &&
             !(table == &binder->globals && global_merges_by_assignment(scope, existing, name))
         ) {
-            if (default_export && existing->decl_count) report_multiple_defaults(scope->errs, existing, name_span);
-            else report_conflicts(scope->errs, existing, name_span, includes, false,
+            if (default_export && existing->decl_count) report_multiple_defaults(scope->binder->errs, existing, name_span);
+            else report_conflicts(scope->binder->errs, existing, name_span, includes, false,
                 csview_equals(name, "export=") ? name : (csview){0});
             return binder_new_symbol(binder, name, includes);
         }
@@ -975,7 +979,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         scope_check_strict_eval_or_arguments(me, props.name);
     }
 
-    check_type_name_is_reserved(me->errs, props.name, props.kind);
+    check_type_name_is_reserved(me->binder->errs, props.name, props.kind);
     if (!props.is_ambient && (
         (props.kind == SYMBOL_DECL_VARIABLE && !props.is_parameter) || props.kind == SYMBOL_DECL_FUNCTION ||
         props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
@@ -1004,7 +1008,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (merged && includes & flags_before & SYMBOL_TYPE_PARAMETER && props.kind != SYMBOL_DECL_INFER) {
         // Type parameters of the same name merge as far as tsc's binder is concerned, which is what `infer U` twice
         // in one conditional type wants. <T, T>: one symbol declared twice (and one type), the second is TS2300
-        report_conflict(scope->errs, props.name, 2300);
+        report_conflict(scope->binder->errs, props.name, 2300);
     }
     if (props.kind == SYMBOL_DECL_VARIABLE) {
         // (Also when it merges into something that isn't a variable: a `declare const never` and the type `never`)
@@ -1159,11 +1163,11 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
             if (!span_valid(decl->name)) continue;
             u32 spaces = declaration_spaces(symbols[s], decl, resolve);
             if (spaces & common_default) {
-                error_ctx_error_d(my errs, decl->name, 2652, "Merged declaration '", decl->name,
+                error_ctx_error_d(my binder->errs, decl->name, 2652, "Merged declaration '", decl->name,
                     "' cannot include a default export declaration. Consider adding a separate 'export default ",
                     decl->name, "' declaration instead.");
             } else if (spaces & common && (s == 1 || decl->flags)) {
-                error_ctx_error_d(my errs, decl->name, 2395, "Individual declarations in merged declaration '",
+                error_ctx_error_d(my binder->errs, decl->name, 2395, "Individual declarations in merged declaration '",
                     decl->name, "' must be all exported or all local.");
             }
         }
@@ -1249,7 +1253,7 @@ static void check_module_exports(Symbol const* container, ErrorCtx* errs) {
 }
 
 void scope_check_duplicate_exports(Scope* me) {
-    check_module_exports(my container, my errs);
+    check_module_exports(my container, my binder->errs);
 }
 
 void binder_check_ambient_module_exports(Binder* me, ErrorCtx* errs) {
@@ -1273,15 +1277,15 @@ void scope_add_port(Scope* me, PortItem* item) {
         case PORT_EXPORT_AS_NAMESPACE: {
             // A global alias of the module (UMD; a module using its value is TS2686, check_umd_global_use()). The
             // checks are tsc's bindNamespaceExportDeclaration()
-            if (span_valid(item->modifiers)) error_ctx_error_d(my errs, item->modifiers, 1184, "Modifiers cannot appear here.");
+            if (span_valid(item->modifiers)) error_ctx_error_d(my binder->errs, item->modifiers, 1184, "Modifiers cannot appear here.");
             if (item->not_top_level) {
-                error_ctx_error_d(my errs, span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
+                error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1316, "Global module exports may only appear at top level.");
                 return;
             } else if (my kind != SCOPE_MODULE) {
-                error_ctx_error_d(my errs, span_with_semicolon(item->full_span), 1314, "Global module exports may only appear in module files.");
+                error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1314, "Global module exports may only appear in module files.");
                 return;
             } else if (my file && !my file->is_declaration) {
-                error_ctx_error_d(my errs, span_with_semicolon(item->full_span), 1315, "Global module exports may only appear in declaration files.");
+                error_ctx_error_d(my binder->errs, span_with_semicolon(item->full_span), 1315, "Global module exports may only appear in declaration files.");
                 return;
             }
             if (!my container) return;
@@ -1407,9 +1411,9 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     if (!top && span_valid(statement) && csview_starts_with(statement.sv, "export")) {
         Span first = span_make(statement.source, statement.sv.buf, statement.sv.buf + 6);
         if (export_equals) {
-            error_ctx_grammar_error_d(my errs, first, 1231, "An export assignment must be at the top level of a file or module declaration.");
+            error_ctx_grammar_error_d(my binder->errs, first, 1231, "An export assignment must be at the top level of a file or module declaration.");
         } else {
-            error_ctx_grammar_error_d(my errs, first, 1258, "A default export must be at the top level of a file or module declaration.");
+            error_ctx_grammar_error_d(my binder->errs, first, 1258, "A default export must be at the top level of a file or module declaration.");
         }
         return;
     }
@@ -1437,7 +1441,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
     ) {
         ModuleKind implied = source_file_implied_format_for_emit(my file);
         if (my ambient ? implied == MODULE_KIND_ESNEXT : implied != MODULE_KIND_COMMONJS) {
-            error_ctx_grammar_error_d(my errs, statement, 1203,
+            error_ctx_grammar_error_d(my binder->errs, statement, 1203,
                 "Export assignment cannot be used when targeting ECMAScript modules. Consider using 'export default' or "
                 "another module format instead.");
         }
@@ -2129,7 +2133,7 @@ static Symbol* resolve_if_pure_alias(Symbol* me) {
 
 static Symbol* resolve_import_alias_path(Symbol* me) {
     PortItem* item = my alias->item;
-    ErrorCtx* errs = my alias->scope->errs;
+    ErrorCtx* errs = my alias->scope->binder->errs;
     if (vec_span_is_empty(&item->alias_path)) return nullptr;
     Span first = *vec_span_front(&item->alias_path);
     if (!first.sv.size) return nullptr; // (A missing name: tsc's resolveEntityName says nothing)
@@ -2572,7 +2576,7 @@ static Symbol* resolve_entity_alias(Symbol* me) {
 
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
-    ErrorCtx* errs = my alias->scope->errs;
+    ErrorCtx* errs = my alias->scope->binder->errs;
     if (my alias->class_expr) return my alias->class_expr->symbol;
     if (my alias->entity) return resolve_entity_alias(me);
     if (!item) {
@@ -2727,7 +2731,7 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         // (Import-equals declarations are reported on the whole statement)
         PortItem const* item = my alias->item;
         Span at = item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
-        error_ctx_error_d(my alias->scope->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
+        error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
         // (tsc's resolveAlias: the inner visit made the target unknownSymbol, and it stays that)
         target = nullptr;
     }
@@ -2984,12 +2988,12 @@ static void merge_augmentations(Binder* me) {
             // (tsc's mergeModuleAugmentation: not for one in an ambient context, a declaration file's)
             Scope const* outer = decl->inner_scope->parent;
             if (outer && !outer->ambient) {
-                error_ctx_error_d(decl->inner_scope->errs, ref->span, 2664, "Invalid module name in augmentation, module '",
+                error_ctx_error_d(decl->inner_scope->binder->errs, ref->span, 2664, "Invalid module name in augmentation, module '",
                     ref->path, "' cannot be found.");
             }
             continue;
         }
-        error_ctx_error_d(decl->inner_scope->errs, ref->span, 2665, "Invalid module name in augmentation. Module '",
+        error_ctx_error_d(decl->inner_scope->binder->errs, ref->span, 2665, "Invalid module name in augmentation. Module '",
             ref->path, "' resolves to an untyped module at '", ref->resolved_path, "', which cannot be augmented.");
     }
     // First what merges without resolving anything, then (in the same order) what needs aliases or `export *`
@@ -3002,7 +3006,7 @@ static void merge_augmentations(Binder* me) {
             NamespaceDecl* decl = my augmentations[i];
             Symbol* augmentation = decl->symbol;
             Symbol* module = augmented_module(me, decl);
-            ErrorCtx* errs = decl->inner_scope->errs;
+            ErrorCtx* errs = decl->inner_scope->binder->errs;
             bool export_equals = symbol_table_get(module->exports, c_sv("export=")) != nullptr;
             if (export_equals) {
                 if (pass == 0) continue;
@@ -3098,7 +3102,7 @@ static void check_alias_ambient_const_enum(Symbol const* alias, Symbol const* ta
     } else if (item->tag != PORT_IMPORT_DEFAULT) {
         return;
     }
-    error_ctx_error_d(scope->errs, at, 2748, "Cannot access ambient const enums when 'verbatimModuleSyntax' is enabled.");
+    error_ctx_error_d(scope->binder->errs, at, 2748, "Cannot access ambient const enums when 'verbatimModuleSyntax' is enabled.");
 }
 
 // tsc's checkAliasSymbol under isolatedModules/verbatimModuleSyntax: what a transpiler that sees one file at a time
@@ -3116,7 +3120,7 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     // (a JavaScript file's import of a type is an error of its own)
     if (file->is_js && is_type) return;
     const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
-    ErrorCtx* errs = scope->errs;
+    ErrorCtx* errs = scope->binder->errs;
     bool import_equals = item->tag == PORT_IMPORT_ALIAS || item->is_require;
     // tsc's error node: the whole specifier, the whole `import x = ...`, the name of `* as ns` (and of a default
     // import's clause, which tsc spans to its named imports too)
@@ -3213,7 +3217,7 @@ void binder_link(Binder* me) {
             (target_flags & SYMBOL_TYPE ? SYMBOL_TYPE : 0) |
             (target_flags & SYMBOL_NAMESPACE ? SYMBOL_NAMESPACE : 0);
         PortItem const* item = symbol->alias->item;
-        ErrorCtx* errs = symbol->alias->scope->errs;
+        ErrorCtx* errs = symbol->alias->scope->binder->errs;
         // tsc reports on the import specifier (`a as b`), or the whole `import a = b.c`
         Span at = item->decl_name;
         if (item->tag == PORT_IMPORT_ALIAS) at = span_with_semicolon(item->full_span);
@@ -3481,7 +3485,7 @@ typedef struct PendingNotFound {
 
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs) {
     bool in_class = false;
-    for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope->this_ref.class_decl;
+    for (Scope const* scope = me; scope && !in_class; scope = scope->parent) in_class = scope_rare(scope)->this_ref.class_decl;
     if (!in_class || (my flow && my flow->in_type_query)) {
         ClassItem const* field = in_class ? scope_invalid_initializer_field(me, name.sv, nullptr) : nullptr;
         if (field) {
@@ -3507,11 +3511,11 @@ static bool report_missing_prefix(Scope const* me, Span name, ErrorCtx* errs) {
     Atom const* atom = checker_atom(checker, name.sv);
     bool container_found = false, direct = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        ThisKind kind = scope->this_ref.kind;
+        ThisKind kind = scope_rare(scope)->this_ref.kind;
         if (!kind) continue;
         bool first = !container_found;
         container_found = true;
-        ClassDecl const* class_decl = scope->this_ref.class_decl;
+        ClassDecl const* class_decl = scope_rare(scope)->this_ref.class_decl;
         if (!class_decl || !class_decl->symbol) continue;
         direct = first;
         if (ty_get_prop(checker, ty_static_type_of(checker, class_decl->symbol), atom)) {
@@ -3625,15 +3629,15 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
 ClassItem const* scope_invalid_initializer_field(Scope const* me, csview name, Symbol const* found) {
     // (Every identifier asks: skip the lookups when no scope around it has constructor locals, nearly always)
     Scope const* with_locals = me;
-    while (with_locals && !with_locals->constructor_local_count) with_locals = with_locals->parent;
+    while (with_locals && !scope_rare(with_locals)->constructor_local_count) with_locals = with_locals->parent;
     if (!with_locals) return nullptr;
     ClassItem const* ret = nullptr;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         if (found && scope_declares_symbol(scope, found)) break;
         // (tsc keeps the outermost one when fields are nested in class expressions)
-        for (u32 i = 0; i < scope->constructor_local_count; i++) {
-            if (csview_equals_sv(scope->constructor_locals[i].sv, name)) {
-                ret = scope->instance_field;
+        for (u32 i = 0; i < scope_rare(scope)->constructor_local_count; i++) {
+            if (csview_equals_sv(scope_rare(scope)->constructor_locals[i].sv, name)) {
+                ret = scope_rare(scope)->instance_field;
                 break;
             }
         }
@@ -3676,25 +3680,25 @@ ThisRef scope_get_this(Scope const* me, bool type_else_value) {
     bool skip_class = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         skip_class |= scope->member_decorator && !type_else_value;
-        ThisKind kind = scope->this_ref.kind;
+        ThisKind kind = scope_rare(scope)->this_ref.kind;
         if (!kind) continue;
-        if (skip_class && scope->this_ref.class_decl) {
+        if (skip_class && scope_rare(scope)->this_ref.class_decl) {
             skip_class = false;
             continue;
         }
         bool is_class = kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC || kind == THIS_INTERFACE ||
             kind == THIS_TYPE_LITERAL;
-        if (!type_else_value || is_class) return scope->this_ref;
+        if (!type_else_value || is_class) return scope_rare(scope)->this_ref;
         // A `this` type in a function that isn't a method of a class (tsc's getThisContainer stops there) has nothing
         // to be about
-        if (scope->this_ref.type_boundary) return (ThisRef){ .kind = THIS_TYPE_LITERAL };
+        if (scope_rare(scope)->this_ref.type_boundary) return (ThisRef){ .kind = THIS_TYPE_LITERAL };
     }
     return (ThisRef){0};
 }
 
 struct ClassDecl const* scope_enclosing_class(Scope const* me) {
     for (Scope const* scope = me; scope; scope = scope->parent) {
-        if (scope->this_ref.class_decl) return scope->this_ref.class_decl;
+        if (scope_rare(scope)->this_ref.class_decl) return scope_rare(scope)->this_ref.class_decl;
     }
     return nullptr;
 }

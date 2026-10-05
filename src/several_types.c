@@ -183,8 +183,8 @@ static void check_static_type_parameter_reference(IdentifierType* me, Scope cons
         if (scope_declares_symbol(scope, my target)) return;
         // A type parameter of a class or interface in the computed name of one of its members: TS2467 (tsc's
         // resolveNameHelper at a ComputedPropertyName), the innermost member name only
-        for (u32 i = 0; !in_computed_name && scope->computed_name_of && i < scope->computed_name_of->items.size; i++) {
-            GenericItem const* item = &scope->computed_name_of->items.data[i];
+        for (u32 i = 0; !in_computed_name && scope_rare(scope)->computed_name_of && i < scope_rare(scope)->computed_name_of->items.size; i++) {
+            GenericItem const* item = &scope_rare(scope)->computed_name_of->items.data[i];
             if (item->owned_symbol == my target || item->symbol_ref == my target) {
                 error_ctx_error_d(errs, my name, 2467, "A computed property name cannot reference a type parameter from its "
                     "containing type.");
@@ -192,9 +192,9 @@ static void check_static_type_parameter_reference(IdentifierType* me, Scope cons
                 return;
             }
         }
-        in_computed_name |= scope->computed_name_of != nullptr;
-        if (scope->this_ref.kind != THIS_CLASS_STATIC || !scope->this_ref.class_decl) continue;
-        for_each (i, vec_generic_item, &scope->this_ref.class_decl->generic.items) {
+        in_computed_name |= scope_rare(scope)->computed_name_of != nullptr;
+        if (scope_rare(scope)->this_ref.kind != THIS_CLASS_STATIC || !scope_rare(scope)->this_ref.class_decl) continue;
+        for_each (i, vec_generic_item, &scope_rare(scope)->this_ref.class_decl->generic.items) {
             if (i->owned_symbol == my target || i->symbol_ref == my target) {
                 error_ctx_error_d(errs, my name, 2302, "Static members cannot reference class type parameters.");
                 my target = my symbol = nullptr; // (Resolves to nothing, like in tsc)

@@ -390,34 +390,15 @@ typedef enum NoSuper : uint8_t {
     NO_SUPER_CONSTRUCTOR_ARGS,
 } NoSuper;
 
-typedef struct Scope {
-    Scope* parent;
-    ScopeKind kind;
-    Binder* binder;
-    ErrorCtx* errs;
-    SymbolTable locals;
-    Symbol* container; // Exported declarations go to its exports, and lookups see them
-    // Ambient namespace (or declaration file) without export declarations: everything is exported
-    bool export_context;
-    bool ambient;
+// What few scopes have (functions, classes, decorators, computed names...): behind Scope.rare, read through
+// scope_rare() (a zeroed one when absent), written through scope_rare_mut()
+typedef struct ScopeRare {
     ThisRef this_ref;
-    // The resolve walk: the builder of the control flow container this scope is in (inherited by child scopes). Only
-    // valid during the walk
-    FlowBuilder* flow;
-    FunctionImpl* function; // The function this scope is in, null outside of functions
     // The scope of a function expression's name, which is in that function's await/yield context (tsc's
     // parseFunctionExpression)
     FunctionImpl const* expression_name_of;
-    // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
-    // isLegalUsageOfSuperExpression (see resolve_super())
-    NoSuper no_super;
-    // Everything of a class's field (decorators, computed name, initializer): not directly in a constructor it's
-    // nested in (tsc's isThisContainerOrFunctionBlock has PropertyDeclaration)
-    bool in_field;
     // The scope of a for-in loop, once the walk is in its body (tsc's isForInVariableForNumericPropertyNames)
     struct ForEachLoopStatement const* for_in_body;
-    // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
-    bool member_decorator;
     // A computed member name of a class or interface: the type parameters of that class or interface, which it can't
     // reference (TS2467, tsc's resolveNameHelper at a ComputedPropertyName)
     struct Generic const* computed_name_of;
@@ -427,13 +408,52 @@ typedef struct Scope {
     // The scope of a decorator of this class (for a member decorator, no_super is NO_SUPER_DECORATOR instead): an ES
     // decorator runs before the class is initialized (tsc's isBlockScopedNameDeclaredBeforeUse)
     struct ClassDecl const* decorator_of;
-    // The file the scope is in (null for the global scope)
-    SourceFile* file;
     // The parameter list of a function: from ES2015 on the variables its body declares aren't visible there (tsc's
     // useOuterVariableScopeInParameter), although they share the function's scope
     // A scope of a function's type parameters (scope_new_generic()): the function's scope, which has its parameters
     // and the top level of its body (one table in tsc: see baseline_symbol_declaration_spans())
     struct Scope* type_params_function;
+    // The type and initializer of an instance field of a class with a constructor, when fields are initialized in the
+    // constructor (not standard class fields): the value names the constructor declares, which the field can't use
+    // (tsc's propertyWithInvalidInitializer), see scope_invalid_initializer_field()
+    struct ClassItem const* instance_field;
+    Span const* constructor_locals;
+    u32 constructor_local_count;
+} ScopeRare;
+
+// PERF: ~100k of them on nest/webpack, most of them a block that declares nothing: keep it small (what few scopes
+// have goes to ScopeRare)
+typedef struct Scope {
+    Scope* parent;
+    Binder* binder; // (Its errs are the scope's)
+    SymbolTable locals;
+    Symbol* container; // Exported declarations go to its exports, and lookups see them
+    // The resolve walk: the builder of the control flow container this scope is in (inherited by child scopes). Only
+    // valid during the walk
+    FlowBuilder* flow;
+    FunctionImpl* function; // The function this scope is in, null outside of functions
+    // The file the scope is in (null for the global scope)
+    SourceFile* file;
+    // The type parameter lists this scope is inside of (inherited by child scopes), null at the top level
+    OuterGenerics const* generics;
+    // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
+    // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
+    Symbol const* self;
+    // The statements declared in this scope (block_add_names()), null if none were
+    struct Block const* block;
+    ScopeRare* rare; // Null: all zero
+    uint8_t kind; // ScopeKind
+    // A computed member name, a member decorator or a constructor's parameters: `super` can't be used, tsc's
+    // isLegalUsageOfSuperExpression (see resolve_super())
+    NoSuper no_super;
+    // Ambient namespace (or declaration file) without export declarations: everything is exported
+    bool export_context;
+    bool ambient;
+    // Everything of a class's field (decorators, computed name, initializer): not directly in a constructor it's
+    // nested in (tsc's isThisContainerOrFunctionBlock has PropertyDeclaration)
+    bool in_field;
+    // A class member's decorator: its `this` is the one outside the class (tsc's getThisContainer of a Decorator)
+    bool member_decorator;
     bool parameters;
     // statement_hoist_names() is declaring a nested statement's `var`s and functions here (SymbolDecl.hoisted)
     bool hoisting;
@@ -445,25 +465,21 @@ typedef struct Scope {
     // The type of a parameter written in the function's JSDoc (`@param {typeof x} x`): the function's parameters and
     // `var`s aren't values there (tsc's resolveNameHelper: lastLocation is the JSDoc, not a parameter)
     bool jsdoc_parameter_type;
-    // The inside of the declaration of this symbol (a function, class, interface, type alias, enum or namespace
-    // declaration): a use of it from here isn't a reference (tsc's isSelfReferenceLocation)
-    Symbol const* self;
     // Strict mode code (tsc's inStrictMode): a module, alwaysStrict, a "use strict" prologue, a class body
     bool strict;
     bool with_body; // The body of a `with` statement: bound, never checked (tsc's checker skips it)
-    // The statements declared in this scope (block_add_names()), null if none were
-    struct Block const* block;
-    // The type and initializer of an instance field of a class with a constructor, when fields are initialized in the
-    // constructor (not standard class fields): the value names the constructor declares, which the field can't use
-    // (tsc's propertyWithInvalidInitializer), see scope_invalid_initializer_field()
-    struct ClassItem const* instance_field;
-    Span const* constructor_locals;
-    u32 constructor_local_count;
-    // The type parameter lists this scope is inside of (inherited by child scopes), null at the top level
-    OuterGenerics const* generics;
     // A static field of a class with legacy decorators: no `this` in its initializer (TS2816)
     bool decorated_static_field;
 } Scope;
+
+extern ScopeRare const scope_rare_none;
+static inline ScopeRare const* scope_rare(Scope const* me) {
+    return my rare ? my rare : &scope_rare_none;
+}
+ScopeRare* scope_rare_new(Scope* me);
+static inline ScopeRare* scope_rare_mut(Scope* me) {
+    return my rare ? my rare : scope_rare_new(me);
+}
 
 // Symbol pointer -> symbol pointer, open addressing
 typedef struct SymbolMap {

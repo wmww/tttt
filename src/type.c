@@ -331,7 +331,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             // Computed names in there are in a type: not uses of values (tsc's isInAmbientOrTypeNode)
             bool saved_type_query = names->flow->in_type_query;
             names->flow->in_type_query = true;
-            literal_scope->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
+            scope_rare_mut(literal_scope)->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
             for_each (i, vec_interface_member, &my interface.members) {
                 interface_member_lookup_names(i, literal_scope, errs);
             }

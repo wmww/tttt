@@ -1718,9 +1718,9 @@ VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
     if (!block) return symbol_declaration_spans(me);
     Symbol const* twin = nullptr;
     bool twin_same_block = false;
-    if (me->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER && block->type_params_function) {
-        twin = symbol_table_get(&block->type_params_function->locals, me->name);
-    } else if (block->kind == SCOPE_FUNCTION && block->parent && block->parent->type_params_function == block) {
+    if (me->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER && scope_rare(block)->type_params_function) {
+        twin = symbol_table_get(&scope_rare(block)->type_params_function->locals, me->name);
+    } else if (block->kind == SCOPE_FUNCTION && block->parent && scope_rare(block->parent)->type_params_function == block) {
         twin = symbol_table_get(&block->parent->locals, me->name);
         if (twin && !(twin->decl_count && twin->decls[0].kind == SYMBOL_DECL_TYPE_PARAMETER)) twin = nullptr;
     } else if (me->is_local || import) {

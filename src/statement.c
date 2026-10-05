@@ -398,7 +398,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     // tsc's checkGrammarModuleElementContext: directly in a file or a namespace body, else only this is said about it
     bool misplaced = my labeled || !(scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_MODULE ||
         scope->kind == SCOPE_NAMESPACE || scope->kind == SCOPE_GLOBAL_AUGMENTATION);
-    ErrorCtx* errs = misplaced ? nullptr : scope->errs;
+    ErrorCtx* errs = misplaced ? nullptr : scope->binder->errs;
     bool checked = true;
     for (Scope const* i = scope; i && checked; i = i->parent) checked = !i->with_body;
     if (misplaced && checked) {
@@ -406,7 +406,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
         isize len = 0;
         while (len < first.sv.size && (isalnum((unsigned char)first.sv.buf[len]) || first.sv.buf[len] == '_')) len++;
         first.sv.size = len;
-        error_ctx_grammar_error_d(scope->errs, first, (my is_global || my is_ambient_module) ? 1234 : 1235,
+        error_ctx_grammar_error_d(scope->binder->errs, first, (my is_global || my is_ambient_module) ? 1234 : 1235,
             (my is_global || my is_ambient_module) ? "An ambient module declaration is only allowed at the top level in a file." :
             "A namespace declaration is only allowed at the top level of a namespace or module.");
     }
@@ -803,7 +803,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
             span = span_make(span.source, span_start_ptr(span), span_start_ptr(span) + 1);
         }
         error_ctx_error_d(
-            scope->errs,
+            scope->binder->errs,
             span,
             my keyword == FOR_EACH_LOOP_OF ? 1188 : 1091,
             "Only a single variable declaration is allowed in a 'for...",
@@ -815,7 +815,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         InitializedBinding* initializer = initializers->data;
         if (initialized_binding_value(initializer)->tag != EXPR_IMPLICIT_ANY) {
             error_ctx_error_d(
-                scope->errs,
+                scope->binder->errs,
                 initializer->binding.content_span,
                 my keyword == FOR_EACH_LOOP_OF ? 1190 : 1189,
                 "The variable declaration of a 'for...",
@@ -824,7 +824,7 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
             );
         } else if (initializer->binding.has_explicit_type) {
             error_ctx_error_d(
-                scope->errs,
+                scope->binder->errs,
                 initializer->binding.content_span,
                 2404,
                 "The left-hand side of a 'for...",
@@ -1475,7 +1475,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                 expr_lookup_names(&loop->variable.expr, names, errs);
                 expr_flow_assign_for_each(&loop->variable.expr, names, loop);
             }
-            if (loop->keyword == FOR_EACH_LOOP_IN) loop_scope->for_in_body = loop; // (Its body from here on)
+            if (loop->keyword == FOR_EACH_LOOP_IN) scope_rare_mut(loop_scope)->for_in_body = loop; // (Its body from here on)
             statement_add_names(&loop->body, loop_scope);
             statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_loop);
             flow_add_antecedent(flow, pre_loop, flow->current);
@@ -2468,7 +2468,7 @@ void switch_case_drop(SwitchCase* me) {
 
 ForEachLoopStatement const* scope_for_in_loop_of(Scope const* names, Symbol const* variable) {
     for (Scope const* scope = names; scope; scope = scope->parent) {
-        ForEachLoopStatement const* loop = scope->for_in_body;
+        ForEachLoopStatement const* loop = scope_rare(scope)->for_in_body;
         if (!loop) continue;
         Symbol const* symbol = nullptr;
         if (loop->variable.tag == FOR_EACH_LOOP_STATEMENT) {

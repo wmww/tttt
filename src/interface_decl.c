@@ -34,7 +34,7 @@ void interface_decl_lookup_names(InterfaceDecl* me, Scope* names, ErrorCtx* errs
     my outer_generics = names->generics;
     names = scope_new_generic_merged(names, &my generic, my symbol, me, my name, errs);
     Scope* this_scope = scope_new(names, SCOPE_BLOCK);
-    this_scope->this_ref = (ThisRef){ .kind = THIS_INTERFACE, .symbol = my symbol, .interface = me };
+    scope_rare_mut(this_scope)->this_ref = (ThisRef){ .kind = THIS_INTERFACE, .symbol = my symbol, .interface = me };
     names = this_scope;
     check(my type.tag == TYPE_INTERFACE);
     // HACK (tsc's too, for pre-3.0 libs): a `symbol` property of the global `SymbolConstructor` is a unique symbol

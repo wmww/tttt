@@ -69,9 +69,9 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
         case INTERFACE_KEY_EXPR: {
             // (An interface's type parameters are out of reach of its members' names)
             Scope* key_names = names;
-            if (names->this_ref.kind == THIS_INTERFACE && names->this_ref.interface) {
+            if (scope_rare(names)->this_ref.kind == THIS_INTERFACE && scope_rare(names)->this_ref.interface) {
                 key_names = scope_new(names, SCOPE_BLOCK);
-                key_names->computed_name_of = &names->this_ref.interface->generic;
+                scope_rare_mut(key_names)->computed_name_of = &scope_rare(names)->this_ref.interface->generic;
             }
             // (A mapped type's member elsewhere, `[K in T]`: resolved silently, TS7061 said it all)
             expr_lookup_names(my key.expr.ref, key_names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
