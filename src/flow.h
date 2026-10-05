@@ -148,6 +148,10 @@ typedef struct FlowBuilder {
     // The container is the constructor of this class, or an IIFE in one (tsc's getControlFlowContainer skips those)
     Symbol const* constructor_of;
     FlowNode* start; // Of the container (an inlined IIFE: of the flow around it)
+    // The start of tsc's getControlFlowContainer: `start`, except in an async or generator IIFE, which has a start of
+    // its own (it isn't inlined) but whose container is the one around it. What declarations record as
+    // Symbol.flow_start and outer references compare with
+    FlowNode* container_start;
     FlowNode* current;
     // Inside a statement that is unreachable: like tsc, nothing in there gets flow nodes, reports or counts as a
     // `return`. `current` doesn't change while it is set

@@ -34,6 +34,7 @@ void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, 
         .contextual_depth = outer ? outer->contextual_depth : 0,
         // A class field initializer is still inside the statements of the function around it
         .statements = outer && !function ? outer->statements : nullptr,
+        .container_start = outer ? outer->container_start : nullptr,
     };
     my next_id = outer ? outer->next_id : &my id_counter;
     my current = &flow_unreachable; // Until the container gets its start node
@@ -56,6 +57,7 @@ static void set_referenced(FlowNode* flow) {
 
 FlowNode* flow_new_start(FlowBuilder* me, FunctionImpl const* function, bool continues_outside) {
     my start = new_node(me, FLOW_START | (continues_outside ? FLOW_CONTINUES_OUTSIDE : 0), nullptr, function);
+    my container_start = my start;
     return my start;
 }
 

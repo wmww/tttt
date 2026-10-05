@@ -616,7 +616,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
         check_umd_global_use(me, names, errs);
-        my outer_reference = my target->flow_start && names->flow && names->flow->start != my target->flow_start;
+        my outer_reference = my target->flow_start && names->flow && names->flow->container_start != my target->flow_start;
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
             // (tsc's checkIdentifier: the error type)

@@ -2870,6 +2870,8 @@ static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl 
     Expr const* reference = skip_reference_wrappers(q->reference);
     if (reference->tag != EXPR_IDENTIFIER) return false;
     if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return function_impl_is_arrow(function);
+    // An async or generator IIFE has a start of its own, but tsc's getControlFlowContainer skips it
+    if (function->is_iife) return true;
     Symbol const* symbol = q->symbol;
     if (!symbol || symbol->flow_start == start) return false;
     // (Not a `const x = []`: what a closure sees of it is `any[]`, whatever is pushed after, tsc's checkIdentifier)
@@ -2963,7 +2965,7 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             FunctionImpl const* function = flow->node;
             if ((flags & FLOW_CONTINUES_OUTSIDE) && function->outer_flow && continues_outside(q, flow, function)) {
                 flow = function->outer_flow;
-                q->left_container = true;
+                if (!function->is_iife) q->left_container = true;
                 continue;
             }
             // A variable of another container than the one the reference is in is assumed to be initialized. A

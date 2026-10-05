@@ -157,7 +157,7 @@ void binding_lookup_names(Binding* me, Scope* names, ErrorCtx* errs) {
 
         case BINDING_IDENTIFIER:
             // The flow container the variable belongs to: elsewhere it is assumed to be initialized
-            if (my symbol && !my symbol->flow_start && names->flow) my symbol->flow_start = names->flow->start;
+            if (my symbol && !my symbol->flow_start && names->flow) my symbol->flow_start = names->flow->container_start;
             binding_check_var_not_shadowed(me, names, errs);
             break;
 

@@ -251,6 +251,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         if (continues) my outer_flow = flow_builder_reference(outer, span_null);
         // Signatures and function types (the libs are full of them) have nothing that flows
         if (my has_body) flow.current = flow_new_start(&flow, me, continues);
+        // An async or generator IIFE (an inlined IIFE is the branch above) is in the container around it for the
+        // checker (tsc's getControlFlowContainer skips IIFEs): flow walks always continue outside
+        if (my has_body && my is_iife) flow.container_start = outer->container_start;
     }
     // (A JavaScript function may be a constructor function: `this.x = v` has its type at the end of it too)
     bool js_constructor_candidate = names->file && names->file->is_js && !function_impl_is_arrow(me) && !my is_method &&
