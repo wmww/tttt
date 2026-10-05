@@ -853,10 +853,15 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
         // `[...T, ...U]` in the middle: split by the number of arguments T's rest parameter got (tsc's impliedArity)
         InferParam const* first = inference_param(inf, target_args.data[start]);
         u32 implied = first && first->implied_arity_plus_one ? first->implied_arity_plus_one - 1 : UINT32_MAX;
-        // (The first slice skips `end + source_arity - implied` at the end, as tsc's does)
-        if (implied != UINT32_MAX && start + end + implied <= source_arity && start + end + source_arity - implied <= source_arity) {
-            infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, end + source_arity - implied), target_args.data[start]);
-            infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start + implied, end), target_args.data[start + 1]);
+        // (The first slice skips `end + source_arity - implied` at the end, as tsc's does. Like its slice(), the bounds
+        // are clamped: more arguments than the source has elements is all of them for T and none for U)
+        if (implied != UINT32_MAX) {
+            i64 first_skip = (i64)end + (i64)source_arity - (i64)implied;
+            if (first_skip < 0) first_skip = 0;
+            if ((i64)start + first_skip > (i64)source_arity) first_skip = (i64)source_arity - start;
+            u32 second_start = start + implied < source_arity - end ? start + implied : source_arity - end;
+            infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, (u32)first_skip), target_args.data[start]);
+            infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, second_start, end), target_args.data[start + 1]);
         }
     }
     // TODO: `[...T, ...rest]` and `[...rest, ...T]` in the middle of the target (tsc infers T by its constraint's arity)
