@@ -2444,75 +2444,80 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
     cstr_drop(&module_name);
 }
 
+// tsc's canHaveSyntheticDefault: whether a default import of `module` is the module itself (what `export =` names)
+static bool can_have_synthetic_default(PortItem const* item, Symbol* module, SourceFile const* file) {
+    ModuleKind module_kind = compiler_options()->module;
+    if (file) {
+        // In Node.js a CommonJS module imported into an ES module always has a synthetic default; when both are sure to
+        // be ES modules there is none, whatever `module` says
+        if (module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT && esm_imports_cjs(item, file)) return true;
+        if (esm_imports_esm(item, file)) return false;
+    }
+    if (!compiler_options()->allow_synthetic_default_imports) return false;
+    if (!file || source_file_reads_as_declaration(file)) {
+        // Declaration files and ambient modules: unless they say they have a default or are ES modules (`__esModule`).
+        // (Every default export of a declaration file is tsc's isSyntacticDefault)
+        return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
+    }
+    // TypeScript files are emitted with an `__esModule` marker: only `export =` makes one
+    if (!file->is_js) return symbol_get_export(module, c_sv("export=")) != nullptr;
+    // JavaScript files without ES module syntax nor an `__esModule` marker
+    return !span_valid(file->module_indicator) && !symbol_get_export(module, c_sv("__esModule"));
+}
+
+// tsc's reportNonDefaultExport: TS2613 when the module exports what the import names, TS1192 otherwise
+static void report_non_default_export(PortItem const* item, Symbol* module, ErrorCtx* errs) {
+    cstr module_name = module_name_for_error(module, item->module_ref, false);
+    if (symbol_get_export(module, item->decl_name.sv)) {
+        error_ctx_error_d(errs, item->decl_name, 2613, "Module '", module_name,
+            "' has no default export. Did you mean to use 'import { ", item->decl_name.sv, " } from ", module_name,
+            "' instead?");
+        cstr_drop(&module_name);
+        return;
+    }
+    Error* error = error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
+    // (the first `export *` of a module that has a default)
+    for (u32 s = 0; error && module->is_module && s < module->module->export_star_count; s++) {
+        PortItem const* star = module->module->export_stars[s];
+        Symbol const* from = binder_module_of_ref(module->binder, star->module_ref);
+        if (from && from->exports && symbol_table_get(from->exports, c_sv("default"))) {
+            error_add_related_d(error, span_with_semicolon(star->full_span), 1195,
+                "'export *' does not re-export a default.");
+            break;
+        }
+    }
+    cstr_drop(&module_name);
+}
+
 // tsc's getTargetofModuleDefault: `import d from "m"`, `import { default as d }`, `export { default } from "m"`
 static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
-    // In Node.js a CommonJS module imported into an ES module always has a synthetic default, which overrides a real
-    // `default` export (tsc's canHaveSyntheticDefault, getTargetofModuleDefault)
-    ModuleKind module_kind = compiler_options()->module;
-    SourceFile const* target_file = item->module_ref ? item->module_ref->file : nullptr;
-    if (target_file && module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT &&
-        esm_imports_cjs(item, target_file)
-    ) {
+    SourceFile const* file = module->is_module ? module->module->file : nullptr;
+    Symbol* found = symbol_get_export(module, c_sv("default"));
+    if (can_have_synthetic_default(item, module, file)) {
+        // A synthetic default overrides a real `default` export (as emitted without `__esModule`). (`{ default as d }`
+        // names the `export=` symbol itself)
+        if (assigned && item->tag != PORT_IMPORT_DEFAULT) item->source_symbol = symbol_get_export(module, c_sv("export="));
         return assigned ? assigned : module;
     }
-    Symbol* found = symbol_get_export(module, c_sv("default"));
-    if (!found && assigned) {
-        // The default import is what `export =` names, with allowSyntheticDefaultImports or where an ES module
-        // imports a CommonJS one (tsc's getTargetofModuleDefault, canHaveSyntheticDefault)
-        SourceFile const* file = item->module_ref->file;
-        if (!compiler_options()->allow_synthetic_default_imports && !(file && esm_imports_cjs(item, file))) {
+    if (!found) {
+        Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+        if (export_equals && !compiler_options()->allow_synthetic_default_imports) {
             const char* option = compiler_options()->module >= MODULE_KIND_ES2015 ?
                 "allowSyntheticDefaultImports" : "esModuleInterop";
             cstr module_name = module_name_for_error(module, item->module_ref, false);
             Error* error = error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
                 "' can only be default-imported using the '", option, "' flag");
-            Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
-            if (error && export_equals && export_equals->decl_count) {
+            if (error && export_equals->decl_count) {
                 error_add_related_d(error, export_equals->decls[0].full, 2594,
                     "This module is declared with 'export =', and can only be used with a default import when "
                     "using the '", option, "' flag.");
             }
             cstr_drop(&module_name);
-            return nullptr; // (tsc's exportDefaultSymbol, which there is none of)
+        } else if (item->tag == PORT_IMPORT_DEFAULT) {
+            report_non_default_export(item, module, errs);
+        } else {
+            scope_report_non_exported_member(item, module, errs); // (tsc's errorNoModuleMemberSymbol)
         }
-        // (`{ default as d }` names the `export=` symbol itself)
-        if (item->tag != PORT_IMPORT_DEFAULT) item->source_symbol = symbol_get_export(module, c_sv("export="));
-        return assigned;
-    }
-    if (!found) {
-        SourceFile const* file = item->module_ref->file;
-        // In Node.js a CommonJS module always has a synthetic default when an ES module imports it (tsc's
-        // canHaveSyntheticDefault, before allowSyntheticDefaultImports)
-        if (file && esm_imports_cjs(item, file)) return module;
-        if (compiler_options()->allow_synthetic_default_imports && file && file->is_commonjs &&
-            !symbol_get_export(module, c_sv("__esModule"))
-        ) {
-            // A CommonJS JavaScript module's synthetic default is the module (tsc's canHaveSyntheticDefault)
-            return module;
-        }
-        if (compiler_options()->allow_synthetic_default_imports && (!file || source_file_reads_as_declaration(file)) &&
-            !symbol_get_export(module, c_sv("__esModule")) && !(file && esm_imports_esm(item, file))
-        ) {
-            return module; // So is a declaration file's (tsc's canHaveSyntheticDefault)
-        }
-        // (a specifier naming `default` is tsc's errorNoModuleMemberSymbol)
-        if (item->tag != PORT_IMPORT_DEFAULT) {
-            scope_report_non_exported_member(item, module, errs);
-            return nullptr;
-        }
-        cstr module_name = module_name_for_error(module, item->module_ref, false);
-        Error* error = error_ctx_error_d(errs, item->decl_name, 1192, "Module '", module_name, "' has no default export.");
-        // (tsc's reportNonDefaultExport: the first `export *` of a module that has a default)
-        for (u32 s = 0; error && module->is_module && s < module->module->export_star_count; s++) {
-            PortItem const* star = module->module->export_stars[s];
-            Symbol const* from = binder_module_of_ref(module->binder, star->module_ref);
-            if (from && from->exports && symbol_table_get(from->exports, c_sv("default"))) {
-                error_add_related_d(error, span_with_semicolon(star->full_span), 1195,
-                    "'export *' does not re-export a default.");
-                break;
-            }
-        }
-        cstr_drop(&module_name);
         return nullptr;
     }
     item->source_symbol = found;
