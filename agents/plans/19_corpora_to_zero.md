@@ -74,7 +74,7 @@ reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
 - Not investigated: invoke `event.output` unknown x4 / `Snapshot<unknown>` context x3, actor 869, actions
   3951/4152/4181 (DoNotInfer leak?), actions 4224/4272 (GetConcreteByKey), emit 49/52 (TS2353), spawn.ts:132
   (deferred conditional rest parameter).
-- Determinism: 5 diagnostics only at `--checkers 1` (triage).
+- Determinism: 5 diagnostics only at `--checkers 1` then; none since (checkerdiff K=2/3/4/7 clean, 2026-10-05).
 
 2026-10-05 (vscode window, agent B), 7 -> 2: types 2634 (expand_mapped's keyed-intersection path skipped any
 intersection with TYF_COULD_CONTAIN_TYPE_VARIABLES, which every type literal with a `typeof` has), types 1662
@@ -160,9 +160,8 @@ literals that have room in them, and their context-sensitive functions wait out 
 type variables spread into tuples stay variadic; literals with generic functions in them skipped in a candidate's
 first check. Also `readonly ಠ_ಠ` (a modifier before a non-ASCII name).
 
-**Determinism**: 7 of the 63 differ between `--checkers 1` and 4 (`./checkerdiff.py effect`; K=4 twice is identical):
-fiberRuntime 3612, Sink racing/zipping 57/73, vitest internal 175 and three only at K=1. Order-dependent checking,
-like xstate's earlier (triage).
+**Determinism**: 7 of the 63 differed between `--checkers 1` and 4 at one point; gone by 2026-10-05 (13 left, K=2/3/4/7
+identical modulo quoted text, `./checkerdiff.py`): the inference fixes since removed whatever was order-dependent.
 
 2026-10-05, second pass (63 -> 31, probes in `test/probes/plan19/effect/`, one commit each): a generic call as an
 argument infers from the raw parameter type, not one instantiated with the outer call's return mapper (Cause.test 8,

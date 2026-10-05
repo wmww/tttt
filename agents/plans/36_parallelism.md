@@ -51,7 +51,11 @@ What limits it:
 AST-side walk already goes through the thread-local `current_checker`, and the checker writes almost nothing
 outside itself (audit below), so K checkers over one AST worked with no changes at all. Diagnostics: the same codes
 at the same positions as K=1; **only union member order in message text differs** (type ids are per checker, unions
-print sorted by id): 2-3 messages on zod and webpack, none on the other corpora. Typecheck time per checker (sum =
+print sorted by id): 2-3 messages on zod and webpack, none on the other corpora. (2026-10-05 audit: every corpus at
+K=2/3/4/7 and the suite dumps at K=1/2/4 identical modulo quoted text; DefinitelyTyped at K=1 vs 4 differs in one
+package, react-router-transition's TS2739 "missing the following properties ...: children, render" vs "render,
+children", the same id order leaking out of quotes: `Pick<RouteProps, "children" | ... | "render">` lists the keys in
+union order. tsc is creation-order dependent there too; not fixable without checker-independent literal ids.) Typecheck time per checker (sum =
 duplicated work, max = ideal parallel wall):
 
 | corpus | K=1 | K=2 sum / max | K=4 sum / max | peak RSS K=1 -> 4 |
