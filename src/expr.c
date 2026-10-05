@@ -490,6 +490,22 @@ static void check_umd_global_use(IdentifierExpr const* me, Scope const* names, E
         "Consider adding an import instead.");
 }
 
+// tsc's resolveNameHelper at an enum: a member of the enum declared in another file, unqualified, under isolatedModules
+static void check_isolated_enum_member(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
+    Symbol const* symbol = my symbol;
+    if (!(symbol->flags & SYMBOL_ENUM_MEMBER)) return;
+    CompilerOptions const* options = compiler_options();
+    if (!options->isolated_modules && !options->verbatim_module_syntax) return;
+    Scope const* enum_scope = names;
+    while (enum_scope && enum_scope->kind != SCOPE_ENUM) enum_scope = enum_scope->parent;
+    if (!enum_scope || enum_scope->ambient || !enum_scope->container) return;
+    SymbolDecl const* decl = symbol_find_decl(symbol, SYMBOL_DECL_ENUM_MEMBER);
+    if (!decl || decl->full.source == identifier_expr_name(me).source) return;
+    error_ctx_error_d(errs, identifier_expr_name(me), 1281, "Cannot access '", identifier_expr_name(me), "' from another file "
+        "without qualification when '", options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules",
+        "' is enabled. Use '", enum_scope->container->name, ".", identifier_expr_name(me), "' instead.");
+}
+
 void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* errs) {
     if (my keyword) {
         if ((my keyword == KEYWORD_IDENTIFIER_THIS || (my keyword == KEYWORD_IDENTIFIER_SUPER && !my super_call)) &&
@@ -616,6 +632,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_declared_before_use(me, names, errs);
         check_parameter_reference(me, names, errs);
         check_umd_global_use(me, names, errs);
+        check_isolated_enum_member(me, names, errs);
         my outer_reference = my target->flow_start && names->flow && names->flow->container_start != my target->flow_start;
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {

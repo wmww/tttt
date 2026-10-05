@@ -564,6 +564,25 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
         if (my symbol->decls[i].node == me) own = &my symbol->decls[i];
     }
     Symbol const* counterpart = own && !declared ? same_block_counterpart(my symbol, own) : nullptr;
+    // (tsc's checkModuleDeclarationDiagnostics)
+    if (!declared && my is_ambient_module) {
+        error_ctx_grammar_error_d(errs, my name, 1035, "Only ambient modules can use quoted names.");
+    }
+    CompilerOptions const* options = compiler_options();
+    bool isolated = options->isolated_modules || options->verbatim_module_syntax;
+    if (!declared && !my is_global && (options->erasable_syntax_only || (isolated && !my full_span.source->is_module)) &&
+        namespace_decl_is_instantiated(me)
+    ) {
+        if (options->erasable_syntax_only) {
+            error_ctx_error_d(errs, my name, 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
+        }
+        if (isolated && !my full_span.source->is_module) {
+            error_ctx_error_d(errs, my name, 1280, "Namespaces are not allowed in global script files when '",
+                options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules", "' is enabled. If this "
+                "file is not intended to be a global script, set 'moduleDetection' to 'force' or add an empty 'export {}' "
+                "statement.");
+        }
+    }
     if (!declared && !my is_global && !my is_ambient_module && my symbol && (my symbol->decl_count > 1 || counterpart) &&
         namespace_decl_is_instantiated(me)
     ) {
@@ -2396,6 +2415,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 expr_typecheck(&my expr, errs);
                 ty_check_assignable(current_checker, type, declared, expr_outer_span(&my expr), errs);
                 break;
+            }
+            if (my export_equals && compiler_options()->erasable_syntax_only && !ctx.ambient) { // (tsc's checkExportAssignment)
+                error_ctx_error_d(errs, span_with_semicolon(my span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
             }
             expr_typecheck_export_assignment(&my expr, errs);
             break;

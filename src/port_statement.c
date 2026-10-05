@@ -273,6 +273,10 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             cstr_drop(&name);
         }
     }
+    // (tsc's checkImportEqualsDeclaration)
+    if (compiler_options()->erasable_syntax_only && !ambient && !my jsdoc && (my main.tag == PORT_IMPORT_ALIAS || my is_import_require)) {
+        error_ctx_error_d(errs, span_with_semicolon(span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
+    }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
     // `export * from "./script"` (tsc's checkExportDeclaration: resolveExternalModuleName; aliases say it themselves)
     if (my main.tag == PORT_REEXPORT_SPLAT && my module_ref && my module_ref->file && !my jsdoc && !my wrong_context &&

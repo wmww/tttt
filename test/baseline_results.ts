@@ -11206,7 +11206,7 @@ const baselines = {
         types: true,
     },
     'erasableSyntaxOnly': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18901,7 +18901,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesGlobalNamespacesAndEnums': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26456,7 +26456,7 @@ const baselines = {
         types: true,
     },
     'quotedModuleNameMustBeAmbient': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -57791,7 +57791,7 @@ const baselines = {
         types: true,
     },
     'parserModuleDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

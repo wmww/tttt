@@ -701,6 +701,9 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         } else if (i->is_parameter_property && i->rest) {
             error_ctx_grammar_error_d(errs, i->span, 1317, "A parameter property cannot be declared using a rest parameter.");
         }
+        if (i->is_parameter_property && compiler_options()->erasable_syntax_only) { // (tsc's checkParameter)
+            error_ctx_error_d(errs, i->span, 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
+        }
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
             error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
         }
