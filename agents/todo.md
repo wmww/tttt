@@ -20,8 +20,10 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    129 -> 0 the same session with four sub-agents, who then took effect 61 -> 31, xstate 7 -> 2, drizzle 4 -> 0,
    webpack 6 -> 0 and the sweep 7971 -> 8016 match (react-relay crash fixed). Suite 12768, 0 lost; callgrind within
    +1.2% (measurements.md "VS Code corpus pinned").
-6. **Fan-out: the errors tail** (four Opus sub-agents, disjoint failstats buckets: the 66 "tttt reports nothing"
-   tests, the 117 missing+spurious ones, the spurious TS1xxx/syntaxstats, and missing_checks.md). 0 lost at merge.
+6. Done: fan-out on the errors tail (four agents, then second lists: c's and a's remainders, plan 44's small and
+   medium sweep causes). Suite 12768 -> 12932, errors component failing 356 -> 150, 0 lost; sweep 8016 -> 8072 match,
+   0 timeout; corpora unchanged. Callgrind +0.3..1.1% (new checks tsc also does; six regressions bisected and fixed by
+   their authors). Leftovers by root cause in missing_checks.md (lists p, c, d) and plan 44.
 7. **Planning + execution: parallel name resolution** (plan 36's next step, and plan 41's `-b` lever). Write plan 45
    from what the binder still shares (hacks.md "Parallelism contract audit"), then execute stage 1 if it fits. Threads
    1/4 must stay byte-identical (`./threadcheck.sh`, `./checkerdiff.py`).
@@ -29,7 +31,8 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
    The sweep's ranking (`./sweep.py`, plan 44 "Open root causes": the circular/unresolved `export =` TS2497/TS2305 in
    ~65 webpack-plugin packages first, carbon-components-react's 25 s), effect's 31 (plan 19 "effect": the overload
    reset typing callbacks before a generic-call argument (`tap(acquireRelease(...))`), blocking the `dual<A, B>()`
-   predicate gate), xstate's 2 (plan 19). Sweep and corpus root causes go ahead of suite plans.
+   predicate gate), xstate's 2 (plan 19). Sweep and corpus root causes go ahead of suite plans. (Entry 6's agents already did plan 44's small causes and six
+   medium ones: what's left there is the `export =` item, four medium ones and the large ones.)
 9. **Fan-out: types/symbols tail** (plan 35's queue, `./displaydiff.py --fine`, bugs/display.md), four sub-agents.
 10. **Triage.** Also: the deferred checks tsc does that tttt doesn't (triage.md), hacks.md pruning (725 lines: merge
    or delete entries whose code is gone).
