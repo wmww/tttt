@@ -66,7 +66,9 @@ FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scop
     flow.current = outer->current;
     flow.dead = outer->dead;
     flow.has_flow_effects = outer->has_flow_effects;
-    // Runs with the class: in a parameter's initializer it's still there (tsc's getIsDeferredContext)
+    // Runs with the class: in a parameter's initializer it's still there (tsc's getIsDeferredContext), and in the
+    // initializer of a variable it is (TS2448)
+    flow.initializing = outer->initializing;
     flow.parameter_initializing = outer->parameter_initializing;
     flow.parameter_function_scope = outer->parameter_function_scope;
     flow.return_target = flow_new_branch_label(&flow);

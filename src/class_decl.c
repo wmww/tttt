@@ -271,6 +271,9 @@ void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
                 flow.initializer_context = my field.is_static ? INITIALIZER_STATIC_FIELD : INITIALIZER_INSTANCE_FIELD;
                 flow.initializer_field = me;
                 flow.container = me;
+                // Not deferred: using the variable a class expression initializes is using it in its initializer
+                // (TS2448, tsc's isImmediatelyUsedInInitializerOfBlockScopedVariable stops at functions only)
+                flow.initializing = outer->initializing;
                 if (my field.is_static) {
                     // Evaluated with the class: in a parameter's initializer it's still there (tsc's getIsDeferredContext)
                     flow.parameter_initializing = outer->parameter_initializing;
