@@ -1644,6 +1644,8 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         Ty const* declared = params.data[i];
         while (declared->kind == TY_TYPE_PARAM && declared->param.state->clone_of) declared = declared->param.state->clone_of;
         GenericItem const* item = declared->kind == TY_TYPE_PARAM ? declared->param.state->item : nullptr;
+        // (A copy renamed by inference, `T1`, is a new symbol without declarations: tsc's getUniqueTypeParameterName)
+        if (declared->kind == TY_TYPE_PARAM && declared->param.name != params.data[i]->param.name) item = nullptr;
         if (item && item->is_const) out_lit(d, "const ");
         if (item && item->is_in) out_lit(d, "in ");
         if (item && item->is_out) out_lit(d, "out ");
