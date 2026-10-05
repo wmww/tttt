@@ -2888,7 +2888,7 @@ static PredicateSemantics nullish_semantics(Expr const* me) {
 
 // tsc's checkNullishCoalesceOperands: `??` doesn't mix with `||`/`&&` without parentheses (TS5076), and its left
 // operand has to be possibly nullish, as far as its syntax tells
-// tsc's checkGrammarImportCallExpression (the trailing comma part aside)
+// tsc's checkGrammarImportCallExpression
 static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     ModuleKind module = options->module;
@@ -2906,6 +2906,11 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     VecExpr const* args = &my call->args;
     isize count = vec_expr_size(args);
     bool node = module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT;
+    if (!node && module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE && count > 0) {
+        // (checkGrammarForDisallowedTrailingComma: the AST doesn't keep it, the source does)
+        Span comma = span_comma_after(expr_outer_span(vec_expr_at(args, count - 1)));
+        if (span_valid(comma)) error_ctx_grammar_error_d(errs, comma, 1009, "Trailing comma not allowed.");
+    }
     if (!node && module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE && count > 1) {
         error_ctx_grammar_error_d(errs, expr_outer_span(vec_expr_at(args, 1)), 1324,
             "Dynamic imports only support a second argument when the '--module' option is set to 'esnext', 'node16', "
