@@ -5192,6 +5192,13 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
                         type_move(&item.field.explicit_type)
                     ));
                     vec_interface_member_back_mut(&members)->implicit_any = !item.field.has_explicit_type;
+                    if (item.field.value.tag != EXPR_IMPLICIT_ANY) { // (tsc's checkGrammarProperty)
+                        if (is_declaration) {
+                            grammar_error(&p, expr_outer_span(&item.field.value), 1246, "An interface property cannot have an initializer.");
+                        } else {
+                            grammar_error(&p, expr_outer_span(&item.field.value), 1247, "A type literal property cannot have an initializer.");
+                        }
+                    }
                     break;
 
                 case CLASS_ITEM_INTERFACE_MEMBER:

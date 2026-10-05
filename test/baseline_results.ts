@@ -5856,7 +5856,7 @@ const baselines = {
         types: true,
     },
     'constantEnumAssert': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10941,7 +10941,7 @@ const baselines = {
         types: true,
     },
     'emptyThenWarning': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11131,7 +11131,7 @@ const baselines = {
         types: true,
     },
     'enumWithComputedMember': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -11331,12 +11331,12 @@ const baselines = {
         types: true,
     },
     'errorOnInitializerInInterfaceProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'errorOnInitializerInObjectTypeLiteralProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -48006,7 +48006,7 @@ const baselines = {
         types: true,
     },
     'constAssertions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
