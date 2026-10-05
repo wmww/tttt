@@ -3663,7 +3663,8 @@ Ty const* expr_evaluate_type(Expr const* me) {
 // The target of a destructuring assignment (`[...x] = e`, `({ ...x } = e)`), as the resolve walk marked it
 static bool expr_is_destructuring_target(Expr const* me) {
     return (my tag == EXPR_IDENTIFIER && my identifier.assignment_target) ||
-        (my tag == EXPR_PROPERTY && my property->assignment_target);
+        (my tag == EXPR_PROPERTY && my property->assignment_target) ||
+        ((my tag == EXPR_OBJECT || my tag == EXPR_ARRAY) && my assignment_pattern); // (`[...{ 0: a }] = e`)
 }
 
 // Private names are emitted with WeakMaps and the __classPrivateField* helpers

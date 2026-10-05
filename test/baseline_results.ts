@@ -42236,7 +42236,7 @@ const baselines = {
         types: true,
     },
     'restElementWithAssignmentPattern2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -42246,7 +42246,7 @@ const baselines = {
         types: true,
     },
     'restElementWithAssignmentPattern4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
