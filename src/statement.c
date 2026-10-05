@@ -1923,7 +1923,16 @@ static bool return_typecheck(
         span = span_make(statement->span.source, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);
     }
     Ty const* source = ty_expr_type(checker, expr);
-    if (awaited) source = ty_awaited_returned(checker, source);
+    if (awaited) {
+        // (HACK: see ty_awaited_returned(). An error names the awaited type as tsc's checkAwaitedType makes it,
+        // `Awaited<T>` and all)
+        Ty const* unwrapped = ty_awaited_returned(checker, source);
+        if (unwrapped == source || ty_is_related(checker, unwrapped, target, TY_RELATION_ASSIGNABLE)) {
+            source = unwrapped;
+        } else {
+            source = ty_awaited(checker, source);
+        }
+    }
     return ty_check_assignable_expr(checker, source, target, span, effective, errs);
 }
 

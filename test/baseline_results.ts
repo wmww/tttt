@@ -9941,7 +9941,7 @@ const baselines = {
         types: false,
     },
     'doNotElaborateAssignabilityToTypeParameters': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
