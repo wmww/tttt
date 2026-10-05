@@ -25313,7 +25313,7 @@ const baselines = {
     'parseBigInt': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parseCommaSeparatedNewlineNew': {
         errors: true,
@@ -30208,7 +30208,7 @@ const baselines = {
     'templateLiteralEscapeSequence': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralIntersection': {
         errors: true,

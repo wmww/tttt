@@ -263,8 +263,10 @@ static void escape_error(EscapeErrors* errors, u32 code, const char* at, u32 len
     if (errors->count < c_arraylen(errors->errors)) errors->errors[errors->count++] = (typeof(errors->errors[0])){ code, at, len, 0 };
 }
 
-// After the backslash. An invalid escape stands for its own text (`\u{` in "\u{-1}", like tsc's) and fills `errors`
-static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors) {
+// After the backslash. An invalid escape stands for its own text (`\u{` in "\u{-1}", like tsc's) and fills `errors`.
+// In a tagged template a legacy octal or `\8` is its own text too (tsc's reScanTemplateToken scans them without
+// ReportInvalidEscapeErrors, so they aren't cooked: tag`\5` is "\\5")
+static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors, bool tagged) {
     const char* start = p->pos - 1;
     char c = *p->pos;
     p->pos++;
@@ -289,12 +291,14 @@ static bool parse_string_escape(Parser* p, cstr* str, EscapeErrors* errors) {
             if (*p->pos >= '0' && *p->pos <= '7' && p->pos - start < 4) value = value * 8 + (u32)(*p->pos++ - '0');
             escape_error(errors, 1487, start, (u32)(p->pos - start));
             errors->errors[errors->count - 1].value = value;
-            append_code_point(str, value);
+            if (tagged) cstr_append_n(str, start, p->pos - start);
+            else append_code_point(str, value);
             return false;
         }
         case '8': case '9':
             escape_error(errors, 1488, start, 2);
-            cstr_append_n(str, &c, 1);
+            if (tagged) cstr_append_n(str, start, 2);
+            else cstr_append_n(str, &c, 1);
             return false;
         case '\r':
             if (*p->pos == '\n') p->pos++;
@@ -8786,7 +8790,7 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
         } else if (*p.pos == '\\') {
             p.pos++;
             EscapeErrors errors = {0};
-            if (!parse_string_escape(&p, &str, &errors) && report_escapes) report_escape_errors(&p, &errors);
+            if (!parse_string_escape(&p, &str, &errors, quote == '`' && !report_escapes) && report_escapes) report_escape_errors(&p, &errors);
             continue;
         } else if (*p.pos == '\r') {
             // Ignore?
@@ -8929,7 +8933,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
         } else if (*p.pos == '\\') {
             p.pos++;
             EscapeErrors errors = {0};
-            if (!parse_string_escape(&p, &text, &errors)) report_escape_errors(&p, &errors);
+            if (!parse_string_escape(&p, &text, &errors, false)) report_escape_errors(&p, &errors);
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
             p.pos += 2;
             vec_cstr_push(&template.texts, text);
@@ -9396,7 +9400,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             p.pos++;
             EscapeErrors errors = {0};
             // (An invalid escape is fine in a tagged template)
-            if (!parse_string_escape(&p, &text, &errors) && texts) report_escape_errors(&p, &errors);
+            if (!parse_string_escape(&p, &text, &errors, !texts) && texts) report_escape_errors(&p, &errors);
         } else if (*p.pos == '\r') {
             p.pos++;
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
