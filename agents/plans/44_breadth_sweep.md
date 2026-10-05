@@ -97,8 +97,11 @@ one commit each, `./sweep.py` before/after.
   (it's `never`, from the first pass's `[]` candidate): tsc types it through the nonFixingMapper when the contextual
   signature's rest type is a type parameter (contextuallyCheckFunctionExpressionOrObjectLiteralMethod) and ends up with
   `TArgs[0]`; how exactly (the `[]` candidate is there from the first pass) wasn't pinned down. Needs that first.
-- **Class + interface member conflicts give no TS2300** (selenium-webdriver 22; D/dupMerge*.ts); plus a spurious TS2687
-  for an interface accessor merged with a property.
+- **TS2395 in an export-context declaration file** (selenium-webdriver; `export interface R {..}` + `declare class R
+  {..}` in a .d.ts without `export {}`/`export =`): the binder exports both (tsc's ExportContext), so tttt's
+  check_export_merge sees one symbol and returns, but tsc's getEffectiveDeclarationFlags only adds Export to an ambient
+  declaration *without* the `declare` modifier: the class counts as local, TS2395 on both names. Needs the explicit
+  `export`/`declare` of each declaration in check_export_merge (DeclStatementProps has them, SymbolDecl doesn't).
 
 ### Large / elsewhere
 - **Generic overloads skip the whole context-sensitive literal** (async, steed; C/2769 B): hacks.md

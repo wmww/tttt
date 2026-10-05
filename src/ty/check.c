@@ -2818,6 +2818,63 @@ static void add_meaning(MeaningEntry* entries, u32* count, u32 cap, Atom const* 
 
 static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs);
 
+// The kind of declaration an interface member's declaration span is: `get x`, `set x`, else a property
+static u32 interface_declaration_kind(Span decl) {
+    csview text = decl.sv;
+    bool keyword = text.size > 4 && (text.buf[3] == ' ' || text.buf[3] == '\t' || text.buf[3] == '\n');
+    return keyword && csview_starts_with(text, "get") ? MEMBER_GET : keyword && csview_starts_with(text, "set") ? MEMBER_SET :
+        MEMBER_PROPERTY;
+}
+
+// A class merged with interfaces: tsc binds the instance members of all of them into one members table, in declaration
+// order, so a class getter and an interface property of one name conflict (TS2300 on both, reported once)
+static void check_class_interface_members(Checker* me, Symbol const* symbol, MemberTables* tables, ErrorCtx* errs) {
+    tables->count = 0;
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        SymbolDecl const* decl = &symbol->decls[d];
+        if (decl->kind == SYMBOL_DECL_CLASS) {
+            ClassDecl const* class_decl = decl->node;
+            for_each (i, vec_class_item, &class_decl->items) {
+                if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
+                    for_each (arg, vec_function_arg, &i->constructor.func.args) {
+                        Binding const* binding = &arg->initializer.binding;
+                        if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
+                        declare_member(tables, checker_atom(me, binding->content_span.sv), 0, MEMBER_PROPERTY, binding->content_span, errs);
+                    }
+                    continue;
+                }
+                if ((i->tag != CLASS_ITEM_FIELD && i->tag != CLASS_ITEM_METHOD) || class_item_is_static(i)) continue;
+                if (span_valid(class_item_private_name(i))) continue;
+                bool is_field = i->tag == CLASS_ITEM_FIELD;
+                if (is_field ? i->field.computed_key != nullptr : i->method.computed_key != nullptr) continue;
+                Atom const* name = checker_atom(me, cstr_sv(is_field ? &i->field.name_string : &i->method.name_string));
+                u32 kind = is_field ? (i->field.is_auto_accessor ? MEMBER_GET | MEMBER_SET : MEMBER_PROPERTY) :
+                    i->method.accessor == CLASS_ACCESSOR_GET ? MEMBER_GET :
+                    i->method.accessor == CLASS_ACCESSOR_SET ? MEMBER_SET : MEMBER_METHOD;
+                declare_member(tables, name, 0, kind, is_field ? i->field.name_span : i->method.name_span, errs);
+            }
+        } else if (decl->kind == SYMBOL_DECL_INTERFACE) {
+            InterfaceDecl const* interface_decl = decl->node;
+            for_each (i, vec_interface_member, &interface_decl->type.interface.members) {
+                if (i->key.tag != INTERFACE_KEY_NAME) continue;
+                Atom const* name = checker_atom(me, cstr_sv(&i->key.name_string));
+                if (i->is_method || i->key.name_is_member_function) {
+                    declare_member(tables, name, 0, MEMBER_METHOD, i->key.span, errs);
+                    continue;
+                }
+                // (An accessor pair is one member with a declaration per accessor, written `get x`/`set x`)
+                u32 count;
+                Span const* decls = interface_member_declarations(i, &count);
+                for (u32 k = 0; k < count; k++) {
+                    u32 kind = interface_declaration_kind(decls[k]);
+                    Span at = k > 0 && i->accessor && span_valid(i->accessor->second_name) ? i->accessor->second_name : i->key.span;
+                    declare_member(tables, name, 0, kind, at, errs);
+                }
+            }
+        }
+    }
+}
+
 void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs) {
     // A field after another member of its name and staticness: the symbols merge (a property excludes nothing), and
     // the field is a secondary declaration
@@ -2898,6 +2955,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
     for (u32 d = class_index + 1; symbol && d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
     }
+    if (symbol && symbol->flags & SYMBOL_INTERFACE) check_class_interface_members(me, symbol, tables, errs);
     free(tables);
 }
 
@@ -2973,6 +3031,8 @@ static void collect_class_property_decls(ClassDecl const* class_decl, VecPropert
 static void collect_interface_property_decls(VecInterfaceMember const* members, VecPropertyDeclEntry* out) {
     for_each (i, vec_interface_member, members) {
         if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) continue;
+        // (Accessors aren't variable-like: tsc's checkVariableLikeDeclaration compares property declarations only)
+        if (i->accessor || interface_declaration_kind(i->declaration) != MEMBER_PROPERTY) continue;
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
             .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional,
             .modifiers = i->readonly ? PROPERTY_MOD_READONLY : 0,
