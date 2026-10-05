@@ -1302,6 +1302,35 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
     return ret;
 }
 
+// The name of an empty DOM type a program without the dom lib may declare itself (tsc's
+// /^(?:EventTarget|Node|(?:HTML[a-zA-Z]*)?Element)$/)
+static bool dom_element_name(csview name) {
+    if (csview_equals(name, "EventTarget") || csview_equals(name, "Node") || csview_equals(name, "Element")) return true;
+    if (name.size < 11 || !csview_starts_with(name, "HTML") || !csview_ends_with(name, "Element")) return false;
+    for (isize i = 4; i < name.size - 7; i++) {
+        if (!isalpha((unsigned char)name.buf[i])) return false;
+    }
+    return true;
+}
+
+// tsc's containerSeemsToBeEmptyDomElement: TS2812 suggests the dom lib
+static bool seems_empty_dom_element(Checker* me, Ty const* ty) {
+    csview lib = cstr_sv(&compiler_options()->lib);
+    if (!lib.size) return false;
+    for (isize i = 0; i + 3 <= lib.size; i++) {
+        if (memcmp(lib.buf + i, "dom", 3) == 0 && (i == 0 || lib.buf[i - 1] == ',') && (i + 3 == lib.size || lib.buf[i + 3] == ',' || lib.buf[i + 3] == '.')) {
+            return false;
+        }
+    }
+    TyList parts = ty->kind == TY_INTERSECTION || ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    for (u32 i = 0; i < parts.len; i++) {
+        Ty const* part = parts.data[i];
+        Symbol const* symbol = part->kind == TY_DECLARED ? part->declared.symbol : nullptr;
+        if (!symbol || !dom_element_name(symbol->name) || !ty_is_empty_object_type(me, part)) return false;
+    }
+    return true;
+}
+
 // destructured: a binding element's property (tsc's getIndexedAccessType reports it, without saying which union member
 // lacks it)
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, bool destructured,
@@ -1368,6 +1397,9 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             Span at = span_contains_span(declared->decl->decl_spans[0], name_span) ? name_span : declared->decl->decl_spans[0];
             error_add_related_d(error, at, 2728, "'", atom_sv(suggestion->name), "' is declared here.");
         }
+    } else if (ts_code == 2339 && !destructured && seems_empty_dom_element(me, object)) {
+        error = error_ctx_error_d(errs, span, 2812, "Property '", name, "' does not exist on type '", object_str,
+            "'. Try changing the 'lib' compiler option to include 'dom'.");
     } else {
         error = error_ctx_error_d(errs, span, ts_code, "Property '", name, "' does not exist on type '", object_str, "'.");
     }

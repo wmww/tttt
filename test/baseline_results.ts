@@ -21281,7 +21281,7 @@ const baselines = {
         types: true,
     },
     'missingDomElements': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
