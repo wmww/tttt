@@ -28,6 +28,14 @@ typedef struct IdentifierTypeRare {
     // `A.b` where A is only a type (tsc's checkAndReportErrorForUsingTypeAsNamespace): that type, TS2713 if it has a
     // property b, else TS2702, said when checking (it takes the type's members)
     Symbol const* type_as_namespace;
+    // `A.b.c` where b is a value but not a namespace (tsc's resolveEntityName of a qualified name): said when checking,
+    // TS2749 for the whole name if it reads as a value (`A.b.c` as properties of A's value, tryGetQualifiedNameAsValue),
+    // else TS2713 if b is a type too, else TS2694. `value_member_at`: b's index in namespaces, `value_member_of` the
+    // namespace it is a member of, `first_value` what the first name means as a value
+    Symbol const* value_member;
+    Symbol const* value_member_of;
+    Symbol const* first_value;
+    u32 value_member_at;
 } IdentifierTypeRare;
 
 typedef struct IdentifierType {

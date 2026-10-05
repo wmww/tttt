@@ -319,7 +319,14 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                 // (A member that is a value too is TS2749 for the whole name, tsc's canSuggestTypeof)
                 Symbol const* type = member && !symbol_for_meaning(member, SYMBOL_NAMESPACE | SYMBOL_VALUE) ?
                     symbol_for_meaning(member, SYMBOL_TYPE) : nullptr;
-                if (type) {
+                if (member && !type && !my jsdoc && !symbol_for_meaning(member, SYMBOL_NAMESPACE) && symbol_for_meaning(member, SYMBOL_VALUE)) {
+                    rare->value_member = member;
+                    rare->value_member_of = namespace;
+                    rare->value_member_at = (u32)(i - rare->namespaces.data);
+                    Symbol const* first_found = nullptr;
+                    rare->first_value = scope_get_value(names, rare->namespaces.data[0].sv, &first_found);
+                    decl = nullptr;
+                } else if (type) {
                     // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
                     Span right = i + 1 < rare->namespaces.data + rare->namespaces.size ? i[1] : my name;
                     error_ctx_error_d(errs, right, 2713, "Cannot access '", *i, ".", right, "' because '", *i,
@@ -575,6 +582,33 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
                 "' in '", left, "' with '", left, "[\"", right, "\"]'?");
         } else {
             error_ctx_error_d(errs, left, 2702, "'", left, "' only refers to a type, but is being used as a namespace here.");
+        }
+    }
+    if (rare && rare->value_member) {
+        Checker* checker = current_checker;
+        isize count = vec_span_size(&rare->namespaces);
+        // (tsc's tryGetQualifiedNameAsValue: the names after the first are properties of the value)
+        Ty const* value = rare->first_value && !rare->first_value->is_placeholder ? ty_type_of_symbol(checker, rare->first_value) : nullptr;
+        for (isize k = 1; value && k <= count; k++) {
+            Span part = k < count ? rare->namespaces.data[k] : my name;
+            value = ty_prop_type_of(checker, ty_apparent_type(checker, value), checker_atom(checker, part.sv));
+        }
+        u32 at = rare->value_member_at;
+        Span member = rare->namespaces.data[at];
+        Span right = (isize)at + 1 < count ? rare->namespaces.data[at + 1] : my name;
+        if (value) {
+            cstr name = identifier_type_make_name_str(me);
+            error_ctx_error_d(errs, span_between(rare->namespaces.data[0], my name), 2749, "'", name, "' refers to a value, "
+                "but is being used as a type here. Did you mean 'typeof ", name, "'?");
+            cstr_drop(&name);
+        } else if (symbol_for_meaning(rare->value_member, SYMBOL_TYPE)) {
+            error_ctx_error_d(errs, right, 2713, "Cannot access '", member, ".", right, "' because '", member,
+                "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
+                "' in '", member, "' with '", member, "[\"", right, "\"]'?");
+        } else {
+            cstr qualified = symbol_fully_qualified_name(rare->value_member_of);
+            error_ctx_error_d(errs, member, 2694, "Namespace '", qualified, "' has no exported member '", member, "'.");
+            cstr_drop(&qualified);
         }
     }
     // tsc's getTypeFromTypeReference: a referenced alias is resolved (TS2456 if that is circular)

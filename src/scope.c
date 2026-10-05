@@ -2296,6 +2296,14 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         Symbol* found = symbol_get_export(container, name.sv);
         Symbol* next = resolve_if_pure_alias(found);
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
+            if (next && !last && (symbol_resolved_flags(next) & SYMBOL_TYPE)) {
+                // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
+                Span right = *vec_span_at(&item->alias_path, i + 1);
+                error_ctx_error_d(errs, right, 2713, "Cannot access '", name, ".", right, "' because '", name,
+                    "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
+                    "' in '", name, "' with '", name, "[\"", right, "\"]'?");
+                return nullptr;
+            }
             cstr qualified = symbol_fully_qualified_name(container);
             if (!scope_report_misspelled_export(container, name, cstr_sv(&qualified), errs)) {
                 error_ctx_error_d(errs, name, 2694, "Namespace '", qualified, "' has no exported member '", name, "'.");
