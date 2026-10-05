@@ -660,7 +660,7 @@ static void js_syntax_error_s(Parser* me, Span span, unsigned ts_code, cstr mess
         cstr_drop(&message);
         return;
     }
-    add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_PARSE });
+    add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code, .phase = ERROR_PHASE_PARSE, .js_syntax = true });
 }
 
 #define js_syntax_error(me, span, ts_code, ...) js_syntax_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
@@ -12918,6 +12918,37 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         return parse_fail(&p);
     }
     hop_whitespace(&p);
+    if (modifiers.includes[MODIFIER_EXPORT] && !modifiers.includes[MODIFIER_EXPORT_DEFAULT] && *p.pos == '@') {
+        // `export @dec default class C {}`: a default export whose decorators are where none are valid (tsc's
+        // checkGrammarModifiers, in JavaScript getJSSyntacticDiagnosticsForFile: TS1206 at the first)
+        Parser q = parser(&p);
+        char const* at = q.pos;
+        VecExpr between = {0};
+        if (parse_decorators(&q, &between)) {
+            hop_whitespace(&q);
+            Parser c = parser(&q);
+            bool is_default = hop_start_if_ends_on_word_break(&c, "default");
+            hop_whitespace(&c);
+            is_default = is_default && (starts_with_followed_by_word_break(&c, "class") || starts_with_followed_by_word_break(&c, "abstract"));
+            if (is_default) {
+                parse_success(&c);
+                parse_success(&q);
+                Span first = span_make(p.shared->source, at, span_end_ptr(expr_outer_span(vec_expr_at(&between, 0))));
+                if (p.shared->source->is_js) js_syntax_error(&p, first, 1206, "Decorators are not valid here.");
+                else grammar_error(&p, first, 1206, "Decorators are not valid here.");
+                if (vec_expr_is_empty(&decorators)) decorators_span = first;
+                for_each (i, vec_expr, &between) vec_expr_push(&decorators, *i);
+                between.size = 0;
+                modifiers.includes[MODIFIER_EXPORT_DEFAULT] = true;
+            } else {
+                parse_fail(&c);
+                parse_fail(&q);
+            }
+        } else {
+            parse_fail(&q);
+        }
+        vec_expr_drop(&between);
+    }
     const char* keyword = p.pos;
     DeclStatementProps decl_props = {
         .exported = modifiers.includes[MODIFIER_EXPORT_DEFAULT] ?
@@ -13120,6 +13151,24 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 
     if (!vec_expr_is_empty(&decorators)) {
         if (ret->tag == STATEMENT_DECL_CLASS) {
+            if (!vec_expr_is_empty(&ret->decl.class->decorators)) {
+                // Decorators both before and after `export` (tsc's checkGrammarModifiers: at the first after)
+                char const* at = span_start_ptr(expr_outer_span(vec_expr_at(&ret->decl.class->decorators, 0)));
+                char const* file_start = source_file_start(p.shared->source);
+                while (at > file_start && *at != '@') at--;
+                Span trailing = expr_outer_span(vec_expr_at(&ret->decl.class->decorators, 0));
+                Span trailing_span = span_make(p.shared->source, at, span_end_ptr(trailing));
+                cstr message = cstr_from("Decorators may not appear after 'export' or 'export default' if they also appear before 'export'.");
+                // (In JavaScript one of tsc's getJSSyntacticDiagnosticsForFile, whatever else the file has)
+                Error* error = !p.shared->source->is_js ? grammar_error_s(&p, trailing_span, 8038, message) :
+                    reports_js_syntax(&p) ? add_error_to_parser(&p, (Error){ .message = message, .span = trailing_span,
+                        .ts_code = 8038, .phase = ERROR_PHASE_PARSE }) : (cstr_drop(&message), nullptr);
+                if (error) {
+                    Span leading = expr_outer_span(vec_expr_at(&decorators, 0));
+                    error_add_related_d(error, span_make(p.shared->source, decorators_span.sv.buf, span_end_ptr(leading)),
+                        1486, "Decorator used before 'export' here.");
+                }
+            }
             // These come before any that parse_class_decl() found after `export`
             for_each (i, vec_expr, &ret->decl.class->decorators) {
                 vec_expr_push(&decorators, *i);
@@ -13724,8 +13773,8 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     source->parse_error_starts = nullptr;
     source->parse_error_count = 0;
     for_each (i, vec_error, &shared.errors) {
-        i->grammar |= is_grammar_code(i->ts_code);
-        if (i->grammar || is_js_syntax_code(i->ts_code)) continue;
+        i->grammar |= is_grammar_code(i->ts_code) && !i->js_syntax;
+        if (i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code)) continue;
         source->has_parse_errors = true;
         source->parse_error_starts = realloc(source->parse_error_starts, sizeof(char const*) * (source->parse_error_count + 1));
         source->parse_error_starts[source->parse_error_count++] = span_start_ptr(i->span);

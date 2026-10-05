@@ -24,6 +24,9 @@ typedef struct Error {
     bool detached; // Related information without a location (tsc's createDetachedDiagnostic)
     // A grammar error the parser reports (tsc's checker's): not one parse error per position, see parse_file()
     bool grammar;
+    // One of tsc's getJSSyntacticDiagnosticsForFile (a JavaScript file's TypeScript-only syntax): reported whatever the
+    // file's parse errors and in unchecked JavaScript, even with a grammar error's code (TS1206)
+    bool js_syntax;
     bool suggestion; // tsc's DiagnosticCategory.Suggestion (only with CompilerOptions.capture_suggestions)
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order

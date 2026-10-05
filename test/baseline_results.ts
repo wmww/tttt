@@ -45781,8 +45781,8 @@ const baselines = {
         types: false,
     },
     'esDecorators-classDeclaration-exportModifier': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'esDecorators-classDeclaration-missingEmitHelpers-classDecorator.1': {
