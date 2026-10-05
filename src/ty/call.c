@@ -302,12 +302,20 @@ static bool waits_for_sensitive(Arg const* arg) {
 
 // `skip_sensitive`: leave out the context-sensitive arguments, which a contextual type would type for good (tsc's
 // CheckMode.SkipContextSensitive, while it's not known yet which overload they'll be checked against)
-static void check_args_skipping(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive, bool skip_generic_functions) {
-    for (u32 i = 0; i < args->len; i++) {
-        if (skip_sensitive && waits_for_sensitive(&args->data[i])) continue;
-        if (skip_generic_functions && args->data[i].generic_function) continue;
-        check_arg(me, shape, args, i);
+static bool skipped_arg(Arg const* arg, bool skip_sensitive, bool skip_generic_functions) {
+    return (skip_sensitive && waits_for_sensitive(arg)) || (skip_generic_functions && arg->generic_function);
+}
+
+static void check_args_from(
+    Checker* me, ParamShape const* shape, Args* args, u32 from, bool skip_sensitive, bool skip_generic_functions
+) {
+    for (u32 i = from; i < args->len; i++) {
+        if (!skipped_arg(&args->data[i], skip_sensitive, skip_generic_functions)) check_arg(me, shape, args, i);
     }
+}
+
+static void check_args_skipping(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive, bool skip_generic_functions) {
+    check_args_from(me, shape, args, 0, skip_sensitive, skip_generic_functions);
 }
 
 static void check_args(Checker* me, ParamShape const* shape, Args* args, bool skip_sensitive) {
@@ -1110,6 +1118,22 @@ static TyMapper const* infer_type_arguments(
 
 // Applicability
 
+// No argument for a rest parameter that isn't an array: it still gets `[]` (tsc's checkApplicableSignature with
+// getNonArrayRestType), reported at the call (the index past the arguments)
+static i32 unfit_missing_rest(
+    Checker* me, ParamShape const* shape, Args const* args, TyRelation relation, Ty const** arg_type, Ty const** param_type
+) {
+    if (shape->rest_variadic && args->len <= shape->count && args->spread_index < 0 && !args->incomplete) {
+        Ty const* source = rest_args_tuple(me, args, args->len, false, false);
+        if (!ty_is_related(me, source, shape->rest_variadic, relation)) {
+            *arg_type = source;
+            *param_type = shape->rest_variadic;
+            return (i32)args->len;
+        }
+    }
+    return -1;
+}
+
 // The first argument that doesn't fit, -1 if they all do. `*param_type` is what it should have fit, `*arg_type` what
 // it is (a tuple of the remaining arguments for a variadic rest parameter)
 static i32 first_unfit_argument_skipping(
@@ -1119,7 +1143,7 @@ static i32 first_unfit_argument_skipping(
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
         // (A generic function argument skipped by the inference is tsc's anyFunctionType, which fits)
-        if ((skip_sensitive && waits_for_sensitive(arg)) || (skip_generic_functions && arg->generic_function)) {
+        if (skipped_arg(arg, skip_sensitive, skip_generic_functions)) {
             if (i >= shape->count && shape->rest_variadic) break;
             continue;
         }
@@ -1143,17 +1167,51 @@ static i32 first_unfit_argument_skipping(
         }
         if (i >= shape->count && shape->rest_variadic) break;
     }
-    // No argument for a rest parameter that isn't an array: it still gets `[]` (tsc's checkApplicableSignature with
-    // getNonArrayRestType), reported at the call (the index past the arguments)
-    if (shape->rest_variadic && args->len <= shape->count && args->spread_index < 0 && !args->incomplete) {
-        Ty const* source = rest_args_tuple(me, args, args->len, false, false);
-        if (!ty_is_related(me, source, shape->rest_variadic, relation)) {
-            *arg_type = source;
-            *param_type = shape->rest_variadic;
-            return (i32)args->len;
+    return unfit_missing_rest(me, shape, args, relation, arg_type, param_type);
+}
+
+// check_args_skipping() and first_unfit_argument_skipping() at once, an argument checked just before it's related as
+// tsc's getSignatureApplicabilityError does: the arguments after the first that doesn't fit aren't checked against
+// this candidate (the next candidate or the error report checks them again), which saves checking them for every
+// overload a call tries (twice with several: the subtype round, then the assignable one)
+static i32 check_args_until_unfit(
+    Checker* me, ParamShape const* shape, Args* args, TyRelation relation, bool skip_sensitive,
+    bool skip_generic_functions, Ty const** arg_type, Ty const** param_type
+) {
+    u32 checked = 0;
+    for (u32 i = 0; i < args->len; i++) {
+        Arg const* arg = &args->data[i];
+        if (skipped_arg(arg, skip_sensitive, skip_generic_functions)) {
+            if (i >= shape->count && shape->rest_variadic) break;
+            continue;
         }
+        bool variadic = i >= shape->count && !shape->rest_element && shape->rest_variadic;
+        if (i >= shape->count && !shape->rest_element && !shape->rest_variadic) break;
+        if (variadic) {
+            check_args_from(me, shape, args, checked, skip_sensitive, skip_generic_functions);
+            checked = args->len;
+        } else {
+            for (; checked <= i; checked++) {
+                if (!skipped_arg(&args->data[checked], skip_sensitive, skip_generic_functions)) check_arg(me, shape, args, checked);
+            }
+        }
+        Ty const* source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
+        Ty const* target;
+        if (!variadic) {
+            target = i < shape->count ? shape->types[i] : shape->rest_element;
+        } else {
+            source = rest_args_tuple(me, args, i, false, false);
+            target = shape->rest_variadic;
+        }
+        if (!ty_is_related(me, source, target, relation)) {
+            *arg_type = source;
+            *param_type = target;
+            return (i32)i;
+        }
+        if (variadic) break;
     }
-    return -1;
+    check_args_from(me, shape, args, checked, skip_sensitive, skip_generic_functions);
+    return unfit_missing_rest(me, shape, args, relation, arg_type, param_type);
 }
 
 // tsc's CheckMode.SkipContextSensitive checks a context-sensitive object or array literal argument too, its
@@ -1746,10 +1804,9 @@ static Resolution resolve_with_signatures(
             ParamShape shape = call_param_shape(me, info, sig, candidate.mapper);
             // (With a generic function left out, the generic calls among the arguments wait too: checking them now
             // would type their functions for good against what isn't inferred yet)
-            check_args_skipping(me, &shape, args, skip_sensitive || skipped_generic, skipped_generic);
             Ty const* arg_type;
             Ty const* param_type;
-            bool fits = first_unfit_argument_skipping(me, &shape, args, rounds[round], skip_sensitive || skipped_generic,
+            bool fits = check_args_until_unfit(me, &shape, args, rounds[round], skip_sensitive || skipped_generic,
                 skipped_generic, &arg_type, &param_type) < 0;
             if (fits && skip_sensitive && count > 1 && !sig->type_params.len) {
                 fits = first_unfit_skipped_literal(me, &shape, args, rounds[round]) < 0;
@@ -1760,8 +1817,7 @@ static Resolution resolve_with_signatures(
                 free(shape.types);
                 candidate = make_candidate(me, sig, args, info, false, false);
                 shape = call_param_shape(me, info, sig, candidate.mapper);
-                check_args(me, &shape, args, false);
-                fits = first_unfit_argument(me, &shape, args, rounds[round], false, &arg_type, &param_type) < 0;
+                fits = check_args_until_unfit(me, &shape, args, rounds[round], false, false, &arg_type, &param_type) < 0;
             }
             fits = fits && this_fits(me, &candidate, info, rounds[round]);
             if (fits) {
