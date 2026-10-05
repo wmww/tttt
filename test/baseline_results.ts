@@ -11101,7 +11101,7 @@ const baselines = {
         types: true,
     },
     'enumNoInitializerFollowsNonLiteralInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

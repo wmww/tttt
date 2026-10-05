@@ -90,11 +90,29 @@ static void enum_decl_check_declarations(EnumDecl const* me, ErrorCtx* errs) {
     }
 }
 
+// Whether evaluating an enum initializer reads a declaration of another file (tsc's evaluator: resolvedOtherFiles)
+static bool references_other_file(Expr const* expr, SourceFile const* file) {
+    switch (expr->tag) {
+        case EXPR_IDENTIFIER: {
+            // (The evaluator knows Infinity and NaN itself)
+            if (span_equals(expr->inner_span, "Infinity") || span_equals(expr->inner_span, "NaN")) return false;
+            Symbol const* target = expr->identifier.target;
+            return target && target->decl_count && target->decls[0].full.source && target->decls[0].full.source != file;
+        }
+        case EXPR_PROPERTY: return references_other_file(&expr->property->expr, file);
+        case EXPR_BINARY_OP:
+            return references_other_file(&expr->binary_op->left, file) || references_other_file(&expr->binary_op->right, file);
+        case EXPR_UNARY_OP: return references_other_file(&expr->unary_op->expr, file);
+        default: return false;
+    }
+}
+
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
     if (compiler_options()->erasable_syntax_only && !my ambient) { // (tsc's checkEnumDeclarationWorker)
         error_ctx_error_d(errs, my name, 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
     }
     bool previous_number = true; // (The first member's automatic value is 0)
+    bool previous_other_file = false;
     for_each (i, vec_enum_case, &my cases) {
         if (!i->name_is_value && i->name.sv.size && i->name.sv.buf[0] == '#') { // tsc's checkEnumMember
             error_ctx_error_d(errs, i->name, 18024, "An enum member cannot be named with a private identifier.");
@@ -104,9 +122,16 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
         bool auto_number = previous_number;
         previous_number = false;
         if (i->value.tag == EXPR_IMPLICIT_ANY && (!my ambient || my is_const)) {
-            if (!auto_number) error_ctx_error_d(errs, i->full_name, 1061, "Enum member must have initializer.");
+            if (!auto_number) {
+                error_ctx_error_d(errs, i->full_name, 1061, "Enum member must have initializer.");
+            } else if (previous_other_file && compiler_options()->isolated_modules) {
+                // (A number that took another file to compute: tsc's resolvedOtherFiles)
+                error_ctx_error_d(errs, i->full_name, 18056, "Enum member following a non-literal numeric member must have "
+                    "an initializer when 'isolatedModules' is enabled.");
+            }
             previous_number = auto_number && !i->computed_name;
         }
+        previous_other_file = i->value.tag != EXPR_IMPLICIT_ANY && references_other_file(&i->value, my name.source);
         current_checker->enum_member_initializer = &i->value;
         expr_typecheck(&i->value, errs);
         current_checker->enum_member_initializer = nullptr;
