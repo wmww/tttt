@@ -1459,6 +1459,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             ) {
                 error_ctx_error_d(errs, my labeled.name, 1344, "'A label is not allowed here.");
             }
+            // (A type alias under a label isn't visible: tsc's isDeclarationVisible, the container is the label)
+            if (body->tag == STATEMENT_DECL_TYPE) body->decl.type->local = true;
             FlowNode* post = flow_new_branch_label(flow);
             FlowActiveLabel label = { .next = flow->active_labels, .name = my labeled.name, .break_target = post };
             flow->active_labels = &label;

@@ -63373,17 +63373,17 @@ const baselines = {
     'labeledStatementWithLabel': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'labeledStatementWithLabel_es2015': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'labeledStatementWithLabel_strict': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidReturnStatements': {
         errors: true,
