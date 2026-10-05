@@ -35496,7 +35496,7 @@ const baselines = {
         types: true,
     },
     'classConstructorOverloadsAccessibility': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

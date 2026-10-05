@@ -1277,6 +1277,29 @@ static Span overload_name(ClassItem const* item) {
 // optionality (TS2386)
 static void class_check_overload_agreement(ClassDecl const* me, ErrorCtx* errs) {
     isize count = vec_class_item_size(&my items);
+    // The constructors, in accessibility
+    {
+        ClassItem const* first = nullptr;
+        ClassItem const* implementation = nullptr;
+        bool overloads = false, differ = false;
+        for (isize j = 0; j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            if (other->tag != CLASS_ITEM_CONSTRUCTOR) continue;
+            if (!first) first = other;
+            differ |= other->access != first->access;
+            if (other->constructor.func.has_body) {
+                if (!implementation) implementation = other;
+            } else {
+                overloads = true;
+            }
+        }
+        ClassItem const* canonical = implementation ? implementation : first;
+        for (isize j = 0; overloads && differ && j < count; j++) {
+            ClassItem const* other = vec_class_item_at(&my items, j);
+            if (other->tag != CLASS_ITEM_CONSTRUCTOR || other->access == canonical->access) continue;
+            error_ctx_error_d(errs, other->constructor.name_span, 2385, "Overload signatures must all be public, private or protected.");
+        }
+    }
     for (isize i = 0; i < count; i++) {
         ClassItem const* item = vec_class_item_at(&my items, i);
         if (item->tag != CLASS_ITEM_METHOD || item->method.accessor || !bindable_method(item)) continue;

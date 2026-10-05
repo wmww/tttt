@@ -1841,6 +1841,15 @@ bool ty_implementation_compatible_with_overload(Checker* me, Signature const* im
     copy->ret_state = LAZY_STATE_DONE;
     copy->predicate = nullptr;
     copy->predicate_done = true;
+    // (compareSignaturesRelated, not signaturesRelatedTo: a constructor's accessibility or abstractness doesn't matter,
+    // so both are compared as call signatures)
+    copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
+    if (source->flags & SIGNATURE_CONSTRUCT) {
+        Signature* source_copy = arena_new(&my arena, Signature);
+        *source_copy = *source;
+        source_copy->flags &= ~(u32)SIGNATURE_CONSTRUCT;
+        source = source_copy;
+    }
     Ty const* source_type = ty_signature_type(me, source);
     return ty_is_related(me, source_type, ty_signature_type(me, copy), TY_RELATION_ASSIGNABLE);
 }
