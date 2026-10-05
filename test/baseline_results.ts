@@ -49926,8 +49926,8 @@ const baselines = {
         types: true,
     },
     'umd-errors': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'umd1': {
@@ -58886,7 +58886,7 @@ const baselines = {
         types: true,
     },
     'parserReturnStatement1.d': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61131,9 +61131,9 @@ const baselines = {
         types: true,
     },
     'scannerStringLiteralWithContainingNullCharacter1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'scannerStringLiterals': {
         errors: true,
