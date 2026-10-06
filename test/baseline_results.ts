@@ -47667,7 +47667,7 @@ const baselines = {
     },
     'objectLiteralNormalization': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'incrementAndDecrement': {

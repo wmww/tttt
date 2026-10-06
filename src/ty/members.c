@@ -4120,6 +4120,11 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         // stores for an optional property) drops, so `x?: never` (also how tsc prints it). Index signatures and
         // optional targets accept it; reading it still gives undefined
         bool exact = compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks;
+        // (One symbol per name for the whole program, made of the first property it was needed for: tsc's
+        // undefinedProperties cache. Only its declarations show, in the symbols baseline)
+        void const** cached = intern_slot(me, &my links, (u64[]){ KEY_UNDEFINED_PROPERTY, (u64)(uintptr_t)prop->name }, 2);
+        if (!*cached) *cached = prop;
+        Prop const* first = *cached;
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
             .flags = PROP_OPTIONAL,
@@ -4127,8 +4132,8 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .name_span = prop->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop->decl->name_type,
-            .decl_spans = prop->decl->decl_spans,
-            .decl_span_count = prop->decl->decl_span_count,
+            .decl_spans = first->decl->decl_spans,
+            .decl_span_count = first->decl->decl_span_count,
             .name_is_value = prop->decl->name_is_value,
         };
     }
