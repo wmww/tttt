@@ -262,6 +262,9 @@ void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, struct Erro
 // 0-based index of the line `pos` (which must point into the contents, or at their end) is on
 unsigned source_file_line_index(SourceFile const* me, const char* pos);
 
+// tsc's getErrorSpanForNode of a source file: its first token after trivia
+Span source_file_first_token(SourceFile const* file);
+
 static inline const char* source_file_start(SourceFile const* me) {
     return cstr_str(&my contents);
 }

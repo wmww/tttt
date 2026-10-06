@@ -2024,26 +2024,6 @@ static void program_apply_comment_directives(Program* me, ErrorPhase phase) {
 }
 
 // TS2578 for every @ts-expect-error nothing was reported under, once all semantic diagnostics are in
-// tsc's getErrorSpanForNode of a source file: its first token after trivia
-static Span file_first_token(SourceFile const* file) {
-    char const* text = source_file_start(file);
-    char const* end = text + cstr_size(&file->contents);
-    char const* c = text;
-    while (c < end) {
-        if (isspace((unsigned char)*c)) c++;
-        else if (c + 1 < end && c[0] == '/' && c[1] == '/') { while (c < end && *c != '\n') c++; }
-        else if (c + 1 < end && c[0] == '/' && c[1] == '*') {
-            c += 2;
-            while (c + 1 < end && !(c[0] == '*' && c[1] == '/')) c++;
-            c = c + 2 < end ? c + 2 : end;
-        } else break;
-    }
-    char const* token_end = c;
-    while (token_end < end && (isalnum((unsigned char)*token_end) || *token_end == '_' || *token_end == '$')) token_end++;
-    if (token_end == c && c < end) token_end++;
-    return span_make(file, c, token_end);
-}
-
 // A duplicate between two files: the other file (of its "was also declared here"), else null
 static SourceFile const* cross_file_duplicate_other(Error const* e) {
     if ((e->ts_code != 2300 && e->ts_code != 2451) || !span_valid(e->span) || !e->span.source) return nullptr;
@@ -2064,15 +2044,19 @@ static void program_amalgamate_duplicates(Program* me) {
         SourceFile const* other = cross_file_duplicate_other(seed);
         if (!other) continue;
         SourceFile const* a = seed->span.source;
-        // The pair's names, the first file's (by path) in order
+        // The pair's errors, the first file's (by path) first
         SourceFile const* first = cstr_cmp(&a->canonical_path, &other->canonical_path) < 0 ? a : other;
         SourceFile const* second = first == a ? other : a;
+        // The names in the order of the file merged into the other's symbols, the later one in the program (tsc's
+        // mergeSymbolTable walks the source's table, its declaration order)
+        SourceFile const* merged = a->program_order > other->program_order ? a : other;
+        SourceFile const* into = merged == a ? other : a;
         cstr names = cstr_null;
         isize name_count = 0;
         for (int side = 0; side < 2; side++) {
             for_each (e, vec_error, errors) {
                 SourceFile const* o = cross_file_duplicate_other(e);
-                if (!o || e->span.source != (side ? second : first) || o != (side ? first : second)) continue;
+                if (!o || e->span.source != (side ? into : merged) || o != (side ? merged : into)) continue;
                 csview name = e->span.sv;
                 bool seen = false;
                 for (isize at = 0; at < cstr_size(&names) && !seen;) {
@@ -2102,9 +2086,9 @@ static void program_amalgamate_duplicates(Program* me) {
             SourceFile const* there = side ? first : second;
             Error error = {
                 .message = cstr_d("Definitions of the following identifiers conflict with those in another file: ", names),
-                .span = file_first_token(here), .ts_code = 6200, .phase = ERROR_PHASE_TYPECHECK,
+                .span = source_file_first_token(here), .ts_code = 6200, .phase = ERROR_PHASE_TYPECHECK,
             };
-            error_add_related_d(&error, file_first_token(there), 6201, "Conflicts are in this file.");
+            error_add_related_d(&error, source_file_first_token(there), 6201, "Conflicts are in this file.");
             vec_error_push(errors, error);
         }
         cstr_drop(&names);

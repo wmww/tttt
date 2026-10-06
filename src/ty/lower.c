@@ -1077,36 +1077,11 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
 
 // The `module` of a CommonJS file: `{ exports: <what the module exports> }` (tsc builds it in
 // getTypeOfVariableOrParameterOrPropertyWorker for SymbolFlags.ModuleExports)
-// The first token of a file (tsc's getErrorSpanForNode of a SourceFile: skipTrivia from its start)
-static char const* file_first_token(SourceFile const* file) {
-    char const* at = source_file_start(file);
-    char const* end = at + cstr_size(&file->contents);
-    if (end - at >= 2 && at[0] == '#' && at[1] == '!') {
-        while (at < end && *at != '\n' && *at != '\r') at++;
-    }
-    while (at < end) {
-        if (*at == ' ' || *at == '\t' || *at == '\n' || *at == '\r' || *at == '\v' || *at == '\f') {
-            at++;
-        } else if (end - at >= 3 && (unsigned char)at[0] == 0xEF && (unsigned char)at[1] == 0xBB && (unsigned char)at[2] == 0xBF) {
-            at += 3;
-        } else if (end - at >= 2 && at[0] == '/' && at[1] == '/') {
-            while (at < end && *at != '\n' && *at != '\r') at++;
-        } else if (end - at >= 2 && at[0] == '/' && at[1] == '*') {
-            char const* close = at + 2;
-            while (close + 1 < end && !(close[0] == '*' && close[1] == '/')) close++;
-            at = close + 1 < end ? close + 2 : end;
-        } else {
-            break;
-        }
-    }
-    return at;
-}
-
 Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
     Symbol* module = file->scope ? file->scope->container : nullptr;
     if (!module) return ty_intrinsic(me, TY_ANY);
     Span* file_span = arena_new(&my arena, Span);
-    *file_span = (Span){ .source = file, .sv = csview_from_n(file_first_token(file), 0) };
+    *file_span = (Span){ .source = file, .sv = csview_from_n(source_file_first_token(file).sv.buf, 0) };
     Ty const* exports = ty_commonjs_exports_type(me, file);
     ObjectLiteralProp prop = {
         .name = checker_atom(me, c_sv("exports")),

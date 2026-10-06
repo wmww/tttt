@@ -460,3 +460,26 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
         report_unsafe_rewrite(me, errs);
     }
 }
+
+// tsc's getErrorSpanForNode of a source file: its first token after trivia
+Span source_file_first_token(SourceFile const* file) {
+    char const* text = source_file_start(file);
+    char const* end = text + cstr_size(&file->contents);
+    char const* c = text;
+    if (end - c >= 2 && c[0] == '#' && c[1] == '!') {
+        while (c < end && *c != '\n') c++;
+    }
+    while (c < end) {
+        if (isspace((unsigned char)*c)) c++;
+        else if (c + 1 < end && c[0] == '/' && c[1] == '/') { while (c < end && *c != '\n') c++; }
+        else if (c + 1 < end && c[0] == '/' && c[1] == '*') {
+            c += 2;
+            while (c + 1 < end && !(c[0] == '*' && c[1] == '/')) c++;
+            c = c + 2 < end ? c + 2 : end;
+        } else break;
+    }
+    char const* token_end = c;
+    while (token_end < end && (isalnum((unsigned char)*token_end) || *token_end == '_' || *token_end == '$')) token_end++;
+    if (token_end == c && c < end) token_end++;
+    return span_make(file, c, token_end);
+}
