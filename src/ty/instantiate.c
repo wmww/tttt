@@ -80,9 +80,8 @@ TyMapper const* ty_compose_mappers(Checker* me, TyMapper const* inner, TyMapper 
 // maps its outer type parameters only): the recursive `Split<B, D>` in the true branch of `S extends `${infer A}.${infer
 // B}` ? [A, ...Split<B, D>] : [S]` gets the outer B for its check type, not for its own `infer B`
 TyList ty_conditional_own_infers(Checker* me, Ty const* root) {
-    u64 key[2] = { KEY_CONDITIONAL_INFERS, root->id };
-    TyList const* infers = intern_get(&my links, key, 2);
-    return infers ? *infers : (TyList){0};
+    (void)me;
+    return root->conditional.outer ? root->conditional.outer->infers : (TyList){0};
 }
 
 TyMapper const* ty_mapper_without(Checker* me, TyMapper const* mapper, TyList params) {

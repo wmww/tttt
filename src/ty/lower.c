@@ -947,9 +947,10 @@ static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* nod
     return outer;
 }
 
-static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node, TyList alias_args) {
+static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node, TyList alias_args, TyList infers) {
     if (root->conditional.outer) return;
     TyConditionalOuter* outer = collect_outer_params(me, node);
+    outer->infers = ty_list_copy(me, infers.data, infers.len);
     // An alias's body keeps the alias's type parameters it doesn't mention too (tsc's getTypeFromConditionalTypeNode
     // filters by isTypeParameterPossiblyReferenced only without an alias): instantiation names a deferred instance by
     // the root's alias with its arguments through the instance's mapper (instantiate.c), `C<X, number>`, not `C<X, U>`
@@ -3432,13 +3433,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             if (ret->kind == TY_CONDITIONAL && ret->conditional.root == ret) {
                 // Instantiation must leave them alone: they're this conditional type's own, whatever an outer one of
                 // the same declaration inferred (`Split<B, D>` in the true branch of Split, see instantiate.c)
-                u64 key[2] = { KEY_CONDITIONAL_INFERS, ret->id };
-                if (infers.len && !intern_get(&my links, key, 2)) {
-                    TyList* list = arena_new(&my arena, TyList);
-                    *list = ty_list_copy(me, infers.data, infers.len);
-                    *intern_slot(me, &my links, key, 2) = list;
-                }
-                conditional_set_outer(me, ret, node, alias ? alias_args : (TyList){0});
+                conditional_set_outer(
+                    me, ret, node, alias ? alias_args : (TyList){0}, (TyList){ .data = infers.data, .len = infers.len }
+                );
             }
             ty_buf_drop(&infers);
             if (!alias || ret->kind != TY_CONDITIONAL) return ret;

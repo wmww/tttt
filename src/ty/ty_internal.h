@@ -33,7 +33,6 @@ enum {
     KEY_STRING_MAPPING,
     KEY_MAPPED_KEY_PARAM, // MappedInfo -> TyMapper from its key type parameter to a constrained stand-in
     KEY_INSTANTIATION_QUERY, // instantiation expression type id -> the `typeof f<T>` TypeNode that first lowered to it
-    KEY_CONDITIONAL_INFERS, // root conditional type id -> TyList* of the `infer` type parameters its extends type declares
     KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT, // The same, instantiated for a distributive constraint (Checker.for_constraint_root)
     KEY_CONDITIONAL_INSTANCE, // (root conditional type id, what its outer type parameters map to) -> Ty
     // First word of every key in Checker.links
@@ -141,6 +140,7 @@ enum {
 // the ones it can't reference). Instantiation only looks at what these map to, and caches by that
 typedef struct TyConditionalOuter {
     TyList params;
+    TyList infers; // The `infer` type parameters its extends type declares: its own, which instantiation leaves alone
     bool unknown; // It has parts that aren't syntax (`this`, `typeof x`): every type parameter could matter
     // A Block lies between the node and its check type parameter's declaration (the parameter is declared before the
     // innermost Block it's written in): tsc's isTypeParameterPossiblyReferenced says the branches may mention it
