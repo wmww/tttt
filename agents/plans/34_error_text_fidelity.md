@@ -35,6 +35,33 @@ up are in `triage.md`.
   jsxChildrenWrongType (an optional tuple element's missing type prints as `undefined` under exactOptionalPropertyTypes);
   bigintWithLib (tsc repeats one line three times: a relation through the Symbol.toStringTag overloads?).
 
+## Left (2026-10-06, agent D: 20 tests)
+`./errtextdiff.py` after `./failstats.py`: 21 tests, one fixed (destructuringUnspreadableIntoRest: getRestType makes
+every property's literal in order, the creation order the Omit keys' union goes by). What remains is relation-path or
+identity work, no message rules:
+- Elaboration paths that take another route through the relation (chain:text/shallower/deeper): indexedAccessRelation,
+  keyofAndIndexedAccessErrors (tsc explains `keyof T` through its constraint before splitting the intersection
+  target), mappedTypes6 and mappedTypeRelationships (`'P' could be instantiated with a different subtype of constraint
+  'string | number | symbol'`: tsc names the constraint's resolved base, tttt the declared `keyof T`; `T[P]` to `{}`
+  through NonNullable), complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, conditionalTypes1,
+  recursiveConditionalTypes (tsc stops at the deferred conditionals), bigintWithLib (tsc repeats one line three
+  times), jsxExcessPropsAndAssignability (tsc adds the `ComposedComponentProps["myProp"] & string` step).
+- invariantGenericErrorElaboration: tsc relates `Constraint<Runtype<any>>` to `Constraint<Num>` by its type arguments
+  (variance) and reports `Runtype<any>` to `Num` directly; tttt falls back to the structure (`underlying`). Compare the
+  measured variance of Constraint's A (`TTTT_DUMP_VARIANCES=1`) with tsc's first.
+- tsxUnionElementType3/4 (related:text): tsc's `P & { children?: ReactNode }` in React.Component is instantiated per
+  class instantiation because P has two declarations (interface + class Component<P, S>): isTypeParameterPossiblyReferenced
+  says yes for a type parameter whose symbol has more than one declaration, so `{ children?: ReactNode }` appears once
+  per union member in the intersection. tttt's free-parameter collection (collect_free_params) only counts mentions, and
+  a type node doesn't know its outer type parameters; the lib's many-times-declared `Array<T>` makes this a perf
+  question too.
+- tsxStatelessFunctionComponentsWithTypeArguments4 (`{ b: number; a: unknown }` vs tttt's `b: unknown`: inference
+  for the overload in the message), genericCallWithGenericSignatureArguments3 (tsc keeps `(n: Object) => 1` as an
+  inferred return: the inner arrow's literal isn't widened under the outer one's type-parameter return context),
+  propertyAssignmentUseParentType2 (a JS expando function annotated through its variable: tsc's expression type is
+  the merged symbol's, `{ (): boolean; nuo: 1000 }`, tttt prints the arrow's own `(): true`).
+- `outside diagnostics` (3) and `count` (1): see the earlier note (lib diagnostics, emit counts).
+
 ## Validation
 Each fix: `./fasttest.sh -s` with no lost components (`./resultdiff.py --lost`), the corpora unchanged (a message
 change can crash, see the `ty_prop_written_name` mapped-property bug the suite didn't catch but type-fest did), and
