@@ -468,7 +468,23 @@ Ty const* function_impl_evaluate_type(FunctionImpl* me) {
     return ty_function_type(current_checker, me);
 }
 
+// tsc's getAccessorThisParameter
+static FunctionArg const* accessor_this_parameter(FunctionImpl const* accessor, bool setter) {
+    if (vec_function_arg_size(&accessor->args) != (setter ? 2u : 1u)) return nullptr;
+    FunctionArg const* first = vec_function_arg_at(&accessor->args, 0);
+    return is_this_parameter(first) ? first : nullptr;
+}
+
 void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr const* key) {
+    FunctionArg const* setter_this = accessor_this_parameter(setter, true);
+    FunctionArg const* getter_this = accessor_this_parameter(getter, false);
+    if (getter_this && !(vec_function_arg_size(&setter->args) && is_this_parameter(vec_function_arg_at(&setter->args, 0)) &&
+        vec_function_arg_at(&setter->args, 0)->initializer.binding.has_explicit_type)) {
+        function_impl_rare_mut(setter)->paired_this = getter_this;
+    }
+    if (setter_this && !(vec_function_arg_size(&getter->args) && is_this_parameter(vec_function_arg_at(&getter->args, 0)))) {
+        function_impl_rare_mut(getter)->paired_this = setter_this;
+    }
     for_each (i, vec_function_arg, &setter->args) {
         bool is_this = i->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(i->initializer.binding.content_span, "this");
         if (is_this) continue;

@@ -2272,6 +2272,9 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
         });
         return;
     }
+    if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me) && function_impl_rare(identifier_this_function(me))->paired_this) {
+        symbol = function_impl_rare(identifier_this_function(me))->paired_this->initializer.binding.symbol;
+    }
     if (!symbol && my this_kind == THIS_ANY && identifier_this_function(me)) {
         Signature const* sig = ty_function_assigned_contextual_signature(checker, identifier_this_function(me));
         // (A union's contextual signature: the `this` of the member it was made from, declared_by)

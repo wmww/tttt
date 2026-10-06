@@ -130,6 +130,10 @@ typedef struct FunctionImplRare {
     // Read through function_impl_setter_type(), which checks setter_key
     TypeNode const* setter_type;
     struct Expr const* setter_key; // The computed name the pair shares (`[C.k]`), null if none
+    // The `this` parameter of the other accessor of the pair (tsc's getAccessorThisParameter: a getter's only parameter,
+    // a setter's first of two), which is this one's when it has none (getSignatureFromDeclaration) and types a setter's
+    // unannotated one (getTypeForVariableLikeDeclaration). Set by the resolve walk
+    struct FunctionArg const* paired_this;
     u32 iife_arg_count; // See FunctionImpl.is_iife
     struct CallExpr const* iife_call; // The call it is the callee of, when is_iife
     // What a `this` in it may be typed by (tsc's getContextualThisParameterType), set when resolving: the object literal

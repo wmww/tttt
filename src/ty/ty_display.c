@@ -2431,6 +2431,16 @@ static bool annotates_name_at(Span at, Span literal) {
     return colon;
 }
 
+
+// tsc's getSetAccessorValueParameter: the parameter after a `this` one
+static Binding const* setter_value_parameter(FunctionImpl const* setter) {
+    isize count = vec_function_arg_size(&setter->args);
+    if (!count) return nullptr;
+    Binding const* first = &vec_function_arg_at(&setter->args, 0)->initializer.binding;
+    bool first_this = first->tag == BINDING_IDENTIFIER && span_equals(first->content_span, "this");
+    return count == 2 && first_this ? &vec_function_arg_at(&setter->args, 1)->initializer.binding : first;
+}
+
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     if (reuses_nodes(d) && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
         ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
@@ -2652,10 +2662,10 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         FunctionImpl const* syntactic_getter = nullptr;
         if ((origin->flags & (PROP_GETTER | PROP_SETTER)) && origin->decl->function) {
             FunctionImpl const* accessor = origin->decl->function;
-            Binding const* param = vec_function_arg_size(&accessor->args) ?
-                &vec_function_arg_at(&accessor->args, 0)->initializer.binding : nullptr;
-            if (prop_decl_rare(origin->decl)->setter && !accessor->ret_explicit && vec_function_arg_size(&prop_decl_rare(origin->decl)->setter->args)) {
-                param = &vec_function_arg_at(&prop_decl_rare(origin->decl)->setter->args, 0)->initializer.binding;
+            Binding const* param = setter_value_parameter(accessor);
+            Binding const* setter_param = prop_decl_rare(origin->decl)->setter ? setter_value_parameter(prop_decl_rare(origin->decl)->setter) : nullptr;
+            if (setter_param && !accessor->ret_explicit) {
+                param = setter_param;
                 if (param->has_explicit_type) annotation = &param->explicit_type;
                 else if (origin->flags & PROP_GETTER) syntactic_getter = accessor;
             } else if ((origin->flags & PROP_GETTER) && accessor->ret_explicit) {

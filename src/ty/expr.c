@@ -1197,7 +1197,12 @@ bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern) {
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
     u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)parameter };
     Ty const* ret = intern_get(&my links, key, 2);
-    if (!ret && initialized_binding_rare(parameter)->this_of) ret = ty_contextual_this_type(me, initialized_binding_rare(parameter)->this_of);
+    FunctionImpl const* this_of = initialized_binding_rare(parameter)->this_of;
+    if (!ret && this_of) {
+        // (A setter's: the getter's `this` parameter, tsc's getTypeForVariableLikeDeclaration)
+        FunctionArg const* paired_this = this_of->accessor == 2 ? function_impl_rare(this_of)->paired_this : nullptr;
+        ret = paired_this ? ty_type_of_symbol(me, paired_this->initializer.binding.symbol) : ty_contextual_this_type(me, this_of);
+    }
     return ret;
 }
 
@@ -1594,6 +1599,8 @@ Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identi
     switch (identifier->this_kind) {
         case THIS_NONE: break;
         case THIS_ANY: {
+            FunctionArg const* paired_this = identifier_this_function(identifier) ? function_impl_rare(identifier_this_function(identifier))->paired_this : nullptr;
+            if (paired_this) return ty_type_of_symbol(me, paired_this->initializer.binding.symbol);
             Ty const* js_this = identifier_this_function(identifier) ? ty_js_this_type(me, identifier_this_function(identifier)) : nullptr;
             if (js_this) return js_this;
             Ty const* contextual = identifier_this_function(identifier) ? ty_contextual_this_type(me, identifier_this_function(identifier)) : nullptr;

@@ -65597,8 +65597,8 @@ const baselines = {
     },
     'thisTypeInAccessors': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'thisTypeInAccessorsNegative': {
         errors: true,
