@@ -65033,7 +65033,7 @@ const baselines = {
     'genericRestParameters2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericRestParameters3': {
         errors: false,

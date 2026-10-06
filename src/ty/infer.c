@@ -158,6 +158,12 @@ Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from,
         Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
         if (ty_is_tuple(rest) && !ty_is_generic_tuple(me, rest)) rest_tuple = rest;
     }
+    // Past an array rest parameter: an array of its elements (tsc's getRestTypeAtPosition), `(...z: number[])` from 1
+    // is number[]
+    if (!rest_tuple && sig->param_count && sig->params[sig->param_count - 1].rest && from >= sig->param_count) {
+        Ty const* rest = ty_instantiate(me, sig->params[sig->param_count - 1].type, mapper);
+        if (ty_is_array(me, rest)) return ty_array(me, ty_rest_element_type(me, rest), false);
+    }
     TupleShape const* rest_shape = rest_tuple ? ty_tuple_shape(rest_tuple) : nullptr;
     u32 fixed_end = rest_shape ? sig->param_count - 1 : sig->param_count; // (Parameters before the tuple)
     u32 fixed = fixed_end > from ? fixed_end - from : 0;
