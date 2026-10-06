@@ -161,3 +161,21 @@ queues merged into one.
   declaration tsc's JS class members keep as valueDeclaration); quickIntersectionCheckCorrectlyCachesErrors with a
   required `children`: tsc's chain goes through the constraint first (relation cache order); jsdocThisType with a TS
   annotation on the JS variable: the function expression doesn't get `this: Foo` from the statement's `@type`.
+- (mutate.py multi/js, modules bucket, 2026-10-06) Left: missing TS2303 for an `export =` of an unresolvable target
+  (umd7, recursiveExportAssignmentAndFindAliasedType7, jsDeclarationsExportedClassAliases: tsc's "circular import
+  alias"); augmentExportEquals3/4/3_1 print `typeof foo` where tsc says `typeof import("file1.ts")` (module augmentation
+  merged into an `export =` class+namespace); typeValueMerge1 (`export type B` + `export { B }`, TS2484) loses tsc's
+  TS2693 at a value use; commonJSAliasedExport (`module.exports = <unresolved>` + `module.exports.funky = ...`: tsc's
+  export is unknown, so the `funky` import is TS2305); importTag14 (`/** @import * from "./foo" with */` reports
+  nothing, tsc "'as' expected"); `const v = require("m").missing` gets no TS2305 (only destructuring does);
+  tsconfig.c reads package.json leniently for `extends`; json_parse_strict() matches parseJsonText's syntax errors by
+  hand (escapes, odd numbers unchecked). jsDeclarationsParameterTagReusesInputNodeInEmit1's TS2306 is emit-only in tsc.
+- (mutate.py multi/js, JS bucket, 2026-10-06) Left: s2 mut2098/mut3422 missing TS2344 (checkJsdocTypeTag4, not
+  investigated); `.exportsX` typos (tsc's binder makes `module` a namespace through `Object.defineProperty(module.exportsX,
+  ...)`); a TS annotation plus a JSDoc `@type` on one declaration (tsc still types the arrow by the JSDoc signature:
+  checkJsdocTypeTag1, checkJsdocSatisfiesTag12/13); `Object.defineProperty(x, 42, ...)` declares property `42` in tsc
+  (string keys only here); an interface member `[symb]` with `symb: never` acts as a number index signature in tsc
+  (expandoFunctionSymbolPropertyJs); genericDefaultsJs (JS `super()` to a generic base without type arguments skips
+  the argument count check in tsc); typeFromParamTagForFunction (a user `require(id: number)` is only checked lazily);
+  enumTagOnExports (an earlier comment's `@enum` on `module.exports.b` declares a type too: TS2300); `@overload`
+  signatures' types are resolved eagerly (TS2304 for a missing name in an unused overload, tsc resolves on use).
