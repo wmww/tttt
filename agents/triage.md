@@ -95,3 +95,15 @@ queues merged into one.
   with `const x: never =` (mut5018), missing TS2540, TS2741 (objectRestAssignment), TS2687, TS2403, TS2344, TS2353,
   spurious TS2538/TS7015/TS2411/TS2339/TS2664; text/elaboration/render ones (~15). `MUTATE_DIR=... ./mutate.py -n 8000
   --seed 5` reproduces them.
+- (agent d, seed 4) Error text of a fresh arrow function: a parameter annotated with a union holding a reducible
+  intersection (`Container<"a"> | (Container<"b"> & ... & Container<"a">)`) prints reduced (`(t: Container<"a">) => ...`);
+  tsc prints the annotation (mut0934, mut1233). Only the error message (no underline/enclosing) loses it; a declared
+  function type prints fine.
+- (agent d, seed 4) `const pairs: never = [[{}, 1], [{}, 2]] as const`: tsc's message names `[[{}, 1], [{}, 2]]`, tttt the
+  readonly tuples (mut1482). `const SYM: never = Symbol()` then `{ [SYM]: "sym" }`: tsc prints `{ [SYM]: "sym"; }`, tttt
+  `{ [x: number]: "sym"; }` (mut6736). Union member order: mut2452 (`PromiseLike<..> | 42`), mut3152.
+- (agent d, seed 4) Parameter properties in an overload and the implementation (`constructor(public names: number);
+  constructor(public names: string, ...)`): tsc's node.symbol is the class property, so TS2403 compares them (mut1636).
+- (agent d, seed 4) Same-position diagnostics TS2552 and TS2538 at `[nameX]` in a destructuring pattern: tsc lists 2552
+  first despite compareDiagnostics' code order (mut6126); with `/// <reference no-default-lib="true"/>` and a few empty
+  global interfaces tsc reports nothing at all, tttt TS2304 (mut1536).
