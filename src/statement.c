@@ -2063,7 +2063,10 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
         // The next declaration of the function in this list (an implementation followed by an overload after an empty
         // statement, `function f() {};`, counts too)
         isize next_at = i + 1;
-        if (!(next && name_equals(next->name.sv, overload->name.sv)) && (overload->has_body || overload->body_missing)) {
+        // (Only for a function declared more than once: the scan is quadratic in a block of many functions)
+        if (!(next && name_equals(next->name.sv, overload->name.sv)) && (overload->has_body || overload->body_missing) &&
+            overload->symbol && overload->symbol->decl_count > 1
+        ) {
             for (isize j = i + 1; j < count; j++) {
                 FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
                 if (other && name_equals(other->name.sv, overload->name.sv)) {
