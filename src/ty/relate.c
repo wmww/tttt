@@ -6172,6 +6172,8 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     }
     // A class or interface that adds nothing to its one base is that base (getNormalizedType)
     bool source_has_base = false;
+    Ty const* unnormalized_source = source;
+    Ty const* unnormalized_target = target;
     if (source->kind == TY_DECLARED || source->kind == TY_REFERENCE) {
         Ty const* base;
         for (u32 i = 0; i < 16 && (base = ty_non_augmenting_base(me, source)) && base != source; i++) {
@@ -6220,7 +6222,10 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     target = stripped;
     if (source == target) return TERNARY_TRUE;
     // (Errors name an alias as it was: tsc's reportErrorResults)
+    // (And a class or interface that adds nothing to its base, as written: tsc's reportErrorResults)
     Ty const* report_target = original_target->alias ? original_target : target;
+    if (unnormalized_target != original_target && ty_non_augmenting_base(me, unnormalized_target)) report_target = unnormalized_target;
+    Ty const* report_source = source_has_base ? unnormalized_source : source;
     // Comparability is mostly bidirectional (tsc's isRelatedTo: simple relations the other way around count too)
     if (st->relation == TY_RELATION_COMPARABLE && !(target->flags & TYF_NEVER) && is_simple_related(me, st, target, source)) {
         return TERNARY_TRUE;
@@ -6231,7 +6236,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)
     ) {
-        if (report) report_relation_error(me, st, source, report_target, top, source_has_base);
+        if (report) report_relation_error(me, st, report_source, report_target, top, source_has_base);
         return TERNARY_FALSE;
     }
     Ternary result = TERNARY_FALSE;
@@ -6257,7 +6262,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (unreduced_target != target && ty_never_intersection_elaboration(me, unreduced_target, &code, &message)) {
             report_line(st, code, message);
         }
-        report_relation_error(me, st, source, report_target, top, source_has_base);
+        report_relation_error(me, st, report_source, report_target, top, source_has_base);
     }
     return result;
 }
