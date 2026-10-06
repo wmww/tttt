@@ -4573,8 +4573,10 @@ static void jsdoc_apply_class(Parser* p, VecJsDocTag* tags, ClassDecl* class_dec
     VecSpannedType params = tag->type.identifier->generic_params;
     tag->type.identifier->generic_params = (VecSpannedType){0};
     for_each (i, vec_spanned_type, &params) i->type.from_jsdoc = true;
-    Span span = expr_outer_span(&class_decl->extends);
-    class_decl->extends = expr_generic_params(span, c_new(GenericParamsExpr, { .expr = class_decl->extends, .params = params }));
+    // (The tag's type arguments go with the base it names: the clause's, or the tag's own name, see jsdoc_base)
+    Expr* base = class_decl->jsdoc_base ? class_decl->jsdoc_base : &class_decl->extends;
+    Span span = expr_outer_span(base);
+    *base = expr_generic_params(span, c_new(GenericParamsExpr, { .expr = *base, .params = params }));
 }
 
 // What a function's JSDoc says about its parameters and return type: `@param`, `@returns`
