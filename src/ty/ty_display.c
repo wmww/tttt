@@ -1623,10 +1623,16 @@ static bool annotation_plus_undefined(Checker* me, TypeNode const* node, Ty cons
     return ty_without_undefined(me, ty) == annotated;
 }
 
+// Whether the printer reprints annotations (tsc's node reuse, which needs an enclosing declaration): the types
+// baseline, which marks them in the underline, and a message's type with `reuse_nodes`
+static bool reuses_nodes(TyDisplay d) {
+    return (d.underline || d.reuse_nodes) && d.enclosing;
+}
+
 static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotation, Ty const* ty, bool optional) {
-    if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, ty, optional)) {
+    if (annotation && reuses_nodes(d) && annotation_is(me, annotation, ty, optional)) {
         display_node(me, d, annotation);
-    } else if (annotation && d.underline && d.enclosing && !annotation->parsed && !annotation->synthesized) {
+    } else if (annotation && reuses_nodes(d) && !annotation->parsed && !annotation->synthesized) {
         ty_display(me, reused_if(d, true), ty); // A missing type (`(a: ) => {}`), which tsc reuses as `any`
     } else {
         ty_display(me, d, ty);
@@ -2060,7 +2066,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     FunctionImpl const* function = root->function && root->class_instance && !root->function->is_constructor ? nullptr : root->function;
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
     bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
-    bool reusable = d.underline && function;
+    bool reusable = (d.underline || d.reuse_nodes) && function;
     bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
     d.syntactic_function = nullptr;
     display_type_params(me, d, sig->type_params, reusable, syntactic);
@@ -2069,7 +2075,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     SigParam const* params = expanded_params(me, sig, &param_count);
     if (!params) params = sig->params;
     TyDisplayParams printed = { .params = params, .count = param_count, .function = function, .outer = d.printed_params };
-    if (d.underline) d.printed_params = &printed;
+    if (d.underline || d.reuse_nodes) d.printed_params = &printed;
     if (sig->this_type) {
         out(reused_if(d, d.reused || (function && !jsdoc_this)), c_sv("this"));
         out_lit(d, ": ");
@@ -2135,7 +2141,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ) {
             shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
         }
-        if (reused && param_d.underline && param_d.enclosing && !param->optional &&
+        if (reused && reuses_nodes(param_d) && !param->optional &&
             annotation_plus_undefined(me, &binding->explicit_type, shown)
         ) {
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
@@ -2166,7 +2172,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
             out_lit(predicate_d, " is ");
             // Reused like any annotation, but whatever type it has (tsc compares the return type, boolean): in an
             // instantiated signature, what the instantiation maps prints what it is mapped to
-            if (predicate_d.reused && function->predicate->has_type && d.underline && d.enclosing) {
+            if (predicate_d.reused && function->predicate->has_type && reuses_nodes(d)) {
                 predicate_d.mapped_by = instantiated && !this_only ? sig : nullptr;
                 display_node(me, predicate_d, &function->predicate->type);
             } else {
@@ -2424,7 +2430,7 @@ static bool annotates_name_at(Span at, Span literal) {
 }
 
 static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
-    if (d.underline && d.enclosing && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
+    if (reuses_nodes(d) && !span_valid(d.decl_literal) && ty->kind == TY_ANONYMOUS && ty->anonymous.node &&
         ty->anonymous.node->tag == TYPE_INTERFACE && annotates_name_at(d.at, ty->anonymous.node->interface.span)
     ) {
         d.decl_literal = ty->anonymous.node->interface.span;
@@ -2471,7 +2477,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     out_lit(d, "{ ");
     d.in_object_literal = true;
     TyDisplay sig_d = d;
-    for (u32 i = 0; i < members->call_count && members->call_count > 1 && d.underline && !sig_d.sibling_mentions_mapped; i++) {
+    for (u32 i = 0; i < members->call_count && members->call_count > 1 && (d.underline || d.reuse_nodes) && !sig_d.sibling_mentions_mapped; i++) {
         Signature const* root = members->call[i];
         while (root->target) root = root->target;
         sig_d.sibling_mentions_mapped = root != members->call[i] && mentions_mapped(me, members->call[i], root);
@@ -2618,7 +2624,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         Expr const* literal_initializer = nullptr;
         FunctionImpl const* initializer_function = nullptr;
         Symbol const* variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable;
-        if (!annotation && !placeholder && variable && d.underline && d.enclosing) {
+        if (!annotation && !placeholder && variable && reuses_nodes(d)) {
             Binding const* binding = variable->decl_count == 1 && variable->decls[0].kind == SYMBOL_DECL_VARIABLE ?
                 variable->decls[0].node : nullptr;
             if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable) {
@@ -2661,7 +2667,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // A getter returning a function expression has its type syntactically, parameter declarations reused (tsc's
         // typeFromAccessor -> typeFromSingleReturnExpression)
         TyDisplay type_d = d;
-        if (syntactic_getter && d.underline && d.enclosing) type_d.syntactic_function = single_return_function(me, syntactic_getter, type);
+        if (syntactic_getter && reuses_nodes(d)) type_d.syntactic_function = single_return_function(me, syntactic_getter, type);
         if (initializer_function) type_d.syntactic_function = initializer_function;
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
@@ -2678,20 +2684,20 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
         // union, like a parameter's, see annotation_plus_undefined())
         bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
-        if ((mapped_from || reverse) && annotation && !d.reused && d.underline && d.enclosing && annotation_plus_undefined(me, annotation, shown)) {
+        if ((mapped_from || reverse) && annotation && !d.reused && reuses_nodes(d) && annotation_plus_undefined(me, annotation, shown)) {
             display_node(me, d, annotation);
             out(reused_if(d, false), c_sv(" | undefined"));
         }
         else if (literal_initializer && !d.reused) out(reused_if(d, true), literal_initializer->inner_span.sv);
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
         else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
-        else if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL && d.underline && d.enclosing && span_valid(d.decl_literal) &&
+        else if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL && reuses_nodes(d) && span_valid(d.decl_literal) &&
             span_contains_span(d.decl_literal, annotation->unique_symbol.member) && (type->flags & TYF_UNIQUE_ES_SYMBOL)
         ) {
             // (tsc's canReuseTypeNode: a `unique symbol` inside the enclosing declaration)
             display_node(me, d, annotation);
         }
-        else if (annotation && d.underline && d.enclosing && annotation_is(me, annotation, type, optional)) display_node(me, d, annotation);
+        else if (annotation && reuses_nodes(d) && annotation_is(me, annotation, type, optional)) display_node(me, d, annotation);
         else display_annotated(me, type_d, annotation, shown, optional);
         out_lit(d, "; ");
     }
@@ -3308,4 +3314,55 @@ cstr ty_to_cstr(Checker* me, Ty const* ty) {
     cstr ret = cstr_null;
     ty_display(me, (TyDisplay){ .target = &ret }, ty);
     return ret;
+}
+
+// Whether an object literal's type is of a context sensitive literal (tsc's isContextSensitive of an object literal: a
+// method or function value that is), as far as its properties tell
+static bool object_literal_is_context_sensitive(Checker* me, Ty const* ty, u32 depth) {
+    if (depth > 4) return false;
+    Members const* members = ty_members(me, ty);
+    for (u32 i = 0; i < members->prop_count; i++) {
+        Prop const* prop = members->props[i];
+        if (prop->decl->function && ty_function_is_context_sensitive(prop->decl->function)) return true;
+        Ty const* type = prop->type_state == LAZY_STATE_DONE ? prop->type : nullptr;
+        if (!type || type->kind != TY_ANONYMOUS || type->anonymous.target) continue;
+        if (type->anonymous.function && type->anonymous.function->is_expression &&
+            ty_function_is_context_sensitive(type->anonymous.function)
+        ) {
+            return true;
+        }
+        if (type->anonymous.object_literal && object_literal_is_context_sensitive(me, type, depth + 1)) return true;
+    }
+    return false;
+}
+
+Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || ty->anonymous.target || ty->anonymous.is_reverse) return nullptr;
+    FunctionImpl const* function = ty->anonymous.function;
+    if (function) {
+        // (A function expression or arrow function, not an object literal method: a declaration of its own)
+        if (!function->is_expression || span_valid(function_impl_member_name(function)) ||
+            ty_function_is_context_sensitive(function)
+        ) {
+            return nullptr;
+        }
+        // Inside it, where its parameters are declared
+        for_each (i, vec_function_arg, &function->args) {
+            Binding const* binding = &i->initializer.binding;
+            if (binding->tag == BINDING_IDENTIFIER && binding->symbol && binding->symbol->decl_count &&
+                binding->symbol->decls[0].block
+            ) {
+                return binding->symbol->decls[0].block;
+            }
+        }
+        SourceFile const* file = function->span_source ? function->span_source : function->full_span.source;
+        return file ? file->scope : nullptr;
+    }
+    if (!ty->anonymous.object_literal || ty->anonymous.jsx_attributes) return nullptr;
+    Members const* members = ty_members(me, ty);
+    SourceFile const* file = nullptr;
+    for (u32 i = 0; i < members->prop_count && !file; i++) file = members->props[i]->decl->name_span.source;
+    if (!file || object_literal_is_context_sensitive(me, ty, 0)) return nullptr;
+    // HACK: tsc prints it from the literal (its valueDeclaration), tttt from the file's scope
+    return file->scope;
 }

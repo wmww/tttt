@@ -604,7 +604,8 @@ static void report_truncate(RelationState* st, isize_t len) {
 
 [[gnu::cold]] static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
     cstr ret = cstr_null;
-    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen }, ty);
+    Scope const* enclosing = ty_report_enclosing(me, ty);
+    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .enclosing = enclosing, .reuse_nodes = enclosing != nullptr }, ty);
     return ret;
 }
 

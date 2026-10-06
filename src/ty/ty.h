@@ -2170,6 +2170,9 @@ typedef struct TyDisplay {
     // emitter would have reused a node from the source (`reused`, see display_signature()). Null: not wanted
     cstr* underline;
     bool reused;
+    // Reprint annotations where tsc's node builder reuses them, without an underline (a message's type printed from
+    // its expression: tsc's getTypeNamesForErrorDisplay). Only with `enclosing`
+    bool reuse_nodes;
     // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
     // mentions them is reused inside of it
     TyList fresh_params;
@@ -2213,6 +2216,9 @@ void ty_display_call_signature(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_signature_arrow(Checker* me, TyDisplay d, Signature const* sig);
 void ty_display_predicate(Checker* me, TyDisplay d, TyPredicate const* predicate);
 cstr ty_to_cstr(Checker* me, Ty const* ty);
+// Where a message prints a type from, null if from nowhere: an expression type that isn't context sensitive, from its
+// expression (tsc's getTypeNamesForErrorDisplay: typeToString(type, symbol.valueDeclaration)), annotations reused
+struct Scope const* ty_report_enclosing(Checker* me, Ty const* ty);
 // The property name of `Symbol.<name>` (a unique symbol), null if the lib has no such symbol
 Atom const* ty_well_known_symbol_name(Checker* me, char const* name);
 cstr ty_prop_name_cstr(Checker* me, Atom const* name); // As messages show it: `x`, `[Symbol.iterator]`
