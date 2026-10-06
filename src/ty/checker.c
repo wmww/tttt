@@ -2491,11 +2491,23 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             }
             // tsc's getLiteralTypeFromProperties: keyof a class, interface or reference, or of an aliased type,
             // remembers it (prints `keyof X`)
-            bool named = operand->alias || operand->kind == TY_REFERENCE || (operand->kind == TY_DECLARED &&
-                (operand->declared.kind == TY_DECLARED_INTERFACE || operand->declared.kind == TY_DECLARED_CLASS_INSTANCE));
+            // Of a mapped type with an `as` clause, the union of the names (tsc's getIndexTypeForMappedType), or its
+            // constraint if that has the same members
+            MappedInfo const* renamed = members->expanded_from && members->expanded_from->name_type ? members->expanded_from : nullptr;
+            bool named = !renamed && (operand->alias || operand->kind == TY_REFERENCE || (operand->kind == TY_DECLARED &&
+                (operand->declared.kind == TY_DECLARED_INTERFACE || operand->declared.kind == TY_DECLARED_CLASS_INSTANCE)));
             OriginSpec spec = { TY_KEYOF, &operand, 1 };
             Ty const* ret = union_with_origin(me, parts.data, parts.len, nullptr, (TyList){0}, named ? &spec : nullptr);
             ty_buf_drop(&parts);
+            if (renamed && ret->kind == TY_UNION && renamed->constraint->kind == TY_UNION &&
+                ret->composite.types.len == renamed->constraint->composite.types.len
+            ) {
+                bool same = true;
+                for (u32 i = 0; i < ret->composite.types.len && same; i++) {
+                    same = ret->composite.types.data[i] == renamed->constraint->composite.types.data[i];
+                }
+                if (same) return renamed->constraint;
+            }
             return ret;
         }
     }
