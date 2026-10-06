@@ -13,6 +13,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   **effect** (299k lines, pinned this window: 6300 -> 7; three need tsc's base-type resolution stack, one TS2590);
   zod-root at tsc's level. **Breadth sweep** (plan 44, this window): 8579 / 8595 DefinitelyTyped packages match tsc
   5.8's (file, line, code) set exactly, no crash, nothing slower than tsc.
+- **Flag flips** (plan 46 stage 1, 2026-10-06): the corpora rechecked under 13 flag sets give 47k real tsc
+  diagnostics; tttt misses 103, adds 68 and reports 17 under another code (was 603 / 1460 / 1029 before the first
+  drain). The non-strict modes and exactOptionalPropertyTypes were the weak spots.
 - **Perf**: callgrind flat over the window except where tsc caches were added (valibot -24%, effect -12%). vscode
   2.2 s / 2.1 GB vs tsgo 6.75 s / 3.7 GB; 1.5-7x faster than multi-threaded tsgo elsewhere. **Memory** below tsgo's
   peak RSS on every corpus (plan 43: -20 to -42%). Name resolution is parallel for TypeScript files (plan 45 stage 1).

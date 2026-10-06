@@ -10,6 +10,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Flag flips (2026-10-06, tenth window's todo entry 1, plan 46 stage 1, four sub-agents)
+`./flagflip.py` (12 corpora x 13 flag sets, tsc 5.8 cached): 47455 tsc diagnostics; tttt missing / spurious / other
+code 603 / 1460 / 1029 -> **103 / 68 / 17** (per flag: plan 46). Suite 13099 -> 13099 (0 lost), corpora at default
+flags unchanged (effect 7, zod-root the same 55, the rest 0), sweep 8579 -> **8580** / 8595, vscode with
+noUncheckedIndexedAccess / exactOptionalPropertyTypes / non-strict identical at `--checkers 1` and 4. Instructions
+(callgrind, `./instrcount.sh`), b66bb745 -> end: tsc 4.607 -> 4.621, type-fest 3.110 flat, valibot 3.869 -> 3.905
+(+0.9%), react 1.618 -> 1.620, nest 1.254 -> 1.255, webpack 3.834 -> 3.845, zod 4.475 -> 4.489, xstate 2.880 ->
+2.893, drizzle 13.280 -> 13.278, vue 7.692 -> 7.713, effect 9.719 -> 9.749, vscode 31.926 -> 32.081 (+0.5%): ~+0.3%
+for ~25 checks tsc does too, not bisected per fix.
+
 ## Triage (2026-10-05, ninth window's todo entry 10, four sub-agents)
 Suite 13097 -> **13099** (0 lost). Corpora unchanged (effect 7, the rest 0), scenarios 214 / 0 failing. Instructions
 (callgrind, `./instrcount.sh`), 6f877de4 -> end: tsc 4.606 -> 4.607, type-fest 3.106 -> 3.110, valibot 3.861 -> 3.868,

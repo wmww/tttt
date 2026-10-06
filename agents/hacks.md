@@ -4,6 +4,10 @@ fix would be. Missing diagnostics and features belong in `bugs/*.md`, triage.md 
 src` finds the code-side markers; every significant one has an entry here.
 
 ## Global state, memory, parallelism
+- `ty_iterated_type_sending` (`ty/iterate.c`): TS2488 on a union is reported once per program like tsc's cached
+  noIterationTypes: once per checker by a links key, across checkers by an `Error.once_key` hashed from the message
+  text (type ids differ between checkers). If two checkers print the union's members in different orders, both
+  report it.
 - `reexec_with_huge_pages` (`main.c`): glibc reads `GLIBC_TUNABLES` only at startup, so tttt re-execs itself with
   `glibc.malloc.hugetlb=1` (not under valgrind or `TTTT_NO_REEXEC`): 5-20% wall time. An own malloc / AST arenas that
   madvise like the checker arena would remove it (`bugs/perf_leads.md`).
@@ -263,6 +267,11 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_optional_param_type()`); tsc shows it in the signature too.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
+- `ty_function_note_widening_context` / `KEY_CONTEXT_WIDENING` (`ty/expr.c`, set from `infer_type_arguments`): without
+  strictNullChecks, the widening errors of a function argument (TS7011) are decided on the *parameter's* contextual
+  signature (`() => U`), recorded on the side, because tttt checks the function against the deeply instantiated one
+  (push-down contextual instantiation, type_core.md) where tsc sees the uninstantiated return. Goes away with tsc's
+  leaf-wise contextual instantiation. `ty_function_context_is_self` (TS7024) is the same kind of side channel.
 - `Checker.overload_failure_inference` (set by `overload_failure_candidate()`, read in `check_with()`'s generic-mode
   skip, expr.c HACK): a nested generic call returning a function that is already resolved keeps its type instead of
   being skipped (silent never), as tsc's getResolvedSignature cache makes SkipGenericFunctions do, but only in an
