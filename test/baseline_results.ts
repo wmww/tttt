@@ -20921,7 +20921,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeNotMistakenlyHomomorphic': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

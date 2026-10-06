@@ -2782,8 +2782,10 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) return members;
         }
     }
+    // (Its properties as tsc's getPropertyOfType finds them, on the apparent type: `Pick<T, "a" | "c">` has T's
+    // constraint's modifiers)
     Ty const* modifiers = mapped->modifiers_type;
-    if (generic && modifiers) modifiers = ty_apparent_type(me, modifiers);
+    if (modifiers) modifiers = ty_apparent_type(me, modifiers);
     if (modifiers && !(modifiers->flags & TYF_OBJECT) && modifiers->kind != TY_UNION && modifiers->kind != TY_INTERSECTION) {
         modifiers = nullptr;
     }
