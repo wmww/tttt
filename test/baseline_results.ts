@@ -65817,7 +65817,7 @@ const baselines = {
     },
     'variadicTuples2': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'variadicTuples3': {

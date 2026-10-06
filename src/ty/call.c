@@ -299,11 +299,13 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     // An argument for a rest parameter that is a union of tuples: the element types at its position (tsc's
     // getContextualTypeForArgumentAtIndex, an indexed access with AccessFlags.Contextual). A generic one is typed by
     // infer_rest_variadic()
-    if (!contextual && i >= shape->count && shape->rest_variadic && args->spread_index < 0 &&
+    if (!contextual && i >= shape->count && shape->rest_variadic &&
         !(shape->rest_variadic->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
     ) {
-        // (Elements after a variadic one count from the end: the arguments are its elements)
-        contextual = ty_contextual_element_type_of(me, shape->rest_variadic, i - shape->count, args->len - shape->count);
+        // (Elements after a variadic one count from the end: the arguments are its elements. After a spread argument
+        // the position is just the index, tsc's argIndex - restIndex)
+        u32 length = args->spread_index < 0 ? args->len - shape->count : UINT32_MAX;
+        contextual = ty_contextual_element_type_of(me, shape->rest_variadic, i - shape->count, length);
     }
     arg->type = ty_check_expr(me, arg->expr, contextual);
     // A literal its contextual type has room for is regular, so it isn't widened as a candidate (tsc's
@@ -942,9 +944,10 @@ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper
 // type is the rest type's element at its position, and a literal that has room in it isn't widened as a candidate
 // (`Literal("a")` under `...literals: Literals` with `Literals extends readonly LiteralValue[]` is `["a"]`)
 static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args const* args, u32 i, u32 from) {
-    if (!ty_is_tuple(shape->rest_variadic)) {
+    if (!ty_is_tuple(shape->rest_variadic) || args->spread_index >= 0) {
         // A rest type that isn't a tuple gives `T[i]` (with a `const T`, each argument is in a const context), by
-        // position even with spreads among the arguments (tsc's getSpreadArgumentType): `f11(1, ...u)` keeps 1
+        // position even with spreads among the arguments (tsc's getSpreadArgumentType): `f11(1, ...u)` keeps 1. So
+        // does a tuple after a spread argument (i - index, whatever the spread expands to)
         Value index = value_number((double)(i - from));
         return ty_indexed(me, shape->rest_variadic, ty_literal(me, &index));
     }
@@ -1011,7 +1014,7 @@ static void infer_rest_variadic(
     // getSpreadArgumentType, an indexed access with AccessFlags.Contextual): `gen(this, function*() { this.x })` under
     // `...args: [self: Self, body: (this: Self) => ...] | [body: ...]`
     bool sensitive = false;
-    for (u32 i = from; i < args->len && args->spread_index < 0; i++) {
+    for (u32 i = from; i < args->len; i++) {
         sensitive |= !args->data[i].type && args->data[i].context_sensitive;
     }
     if (sensitive) {
