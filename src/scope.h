@@ -520,6 +520,8 @@ typedef struct Scope {
     bool with_body; // The body of a `with` statement: bound, never checked (tsc's checker skips it)
     // A static field of a class with legacy decorators: no `this` in its initializer (TS2816)
     bool decorated_static_field;
+    // An unbraced branch of an `if` (which declares a function in it): no block scope container to tsc's binder
+    bool binder_transparent;
 } Scope;
 
 extern ScopeRare const scope_rare_none;
@@ -776,6 +778,9 @@ void scope_add_expandos(Scope* me, struct Block const* block);
 // An assignment `f.x = v` nested in an expression (`(f.x = 1)`, `if (f.x = 1)`), which tsc's binder binds like any
 // other: called by the resolve walk for the ones scope_add_expandos() didn't see
 void scope_add_nested_expando(Scope* me, struct BinaryOpExpr* op);
+// `module.exports` in a CommonJS file, `module` its identifier: outside the file's top level each one declares the file's
+// `module` again (tsc's binder looks it up in the block scope container only), which the symbols baseline shows
+void scope_note_module_exports_access(Scope* me, struct Expr const* module);
 // The expression a declaration initialized (or a member assigned) with `init` is an expando container of (tsc's
 // getExpandoInitializer/getDefaultedExpandoInitializer): a function or arrow function, in JavaScript also a class
 // expression or `{}`, possibly defaulted (`var ns = ns || {}`: `name` is the declared name, invalid for a member)

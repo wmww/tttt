@@ -1265,8 +1265,11 @@ static Scope* branch_names_scope(Statement const* branch, Scope* names) {
             // `if (a) const x = 1;` (TS1156) declares x where the `if` is: an `if` isn't a block scope container to tsc's
             // binder
             return names;
-        default:
-            return scope_new(names, SCOPE_BLOCK);
+        default: {
+            Scope* scope = scope_new(names, SCOPE_BLOCK);
+            scope->binder_transparent = true;
+            return scope;
+        }
     }
 }
 

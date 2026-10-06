@@ -2009,6 +2009,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             ) {
                 my property->for_in_loop_ = scope_for_in_loop_of(names, my property->prop.identifier.target);
             }
+            if (names->file && names->file->is_commonjs && !flow->in_type_query && my property->expr.tag == EXPR_IDENTIFIER && expr_is_module_exports(me)) {
+                scope_note_module_exports_access(names, &my property->expr);
+            }
             break;
 
         case EXPR_GENERIC_PARAMS:

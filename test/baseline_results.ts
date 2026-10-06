@@ -51452,7 +51452,7 @@ const baselines = {
     },
     'jsDeclarationsExportAssignedClassExpressionAnonymousWithSub': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationsExportAssignedClassExpressionShadowing': {
@@ -60407,7 +60407,7 @@ const baselines = {
     },
     'moduleExportAssignment2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportAssignment3': {
