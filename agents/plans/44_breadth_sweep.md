@@ -48,11 +48,7 @@ open causes in plan 19's style in this file's "Open root causes" below (or bugs/
 1. **Versioned dependencies**: done (test/sweep_links.py, run by sweep.py; 1241 links, 387 versioned packages of
    their own, oracle regenerated for the 584 affected with `./sweep.py --tsc -f` on `test/sweep_links.py --affected`).
    After a DT pin change: rerun the links (sweep.py does) and `--tsc` for everything.
-2. **`$ExpectType`** (69.6k assertions in 2639 packages): a *types* oracle at breadth. dtslint compares
-   `typeToString` of the expression on the assertion's line (no truncation, union order normalised) with the comment.
-   tttt needs a mode printing the type of the expression on given lines (the baseline harness already prints every
-   expression's type); compare with what tsc 5.8 prints (`test/sweep_tsc.js` can record it), not with the comment,
-   since DT's CI uses a newer TS. Plan 35's machinery (displaydiff kinds) applies.
+2. **`$ExpectType`**: done 2026-10-06 (`./expecttypes.py`, see "`$ExpectType` ranking" below).
 3. **More real npm dependencies** for the packages tsc rejects for TS2307/TS2688 (webpack 5, postcss, moment...):
    cheap, each widens coverage by tens of packages; regenerate the lock and rerun `--tsc` for the affected packages.
 4. Beyond DT: the `.d.ts` of the top-N npm packages (types shipped in the package) with a generated test importing
@@ -119,3 +115,47 @@ like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType
   react-relay/relay-hooks/EntryPointTypes (see this commit's message).
 - Not investigated: google-apps-script (property named `''`), fabric's second `Image`, kefir; d3-tip and dynmap as
   above. `./sweep.py --last -k ...` lists each.
+
+## `$ExpectType` ranking (stage 3 item 2, built 2026-10-06)
+`./expecttypes.py` (~30 s): DT's 69.2k `// $ExpectType` assertions in 2737 packages. tsc's side (`test/sweep_tsc.js
+--expect`, 108 s, cached gzipped in `test/sweep/DefinitelyTyped.expect.jsonl.gz`; rerun `--tsc` after a pin change)
+picks the node DT's `expect` rule checks (first node in forEachChild pre-order starting on the asserted line; an
+expression statement unwrapped, a lone initialized variable statement's initializer) and records its span, kind and
+`typeToString(getTypeAtLocation(node), undefined, NoTruncation)`: bare names (no enclosing declaration), unique symbols
+as `typeof x`. tttt's side: `tttt --expect-types SPANS` prints the regular type of the expression with each span
+(`src/expect_types.c`; a property access's name stands for the access). ~600 assertions on declarations (type aliases,
+parameters, binding elements: `DECLARATION_KINDS`) aren't compared: they'd need getTypeAtLocation of declarations.
+**Compared with tsc 5.8, not with the comment** (DT's CI runs TS 5.9+/7, the comments often list both orders with `||`).
+
+First run 68312 / 68640 (99.5%); after this session's fixes **68416 (99.7%), 2637 / 2703 packages all match**. Fixed:
+a merged interface's default from a later declaration (node's AsyncIterator), `G` through an import keeps alias
+arguments `[]` for unions (ty_realias), an alias of an alias of a homomorphic mapped type (lodash's PartialObject), a
+distribution that changes nothing is the union itself (underscore's `keyof X`), assertions through a property of an
+intersection (assert.strict.equal), `${Enum}` property annotations made at the interface check (chrome, partly).
+
+### Open, for the fan-out (todo entry 4); `./expecttypes.py --last -k KIND` lists each
+- **Union order, 135 assertions / ~55 packages** (`union order` + `order (same tokens)`): creation order. chrome is 42
+  of them: its enums' string literals; ``folderType?: `${FolderType}` `` is right now except `"other"`, made earlier
+  somewhere in chrome's 15k-line index.d.ts by tttt and not by tsc; `"start_page"` the other way. Trace with a probe
+  that cuts chrome down. tsc asks for *every* property signature's type in checkPropertySignature; tttt only for
+  literal and template annotations (interface_member_typecheck: doing all moved 5 suite tests both ways, variance
+  measurement order). Others: xmpp__connection 7, yargs (3 versions) 12, postman-collection 4, formidable 4.
+- **chillout (12)**: inference through a rest parameter of conditional tuple type keeps the fresh `true`:
+  `fe<T>(...args: T extends ArrayLike<unknown> ? [T, (v: T) => void] : [T, (v: T[keyof T]) => void])` with
+  `fe({ a: "x", b: true }, v => v)` gives `v: string | true` (tsc `string | boolean`); without the conditional it's right.
+- **node stream (we-any 36, we-unknown 6, other ~8 in node and node/v22, v24, v25)**: the sweep's known
+  `stream.pipeline(function*(){...}, async function*(source){...})` generic overloads with context-sensitive generator
+  arguments (plan 47's territory).
+- **Alias/display singles**: yargs `c: Color` printed as its union (an alias lost through inference), redux-saga-test-engine
+  `Effect<ThrowErrorKey, ...>` where tsc resolves the alias to its literal, core-object `MethodNames<{...}>` printed
+  resolved, webpack-config-utils `DefinedObjKeys<...>` resolved, conventional-changelog-config-spec (tsc expands a
+  spread-typed object, tttt keeps `JSONSchema7`), es-abstract / conventional-commits-parser print default type arguments
+  tsc omits (`PropertyDescriptor<unknown>`, `Commit<string | number | symbol>`: through an import? like the GeoJSON fix
+  but not a union), d3-dispatch `never[]` vs `never`, `[value: number] | [value: number]` (node test.ts: tsc keeps two
+  identical-looking tuples, labels differ in identity), secure-password / webidl-conversions `typeof X.y` where tsc
+  prints the bare `typeof y` without an enclosing declaration (5).
+- **Inference singles**: frida-gum (NativeFunction's return from a tuple), function-bind (`new () => Foo` vs `new
+  (...args: readonly unknown[]) => Foo`), convict, redux-promise-listener (`AsyncFunction<unknown>` vs `<AnyAction>`),
+  raphael (`[]` vs a huge mapped object), underscore NonIntersecting (union of records vs alias).
+- mustache-express: an unresolved import's type arguments are reprinted from the source text (tsc reprints through
+  its emitter, `;` after the last member); `lru-cache` isn't installed, low value.

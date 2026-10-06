@@ -14,9 +14,12 @@ commit.
    sub-agents: seed 2 94 -> 6 mismatches, the fresh seeds' yield now ~1%; flagflip 103 / 68 / 17 -> 81 / 63 / 12 (open
    causes 2, 3, 5 done, 1 judged not worth porting, 4/6/8 partly); suite 13099 -> 13103, sweep 8580 flat, two parser
    crashes fixed. Instructions: plan 46 / measurements.md.
-3. **Execution: plan 44 stage 3 item 2, `$ExpectType`** (tool: tttt prints the types on the asserted lines, compared
-   with tsc 5.8's `typeToString`, cached; ranked with displaydiff's kinds). Fix the top kinds if time is left.
-4. **Execution: fan-out on the `$ExpectType` ranking** plus the plan 35 queue where they overlap.
+3. ~~Execution: plan 44 stage 3 item 2, `$ExpectType`~~ done 2026-10-06: `./expecttypes.py` built (69k assertions,
+   ~30 s); 99.5% -> 99.7% match after six fixes (suite 13103 -> 13104, sweep/corpora/flagflip flat). The ranking for
+   entry 4 is in plan 44 "`$ExpectType` ranking": union order (135, chrome 42), then singles.
+4. **Execution: fan-out on the `$ExpectType` ranking** plus the plan 35 queue where they overlap. The ranking is thin
+   (224 mismatches, mostly creation-order union order): one or two agents on it, the rest on the plan 35 queue /
+   displaydiff's kinds; `./expecttypes.py` next to the sweep as a gate.
 5. **Planning: plan 47** (speculative checks). It may say no; if yes, entry 9 executes stage 1.
 6. **Execution: flagflip's queue and the mutation leftovers** (plan 46 "Open causes" 4, 6, 8; triage.md's seed 3-5
    notes, which a triage session may consolidate first). Both are thin now: start with the nuia sweep run (plan 46

@@ -769,6 +769,10 @@ src` finds the code-side markers; every significant one has an entry here.
 - `callee_compile_test_info`: `f<T>` gets its own line only when `?.` follows (source peek); `a<b>?.()` keeps an
   `EXPR_GENERIC_PARAMS` callee.
 - `render_types_or_symbols_file` drops one trailing line break per unit (a last unit before `// @link` lines is off).
+- `interface_member_typecheck()`: a property signature's annotation is lowered at the interface's check only when it
+  is a literal or a template literal (union order: the order types are made in). tsc's checkPropertySignature asks
+  for every property's type there; doing it for all moved 5 suite tests both ways (strictFunctionTypesErrors,
+  covariantCallbacks... variance measured in another order). chrome's `$ExpectType` union order needs more of it.
 
 ## Harness and tools
 - `apply_setting`: `@baselineFile`, `@fullEmitPaths`, bad values ignored.
