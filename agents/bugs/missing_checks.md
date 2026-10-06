@@ -56,8 +56,7 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
   require }` isn't type-only for TS2441; duplicatePackage_globalMerge prints TS2306 paths as `/node_modules/...` (tsc `/tests/node_modules/...`); a nested
   `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace).
 - **TS2303**: pushTypeGetTypeOfAlias (`exports.blah = exports.someProp`, see JavaScript below; the TS2303 there is
-  getTypeOfAlias's type circularity through the module's type, not alias resolution), exportAsNamespaceConflict (an
-  `export as namespace` alias merged with a `declare global` namespace; tttt says TS2484).
+  getTypeOfAlias's type circularity through the module's type, not alias resolution).
 - **Templates**: `${symbol}` not rejected, TS2590 at the type node (templateLiteralTypes1/3; reporting it from
   `intersect_unions()`/`ty_template_literal()` at the current node put it at the wrong node and fired where tsc
   doesn't).

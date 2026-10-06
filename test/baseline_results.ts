@@ -12561,7 +12561,7 @@ const baselines = {
         types: true,
     },
     'exportAsNamespaceConflict': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

@@ -3780,6 +3780,13 @@ static void merge_into_umd_globals(Binder* me) {
         Symbol* own = global->alias->scope->container;
         if (!own || !own->is_module) continue;
         Symbol* target = module_export_equals(own);
+        // (`export = N` naming the global N itself: tsc's mergeSymbol resolves the alias it merges into, which goes
+        // through the module's `export =` back to the alias)
+        if (target == global && global->alias->item) {
+            error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(global->alias->item->full_span), 2303,
+                "Circular definition of import alias '", global->alias->item->decl_name, "'.");
+            continue;
+        }
         if (!target || target->is_placeholder || target->binder != me || (target->flags & SYMBOL_ALIAS)) continue;
         if (!target->is_module && !(target->flags & SYMBOL_NAMESPACE)) continue;
         u32 flags = 0;
