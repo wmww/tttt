@@ -7,6 +7,7 @@ them, and buckets the errors-component mismatches by root-cause key, like failst
 
   ./mutate.py                      2000 mutants, seed 1: generate, tsc (cached), tttt, report
   ./mutate.py -n 400 --seed 7      another sample
+  ./mutate.py --tests multi,js     mutants of multi-file (@filename) and JS (@allowJs) tests instead
   ./mutate.py --last               re-report the last run without running anything
   ./mutate.py --recheck            rerun tttt on the last run's mutants (after a fix: the mutants are generated from
                                    the tests passing in test/baseline_results.ts, so a new -s changes a seed's set)
@@ -102,7 +103,9 @@ def line_ops(src, rng, op):
     return op, i + 1, lines[i].strip(), ''.join(lines[:i] + lines[i + 1:])
 
 
-def suite_tests():
+def suite_tests(kinds=()):
+    """Passing suite tests under 6000 bytes: single-file TypeScript ones, plus multi-file (`@filename`) and JS
+    (`@allowJs`) ones if `kinds` says so (the only ones with `--tests multi` / `--tests js`)"""
     res = open(f'{ROOT}/test/baseline_results.ts').read()
     passing = set(re.findall(r"'([^']+)': \{\s*errors: true,\s*symbols: true,\s*types: true", res))
     paths = {}
@@ -117,16 +120,18 @@ def suite_tests():
         if os.path.getsize(p) >= 6000:
             continue
         src = open(p, errors='replace', newline='').read()
-        if '@filename' in src.lower() or '@noTypesAndSymbols' in src or '@allowjs' in src.lower():
+        if '@noTypesAndSymbols' in src:
             continue
-        out[n] = src
+        kind = 'js' if '@allowjs' in src.lower() else 'multi' if '@filename' in src.lower() else 'single'
+        if kind in (kinds or ('single',)):
+            out[n] = src
     return out
 
 
-def generate(n, seed):
+def generate(n, seed, kinds=()):
     """Deterministic mutants: {name: (source, log entry)}"""
     rng = random.Random(seed)
-    tests = suite_tests()
+    tests = suite_tests(kinds)
     names = sorted(tests)
     ops = sorted(OPS) + LINE_OPS
     mutants, seen = {}, set()
@@ -225,7 +230,7 @@ def parse_errors(text):
             break
         m = ERR_LINE.match(line)
         if m:
-            out.append([int(m[2] or 0), int(m[3] or 0), m[4], m[5], ''])
+            out.append([int(m[2] or 0), int(m[3] or 0), m[4], m[5], '', m[1] or ''])
         elif out and line.startswith(' '):
             out[-1][4] += line.strip() + '\n'  # elaboration chain and related information
     return [tuple(e) for e in out]
@@ -243,25 +248,26 @@ def classify(ours_text, exp_text):
     if ours_text == exp_text:
         return None
     ours, exp = parse_errors(ours_text), parse_errors(exp_text)
-    o_lc = collections.Counter((e[0], e[2]) for e in ours)
-    e_lc = collections.Counter((e[0], e[2]) for e in exp)
+    # (file, line, code): multi-file tests number lines per file
+    o_lc = collections.Counter((e[5], e[0], e[2]) for e in ours)
+    e_lc = collections.Counter((e[5], e[0], e[2]) for e in exp)
     missing = sorted((e_lc - o_lc).elements())
     spurious = sorted((o_lc - e_lc).elements())
     if missing or spurious:
         first = min(missing + spurious)
-        line = first[0]
-        m = [c for l, c in missing if l == line]
-        s = [c for l, c in spurious if l == line]
+        where = first[:2]
+        m = [c for f, l, c in missing if (f, l) == where]
+        s = [c for f, l, c in spurious if (f, l) == where]
         if m and s:
-            return f'{m[0]}->{s[0]}', line
+            return f'{m[0]}->{s[0]}', where[1]
         if first in missing:
-            return f'missing {first[1]}', line
-        return f'spurious {first[1]}', line
-    o_pos = collections.Counter(e[:3] for e in ours)
-    e_pos = collections.Counter(e[:3] for e in exp)
+            return f'missing {first[2]}', where[1]
+        return f'spurious {first[2]}', where[1]
+    o_pos = collections.Counter((e[5], *e[:3]) for e in ours)
+    e_pos = collections.Counter((e[5], *e[:3]) for e in exp)
     diff = sorted(((e_pos - o_pos) + (o_pos - e_pos)).elements())
     if diff:
-        return f'position {diff[0][2]}', diff[0][0]
+        return f'position {diff[0][3]}', diff[0][1]
     for o, e in zip(sorted(ours), sorted(exp)):
         if o[3] != e[3]:
             return f'text {e[2]}', e[0]
@@ -357,9 +363,9 @@ def show(work, name):
             print(f'--- {f}: {classify(ours, exp)}')
             o, x = parse_errors(ours), parse_errors(exp)
             for d in sorted(set(x) - set(o)):
-                print(f'  + tsc   ({d[0]},{d[1]}) {d[2]}: {d[3][:200]}' + ''.join('\n          ' + l for l in d[4].splitlines()))
+                print(f'  + tsc   ({d[5] + ':' if d[5] else ''}{d[0]},{d[1]}) {d[2]}: {d[3][:200]}' + ''.join('\n          ' + l for l in d[4].splitlines()))
             for d in sorted(set(o) - set(x)):
-                print(f'  - tttt  ({d[0]},{d[1]}) {d[2]}: {d[3][:200]}' + ''.join('\n          ' + l for l in d[4].splitlines()))
+                print(f'  - tttt  ({d[5] + ':' if d[5] else ''}{d[0]},{d[1]}) {d[2]}: {d[3][:200]}' + ''.join('\n          ' + l for l in d[4].splitlines()))
             if set(o) == set(x) and ours != exp:
                 import difflib
                 for l in list(difflib.unified_diff(exp.splitlines(), ours.splitlines(), 'tsc', 'tttt', lineterm='', n=1))[:40]:
@@ -376,6 +382,9 @@ def main():
     ap.add_argument('--show')
     ap.add_argument('--syntax', action='store_true')
     ap.add_argument('--rows', dest='n', type=int, default=40)
+    ap.add_argument('--tests', default='single',
+                    help='which passing tests to mutate, comma separated: single (one TypeScript file), multi '
+                         '(@filename), js (@allowJs)')
     args = ap.parse_args()
     os.makedirs(BASE, exist_ok=True)
     last = f'{BASE}/last'
@@ -389,7 +398,7 @@ def main():
             sys.exit('no previous run')
         return show(work, args.show) if args.show else report(work, args)
 
-    mutants = generate(args.count, args.seed)
+    mutants = generate(args.count, args.seed, tuple(args.tests.split(',')))
     commit = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=TSC, capture_output=True, text=True).stdout.strip()
     h = hashlib.sha1(commit.encode())
     for name, (src, _) in sorted(mutants.items()):

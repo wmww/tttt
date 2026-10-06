@@ -3626,27 +3626,38 @@ static bool function_is_untyped_js(FunctionImpl const* function) {
 // A JavaScript function declaration's or class method's `@type {F}` naming a function type: F's one call signature, which
 // is the function's (tsc's getSignaturesOfSymbol with getSignatureOfTypeTag). Function expressions, arrow functions and
 // object literal methods are contextually typed by it instead. Null if F isn't a single signature (getSingleCallSignature)
-static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function);
+static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function, bool* self);
 
 static Signature const* jsdoc_tag_signature(Checker* me, FunctionImpl const* function) {
     if (function->is_expression) return nullptr;
-    return jsdoc_tag_single_signature(me, function);
+    bool self = false;
+    return jsdoc_tag_single_signature(me, function, &self);
 }
 
 // The return type of the function's `@type {F}` signature, which is its return type whatever kind of function it is
 // (tsc's getReturnTypeFromAnnotation -> getReturnTypeOfTypeTag). Null if there's no such signature
 Ty const* ty_jsdoc_tag_return_type(Checker* me, FunctionImpl const* function) {
-    Signature const* sig = jsdoc_tag_single_signature(me, function);
+    bool self = false;
+    Signature const* sig = jsdoc_tag_single_signature(me, function, &self);
+    // (Its own type: tsc's return type resolution is circular there, any)
+    if (self) return ty_intrinsic(me, TY_ANY);
     return sig ? signature_return_type(me, sig) : nullptr;
 }
 
-static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function) {
+static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl const* function, bool* self) {
     TypeNode const* node = function_impl_rare(function)->jsdoc_signature_type ? function_impl_rare(function)->jsdoc_signature_type : function_impl_rare(function)->jsdoc_host_type;
     if (!node) return nullptr;
     Ty const* type = ty_of_node(node);
     if (!(type->flags & TYF_OBJECT)) return nullptr;
     Members const* members = ty_members(me, type);
     if (members->call_count != 1 || members->construct_count || members->index_count || members->prop_count) return nullptr;
+    // (Not the function's own signature: `@type {MyClass}` on `function MyClass`, which is TS8030)
+    for (Signature const* i = members->call[0]; i; i = i->target) {
+        if (i->function == function) {
+            *self = true;
+            return nullptr;
+        }
+    }
     return members->call[0];
 }
 
@@ -3926,7 +3937,8 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
     } else if (sig->function && !sig->function->ret_explicit) {
         // A JavaScript function typed by `@type {F}`: the predicate of F's signature (tsc's getTypePredicateOfSignature
         // with getSignatureOfTypeTag), else one inferred from the body
-        Signature const* tagged = jsdoc_tag_single_signature(me, sig->function);
+        bool self = false;
+        Signature const* tagged = jsdoc_tag_single_signature(me, sig->function, &self);
         if (tagged && tagged != sig) sig->predicate = signature_predicate(me, tagged);
         // (Only while the return type isn't known to be something other than boolean: tsc's getTypePredicateOfSignature
         // asks `!signature.resolvedReturnType || boolean`. A function expression's is resolved by its first check with a
