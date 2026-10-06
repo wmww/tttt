@@ -1218,7 +1218,9 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
     // (tsc's getPropertyOfType: of an intersection too, `assert.strict.equal` with `strict: Omit<...> & { equal }`)
     if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return nullptr;
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
-    return prop && prop_has_explicit_type(prop) ? prop_type(me, prop) : nullptr;
+    if (!prop || !prop_has_explicit_type(prop)) return nullptr;
+    // (An optional one has undefined in its type, an optional method's too: tsc's getTypeOfSymbol. Not callable then)
+    return prop->flags & PROP_OPTIONAL ? ty_optional_prop_type(me, prop_type(me, prop)) : prop_type(me, prop);
 }
 
 // tsc's getEffectsSignature(), remembered per call like there
