@@ -140,7 +140,7 @@ non-generic variant of the last one still reports TS7023 where tsc doesn't (`pro
 the inferred type predicate of `get` evaluates `wrap2(target)` while wrap2's return type is in flight; how tsc's
 ordering avoids the cycle wasn't worked out).
 
-### effect (7; 6300 at pinning)
+### effect (3; 6300 at pinning)
 Pinned 2026-10-05 (ninth window, todo entry 2): Effect-TS/effect's v3 branch head e730f59d (Effect 3.22.2, still on
 TypeScript 5.8; main is Effect 4 on TS 7), the core `effect` package's src (188k lines), test (95k, through
 @effect/vitest's sources) and dtslint tstyche type tests (14k), through `corpora-locks/effect.overlay/packages/effect/
@@ -198,27 +198,33 @@ returns into `Ret` = `"a" | "b"` (Match 887/888, probe `variadic_rest_function_r
 uses the instantiation's fresh key parameter, the one the index signature relation uses (SchemaUserland 12: `F[P]`
 from `Readonly<F>` related to `ReadonlyRecord<string, F[P]>`, probe `generic_mapped_fresh_key_param.ts`).
 
-Left, by cause (not reduced unless said):
-- **Missing errors** (TS2578, 5): `@ts-expect-error` that tsc uses.
-  - dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28: tsc reports TS2310 + TS2506 on `class _A extends
-    Schema.TaggedClass<_A>()("A", {...}, [undefined, undefined, { pretty: () => (x) => ... }])`: resolving _A's base
-    constructor type checks the base expression, whose annotations relate `x: _A` structurally (getUnmatchedProperty
-    -> resolveBaseTypesOfClass while it is on the type resolution stack). tttt's TS2506 is structural
-    (ty_has_base_type in class_heritage_typecheck) and its base expression isn't checked inside a base-type
-    resolution, so the cycle isn't seen. Needs tsc's pushTypeResolution(ResolvedBaseConstructorType) modelled.
-  - fiberRuntime 1397: tsc's TS2590 (`this[(cur as Primitive)._op](cur)`: the union call's parameter intersection is
-    a cross product of 100000+). intersect_unions() (checker.c) already makes it the error type silently; reporting
-    it there (ty_error_at_current_node) fixes this but adds TS2590 to 3 suite tests (JSX intrinsic element
-    intersections, reactTagNameComponentWithPropsNoOOM*, errorInfoForRelatedIndexTypesNoConstraintElaboration) where
-    tttt intersects more than tsc (also: tsc halves at >= 4 members, tttt at >= 3).
-  - Schema.ts 9010: tsc's TS2322 at `arbitrary: (arb) => ...` overridden by `...typeAnnotations` in `declare(...)`'s
-    annotations (the property is the union of both); not reduced.
-- Tests: query 51 (`promise(() => new Promise((r) => r(0)))` as zipRight's `that`: the function argument's
-  contextual type is fully instantiated with the return mapper (infer_type_arguments' first pass), so `new Promise`
-  infers T = zipRight's uninferred A2 as a return-type candidate; tsc's getContextualType is raw there and only its
-  returnMapper sees A2. Passing the raw type fixes it but breaks vue customElement.spec 1505 (Promise.resolve's
-  return mapper comes from `inf`, not a separate return inference: the valibot HACK in infer_type_arguments)), dtslint Effect 736 (`Effect.fn` generator as
-  catchTag handler).
+Fourth pass (2026-10-06, 7 -> 3, probes in `test/probes/plan19/effect/` and `vue/`): a non-sensitive function
+argument's contextual type gets the return mapper only at its top level (instantiateInstantiableTypes), and the outer
+inference mapper a nested call instantiates its contextual type with checks constraints (getInferredType on the
+clone): query.test 51 (`function_argument_return_mapper_top_level.ts`, vue `outer_inference_constraint.ts`). Generic
+calls returning functions among a variadic rest's arguments wait for the others' inferences (SkipGenericFunctions):
+Effect.tst 736 `catchTag("A", fn(function*(e) {...}))` (`rest_generic_call_waits.ts`). A generic mapped type spread into
+a tuple is a variadic element, not a rest array: Schema.ts 9010 (`variadic_generic_mapped_element.ts`). TS2590 reported
+by intersect_unions(), with intersection targets' property types made lazily for 3+ parts as tsc defers them:
+fiberRuntime 1397 (`union_call_cross_product_too_complex.ts`).
+
+Left (TS2578, 3), dtslint TaggedClass 6, TaggedError 31, TaggedRequest 28: tsc reports TS2310 + TS2506 on `class _A
+extends Schema.TaggedClass<_A>()("A", {...}, [undefined, undefined, { pretty: () => (x) => ... }])`. Reduced
+(instrumented tsc stack): getBaseConstructorTypeOfClass checks the call; the annotations tuple related to the
+`readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?]` parameter also goes through indexSignaturesRelatedTo (the
+tuple's number index, `undefined | { pretty }`, against the union of the target's elements), which tries
+`{ pretty: (x: F) => .. }` against Ann<_A> first, relates `_A` to F structurally (getUnmatchedProperty) and resolves
+_A's base types while its base constructor type is on the resolution stack. tttt relates tuples element-wise only (no
+index-signature step), so the cycle never happens; modelling it needs both (a) tuple-to-tuple index relation (hot path:
+only for side effects like this) and (b) a ResolvedBaseConstructorType resolution entry (class_base() seeing its own
+extends expression in flight; note BASE_CYCLE_IN_CYCLE is also set for ordinary class cycles, which tsc reports as
+TS2506 only). Probe:
+```ts
+interface Ann<A> { readonly pretty?: (x: A) => string; readonly title?: string }
+type ClassAnn<Self, A> = Ann<Self> | readonly [Ann<Self> | undefined, Ann<Self>?, Ann<A>?]
+declare function Tagged<Self>(): <F>(tag: string, fields: F, ann?: ClassAnn<Self, F>) => new () => { readonly _tag: string } & F
+export class _A extends Tagged<_A>()("A", { id: 1 }, [undefined, undefined, { pretty: (x) => "" }]) {}
+```
 - `x[key]` constraint position: only an identifier object so far (`a.b[key]` isn't, TODO in expr.c).
 
 ### vscode (0; 129 at pinning)
