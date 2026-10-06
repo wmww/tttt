@@ -6315,6 +6315,19 @@ static Ty const* normalized_generic_tuple(Checker* me, Ty const* ty, bool writin
     return ret;
 }
 
+// The source as the head of a relation error names it: tsc's reportErrorResults uses getNormalizedType's (simplified
+// indexed accesses and conditional types, read) unless it has an alias
+Ty const* ty_report_source(Checker* me, Ty const* source) {
+    if (source->alias) return source;
+    for (u32 i = 0; i < 16 && (source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL || source->kind == TY_SUBSTITUTION); i++) {
+        Ty const* next = source->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, source, false)) :
+            source->substitution.base;
+        if (next == source || next->alias != source->alias) break;
+        source = next;
+    }
+    return source;
+}
+
 Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target) {
     if (target->alias) return target;
     for (u32 i = 0; i < 16 && (target->kind == TY_INDEXED || target->kind == TY_CONDITIONAL || target->kind == TY_SUBSTITUTION); i++) {

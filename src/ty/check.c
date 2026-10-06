@@ -66,7 +66,7 @@ static Error* report_unassignable(
     // room for literals
     cstr source_str, target_str;
     Ty const* head_target = ty_report_target(me, source, target);
-    ty_report_pair_cstr(me, source, head_target, &source_str, &target_str);
+    ty_report_pair_cstr(me, ty_report_source(me, source), head_target, &source_str, &target_str);
     if (head.ts_code == HEAD_SATISFIES.ts_code) {
         Error* error = report_unassignable_with_head(me, source, target, 1360, cstr_d(
             "Type '", source_str, "' does not satisfy the expected type '", target_str, "'."
