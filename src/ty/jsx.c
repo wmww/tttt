@@ -118,8 +118,27 @@ Ty const* ty_jsx_signature_props(Checker* me, JsxElement const* element, Signatu
     Ty const* instance = nullptr;
     if (location) {
         instance = ty_instantiate(me, signature_return_type(me, sig), mapper);
+        Ty const* tag_type = ty_expr_type(me, &element->tag_name);
         if (!atom_sv(location).size || (instance->flags & TYF_ANY)) {
             props = instance;
+        } else if (instance->kind == TY_UNION && tag_type->kind == TY_UNION) {
+            // The signature of a union of classes (tsc's compositeSignatures): the intersection of what each instance
+            // has (getJsxPropsTypeFromClassElement), so `RC1 || RC2` with x: number and x: string takes x: never
+            TyBuf parts = {0};
+            for (u32 i = 0; i < instance->composite.types.len && props; i++) {
+                Ty const* member = instance->composite.types.data[i];
+                if (member->flags & TYF_ANY) {
+                    props = member;
+                    break;
+                }
+                Ty const* apparent = ty_apparent_type(me, member);
+                Ty const* part = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_access(me, apparent, ty_prop_name_literal(me, location)) : nullptr;
+                if (!part) props = nullptr;
+                else ty_buf_push(&parts, part);
+            }
+            if (props && !(props->flags & TYF_ANY)) props = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+            ty_buf_drop(&parts);
+            if (!props) return unknown;
         } else {
             Ty const* apparent = ty_apparent_type(me, instance);
             Prop const* prop = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_get_prop(me, apparent, location) : nullptr;
