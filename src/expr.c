@@ -3774,9 +3774,11 @@ static bool binary_op_typecheck(
                 }
                 break;
             }
-            // The expression's own type is what gets assigned
+            // The expression's own type is what gets assigned, the right operand's for `&&=`, `||=` and `??=` (tsc's
+            // checkBinaryLikeExpressionWorker: checkAssignmentOperator(rightType))
+            bool logical = op == BINARY_OP_AND_AND_EQUAL || op == BINARY_OP_OR_OR_EQUAL || op == BINARY_OP_EH_EH_EQUAL;
             if (binary_op_typecheck(left, without_assignment, right, expr, errs)) {
-                binary_op_typecheck(left, BINARY_OP_EQUAL, expr_get_type((Expr*)expr), expr, errs);
+                binary_op_typecheck(left, BINARY_OP_EQUAL, logical ? right : expr_get_type((Expr*)expr), expr, errs);
             }
         }   break;
 
