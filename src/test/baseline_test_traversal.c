@@ -1068,6 +1068,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 !(my identifier->symbol && my identifier->symbol != my identifier->target &&
                     my identifier->symbol->flags & SYMBOL_ALIAS && span_valid(my identifier->symbol->name_span))
             ) {
+                // (Its qualifier still has a type: see below)
+                if (identifier_type_import_typeof(my identifier) && span_valid(my identifier->name) && !identifier_type_namespace_count(my identifier)) {
+                    baseline_test_case_add_type(ctx, my identifier->name, ty_intrinsic(current_checker, TY_ERROR));
+                }
                 break;
             }
             bool heritage = ctx->heritage_type;

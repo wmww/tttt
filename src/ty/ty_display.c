@@ -959,6 +959,11 @@ static bool has_prototype_members(Symbol const* symbol) {
 static bool jsdoc_reference_reusable(Checker* me, TyDisplay d, TypeNode const* node) {
     IdentifierType const* identifier = node->identifier;
     if (identifier->jsdoc_intrinsic) return false;
+    // A JSDoc `typeof import("./m").x` is reused as written: tsc's tryVisitSimpleTypeNode only prints the type of an
+    // import type that the JSDoc fallback resolved as a value without `typeof`, or whose type arguments it filled in
+    if (identifier_type_import_typeof(identifier) && identifier->target && (identifier_type_import_ref(identifier) || identifier_type_import_argument(identifier))) {
+        return true;
+    }
     // (An unresolved name is reused as written: tsc's errorType for it, unresolved names allowed)
     if (!identifier->target) return !identifier_type_namespace_count(identifier) && (node_type(me, d, node)->flags & TYF_ERROR);
     // A value used as a type (an expando `Outer.Inner = class {}`: tsc's getTypeFromJSDocValueReference) isn't found by

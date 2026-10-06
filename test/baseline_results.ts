@@ -60433,7 +60433,7 @@ const baselines = {
     'moduleExportAssignment7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportDuplicateAlias': {
         errors: true,
