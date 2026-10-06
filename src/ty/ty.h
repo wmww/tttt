@@ -930,6 +930,9 @@ struct Checker {
     u32 instantiation_tail_count;
     u32 instantiation_epoch; // Bumped whenever instantiation_count starts over
     bool instantiating_tail;
+    // The root conditional type a distributive constraint is being instantiated from (tsc's forConstraint): a definitely
+    // false check of it gives both branches
+    Ty const* for_constraint_root;
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
@@ -1523,7 +1526,7 @@ void relation_cache_drop(RelationCache* me);
 // of its `infer X extends C` are the root's)
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
-    TyCondBranch const* if_false, TyMapper const* mapper
+    TyCondBranch const* if_false, TyMapper const* mapper, Ty const* constraint_root
 );
 // Assignable whatever the type parameters in either side turn out to be (tsc's check on their restrictive instantiations)
 bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target);

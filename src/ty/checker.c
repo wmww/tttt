@@ -2982,7 +2982,13 @@ Ty const* ty_conditional(
     Ty const* root, TyMapper const* mapper, bool distributive, TyList infers
 ) {
     if (check_type == my intrinsics[TY_WILDCARD] || extends == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
-    Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false, mapper);
+    // (Only this resolution is for a constraint: what its branches instantiate isn't, tsc's forConstraint parameter)
+    Ty const* constraint_root = root && root == my for_constraint_root ? root : nullptr;
+    Ty const* saved_constraint_root = my for_constraint_root;
+    my for_constraint_root = nullptr;
+    Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false, mapper,
+        constraint_root);
+    my for_constraint_root = saved_constraint_root;
     if (resolved) return resolved;
     u64 stack_key[64];
     u32 key_len = 3 + cond_branch_key_len(if_true) + cond_branch_key_len(if_false);

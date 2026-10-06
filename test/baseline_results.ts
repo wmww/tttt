@@ -9876,9 +9876,9 @@ const baselines = {
         types: true,
     },
     'distributiveConditionalTypeConstraints': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'distributiveConditionalTypeNeverIntersection1': {
         errors: true,

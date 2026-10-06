@@ -705,7 +705,7 @@ static Ty const* instantiate_conditional(Checker* me, Ty const* ty, TyMapper con
     u32 key_len = 2 + (len + 1) / 2;
     u64* key = key_len <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * key_len);
     Ty const** targets = len <= c_arraylen(stack_targets) ? stack_targets : malloc(sizeof(Ty const*) * len);
-    key[0] = KEY_CONDITIONAL_INSTANCE;
+    key[0] = my for_constraint_root == root ? KEY_CONDITIONAL_INSTANCE_FOR_CONSTRAINT : KEY_CONDITIONAL_INSTANCE;
     key[1] = root->id;
     u32 mapped = 0;
     for (u32 i = 0; i < len; i++) {

@@ -3785,7 +3785,10 @@ static Ty const* distributive_constraint_uncached(Checker* me, Ty const* conditi
     targets[len++] = check_constraint;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     free(sources);
+    Ty const* saved_root = my for_constraint_root;
+    my for_constraint_root = root;
     Ty const* instantiated = ty_instantiate(me, root, mapper);
+    my for_constraint_root = saved_root;
     if (conditional->alias && immediate) instantiated = realias_conditional_instances(me, instantiated, conditional, root);
     return instantiated != conditional && !(instantiated->flags & TYF_NEVER) ? instantiated : nullptr;
 }

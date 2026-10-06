@@ -412,8 +412,9 @@ bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target) {
 
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
-    TyCondBranch const* if_false, TyMapper const* outer
+    TyCondBranch const* if_false, TyMapper const* outer, Ty const* constraint_root
 ) {
+    bool for_constraint = constraint_root != nullptr;
     // (tsc compares with errorType itself, before deferring: an unresolved reference's error type (ty_unresolved, tsc's
     // errorTypes) is any to it, `Parameters<Unresolved>` is unknown[]; a union with one is errorType)
     Ty const* error = ty_intrinsic(me, TY_ERROR);
@@ -483,10 +484,40 @@ Ty const* ty_conditional_resolve(
     }
     // Definitely false: not even with every type variable in either side the wildcard (tsc's permissive
     // instantiation); definitely true: with each one unconstrained (restrictive); otherwise deferred
-    if (definitely_unrelated(me, check_type, inferred_extends)) return branch_type(me, if_false);
+    // (For a constraint, false still has the true branch too: what the constraint stands for may match, tsc's
+    // forConstraint)
     bool mentions = false;
-    if (definitely_related(me, check_type, inferred_extends, &mentions)) {
+    bool is_false = definitely_unrelated(me, check_type, inferred_extends);
+    if (!is_false && definitely_related(me, check_type, inferred_extends, &mentions)) {
         return branch_type_with(me, if_true, mapper);
     }
-    return mentions ? nullptr : branch_type(me, if_false);
+    if (!is_false && mentions) return nullptr;
+    // (Only if the extends type, or a member of it, is assignable to the check type: tsc's forConstraint check)
+    bool narrows_to_extends = false;
+    if (for_constraint && !(inferred_extends->flags & TYF_NEVER)) {
+        TyList members = inferred_extends->kind == TY_UNION ? inferred_extends->composite.types : (TyList){ .data = &inferred_extends, .len = 1 };
+        for (u32 i = 0; i < members.len && !narrows_to_extends; i++) {
+            narrows_to_extends = ty_is_related(me, members.data[i], check_type, TY_RELATION_ASSIGNABLE);
+        }
+    }
+    // (A conditional type written as the false branch goes on for the constraint too, tsc's tail loop in
+    // getConditionalType: `T extends null ? null : T extends string ? "" : ...`)
+    Ty const* falsy = nullptr;
+    if (for_constraint && if_false->node && if_false->node->tag == TYPE_TERNARY && if_false->state != LAZY_STATE_DONE) {
+        Ty const* nested = ty_from_node(me, if_false->node, if_false->ctx);
+        if (nested->kind == TY_CONDITIONAL &&
+            (!nested->conditional.distributive || nested->conditional.check == constraint_root->conditional.check)
+        ) {
+            Ty const* saved = my for_constraint_root;
+            my for_constraint_root = nested;
+            falsy = branch_type(me, if_false);
+            my for_constraint_root = saved;
+        }
+    }
+    if (!falsy) falsy = branch_type(me, if_false);
+    if (narrows_to_extends) {
+        Ty const* parts[2] = { branch_type_with(me, if_true, mapper), falsy };
+        return ty_union(me, parts, 2, nullptr, (TyList){0});
+    }
+    return falsy;
 }
