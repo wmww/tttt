@@ -83,10 +83,13 @@ and noPropertyAccessFromIndexSignature were already right: those checks are done
 3. **Done (2026-10-06)**: `tuples_definitely_unrelated` gates tuple-to-tuple inference in `infer_from_objects` before
    the structure-matching shortcut, with tsc's minLength (required + variadic elements). The object half was already
    `types_definitely_unrelated`. The earlier ember breakage came from the old prototype's placement and min length.
-4. **Overload/inference residue under nosft/sloppy**: vue `customElement.spec` TS2769 x10 (tsc infers
-   `Promise.resolve`'s value from the return context as `Component`'s `(props: never, ctx) => RenderFunction` branch),
-   vue `defineComponent.test-d.tsx:1615` TS2345, nest TS2345 x4 (fallback type after overload failure), TS7011 x4 in
-   vscode (overloads whose first candidate gives no contextual signature; `mockObject<T>()({...})` with a `{}` default).
+4. **Overload/inference residue under nosft/sloppy (partly done 2026-10-06)**. Done: nest TS2345 x4 (a default saw an
+   earlier inference that failed its constraint, `inference_mapper()`), vscode `debugModel.test.ts` TS7011 x2 (first
+   check without a contextual signature because of TP's `{}` default, KEY_CONTEXT_WIDENING_ABSENT). Left: vscode
+   TS7011 x2 through `instantiationService.stub()`'s overloads (`stub(INotificationService, { prompt: () => null! })`,
+   the first candidate gives no contextual signature); vue `customElement.spec` TS2769 x10 (tsc infers
+   `Promise.resolve`'s value from the return context as `Component`'s `(props: never, ctx) => RenderFunction` branch);
+   vue `defineComponent.test-d.tsx:1615` TS2345.
 5. **Done (2026-10-06)**: xstate `State.ts:36`. An intersection source is related through tsc's
    getEffectiveConstraintOfIntersection (`effective_intersection_constraint`: one-step constraints, the members too
    against a union target, normalized) and not through base constraints; an intersection's inferable index looks at
