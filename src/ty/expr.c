@@ -1608,7 +1608,7 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
 void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type) {
     if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any || function->ret_explicit) return;
     Signature const** slot = (Signature const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
-    if (*slot) return;
+    if (*slot || intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return;
     Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, param_type, true), function, 0);
     if (sig) *slot = sig;
 }
@@ -1626,6 +1626,7 @@ bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, 
     // (The first contextual signature, which tsc's getReturnTypeFromBody reports with: while a call infers, its type
     // parameters are still there)
     Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
+    if (!sig && intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return true;
     if (!sig) sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
     if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
     if (!sig) {
@@ -4567,6 +4568,17 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its
             // return type only sees the context once the call is resolved (ty_late_contextual_return())
             u64 none_key[2] = { KEY_CONTEXT_NONE, (u64)(uintptr_t)expr->function };
+            // A first check while a call infers whose contextual type, instantiated with what it knows so far, has no
+            // signature for it (`<TP extends Partial<T> = {}>(p?: TP)`: the default `{}`) decides its return type
+            // without one (tsc's getReturnTypeFromBody then reports widening, TS7011, whatever comes later)
+            if (ctx.sig_absent && my outer_inference && !expr->function->ret_explicit && !compiler_options()->strict_null_checks &&
+                compiler_options()->no_implicit_any && !ty_function_is_context_sensitive(expr->function) &&
+                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
+                !intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)expr->function }, 2)
+            ) {
+                Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)expr->function }, 2);
+                if (!*slot) *slot = (Ty const*)expr->function;
+            }
             CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
             if (none_call) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
