@@ -384,9 +384,39 @@ static bool has_correct_arity(ParamShape const* shape, Args const* args) {
     return (args->incomplete || args->len >= shape->min) && (shape_has_rest(shape) || args->len <= shape->count);
 }
 
+// tsc's getMutableArrayOrTupleType of a union of arrays and tuples: each member mutable. Null if it isn't one
+static Ty const* mutable_array_or_tuple_union(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_UNION || (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+    TyBuf parts = {0};
+    for (u32 i = 0; i < ty->composite.types.len; i++) {
+        Ty const* member = ty->composite.types.data[i];
+        if (ty_is_tuple(member) && member->kind == TY_REFERENCE) {
+            TupleShape shape = *member->reference.target->declared.tuple;
+            shape.readonly = false;
+            member = ty_reference(me, ty_tuple_target(me, &shape), ty_reference_args(me, member));
+        } else if (ty_is_array(me, member)) {
+            member = ty_array(me, ty_rest_element_type(me, member), false);
+        } else {
+            ty_buf_drop(&parts);
+            return nullptr;
+        }
+        ty_buf_push(&parts, member);
+    }
+    Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 // The arguments from `from` on, as the tuple a variadic rest parameter receives
 // `skip_sensitive`: a context-sensitive function not typed yet is anyFunctionType (tsc's SkipContextSensitive)
-static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive) {
+static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args const* args, u32 i, u32 from);
+static bool maybe_primitive_context(Ty const* ty);
+
+// `context_shape`: an element is widened unless its contextual type in the rest parameter may be primitive (tsc's
+// getSpreadArgumentType, as the applicability check sees the arguments)
+static Ty const* rest_args_tuple_ctx(
+    Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive, ParamShape const* context_shape
+) {
     u32 arity = args->len > from ? args->len - from : 0;
     // Just a spread of something of type any: any, not `any[]` (tsc's getSpreadArgumentType for a last spread argument
     // takes an array-like type as it is), so `f(...x as any)` fits a rest parameter `L extends [A, ...A[]]`
@@ -395,6 +425,11 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
         (ty_expr_type(me, args->data[from].expr->spread)->flags & TYF_ANY)
     ) {
         return ty_expr_type(me, args->data[from].expr->spread);
+    }
+    // Just a spread of a union of tuples (or arrays): that union, its members mutable (tsc's getSpreadArgumentType)
+    if (arity == 1 && args->data[from].spread && !args->data[from].variadic && args->data[from].expr->tag == EXPR_SPREAD) {
+        Ty const* mutable = mutable_array_or_tuple_union(me, ty_expr_type(me, args->data[from].expr->spread));
+        if (mutable) return mutable;
     }
     // A lone spread of a generic array-like whose constraint is a mutable array or tuple: that type itself (tsc's
     // getSpreadArgumentType, getMutableArrayOrTupleType), `f10(...u)` with U extends string[] infers U
@@ -424,7 +459,12 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
                 skip_sensitive && arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION ? ty_any_function_type(me) :
                 skip_sensitive && arg->context_sensitive ? ty_check_expr_skipping_sensitive(me, arg->expr, nullptr, false) :
                 ty_expr_type(me, arg->expr);
-            elements[i] = widen ? ty_widened_literal(me, type) : type;
+            bool widen_this = widen;
+            if (!widen && context_shape && (type->flags & TYF_LITERAL)) {
+                Ty const* contextual = rest_arg_contextual(me, context_shape, args, from + i, from);
+                widen_this = !contextual || !maybe_primitive_context(contextual);
+            }
+            elements[i] = widen_this ? ty_widened_literal(me, type) : type;
         }
     }
     TupleShape tuple = { .arity = arity, .flags = flags, .readonly = readonly, .names = names };
@@ -434,6 +474,10 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
     free(elements);
     free(names);
     return ret;
+}
+
+static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 from, bool widen, bool readonly, bool skip_sensitive) {
+    return rest_args_tuple_ctx(me, args, from, widen, readonly, skip_sensitive, nullptr);
 }
 
 static Ty const* rest_args_tuple(Checker* me, Args const* args, u32 from, bool widen, bool readonly) {
@@ -1401,7 +1445,7 @@ static i32 first_unfit_argument_skipping(
         } else if (shape->rest_element) {
             target = shape->rest_element;
         } else if (shape->rest_variadic) {
-            source = rest_args_tuple_skipping(me, args, i, false, false, skip_sensitive);
+            source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape);
             target = shape->rest_variadic;
         } else {
             break;
@@ -1456,7 +1500,7 @@ static i32 check_args_until_unfit(
         if (!variadic) {
             target = i < shape->count ? shape->types[i] : shape->rest_element;
         } else {
-            source = rest_args_tuple_skipping(me, args, i, false, false, skip_sensitive);
+            source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape);
             target = shape->rest_variadic;
         }
         if (!ty_is_related(me, source, target, relation)) {
