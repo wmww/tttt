@@ -1781,6 +1781,13 @@ static bool is_top_signature(Checker* me, Signature const* sig) {
     return (rest->flags & (TYF_ANY | TYF_NEVER)) && (signature_return_type(me, sig)->flags & (TYF_ANY | TYF_UNKNOWN));
 }
 
+// A signature declared by a class's `constructor`, also as inherited by a derived class without one (tsc's
+// getDefaultConstructSignatures clones the base's, declaration and all) or instantiated
+static bool is_constructor_declaration(Signature const* sig) {
+    while (sig && !sig->function && sig->target) sig = sig->target;
+    return sig && sig->function && sig->function->is_constructor && !sig->function->is_type;
+}
+
 static Ternary compare_signatures(
     Checker* me, RelationState* st, Signature const* source, Signature const* target, CallbackMode callback, bool report,
     unsigned return_code
@@ -1823,11 +1830,11 @@ static Ternary compare_signatures(
         return TERNARY_FALSE;
     }
 
-    bool strict = !callback && st->relation != TY_RELATION_COMPARABLE && compiler_options()->strict_function_types &&
+    bool strict = !callback && compiler_options()->strict_function_types &&
         !(target->flags & SIGNATURE_METHOD) &&
         // (A class's `constructor` declaration is bivariant, a construct signature type isn't: tsc's strictVariance
         // goes by the target's declaration kind)
-        !((target->flags & SIGNATURE_CONSTRUCT) && (target->function && target->function->is_constructor && !target->function->is_type));
+        !((target->flags & SIGNATURE_CONSTRUCT) && is_constructor_declaration(target));
     Ternary result = TERNARY_TRUE;
     // A source that says what `this` is needs a target that agrees (a `void` one is called any way)
     if (source->this_type && !(source->this_type->flags & TYF_VOID) && target->this_type) {
