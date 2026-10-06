@@ -18807,7 +18807,7 @@ const baselines = {
     },
     'isolatedDeclarationLazySymbols': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'isolatedDeclarationOutFile': {

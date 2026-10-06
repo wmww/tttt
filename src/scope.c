@@ -4935,7 +4935,25 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         name = span_make(expr_outer_span(left).source, span_end_ptr(expr_outer_span(object)), span_end_ptr(expr_outer_span(left)));
         if (!span_valid(name) || !csview_starts_with(name.sv, "[")) return;
     }
-    if (!span_valid(name)) return;
+    if (!span_valid(name)) {
+        // Any other computed name (`f[o["a"]] = v`) is a dynamic name too, which declares nothing the checker sees but
+        // the namespaces of the entity name it's assigned to (tsc's bindSpecialPropertyAssignment: hasDynamicName)
+        if (top_level && left->property->form == PROPERTY_EXPR_BRACKET && !left->property->optional_chain &&
+            !expr_is_perenthisized(left) && expr_is_entity_name(object) && !expr_prototype_object(object) &&
+            expr_is_non_bindable_dynamic_name(&left->property->prop) &&
+            // (tsc's isDynamicName skips parentheses: `x[(0)]` isn't one)
+            !(left->property->prop.tag == EXPR_LITERAL &&
+                (left->property->prop.literal.tag == VALUE_STRING || left->property->prop.literal.tag == VALUE_NUMBER))
+        ) {
+            Expr const* root = object;
+            while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
+            Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
+            bool bound = root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder && (my file->is_js ?
+                !(my file->is_commonjs && is_commonjs_root(object)) : is_function_symbol(lookup_for_property_access(me, object)));
+            if (bound) add_expando_namespace_decls(me, object, true);
+        }
+        return;
+    }
     if (late_bound_key && (expr_prototype_object(object) || !expr_is_entity_name(object))) return;
     add_expando_member(me, object, name, left, right, jsdoc_type, top_level, late_bound_key, ASSIGNMENT_DECL_PROPERTY);
 }
