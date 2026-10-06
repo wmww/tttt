@@ -2463,10 +2463,24 @@ static bool index_key_applies(IndexInfo const* source, IndexInfo const* target) 
 // tsc's isObjectTypeWithInferableIndex: object literal and type literal types, namespaces and enums, but nothing callable
 static bool has_inferable_index(Checker* me, Ty const* ty) {
     if (ty->kind == TY_INTERSECTION) {
+        bool empty_seen = false;
         for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* member = ty->composite.types.data[i];
             // (`object` is `{}` in the intersection's apparent type, which drops it: tsc's getApparentTypeOfIntersectionType)
-            if (ty->composite.types.data[i]->flags & TYF_NON_PRIMITIVE) continue;
-            if (!has_inferable_index(me, ty->composite.types.data[i])) return false;
+            if (member->flags & TYF_NON_PRIMITIVE) continue;
+            // A type variable is its base constraint there, or unknown, which is nothing with strictNullChecks and
+            // tsc's emptyObjectType without: the first empty object type of an intersection is the one it keeps, so
+            // NonNullable's `T[K] & {}` has none then
+            if (member->kind == TY_TYPE_PARAM || member->kind == TY_SUBSTITUTION || (member->flags & TYF_DEFERRED)) {
+                Ty const* constraint = base_constraint(me, member, 0);
+                if (!constraint || constraint == member || (constraint->flags & TYF_UNKNOWN)) {
+                    if (compiler_options()->strict_null_checks || empty_seen) continue;
+                    return false;
+                }
+                member = apparent_type(me, constraint);
+            }
+            empty_seen |= member->kind == TY_ANONYMOUS && ty_is_empty_anonymous_object(me, member);
+            if (!has_inferable_index(me, member)) return false;
         }
         return true;
     }
@@ -3197,6 +3211,7 @@ static Ternary object_related(
 }
 
 static Ty const* intersection_constraint(Checker* me, Ty const* ty);
+static Ty const* normalized_intersection(Checker* me, Ty const* ty, bool writing);
 
 // The mapped type an object type is, generic (keys not known yet) or not (tsc's ObjectFlags.Mapped). Null if none
 static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic) {
@@ -4022,6 +4037,63 @@ static Ty const* intersection_constraint(Checker* me, Ty const* ty) {
     return ret == ty ? nullptr : ret;
 }
 
+// tsc's getConstraintOfType, one step: a type parameter's constraint, an indexed access's getConstraintFromIndexedAccess,
+// a conditional type's constraint, else the base constraint
+static Ty const* immediate_constraint(Checker* me, Ty const* ty) {
+    switch ((TyKind)ty->kind) {
+        case TY_TYPE_PARAM: return ty_param_constraint(me, ty);
+        case TY_INDEXED: return constraint_of_indexed(me, ty);
+        case TY_CONDITIONAL: return ty_conditional_constraint(me, ty);
+        default: return base_constraint(me, ty, 0);
+    }
+}
+
+// What an intersection source with type variables is related through once its members weren't (tsc's
+// getEffectiveConstraintOfIntersection): each instantiable member's constraint, followed through type parameters,
+// keyof and conditional types but not indexed accesses (which may be circular), together with the member itself
+// against a union target, and the members of disjoint domains or empty object types. Only against a union target or
+// with such a member, else null. `V[K] & {}` (NonNullable) is `V[keyof V] & {}` there, not the `{}` its base constraint
+// may come to
+static Ty const* effective_intersection_constraint(Checker* me, Ty const* source, bool target_is_union) {
+    TyList members = source->composite.types;
+    TyBuf parts = {0};
+    bool disjoint = false;
+    u32 disjoint_flags = TYF_NON_PRIMITIVE | TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM | TYF_BIGINT |
+        TYF_BIGINT_LITERAL | TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_UNDEFINED | TYF_NULL;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (member->kind == TY_TYPE_PARAM || member->kind == TY_SUBSTITUTION || (member->flags & TYF_DEFERRED)) {
+            Ty const* constraint = immediate_constraint(me, member);
+            for (u32 depth = 0; constraint && depth < 32 &&
+                (constraint->kind == TY_TYPE_PARAM || constraint->kind == TY_KEYOF || constraint->kind == TY_CONDITIONAL); depth++
+            ) {
+                Ty const* next = immediate_constraint(me, constraint);
+                constraint = next == constraint ? nullptr : next;
+            }
+            if (constraint) {
+                ty_buf_push(&parts, constraint);
+                if (target_is_union) ty_buf_push(&parts, member);
+            }
+        } else if ((member->flags & disjoint_flags) || ty_is_empty_anonymous_object(me, member)) {
+            disjoint = true;
+        }
+    }
+    Ty const* ret = nullptr;
+    if (parts.len && (target_is_union || disjoint)) {
+        for (u32 i = 0; disjoint && i < members.len; i++) {
+            Ty const* member = members.data[i];
+            if ((member->flags & disjoint_flags) || ty_is_empty_anonymous_object(me, member)) ty_buf_push(&parts, member);
+        }
+        // (Normalized like the source was: `V[string | number | symbol] & {}` is `(V[string] & {}) | ...`)
+        ret = normalized_intersection(me, ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}), false);
+        // (Not when the expansion contains the source itself)
+        TyList expanded = ret->kind == TY_UNION ? ret->composite.types : (TyList){ .data = &ret, .len = 1 };
+        for (u32 i = 0; ret && i < expanded.len; i++) if (expanded.data[i] == source) ret = nullptr;
+    }
+    ty_buf_drop(&parts);
+    return ret;
+}
+
 // `[...T]` with T generic (tsc's isSingleElementGenericTupleType)
 static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
     if (!is_tuple(ty)) return false;
@@ -4649,7 +4721,11 @@ static Ternary structured_related_members(
         st->intersection_source = saved_source;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
-        Ty const* constraint = related ? nullptr : intersection_constraint(me, source);
+        // (tsc relates the intersection normalized, its members simplified, in the first place: `Partial<T>[K] & {}` is
+        // `T[K] & {}`. Only once the members as they are failed here, which keeps the common case cheap)
+        Ty const* normalized = related ? source : normalized_intersection(me, source, false);
+        if (normalized != source) related = is_related_to_side(me, st, normalized, target, false, 2);
+        Ty const* constraint = related ? nullptr : effective_intersection_constraint(me, source, target->kind == TY_UNION);
         if (constraint) related = is_related_to_side(me, st, constraint, target, false, 2);
         if (related) {
             // A member being related isn't enough for the target's optional properties, which the intersection as a
@@ -6162,6 +6238,45 @@ Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* targ
     }
     // (`boolean | undefined` is three members in tsc: true and false aren't one. `false | undefined` is two)
     return candidate && !(candidate->kind == TY_UNION && (candidate->flags & TYF_BOOLEAN)) ? candidate : target;
+}
+
+// tsc's getNormalizedUnionOrIntersectionType for an intersection with an instantiable member next to a nullable or
+// empty object one (shouldNormalizeIntersection): its members normalized, `Partial<T>[K] & {}` is `T[K] & {}`
+static Ty const* normalized_intersection(Checker* me, Ty const* ty, bool writing) {
+    if (ty->kind != TY_INTERSECTION || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+    TyList members = ty->composite.types;
+    // (Only members that simplify can change anything: indexed accesses, conditional and substitution types)
+    bool simplifiable = false, nullable_or_empty = false;
+    for (u32 i = 0; i < members.len && !simplifiable; i++) {
+        Ty const* member = members.data[i];
+        simplifiable = member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL || member->kind == TY_SUBSTITUTION;
+    }
+    if (!simplifiable) return ty;
+    for (u32 i = 0; i < members.len && !nullable_or_empty; i++) {
+        Ty const* member = members.data[i];
+        nullable_or_empty = (member->flags & TYF_NULLABLE) || (member->kind == TY_ANONYMOUS && ty_is_empty_anonymous_object(me, member));
+    }
+    if (!nullable_or_empty) return ty;
+    u64 key[3] = { KEY_NORMALIZED_INTERSECTION, ty->id, writing };
+    Ty const* cached = intern_get(&my links, key, 3);
+    if (cached) return cached;
+    TyBuf parts = {0};
+    bool changed = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        for (u32 n = 0; n < 16 && (member->kind == TY_INDEXED || member->kind == TY_CONDITIONAL || member->kind == TY_SUBSTITUTION); n++) {
+            Ty const* next = member->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, member, writing)) :
+                writing ? member->substitution.base : ty_substitution_intersection(me, member);
+            if (next == member) break;
+            member = next;
+        }
+        changed |= member != members.data[i];
+        ty_buf_push(&parts, member);
+    }
+    Ty const* ret = changed ? ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}) : ty;
+    ty_buf_drop(&parts);
+    *intern_slot(me, &my links, key, 3) = ret;
+    return ret;
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
