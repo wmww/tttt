@@ -50551,7 +50551,7 @@ const baselines = {
         types: true,
     },
     'interfaceExtendsObjectIntersectionErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

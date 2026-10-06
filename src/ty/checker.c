@@ -2176,6 +2176,10 @@ Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg) {
         if (ty->reference.this_arg == this_arg) return ty;
         return ty_reference_with_this(me, ty->reference.target, ty_reference_args(me, ty), this_arg);
     }
+    // (A tuple's target has a this-type in tsc too: the reference it makes has no alias, `[string, number]`)
+    if (ty->kind == TY_REFERENCE && ty->alias && ty->reference.target->declared.tuple) {
+        return ty_reference(me, ty->reference.target, ty_reference_args(me, ty));
+    }
     return ty;
 }
 
