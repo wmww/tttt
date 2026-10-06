@@ -2377,7 +2377,9 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
         if (mapped->readonly > 0) flags |= PROP_READONLY;
         if (mapped->readonly < 0) flags &= ~(u32)PROP_READONLY;
         Prop* prop = arena_new(&my arena, Prop);
-        *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper, .decl = prop_decl_none() };
+        // (A mapped symbol: declarations but no valueDeclaration in tsc)
+        *prop = (Prop){ .name = from->name, .flags = flags | PROP_NO_VALUE_DECLARATION, .target = template, .mapper = mapper,
+            .decl = prop_decl_none() };
         Prop const* declared = from;
         while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
         if (declared) {
@@ -2454,7 +2456,9 @@ static Members const* expand_generic_intersection_homomorphic(Checker* me, Membe
                 me, (TyList){ .data = &mapped->type_param, .len = 1 }, (TyList){ .data = &key, .len = 1 }
             );
             Prop* prop = arena_new(&my arena, Prop);
-            *prop = (Prop){ .name = from->name, .flags = flags, .target = template, .mapper = mapper, .decl = prop_decl_none() };
+            // (A mapped symbol: declarations but no valueDeclaration in tsc)
+            *prop = (Prop){ .name = from->name, .flags = flags | PROP_NO_VALUE_DECLARATION, .target = template, .mapper = mapper,
+                .decl = prop_decl_none() };
             Prop const* declared = from;
             while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
             if (declared) {

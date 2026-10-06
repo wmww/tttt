@@ -1508,7 +1508,7 @@ static Span callee_span(CallInfo const* info) {
 // Where tsc's getErrorNodeForCallNode puts TS2769 when its overloads' errors are in different places: the callee (its
 // name if a property access) of a call or `new` alike, a tagged template's tag
 static Span overload_error_span(CallInfo const* info) {
-    if (info->jsx || !info->call->uses_new || !span_valid(info->call_span)) return callee_span(info);
+    if (info->jsx || !(info->call->uses_new || info->tagged_template) || !span_valid(info->call_span)) return callee_span(info);
     Expr const* callee = &info->call->callable;
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
