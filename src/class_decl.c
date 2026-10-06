@@ -1698,10 +1698,11 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
 // which needs its type arguments
 // The class a base constructor that is a class names, and how many type arguments it gets (null: not a class)
 static Symbol const* class_base_reference(ClassDecl const* me, u32* arg_count, bool* missing_extends) {
-    Expr const* base = &my extends;
+    // (An `@augments` tag naming another base: that base, see ClassDecl.jsdoc_base)
+    Expr const* base = my jsdoc_base ? my jsdoc_base : &my extends;
     *arg_count = 0;
     // (tsc's getTypeFromClassOrInterfaceReference: the clause itself rather than an `@extends` tag's type)
-    *missing_extends = expr_outer_span(&my extends).source && expr_outer_span(&my extends).source->is_js;
+    *missing_extends = !my jsdoc_base && expr_outer_span(&my extends).source && expr_outer_span(&my extends).source->is_js;
     if (base->tag == EXPR_GENERIC_PARAMS) {
         SpannedType const* first = vec_spanned_type_size(&base->generic_params->params) ?
             vec_spanned_type_at(&base->generic_params->params, 0) : nullptr;
@@ -2060,8 +2061,14 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
     generic_typecheck(&my generic, false, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
-    // (The base an `@augments` tag names instead: tsc checks its expression, checkClassLikeDeclaration)
-    if (my jsdoc_base) expr_typecheck(my jsdoc_base, errs);
+    // (The base an `@augments` tag names instead: tsc checks its expression, checkClassLikeDeclaration, without the
+    // type arguments, which class_check_base_arity() checks as the reference's)
+    if (my jsdoc_base && my jsdoc_base->tag == EXPR_GENERIC_PARAMS) {
+        expr_typecheck(&my jsdoc_base->generic_params->expr, errs);
+        for_each (i, vec_spanned_type, &my jsdoc_base->generic_params->params) type_typecheck(&i->type, errs);
+    } else if (my jsdoc_base) {
+        expr_typecheck(my jsdoc_base, errs);
+    }
     if (my extends.tag != EXPR_IMPLICIT_ANY) {
         expr_typecheck(&my extends, errs);
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);
