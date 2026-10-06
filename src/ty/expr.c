@@ -3600,7 +3600,11 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
             } else {
                 // (never is array-like, its element never: tsc's checkArrayLiteral, getIndexedAccessTypeOrUndefined.
                 // The spread expression itself is what iterating gives, any)
-                elements[count++] = operand->flags & TYF_NEVER ? operand : ty_expr_type(me, i);
+                // (A generic array-like one is its `[number]`: tsc's getIndexedAccessTypeOrUndefined of a variadic
+                // element, `[...arg]` with arg: T & {} is (T & {})[number][])
+                elements[count++] = operand->flags & TYF_NEVER ? operand :
+                    (is_generic_array_like(me, operand) || (operand->kind == TY_INTERSECTION && is_generic_type(me, operand) &&
+                        ty_extends_array(me, operand))) ? ty_indexed(me, operand, ty_intrinsic(me, TY_NUMBER)) : ty_expr_type(me, i);
             }
             continue;
         }

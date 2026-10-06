@@ -22958,7 +22958,7 @@ const baselines = {
     'narrowingTypeofUndefined2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingUnionToNeverAssigment': {
         errors: true,
