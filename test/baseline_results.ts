@@ -52236,8 +52236,8 @@ const baselines = {
         types: true,
     },
     'jsdocParamTagTypeLiteral': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'jsdocParseBackquotedParamName': {

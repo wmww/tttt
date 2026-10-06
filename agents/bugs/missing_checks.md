@@ -175,8 +175,7 @@ Binder gaps (spurious TS2339 and friends):
 - **`@typedef` inside a class body** (jsdocTemplateClass): tsc binds it in the class (blockScopeContainer = the class),
   where the class's `@template T` is visible; `jsdoc_bind_comments()` only lets statement lists claim comments, so the
   file claims it and `T` is TS2304.
-- `@param {Object} o` refined by `@param o.x` tags into a type literal (jsdocParamTagTypeLiteral); the nested
-  `@param {..} [config.additionalFiles]` binding type and TS7031 next to a JSDoc-typed sibling
+- The nested `@param {..} [config.additionalFiles]` binding type and TS7031 next to a JSDoc-typed sibling
   (destructuringParameterDeclaration9).
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
 const: TS18042), assignmentToVoidZero2,

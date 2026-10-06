@@ -4478,8 +4478,37 @@ static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array) {
         (span_equals(type->identifier->name, "Object") || span_equals(type->identifier->name, "object"));
 }
 
+// A JSDoc name's `[]` (`@param {string} opts[].x`, an element of an `{Object[]}` parameter) isn't part of the entity
+// name (tsc's parseJSDocEntityName skips `[` `]`): `name` is `prefix.<rest>` with them left out. The rest without its
+// leading `[]`, if `rest` isn't null
+static bool jsdoc_name_rest(csview name, csview prefix, csview* rest) {
+    isize i = 0, j = 0;
+    for (;;) {
+        while (i + 1 < name.size && name.buf[i] == '[' && name.buf[i + 1] == ']') i += 2;
+        while (j + 1 < prefix.size && prefix.buf[j] == '[' && prefix.buf[j + 1] == ']') j += 2;
+        if (j >= prefix.size) break;
+        if (i >= name.size || name.buf[i] != prefix.buf[j]) return false;
+        i++, j++;
+    }
+    if (i >= name.size || name.buf[i] != '.' || i + 1 >= name.size) return false;
+    if (rest) *rest = csview_from_range(name.buf + i + 1, name.buf + name.size);
+    return true;
+}
+
 static bool jsdoc_name_is_under(csview name, csview prefix) {
-    return name.size > prefix.size + 1 && !memcmp(name.buf, prefix.buf, (size_t)prefix.size) && name.buf[prefix.size] == '.';
+    return jsdoc_name_rest(name, prefix, nullptr);
+}
+
+// The same name with `[]`s left out
+static bool jsdoc_names_equal(csview a, csview b) {
+    isize i = 0, j = 0;
+    for (;;) {
+        while (i + 1 < a.size && a.buf[i] == '[' && a.buf[i + 1] == ']') i += 2;
+        while (j + 1 < b.size && b.buf[j] == '[' && b.buf[j + 1] == ']') j += 2;
+        if (i >= a.size || j >= b.size) return i >= a.size && j >= b.size;
+        if (a.buf[i] != b.buf[j]) return false;
+        i++, j++;
+    }
 }
 
 // The type literal the `@property`/`@param` tags named `prefix.x` among `props` make (`x` when prefix is empty; tsc's
@@ -4490,10 +4519,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         JsDocTag* tag = &props[i];
         if (!span_valid(tag->name)) continue;
         csview name = tag->name.sv;
-        if (prefix.size) {
-            if (!jsdoc_name_is_under(name, prefix)) continue;
-            name = csview_from_range(name.buf + prefix.size + 1, name.buf + name.size);
-        }
+        if (prefix.size && !jsdoc_name_rest(name, prefix, &name)) continue;
         if (memchr(name.buf, '.', (size_t)name.size) || memchr(name.buf, '[', (size_t)name.size)) continue;
         bool has_children = false;
         for (isize j = i + 1; j < count && !has_children; j++) {
@@ -4651,7 +4677,7 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
         bool object = i->has_type && jsdoc_is_object_type(i, &array);
         if (dot) {
             csview left = csview_from_range(name.buf, dot);
-            while (depth && !csview_equals_sv(objects[depth - 1].sv, left)) depth--;
+            while (depth && !jsdoc_names_equal(objects[depth - 1].sv, left)) depth--;
             if (depth) {
                 if (object && depth < c_arraylen(objects)) objects[depth++] = i->name;
                 continue;
@@ -4789,8 +4815,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         }
         bool direct = false; // (`o.a.b` without `o.a` is TS8032, which isn't reported: o keeps its type)
         for (isize j = 1; j <= children && !direct; j++) {
-            csview rest = csview_from_range(tag[j].name.sv.buf + tag->name.sv.size + 1, tag[j].name.sv.buf + tag[j].name.sv.size);
-            direct = !memchr(rest.buf, '.', (size_t)rest.size);
+            csview rest = {0};
+            jsdoc_name_rest(tag[j].name.sv, tag->name.sv, &rest);
+            direct = rest.size && !memchr(rest.buf, '.', (size_t)rest.size);
         }
         bool array;
         if (direct && jsdoc_is_object_type(tag, &array)) {
