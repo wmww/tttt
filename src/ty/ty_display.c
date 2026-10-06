@@ -1547,6 +1547,11 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
                 display_node(me, d, element);
                 if (parens) out(reused_if(d, false), c_sv(")"));
                 out_lit(d, "[]");
+                // (`...T=`: tsc's JSDocOptionalType around it, whose `undefined` is synthesized)
+                if (node->jsdoc_optional) {
+                    out_lit(d, " | ");
+                    out(reused_if(d, false), c_sv("undefined"));
+                }
                 break;
             }
             display_node_list(me, d, &node->composite, " | ");

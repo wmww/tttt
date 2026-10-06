@@ -4775,9 +4775,11 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
         }
         i->jsdoc_variadic = variadic && !i->rest;
-        if (variadic && i->rest) {
-            // TODO: `{...T=}` is optional of variadic in tsc (parseJSDocType), which types the parameter any and prints
-            // as `T[] | undefined` (getTypeFromJSDocVariadicType sees no parameter tag above it)
+        if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {
+            // `{...T=}` is optional of variadic in tsc (parseJSDocType): getTypeFromJSDocVariadicType sees no parameter
+            // tag above it, so the parameter is `T | undefined`, which the printer shows as `T[] | undefined`
+            binding->explicit_type.jsdoc_variadic = true;
+        } else if (variadic && i->rest) {
             binding->explicit_type = type_array(c_new(TypeNode, binding->explicit_type), false);
             binding->explicit_type.parsed = true;
         } else if (variadic) {

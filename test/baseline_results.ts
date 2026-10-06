@@ -52273,7 +52273,7 @@ const baselines = {
     'jsdocParseStarEquals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocPostfixEqualsAddsOptionality': {
         errors: true,
