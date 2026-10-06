@@ -168,27 +168,51 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
     `f11(1, ...u)` keeps `1`), isomorphicMappedTypeInference (f22/f24 infer unknown),
     dependentDestructuredVariablesFromNestedPatterns, arrayFrom, inferConditionalConstraintMappedMember (tsc: never),
     typeArgumentInferenceWithObjectLiteral (single-member `enum E1 { X }`: tsc ends with the fresh E1.X).
-11. **Narrowable references during inference / one type per expression**: constraint substitution of generics with
-    union constraints where the contextual type is a call's resolved parameter (intersectionSatisfiesConstraint,
-    voidReturnIndexUnionInference, mappedTypeIndexedAccessConstraint, narrowingTypeofUndefined2, narrowingDestructuring);
-    needs a tsc trace.
+11. **Narrowable references** (2026-10-06, agent C: done for intersectionSatisfiesConstraint (an intersection whose
+    apparent type is a union isn't related structurally, seen in a tsc trace), voidReturnIndexUnionInference (property
+    accesses retyped outside inference), mappedTypeIndexedAccessConstraint (base constraint of an indexed access),
+    narrowingTypeofUndefined2 (`[...x]` of a generic array-like is `X[number][]`), restInvalidArgumentType and
+    genericObjectSpreadResultInSwitch (rest elements retyped, CheckMode.RestBindingElement)). Left:
+    narrowingDestructuring: an IIFE argument `(({ kind, ...rest }) => rest)(t)` is substituted in tsc (its contextual
+    type comes from the resolving signature), and a nested pattern's rest element still takes the substituted type.
 12. **Circularity order**: circular returns are any in tsc (`let x = { foo: () => x }` gives foo `() => any`;
     genericCallOnMemberReturningClosedOverObject; the opposite of plan 42's direction). Static side resolution lowers
     the base's type arguments first (cloduleGenericOnSelfMember, classDeclarationShouldBeOutOfScopeInComputedNames:
     `class S extends B<typeof S.Base>` cycles to any; tsc publishes the static members before default construct
-    signatures).
-13. **Spread of a union with a generic member** (spreadInvalidArgumentType, spreadObjectOrFalsy): `{ ...(T | {a:
-    number}) }` is `T | { a: number }` in tsc (getSpreadType maps over the union); `SpreadAcc` spreads T's constraint.
-    A refactor.
-14. One each: destructuringParameterDeclaration10 strict=false (a nested pattern's default `{}` padded with implied
+    signatures). cyclicGenericTypeInstantiation{,Inference}: tsc's `typeof z` circularity bottoms out in any 11 levels
+    down, tttt's type is infinite. dynamicNames: `[rI.x]` in `interface RI<T>` needs the early-bound members while the
+    late-bound ones are resolved (tsc's getResolvedMembersOrExportsOfSymbol publishes earlySymbols first).
+13. Spreads: done (2026-10-06, SpreadAcc is a union of intersections, mapped over every union spread).
+14. One each: destructuringParameterDeclaration9/10 strict=false (a nested pattern's default `{}` padded with implied
     types, see binding_element_implied_type / ty_binding_element_type), `yield` as a call argument/assignment
     right side/return operand gets its TNext only once the statement is checked (fixed for `const y: T = yield` via
-    UnaryOpExpr.declared_context), reExportUndefined1 (`export { undefined }` is undefinedSymbol), fakeInfinity2/3
-    (`() => Infinity`, not the alias), wellKnownSymbolExpando (no late-bound expando for `f[Symbol.iterator] = ...` in
-    TS), instantiationExpressions' last line / typeofImportInstantiationExpression (`typeof import("./a").f<T>`, `fx<>`
-    has no node), ramdaToolsNoInfinite2 (alias chosen), inexistentPropertyInsideToStringType (`function toString()`
-    in a JS script), declarationEmitPartialReuseComputedProperty (artefact). Not worth mimicking: awaitedType-like
-    "first alias a union was created with" cases.
+    UnaryOpExpr.declared_context), fakeInfinity2/3 (`() => Infinity`, not the alias), wellKnownSymbolExpando (no
+    late-bound expando for `f[Symbol.iterator] = ...` in TS), instantiationExpressions' last line /
+    typeofImportInstantiationExpression (`typeof import("./a").f<T>`, `fx<>` has no node), ramdaToolsNoInfinite2
+    (alias chosen), inexistentPropertyInsideToStringType (`function toString()` in a JS script),
+    declarationEmitPartialReuseComputedProperty (artefact). Not worth mimicking: awaitedType-like "first alias a union
+    was created with" cases. Found by agent C (2026-10-06), not done:
+    - Object literal methods of one name are one binder symbol (PropertyExcludes is None): `{ foo(x: 'hi') {}, foo(x:
+      'a') {} }` is `{ foo(x: "hi"): void; foo(x: "a"): void }`, each name typed with both signatures
+      (stringLiteralTypesInImplementationSignatures2, callSignaturesWithParameterInitializers2).
+    - overloadModifiersMustAgree: `declare function bar(); export function bar(s); function bar(s?) {}` is one local
+      symbol in tsc whose implementation is skipped (it follows an overload); tttt keeps the implementation.
+    - Members of an interface declared in several places (Array, String...) are instantiated per `this` in tsc
+      (isTypeParameterPossiblyReferenced is true for a multi-declaration symbol), so `x.slice` of `[A, B] | [A, B, C]`
+      is a union of two identical-looking function types (sliceResultCast, arrayDestructuringInSwitch1). tttt's
+      free_params is exact; mimicking it costs instantiations on every lib method.
+    - Accessor bodies in type literals (`get foo() { return 0 }`, TS1183) are typed from the body in tsc
+      (accessorBodyInTypeContext); a getter without a body in an object literal (`get e,`) names void.
+    - typeArgumentInferenceWithObjectLiteral: a single-member enum's regular member literal is the enum type itself
+      (prints E1), the fresh one prints E1.X.
+    - noCrashOnNoLib: without lib, array types are `{}` (missing global Array).
+    - intersectionsAndEmptyObjects: `{} & M` with M an import()'s synthetic default type is {} (the spread type's
+      symbol has no members, so isEmptyAnonymousObjectType counts it empty).
+    - globalThisBlockscopedProperties: `keyof typeof globalThis` has "undefined" (tsc's undefinedSymbol is a global).
+    - importDeclWithExportModifierAndExportAssignment{,InAmbientContext}: `export = x` of an uninstantiated namespace
+      next to other exports prints any, tsc typeof x (the merged export= path).
+    - shadowedInternalModule (`import any = b.A` prints the alias's type), typeFromPropertyAssignment30 (an expando
+      `c.p = {}` of an annotated const is typed without context in tsc).
 
 **Symbols component and binder (tsc's checker-time mergeSymbol through aliases; tttt's binder merges first)**
 15. importEqualsError45874 (`.St`), moduleAugmentationWithNonExistentNamedImport, duplicateVarsAcrossFileBoundaries,
