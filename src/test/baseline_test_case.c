@@ -458,22 +458,25 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     // starts as an option is an option line whole (its other options still apply: tsc's extractCompilerSettings scans
     // the whole file), a `@filename` after its first line included
     bool crlf_only = csview_find_sv(contents_sv, c_sv("\r\n")) != c_NPOS;
+    // (Without any `\n`, split at `\r`: a file whose line breaks are all CR)
+    bool cr_only = !crlf_only && csview_find_sv(contents_sv, c_sv("\n")) == c_NPOS && csview_find_sv(contents_sv, c_sv("\r")) != c_NPOS;
     csview* chunks = nullptr;
     isize chunk_count = 0, chunk_cap = 0;
 #define PUSH_CHUNK(sv) do { \
         if (chunk_count == chunk_cap) { chunk_cap = chunk_cap ? chunk_cap * 2 : 64; chunks = realloc(chunks, sizeof(csview) * (size_t)chunk_cap); } \
         chunks[chunk_count++] = (sv); \
     } while (0)
-    if (crlf_only) {
+    if (crlf_only || cr_only) {
         csview rest = contents_sv;
+        csview separator = crlf_only ? c_sv("\r\n") : c_sv("\r");
         for (;;) {
-            isize at = csview_find_sv(rest, c_sv("\r\n"));
+            isize at = csview_find_sv(rest, separator);
             if (at == c_NPOS) {
                 if (rest.size) PUSH_CHUNK(rest); // (like lines_sv: no empty line after the last line break)
                 break;
             }
             PUSH_CHUNK(csview_slice(rest, 0, at));
-            rest = csview_slice(rest, at + 2, rest.size);
+            rest = csview_slice(rest, at + separator.size, rest.size);
         }
     } else {
         for_each (i, lines_sv, contents_sv) PUSH_CHUNK(i);

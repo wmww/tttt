@@ -43782,13 +43782,13 @@ const baselines = {
     },
     'templateStringMultiline3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringMultiline3_ES6': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'templateStringPlainCharactersThatArePartsOfEscapes01': {
         errors: true,
