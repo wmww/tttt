@@ -117,6 +117,9 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
   controlFlowGenericTypes (`Box<T>` vs `Box<unknown>` display, a TS2536 at line 218), strictBindCallApply1
   (bind/call/apply inference with the `this` parameter: TS2684 instead of TS2345), variadicTuples2 (spread arguments
   against variadic rest tuples).
+  controlFlowGenericTypes (`Box<T>` vs `Box<unknown>` display, a TS2536 at line 218), variadicTuples2 (spread arguments
+  against variadic rest tuples), interfaceExtendsObjectIntersectionErrors (heritage errors name the alias, not the
+  resolved base).
 - deeplyNestedMappedTypes (`Id2<T> = { [K in keyof T]: Id2<Id2<T[K]>> }` still ends in a Maybe),
   reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),

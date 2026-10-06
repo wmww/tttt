@@ -1931,6 +1931,10 @@ static Atom const* rest_element_label(Checker* me, SigParam const* rest, u32 ind
     return numbered_name(me, atom_sv(rest->name), "_%u", index);
 }
 
+Atom const* ty_rest_element_label(Checker* me, SigParam const* rest, u32 index, unsigned char flags) {
+    return rest_element_label(me, rest, index, flags);
+}
+
 // tsc prints a rest parameter of tuple type as the parameters it stands for (getExpandedParameters), unless a rest
 // element comes before the end. Null when there's nothing to expand
 static SigParam const* expanded_params(Checker* me, Signature const* sig, u32* count_out) {

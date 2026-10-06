@@ -1180,6 +1180,8 @@ void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* er
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape);
 // The shape of a tuple type, the empty tuple (its own target) included. Null if it isn't one
 TupleShape const* ty_tuple_shape(Ty const* ty);
+// tsc's getTupleElementLabel of an unlabeled element of a rest parameter's tuple (`args_0`), ty_display.c
+Atom const* ty_rest_element_label(Checker* me, SigParam const* rest, u32 index, unsigned char flags);
 Ty const* ty_keyof(Checker* me, Ty const* operand);
 // A mapped type's declaration (key, constraint, modifiers type) without expanding its members
 struct MappedInfo const* ty_mapped_info_unexpanded(Checker* me, Ty const* ty);

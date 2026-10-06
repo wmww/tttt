@@ -1674,8 +1674,23 @@ static Ty const* non_array_rest_type(Checker* me, Signature const* sig) {
     return rest;
 }
 
-// A parameter's name as tsc's getParameterNameAtPosition gives it: its symbol's, which is `__<index>` for a binding pattern
-[[gnu::cold]] static cstr message_param_name(Signature const* sig, u32 index) {
+// A parameter's name as tsc's getParameterNameAtPosition gives it: its symbol's, which is `__<index>` for a binding
+// pattern; past the others, a rest parameter of a tuple type's element label (`args_0`)
+[[gnu::cold]] static cstr message_param_name(Checker* me, Signature const* sig, u32 pos) {
+    if (!sig->param_count) return cstr_lit("");
+    bool rest = sig->params[sig->param_count - 1].rest;
+    u32 fixed = sig->param_count - (rest ? 1 : 0);
+    u32 index = pos < sig->param_count ? pos : sig->param_count - 1;
+    if (rest && pos >= fixed) {
+        SigParam const* rest_param = &sig->params[fixed];
+        TupleShape const* shape = rest_param->type->kind == TY_REFERENCE ? ty_tuple_shape(rest_param->type) : nullptr;
+        u32 element = pos - fixed;
+        if (shape && element < shape->arity) {
+            if (shape->names && shape->names[element]) return cstr_from_sv(atom_sv(shape->names[element]));
+            return cstr_from_sv(atom_sv(ty_rest_element_label(me, rest_param, element, shape->flags[element])));
+        }
+        index = fixed;
+    }
     FunctionArg const* decl = sig->params[index].decl;
     if (decl && decl->initializer.binding.tag != BINDING_IDENTIFIER) return cstr_d("__", index);
     return cstr_from_sv(atom_sv(sig->params[index].name));
@@ -1865,9 +1880,7 @@ static Ternary compare_signatures(
         }
         if (!related) {
             if (report) {
-                u32 source_index = i < source->param_count ? i : source->param_count - 1;
-                u32 target_index = i < target->param_count ? i : target->param_count - 1;
-                cstr source_name = message_param_name(source, source_index), target_name = message_param_name(target, target_index);
+                cstr source_name = message_param_name(me, source, i), target_name = message_param_name(me, target, i);
                 report_line(st, 2328, cstr_d("Types of parameters '", source_name, "' and '", target_name, "' are incompatible."));
                 c_drop(cstr, &source_name, &target_name);
             }
