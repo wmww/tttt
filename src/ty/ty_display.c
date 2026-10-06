@@ -908,6 +908,7 @@ static Ty const* node_type(Checker* me, TyDisplay d, TypeNode const* node) {
 
 // A part of an annotation that can't be reused prints its type
 static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty);
+static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, bool parens);
 static void display_node_fallback(Checker* me, TyDisplay d, TypeNode const* node) {
     bool element = d.array_element_node;
     d.array_element_node = false;
@@ -2300,6 +2301,10 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         TyDisplay fresh = reused_if(d, false);
         if (keyof_wrapper) out(fresh, c_sv("keyof "));
         out_type_param_name(me, fresh, wrapper, false);
+    } else if (mapped->keyof_constraint && mapped->modifiers_type) {
+        // (`keyof` and the modifiers type: the constraint itself may have distributed `keyof` over an intersection)
+        out_lit(d, "keyof ");
+        display_parenthesized_if(me, d, mapped->modifiers_type, needs_parens_in_array(me, d, mapped->modifiers_type));
     } else {
         ty_display(me, d, mapped->constraint);
     }

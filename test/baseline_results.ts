@@ -20328,7 +20328,7 @@ const baselines = {
     'keyRemappingKeyofResult': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofDoesntContainSymbols': {
         errors: true,
@@ -20868,7 +20868,7 @@ const baselines = {
     'mappedTypeGenericInstantiationPreservesInlineForm': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeGenericWithKnownKeys': {
         errors: true,
@@ -20968,7 +20968,7 @@ const baselines = {
     'mappedTypeUnionConstraintInferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeWithAsClauseAndLateBoundProperty': {
         errors: true,
