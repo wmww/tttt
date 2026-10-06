@@ -174,8 +174,22 @@ intersection (assert.strict.equal), `${Enum}` property annotations made at the i
   inaccessible local alias ThrowErrorKey (the mustache-express class, low value). `[value: number] | [value: number]`
   (node test.ts x4): tsc's tuple targets are keyed by the named member *declarations* (getTupleTargetType), tttt's
   TupleShape by label atoms: a design change for 4 assertions.
-- **Inference singles**: frida-gum (NativeFunction's return from a tuple), function-bind (`new () => Foo` vs `new
-  (...args: readonly unknown[]) => Foo`), convict, redux-promise-listener (`AsyncFunction<unknown>` vs `<AnyAction>`),
-  raphael (`[]` vs a huge mapped object), underscore NonIntersecting (union of records vs alias).
-- mustache-express: an unresolved import's type arguments are reprinted from the source text (tsc reprints through
-  its emitter, `;` after the last member); `lru-cache` isn't installed, low value.
+- **Inference singles** done 2026-10-06 (agent C, 68610 -> 68619): convict (getTypeFromInference subtype-reduces),
+  frida-gum (an array literal's element context from a type parameter's union constraint, unreduced), function-bind
+  (a target rest parameter past the source's parameters gets `[]`), raphael (the empty tuple's `this` members return
+  `[]`), mustache-express (an unresolved reference's type arguments reprinted), es-abstract `[Symbol.toStringTag]` (a
+  unique-symbol property name is looked up from its declaration, never bare). Left: redux-promise-listener
+  (`AsyncFunction<unknown>`; tsc 5.8 says `AsyncFunction<AnyAction>` for a TReturn defaulting to
+  `ResolveAction["payload"]` with ResolveAction uninferred: not understood), lodash 6087 (`Pick<Dictionary<..>,
+  keyof Dictionary<..>>` vs `string | number`: didn't reproduce outside lodash), underscore NonIntersecting.
+- react-relay (sweep): a conditional `infer X` that infers nothing is now its constraint without comparing (tsc's
+  getInferredType: unknown is assignable to `{}` without strictNullChecks, so tttt kept unknown), but only for a
+  constraint not flagged TYF_COULD_CONTAIN_TYPE_VARIABLES: react-relay's `Record<string, EP<any> | undefined>` is
+  flagged (a deferred alias reference) and still gives unknown. Taking flagged constraints too (even only those
+  mentions_type_variables() says are concrete) fixed react-relay but cost valibot +5% instructions: the valibot
+  ValidPath HACK in ty_conditional_resolve. A fix needs the flag to be exact for deferred references or valibot's
+  iteration understood.
+- chai, chai/v4 (sweep): `d(mk([["a", { a: 1 }]]))` with `d<T>(h: ReadonlySet<T> | ReadonlyMap<any, T>)` and lib es6
+  infers T = string, a declared `Map<string, {a}>` argument doesn't; reduced to `/tmp/c-probes/ch3.ts`-like files with
+  lib es6 (a self-written S/M pair does NOT reproduce, so it needs the real es2015 collection/iterable lib types).
+  Probably the inner call's return-type inference (K, V from `ReadonlySet<T>`) leaking into the outer T.

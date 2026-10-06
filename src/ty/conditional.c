@@ -444,9 +444,11 @@ Ty const* ty_conditional_resolve(
         infer_types(me, &inf, check_type, extends, INFER_PRIORITY_NORMAL);
         Ty const** params = arena_new_n(&my arena, Ty const*, inf.len);
         Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);
+        bool* none = arena_new_n(&my arena, bool, inf.len);
         for (u32 i = 0; i < inf.len; i++) {
             params[i] = inf.params[i].param;
             results[i] = inference_conditional_result(me, &inf, i);
+            none[i] = !results[i];
             if (!results[i]) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
         }
         // Nothing inferred, or what doesn't satisfy `infer X extends C` (or an implied constraint: `string` in a
@@ -476,7 +478,9 @@ Ty const* ty_conditional_resolve(
             // Doing it made valibot's ValidPath<TInput, TPath> iterate to a type mentioning LazyPath's own TValue
             // (probe test/probes/plan19/zod/ark_infer_constraint.ts has both)
             if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) continue;
-            if (!ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)) checked[i] = constraint;
+            // (Nothing inferred is the constraint without asking: unknown is assignable to `{}` without
+            // strictNullChecks, tsc's getInferredType doesn't compare then)
+            if (none[i] || !ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)) checked[i] = constraint;
         }
         results = checked;
         mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
