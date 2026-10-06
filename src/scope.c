@@ -5105,7 +5105,8 @@ static Span written_member_name(Expr const* left, Span name) {
 }
 
 // JavaScript `F.prototype.x = v` declares an instance member x of F, which makes F a class (tsc's
-// bindPrototypePropertyAssignment)
+// bindPrototypePropertyAssignment). Without a name (`F.prototype[k] = v`, a late-bound member the checker doesn't
+// see) only the latter
 static void add_prototype_property(
     Scope* me, Expr* constructor, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type, AssignmentDeclKind kind
 ) {
@@ -5114,6 +5115,7 @@ static void add_prototype_property(
     Expr* init;
     Symbol* host = expando_host(me, constructor, &init);
     if (!host) {
+        if (!span_valid(name)) return;
         // Any variable of this file gets the member (tsc's bindPotentiallyMissingNamespaces makes whatever has a value
         // declaration a class: \`var g = f; g.prototype.m = v\`). Its type stays its initializer's, so it isn't made a
         // class here
@@ -5131,7 +5133,12 @@ static void add_prototype_property(
         value = &value->binary_op->right;
     }
     host->flags |= SYMBOL_CLASS;
-    declare_assignment_member(me, &symbol_rare_mut(host)->members, host, name, left, value, jsdoc_type, kind, 0);
+    if (span_valid(name)) {
+        declare_assignment_member(me, &symbol_rare_mut(host)->members, host, name, left, value, jsdoc_type, kind, 0);
+    } else if (!symbol_rare(host)->members) {
+        // (tsc's members get the late-bound symbol, which nothing looks up by name: a table, empty)
+        symbol_rare_mut(host)->members = arena_new(binder_arena(my binder), SymbolTable);
+    }
 }
 
 static Symbol* js_constructor_symbol(Symbol* symbol);
@@ -5219,7 +5226,13 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
         }
         return;
     }
-    if (late_bound_key && (expr_prototype_object(object) || !expr_is_entity_name(object))) return;
+    if (late_bound_key && expr_prototype_object(object)) {
+        // `F.prototype[k] = v`: tsc binds a late-bound prototype member (PrototypeProperty), which makes F a constructor
+        // (isJSConstructor: it has members), though the checker never sees the member itself
+        add_prototype_property(me, expr_prototype_object(object), span_null, left, right, jsdoc_type, ASSIGNMENT_DECL_PROTOTYPE_PROPERTY);
+        return;
+    }
+    if (late_bound_key && !expr_is_entity_name(object)) return;
     add_expando_member(me, object, name, left, right, jsdoc_type, top_level, late_bound_key, ASSIGNMENT_DECL_PROPERTY);
 }
 
