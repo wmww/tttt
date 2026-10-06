@@ -27,12 +27,30 @@ LAST = f'/tmp/sweep-{TREE}.json'
 DIAG = re.compile(r'(\S+):(\d+) \[TS(\d+)\] (.*)')
 
 
-def run_tsc(packages, jobs):
+def list_packages(filter=None):
+    """Every package, and every versioned directory of one (types/NAME/vN), which is a package of its own"""
+    packages = []
+    for n in os.listdir(os.path.join(DT, 'types')):
+        base = os.path.join(DT, 'types', n)
+        if os.path.exists(os.path.join(base, 'tsconfig.json')):
+            packages.append('types/' + n)
+        if os.path.isdir(base):
+            packages += [f'types/{n}/{v}' for v in os.listdir(base)
+                         if re.fullmatch(r'v\d+(\.\d+)?', v) and os.path.exists(os.path.join(base, v, 'tsconfig.json'))]
+    packages.sort()
+    # The ~460 generated Google API wrappers (types/gapi.client.*) are one shape that needs npm-only typings: no signal
+    packages = [p for p in packages if not p.startswith('types/gapi.client.')]
+    if filter:
+        packages = [p for p in packages if re.search(filter, p[len('types/'):])]
+    return packages
+
+
+def run_tsc(packages, jobs, extra=()):
     """tsc 5.8 on the packages, `jobs` node processes each checking a share in one process (test/sweep_tsc.js)"""
     procs = []
     for i in range(jobs):
         share = packages[i::jobs]
-        p = subprocess.Popen(['node', '--max-old-space-size=4096', os.path.join(ROOT, 'test/sweep_tsc.js')],
+        p = subprocess.Popen(['node', '--max-old-space-size=4096', os.path.join(ROOT, 'test/sweep_tsc.js'), *extra],
                              cwd=DT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         p.stdin.write('\n'.join(share) + '\n')
         p.stdin.close()
@@ -143,20 +161,7 @@ def main():
     # Older majors of dependencies where a package asks for them, as pnpm would link them (idempotent: writes nothing
     # once they're there)
     subprocess.run([sys.executable, os.path.join(ROOT, 'test/sweep_links.py'), DT], check=True)
-    # Every package, and every versioned directory of one (types/NAME/vN), which is a package of its own
-    packages = []
-    for n in os.listdir(os.path.join(DT, 'types')):
-        base = os.path.join(DT, 'types', n)
-        if os.path.exists(os.path.join(base, 'tsconfig.json')):
-            packages.append('types/' + n)
-        if os.path.isdir(base):
-            packages += [f'types/{n}/{v}' for v in os.listdir(base)
-                         if re.fullmatch(r'v\d+(\.\d+)?', v) and os.path.exists(os.path.join(base, v, 'tsconfig.json'))]
-    packages.sort()
-    # The ~460 generated Google API wrappers (types/gapi.client.*) are one shape that needs npm-only typings: no signal
-    packages = [p for p in packages if not p.startswith('types/gapi.client.')]
-    if args.filter:
-        packages = [p for p in packages if re.search(args.filter, p[len('types/'):])]
+    packages = list_packages(args.filter)
 
     if args.tsc:
         oracle = {}

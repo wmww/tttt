@@ -14,6 +14,7 @@ core_files = files(
     'block.c',
     'expr.c',
     'ast_walk.c',
+    'expect_types.c',
     'value.c',
     'modifier_list.c',
     'statement.c',

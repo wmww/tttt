@@ -17,6 +17,7 @@
 #include "tsconfig.h"
 #include "project.h"
 #include "load_pool.h"
+#include "expect_types.h"
 #include <cleat/filesystem.h>
 #include <pthread.h>
 #include <stdatomic.h>
@@ -42,6 +43,7 @@ typedef struct Options {
     bool stop_build_on_errors; // --stopBuildOnErrors
     u32 checkers; // --checkers
     u32 threads; // --threads
+    const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
     u32 build_jobs; // --build-jobs: how many projects -b checks at once (0: decided by threads)
     const char** paths;
     intptr_t path_count;
@@ -469,6 +471,10 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         type_errors = report_errors(out, errs);
         if (type_errors) ret = 1;
         phase_done(opts, out, "typecheck", &last_time);
+        if (opts->expect_types) {
+            output_flush(out);
+            program_print_expect_types(program, opts->expect_types);
+        }
         if (opts->time) {
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
@@ -729,6 +735,7 @@ int main(int argc, const char** argv) {
                 "  --build-jobs J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
                 "                4 threads, else 1). The output doesn't depend on it\n"
                 "  --no-lib      don't load the standard library\n"
+                "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
                 "  --keep-going  typecheck even after parse or options errors\n"
                 "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
                 "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
@@ -769,6 +776,8 @@ int main(int argc, const char** argv) {
             opts.threads = (u32)atoi(argv[++i]);
         } else if (streq(argv[i], "--build-jobs") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
             opts.build_jobs = (u32)atoi(argv[++i]);
+        } else if (streq(argv[i], "--expect-types") && i + 1 < argc) {
+            opts.expect_types = argv[++i];
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {
