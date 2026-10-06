@@ -2443,11 +2443,13 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
         }
 
         if (*p.pos != '>') {
-            if (expect_char(&p, ',')) {
+            if (*p.pos == ',') {
+                expect_char(&p, ',');
                 trailing_comma_span = span_from_previous_char(&p);
             } else {
+                // (tsc's isListTerminator for type arguments: any token but `,` ends the list, which then expects `>`)
                 if (fail_on_error) { goto fail; }
-                hop_token(&p);
+                break;
             }
         }
         hop_whitespace(&p);

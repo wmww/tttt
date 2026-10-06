@@ -190,8 +190,6 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   and '</' expected); tttt's last-error dedupe drops the second.
 - tsxAttributeInvalidNames: `<test1 32data={32} />` wants ';' expected and TS1351 at the same position (scanner
   error order).
-- parserSkippedTokens20 (`X<T \`): tsc aborts the type argument list at an invalid character (all later errors
-  land on it and are deduped); tttt skips it and reports '>' expected at the end.
 - dontShowCompilerGeneratedMembers (`<-` in a type literal: a call signature whose type parameter list fails),
   esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
 - reservedNamesInAliases (`type void = I` is both a TS2457 alias and an expression statement),
