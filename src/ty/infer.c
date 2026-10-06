@@ -797,6 +797,31 @@ static bool is_variadic_element(Checker* me, TupleShape const* shape, TyList arg
     return (shape->flags[i] & TUPLE_ELEMENT_REST) && !ty_is_array(me, args.data[i]) && !ty_is_tuple(args.data[i]);
 }
 
+// tsc's tupleTypesDefinitelyUnrelated: tuples of arities that can't match, nothing to infer from their elements. `[A,
+// B]` against `[T]` (AsArray<T>'s false branch) infers nothing to T. (tsc's minLength counts the required and the
+// variadic elements, its fixedLength the elements before the first rest or variadic one)
+static bool tuples_definitely_unrelated(Checker* me, Ty const* source, Ty const* target) {
+    TupleShape const* source_shape = ty_is_tuple(source) ? source->reference.target->declared.tuple : source->declared.tuple;
+    TupleShape const* target_shape = target->reference.target->declared.tuple;
+    TyList source_args = ty_is_tuple(source) ? ty_reference_args(me, source) : (TyList){0};
+    TyList target_args = ty_reference_args(me, target);
+    u32 source_min = 0, target_min = 0;
+    bool target_variadic = false;
+    for (u32 i = 0; i < source_shape->arity; i++) {
+        source_min += !(source_shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST)) ||
+            is_variadic_element(me, source_shape, source_args, i);
+    }
+    for (u32 i = 0; i < target_shape->arity; i++) {
+        bool variadic = is_variadic_element(me, target_shape, target_args, i);
+        target_variadic |= variadic;
+        target_min += !(target_shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST)) || variadic;
+    }
+    if (!target_variadic && target_min > source_min) return true;
+    bool target_variable = tuple_fixed_length(target_shape) < target_shape->arity;
+    bool source_variable = tuple_fixed_length(source_shape) < source_shape->arity;
+    return !target_variable && (source_variable || tuple_fixed_length(target_shape) < tuple_fixed_length(source_shape));
+}
+
 // An array or tuple against a tuple (tsc's inferFromObjectTypes): the fixed elements at the start and at the end pair
 // up, what's between goes to the variadic or rest element in the middle of the target
 static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
@@ -941,6 +966,7 @@ static void infer_from_type_args(Checker* me, Inference* inf, Ty const* source, 
 
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if ((ty_is_tuple(source) || is_empty_tuple(source) || ty_is_array(me, source)) && ty_is_tuple(target)) {
+        if ((ty_is_tuple(source) || is_empty_tuple(source)) && tuples_definitely_unrelated(me, source, target)) return;
         infer_to_tuple(me, inf, source, target);
         return;
     }
