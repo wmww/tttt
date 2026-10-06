@@ -115,7 +115,7 @@ static void add_symbol_override(BaselineTestCase* ctx, Span span, Symbol const* 
     };
 }
 
-// tsc's getSpecialPropertyAssignmentSymbolFromEntityName: in `exports.x = v` the access, `exports` and `x` are the
+// tsc's getSpecialPropertyAssignmentSymbolFromEntityName: in `exports.x = v` `exports` and `x` are the
 // export x; in `module.exports = v` `module` and `exports` are the `export=` (the access itself is `module.exports`)
 static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
     SourceFile const* file = left->inner_span.source;
@@ -127,7 +127,7 @@ static void commonjs_symbol_overrides(Expr const* left, BaselineTestCase* ctx) {
             break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY: {
             Symbol const* symbol = module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
-            add_symbol_override(ctx, left->inner_span, symbol);
+            // (The access itself shows what the property lookup finds: nothing on an `export=` of another type)
             // (`exports["x"]`: an element access isn't a special property assignment name, its object is itself)
             if (left->property->form != PROPERTY_EXPR_BRACKET) add_symbol_override(ctx, left->property->expr.inner_span, symbol);
             add_symbol_override(ctx, expr_outer_span(&left->property->prop), symbol);

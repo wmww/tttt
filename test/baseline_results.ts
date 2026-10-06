@@ -60397,7 +60397,7 @@ const baselines = {
     },
     'moduleExportAliasUnknown': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportAssignment': {
@@ -60417,7 +60417,7 @@ const baselines = {
     },
     'moduleExportAssignment4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportAssignment5': {
@@ -60467,12 +60467,12 @@ const baselines = {
     },
     'moduleExportWithExportPropertyAssignment2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportWithExportPropertyAssignment3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportWithExportPropertyAssignment4': {
