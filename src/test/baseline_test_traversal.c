@@ -231,11 +231,6 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
                 .declarations = symbol_declaration_spans(literal_member),
             };
             // (The access itself is what the literal's type has, nothing if it hasn't x)
-            if (ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
-                ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
-                    .span = left->inner_span, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
-                };
-            }
         }
         return;
     }

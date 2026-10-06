@@ -60687,7 +60687,7 @@ const baselines = {
     },
     'typeFromContextualThisType': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typeFromJSConstructor': {
