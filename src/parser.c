@@ -13578,6 +13578,10 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 FunctionImpl const* signature = jsdoc_single_signature(&initializer->binding.explicit_type);
                 if (signature && signature->ret_explicit) function_impl_rare_mut(function)->jsdoc_tag_ret = &signature->ret;
                 function_impl_rare_mut(function)->jsdoc_host_type = &initializer->binding.explicit_type;
+                // (Where errors about the signature go when the tag names it: tsc's returnTypeErrorLocation)
+                if (initializer->binding.explicit_type.tag == TYPE_IDENTIFIER) {
+                    function_impl_rare_mut(function)->jsdoc_signature_span = binding_explicit_type_span(&initializer->binding);
+                }
             }
             if (function) jsdoc_apply_function(p, &tags, function), hosts = true;
             if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl), class_host = true;

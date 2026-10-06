@@ -34206,12 +34206,12 @@ const baselines = {
         types: true,
     },
     'asyncFunctionDeclaration15_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'asyncFunctionDeclaration16_es5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

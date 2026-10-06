@@ -74,8 +74,6 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 - **Regular expression patterns** (TS1487, TS1508, TS1535, TS1530, TS1517, TS1518, TS1507...): tsc's
   scanRegularExpressionWorker, ~1000 lines; only the flags are checked (`regex_check_flags`). Plan 27 stage 3.
 - **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
-- **Async return annotations below ES2015**: TS1055/TS1065 for a class annotation (`Thenable`) whose construct
-  signature isn't PromiseLike (`check_es5_async_return_annotation`): asyncFunctionDeclaration15_es5/16_es5.
 - exportEqualsDefaultProperty: a default import of an `export =` module whose value has a `default` property is
   that property (tsc's resolveExportByName via getPropertyOfType); `resolve_default_target` reports TS1259 instead.
   Needs the value's type during alias resolution, like the specific-import path's synthetic property symbol.
