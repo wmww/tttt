@@ -2717,12 +2717,14 @@ static Ternary index_signatures_related(
 
 // Tuples
 
-// A rest element (`...X[]`, tsc's ElementFlags.Rest) rather than a variadic one (`...T`). HACK: anything but a type
-// parameter counts: tsc normalizes `[...X]` for an X that isn't a type variable when it makes the tuple (a mapped type
-// over an array, `{ [S in K]: [a: number] }[K]` simplified), tttt keeps X, whose elements are X[number]
+// A rest element (`...X[]`, tsc's ElementFlags.Rest) rather than a variadic one (`...T`, or a generic mapped type
+// `...{ [K in keyof T]: X }`: tsc's createNormalizedTupleType makes those Variadic). HACK: anything else counts: tsc
+// normalizes `[...X]` for an X that isn't a type variable when it makes the tuple (a mapped type over an array,
+// `{ [S in K]: [a: number] }[K]` simplified), tttt keeps X, whose elements are X[number]
 static bool is_rest_array(Checker* me, Ty const* rest) {
-    (void)me;
-    return rest->kind != TY_TYPE_PARAM;
+    if (rest->kind == TY_TYPE_PARAM) return false;
+    if (rest->kind == TY_ANONYMOUS && (rest->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, rest)->mapped) return false;
+    return true;
 }
 
 // A class or interface whose length is number literals (one extending a tuple): an array is no match for it, the
