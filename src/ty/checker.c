@@ -1696,6 +1696,8 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             for (u32 j = 0; j < out; j++) duplicate |= buf.data[j] == t;
             if (duplicate) continue;
             u32 t_family = primitive_family(t);
+            // (void and undefined are both void-like, which aren't disjoint: `undefined & void` is undefined)
+            if (t_family == TYF_UNDEFINED) t_family = TYF_VOID;
             if (t_family) {
                 if (family && family != t_family) is_never = true;
                 family = t_family;
@@ -1733,6 +1735,14 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             out = kept;
             // `get${string}` & "getX" is "getX", and with "setX" never (tsc's extractRedundantTemplateLiterals)
             if (literal && !is_never) is_never = extract_redundant_templates(me, buf.data, &out, literal);
+        }
+        // void next to undefined adds nothing (tsc's removeRedundantSupertypes)
+        if (!is_never && family == TYF_VOID && (includes & TYF_UNDEFINED) && (includes & TYF_VOID)) {
+            u32 kept = 0;
+            for (u32 i = 0; i < out; i++) {
+                if (!(buf.data[i]->kind == TY_INTRINSIC && (buf.data[i]->flags & TYF_VOID))) buf.data[kept++] = buf.data[i];
+            }
+            out = kept;
         }
         // Nothing is both an object and null or undefined
         bool strict = compiler_options()->strict_null_checks;

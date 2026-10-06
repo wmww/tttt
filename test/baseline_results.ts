@@ -67648,7 +67648,7 @@ const baselines = {
     'unknownControlFlow': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unknownType1': {
         errors: true,
