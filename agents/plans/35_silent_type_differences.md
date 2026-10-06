@@ -117,21 +117,36 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
    annotation, tsc `any`); duplicate declarations that resolve to the other symbol (typeAliasesDoNotMerge,
    multipleExportDefault3: `import("f").A`); exportAssignmentOfExportNamespaceWithDefault (the default import of an
    `export =` whose target has a `default` export is that member, not the target, so tsc qualifies).
-3. **Union order / creation order**: tsc's type writer re-checks each printed expression, so its object literals are
-   newest (contextualTyping36, conditionalOperatorWithIdenticalBCT; bugs/display.md). Looked at 2026-10-05: emulating
-   it as "object literals re-made by re-checking E print last" needs object literal types to know their node (a
-   harness-only side table: TY_ANONYMOUS has no origin) and only fixes conditionalOperatorWithIdenticalBCT;
-   contextualTyping36 also needs the re-check's subtype reduction (mutual subtypes keep the older). Not worth it alone.
-   Done 2026-10-05: contextual property lookups no longer make the name's literal (es2022IntlAPIs), the walk makes a
-   union's literal members and a property signature's bare literal annotation (assignmentCompatWithDiscriminatedUnion).
-   Left: literals in other nested annotation positions (`"a"[]`, tuples) are made on demand, not at the walk;
-   contextual lookups through intersections with type variables still make the literal eagerly. Lib literal made
-   early (correlatedUnions: dom's `CSSMathOperator` "sum", not found). typeInferenceWithExcessPropertiesJsx. Also
-   keyofAndIndexedAccess2 (generic intersection member order), complexRecursiveCollections, arrayFrom
-   (`ArrayLike<T> | Iterable<T>`), dependentDestructuredVariablesFromNestedPatterns (tuple references made in another
-   order), noImplicitAnyUnionNormalizedObjectLiteral1, spreadUnion (spread of a union: member order). The harness sets
-   skipDefaultLibCheck; tsc's CLI default checks the libs, which makes ~2700 string literals first (lib.dom: every
-   `keyof HTMLElementTagNameMap` etc.), so CLI messages can order unions differently from tttt: not a suite concern.
+3. **Union order / creation order**: union member order is type creation order. Done (2026-10-05/06, agent A, see
+   plan 44's union-order bullet too): the check walk makes references, unions, tuples, function-type parameters and
+   alias bodies where tsc's checkSourceElement does (union and generic reference nodes memoized per checker,
+   KEY_UNION_NODE, like tsc's links.resolvedType); a declared signature types its last required parameter first
+   (getMinArgumentCount: arrayFrom); discriminant lookups, interface heritage/index constraints, inference skipping
+   type-variable-free literal arguments, tuple length literals. Fixed complexRecursiveCollections, arrayFrom,
+   spreadObjectNoCircular1, strictSubtypeAndNarrowing, typeInferenceLiteralUnion,
+   templateLiteralTypesPatterns, typeGuardOfFormTypeOfFunction... Left, each a mechanism of its own:
+   - **Array literal clones**: tsc's createArrayLiteralType gives every tuple/array reference an ArrayLiteral clone
+     (a new id, once per reference, made when an array literal first produces it). So `c ? [b, 1] : ["c", ""]` is
+     `["a" | "b", number] | ["c", string]` even when `["c", string]` was written earlier: its clone is newer
+     (assignmentCompatWithDiscriminatedUnion, dependentDestructuredVariablesFromNestedPatterns,
+     typeInferenceWithExcessPropertiesJsx). tttt has no such type; adding one touches identity everywhere. Plan-sized.
+   - **Object literal types are interned in tttt** (ty_object_literal by structure); tsc makes a new one per check, and
+     per spread member (spreadUnion: `{ ...union, ...union }` reuses `{ b: string }` from the line before).
+   - **The type writer re-check**: tsc's harness re-checks each printed expression, so object literals there are
+     newest (contextualTyping36, conditionalOperatorWithIdenticalBCT, heterogeneousArrayLiterals `[{}, Object]`).
+     Needs object literal types to know their node (harness side table). Not worth it alone.
+   - **getReducedType enumerates an intersection's properties** (getPropertiesOfUnionOrIntersectionType), making the
+     intersection type of each property exactly two members have, in member property order (keyofAndIndexedAccess2:
+     `window[action]`). Implemented and measured 2026-10-06: vue +0.46%, drizzle +0.25%, tsc +0.2% instructions for
+     one test: dropped.
+   - noImplicitAnyUnionNormalizedObjectLiteral1 (widening/normalizing a union of object literals: which normalized
+     member tsc makes first), correlatedUnions (tsc's harness has "sum" before "concat"; a plain tsc program with
+     lib es5+dom gives tttt's order, so it is something of the harness setup, lib or options), ramdaToolsNoInfinite2.
+   - Underline-only diffs in this family (callbackTag4, objectLiteralNormalization, promisePermutations,
+     prototypePropertyAssignmentMergeWithInterfaceMethod, intraBindingPatternReferences, expandoFunctionContextualTypesJs,
+     declarationEmitPartialReuseComputedProperty) are annotation reuse (item 4), not creation order.
+   The harness sets skipDefaultLibCheck; tsc's CLI default checks the libs, which makes ~2700 string literals first,
+   so CLI messages can order unions differently from tttt: not a suite concern.
 4. **Underline/annotation reuse**: merged generic interface members aren't node-reused (useRegexpGroups,
    doYouNeedToChangeYourTargetLibraryES2016Plus: `(onfinally?: () => void)` not the written
    `(() => void) | undefined | null`; a local generic interface declared twice behaves the same; instrument tsc).
