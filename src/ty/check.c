@@ -1607,6 +1607,7 @@ bool ty_is_js_literal_type(Checker* me, Ty const* type) {
     if (compiler_options()->no_implicit_any) return false;
     switch (type->kind) {
         case TY_ANONYMOUS: return type->anonymous.js_literal;
+        case TY_DECLARED: return type->declared.kind == TY_DECLARED_NAMESPACE && type->declared.js_container;
         case TY_UNION:
             for (u32 i = 0; i < type->composite.types.len; i++) {
                 if (!ty_is_js_literal_type(me, type->composite.types.data[i])) return false;

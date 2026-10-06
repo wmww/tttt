@@ -279,6 +279,9 @@ struct Ty {
             // TY_DECLARED_NAMESPACE of a CommonJS module as its `module.exports` (tsc's synthetic symbol of that name):
             // named `name` wherever it's printed
             bool commonjs_exports;
+            // TY_DECLARED_NAMESPACE of a JavaScript `var ns = {}` with expandos (is_js_container()): open-ended like
+            // the object literal it is (tsc's getJSContainerObjectType makes it ObjectFlags.JSLiteral)
+            bool js_container;
             u32 outer_count; // See type_params
             Symbol const* symbol; // null for tuple targets and synthetics
             struct Symbol const* namespace_symbol; // TY_DECLARED_NAMESPACE only: the namespace, enum or module

@@ -1094,11 +1094,25 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
 }
 
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares
+static bool is_js_container(Symbol const* symbol, Expr const* value, Span name);
+
+// Whether symbol's value declaration makes it a JavaScript container (see value_entry_type())
+static bool symbol_is_js_container(Symbol const* symbol) {
+    if (!symbol->exports || !symbol->decl_count) return false;
+    SymbolDecl const* decl = &symbol->decls[0];
+    if (decl->kind == SYMBOL_DECL_ASSIGNMENT) return is_js_container(symbol, decl->node, span_null);
+    if (decl->kind != SYMBOL_DECL_VARIABLE) return false;
+    Binding const* binding = decl->node;
+    return !binding->parent && binding->tag == BINDING_IDENTIFIER && !binding->has_explicit_type &&
+        is_js_container(symbol, initialized_binding_value(((InitializedBinding const*)binding)), binding->content_span);
+}
+
 Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
     u64 key[2] = { KEY_NAMESPACE, (u64)(uintptr_t)symbol };
     Ty const* existing = intern_get(&my links, key, 2);
     if (existing) return existing;
-    Ty const* ret = make_namespace(me, symbol);
+    Ty* ret = make_namespace(me, symbol);
+    ret->declared.js_container = symbol_is_js_container(symbol);
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
