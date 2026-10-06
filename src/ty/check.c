@@ -1524,7 +1524,10 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             // (Likewise an intersection's: two members declaring it make none)
             Prop const* root = suggestion;
             while (root->target) root = root->target;
-            uniform = prop_root_decl(me, object, suggestion->name) == root->decl;
+            for (u32 i = 0; i < object->composite.types.len && uniform; i++) {
+                PropDecl const* part = prop_root_decl(me, ty_apparent_type(me, object->composite.types.data[i]), suggestion->name);
+                uniform = !part || part == root->decl;
+            }
         } else if (object->kind == TY_UNION) {
             Prop const* root = suggestion;
             while (root->target) root = root->target;
