@@ -5268,7 +5268,7 @@ const baselines = {
     'complexRecursiveCollections': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'complicatedGenericRecursiveBaseClassReference': {
         errors: true,
@@ -29293,7 +29293,7 @@ const baselines = {
     'strictSubtypeAndNarrowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictTypeofUnionNarrowing': {
         errors: true,
@@ -66698,7 +66698,7 @@ const baselines = {
     'recursiveTypeReferences1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveTypeReferences2': {
         errors: true,

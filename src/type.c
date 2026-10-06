@@ -437,7 +437,17 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             type_typecheck(&my inferred->extends, errs);
             ty_check_infer_constraints(current_checker, my inferred, errs);
             break;
-        case TYPE_IDENTIFIER: identifier_type_typecheck(my identifier, errs); break;
+        case TYPE_IDENTIFIER:
+            identifier_type_typecheck(my identifier, errs);
+            // A generic reference is made when the walk meets it, after its type arguments (tsc's
+            // checkTypeReferenceOrImport asks getTypeFromTypeNode), which decides union order: `string[] | Box<number>`
+            // makes Box<number> first. (A plain one is its declared type, made by identifier_type_typecheck)
+            if (vec_spanned_type_size(&my identifier->generic_params) && my identifier->target &&
+                !current_checker->alias_body_walks
+            ) {
+                ty_of_node(me);
+            }
+            break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())
@@ -490,6 +500,8 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             for_each (i, vec_tuple_element, &my tuple.elements) {
                 type_typecheck(&i->type, errs);
             }
+            // (Made once its elements are walked: tsc's checkTupleType)
+            if (!current_checker->alias_body_walks) ty_of_node(me);
             // tsc's checkTupleType: a variadic element (`...T`, T no array type syntactically) must be array-like; a
             // rest element (`...T[]`, `...[...T[]]`) can't follow another nor be followed by an optional one, and a
             // required element can't follow an optional one (grammar errors). The first error ends the walk
@@ -551,10 +563,11 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             // Made after its members are walked (tsc's checkUnionOrIntersectionType), which decides union order:
             // `(string & {}) | "-moz-initial"`. Only intersections: a union's own id rarely shows, and lowering every
             // union twice cost webpack 0.4% instructions
-            if (my tag == TYPE_INTERSECTION && !current_checker->alias_body_walks) ty_of_node(me);
-            // But a union's literal members are made then, in order (tsc's getTypeFromUnionTypeNode): what a literal
-            // type's id is shows, `type T1 = { a: "a" | "b" }` before `{ b: 1 }` asks for "b" (typeSatisfaction)
-            if (my tag == TYPE_UNION) {
+            if (!current_checker->alias_body_walks) {
+                ty_of_node(me);
+            } else if (my tag == TYPE_UNION) {
+                // But a union's literal members are made then, in order (tsc's getTypeFromUnionTypeNode): what a literal
+                // type's id is shows, `type T1 = { a: "a" | "b" }` before `{ b: 1 }` asks for "b" (typeSatisfaction)
                 for_each (i, vec_type, &my composite) {
                     if (i->tag == TYPE_VALUE) ty_of_node(i);
                 }

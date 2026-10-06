@@ -3126,6 +3126,16 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
 static inline __attribute__((always_inline)) Ty const* lower(
     Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args
 ) {
+    // A union node outside an alias body is lowered once: the check walk makes it (tsc's checkUnionOrIntersectionType)
+    // before the declaration it annotates asks (tsc's links.resolvedType)
+    if (node->tag == TYPE_UNION && !alias && !ctx.in_alias && !ctx.method && !node->flow) {
+        u64 key[2] = { KEY_UNION_NODE | (u64)ctx.generic << 32, (u64)(uintptr_t)node };
+        Ty const* memo = intern_get(&my links, key, 2);
+        if (memo) return memo;
+        Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
+        *intern_slot(me, &my links, key, 2) = ret;
+        return ret;
+    }
     Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
     return node->flow ? conditional_flow_type(me, node, ret) : ret;
 }

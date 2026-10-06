@@ -50,9 +50,12 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
         if (!i->initializer.binding.has_explicit_type) continue;
         type_typecheck(&i->initializer.binding.explicit_type, errs);
         // The parameter's type is made here (tsc's checkParameter asks for the parameter symbol's type), which decides
-        // union order: a literal type it names is older than one first written later. Only the literals are made
-        // (lowering every parameter type again cost webpack 0.2%)
-        make_literals(&i->initializer.binding.explicit_type);
+        // union order: `AnyRecord[]` of one overload's callback is older than a later overload's union naming it
+        if (current_checker->alias_body_walks) {
+            make_literals(&i->initializer.binding.explicit_type);
+        } else {
+            ty_of_node(&i->initializer.binding.explicit_type);
+        }
     }
     type_typecheck(&my function->ret, errs);
     if (my function->predicate && my function->predicate->has_type) type_typecheck(&my function->predicate->type, errs);

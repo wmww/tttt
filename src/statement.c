@@ -299,6 +299,12 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     current_checker->alias_body_walks++;
     type_typecheck(&my type, errs);
     current_checker->alias_body_walks--;
+    // A union, intersection or tuple body is made once the walk has met its members (tsc's checkUnionOrIntersectionType
+    // and checkTupleType ask getTypeFromTypeNode, the alias's type): `type Node = A | B` is older than the interface
+    // after it that writes `AST | Node`
+    if (my symbol && (my type.tag == TYPE_UNION || my type.tag == TYPE_INTERSECTION || my type.tag == TYPE_TUPLE)) {
+        ty_declared_type_of(current_checker, my symbol);
+    }
 }
 
 // Namespace declaration
