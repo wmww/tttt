@@ -2744,6 +2744,15 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
         return lazy_type_get(binding->source);
     }
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
+    // A rest element takes what the initializer is without the pattern as its contextual type (tsc's
+    // CheckMode.RestBindingElement)
+    if (binding->rest && !parent->parent && !parent->has_explicit_type && parent->source &&
+        parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+        Ty const* rest_object = ty_rest_binding_initializer_type(me, initialized_binding_value(initialized));
+        if (rest_object) object = rest_object;
+    }
     bool in_array = parent->tag == BINDING_ARRAY;
     // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives
     // (tsc's getTypeForBindingElement). What an element lacks is reported by binding_typecheck()

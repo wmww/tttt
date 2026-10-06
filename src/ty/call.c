@@ -1111,7 +1111,7 @@ static TyMapper const* infer_type_arguments(
             return_mapper = return_inference_mapper(me, sig, &pattern_inf, nullptr);
             inference_drop(&pattern_inf);
             // HACK: the `any` of an element without default is tsc's nonInferrableAnyType, which infers nothing. And a
-            // pattern with a rest element isn't a contextual type at all (see narrowable_type(): tsc types such an
+            // pattern with a rest element isn't a contextual type at all (see ty_rest_binding_initializer_type(): tsc types such an
             // initializer again for the rest, CheckMode.RestBindingElement)
             TupleShape const* shape = ty_is_tuple(contextual) ? contextual->reference.target->declared.tuple : nullptr;
             bool rest = shape ? shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST) :

@@ -219,8 +219,9 @@ src` finds the code-side markers; every significant one has an entry here.
   tsc's pseudo references: one extra query per read.
 - Narrowing by a literal doesn't take its regular type (ty/flow.c TODO).
 - `narrowable_type`: constraint positions marked by the resolve walk (`constraint_position`); element access for
-  literal indices only. A pattern with a rest element is never a contextual type (`pattern_type_has_rest`, expr.c
-  HACK; tsc checks the initializer twice, CheckMode.RestBindingElement; same rule in call.c's return mapper).
+  literal indices only. tsc checks a rest pattern's initializer twice (CheckMode.RestBindingElement): tttt types
+  the rest element of a root pattern from `ty_rest_binding_initializer_type` (the reference computed again without
+  context), not nested patterns' rests; call.c's return mapper still ignores a pattern with a rest element.
 - `non_null_flow_type`: the `x!` rule for identifiers only. At flow depth 2000 queries silently give the error type
   (no TS2563).
 - Auto types: `IdentifierExpr.outer_reference` decided by the resolve walk; isNeverInitialized is

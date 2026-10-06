@@ -15193,7 +15193,7 @@ const baselines = {
     'genericObjectSpreadResultInSwitch': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericOfACloduleType1': {
         errors: true,
@@ -27628,7 +27628,7 @@ const baselines = {
     'restInvalidArgumentType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParamAsOptional': {
         errors: true,

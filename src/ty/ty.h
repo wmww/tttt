@@ -1579,6 +1579,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
 Ty const* ty_element_index_type(Checker* me, Expr const* index); // `index` of `x[index]`
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access); // What `x.y`/`x[y]` looks up (`#y`: the class's)
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
+Ty const* ty_rest_binding_initializer_type(Checker* me, Expr const* expr);
 // The contextual type of the value of `a = v` (null for none): what its target gives it (tsc's
 // getContextualTypeForBinaryOperand and getContextualTypeForAssignmentDeclaration)
 Ty const* ty_assigned_value_context(Checker* me, BinaryOpExpr const* assignment);

@@ -1741,10 +1741,6 @@ static bool has_generic_without_nullable_constraint(Checker* me, Ty const* type)
 // `element_index`: the index of `x[i]` that the reference is the object of (null for any other constraint position)
 static Ty const* narrowable_type(Checker* me, bool constraint_position, Expr const* element_index, Ty const* type, Ty const* contextual) {
     if (ty_is_no_infer(type)) type = type->substitution.base;
-    // HACK: tsc types the initializer of a pattern with a rest element again for the rest (CheckMode.RestBindingElement),
-    // without the pattern as contextual type, so that the rest of a `T` stays generic. tttt has one type per
-    // expression: a pattern with a rest element isn't a contextual type here
-    if (contextual && (contextual->flags & TYF_BINDING_PATTERN) && pattern_type_has_rest(me, contextual)) contextual = nullptr;
     if (!has_generic_with_union_constraint(me, type)) return type;
     // `x[i]` with a generic i keeps a type variable of x that can't be nullable as it is (tsc's isConstraintPosition)
     if (constraint_position && element_index && has_generic_without_nullable_constraint(me, type) &&
@@ -4833,5 +4829,15 @@ Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
 
 // What the LazyType of an expression evaluates to: nobody checked it with a contextual type first
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr) {
+    return compute(me, expr, (ExprCtx){0});
+}
+
+// The initializer of a pattern typed again for its rest element (tsc's CheckMode.RestBindingElement, whose contextual
+// type skips binding patterns): a reference whose type variable the pattern's contextual type substituted by its
+// constraint stays generic, so the rest of a `T` is `Omit<T, ...>`. Null if that's the type it has anyway
+Ty const* ty_rest_binding_initializer_type(Checker* me, Expr const* expr) {
+    if (expr->tag != EXPR_IDENTIFIER && expr->tag != EXPR_PROPERTY) return nullptr;
+    (void)ty_expr_type(me, expr); // (A property access says whether it depends on the context once computed)
+    if (!identifier_uses_context(me, expr)) return nullptr;
     return compute(me, expr, (ExprCtx){0});
 }
