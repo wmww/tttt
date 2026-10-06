@@ -3035,6 +3035,16 @@ static Symbol* resolve_entity_alias(Symbol* me) {
     return target;
 }
 
+typedef struct Suggestion {
+    csview name;
+    Symbol const* symbol; // Null for a primitive (`string` for `String`)
+    // An export of the module or namespace suggested as a value: tsc finds its local (SymbolFlags.ExportValue), which
+    // has no value declaration to relate to
+    bool export_local;
+} Suggestion;
+
+static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out);
+
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
     ErrorCtx* errs = item && item->wrong_context ? nullptr : my alias->scope->binder->errs;
@@ -3051,6 +3061,13 @@ static Symbol* resolve_alias_target(Symbol* me) {
             found = file->scope->container;
         }
         if (found == me) return nullptr;
+        if (!found && span_valid(my alias->name) && my binder->suggestion_count < 10 && !binder_shard(my binder)) {
+            // (tsc's resolveEntityName reports TS2304 through resolveName, whose spelling suggestion resolves the
+            // aliases among the candidates: one that reaches this alias in flight makes it TS2303. The TS2304 itself
+            // comes from the expression)
+            Suggestion ignored = {0};
+            scope_suggest(my alias->scope, my alias->name.sv, SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE, &ignored);
+        }
         // A local type and an exported value of the name are one symbol in tsc, the local one, which has the exported
         // one as its exportSymbol: `interface F {}` + `export const F = ...` + `export default F` exports that local
         // symbol, whose value meaning is only ExportValue: used as a value, the default is tsc's errorType, silently
@@ -4040,13 +4057,6 @@ isize spelling_suggestion(csview name, csview const* names, isize count) {
     return best;
 }
 
-typedef struct Suggestion {
-    csview name;
-    Symbol const* symbol; // Null for a primitive (`string` for `String`)
-    // An export of the module or namespace suggested as a value: tsc finds its local (SymbolFlags.ExportValue), which
-    // has no value declaration to relate to
-    bool export_local;
-} Suggestion;
 
 // tsc's getSuggestionForSymbolNameLookup on one table
 // `exports`: a module's or namespace's exports, where `export default <expr>` is tsc's SymbolFlags.Property (no module
