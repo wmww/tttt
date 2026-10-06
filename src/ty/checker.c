@@ -2156,8 +2156,14 @@ Ty const* ty_with_this_arg(Checker* me, Ty const* ty, Ty const* this_arg) {
     if (ty == this_arg) return ty;
     if (ty->kind == TY_INTERSECTION) {
         TyBuf parts = {0};
-        for (u32 i = 0; i < ty->composite.types.len; i++) ty_buf_push(&parts, ty_with_this_arg(me, ty->composite.types.data[i], this_arg));
-        Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+        bool changed = false;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* part = ty_with_this_arg(me, ty->composite.types.data[i], this_arg);
+            changed |= part != ty->composite.types.data[i];
+            ty_buf_push(&parts, part);
+        }
+        // (Itself, alias and all, when no member changes: tsc's sameMap)
+        Ty const* ret = changed ? ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}) : ty;
         ty_buf_drop(&parts);
         return ret;
     }

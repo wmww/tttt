@@ -168,7 +168,8 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
                     continue;
             }
             // (An object type, or a type parameter: `interface I<T extends object> extends T`)
-            if (!(base->flags & TYF_OBJECT) && base->kind != TY_TYPE_PARAM) continue;
+            // (An intersection of object types too: tsc's resolveBaseTypesOfInterface takes isValidBaseType ones)
+            if (!(base->flags & TYF_OBJECT) && base->kind != TY_TYPE_PARAM && base->kind != TY_INTERSECTION) continue;
             if (base == declared) continue;
             if (base_count == base_cap) {
                 base_cap *= 2;
