@@ -48,7 +48,7 @@ static Symbol const* get_symbol_from_namespace(
     if (!decl && meaning == SYMBOL_TYPE) decl = symbol_for_meaning(member, SYMBOL_ANY_MEANING); // TS2749 below
     if (!decl) {
         cstr qualified = symbol_fully_qualified_name(shown ? shown : namespace);
-        if (!suggest || !scope_report_misspelled_export(namespace, item_name, cstr_sv(&qualified), errs)) {
+        if (!suggest || !scope_report_misspelled_export(namespace, item_name, cstr_sv(&qualified), false, errs)) {
             error_ctx_error_d(errs, item_name, 2694,
                 "Namespace '", qualified, "' has no exported member '", item_name, "'.");
         }
@@ -333,7 +333,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
                     // another export's name is close enough (TS2724 comes first there)
                     Span right = i + 1 < rare->namespaces.data + rare->namespaces.size ? i[1] : my name;
                     cstr qualified = symbol_fully_qualified_name(namespace);
-                    bool misspelled = scope_report_misspelled_export(namespace, *i, cstr_sv(&qualified), errs);
+                    bool misspelled = scope_report_misspelled_export(namespace, *i, cstr_sv(&qualified), false, errs);
                     cstr_drop(&qualified);
                     if (!misspelled) error_ctx_error_d(errs, right, 2713, "Cannot access '", *i, ".", right, "' because '", *i,
                         "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
@@ -679,7 +679,7 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         Span right = (isize)at + 1 < count ? rare->namespaces.data[at + 1] : my name;
         // (tsc's resolveEntityName: a close enough export's name first)
         cstr container_name = symbol_fully_qualified_name(rare->value_member_of);
-        bool misspelled = scope_report_misspelled_export(rare->value_member_of, member, cstr_sv(&container_name), errs);
+        bool misspelled = scope_report_misspelled_export(rare->value_member_of, member, cstr_sv(&container_name), false, errs);
         cstr_drop(&container_name);
         if (misspelled) {
         } else if (value) {

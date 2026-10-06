@@ -4180,6 +4180,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 expr_type = ty_widened_objects(current_checker, ty_widened_nullable(current_checker, expr_type));
             }
             ErrorCtx found = error_ctx_scratch(errs);
+            current_checker->suggestion_access = my property->form == PROPERTY_EXPR_DOT && !my property->qualified_name ? my property : nullptr;
             ty_check_property_access(
                 current_checker,
                 expr_type,
@@ -4202,6 +4203,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 ty_report_no_property(current_checker, unwidened, ty_access_key_type(current_checker, my property),
                     expr_outer_span(&my property->prop), errs);
             }
+            current_checker->suggestion_access = nullptr;
             error_ctx_merge(errs, &found);
             error_ctx_drop(&found);
             ty_check_element_implicit_any(current_checker, my property, expr_type, my inner_span, errs);

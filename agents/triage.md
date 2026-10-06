@@ -13,3 +13,11 @@ to 1.5 s by caching failures after a depth overflow and reporting tsc's TS2321. 
 against the code and baseline_results.ts (816 -> 769 and 750 -> 587 lines), dead code and stale comments. Plan 35's
 queues merged into one.
 
+
+- `ty_object_literal_of()`'s intern key leaves out `asserted`/`asserted_required`: two literals differing only in the
+  annotation the types baseline reuses share one type, whichever came first. spreadUnion2's `{ ...u, ...u }` printed
+  `a?: number | undefined` only because the merged literal collided with `{ ...u }`'s (spread_into() now marks merged
+  props PROP_SYNTHETIC_COPY, which keeps the collision); merged.asserted reusing the right side's non-optional `a: number`
+  for an optional property looks wrong on its own.
+- Did-you-mean suggestions skip `#private` candidates always; tsc keeps them when the access is inside the declaring
+  class (isValidPropertyAccessForCompletions). Untested which name tsc then suggests.

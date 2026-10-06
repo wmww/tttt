@@ -1330,6 +1330,30 @@ static Symbol const* instance_class(Ty const* object) {
     return declared->declared.symbol;
 }
 
+static bool check_accessibility(
+    Checker* me, AccessSite const* site, Span span, bool this_object, bool writing, Prop const* prop,
+    Ty const* containing, bool is_super, ErrorCtx* errs
+);
+
+static bool is_keyword(Expr const* expr, KeywordIdentifier keyword) {
+    return expr->tag == EXPR_IDENTIFIER && expr->identifier.keyword == keyword;
+}
+
+// tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`)
+static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop const* prop, Ty const* containing) {
+    PropertyContext const* site = property_context(access);
+    AccessSite access_site = {
+        .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
+        .this_parameter = site->this_parameter, .this_function = site->this_function,
+        .initializer_context = site->initializer_context,
+    };
+    ErrorCtx discard = error_ctx_init();
+    bool ret = check_accessibility(me, &access_site, expr_outer_span(&access->prop), is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS),
+        false, prop, containing, is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER), &discard);
+    error_ctx_drop(&discard);
+    return ret;
+}
+
 // tsc's getSuggestedSymbolForNonexistentProperty: the property of `object` whose name is closest to `name` (of a union,
 // those all its members have)
 Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
@@ -1364,11 +1388,12 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
     for (u32 i = 0; i < count; i++) {
         Prop const* prop = props[i];
         csview candidate = atom_sv(prop->name);
-        bool everywhere = candidate.size && candidate.buf[0] != '#' && !(prop->flags & PROP_STATIC);
+        bool everywhere = candidate.size && candidate.buf[0] != '#';
         for (u32 j = 0; j < parts.len && everywhere; j++) {
             if (parts.data[j]->flags & TYF_NULLABLE) continue;
             everywhere = ty_prop_type_of(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
         }
+        if (everywhere && me->suggestion_access) everywhere = suggestion_accessible(me, me->suggestion_access, prop, first);
         names[i] = everywhere ? candidate : (csview){0};
     }
     isize best = spelling_suggestion(name, names, count);
@@ -1407,6 +1432,25 @@ static bool seems_empty_dom_element(Checker* me, Ty const* ty) {
     return true;
 }
 
+// The declaration of the property `name` of ty, following instantiations; of an intersection the one its parts share
+// (null if they have different ones: tsc's createUnionOrIntersectionProperty only keeps a single declaration)
+static PropDecl const* prop_root_decl(Checker* me, Ty const* ty, Atom const* name) {
+    if (ty->kind == TY_INTERSECTION) {
+        PropDecl const* ret = nullptr;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            PropDecl const* part = prop_root_decl(me, ty_apparent_type(me, ty->composite.types.data[i]), name);
+            if (!part) continue;
+            if (ret && ret != part) return nullptr;
+            ret = part;
+        }
+        return ret;
+    }
+    if (!(ty->flags & TYF_OBJECT)) return nullptr;
+    Prop const* prop = ty_get_prop(me, ty, name);
+    while (prop && prop->target) prop = prop->target;
+    return prop ? prop->decl : nullptr;
+}
+
 // destructured: a binding element's property (tsc's getIndexedAccessType reports it, without saying which union member
 // lacks it)
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, bool destructured,
@@ -1425,6 +1469,9 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     Symbol const* class_symbol = ts_code == 2339 && !destructured ? instance_class(object) : nullptr;
     Atom const* atom = (index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) ? index->literal.string : nullptr;
     Prop const* suggestion = nullptr;
+    // The related information, added after the elaboration chain (tsc adds it to the finished diagnostic)
+    Span declared_at = {0};
+    bool forgot_await = false;
     // (tsc's typeHasStaticProperty: a declared static member, `#x`s being keyed by their class there)
     bool static_member = atom && class_symbol && atom->len && atom->str[0] != '#' && !csview_equals(atom_sv(atom), "prototype") &&
         ty_get_prop(me, ty_static_type_of(me, class_symbol), atom);
@@ -1444,15 +1491,21 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             "'. Did you mean to access the static member '", object_str, ".", name, "' instead?");
     } else if (promised) {
         error = error_ctx_error_d(errs, span, 2339, "Property '", name, "' does not exist on type '", object_str, "'.");
-        error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
+        forgot_await = true;
     } else if (lib) {
         error = error_ctx_error_d(errs, span, 2550, "Property '", name, "' does not exist on type '", object_str,
             "'. Do you need to change your target library? Try changing the 'lib' compiler option to '", lib, "' or later.");
     } else if (atom && ts_code == 2339 && !destructured && !(object->flags & TYF_NEVER) && (suggestion = ty_suggested_property(me, object, atom_sv(atom)))) {
         error = error_ctx_error_d(errs, span, 2551, "Property '", name, "' does not exist on type '", object_str,
             "'. Did you mean '", atom_sv(suggestion->name), "'?");
+        // (A mapped or reverse mapped type's property, or a spread's fresh copy, has declarations but no
+        // valueDeclaration in tsc: no related information)
         Prop const* declared = suggestion;
-        while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
+        bool synthetic = declared->mapped || (declared->flags & PROP_SYNTHETIC_COPY) || prop_decl_rare(declared->decl)->reverse_of;
+        while (declared->target && !declared->decl->decl_span_count) {
+            declared = declared->target;
+            synthetic |= declared->mapped || (declared->flags & PROP_SYNTHETIC_COPY) || prop_decl_rare(declared->decl)->reverse_of;
+        }
         // (A union's property has a declaration only if every member's is the same one: tsc's
         // createUnionOrIntersectionProperty with hasNonUniformValueDeclaration)
         bool uniform = true;
@@ -1462,16 +1515,14 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             for (u32 i = 0; i < object->composite.types.len && uniform; i++) {
                 Ty const* part = object->composite.types.data[i];
                 if (part->flags & TYF_NULLABLE) continue;
-                Prop const* other = ty_get_prop(me, ty_apparent_type(me, part), suggestion->name);
-                while (other && other->target) other = other->target;
-                uniform = other && other->decl == root->decl;
+                uniform = prop_root_decl(me, ty_apparent_type(me, part), suggestion->name) == root->decl;
             }
         }
-        if (error && uniform && declared->decl->decl_span_count) {
+        if (error && uniform && !synthetic && declared->decl->decl_span_count) {
             // (tsc's error span of the declaration: its name)
             Span name_span = ty_prop_decl_span(suggestion);
             Span at = span_contains_span(declared->decl->decl_spans[0], name_span) ? name_span : declared->decl->decl_spans[0];
-            error_add_related_d(error, at, 2728, "'", atom_sv(suggestion->name), "' is declared here.");
+            declared_at = at;
         }
     } else if (ts_code == 2339 && !destructured && seems_empty_dom_element(me, object)) {
         error = error_ctx_error_d(errs, span, 2812, "Property '", name, "' does not exist on type '", object_str,
@@ -1508,6 +1559,8 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
             break;
         }
     }
+    if (error && forgot_await) error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
+    if (error && span_valid(declared_at)) error_add_related_d(error, declared_at, 2728, "'", atom_sv(suggestion->name), "' is declared here.");
     c_drop(cstr, &name, &object_str);
 }
 
@@ -2394,9 +2447,6 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     return ty_literal_name(me, ty_regular(me, ty_access_key_type(me, access)));
 }
 
-static bool is_keyword(Expr const* expr, KeywordIdentifier keyword) {
-    return expr->tag == EXPR_IDENTIFIER && expr->identifier.keyword == keyword;
-}
 
 // `ns` of `import * as ns from "./a"`
 static bool is_namespace_import(Expr const* expr) {

@@ -2673,6 +2673,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         u32 flags = prop->flags & (u32)~(PROP_READONLY | (setonly ? PROP_SETTER : 0));
         Ty const* declared_type = type;
         if (readonly) flags = (flags & (u32)~PROP_METHOD) | PROP_READONLY; // (tsc's getSpreadSymbol makes a property)
+        if (partial || setonly || readonly != !!(prop->flags & PROP_READONLY)) flags |= PROP_SYNTHETIC_COPY;
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
@@ -2721,7 +2722,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         // Optional: what was there stays possible, and so does its being required
         ObjectLiteralProp merged = *l;
         merged.parent = nullptr;
-        merged.flags = l->flags & (PROP_OPTIONAL | PROP_METHOD);
+        merged.flags = (l->flags & (PROP_OPTIONAL | PROP_METHOD)) | PROP_SYNTHETIC_COPY; // (tsc: a fresh symbol)
         merged.own = false;
         // (Under exactOptionalPropertyTypes only the missing goes, which the declared type doesn't have: tsc's
         // removeMissingOrUndefinedType)

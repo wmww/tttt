@@ -2379,7 +2379,7 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
         }
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
-            .flags = prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER),
+            .flags = (prop->flags & (u32)~(PROP_READONLY | PROP_GETTER | PROP_SETTER | PROP_ACCESSOR | PROP_CLASS_GETTER)) | PROP_SYNTHETIC_COPY,
             .type = prop_type(me, prop),
             .name_span = declared->decl->name_span,
             .name_form = ty_prop_name_form_of(declared),

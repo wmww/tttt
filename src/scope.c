@@ -2481,7 +2481,7 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
                 return nullptr;
             }
             cstr qualified = symbol_fully_qualified_name(container);
-            if (!scope_report_misspelled_export(container, name, cstr_sv(&qualified), errs)) {
+            if (!scope_report_misspelled_export(container, name, cstr_sv(&qualified), false, errs)) {
                 error_ctx_error_d(errs, name, 2694, "Namespace '", qualified, "' has no exported member '", name, "'.");
             }
             cstr_drop(&qualified);
@@ -2662,7 +2662,7 @@ static void check_es_module_symbol(PortItem const* item, Symbol const* module, S
 
 // tsc's getSuggestedSymbolForNonexistentModule: an export of container with a name close to name's, reported as
 // TS2724 (tsc's errorNoModuleMemberSymbol and resolveEntityName). False if there is none
-bool scope_report_misspelled_export(Symbol const* container, Span name, csview container_name, ErrorCtx* errs) {
+bool scope_report_misspelled_export(Symbol const* container, Span name, csview container_name, bool declared_here, ErrorCtx* errs) {
     u32 const module_member = SYMBOL_VARIABLE | SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM |
         SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_TYPE_ALIAS | SYMBOL_ALIAS;
     u32 count = 0;
@@ -2682,9 +2682,10 @@ bool scope_report_misspelled_export(Symbol const* container, Span name, csview c
         csview suggestion = symbol_entry_name(&entries[best]);
         Error* error = error_ctx_error_d(errs, name, 2724, "'", container_name, "' has no exported member named '",
             name, "'. Did you mean '", suggestion, "'?");
-        // (Its valueDeclaration: an alias has one, an interface or a type alias not)
+        // (Its valueDeclaration: an alias has one, an interface or a type alias not. Only an import's: tsc's
+        // resolveEntityName has no related information)
         Symbol const* symbol = entries[best].symbol;
-        for (u32 i = 0; error && i < symbol->decl_count; i++) {
+        for (u32 i = 0; error && declared_here && i < symbol->decl_count; i++) {
             if (!(symbol->decls[i].flags & (SYMBOL_VALUE | SYMBOL_ALIAS)) || !span_valid(symbol->decls[i].name)) continue;
             error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion, "' is declared here.");
             break;
@@ -2702,7 +2703,7 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
         // (Among the exports of what `export =` names, tsc's targetSymbol)
         Symbol const* target = module_export_equals((Symbol*)module);
         if (target != module) target = target && !target->is_placeholder ? symbol_for_meaning(target, SYMBOL_NAMESPACE) : nullptr;
-        bool reported = target && scope_report_misspelled_export(target, name, cstr_sv(&module_name), errs);
+        bool reported = target && scope_report_misspelled_export(target, name, cstr_sv(&module_name), true, errs);
         if (!reported && symbol_get_export(module, c_sv("default"))) {
             error_ctx_error_d(errs, name, 2614, "Module '", module_name, "' has no exported member '", name,
                 "'. Did you mean to use 'import ", name, " from ", module_name, "' instead?");
@@ -4045,7 +4046,11 @@ static bool report_misspelled_counted(
     Symbol const* symbol = suggestion.export_local ? nullptr : suggestion.symbol;
     for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
         if (!(symbol->decls[i].flags & SYMBOL_VALUE)) continue;
-        error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion.name, "' is declared here.");
+        // (tsc's error span of the declaration: its name, but all of a parameter, `...` and modifiers included)
+        SymbolDecl const* decl = &symbol->decls[i];
+        bool parameter = decl->kind == SYMBOL_DECL_VARIABLE && ((Binding const*)decl->node)->is_parameter &&
+            !((Binding const*)decl->node)->parent && span_valid(decl->full);
+        error_add_related_d(error, parameter ? decl->full : decl->name, 2728, "'", suggestion.name, "' is declared here.");
         break;
     }
     return true;

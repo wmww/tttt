@@ -799,7 +799,7 @@ bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* s
 isize spelling_suggestion(csview name, csview const* names, isize count);
 // tsc's getSuggestedSymbolForNonexistentModule: an export of container with a name close to name's, reported as
 // TS2724 (tsc's errorNoModuleMemberSymbol and resolveEntityName). False if there is none
-bool scope_report_misspelled_export(Symbol const* container, Span name, csview container_name, ErrorCtx* errs);
+bool scope_report_misspelled_export(Symbol const* container, Span name, csview container_name, bool declared_here, ErrorCtx* errs);
 // tsc's reportNonExportedMember: `import { x }` of a module without an export x (TS2305), which declares x locally
 // (TS2459/TS2460), or whose `export =` is x (TS2595-TS2598, TS2616/TS2617)
 void scope_report_non_exported_member(PortItem const* item, Symbol const* module, ErrorCtx* errs);
