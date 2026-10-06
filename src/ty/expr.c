@@ -4196,6 +4196,11 @@ static Ty const* object_literal_access(Checker* me, Ty const* object, Ty const* 
     for (u32 i = 0; i < keys.len; i++) {
         Ty const* part = ty_access(me, object, keys.data[i]);
         if (!part && (keys.data[i]->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) {
+            // (Only with noImplicitAny, where it's TS2339: else tsc's getPropertyTypeForIndexType goes on to any)
+            if (!compiler_options()->no_implicit_any) {
+                ty_buf_drop(&parts);
+                return nullptr;
+            }
             part = ty_intrinsic(me, TY_UNDEFINED);
         } else if (!part && (keys.data[i]->flags & (TYF_STRING | TYF_NUMBER))) {
             Members const* members = ty_members(me, object);

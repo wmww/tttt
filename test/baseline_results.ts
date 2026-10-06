@@ -64248,7 +64248,7 @@ const baselines = {
     'augmentedTypeBracketAccessIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classWithPrivateProperty': {
         errors: true,
