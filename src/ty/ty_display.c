@@ -3224,7 +3224,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             if (js_class) {
                 out_lit(d, "typeof ");
                 csview js_name;
-                out(d, ty_js_assigned_class_name(js_class, &js_name) ? js_name : js_class->name);
+                // (A declared function by its symbol chain from here: `typeof x.F` through `const x = require()`)
+                if (ty_js_assigned_class_name(js_class, &js_name)) out(d, js_name);
+                else if (js_class->flags & SYMBOL_FUNCTION) out_symbol_name(me, d, js_class, SYMBOL_VALUE);
+                else out(d, js_class->name);
                 break;
             }
             // A function a CommonJS module exports with the module's other exports merged in (tsc's
