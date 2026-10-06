@@ -6283,7 +6283,7 @@ const baselines = {
     'contextualTypeSelfReferencing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeShouldBeLiteral': {
         errors: true,
@@ -20951,9 +20951,9 @@ const baselines = {
         types: false,
     },
     'mappedTypeRecursiveInference2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'mappedTypeTupleConstraintAssignability': {
         errors: true,
@@ -39213,7 +39213,7 @@ const baselines = {
     'globalThisReadonlyProperties': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'globalThisTypeIndexAccess': {
         errors: true,

@@ -2522,6 +2522,8 @@ static bool readonly_assignment(Checker* me, PropertyExpr const* access, Ty cons
     if (!access->assignment_target || access->commonjs_export_alias || is_commonjs_export_assignment(access)) return false;
     Atom const* name = access_name(me, access);
     if (!name) return false;
+    // (`globalThis.globalThis`: tsc's globalThisSymbol is readonly, see the TS2540 in check_access)
+    if (is_global_this(object) && access->form == PROPERTY_EXPR_DOT && csview_equals(atom_sv(name), "globalThis")) return true;
     int readonly = member_refs(me, object, name, refs, 0);
     if (readonly == 0) return is_namespace_import(&access->expr);
     if (readonly < 0) return false;
