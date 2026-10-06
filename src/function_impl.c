@@ -846,8 +846,8 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
     Span at = my ret_explicit ? function_impl_ret_span(me) : function_error_span(me);
 
     if (my accessor == 1 && !my has_explicit_return) {
+        // (tsc's checkAccessorDeclaration; checkAllCodePathsInNonVoidFunctionReturnOrThrow still runs after it)
         if (span_valid(name)) error_ctx_error_d(errs, name, 2378, "A 'get' accessor must return a value.");
-        return;
     }
     Ty const* type = nullptr;
     if (my ret_explicit) {
