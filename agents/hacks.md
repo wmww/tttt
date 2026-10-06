@@ -808,3 +808,4 @@ src` finds the code-side markers; every significant one has an entry here.
 - `failstats.py`'s `line_ratio` is multiset overlap, not a diff. `bench/make_corpus.py` replicates passing tests
   (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
+- `implementation_signature()` (src/ty/call.c, tsc's getImplementationSignature): clones a generic signature for a call inside the function that declares its type parameters by span containment of `sig->function`; skips construct signatures (tsc goes by the class declaration for `new C()` inside class C, tttt doesn't track where class type parameters are declared).

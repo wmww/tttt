@@ -1341,9 +1341,10 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
 }
 
 // tsc's inferFromTypes on an intersection target that isn't only non-generic objects: members identical in
-// source and target cancel out first (`string & T` from `string & U` infers T from U, not from `string & U`). Returns
+// source and target are inferred between and cancel out first (`string & T` from `string & U` infers T from U, not from
+// `string & U`; `X & A<T>` from `A<T>` with the inferred T itself infers T: tsc's inferFromMatchingTypes). Returns
 // whether anything is left to infer between, in *source / *target
-static bool reduce_intersection_target(Checker* me, Ty const** source, Ty const** target) {
+static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** source, Ty const** target) {
     TyList targets = (*target)->composite.types;
     // (Unless the target is only non-generic object types: `string[] & Iterable<T>` keeps the source's string[])
     bool reduce = false;
@@ -1354,18 +1355,22 @@ static bool reduce_intersection_target(Checker* me, Ty const** source, Ty const*
     }
     if (!reduce) return true;
     TyList sources = (*source)->kind == TY_INTERSECTION ? (*source)->composite.types : (TyList){ .data = source, .len = 1 };
+    bool* source_matched = calloc(sources.len + targets.len, sizeof(bool));
+    panic_if(!source_matched, "out of memory");
+    bool* target_matched = source_matched + sources.len;
+    for (u32 j = 0; j < targets.len; j++) {
+        for (u32 i = 0; i < sources.len; i++) {
+            if (!is_identical(me, sources.data[i], targets.data[j])) continue;
+            infer_from(me, inf, sources.data[i], targets.data[j]);
+            source_matched[i] = true;
+            target_matched[j] = true;
+        }
+    }
     TyBuf kept_sources = {0};
     TyBuf kept_targets = {0};
-    for (u32 i = 0; i < sources.len; i++) {
-        bool matched = false;
-        for (u32 j = 0; j < targets.len && !matched; j++) matched = is_identical(me, sources.data[i], targets.data[j]);
-        if (!matched) ty_buf_push(&kept_sources, sources.data[i]);
-    }
-    for (u32 j = 0; j < targets.len; j++) {
-        bool matched = false;
-        for (u32 i = 0; i < sources.len && !matched; i++) matched = is_identical(me, sources.data[i], targets.data[j]);
-        if (!matched) ty_buf_push(&kept_targets, targets.data[j]);
-    }
+    for (u32 i = 0; i < sources.len; i++) if (!source_matched[i]) ty_buf_push(&kept_sources, sources.data[i]);
+    for (u32 j = 0; j < targets.len; j++) if (!target_matched[j]) ty_buf_push(&kept_targets, targets.data[j]);
+    free(source_matched);
     bool left = kept_sources.len && kept_targets.len;
     if (left && kept_targets.len < targets.len) {
         *source = ty_intersection(me, kept_sources.data, kept_sources.len, nullptr, (TyList){0});
@@ -1442,7 +1447,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
         return;
     }
-    if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, &source, &target)) return;
+    if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
     if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) target = ty_actual_type_variable(me, target);
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);

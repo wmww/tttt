@@ -2265,6 +2265,28 @@ static Resolution resolve_with_signatures(
     return ret;
 }
 
+
+// tsc's getImplementationSignature: a call inside the generic function it calls (a recursive call) is resolved with a
+// clone of its signature whose type parameters are fresh, so that inferring them from arguments that mention the
+// function's own type parameters (`T` to the clone's `T`) is told apart from the outer ones: `f({ x, ...props })` in
+// f's own body infers nothing from the props' `MakeReq<T>` to the parameter's, which aren't identical then. Not for
+// overloads (declared elsewhere) nor constructors (tsc goes by the class there, which tttt doesn't track)
+static Signature const* implementation_signature(Checker* me, Signature const* sig, Span call_span) {
+    FunctionImpl const* function = sig->function;
+    if (!sig->type_params.len || sig->target || !function || function->is_type || (sig->flags & SIGNATURE_CONSTRUCT) ||
+        !span_contains_span(function->full_span, call_span)
+    ) {
+        return sig;
+    }
+    Signature const** slot = (Signature const**)intern_slot(me, &my links, (u64[]){ KEY_IMPLEMENTATION_SIGNATURE, (u64)(uintptr_t)sig }, 2);
+    if (*slot) return *slot;
+    Signature* clone = arena_new(&my arena, Signature);
+    *clone = (Signature){ .flags = sig->flags, .target = sig, .mapper = ty_mapper_new(me, (TyList){0}, (TyList){0}), .fresh_type_params = true };
+    signature_resolve(me, clone);
+    *slot = clone;
+    return clone;
+}
+
 static Resolution resolve_with_signatures_inner(
     Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
     ErrorCtx* errs
@@ -2296,6 +2318,7 @@ static Resolution resolve_with_signatures_inner(
             bool generic_rest = uninstantiated.rest_variadic != nullptr;
             free(uninstantiated.types);
             if (!arity_ok) continue;
+            sig = implementation_signature(me, sig, call_span);
             // A candidate's first inference leaves generic function arguments out, and they fit its first check (tsc's
             // CheckMode.SkipGenericFunctions): a candidate whose other arguments don't fit is reported as that
             // inference has it, before a generic function argument's type parameters could flow into it
