@@ -65,7 +65,7 @@ static Error* report_unassignable(
     // The head line is rendered like the elaboration under it: a literal source shows widened unless the target has
     // room for literals
     cstr source_str, target_str;
-    Ty const* head_target = target->alias ? target : ty_strip_nullable_target(me, ty_regular(me, source), target);
+    Ty const* head_target = ty_report_target(me, source, target);
     ty_report_pair_cstr(me, source, head_target, &source_str, &target_str);
     if (head.ts_code == HEAD_SATISFIES.ts_code) {
         Error* error = report_unassignable_with_head(me, source, target, 1360, cstr_d(

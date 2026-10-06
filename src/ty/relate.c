@@ -6284,6 +6284,48 @@ static Ty const* normalized_intersection(Checker* me, Ty const* ty, bool writing
     return ret;
 }
 
+// tsc's getNormalizedTupleType: a tuple with a spread of something generic (`[...{ [S in K]: [a: number] }[K]]`) has
+// its simplifiable elements simplified, which may splice a tuple in (`[a: number]`). Itself otherwise
+static Ty const* normalized_generic_tuple(Checker* me, Ty const* ty, bool writing) {
+    if (!is_tuple(ty) || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return ty;
+    TupleShape const* shape = ty->reference.target->declared.tuple;
+    TyList args = ty->reference.args;
+    bool variadic = false;
+    for (u32 i = 0; i < shape->arity && i < args.len && !variadic; i++) {
+        variadic = (shape->flags[i] & TUPLE_ELEMENT_REST) && (args.data[i]->kind == TY_TYPE_PARAM || (args.data[i]->flags & TYF_DEFERRED));
+    }
+    if (!variadic) return ty;
+    Ty const** simplified = nullptr;
+    for (u32 i = 0; i < args.len; i++) {
+        Ty const* arg = args.data[i];
+        if (arg->kind != TY_INDEXED && arg->kind != TY_CONDITIONAL) continue;
+        Ty const* next = ty_simplified(me, arg, writing);
+        if (next == arg) continue;
+        if (!simplified) {
+            simplified = malloc(sizeof(Ty const*) * args.len);
+            panic_if(!simplified, "out of memory");
+            memcpy(simplified, args.data, sizeof(Ty const*) * args.len);
+        }
+        simplified[i] = next;
+    }
+    if (!simplified) return ty;
+    Ty const* ret = ty_reference(me, ty->reference.target, (TyList){ .data = simplified, .len = args.len });
+    free(simplified);
+    return ret;
+}
+
+Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target) {
+    if (target->alias) return target;
+    for (u32 i = 0; i < 16 && (target->kind == TY_INDEXED || target->kind == TY_CONDITIONAL || target->kind == TY_SUBSTITUTION); i++) {
+        Ty const* next = target->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, target, true)) :
+            target->substitution.base;
+        if (next == target) break;
+        target = next;
+    }
+    target = normalized_generic_tuple(me, target, true);
+    return ty_strip_nullable_target(me, ty_regular(me, source), target);
+}
+
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     bool top = st->at_top;
     st->at_top = false;
@@ -6342,6 +6384,11 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
             if (next == target) break;
             target = next;
         }
+        if (source == target) return TERNARY_TRUE;
+    }
+    if ((source->flags | target->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+        source = normalized_generic_tuple(me, source, false);
+        target = normalized_generic_tuple(me, target, true);
         if (source == target) return TERNARY_TRUE;
     }
     Ty const* stripped = ty_strip_nullable_target(me, source, target);
