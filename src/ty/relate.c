@@ -4668,6 +4668,63 @@ static bool intersection_apparent_is_union(Checker* me, Ty const* source) {
     return false;
 }
 
+// A conditional source: through its default constraint, then its distributive one (tsc's structuredTypeRelatedToWorker)
+static Ternary conditional_source_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    // Already checking this conditional type as a source further up: don't recurse (tsc's
+    // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
+    if (st->source_depth && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth - 1, 10, false)) return TERNARY_MAYBE;
+    // Through the default constraint, the union of the branches (an any branch counts as never)
+    Ty const* true_branch = inferred_true_branch(me, source);
+    Ty const* false_branch = ty_conditional_branch(me, source, false);
+    if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
+    else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
+    // HACK: tsc relates the default constraint with RecursionFlags.Source; pushing the target too (a deep-nesting
+    // cut-off tsc doesn't have) saves react-hook-form's Path/FieldPathValue chains 10% of the react corpus
+    // (A union source: some member for the comparable relation, each one otherwise)
+    bool some = st->relation == TY_RELATION_COMPARABLE;
+    Ternary related = is_related_to(me, st, true_branch, target, false);
+    if (some && !related) related = is_related_to(me, st, false_branch, target, false);
+    else if (related && !some) related &= is_related_to(me, st, false_branch, target, false);
+    if (related) return related;
+    // Through the distributive constraint (not to another conditional type, like in tsc)
+    if (target->kind != TY_CONDITIONAL) {
+        // tsc's is the immediate one (distributive_constraint_as()). HACK: the base constraint one first, which
+        // is cheaper when it works: the immediate one alone made react-hook-form's paths (bulletproof-react)
+        // TS2589, see hacks.md
+        Ty const* constraint = distributive_constraint(me, source, 0);
+        if (constraint) {
+            related = is_related_to_side(me, st, constraint, target, false, 2);
+            if (related) return related;
+        }
+        // (Only with a base constraint, like tsc's hasNonCircularBaseConstraint gate.) Not while measuring
+        // variances, where relating it walked react-hook-form's Path types through marker instantiations
+        // (+12% instructions on bulletproof-react): the measurement is unreliable instead, so type arguments
+        // it would fail are compared structurally
+        Ty const* immediate = constraint ? distributive_constraint_as(me, source, 0, true) : nullptr;
+        if (immediate && immediate != constraint && my variance_depth) {
+            report_variance(me, source, VARIANCE_UNRELIABLE);
+        } else if (immediate && immediate != constraint) {
+            related = is_related_to_side(me, st, immediate, target, false, 2);
+            if (related) return related;
+        }
+        // (What tsc reports: the distributive constraint's failure replaces the default one's)
+        if (report && (immediate || constraint)) {
+            return is_related_to_side(me, st, immediate ? immediate : constraint, target, report, 2);
+        }
+    }
+    if (report) {
+        // (Explained as the default constraint, the union of the branches, then its failing member: tsc's
+        // isRelatedTo(getDefaultConstraintOfConditionalType(source), ...))
+        Ty const* pair[2] = { true_branch, false_branch };
+        Ty const* branches = ty_union(me, pair, 2, nullptr, (TyList){0});
+        return is_related_to_side(me, st, branches, target, report, 2);
+    }
+    related = is_related_to_side(me, st, true_branch, target, report && !some, 2);
+    if (some && !related) related = is_related_to_side(me, st, false_branch, target, report, 2);
+    else if (related && !some) related &= is_related_to_side(me, st, false_branch, target, report, 2);
+    return related;
+}
+
 static Ternary structured_related_members(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 );
@@ -4784,13 +4841,16 @@ static Ternary structured_related_members(
     if (target->kind == TY_INTERSECTION) {
         isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary result = target_each_related(me, st, source, target->composite.types, report);
-        // A conditional source whose members aren't all related may still be related as a whole through its
-        // distributive constraint, which only the intersection isn't a conditional type for (tsc's
-        // structuredTypeRelatedToWorker goes on for an instantiable source): `Emitted<L>` with `L extends { e: any }`
-        // (any) to `Emitted<L> & (T extends "*" ? unknown : { type: T })`
+        // A conditional source whose members aren't all related may still be related as a whole through its default
+        // or distributive constraint (tsc's structuredTypeRelatedToWorker goes on for an instantiable source, with the
+        // whole target): `Emitted<L>` with `L extends { e: any }` (any) to `Emitted<L> & (T extends "*" ? unknown :
+        // { type: T })`; vue's `shallowRef(r)`, whose branches are each a ShallowRef<T> but not the weak
+        // `{ [ShallowRefMarker]?: true }` alone
         if (!result && source->kind == TY_CONDITIONAL) {
-            Ty const* constraint = distributive_constraint(me, source, 0);
-            Ternary related = constraint ? is_related_to_side(me, st, constraint, target, false, 2) : TERNARY_FALSE;
+            bool saved_target = st->intersection_target;
+            st->intersection_target = false;
+            Ternary related = conditional_source_related(me, st, source, target, false);
+            st->intersection_target = saved_target;
             if (related) {
                 report_truncate(st, saved);
                 return related;
@@ -5120,10 +5180,11 @@ static Ternary structured_related_members(
                 }
                 Ty const* extends = target->conditional.extends;
                 bool skip_true = ty_definitely_unassignable(me, check, extends);
+                // (Only the target is pushed on the deep nesting stacks: tsc's RecursionFlags.Target)
                 Ternary related = skip_true ? TERNARY_TRUE :
-                    is_related_to(me, st, source, ty_conditional_branch(me, target, true), false);
+                    is_related_to_side(me, st, source, ty_conditional_branch(me, target, true), false, 1);
                 if (related) {
-                    Ternary related_false = is_related_to(me, st, source, ty_conditional_branch(me, target, false), false);
+                    Ternary related_false = is_related_to_side(me, st, source, ty_conditional_branch(me, target, false), false, 1);
                     if (!related_false && !skip_true && ty_definitely_assignable(me, check, extends)) related_false = TERNARY_TRUE;
                     related &= related_false;
                 }
@@ -5248,58 +5309,12 @@ static Ternary structured_related_members(
         }
 
         case TY_CONDITIONAL: {
-            // Already checking this conditional type as a source further up: don't recurse (tsc's
-            // isDeeplyNestedType(source, sourceStack, sourceDepth, 10); it is on the stack already)
-            if (st->source_depth && relation_deeply_nested(me, source, st->source_stack, st->source_entries, &st->source_entries_valid, st->source_depth - 1, 10, false)) return TERNARY_MAYBE;
-            // Through the default constraint, the union of the branches (an any branch counts as never)
-            Ty const* true_branch = inferred_true_branch(me, source);
-            Ty const* false_branch = ty_conditional_branch(me, source, false);
-            if (true_branch->flags & TYF_ANY) true_branch = ty_intrinsic(me, TY_NEVER);
-            else if (false_branch->flags & TYF_ANY) false_branch = ty_intrinsic(me, TY_NEVER);
-            // HACK: tsc relates the default constraint with RecursionFlags.Source; pushing the target too (a deep-nesting
-            // cut-off tsc doesn't have) saves react-hook-form's Path/FieldPathValue chains 10% of the react corpus
-            // (A union source: some member for the comparable relation, each one otherwise)
-            bool some = st->relation == TY_RELATION_COMPARABLE;
-            Ternary related = is_related_to(me, st, true_branch, target, false);
-            if (some && !related) related = is_related_to(me, st, false_branch, target, false);
-            else if (related && !some) related &= is_related_to(me, st, false_branch, target, false);
-            if (related) return related;
-            // Through the distributive constraint (not to another conditional type, like in tsc)
-            if (target->kind != TY_CONDITIONAL) {
-                // tsc's is the immediate one (distributive_constraint_as()). HACK: the base constraint one first, which
-                // is cheaper when it works: the immediate one alone made react-hook-form's paths (bulletproof-react)
-                // TS2589, see hacks.md
-                Ty const* constraint = distributive_constraint(me, source, 0);
-                if (constraint) {
-                    related = is_related_to_side(me, st, constraint, target, false, 2);
-                    if (related) return related;
-                }
-                // (Only with a base constraint, like tsc's hasNonCircularBaseConstraint gate.) Not while measuring
-                // variances, where relating it walked react-hook-form's Path types through marker instantiations
-                // (+12% instructions on bulletproof-react): the measurement is unreliable instead, so type arguments
-                // it would fail are compared structurally
-                Ty const* immediate = constraint ? distributive_constraint_as(me, source, 0, true) : nullptr;
-                if (immediate && immediate != constraint && my variance_depth) {
-                    report_variance(me, source, VARIANCE_UNRELIABLE);
-                } else if (immediate && immediate != constraint) {
-                    related = is_related_to_side(me, st, immediate, target, false, 2);
-                    if (related) return related;
-                }
-                // (What tsc reports: the distributive constraint's failure replaces the default one's)
-                if (report && (immediate || constraint)) {
-                    return is_related_to_side(me, st, immediate ? immediate : constraint, target, report, 2);
-                }
-            }
-            if (report) {
-                // (Explained as the default constraint, the union of the branches, then its failing member: tsc's
-                // isRelatedTo(getDefaultConstraintOfConditionalType(source), ...))
-                Ty const* pair[2] = { true_branch, false_branch };
-                Ty const* branches = ty_union(me, pair, 2, nullptr, (TyList){0});
-                return is_related_to_side(me, st, branches, target, report, 2);
-            }
-            related = is_related_to_side(me, st, true_branch, target, report && !some, 2);
-            if (some && !related) related = is_related_to_side(me, st, false_branch, target, report, 2);
-            else if (related && !some) related &= is_related_to_side(me, st, false_branch, target, report, 2);
+            // (Its constraints relate to an intersection target's member without IntersectionState.Target: tsc passes
+            // no intersectionState there, so a weak member is checked for common properties)
+            bool saved = st->intersection_target;
+            st->intersection_target = false;
+            Ternary related = conditional_source_related(me, st, source, target, report);
+            st->intersection_target = saved;
             return related;
         }
 
