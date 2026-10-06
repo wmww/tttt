@@ -342,7 +342,10 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             Ty const* part = access(me, member, index, depth + 1, flags);
             // A tuple too short to have the element has undefined there when others have it (tsc's
             // createUnionOrIntersectionProperty: its index signature applies, and the rest element or undefined is read)
-            if (!part && (index->flags & TYF_NUMBER_LITERAL) && ty_tuple_shape(ty_apparent_type(me, member))) {
+            // (A numeric name too: `T["1"]`)
+            bool numeric_name = (index->flags & TYF_NUMBER_LITERAL) || ((index->flags & TYF_STRING_LITERAL) &&
+                !(index->flags & TYF_ENUM_LITERAL) && index->literal.string && ty_is_numeric_name(index->literal.string));
+            if (!part && numeric_name && ty_tuple_shape(ty_apparent_type(me, member))) {
                 part = ty_intrinsic(me, TY_UNDEFINED);
                 padded = true;
                 if (len < 64) padded_tuples |= 1ull << len;

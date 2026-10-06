@@ -2776,7 +2776,10 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
     }
     Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
-    if (!ret && (index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) {
+    if (!ret && (((index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) ||
+        ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string &&
+            ty_is_numeric_name(index->literal.string) && atom_sv(index->literal.string).buf[0] != '-'))
+    ) {
         TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
         bool tuples = parts.len > 0;
         for (u32 i = 0; i < parts.len && tuples; i++) tuples = ty_tuple_shape(parts.data[i]) != nullptr;

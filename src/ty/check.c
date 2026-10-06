@@ -1986,6 +1986,24 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
         }
     }
     if (is_key && ty_access(me, apparent, index)) return;
+    // A numeric name of tuples is their element (tsc's isNumericLiteralName(propName)): `T["1"]` as `T[1]`
+    if ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string &&
+        ty_is_numeric_name(index->literal.string)
+    ) {
+        bool tuples = ty_is_tuple(apparent);
+        if (apparent->kind == TY_UNION) {
+            tuples = true;
+            for (u32 i = 0; i < apparent->composite.types.len && tuples; i++) tuples = ty_is_tuple(apparent->composite.types.data[i]);
+        }
+        if (tuples) {
+            csview digits = atom_sv(index->literal.string);
+            char buf[64];
+            snprintf(buf, sizeof buf, "%.*s", (int)digits.size, digits.buf);
+            Value value = value_number(atof(buf));
+            check_indexed_access_part(me, apparent, ty_literal(me, &value), index_span, errs);
+            return;
+        }
+    }
     if (ty_is_tuple(apparent) && (index->flags & TYF_NUMBER_LITERAL)) {
         // (ty_access() only misses an element past the end of a tuple without a rest element)
         double n = index->literal.value.number;
@@ -3938,8 +3956,15 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         if (!access->assignment_target || generic) return;
         // A readonly index signature (`readonly T[]`)
         Ty const* apparent = ty_apparent_type(me, object);
-        IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
-            ty_applicable_index_info(me, apparent, ty_regular(me, ty_access_key_type(me, access))) : nullptr;
+        Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+        IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, apparent, key) : nullptr;
+        // (Of a union, any member's: tsc's getIndexedAccessType goes member by member, `string | T` has String's
+        // readonly number index signature, and names the union)
+        for (u32 i = 0; !info && apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN) && i < apparent->composite.types.len; i++) {
+            Ty const* member = ty_apparent_type(me, apparent->composite.types.data[i]);
+            IndexInfo const* member_info = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, member, key) : nullptr;
+            if (member_info && member_info->readonly) info = member_info;
+        }
         if (info && info->readonly) {
             cstr object_str = ty_to_cstr(me, apparent); // (tsc shows the apparent type either way)
             error_ctx_error_d(errs, span, 2542, "Index signature in type '", object_str, "' only permits reading.");
