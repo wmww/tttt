@@ -13,17 +13,24 @@ shows up as a spurious TS2578.
   ./sweep.py -k 'TS2339'      # list the packages and diagnostics whose root-cause key contains this
   ./sweep.py --names spurious # the package names of a verdict (crash, timeout, spurious, missing, both, match)
   ./sweep.py --last ...       # reuse the last run's results (-k, --names) without running tttt again
+  ./sweep.py --flags nuia     # every package rechecked with a flag on top of its tsconfig (plan 46): own oracle file
+                              # (test/sweep/DefinitelyTyped.nuia.tsc.jsonl.gz, --tsc --flags nuia makes it)
 
 A package that wants an older major of a dependency gets it (test/sweep_links.py writes pnpm's links), and the
 versioned directories (types/NAME/vN) are packages of their own.
 """
-import argparse, collections, concurrent.futures, json, os, re, resource, subprocess, sys, time
+import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 DT = os.path.join(ROOT, 'thirdparty/corpora/DefinitelyTyped')
 ORACLE = os.path.join(ROOT, 'test/sweep/DefinitelyTyped.tsc.jsonl')
 TREE = os.path.basename(ROOT)
 LAST = f'/tmp/sweep-{TREE}.json'
+# Flag sets for --flags (DT packages are strict already: only the flags no package sets are worth a run)
+FLAGS = {
+    'nuia': ['--noUncheckedIndexedAccess'],
+    'eopt': ['--exactOptionalPropertyTypes'],
+}
 DIAG = re.compile(r'(\S+):(\d+) \[TS(\d+)\] (.*)')
 
 
@@ -64,12 +71,12 @@ def run_tsc(packages, jobs, extra=()):
     return results
 
 
-def run_tttt(package, timeout, mem_gb):
+def run_tttt(package, timeout, mem_gb, flags=()):
     limit = mem_gb << 30
     start = time.time()
     try:
         proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--all-errors', '--threads', '1',
-                               '--checkers', '1', '-p', package], cwd=DT, stdout=subprocess.PIPE,
+                               '--checkers', '1', '-p', package, *flags], cwd=DT, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
@@ -155,7 +162,14 @@ def main():
     ap.add_argument('--timeout', type=int, default=60)
     ap.add_argument('--mem-gb', type=int, default=4)
     ap.add_argument('--no-build', action='store_true')
+    ap.add_argument('--flags', choices=sorted(FLAGS), help='recheck with a flag set, against its own tsc oracle')
     args = ap.parse_args()
+    global ORACLE, LAST
+    flags = FLAGS[args.flags] if args.flags else []
+    if args.flags:
+        ORACLE = ORACLE.replace('.tsc.jsonl', f'.{args.flags}.tsc.jsonl.gz')
+        LAST = LAST.replace('.json', f'-{args.flags}.json')
+    opener = gzip.open if ORACLE.endswith('.gz') else open
 
     subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-corpora.sh')], check=True)
     # Older majors of dependencies where a package asks for them, as pnpm would link them (idempotent: writes nothing
@@ -166,17 +180,17 @@ def main():
     if args.tsc:
         oracle = {}
         if os.path.exists(ORACLE):
-            oracle = {r['project']: r for r in map(json.loads, open(ORACLE))}
+            oracle = {r['project']: r for r in map(json.loads, opener(ORACLE, 'rt'))}
         start = time.time()
-        oracle.update(run_tsc(packages, args.jobs))
+        oracle.update(run_tsc(packages, args.jobs, flags))
         os.makedirs(os.path.dirname(ORACLE), exist_ok=True)
-        with open(ORACLE, 'w') as f:
+        with opener(ORACLE, 'wt') as f:
             for p in sorted(oracle):
                 f.write(json.dumps(oracle[p], separators=(',', ':')) + '\n')
         print(f'tsc 5.8 on {len(packages)} packages in {time.time() - start:.0f}s, written to {ORACLE}')
         return
 
-    oracle = {r['project']: r for r in map(json.loads, open(ORACLE))}
+    oracle = {r['project']: r for r in map(json.loads, opener(ORACLE, 'rt'))}
     missing_oracle = [p for p in packages if p not in oracle]
     if missing_oracle:
         print(f'{len(missing_oracle)} packages have no tsc verdict (run --tsc): {" ".join(missing_oracle[:5])}...')
@@ -191,7 +205,7 @@ def main():
             subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
         start = time.time()
         with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
-            results = list(pool.map(lambda p: run_tttt(p, args.timeout, args.mem_gb), packages))
+            results = list(pool.map(lambda p: run_tttt(p, args.timeout, args.mem_gb, flags), packages))
         elapsed = time.time() - start
         with open(LAST, 'w') as f:
             json.dump(results, f)

@@ -12,6 +12,9 @@ const path = require('path');
 const readline = require('readline');
 
 const expectMode = process.argv.includes('--expect');
+// Other `--flag` arguments are boolean compiler options set on top of every tsconfig (./sweep.py --flags)
+const extraOptions = Object.fromEntries(process.argv.slice(2).filter(a => a.startsWith('--') && a !== '--expect')
+    .map(a => [a.slice(2), true]));
 const libDir = path.dirname(ts.getDefaultLibFilePath({}));
 const libCache = new Map();
 
@@ -19,7 +22,7 @@ function check(dir) {
     const start = Date.now();
     const configPath = path.resolve(dir, 'tsconfig.json');
     const diags = [];
-    const parsed = ts.getParsedCommandLineOfConfigFile(configPath, {}, {
+    const parsed = ts.getParsedCommandLineOfConfigFile(configPath, extraOptions, {
         ...ts.sys,
         onUnRecoverableConfigFileDiagnostic: d => diags.push(d),
     });
