@@ -797,6 +797,13 @@ FunctionImpl const* initialized_binding_getter(InitializedBinding const* me) {
     return type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL) ? initialized_binding_rare(me)->getter : nullptr;
 }
 
+// Whether the initializer's type `init` is that of `[]` in an unannotated JavaScript declaration, which makes it any[]
+bool initialized_binding_js_empty_array(InitializedBinding const* me, Ty const* init) {
+    SourceFile const* file = my binding.content_span.source;
+    return file && file->is_js && !my binding.has_explicit_type && my binding.tag == BINDING_IDENTIFIER &&
+        ty_is_empty_array_literal_type(current_checker, init);
+}
+
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     Checker* checker = current_checker;
     FunctionImpl const* getter = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY && !my binding.has_explicit_type ?
@@ -829,6 +836,9 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     // widened `{}` would absorb the other member
     // (A parameter's pattern is its declared type too, which is widened)
     bool pattern_source = my binding.tag != BINDING_IDENTIFIER && !binding_is_parameter(&my binding);
+    // `x = []` in JavaScript is any[] (tsc's widenTypeInferredFromInitializer; reportImplicitAny says so, see
+    // initialized_binding_js_empty_array())
+    if (initialized_binding_js_empty_array(me, ret)) return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
     if (!my binding.has_explicit_type && !pattern_source) {
         ret = ty_widened_for_declaration(checker, ret, my binding.tag == BINDING_IDENTIFIER && my abstract_literals);
         // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
@@ -882,13 +892,21 @@ bool binding_report_widening_errors_in_type(Ty const* ty, ErrorCtx* errs) {
 // `parameter`: the whole parameter when `me` is one (tsc reports at the declaration, a variable's at its name)
 static void report_errors_from_widening(InitializedBinding* me, Span parameter, ErrorCtx* errs) {
     Checker* checker = current_checker;
-    if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
+    if (!compiler_options()->no_implicit_any) return;
     if (my binding.has_explicit_type || initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY || my binding.tag != BINDING_IDENTIFIER) return;
     if (auto_type(me) || my is_rest_parameter) return;
     Symbol const* symbol = my binding.symbol;
     if (!symbol) return;
     if (symbol->is_parameter && ty_contextual_parameter_type(checker, me)) return;
     Ty const* ty = ty_expr_type(checker, initialized_binding_value(me));
+    if (compiler_options()->strict_null_checks) {
+        // `x = []` in JavaScript is any[] (tsc's widenTypeInferredFromInitializer and its reportImplicitAny; without
+        // strictNullChecks the widening below says the same)
+        if (!initialized_binding_js_empty_array(me, ty) || initialized_binding_getter(me)) return;
+        error_ctx_error_d(errs, span_valid(parameter) ? parameter : my binding.content_span, symbol->is_parameter ? 7006 : 7005,
+            symbol->is_parameter ? "Parameter '" : "Variable '", my binding.content_span, "' implicitly has an 'any[]' type.");
+        return;
+    }
     if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
     if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));

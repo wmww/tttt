@@ -135,6 +135,10 @@ Ty const* class_item_field_evaluate_type(ClassItem* me) {
     // checkDeclarationInitializer, as for variables: initialized_binding_evaluate_type())
     Ty const* value = ty_quick_expr_type(checker, &my field.value, false);
     if (!value) value = ty_expr_type(checker, &my field.value);
+    // `p = []` in JavaScript is any[] (tsc's widenTypeInferredFromInitializer, TS7008 in class_field_check_implicit_any())
+    if (my field.name_span.source && my field.name_span.source->is_js && ty_is_empty_array_literal_type(checker, value)) {
+        return ty_array(checker, ty_intrinsic(checker, TY_ANY), false);
+    }
     Ty const* ret = ty_widened_for_declaration(checker, value, !my field.is_readonly);
     // A unique symbol made for another declaration is only a symbol here (tsc's widenTypeForVariableLikeDeclaration)
     if ((ret->flags & TYF_UNIQUE_ES_SYMBOL) && ret->literal.unique->key != me) ret = ty_intrinsic(checker, TY_ES_SYMBOL);
@@ -1681,6 +1685,12 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         return;
     }
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
+    if (name.source && name.source->is_js && item->field.value.tag != EXPR_IMPLICIT_ANY && !item->field.js_assigned &&
+        ty_is_empty_array_literal_type(current_checker, ty_expr_type(current_checker, &item->field.value))
+    ) {
+        error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any[]' type.");
+        return;
+    }
     if ((name.source && name.source->is_js) || class_item_private_in_ambient(me, item) || item->field.ts_assigned) return;
     if (item->field.value.tag != EXPR_IMPLICIT_ANY) {
         // tsc's reportErrorsFromWidening: inside the type if it can (object literal properties), else at the member

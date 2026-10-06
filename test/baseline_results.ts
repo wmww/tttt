@@ -60696,9 +60696,9 @@ const baselines = {
         types: true,
     },
     'typeFromJSInitializer': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromJSInitializer2': {
         errors: true,

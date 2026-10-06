@@ -199,3 +199,6 @@ queues merged into one.
 - (todo entry 7, tanstack-router agent) Its probes still differ from tsc in error text: `hash?: string | undefined`
   where tsc prints `hash?: string`, and reversed union order in a conditional constraint's message
   (test/probes/plan19/tanstack-router/conditional_source_weak_target.ts).
+- (suite errors agent B, 2026-10-06) JavaScript `var { d = [] } = {};`: tsc reports TS2339 'd' does not exist on `{}`
+  (an empty object literal initializer of a non-parameter JS declaration is getJSContainerObjectType's `{}`, not the
+  pattern-padded literal); tttt types d as `never[]`/`any[]` and says nothing (TS7031 without strictNullChecks).

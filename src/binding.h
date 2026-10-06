@@ -152,6 +152,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
 // `value_unchecked`: the initializer of a function without a body (TS2371 only): its names are resolved silently
 void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, bool value_unchecked, ErrorCtx* errs);
 Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
+bool initialized_binding_js_empty_array(InitializedBinding const* me, Ty const* init);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 // A parameter (`span`: all of it)
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs);

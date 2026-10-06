@@ -1256,6 +1256,14 @@ static Ty const* define_property_type(Checker* me, Expr const* call) {
     return ty_intrinsic(me, TY_ANY);
 }
 
+// tsc's isEmptyArrayLiteralType: the type of `[]` (its element type is implicitNeverType, or undefinedWideningType
+// without strictNullChecks), which a JavaScript declaration widens to any[] (widenTypeInferredFromInitializer)
+bool ty_is_empty_array_literal_type(Checker* me, Ty const* type) {
+    if (type->kind != TY_REFERENCE || !ty_is_array(me, type)) return false;
+    TyList args = ty_reference_args(me, type);
+    return args.len == 1 && args.data[0] == ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_IMPLICIT_NEVER : TY_UNDEFINED_WIDENING);
+}
+
 static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     if (decl->assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY) return define_property_type(me, decl->node);
     Ty const* annotated = annotated_expando_type(me, symbol);
@@ -1268,9 +1276,7 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     // `[]` is any[] in JavaScript, which noImplicitAny reports (tsc's getInitializerTypeFromAssignmentDeclaration:
     // isEmptyArrayLiteralType, see ty_js_assignment_implicit_any())
     SourceFile const* file = decl->full.source;
-    TyList args = file && file->is_js && ty_is_array(me, type) ? ty_reference_args(me, type) : (TyList){0};
-    Ty const* element = args.len == 1 ? args.data[0] : nullptr;
-    if (element && element == ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_IMPLICIT_NEVER : TY_UNDEFINED_WIDENING)) {
+    if (file && file->is_js && ty_is_empty_array_literal_type(me, type)) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)decl->node }, 2) = decl->node;
         return ty_array(me, ty_intrinsic(me, TY_ANY), false);
     }
