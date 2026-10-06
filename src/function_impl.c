@@ -370,6 +370,12 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
             predicate->param_index = (i32)i_index;
             if (i->initializer.binding.tag == BINDING_IDENTIFIER) predicate->symbol = i->initializer.binding.symbol;
         }
+        // (No parameter of that name: tsc's getSymbolAtLocation resolves it like any name there, a binding element of
+        // a parameter's pattern or an outer variable. Only the symbols baseline looks)
+        if (!predicate->is_this && !predicate->symbol && predicate->param_index < 0 && span_valid(predicate->name)) {
+            Symbol const* found = scope_resolve(function_scope, predicate->name.sv, SYMBOL_VALUE);
+            if (found && !found->is_placeholder) predicate->symbol = found;
+        }
     }
     saved_flow = type_flow_enter_statements();
     if (!skip_body) block_lookup_names_as(&my body, true, function_scope, errs);

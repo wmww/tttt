@@ -48052,8 +48052,8 @@ const baselines = {
     },
     'typeGuardFunctionErrors': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeGuardFunctionGenerics': {
         errors: true,

@@ -869,6 +869,9 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
         }
     }
     if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return true;
+    // (A name that doesn't resolve with this meaning, a value used as a type (TS2749): tsc's resolveEntityName finds
+    // nothing, here or there, and the node is reused, AllowUnresolvedNames)
+    if (meaning != SYMBOL_VALUE && (symbol->is_placeholder || !symbol_for_meaning(symbol, meaning))) return true;
     if (symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN) return true; // `object`
     // (A local of a function or block never is: tsc's isDeclarationVisible() is false for it, and `enclosing` only knows
     // file and namespace scopes anyway)
