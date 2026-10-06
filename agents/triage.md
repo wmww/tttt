@@ -34,3 +34,7 @@ queues merged into one.
 - TS2344 elaboration for `NonNullable<V[K]>` without strictNullChecks: tsc adds "Type 'NonNullable<V[K]>' is not
   assignable to type 'SVM'. / Index signature for type 'string' is missing in type '{}'." (the structural step on the
   intersection's apparent type, tsc's emptyObjectType); tttt prints the header only.
+- (agent d) `function g<T, K extends keyof T>(t: T, k: K) { t[k] }`: tttt types `t[k]` as `T[string] | T[number] |
+  T[symbol]` (tsc `T[K]`), so `t[k].foo` misses TS2339 on 'T[K]'. Probe: /tmp/d-probes/idx.ts shape.
+- (agent d) intersection()'s dedupe_unions() merges unions with the same members but different alias/origin; tsc keeps
+  them apart (origin is part of the union's identity) and then intersects them as sets, losing the alias.
