@@ -2088,10 +2088,17 @@ static void add_nested_commonjs_exports(Scope* module, Statement* statement, boo
     }
 }
 
+static void declare_commonjs_module_symbol(Scope* me);
+
 void scope_add_commonjs_module(Scope* me) {
     if (my kind == SCOPE_MODULE && my file && my file->is_commonjs && my container && my block) {
         for_each (i, vec_statement, &((Block*)my block)->statements) add_nested_commonjs_exports(me, i, false, false);
     }
+    declare_commonjs_module_symbol(me);
+}
+
+// The `module` of a CommonJS file (tsc's binder declares it at the first `module.exports`)
+static void declare_commonjs_module_symbol(Scope* me) {
     SourceFile* file = my file;
     if (my kind != SCOPE_MODULE || !file || !file->is_commonjs || !span_valid(file->module_exports_span)) return;
     if (symbol_table_get(&my locals, c_sv("module"))) return;
@@ -4779,13 +4786,15 @@ static void push_global_expando(Binder* binder, Symbol* symbol) {
 }
 
 // Each name of `a.b` of a top-level JavaScript `a.b.x = v` is a global namespace declared here, merged with the
-// globals of that name (tsc's jsGlobalAugmentations, merged into the globals by initializeTypeChecker)
-static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
+// globals of that name (tsc's jsGlobalAugmentations, merged into the globals by initializeTypeChecker). With `root`,
+// `a` is that symbol instead (the `module` of a CommonJS file, commonjs_module_namespace())
+static Symbol* expando_namespace_in(Scope* me, Expr const* entity, Symbol* root) {
     Symbol* parent = nullptr;
     SymbolTable* table = &my binder->globals;
     Span name;
+    Symbol* symbol;
     if (entity->tag == EXPR_PROPERTY) {
-        parent = global_expando_namespace(me, &entity->property->expr);
+        parent = expando_namespace_in(me, &entity->property->expr, root);
         if (!parent) return nullptr;
         symbol_ensure_exports(parent);
         table = parent->exports;
@@ -4793,13 +4802,17 @@ static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
     } else {
         name = entity->inner_span;
     }
-    bool merged;
-    Symbol* symbol = declare_symbol(me, table, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
-    if (!merged) {
-        symbol->name = name.sv;
-        symbol->name_span = name;
-        symbol->parent = parent;
-        symbol->exported = parent != nullptr;
+    if (root && entity->tag != EXPR_PROPERTY) {
+        symbol = root;
+    } else {
+        bool merged;
+        symbol = declare_symbol(me, table, name.sv, name, SYMBOL_VALUE_MODULE, 0, false, &merged);
+        if (!merged) {
+            symbol->name = name.sv;
+            symbol->name_span = name;
+            symbol->parent = parent;
+            symbol->exported = parent != nullptr;
+        }
     }
     if (symbol->flags & SYMBOL_ALIAS) return nullptr;
     symbol_ensure_exports(symbol);
@@ -4807,8 +4820,48 @@ static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
     symbol_add_decl(symbol, (SymbolDecl){
         .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = entity, .name = decl_name, .full = decl_name,
     });
-    push_global_expando(my binder, symbol);
+    if (!root) push_global_expando(my binder, symbol);
     return symbol;
+}
+
+static Symbol* global_expando_namespace(Scope* me, Expr const* entity) {
+    return expando_namespace_in(me, entity, nullptr);
+}
+
+// `module.a.x = v` at the top level of a CommonJS file after its first `module.exports`: tsc's binder has declared
+// `module` in the file's locals by then, so bindPotentiallyMissingNamespaces makes that symbol a namespace (and `a` a
+// member of it) instead of a global one. Its type stays `{ exports: ... }`, now printed `typeof module`
+static Symbol* commonjs_module_namespace(Scope* me, Expr const* object) {
+    if (object->tag != EXPR_PROPERTY) return nullptr;
+    Expr const* entity = object;
+    Expr const* second = nullptr;
+    while (entity->tag == EXPR_PROPERTY && !expr_is_perenthisized(entity)) {
+        Span name = expr_static_property_name(entity);
+        if (!span_valid(name) || name.sv.buf[0] == '#' || entity->property->form == PROPERTY_EXPR_BRACKET) return nullptr;
+        second = entity;
+        entity = &entity->property->expr;
+    }
+    if (expr_is_perenthisized(entity) || entity->tag != EXPR_IDENTIFIER || entity->identifier.keyword ||
+        !span_equals(entity->inner_span, "module") || span_equals(expr_static_property_name(second), "exports")
+    ) {
+        return nullptr;
+    }
+    Scope* module = commonjs_module_scope(me);
+    if (!module) return nullptr;
+    SourceFile const* file = module->file;
+    Span first = file->module_exports_span;
+    if (!span_valid(first) || first.source != expr_outer_span(entity).source ||
+        span_start_ptr(first) >= span_start_ptr(expr_outer_span(entity))
+    ) {
+        return nullptr;
+    }
+    Symbol* symbol = symbol_table_get(&module->locals, c_sv("module"));
+    if (!symbol) {
+        declare_commonjs_module_symbol(module);
+        symbol = symbol_table_get(&module->locals, c_sv("module"));
+    }
+    if (!symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_COMMONJS_MODULE) return nullptr;
+    return expando_namespace_in(me, object, symbol);
 }
 
 void binder_link_global_expandos(Binder* me) {
@@ -5098,6 +5151,8 @@ static void add_expando_member(
             add_expando_namespace_decls(me, object, true);
         }
         return;
+    } else if (top_level && my file->is_js && my file->is_commonjs && (host = commonjs_module_namespace(me, object))) {
+        // (the members go into the last name, like a global one's)
     } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
         host = global_expando_namespace(me, object);
         if (!host) return;

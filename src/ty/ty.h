@@ -352,6 +352,7 @@ struct Ty {
             bool js_literal : 1; // OBJECT_JS: an object literal of a JavaScript file (tsc's ObjectFlags.JSLiteral)
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
+            bool commonjs_module : 1; // The `module` of a CommonJS file that is a namespace too: prints as `typeof module`
             bool mapped : 1; // A mapped type node (`{ [K in C]: X }`) or an instantiation of one (tsc's ObjectFlags.Mapped)
         } anonymous;
         struct {

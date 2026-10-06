@@ -1077,11 +1077,36 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
 
 // The `module` of a CommonJS file: `{ exports: <what the module exports> }` (tsc builds it in
 // getTypeOfVariableOrParameterOrPropertyWorker for SymbolFlags.ModuleExports)
+// The first token of a file (tsc's getErrorSpanForNode of a SourceFile: skipTrivia from its start)
+static char const* file_first_token(SourceFile const* file) {
+    char const* at = source_file_start(file);
+    char const* end = at + cstr_size(&file->contents);
+    if (end - at >= 2 && at[0] == '#' && at[1] == '!') {
+        while (at < end && *at != '\n' && *at != '\r') at++;
+    }
+    while (at < end) {
+        if (*at == ' ' || *at == '\t' || *at == '\n' || *at == '\r' || *at == '\v' || *at == '\f') {
+            at++;
+        } else if (end - at >= 3 && (unsigned char)at[0] == 0xEF && (unsigned char)at[1] == 0xBB && (unsigned char)at[2] == 0xBF) {
+            at += 3;
+        } else if (end - at >= 2 && at[0] == '/' && at[1] == '/') {
+            while (at < end && *at != '\n' && *at != '\r') at++;
+        } else if (end - at >= 2 && at[0] == '/' && at[1] == '*') {
+            char const* close = at + 2;
+            while (close + 1 < end && !(close[0] == '*' && close[1] == '/')) close++;
+            at = close + 1 < end ? close + 2 : end;
+        } else {
+            break;
+        }
+    }
+    return at;
+}
+
 Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
     Symbol* module = file->scope ? file->scope->container : nullptr;
     if (!module) return ty_intrinsic(me, TY_ANY);
     Span* file_span = arena_new(&my arena, Span);
-    *file_span = (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) };
+    *file_span = (Span){ .source = file, .sv = csview_from_n(file_first_token(file), 0) };
     Ty const* exports = ty_commonjs_exports_type(me, file);
     ObjectLiteralProp prop = {
         .name = checker_atom(me, c_sv("exports")),
@@ -1090,7 +1115,15 @@ Ty const* ty_commonjs_module_object(Checker* me, SourceFile const* file) {
         .decl_spans = file_span,
         .decl_span_count = 1,
     };
-    return ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC);
+    Ty* ret = (Ty*)ty_object_literal(me, &prop, 1, nullptr, 0, OBJECT_SYNTHETIC);
+    // `module.a.x = v` made `module` a namespace too (commonjs_module_namespace()): tsc prints the type by its symbol
+    Symbol const* variable = file->scope ? symbol_table_get(&file->scope->locals, c_sv("module")) : nullptr;
+    if (variable && variable->decl_count && variable->decls[0].kind == SYMBOL_DECL_COMMONJS_MODULE) {
+        for (u32 i = 1; i < variable->decl_count; i++) {
+            if (variable->decls[i].kind == SYMBOL_DECL_EXPANDO) ret->anonymous.commonjs_module = true;
+        }
+    }
+    return ret;
 }
 
 // The value of a namespace (or of a module, through `import * as ns`): a property per value it declares

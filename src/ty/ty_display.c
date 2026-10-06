@@ -3142,6 +3142,10 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         }   break;
 
         case TY_ANONYMOUS: {
+            if (ty->anonymous.commonjs_module) {
+                out_lit(d, "typeof module");
+                break;
+            }
             // An anonymous type inside its own rendering prints as `any`, like tsc's elided information placeholder
             // (`function f() { return f }` is `() => any`)
             // (Not a reverse mapped type, which has no symbol: its properties have placeholders of their own, see
