@@ -2284,14 +2284,19 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
             return;
         }
     }
-    // (tsc's getIndexTypeOfType(objectType, numberType): an intersection has what any of its members has)
-    bool number_index = false;
-    TyList parts = object->kind == TY_INTERSECTION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
+    // (tsc's getIndexTypeOfType(objectType, numberType): an intersection has what any of its members has, a union what
+    // all of them have)
+    bool number_index = object->kind == TY_UNION;
+    TyList parts = object->kind == TY_INTERSECTION || object->kind == TY_UNION ? object->composite.types :
+        (TyList){ .data = &object, .len = 1 };
     for (u32 j = 0; j < parts.len; j++) {
-        Ty const* part = object->kind == TY_INTERSECTION ? ty_apparent_type(me, parts.data[j]) : parts.data[j];
-        if (!(part->flags & TYF_OBJECT)) continue;
-        Members const* members = ty_members(me, part);
-        for (u32 i = 0; i < members->index_count; i++) number_index |= (members->index[i].key->flags & TYF_NUMBER) != 0;
+        Ty const* part = parts.len > 1 ? ty_apparent_type(me, parts.data[j]) : parts.data[j];
+        bool has = false;
+        if (part->flags & TYF_OBJECT) {
+            Members const* members = ty_members(me, part);
+            for (u32 i = 0; i < members->index_count; i++) has |= (members->index[i].key->flags & TYF_NUMBER) != 0;
+        }
+        number_index = object->kind == TY_UNION ? number_index && has : number_index || has;
     }
     if (name && class_symbol && !csview_equals(atom_sv(name), "prototype") &&
         ty_get_prop(me, ty_static_type_of(me, class_symbol), name)
