@@ -6671,9 +6671,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedParametersOptionalInJSDoc': {
         errors: false,

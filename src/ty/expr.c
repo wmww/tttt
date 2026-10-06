@@ -703,7 +703,10 @@ static Ty const* tuple_element_context(Checker* me, Ty const* tuple, ElementCont
     if ((a->first_spread == UINT32_MAX || a->index < a->first_spread) && a->index < fixed) {
         // (tsc's optional elements hold undefined, tttt's don't)
         Ty const* element = ty_reference_args(me, tuple).data[a->index];
-        return shape->flags[a->index] & TUPLE_ELEMENT_OPTIONAL ? ty_optional_param_type(me, element) : element;
+        // (Under exactOptionalPropertyTypes the missing type, which a contextual type leaves out: tsc's
+        // getTypeOfPropertyOfContextualType through removeMissingType)
+        if (!(shape->flags[a->index] & TUPLE_ELEMENT_OPTIONAL)) return element;
+        return compiler_options()->exact_optional_property_types ? ty_remove_missing(me, element, true) : ty_optional_param_type(me, element);
     }
     u32 offset = a->length != UINT32_MAX && (a->last_spread == UINT32_MAX || a->index > a->last_spread) ?
         a->length - a->index : 0;
