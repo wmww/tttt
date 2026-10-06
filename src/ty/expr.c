@@ -649,6 +649,21 @@ static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty con
     return ret;
 }
 
+// Whether the property an assignment writes is optional (tsc's prop.flags & SymbolFlags.Optional in
+// getFlowTypeOfAccessExpression, which only then removes the missing type): of a union, if some member's is. Only a
+// literal key names one (`o[k] = v` keeps it); `r.current = cb` with `current: T` and T inferred as `X | missing` keeps the missing type
+static bool written_prop_is_optional(Checker* me, Ty const* object, Ty const* key) {
+    if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return false;
+    Atom const* name = ty_literal_name(me, key);
+    Ty const* apparent = ty_apparent_type(me, object);
+    TyList members = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+    for (u32 i = 0; i < members.len; i++) {
+        FoundProp found = ty_find_prop(me, ty_apparent_type(me, members.data[i]), name);
+        if (found.found && (found.flags & PROP_OPTIONAL)) return true;
+    }
+    return false;
+}
+
 static Ty const* get_prop_context_with_missing(Checker* me, Ty const* object, PropContextKey const* k);
 
 // (An optional property says its declared type: under exactOptionalPropertyTypes without the missing type, tsc's
@@ -4607,7 +4622,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
                 Ty const* write = key->kind == TY_UNION ? union_key_write_type(me, object, key) : ty_access_write_type(me, object, key);
                 if (write) ret = write;
-                ret = ty_remove_missing(me, ret, true); // (tsc's getFlowTypeOfAccessExpression)
+                ret = ty_remove_missing(me, ret, written_prop_is_optional(me, object, key)); // (tsc's getFlowTypeOfAccessExpression)
             }
             // (A property of any isn't narrowed: tsc's checkPropertyAccessExpressionOrQualifiedName returns any before
             // getFlowTypeOfAccessExpression. An element access is)

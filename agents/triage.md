@@ -179,3 +179,13 @@ queues merged into one.
   the argument count check in tsc); typeFromParamTagForFunction (a user `require(id: number)` is only checked lazily);
   enumTagOnExports (an earlier comment's `@enum` on `module.exports.b` declares a type too: TS2300); `@overload`
   signatures' types are resolved eagerly (TS2304 for a missing name in an unused overload, tsc resolves on use).
+- (corpus pinning 2026-10-06) tsc reports TS2488 ("must have a '[Symbol.iterator]()'") only the first time it sees a
+  given *union* type (getIterationTypesOfIterable caches noIterationTypes per union and returns early on the next
+  check, no error). tttt copies the cache (a standalone two-line probe matches), but excalidraw under
+  noUncheckedIndexedAccess shows tsc reporting `polygon.ts:53` twice (`Point | undefined` and its constraint `[number,
+  number] | undefined`, a generic destructuring) where tttt reports once, so the later `bounds.ts:821` is silent in tsc
+  and reported by tttt, and `bounds.ts:883` the other way round. Order-dependent and not reproduced outside the corpus
+  (`./flagflip.py -c excalidraw -F nuia -k TS2488`); low user value, a determinism question if anything.
+- (same) A type parameter default checked against a conditional constraint: `type RP<T> = unknown extends T ? string :
+  'a' | 'b'; declare function b<R, F extends RP<R> = string>(): void` is TS2344 in tttt, fine in tsc (both branches
+  are tried: string -> 'a' | 'b' fails; how tsc accepts it wasn't worked out).
