@@ -6315,6 +6315,10 @@ static Ty const* normalized_generic_tuple(Checker* me, Ty const* ty, bool writin
     return ret;
 }
 
+Ty const* ty_normalized_generic_tuple(Checker* me, Ty const* ty, bool writing) {
+    return normalized_generic_tuple(me, ty, writing);
+}
+
 // The source as the head of a relation error names it: tsc's reportErrorResults uses getNormalizedType's (simplified
 // indexed accesses and conditional types, read) unless it has an alias
 Ty const* ty_report_source(Checker* me, Ty const* source) {

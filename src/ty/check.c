@@ -675,7 +675,8 @@ static bool elaborate_error(
             if (expr->binary_op->op != BINARY_OP_EQUAL && expr->binary_op->op != BINARY_OP_COMMA) return false;
             return elaborate_error(me, head, &expr->binary_op->right, source, target, errs);
         case EXPR_OBJECT: return elaborate_object_literal(me, expr, source, target, errs);
-        case EXPR_ARRAY: return elaborate_array_literal(me, expr, source, target, errs);
+        // (Against the target as relations see it: a generic tuple normalized, tsc's isRelatedTo in elaborateElementwise)
+        case EXPR_ARRAY: return elaborate_array_literal(me, expr, source, ty_normalized_generic_tuple(me, target, true), errs);
         case EXPR_JSX_ATTRIBUTES: return elaborate_jsx_attributes(me, expr, source, target, errs);
         case EXPR_FUNCTION: return elaborate_arrow_function(me, expr, source, target, errs);
         default: return false;
