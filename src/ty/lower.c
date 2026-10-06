@@ -1154,6 +1154,11 @@ static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
     // (An optional property's type is read with its undefined, but not exactOptionalPropertyTypes' missing type: tsc's
     // getNonMissingTypeOfSymbol). A late-bound expando (`f[sym] = v`) by its key's type
     Expr const* late_bound_key = symbol_rare(symbol)->late_bound_key;
+    // (A property, not what an index signature says, and `never` has none: tsc's getPropertyOfType)
+    if (!late_bound_key) {
+        Ty const* apparent = ty_apparent_type(me, annotation);
+        if (apparent->kind != TY_UNION && !ty_find_prop(me, apparent, checker_atom(me, symbol->name)).found) return nullptr;
+    }
     Ty const* type = ty_access(me, annotation, late_bound_key ? ty_expr_type(me, late_bound_key) : ty_string_literal(me, symbol->name));
     return type ? ty_remove_missing(me, type, true) : nullptr;
 }
