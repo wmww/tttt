@@ -395,8 +395,19 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             my target = my symbol = names->file->scope->container;
         }
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
-        // (In JSDoc a value is looked up too, and suggested: tsc resolves again with meaning Type | Value)
-        if (!my target) scope_report_not_found(names, my name, my jsdoc ? SYMBOL_TYPE | SYMBOL_VALUE : SYMBOL_TYPE, false, errs);
+        // (In JSDoc a value is looked up too, and suggested: tsc resolves again with meaning Type | Value. But not the
+        // function's parameters and variables from its own `@param` types: resolveNameHelper's lastLocation is the
+        // JSDoc, not the body)
+        if (!my target) {
+            Scope const* from = names;
+            for (Scope const* s = names; my jsdoc && s && s->kind != SCOPE_FUNCTION; s = s->parent) {
+                if (s->parameters && s->parent && s->parent->parent) {
+                    from = s->parent->parent;
+                    break;
+                }
+            }
+            scope_report_not_found(from, my name, my jsdoc ? SYMBOL_TYPE | SYMBOL_VALUE : SYMBOL_TYPE, false, errs);
+        }
         if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER)) {
             check_static_type_parameter_reference(me, names, errs);
             TypeParamDefaultScope in_default = identifier_type_default_scope;
