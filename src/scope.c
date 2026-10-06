@@ -4605,6 +4605,18 @@ static Symbol* expando_host(Scope* me, Expr const* entity, Expr** init_ret) {
     bool here = false;
     for (u32 i = 0; i < found->decl_count && !here; i++) here = found->decls[i].full.source == file;
     if (!here) return nullptr;
+    // (Declared further down, `f.x = 1; const f = ...`: tsc's binder hasn't met the declaration yet when it binds the
+    // assignment, only function declarations are bound first)
+    for (u32 i = 0; i < found->decl_count; i++) {
+        SymbolDecl const* decl = &found->decls[i];
+        if (!(decl->flags & SYMBOL_VALUE) || decl->full.source != file) continue;
+        if (decl->kind != SYMBOL_DECL_FUNCTION && span_valid(decl->full) && span_valid(expr_outer_span(entity)) &&
+            span_start_ptr(decl->full) > span_start_ptr(expr_outer_span(entity))
+        ) {
+            return nullptr;
+        }
+        break;
+    }
     return symbol_is_expando_host(found, file, js, init_ret) ? found : nullptr;
 }
 
