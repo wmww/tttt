@@ -3141,6 +3141,7 @@ static Ternary some_related(Checker* me, RelationState* st, TyList sources, Ty c
 }
 
 static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* source, Ty const* target);
+static MappedInfo const* mapped_info_of(Checker* me, Ty const* ty, bool* generic);
 
 static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     TyList targets = target->composite.types;
@@ -5856,7 +5857,12 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             Ty const* t = types.data[i];
             if (t->kind != source->kind) continue;
             if (t->kind == TY_REFERENCE && t->reference.target == source->reference.target) return t;
-            if (t->kind == TY_ANONYMOUS && source->alias && source->alias == t->alias) return t;
+            // (A mapped type isn't one: tsc's ObjectFlags.Mapped isn't Anonymous)
+            if (t->kind == TY_ANONYMOUS && source->alias && source->alias == t->alias && !mapped_info_of(me, source, nullptr) &&
+                !mapped_info_of(me, t, nullptr)
+            ) {
+                return t;
+            }
         }
     }
     // findBestTypeForObjectLiteral
