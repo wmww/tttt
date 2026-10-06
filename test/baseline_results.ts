@@ -19742,8 +19742,8 @@ const baselines = {
     },
     'jsdocReferenceGlobalTypeInCommonJs': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'jsdocResolveNameFailureInTypedef': {
         errors: true,

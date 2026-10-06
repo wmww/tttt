@@ -113,7 +113,9 @@ static void chain_ctx_init(ChainCtx* me, Scope const* enclosing) {
             case SCOPE_GLOBAL:
                 break;
         }
-        if (scope->kind == SCOPE_MODULE) my in_external_module = true;
+        // (A CommonJS file has no externalModuleIndicator, only a commonJsModuleIndicator: tsc's isExternalModule is
+        // false there, so a UMD global is accessible)
+        if (scope->kind == SCOPE_MODULE && !(scope->file && scope->file->is_commonjs)) my in_external_module = true;
     }
     add_table(me, &my binder->globals, true);
 }
