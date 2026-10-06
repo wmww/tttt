@@ -60162,7 +60162,7 @@ const baselines = {
     },
     'enumMergeWithExpando': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'expandoOnAlias': {

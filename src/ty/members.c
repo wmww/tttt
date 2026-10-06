@@ -1709,7 +1709,14 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
         prop->decl->name_span = i->full_name;
         prop->decl->name_is_value = i->name_is_value;
         prop->decl->symbol = i->symbol;
-        prop_add_shared_decl_spans(me, prop, &i->full_name, 1);
+        if (i->symbol->decl_count > 1) {
+            // (JavaScript `E.x = v` merged into the member: more declarations, tsc's mergeSymbol with Assignment)
+            VecSpan spans = symbol_declaration_spans(i->symbol);
+            prop_add_decl_spans(me, prop, spans.data, (u32)vec_span_size(&spans));
+            vec_span_drop(&spans);
+        } else {
+            prop_add_shared_decl_spans(me, prop, &i->full_name, 1);
+        }
         any_numeric |= !(prop->type->flags & TYF_STRING_LITERAL);
         builder_push(builder, props, prop);
     }
