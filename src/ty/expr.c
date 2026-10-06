@@ -4448,7 +4448,12 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (Written to, a generic object's index signatures don't apply: TS2339/TS2862, errorType)
             if (ty_generic_write_index_info(me, expr->property, object, key)) return ty_intrinsic(me, TY_ERROR);
             // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
-            Ty const* ret = expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
+            // (`never[K]` with a generic K is deferred like any generic access: tsc's getIndexedAccessTypeOrUndefined
+            // looks at the index before the object)
+            bool deferred_never = (object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_BRACKET &&
+                ty_is_generic_index(ty_regular(me, key));
+            Ty const* ret = deferred_never ? nullptr :
+                expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);
             // (An element access: a property access of what an object literal lacks is TS2339, checkPropertyAccessExpression)
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target && expr->property->form == PROPERTY_EXPR_BRACKET) {
