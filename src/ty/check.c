@@ -3809,6 +3809,21 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         }
     }
     if (!name || member_refs(me, object, name, &refs, 0) < 0) {
+        // `y[k] = v` with y a generic `+readonly` mapped type and k one of its keys (tsc's checkIndexedAccessIndexType)
+        if (access->assignment_target && access->form == PROPERTY_EXPR_BRACKET && object->kind == TY_ANONYMOUS &&
+            (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+        ) {
+            MappedInfo const* mapped = ty_members(me, object)->mapped;
+            Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+            if (mapped && mapped->readonly > 0 && ty_is_generic_index(key) &&
+                ty_is_related(me, key, ty_keyof(me, object), TY_RELATION_ASSIGNABLE)
+            ) {
+                cstr object_str = ty_to_cstr(me, object);
+                error_ctx_error_d(errs, span, 2542, "Index signature in type '", object_str, "' only permits reading.");
+                cstr_drop(&object_str);
+                return;
+            }
+        }
         // Assigning to a generic object doesn't go through its index signatures (TS2339 instead)
         bool generic = object->kind == TY_TYPE_PARAM && !object->param.state->is_this;
         if (!access->assignment_target || generic) return;
