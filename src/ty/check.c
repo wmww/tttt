@@ -2011,10 +2011,17 @@ bool ty_indexed_access_index_ok(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
     Ty const* keys = ty_keyof(me, object);
-    Ty const* apparent = ty_apparent_type(me, object);
+    // (A substitution type in a true branch is its base and constraint for this: `RF[N]` with `RF[N] extends A[]`)
+    Ty const* apparent = ty_apparent_type(me, object->kind == TY_SUBSTITUTION ? ty_substitution_intersection(me, object) : object);
     bool number_index = false;
-    if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
-        IndexInfo const* info = ty_applicable_index_info(me, apparent, ty_intrinsic(me, TY_NUMBER));
+    // (A union has the index signatures every member has: tsc's resolveUnionTypeMembers)
+    TyList members = apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN) ? apparent->composite.types :
+        (TyList){ .data = &apparent, .len = 1 };
+    number_index = members.len > 0;
+    for (u32 i = 0; i < members.len && number_index; i++) {
+        Ty const* member = members.data[i];
+        IndexInfo const* info = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
+            ty_applicable_index_info(me, member, ty_intrinsic(me, TY_NUMBER)) : nullptr;
         number_index = info && (info->key->flags & TYF_NUMBER);
     }
     Ty const* const* parts = &index;

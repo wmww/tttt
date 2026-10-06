@@ -1188,7 +1188,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (props.kind == SYMBOL_DECL_VARIABLE) {
         // (Also when it merges into something that isn't a variable: a `declare const never` and the type `never`)
         symbol->is_const = props.is_const;
-        symbol->is_parameter = props.is_parameter;
+        // (A `var` redeclaring a parameter is the parameter still: tsc's valueDeclaration is the first declaration)
+        symbol->is_parameter = props.is_parameter || (merged && (flags_before & SYMBOL_VARIABLE) && symbol->is_parameter);
     }
     // (A function too: an ambient `require` function is CommonJS's, expr_symbol_is_commonjs_require())
     if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
