@@ -13711,7 +13711,7 @@ const baselines = {
         types: true,
     },
     'flatArrayNoExcessiveStackDepth': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -65911,7 +65911,7 @@ const baselines = {
         types: true,
     },
     'intrinsicKeyword': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

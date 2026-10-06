@@ -723,16 +723,31 @@ void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* 
 // Whether the base constraint of `ty`, were it the constraint of the type parameter, would need the type parameter's
 // own (tsc's hasNonCircularBaseConstraint of the synthetic parameter): it is the parameter, a union or intersection with
 // it, `P extends ...` over it, an indexed access into it
-static bool constraint_resolves_through(Ty const* ty, Ty const* source, Ty const* declared) {
+// (A conditional type's default constraint is its branches', an indexed access into an object type with a generic
+// index is its properties': `FlatArray<T, D>`, `{ done: T, recur: ... }[D extends -1 ? "done" : "recur"]`)
+static bool constraint_resolves_through(Checker* me, Ty const* ty, Ty const* source, Ty const* declared, u32 depth) {
     if (ty == source || ty == declared) return true;
+    if (depth > 8) return false;
     if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
-            if (constraint_resolves_through(ty->composite.types.data[i], source, declared)) return true;
+            if (constraint_resolves_through(me, ty->composite.types.data[i], source, declared, depth + 1)) return true;
         }
         return false;
     }
-    if (ty->kind == TY_CONDITIONAL) return ty->conditional.check == source || ty->conditional.check == declared;
-    if (ty->kind == TY_INDEXED) return ty->indexed.object == source || ty->indexed.object == declared;
+    if (ty->kind == TY_CONDITIONAL) {
+        return ty->conditional.check == source || ty->conditional.check == declared ||
+            constraint_resolves_through(me, ty_conditional_branch(me, ty, true), source, declared, depth + 1) ||
+            constraint_resolves_through(me, ty_conditional_branch(me, ty, false), source, declared, depth + 1);
+    }
+    if (ty->kind == TY_INDEXED) {
+        Ty const* object = ty->indexed.object;
+        if (object == source || object == declared) return true;
+        if (!(object->flags & TYF_OBJECT) || ty_is_generic_object(me, object) || !ty_is_generic_index(ty->indexed.index)) return false;
+        Members const* members = ty_members(me, object);
+        for (u32 i = 0; i < members->prop_count; i++) {
+            if (constraint_resolves_through(me, prop_type(me, members->props[i]), source, declared, depth + 1)) return true;
+        }
+    }
     return false;
 }
 
@@ -772,7 +787,7 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     // (Nor when the source as constrained by the target would have a circular base constraint, tsc's
     // hasNonCircularBaseConstraint: `Extract<T, string>` as a constraint of T is resolved through T's. Another type
     // parameter is no such target: instantiating it leaves it, and its own constraint mentions the original)
-    if (!constraint_resolved_early(me, target, source, declared, 0) && constraint_resolves_through(target, source, declared)) return;
+    if (!constraint_resolved_early(me, target, source, declared, 0) && constraint_resolves_through(me, target, source, declared, 0)) return;
     // (tsc's typeToString(target, the type parameter's declaration): names as reachable from there, `JSX.X`)
     Symbol const* param_symbol = item ? item->owned_symbol : infer_symbol;
     Scope const* enclosing = param_symbol && param_symbol->decl_count ? param_symbol->decls[0].block : nullptr;
