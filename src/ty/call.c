@@ -2259,9 +2259,12 @@ static Resolution resolve_with_signatures_inner(
             }
             // (A non-generic one that wasn't checked, its type argument count being wrong: `f<T>(...)` of `f(s:
             // string, n: number): number; f<T>(n: number, t: T): T` returns number)
-            Candidate fallback = longest && !longest->type_params.len && unfit[picked].sig != longest ?
-                (Candidate){ .sig = longest } : unfit[picked];
-            if (info->type_arg_nodes && fallback.sig->type_params.len && info->type_args.len < fallback.sig->type_params.len) {
+            // (So is a generic one with explicit type arguments, which are cut or filled in for it: getTypeArgumentsFromNodes)
+            bool longest_unchecked = longest && unfit[picked].sig != longest && (!longest->type_params.len || info->type_arg_nodes);
+            Candidate fallback = longest_unchecked ? (Candidate){ .sig = longest } : unfit[picked];
+            if (info->type_arg_nodes && fallback.sig->type_params.len &&
+                (info->type_args.len < fallback.sig->type_params.len || longest_unchecked)
+            ) {
                 fallback.mapper = failure_type_arguments(me, fallback.sig, info);
                 // (The arguments are checked against it again: an arrow's literal returns see its contextual type)
                 ParamShape shape = call_param_shape(me, info, fallback.sig, fallback.mapper);

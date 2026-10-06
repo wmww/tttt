@@ -14878,7 +14878,7 @@ const baselines = {
     'genericCombinators2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericConditionalConstrainedToUnknownNotAssignableToConcreteObject': {
         errors: true,
