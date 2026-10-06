@@ -1760,7 +1760,10 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
     bool in_flight = memo && memo->evaluation_started && !memo->done;
     Ty const* value = initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, initialized_binding_value(initialized));
     // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
-    if (value && !includes_undefined(value) && !(value->flags & TYF_VOID)) {
+    // (A type parameter by its constraint: tsc's hasTypeFacts(IsUndefined))
+    bool may_be_undefined = value && (includes_undefined(value) || (value->flags & TYF_VOID) ||
+        (!(value->flags & (TYF_ANY | TYF_UNKNOWN)) && ty_can_be_undefined(me, value)));
+    if (value && !may_be_undefined) {
         return ty_without_undefined(me, type);
     }
     return type;
