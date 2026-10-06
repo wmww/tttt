@@ -2027,7 +2027,7 @@ static bool return_typecheck(
         return yes && no;
     }
     Expr const* effective = expr_effective_check_node(expr);
-    Span span = effective->inner_span;
+    Span span = expr_error_span_skip_parens(effective); // (tsc's getErrorSpanForNode: a class expression's `class`)
     if (!in_conditional && span_valid(statement->span)) {
         span = span_make(statement->span.source, span_start_ptr(statement->span), span_start_ptr(statement->span) + 6);
     }
