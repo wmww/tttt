@@ -2709,6 +2709,8 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
         TypeNode const* annotation = origin->decl->node && origin->decl->node->parsed && !origin->decl->lazy && !origin->decl->function &&
             !origin->decl->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
+        // (A property spread in from an object literal reuses what that one reused: `{ ...{ ...b1, z } }`)
+        if (!annotation && origin->decl->asserted && declared_type == prop_type(me, origin)) annotation = origin->decl->asserted;
         TypeNode const* annotation_required = nullptr;
         if (annotation && type != declared_type) {
             annotation_required = annotation;
