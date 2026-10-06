@@ -222,8 +222,8 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   keyofAndIndexedAccessErrors, conditionalTypes1/2, bigintWithLib,
   recursiveConditionalTypes, mappedTypeInferenceErrors.
 - **Node reuse in error messages**: tsc's typeToString reuses syntactic nodes even without an enclosing declaration
-  (a single `return x as T` prints `() => T` as written: baseClassImprovedMismatchErrors; an arrow's return type from a
-  JSDoc `@type`'s signature: propertyAssignmentUseParentType2). tttt reuses nodes only for the types baseline
+  (a single `return x as T` prints `() => T` as written; done only for a T that names nothing,
+  `type_node_names_nothing()`; an arrow's return type from a JSDoc `@type`'s signature: propertyAssignmentUseParentType2). tttt reuses nodes only for the types baseline
   (`d.underline && d.enclosing`); error display would need the reuse path without name-accessibility checks.
 - **Alias/origin preservation and literal order**: `keyof Props` printed as `"when" | "error"`
   (reactDefaultPropsInferenceSuccess); literal creation order puts `1 | 4` where tsc says `4 | 1`

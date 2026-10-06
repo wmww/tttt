@@ -2281,7 +2281,7 @@ const baselines = {
         types: true,
     },
     'baseClassImprovedMismatchErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

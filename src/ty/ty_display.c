@@ -1767,6 +1767,29 @@ static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* 
     return &as_type->type;
 }
 
+// A type node that names nothing (keywords and literals, in unions, intersections, arrays and parentheses): reusing it
+// asks no name whether it is accessible, so it is reused wherever the type is printed from
+static bool type_node_names_nothing(TypeNode const* node, u32 depth) {
+    if (depth > 8) return false;
+    switch (node->tag) {
+        case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_NEVER: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER:
+        case TYPE_STRING: case TYPE_SYMBOL: case TYPE_BIGINT: case TYPE_VALUE:
+            return node->parsed && !node->synthesized && !node->from_jsdoc;
+        case TYPE_IDENTIFIER:
+            return node->identifier->keyword && !vec_spanned_type_size(&node->identifier->generic_params) &&
+                !node->from_jsdoc;
+        case TYPE_ARRAY:
+            return type_node_names_nothing(node->array.element, depth + 1);
+        case TYPE_UNION: case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (i->placeholder || !type_node_names_nothing(i, depth + 1)) return false;
+            }
+            return vec_type_size(&node->composite) > 0;
+        default:
+            return false;
+    }
+}
+
 // A function without a return annotation whose only return is a function expression prints its return type
 // syntactically (tsc's typeFromFunctionLikeExpression), unless something may type it contextually (isContextuallyTyped)
 static FunctionImpl const* single_return_function(Checker* me, FunctionImpl const* function, Ty const* ret) {
@@ -2203,6 +2226,18 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ret_d.syntactic_function = single_return_function(me, function, ret);
         Ty const* keyword = single_return_keyword(me, function, ret);
         if (keyword) ret = keyword;
+    }
+    // tsc's serializeReturnTypeForSignature reuses `return x as T` whether or not there is an enclosing declaration:
+    // a message's type printed from nowhere (a method's) reuses such a T when it names nothing
+    if (!reusable && !d.underline && function && !function->ret_explicit && !root->class_instance && !instantiated &&
+        !function_impl_rare(function)->jsdoc_tag_ret
+    ) {
+        TypeNode const* node = single_return_assertion(me, function, ret);
+        if (node && type_node_names_nothing(node, 0) && annotation_is(me, node, ret, false)) {
+            ret_d.reuse_nodes = true;
+            display_node(me, ret_d, node);
+            return;
+        }
     }
     display_annotated(me, ret_d, reused ? ret_annotation : nullptr, ret, false);
 }
