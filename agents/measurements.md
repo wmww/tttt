@@ -10,6 +10,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Flag sweeps and multi-file/JS mutants (2026-10-06, tenth window's todo entry 6; plan 46)
+`./sweep.py --flags nuia` 8585 -> **8588** / 8595, `--flags eopt` **8588** (both equal to the default sweep's 8588 /
+6 / 1 but react-relay under nuia). `./mutate.py --tests multi,js`: seed 1 (3000) 92 -> **12**, seed 2 (5000) 177 ->
+**40**, fresh seed 3 (5000) 46 of 2325 productive. Suite 13228 -> **13229** (+ typeFromPropertyAssignment18's errors),
+flagflip 65 / 63 / 12, `$ExpectType` 68610, scenarios 214 / 0, corpora (effect 7, the rest 0) all flat.
+Instructions (callgrind, 8641e758 -> end): tsc 4.613 -> 4.622, type-fest 3.135 -> 3.139, valibot 4.270 -> 4.275,
+react 1.544 -> 1.547, nest 1.258 -> 1.261, webpack 3.837 -> 3.861 (+0.6%), zod 4.576 -> 4.587, xstate 2.967 -> 2.976,
+drizzle 13.140 -> 13.150, vue 8.033 -> 8.044, effect 9.802 -> 9.846 (+0.45%), vscode 32.363 -> 32.428.
+
 ## Plan 47 skip-round literals (2026-10-06, tenth window's todo entry 5)
 Suite 13227 -> **13228** (mappedTypeInferenceErrors gained, jsxComplexSignatureHasApplicabilityError's types component
 lost: bugs/display.md "Aliases"), sweep 8584 / 10 / 1 -> **8588 / 6 / 1**, flagflip **78** (HEAD re-measured) / 63 / 12

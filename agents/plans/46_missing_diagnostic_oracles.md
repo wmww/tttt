@@ -109,11 +109,14 @@ and noPropertyAccessFromIndexSignature were already right: those checks are done
    -TS2538 (auto-typed `let` assigned `p[v]` in a loop: error lost under the loop's fixed point), effect
    `context.ts:303` +TS2532 (generic variadic tuple element access stays deferred in tsc).
 
-### Not done, and the decision
-- The sweep with flips: tsc over DefinitelyTyped is ~2 h of CPU per flag set (`./sweep.py --tsc` is ~40 min wall on
-  4 cores); DT packages set their own strict flags, so only nuia/eopt would be new. The corpora matrix found ~3000
-  mismatches; when its queue is drained, one nuia sweep run is the cheap next widening (add a `--flags` to sweep.py
-  with its own oracle file). Not before.
+### The sweep with flips (todo entry 6 of the tenth window, 2026-10-06)
+`./sweep.py --flags nuia|eopt` rechecks every DefinitelyTyped package with the flag on top of its tsconfig, against
+its own tsc oracle (`test/sweep/DefinitelyTyped.FLAG.tsc.jsonl.gz`, ~40 min of tsc on 4 cores each; DT packages set
+their own strict flags, so only these two are new). nuia: tsc reports in ~1800 more packages than at default flags;
+8585 -> **8588 / 8595** match after three fixes (an any index into a nullable union, the quick-type callee check on
+annotated declarations, tsc's createUnionOfSignaturesForOverloadFailure for the arguments). eopt: **8588** at the
+first run. The mismatches left are the default run's own plus react-relay under nuia (triage.md). Both flags are
+done at breadth; rerun after big changes to optional/undefined handling.
 
 ## Stage 2: mutation testing — built (todo entry 2 of the tenth window, 2026-10-06)
 `./mutate.py` (docstring has the usage): 27 operators (24 regex ones plus delete-stmt, swap-stmts, delete-member) on
@@ -143,8 +146,9 @@ including tsc); the per-seed yield no longer justifies a fan-out on its own. Wid
 `./mutate.py --tests multi,js` mutates the passing `@filename` (1436) and `@allowJs` (750) tests; diagnostics compare
 by (file, line, code). Yield ~6.5% of productive mutants (seed 1: 92 of 1429, seed 2: 177 of 2371), against ~1% for
 fresh single-file seeds: JS/JSDoc semantics, module resolution and the harness are less drilled than single-file TS.
-Seed 2 found a hang (a function whose `@type` names itself). Drained by three sub-agents (modules / JS / text):
-see the commit log of that session for the numbers.
+Seed 2 found a hang (a function whose `@type` names itself). Drained by three sub-agents (modules / JS / text, 42
+commits): seed 1 92 -> 12, seed 2 177 -> 40; a fresh seed 3 then had 46 of 2325 (2.0%), so the fixes generalised.
+What's left is in triage.md (mostly tsc binder/resolution quirks of broken CommonJS, and printing).
 
 ### The first run (seed 2, 8000 mutants of 4739 tests): 94 mismatches of 3744 productive mutants (2.5%), +53 syntax
 Root causes, by count (`./mutate.py -k KEY` after a run of the same seed):

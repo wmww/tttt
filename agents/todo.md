@@ -28,9 +28,11 @@ commit.
    no excess properties; nested generic calls skipped, else they're resolved once under the trial type: effect +6).
    Suite 13227 -> 13228 (1 types component lost to a latent alias-argument bug, bugs/display.md "Aliases"), sweep
    8584 -> 8588, flagflip missing 78 -> 65, corpora / `$ExpectType` flat; instructions vue +1.8%, xstate +1.2%.
-6. **Execution: flagflip's queue and the mutation leftovers** (plan 46 "Open causes" 4, 6, 8; triage.md's seed 3-5
-   notes, which a triage session may consolidate first). Both are thin now: start with the nuia sweep run (plan 46
-   "Not done"), then a mutation widening (multi-file or JS tests, plan 46 stage 2 "Next use").
+6. ~~Execution: flagflip's queue and the mutation leftovers~~ done 2026-10-06: `./sweep.py --flags nuia|eopt` built,
+   nuia 8585 -> 8588, eopt 8588 at once (both now equal the default sweep but react-relay); `./mutate.py --tests
+   multi,js` built (~7% yield, 3x single-file's), drained by three sub-agents: seeds 1/2 92 / 177 -> 12 / 40, fresh seed 3
+   2.0%; one hang fixed. Suite 13228 -> 13229 (+1 errors component), flagflip 65 / 63 / 12 flat. Instructions:
+   measurements.md.
 7. **Corpora: pin two new ones** chosen for what the current ones don't exercise: a JSX-heavy application (eg
    excalidraw) and an inference-heavy router/RPC library (eg TanStack Router or tRPC); clean under tsc 5.8, drained to
    0 the same session like effect/vscode (plan 19 has the loop); `./flagflip.py --tsc -c NAME` gives them flag-flip cells.

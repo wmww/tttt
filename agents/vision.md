@@ -17,7 +17,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   creation order, tuple identity by label declarations and a few alias choices (plan 44).
 - **Flag flips** (plan 46 stage 1, 2026-10-06): the corpora rechecked under 13 flag sets give 47k real tsc
   diagnostics; tttt misses 103, adds 68 and reports 17 under another code (was 603 / 1460 / 1029 before the first
-  drain). The non-strict modes and exactOptionalPropertyTypes were the weak spots.
+  drain). The non-strict modes and exactOptionalPropertyTypes were the weak spots. The sweep rechecked with nuia and
+  eopt (2026-10-06) matches as well as at default flags (8588 / 8595 each). **Mutation testing** of multi-file and JS
+  tests yielded 3x single-file's rate (JS/JSDoc, module resolution and the harness were less drilled); drained to ~2%.
 - **Perf**: callgrind flat over the window except where tsc caches were added (valibot -24%, effect -12%). vscode
   2.2 s / 2.1 GB vs tsgo 6.75 s / 3.7 GB; 1.5-7x faster than multi-threaded tsgo elsewhere. **Memory** below tsgo's
   peak RSS on every corpus (plan 43: -20 to -42%). Name resolution is parallel for TypeScript files (plan 45 stage 1).
