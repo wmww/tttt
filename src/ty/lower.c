@@ -426,7 +426,10 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
         cstr_append(&name, "<");
         for_each (i, vec_spanned_type, &identifier->generic_params) {
             if (i_index) cstr_append(&name, ", ");
-            cstr_append_sv(&name, i->span.sv);
+            // (Reprinted by tsc's printer: `{ a: string }` is `{ a: string; }`)
+            cstr arg = ty_type_node_to_cstr(me, &i->type);
+            cstr_append_sv(&name, cstr_sv(&arg));
+            cstr_drop(&arg);
         }
         cstr_append(&name, ">");
     }

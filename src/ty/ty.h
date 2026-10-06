@@ -1067,6 +1067,8 @@ Ty* ty_alloc(Checker* me, TyKind kind, u32 flags);
 TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
 Ty const* ty_unresolved(Checker* me, csview name);
+// A type node printed like tsc's printer reprints it (as the types baseline reuses annotations)
+cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node);
 Ty const* ty_literal(Checker* me, Value const* value);
 // The property name a string, number or unique symbol literal type is as a key (null for other types)
 Atom const* ty_literal_name(Checker* me, Ty const* literal);

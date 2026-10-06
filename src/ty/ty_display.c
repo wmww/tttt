@@ -769,6 +769,9 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
                 return;
             }
         }
+        // (Printed from nowhere, the name is still looked up from the property's declaration, never bare: tsc's
+        // addPropertyToElementList makes it the enclosing declaration, `[Symbol.toStringTag]`)
+        d.typeof_unique_symbols = false;
         out_unique_symbol_name(me, d, decl);
         out_lit(d, "]");
         return;
@@ -3465,4 +3468,10 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     // HACK: tsc prints it from the literal (its valueDeclaration), tttt from the innermost statement-level scope around
     // it, which doesn't see into function expressions
     return statement_scope_at(&file->ast, file->scope, at, 0);
+}
+
+cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node) {
+    cstr ret = cstr_null;
+    display_node(me, (TyDisplay){ .target = &ret }, node);
+    return ret;
 }
