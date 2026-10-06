@@ -8,6 +8,24 @@
 // Members of object types are resolved on first use, never at construction. That's what makes recursive types legal:
 // `interface List<T> { tail: List<T> }` only needs the *identity* of `List<T>` to describe its members.
 
+
+// Nothing but trivia (and the first's `;`) between two class items (tsc's getSignaturesOfSymbol: `decl.pos ===
+// previous.end`; `m(), m() {}` is two signatures)
+static bool adjacent_methods(ClassItem const* before, ClassItem const* after) {
+    Span first = before->span;
+    Span second = after->span;
+    if (!span_valid(first) || !span_valid(second) || first.source != second.source) return true;
+    char const* from = span_end_ptr(first);
+    char const* to = span_start_ptr(second);
+    // (Decorators come first)
+    if (vec_expr_size(&after->decorators)) {
+        Span decorator = vec_expr_at(&after->decorators, 0)->inner_span;
+        if (span_valid(decorator) && span_start_ptr(decorator) < to) to = span_start_ptr(decorator);
+        while (to > from && to[-1] == '@') to--;
+    }
+    return from > to || span_only_trivia_between(from, to, true);
+}
+
 static const Members empty_members = {0};
 
 PropDecl const ty_prop_decl_none = {0};
@@ -1230,7 +1248,8 @@ static void builder_add_class_items(
                         // static `m` between `m(x: string);` and `m(x) {}`) is a signature of its own
                         if (count && other->method.func.has_body && before && before->tag == CLASS_ITEM_METHOD &&
                             !before->method.accessor && before->method.is_static == static_side &&
-                            cstr_eq(&before->method.name_string, &i->method.name_string)
+                            cstr_eq(&before->method.name_string, &i->method.name_string) &&
+                            adjacent_methods(before, other)
                         ) {
                             continue;
                         }
