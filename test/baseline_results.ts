@@ -45776,9 +45776,9 @@ const baselines = {
         types: true,
     },
     'esDecorators-classDeclaration-exportModifier.2': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'esDecorators-classDeclaration-exportModifier': {
         errors: true,

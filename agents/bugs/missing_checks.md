@@ -194,7 +194,7 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
 - dontShowCompilerGeneratedMembers (`<-` in a type literal: a call signature whose type parameter list fails),
   esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
 - reservedNamesInAliases (`type void = I` is both a TS2457 alias and an expression statement),
-  parseUnmatchedTypeAssertion, esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
+  parseUnmatchedTypeAssertion,
   jsdocFunctionTypeFalsePositive (`@param {<} x`), scannerUnexpectedNullCharacter1 (a NUL outside a string ends
   tttt's parse: `*p.pos` is the EOF test everywhere), parser0_004152, jsxInvalidEsprimaTestSuite,
   thisTypeInFunctionsNegative, manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).

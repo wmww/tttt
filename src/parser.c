@@ -2097,7 +2097,9 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
                     break;
 
                 case '@': // `export @decorator class`
-                    if (is_member) {
+                    // (Only after `export` and `default`: tsc's canFollowModifier has no `@`, `abstract @dec class` is
+                    // an expression statement `abstract`)
+                    if (is_member || !(span_equals(mod.span, "export") || span_equals(mod.span, "default"))) {
                         goto loop_end;
                     }
                     break;
