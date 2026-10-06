@@ -98,20 +98,25 @@ One queue from the stage-4 queue and the four "Left by fan-out agent" sections o
 are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size and by how close each is to a fix.
 
 **Display and naming (types component)**
-1. **Reuse needs accessibility, which declaration emit's painting changes**: tsc's trackExistingEntityName reuses a
-   name only if isSymbolAccessible; a non-exported alias in a non-exported namespace of a module isn't, so tsc prints
-   the structure (instantiateContextualTypes, declarationEmitInlinedDistributiveConditional,
-   inlineMappedTypeModifierDeclarationEmit, mappedTypeGenericInstantiationPreservesHomomorphism, deepKeysIndexing,
-   recursiveConditionalCrash1-3, privacyGloFunc, privacyInterface). With `@declaration` the emit runs first and its
-   late painting sets `isVisible` on what it emitted, so the name is reused afterwards. Adding
-   symbol_type_accessible_at() to name_accessible() (ty_display.c) was +5 -4 for that reason: doing it right needs the
-   declaration walk's painted set kept for the types baseline. Largest single mechanism left.
-2. **Naming from a block scope**: TyDisplay.enclosing is the file/namespace scope, so a name shadowed by a local where
-   the type is printed isn't noticed; tsc qualifies with `import("f")` (enumAssignmentCompat6,
-   expandoFunctionBlockShadowing, multipleExportDefault3, exportAssignmentOfExportNamespaceWithDefault,
-   typeAliasesDoNotMerge), and a reused `typeof b` of a function local in its own return annotation falls back
-   (functionVariableInReturnTypeAnnotation). Needs the innermost scope at the printed position (the resolve walk could
-   record it per types-baseline node).
+1. **Reuse needs accessibility** (done 2026-10-06): name_accessible() asks symbol_accessibility_at(), and the
+   suite's walk sees what declaration emit painted (Checker.painted_kept, symbol_chain_set_kept_painted()). The tests
+   listed here turned out to be mostly other mechanisms, also done that day: distributive conditionals whose check
+   type was instantiated print through `infer T` (display_distributive_conditional(); with tsc's eleven-deep elision
+   per conditional root and its print-once cache, TyParamNames.printed), homomorphic / modifier-preserving mapped
+   types through `infer T_1` (display_mapped()), keyof-declared mapped constraints as `keyof X`, and an instantiated
+   conditional type goes by its root's alias (KEY_CONDITIONAL_ROOT_ALIAS: `type W<O> = Extract<O, string>` makes W<X>
+   an `Extract<X, string>`, except through an import or as another alias's body). Left: recursiveConditionalCrash3
+   (a mapped key named K_1 where tsc says K_2: tsc gives every instantiated mapped type a fresh key type parameter,
+   instantiateMappedType's cloneTypeParameter, tttt keeps the declared one; computedTypesKeyofNoIndexSignatureType
+   too), instantiateContextualTypes (`Promise<DooDad>` where tsc infers the alias-less `"SOMETHING" | "ELSE"` through
+   `then`'s return-type inference; needs a tsc trace). Declaration emit doesn't print with TyDisplay.param_names, so
+   none of the `infer T` forms reach `.d.ts`-shaped output or its diagnostics.
+2. **Naming from a block scope** (done 2026-10-06 for blocks): Block.scope (set by block_add_names()) is where the
+   suite names types inside a function body or block (enumAssignmentCompat6, expandoFunctionBlockShadowing). Left:
+   a signature's own scope (functionVariableInReturnTypeAnnotation: `typeof b` of a body local in the return
+   annotation, tsc `any`); duplicate declarations that resolve to the other symbol (typeAliasesDoNotMerge,
+   multipleExportDefault3: `import("f").A`); exportAssignmentOfExportNamespaceWithDefault (the default import of an
+   `export =` whose target has a `default` export is that member, not the target, so tsc qualifies).
 3. **Union order / creation order**: tsc's type writer re-checks each printed expression, so its object literals are
    newest (contextualTyping36, conditionalOperatorWithIdenticalBCT; bugs/display.md). Looked at 2026-10-05: emulating
    it as "object literals re-made by re-checking E print last" needs object literal types to know their node (a
@@ -131,16 +136,15 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
    doYouNeedToChangeYourTargetLibraryES2016Plus: `(onfinally?: () => void)` not the written
    `(() => void) | undefined | null`; a local generic interface declared twice behaves the same; instrument tsc).
    Members of a merged lib interface not instantiated (arrayFlatNoCrashInference: `arr.flat` of `T[]`; tsc instantiates
-   because Array is merged), promisePermutations (hacks.md maps_merged_type_param()). strictFunctionTypesErrors (tsc
-   refuses `typeof Foo.f1` there, not in a reduced probe). isolatedDeclarationsAddUndefined (`x = 10 as T` parameter
-   initializers print the assertion syntactically), declarationEmitResolveTypesIfNotReusable (a spread namespace
-   member declared by `export const f = (o: T) => {}` prints its parameters syntactically: spread props don't keep the
-   declaration). callbackTag4 (`@this {{...}}` members), jsdocPropertyTagInvalid (a JSDoc typedef of an imported JS file
-   reused unqualified).
-   deeplyNestedMappedTypes (errors/symbols pass since triage 2026-10-05): tsc prints the property `static:
-   PropertiesReduce<T, this['params']>` expanded through the inner aliases (`Evaluate<Readonly<Partial<Pick<{ [K in
-   keyof T]: Static<...> }, ...>>> & ...>`), tttt keeps the outer alias name: when does tsc drop an alias whose body is
-   another alias applied to a generic mapped type?
+   because Array is merged), promisePermutations 1-3 (hacks.md maps_merged_type_param(); also tsc rebuilds a reused
+   function type node, `progress?: (progress: any) => void` underlined as new punctuation around reused names).
+   isolatedDeclarationsAddUndefined (`x = 10 as T` parameter initializers print the assertion syntactically).
+   callbackTag4 (`@this {{...}}` members), jsdocPropertyTagInvalid (a JSDoc typedef of an imported JS file reused
+   unqualified), intraBindingPatternReferences (a union member from a binding default reuses `x: number` whole).
+   Done 2026-10-06: properties copied from a module's variable (spread, rest, synthetic default) reuse its annotation,
+   const literal initializer or function expression parameters (PropDeclRare.spread_variable); a generic reference
+   whose type an instantiated signature changes isn't reused (identityRelationNeverTypes); deeplyNestedMappedTypes
+   (the root-alias rule of item 1).
 5. **`T_1` renaming**: inferredReturnTypeIncorrectReuse1 (`fn_1` from enterNewScope's params fake scope; mechanism not
    pinned down), jsxComplexSignatureHasApplicabilityError.
 6. **Clones per import** (resolveESModuleSymbol -> cloneTypeAsModuleType; members through
@@ -152,10 +156,12 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
    vs augmentExportEquals3_1's `import("file1.d.ts")` for the same shape), exportAssignmentMembersVisibleInAugmentation
    (bugs/display.md).
 8. **Duplicate declarations/members**: functionOverloadErrors (`export function fn1(); function fn1(n: string);
-   function fn1() {}` in a namespace is one local symbol in tsc; statement.c function_local_symbol_decls()),
-   overloadConsecutiveness, symbolDeclarationEmit12, privateNameDuplicateField, mergedClassWithNamespacePrototype,
-   sliceResultCast (two identical-looking `slice` signatures kept), arrayDestructuringInSwitch1 (both members'
-   `every` signature sets kept in `(A[] | [A]).every`).
+   function fn1() {}` in a namespace is one local symbol in tsc, the export's declarations included: the local's
+   type needs the export's declarations of the block too, see statement.c function_local_symbol_decls()),
+   symbolDeclarationEmit12, privateNameDuplicateField, mergedClassWithNamespacePrototype, sliceResultCast (two
+   identical-looking `slice` signatures kept), arrayDestructuringInSwitch1 (both members' `every` signature sets kept
+   in `(A[] | [A]).every`). Done 2026-10-06: a method body is an implementation only right after another declaration
+   (overloadConsecutiveness, members.c adjacent_methods()).
 9. **Enum member names are source text** (enumIdentifierLiterals `1.0` -> "1", enumWithUnicodeEscape1): EnumCase.name
    is a Span; tsc uses the numeric literal's canonical text and the cooked string.
 
@@ -213,6 +219,12 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
       next to other exports prints any, tsc typeof x (the merged export= path).
     - shadowedInternalModule (`import any = b.A` prints the alias's type), typeFromPropertyAssignment30 (an expando
       `c.p = {}` of an annotated const is typed without context in tsc).
+    UnaryOpExpr.declared_context), reExportUndefined1 (`export { undefined }` is undefinedSymbol), wellKnownSymbolExpando (no late-bound expando for `f[Symbol.iterator] = ...` in
+    TS), instantiationExpressions (`fx<>`: the parser drops an empty type argument list, keeping it trips code that
+    assumes one; its StringBoxFunc line is done) / typeofImportInstantiationExpression (`typeof import("./a").f<T>`),
+    ramdaToolsNoInfinite2 (left: literal `5` made later in tsc, union order), inexistentPropertyInsideToStringType (`function toString()`
+    in a JS script), declarationEmitPartialReuseComputedProperty (artefact). Not worth mimicking: awaitedType-like
+    "first alias a union was created with" cases.
 
 **Symbols component and binder (tsc's checker-time mergeSymbol through aliases; tttt's binder merges first)**
 15. importEqualsError45874 (`.St`), moduleAugmentationWithNonExistentNamedImport, duplicateVarsAcrossFileBoundaries,
