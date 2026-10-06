@@ -3339,10 +3339,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (builder.count || builder.index_count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
             // (Its contextual type is the literal's as given: tsc's getContextualType of a SpreadAssignment)
-            Ty const* spread_type = check_with(me, &i->value, (ExprCtx){
+            // (Reduced: the members of a union that are never, by conflicting discriminants, spread nothing; tsc's
+            // getReducedType in checkObjectLiteral)
+            Ty const* spread_type = ty_reduced(me, check_with(me, &i->value, (ExprCtx){
                 .contextual = written_context, .sig_contextual = written_sig_context, .sig_absent = ctx.sig_absent,
                 .skip_sensitive = ctx.skip_sensitive,
-            });
+            }));
             // (A spread of no object is TS2698 and makes the literal errorType, tsc's checkObjectLiteral)
             if (!ty_is_valid_spread_type(me, spread_type)) spread.any = spread.error = true;
             else spread_acc_type(me, &spread, spread_type);
@@ -3790,7 +3792,7 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
             has_spread = true;
             if (builder.count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
-            Ty const* spread_type = check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual });
+            Ty const* spread_type = ty_reduced(me, check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual }));
             // A spread of no object (TS2698) is intersected with the rest instead (tsc's typeToIntersect)
             if (!(spread_type->flags & TYF_ANY) && !ty_is_valid_spread_type(me, spread_type)) {
                 to_intersect = to_intersect ?
