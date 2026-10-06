@@ -4063,7 +4063,7 @@ const baselines = {
     'cloduleGenericOnSelfMember': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cloduleSplitAcrossFiles': {
         errors: true,

@@ -1479,6 +1479,19 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         builder_push(builder, construct, sig);
     }
 
+    // The base's type arguments can mention the static side (`class S extends B<typeof S.Base>`): tsc has published
+    // its properties by then (resolveAnonymousTypeMembers sets them before the default construct signatures)
+    TyObjectState* state = object_state(ty);
+    if (class_decl->extends.tag == EXPR_GENERIC_PARAMS && state && state->members_state == LAZY_STATE_IN_FLIGHT &&
+        !state->members
+    ) {
+        Members* partial = arena_new(&my arena, Members);
+        Prop** props = arena_new_n(&my arena, Prop*, builder->props_count ? builder->props_count : 1);
+        memcpy(props, builder->props, sizeof(Prop*) * builder->props_count);
+        partial->props = props;
+        partial->prop_count = builder->props_count;
+        state->members = partial;
+    }
     Ty const* base_instance = nullptr;
     Symbol const* base_decl = nullptr;
     bool has_base = class_base(me, class_decl, ctx, &base_instance, &base_decl);
@@ -1641,9 +1654,30 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
 }
 
 // The members of every value declaration of a merged declaration, see ty_merged_value_type()
-static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Symbol const* decl) {
+static void builder_add_merged_value(Checker* me, MembersBuilder* builder, Ty const* ty, Symbol const* decl) {
     Ty const** entries;
     u32 entry_count = ty_merged_value_entries(me, decl, &entries);
+    // A class whose base's type arguments mention the merged value (`class S extends B<typeof S.Base>` with `namespace
+    // S { export const Base }`): its namespace's exports are already there for them (tsc's class symbol has them among
+    // its exports, published before the base is resolved)
+    TyObjectState* state = object_state(ty);
+    if (state && state->members_state == LAZY_STATE_IN_FLIGHT && !state->members && entry_count > 1) {
+        bool generic_base = false;
+        for (u32 i = 0; i < decl->decl_count; i++) {
+            if (decl->decls[i].kind != SYMBOL_DECL_CLASS) continue;
+            generic_base |= ((ClassDecl const*)decl->decls[i].node)->extends.tag == EXPR_GENERIC_PARAMS;
+        }
+        if (generic_base) {
+            MembersBuilder early = {0};
+            for (u32 i = 0; i < entry_count; i++) {
+                Ty const* entry = entries[i];
+                if (entry->kind != TY_DECLARED || entry->declared.kind != TY_DECLARED_NAMESPACE) continue;
+                Members const* members = ty_members(me, entry);
+                for (u32 j = 0; j < members->prop_count; j++) builder_push(&early, props, (Prop*)members->props[j]);
+            }
+            state->members = builder_finish(me, &early);
+        }
+    }
     // A property only one entry has is that entry's own (an inherited static stays the base's, whose private and
     // protected ones are only related to themselves); it's copied once another entry adds to it
     TyBuf shared = {0};
@@ -2126,7 +2160,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 || this_param };
     MembersBuilder builder = {0};
     if (ty->declared.merged_value) {
-        builder_add_merged_value(me, &builder, ty->declared.merged_value);
+        builder_add_merged_value(me, &builder, ty, ty->declared.merged_value);
         return builder_finish(me, &builder);
     }
     switch (ty->declared.kind) {
@@ -3203,7 +3237,7 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
             }
             MembersBuilder builder = {0};
             if (ty->anonymous.merged_value && !ty->anonymous.is_reverse) {
-                builder_add_merged_value(me, &builder, ty->anonymous.merged_value);
+                builder_add_merged_value(me, &builder, ty, ty->anonymous.merged_value);
             } else if (ty->anonymous.function) {
                 FunctionImpl const* function = ty->anonymous.function;
                 Signature* sig = signature_from_function(me, function, ty->anonymous.ctx);
