@@ -2224,13 +2224,85 @@ static void append_binding_pattern(cstr* out, Binding const* binding) {
     }
 }
 
+static MappedInfo const* mapped_root(MappedInfo const* mapped);
+static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapped, Ty const* wrapper, bool keyof_wrapper);
+
+// How an instantiated mapped type's root was instantiated to make it (tsc's type.mapper)
+static TyMapper const* mapped_mapper_from_root(Checker* me, MappedInfo const* mapped) {
+    if (!mapped->template_from) return nullptr;
+    TyMapper const* inner = mapped_mapper_from_root(me, mapped->template_from);
+    return inner ? ty_compose_mappers(me, inner, mapped->template_mapper) : mapped->template_mapper;
+}
+
 static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
+    // With GenerateNamesForShadowedTypeParams (the types baseline), tsc's createMappedTypeNodeFromType keeps what makes
+    // the mapped type homomorphic or modifier preserving when inlining wouldn't: a homomorphic `[K in keyof T]` whose T
+    // is no longer a type parameter is written over a new T_1 inferred from it (`X extends infer T_1 ? { [K in keyof
+    // T_1]: ... } : never`), a `[P in K]` with `K extends keyof T` whose K is no longer a type parameter over a new T_1
+    // inferred from it and constrained to `keyof T`
+    Ty const* wrapper = nullptr;
+    bool homomorphic_lost = false;
+    if (d.param_names && mapped->modifiers_type && mapped->modifiers_type != ty_intrinsic(me, TY_UNKNOWN_)) {
+        MappedInfo const* root = mapped_root(mapped);
+        if (mapped->keyof_constraint) {
+            homomorphic_lost = root != mapped && root->modifiers_type && root->modifiers_type->kind == TY_TYPE_PARAM &&
+                mapped->modifiers_type->kind != TY_TYPE_PARAM;
+        }
+        bool preserving = !mapped->keyof_constraint && !(mapped->constraint->kind == TY_TYPE_PARAM &&
+            ty_param_constraint(me, mapped->constraint) && ty_param_constraint(me, mapped->constraint)->kind == TY_KEYOF);
+        if (homomorphic_lost || preserving) {
+            wrapper = ty_synthetic_type_param(me, c_sv("T"));
+            type_param_name(me, d, wrapper);
+        }
+    }
+    TyDisplay fresh = reused_if(d, false);
+    if (wrapper) {
+        // (Written after the mapped type, but named before it)
+        cstr inner = cstr_null;
+        cstr inner_underline = cstr_null;
+        TyDisplay inner_d = d;
+        inner_d.target = &inner;
+        inner_d.underline = d.underline ? &inner_underline : nullptr;
+        display_mapped_body(me, inner_d, mapped, wrapper, homomorphic_lost);
+        if (homomorphic_lost) ty_display(me, d, mapped->modifiers_type);
+        else ty_display(me, d, mapped->constraint);
+        out(fresh, c_sv(" extends infer "));
+        out_type_param_name(me, fresh, wrapper, false);
+        if (homomorphic_lost) {
+            MappedInfo const* root = mapped_root(mapped);
+            Ty const* constraint = ty_param_constraint(me, root->modifiers_type);
+            if (constraint) constraint = ty_instantiate(me, constraint, mapped_mapper_from_root(me, mapped));
+            if (constraint && constraint != ty_intrinsic(me, TY_UNKNOWN_)) {
+                out(fresh, c_sv(" extends "));
+                ty_display(me, d, constraint);
+            }
+        } else {
+            out(fresh, c_sv(" extends keyof "));
+            ty_display(me, d, mapped->modifiers_type);
+        }
+        out(fresh, c_sv(" ? "));
+        cstr_append_sv(d.target, cstr_sv(&inner));
+        if (d.underline) cstr_append_sv(d.underline, cstr_sv(&inner_underline));
+        out(fresh, c_sv(" : never"));
+        c_drop(cstr, &inner, &inner_underline);
+        return;
+    }
+    display_mapped_body(me, d, mapped, nullptr, false);
+}
+
+static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapped, Ty const* wrapper, bool keyof_wrapper) {
     out_lit(d, "{ ");
     if (mapped->readonly) out(d, mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
     out_lit(d, "[");
     ty_display(me, reused_if(d, true), mapped->type_param); // (tsc reuses the name of the declared type parameter)
     out_lit(d, " in ");
-    ty_display(me, d, mapped->constraint);
+    if (wrapper) {
+        TyDisplay fresh = reused_if(d, false);
+        if (keyof_wrapper) out(fresh, c_sv("keyof "));
+        out_type_param_name(me, fresh, wrapper, false);
+    } else {
+        ty_display(me, d, mapped->constraint);
+    }
     if (mapped->name_type) {
         out_lit(d, " as ");
         ty_display(me, d, mapped->name_type);

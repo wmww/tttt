@@ -8323,7 +8323,7 @@ const baselines = {
     'declarationEmitMappedTypeDistributivityPreservesConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMappedTypePropertyFromNumericStringKey': {
         errors: true,
@@ -17828,7 +17828,7 @@ const baselines = {
     'inlineMappedTypeModifierDeclarationEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inlineSourceMap': {
         errors: true,
@@ -20863,7 +20863,7 @@ const baselines = {
     'mappedTypeGenericInstantiationPreservesHomomorphism': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeGenericInstantiationPreservesInlineForm': {
         errors: true,
