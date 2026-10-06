@@ -2761,6 +2761,69 @@ static bool check_accessibility(
 }
 
 
+// An intersection's property made of several (tsc's synthetic property): public if a member is, else, when none is
+// private, protected with every member's class as a declaring class (tsc's checkPropertyAccessibilityAtLocation with
+// isClassDerivedFromDeclaringClasses), the containing type named in the message (the property has no declaring class
+// of its own). Returns whether it took care of the access (false: check member by member)
+static bool check_synthetic_protected(
+    Checker* me, AccessSite const* site, Span span, MemberRefs const* refs, Ty const* containing, Atom const* name, ErrorCtx* errs
+) {
+    // (Instantiations of one property with the same type are that property, not a synthetic one: tsc's
+    // createUnionOrIntersectionProperty keeps the single property)
+    Prop const* root = refs->props[0];
+    while (root->target) root = root->target;
+    bool single = true;
+    for (u32 i = 1; i < refs->len && single; i++) {
+        Prop const* other = refs->props[i];
+        while (other->target) other = other->target;
+        single = other == root && ty_is_related(me, prop_type(me, refs->props[i]), prop_type(me, refs->props[0]), TY_RELATION_IDENTITY);
+    }
+    if (single) return false;
+    Ty const* declaring[c_arraylen(refs->props)];
+    u32 count = 0;
+    for (u32 i = 0; i < refs->len; i++) {
+        Prop const* prop = refs->props[i];
+        if (prop->flags & PROP_PRIVATE) return false;
+        if (!(prop->flags & PROP_PROTECTED)) return true; // Public through this member
+        if (!prop->parent || !class_decl_of(prop->parent)) return false;
+        declaring[count++] = ty_declared_type_of(me, prop->parent);
+    }
+    bool is_static = (refs->props[0]->flags & PROP_STATIC) != 0;
+    Ty const* enclosing_type = nullptr;
+    for (ClassDecl const* c = site->enclosing_class; c && !enclosing_type; c = c->outer_class) {
+        if (!c->symbol) continue;
+        Ty const* type = ty_declared_type_of(me, c->symbol);
+        bool derived = true;
+        for (u32 i = 0; i < count && derived; i++) derived = ty_has_base_type(me, type, declaring[i]);
+        if (derived) enclosing_type = type;
+    }
+    bool enclosing_found = enclosing_type != nullptr;
+    if (!enclosing_type) {
+        enclosing_type = this_parameter_class(me, site);
+        for (u32 i = 0; enclosing_type && i < count; i++) {
+            if (!ty_has_base_type(me, enclosing_type, declaring[i])) enclosing_type = nullptr;
+        }
+    }
+    if (!enclosing_type || (is_static && !enclosing_found)) {
+        cstr class_str = ty_to_cstr(me, containing);
+        error_ctx_error_d(errs, span, 2445, "Property '", atom_sv(name),
+            "' is protected and only accessible within class '", class_str, "' and its subclasses.");
+        cstr_drop(&class_str);
+        return true;
+    }
+    if (is_static) return true;
+    if (containing->kind == TY_TYPE_PARAM) containing = ty_apparent_type(me, containing);
+    if (!containing_has_base(me, containing, enclosing_type)) {
+        cstr enclosing_str = ty_to_cstr(me, enclosing_type);
+        cstr containing_str = ty_to_cstr(me, containing);
+        error_ctx_error_d(errs, span, 2446, "Property '", atom_sv(name),
+            "' is protected and only accessible through an instance of class '", enclosing_str,
+            "'. This is an instance of class '", containing_str, "'.");
+        c_drop(cstr, &enclosing_str, &containing_str);
+    }
+    return true;
+}
+
 static Generic const* class_or_interface_generic(SymbolDecl const* decl) {
     switch (decl->kind) {
         case SYMBOL_DECL_CLASS: return &((ClassDecl const*)decl->node)->generic;
@@ -3848,7 +3911,18 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
     }
     if (refs.len == 1 && access->form == PROPERTY_EXPR_DOT) check_class_used_before_declaration(access, refs.props[0], errs);
     // Element access is the way around accessibility
-    if (access->form == PROPERTY_EXPR_DOT) {
+    bool synthetic_checked = false;
+    if (access->form == PROPERTY_EXPR_DOT && refs.len > 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER) &&
+        ty_reduced(me, object)->kind == TY_INTERSECTION
+    ) {
+        AccessSite access_site = {
+            .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
+            .this_parameter = site->this_parameter, .this_function = site->this_function,
+            .initializer_context = site->initializer_context,
+        };
+        synthetic_checked = check_synthetic_protected(me, &access_site, expr_outer_span(&access->prop), &refs, object, name, errs);
+    }
+    if (access->form == PROPERTY_EXPR_DOT && !synthetic_checked) {
         bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);
         for (u32 i = 0; i < refs.len; i++) {
             AccessSite access_site = {
