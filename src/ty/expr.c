@@ -549,6 +549,8 @@ typedef Ty const* (*ContextGetter)(Checker* me, Ty const* object, void const* ar
 
 static Ty const* context_map(Checker* me, Ty const* contextual, ContextGetter get, void const* arg) {
     if (!contextual || (contextual->flags & TYF_ANY)) return nullptr;
+    // (never says never of each part: tsc's mapType returns it as it is)
+    if (contextual->flags & TYF_NEVER) return contextual;
     if (contextual->kind == TY_UNION && !(contextual->flags & TYF_BOOLEAN)) {
         TyList members = contextual->composite.types;
         Ty const** parts = malloc(sizeof(Ty const*) * members.len);
