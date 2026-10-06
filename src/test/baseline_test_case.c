@@ -681,6 +681,8 @@ static const char* error_file_name(SourceFile const* source) {
     return strncmp(ret, "./", 2) == 0 ? ret + 2 : ret;
 }
 
+static void remove_test_path_prefixes(cstr* target, isize from);
+
 static void format_error_tree(
     cstr* global_target,
     cstr* file_target,
@@ -744,11 +746,12 @@ static void format_error_tree(
         } else {
             unsigned related_line = span_line_index(error->span);
             unsigned related_col = span_col_index(error->span);
-            cstr_append_d(
-                file_target, DEFAULT_DISPLAY,
-                "\r\n!!! related TS", error->ts_code, " ", error_file_name(related_source), ":",
-                related_line + 1, ":", related_col + 1, ": ", error->message
-            );
+            cstr_append_d(file_target, DEFAULT_DISPLAY, "\r\n!!! related TS", error->ts_code, " ");
+            // (the harness removes the test path prefixes from the location: `/.lib/react16.d.ts` is `react16.d.ts`)
+            isize location = cstr_size(file_target);
+            cstr_append_d(file_target, DEFAULT_DISPLAY, error_file_name(related_source), ":", related_line + 1, ":", related_col + 1);
+            remove_test_path_prefixes(file_target, location);
+            cstr_append_d(file_target, DEFAULT_DISPLAY, ": ", error->message);
         }
     }
 
@@ -758,7 +761,6 @@ static void format_error_tree(
     }
 }
 
-static void remove_test_path_prefixes(cstr* target, isize from);
 
 static void process_errors(BaselineTestCase* me) {
     if (error_ctx_empty(my error_ctx)) {
@@ -1320,10 +1322,12 @@ void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) 
     }
 
     for_each (i, vec_baseline_test_file, &my files) {
-        cstr_append_d(
-            target, DEFAULT_DISPLAY,
-            "\r\n==== ", baseline_test_file_header(i), " (", i->error_count, " errors) ====\r\n"
-        );
+        cstr_append_lit(target, "\r\n==== ");
+        // (tsc's harness removes the test path prefixes from the name: `/.src/a.ts` is `a.ts`)
+        isize header = cstr_size(target);
+        cstr_append(target, baseline_test_file_header(i));
+        remove_test_path_prefixes(target, header);
+        cstr_append_d(target, DEFAULT_DISPLAY, " (", i->error_count, " errors) ====\r\n");
 
         render_lines_woven_with_file(
             target,
