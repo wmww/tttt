@@ -136,6 +136,7 @@ infers string, tttt unknown; mechanism not found), tsxStatelessFunctionComponent
 tsc's TS2769 report), intraExpressionInferencesJsx, unionAndIntersectionInference3, mappedTypeRecursiveInference2,
 variadicTuples1, genericCallWithGenericSignatureArguments3 (`(n: Object) => 1` returned where the contextual type is
 the outer call's U keeps its literal return type in tsc, `=> 1`; tttt widens to number).
+genericRestParameters3, genericCallWithGenericSignatureArguments3 (not investigated).
 
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols

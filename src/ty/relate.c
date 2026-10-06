@@ -263,6 +263,18 @@ static bool is_empty_tuple(Ty const* ty) {
     return ty->kind == TY_DECLARED && ty->declared.kind == TY_DECLARED_TUPLE_TARGET;
 }
 
+// tsc's isArrayOrTupleType && !isGenericTupleType of every member
+static bool every_array_or_tuple(Checker* me, Ty const* ty) {
+    TyList types = ty->kind == TY_UNION ? ty->composite.types : (TyList){ .data = &ty, .len = 1 };
+    for (u32 i = 0; i < types.len; i++) {
+        Ty const* c = types.data[i];
+        bool fits = is_empty_tuple(c) || (c->kind == TY_REFERENCE && (is_array_target(me, c->reference.target) ||
+            (is_tuple(c) && !ty_is_generic_tuple(me, c))));
+        if (!fits) return false;
+    }
+    return types.len > 0;
+}
+
 // Literals
 
 // tsc's getBaseTypeOfLiteralType: the primitive (or enum) a literal belongs to, fresh or not
@@ -4078,8 +4090,9 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             return ret == ty ? nullptr : ret;
         }
         case TY_REFERENCE: {
-            // A generic tuple: its variadic elements as the arrays they're constrained to (tsc's computeBaseConstraint),
-            // `[S, ...T]` with `T extends readonly X[]` is `[S, ...X[]]`
+            // A generic tuple: its variadic elements as the arrays or non-generic tuples (or unions of them) they're
+            // constrained to (tsc's computeBaseConstraint), `[S, ...T]` with `T extends readonly X[]` is `[S, ...X[]]`,
+            // `[...T, ...T]` with `T extends [] | [unknown]` is `[] | [unknown] | [unknown, unknown]`
             if (!is_tuple(ty) || !ty_is_generic_tuple(me, ty)) return nullptr;
             TupleShape const* shape = ty_tuple_shape(ty);
             TyList args = ty_reference_args(me, ty);
@@ -4090,7 +4103,7 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 elements[i] = args.data[i];
                 if (i >= shape->arity || !(shape->flags[i] & TUPLE_ELEMENT_REST) || args.data[i]->kind != TY_TYPE_PARAM) continue;
                 Ty const* constraint = base_constraint(me, args.data[i], depth + 1);
-                if (constraint && ty_is_array(me, constraint)) {
+                if (constraint && every_array_or_tuple(me, constraint)) {
                     elements[i] = constraint;
                     changed = true;
                 }
@@ -5116,7 +5129,8 @@ static Ternary structured_related_members(
                 if (related) return related;
             }
             Ty const* operand = target->keyof.operand;
-            // A tuple with variadic elements: its known keys (tsc's getKnownKeysOfTupleType)
+            // A tuple with variadic elements: its known keys (tsc's getKnownKeysOfTupleType: the fixed elements' and
+            // those of the generic Array or ReadonlyArray), and nothing else
             if (is_tuple(operand)) {
                 TupleShape const* shape = operand->reference.target->declared.tuple;
                 TyBuf keys = {0};
@@ -5125,11 +5139,12 @@ static Ternary structured_related_members(
                     snprintf(digits, sizeof digits, "%u", i);
                     ty_buf_push(&keys, ty_string_literal(me, csview_from(digits)));
                 }
-                ty_buf_push(&keys, ty_keyof(me, tuple_as_array(me, operand)));
+                // (The declared type is a reference to itself with its own type parameter: `T[]`)
+                Ty const* array = shape->readonly ? ty_readonly_array_target(me) : my array_target;
+                ty_buf_push(&keys, ty_keyof(me, ty_array(me, array->declared.type_params.data[0], shape->readonly)));
                 Ty const* known = ty_union(me, keys.data, keys.len, nullptr, (TyList){0});
                 ty_buf_drop(&keys);
-                Ternary related = is_related_to(me, st, source, known, report);
-                if (related) return related;
+                return is_related_to(me, st, source, known, report);
             }
             // A union kept as `keyof` it because an instantiation may reduce it (ty_keyof()): keyof each member,
             // without that check (tsc's IndexFlags.NoReducibleCheck)
