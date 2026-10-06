@@ -4322,16 +4322,21 @@ static Ty const* constructor_declared_read(Checker* me, Expr const* expr) {
     return ty_constructor_declared_flow_type(me, member, expr, access->flow);
 }
 
+// `o[k]` with o made of nothing but a string index signature and a key that is a string or a number (each on its own,
+// tsc's isTypeAssignableToKind: `K extends string | number` is neither) reads that signature
+static bool reads_string_index_only(Checker* me, Ty const* object, Ty const* key) {
+    return is_string_index_only(me, object) && !(key->flags & TYF_NULLABLE) &&
+        (ty_is_related(me, key, ty_intrinsic(me, TY_STRING), TY_RELATION_ASSIGNABLE) ||
+            ty_is_related(me, key, ty_intrinsic(me, TY_NUMBER), TY_RELATION_ASSIGNABLE));
+}
+
 // `o[k]` with a generic key that ty_access() couldn't read through a constraint: the deferred
 // `O[K]` (tsc's getIndexedAccessType), unless o has nothing but a string index signature, which is what it reads then
 static Ty const* generic_element_access(Checker* me, PropertyExpr const* access, Ty const* object, Ty const* key) {
     key = ty_regular(me, key);
     if (!ty_is_generic_index(key)) return nullptr;
     if (object->flags & (TYF_ANY | TYF_UNKNOWN)) return object;
-    Ty const* string_or_number = union_of_two(me, ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER));
-    if (is_string_index_only(me, object) && !(key->flags & TYF_NULLABLE) &&
-        ty_is_related(me, key, string_or_number, TY_RELATION_ASSIGNABLE)
-    ) {
+    if (reads_string_index_only(me, object, key)) {
         Ty const* string = ty_intrinsic(me, TY_STRING);
         // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)
         return access->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, string) : ty_access_reading(me, object, string);
@@ -4349,10 +4354,7 @@ Ty const* ty_invalid_generic_element_access(Checker* me, PropertyExpr const* acc
     Ty const* key = ty_regular(me, ty_access_key_type(me, access));
     if (!ty_is_generic_index(key) || (object->flags & (TYF_ANY | TYF_UNKNOWN | TYF_ERROR))) return nullptr;
     if (ty_access(me, object, key)) return nullptr;
-    Ty const* string_or_number = union_of_two(me, ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER));
-    if (is_string_index_only(me, object) && !(key->flags & TYF_NULLABLE) &&
-        ty_is_related(me, key, string_or_number, TY_RELATION_ASSIGNABLE)
-    ) {
+    if (reads_string_index_only(me, object, key)) {
         return nullptr;
     }
     Ty const* ret = ty_indexed(me, object, key);
