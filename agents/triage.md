@@ -27,3 +27,10 @@ queues merged into one.
   resolution-order effect worth understanding before matching it.
 - (agent c) Types: `class L<RT> extends Object<RT[...]>` (TS2508) then `class X extends L<X>` (TS2507): tsc prints the
   extends expression `>L : L<X>`, tttt `typeof L` (mut7384's types component).
+- `o[sym]` on `{ [k: string]: C }` with an access node: tsc says TS2538 "cannot be used as an index type" and reads the
+  string index signature (type C); tttt says TS7053 and any (`check_access`; union or not). Probe: agent e, plan 46 cause 2.
+- valibot/es5 flag-flip cell: spurious TS7053 at `schemas/variant/variantAsync.ts:153/189` (`any` index into
+  `VariantObjectEntries<string> | VariantObjectEntriesAsync<...>`), only at target es5. Uninvestigated.
+- TS2344 elaboration for `NonNullable<V[K]>` without strictNullChecks: tsc adds "Type 'NonNullable<V[K]>' is not
+  assignable to type 'SVM'. / Index signature for type 'string' is missing in type '{}'." (the structural step on the
+  intersection's apparent type, tsc's emptyObjectType); tttt prints the header only.

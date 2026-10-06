@@ -59,25 +59,23 @@ and noPropertyAccessFromIndexSignature were already right: those checks are done
    expect-type's comparison and its cached error type silences later assertions; tttt computes on and reports
    TS2554/TS2344. Not a null-handling bug: tsc's instantiation depth/count accounting (`instantiationDepth === 100 ||
    instantiationCount >= 5000000`) per statement. Probably plan-sized; check what tttt counts first.
-2. **Union index signatures (nuia cause F, 6 webpack, taken out again)**: tsc's `getUnionIndexInfos` keeps only the
-   first member's index infos whose key every member has, so `C[] | Record<string, C>` has none (`cs[0]` is TS7053).
-   The prototype (`union_index_applies` in `access()`'s union branch) made 4 TS2344 on valibot (`TEntries[TKey]`
-   against its constraint, `types/object.ts:141`) and 1 on xstate (`setup.ts:276`) at default flags once combined
-   with the eopt changes: the constraint computation must not use it, or it must be applied where tsc applies it
-   (property access of a union, not the indexed-access type).
-3. **`typesDefinitelyUnrelated` in inference (non-strict cause 4, 4 webpack, taken out again)**: tsc skips inferring
-   from members when source and target are definitely unrelated (tuples of incompatible arity, or object types each
-   with a property the other lacks: `inferFromObjectTypes`). A tuple-only port inside `infer_to_tuple` broke
-   types/ember (computed properties became unknown). Port the whole gate where tsc has it. Repro: `type AsArray<T> =
-   T extends any[] ? T : [T]; declare class H<T> { m: (...a: AsArray<T>) => void }` and `const c: { m: (a: P1, b: O1)
-   => void } = make();` with strictFunctionTypes off infers `H<P1 | [P1, O1]>` (tsc `H<[P1, O1]>`).
+2. **Done (2026-10-06)**: union index signatures (`union_index_applies`, tsc's getUnionIndexInfos) back in `access()`'s
+   union branch. The earlier valibot/xstate TS2344s came from `TEntries[symbol]` in a constraint: without an access
+   node tsc's getPropertyTypeForIndexType falls back to the string index signature for a symbol key, which the union
+   rule now does too (ACCESS_NO_NODE).
+3. **Done (2026-10-06)**: `tuples_definitely_unrelated` gates tuple-to-tuple inference in `infer_from_objects` before
+   the structure-matching shortcut, with tsc's minLength (required + variadic elements). The object half was already
+   `types_definitely_unrelated`. The earlier ember breakage came from the old prototype's placement and min length.
 4. **Overload/inference residue under nosft/sloppy**: vue `customElement.spec` TS2769 x10 (tsc infers
    `Promise.resolve`'s value from the return context as `Component`'s `(props: never, ctx) => RenderFunction` branch),
    vue `defineComponent.test-d.tsx:1615` TS2345, nest TS2345 x4 (fallback type after overload failure), TS7011 x4 in
    vscode (overloads whose first candidate gives no contextual signature; `mockObject<T>()({...})` with a `{}` default).
-5. **xstate `State.ts:36` TS2344 x8 (sloppy/nosnc)**: `type T<V extends SV> = V extends string ? V : {[K in keyof
-   V]?: T<NonNullable<V[K]>>}` with `SV = string | {[k: string]: SV | undefined}`: tsc reports the constraint, tttt
-   doesn't.
+5. **Done (2026-10-06)**: xstate `State.ts:36`. An intersection source is related through tsc's
+   getEffectiveConstraintOfIntersection (`effective_intersection_constraint`: one-step constraints, the members too
+   against a union target, normalized) and not through base constraints; an intersection's inferable index looks at
+   its members' apparent types (without strictNullChecks `T[K] & {}` is tsc's emptyObjectType there, which has none);
+   a failing intersection source is retried normalized (`Partial<T>[K] & {}` is `T[K] & {}`). tsc normalizes every
+   relation's intersection up front; doing that in `is_related_to` cost valibot 1.1% instructions, so it's only on failure.
 6. **eopt residue (~25)**: webpack `SerializerMiddleware.js:82` TS2412 x4, `typeof import("fs")` vs
    `IntermediateFileSystem`, vscode `notebookEditorModelResolverServiceImpl`, `terminalInstance` 527-529,
    `extHostTestItem` 190-194, vue `apiAsyncComponent.ts:120-125` (TS2352, TS7006); xstate `input.test.ts:250` +1 (an
