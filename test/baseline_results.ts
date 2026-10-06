@@ -60517,7 +60517,7 @@ const baselines = {
     },
     'plainJSGrammarErrors': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'plainJSGrammarErrors2': {

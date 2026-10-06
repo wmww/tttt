@@ -314,7 +314,10 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
 Span class_decl_display_name(ClassDecl const* me) {
     if (span_valid(my name)) return my name;
     if (span_valid(my assigned_name)) return my assigned_name;
-    return sv_make_span(my is_expression ? c_sv("(Anonymous class)") : c_sv("default")); // `export default class {}`
+    if (my is_expression) return sv_make_span(c_sv("(Anonymous class)"));
+    // `export default class {}`; a class statement missing its name otherwise (a parse error) is tsc's
+    // InternalSymbolName.Missing
+    return sv_make_span(!my symbol || my symbol->is_default_export ? c_sv("default") : c_sv("__missing"));
 }
 
 void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bool declared) {
