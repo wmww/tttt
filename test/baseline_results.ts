@@ -60492,7 +60492,7 @@ const baselines = {
     },
     'multipleDeclarations': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'namespaceAssignmentToRequireAlias': {

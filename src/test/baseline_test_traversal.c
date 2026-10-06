@@ -176,6 +176,10 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Expr* constructor = span_valid(name) ? expr_prototype_object(&left->property->expr) : nullptr;
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     Symbol const* member = symbol && symbol_rare(symbol)->members ? symbol_table_get(symbol_rare(symbol)->members, name.sv) : nullptr;
+    // (One that conflicted with the constructor's `this.m` has a symbol of its own: declare_assignment_member())
+    if (member && left->property->declares && left->property->declares != member && left->property->declares->parent == symbol) {
+        member = left->property->declares;
+    }
     if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
     // A member the class body (or an interface merged with the JavaScript class) declares is the symbol the assignment
     // adds a declaration to (tsc's bindPrototypePropertyAssignment): the checker's member has them all

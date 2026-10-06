@@ -5549,11 +5549,62 @@ static Symbol* js_constructor_symbol(Symbol* symbol) {
 }
 
 // Declares an assignment member `name` (`left` = v) in a class's or constructor function's table
+// A prototype method (`F.prototype.m = function () {}`): a Method to tsc's binder (bindPotentiallyNewExpandoMemberToNamespace)
+static bool is_prototype_method_decl(AssignmentDeclKind kind, Expr const* value) {
+    return kind == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY && value && value->tag == EXPR_FUNCTION && !expr_is_perenthisized(value);
+}
+
+// The property name of an assignment declaration's target (`m` of `C.prototype.m`)
+static Span assignment_decl_member_name(SymbolDecl const* decl) {
+    Span full = decl->name;
+    char const* start = span_end_ptr(full);
+    while (start > span_start_ptr(full) && start[-1] != '.') start--;
+    return start > span_start_ptr(full) ? span_make(full.source, start, span_end_ptr(full)) : full;
+}
+
+// A constructor function's `this.m = v` (a Property) and a prototype method m (MethodExcludes has Property) conflict:
+// TS2300 at both, and the method gets a symbol of its own that the members table doesn't hold (tsc's declareSymbol,
+// whose binder sees the hoisted constructor function's body first). Whichever tttt declares first
+static bool prototype_method_conflict(Symbol const* existing, AssignmentDeclKind kind, Expr const* value) {
+    bool method = is_prototype_method_decl(kind, value);
+    if (!method && kind != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) return false;
+    for (u32 i = 0; i < existing->decl_count; i++) {
+        SymbolDecl const* decl = &existing->decls[i];
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT) return false;
+        bool other = method ? decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR : is_prototype_method_decl(decl->assignment, decl->node);
+        if (!other) return false;
+    }
+    return existing->decl_count > 0;
+}
+
 static void declare_assignment_member(
     Scope* me, SymbolTable** table, Symbol* parent, Span name, Expr* left, Expr* value, TypeNode const* jsdoc_type,
     AssignmentDeclKind kind, uint8_t jsdoc_modifiers
 ) {
     if (!*table) *table = arena_new(binder_arena(my binder), SymbolTable);
+    Symbol* existing = my file && my file->is_js ? (Symbol*)symbol_table_get_own(*table, name.sv, symbol_name_hash(name.sv)) : nullptr;
+    if (existing && prototype_method_conflict(existing, kind, value)) {
+        for (u32 i = 0; i < existing->decl_count; i++) {
+            report_conflict(binder_errs(my binder), assignment_decl_member_name(&existing->decls[i]), 2300);
+        }
+        report_conflict(binder_errs(my binder), name, 2300);
+        Symbol* own = binder_new_symbol(my binder, name.sv, SYMBOL_PROPERTY);
+        own->name_span = written_member_name(left, name);
+        own->parent = parent;
+        own->exported = true;
+        // (The constructor's own `this.m` is the one the members table keeps)
+        if (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) {
+            for (u32 i = 0; i < (*table)->count; i++) {
+                if ((*table)->entries[i].symbol == existing) (*table)->entries[i].symbol = own;
+            }
+        }
+        if (left->tag == EXPR_PROPERTY) left->property->declares = own;
+        symbol_add_decl(own, (SymbolDecl){
+            .kind = SYMBOL_DECL_ASSIGNMENT, .assignment = kind, .flags = SYMBOL_PROPERTY, .node = value,
+            .name = expr_outer_span(left), .full = expr_outer_span(left), .js = symbol_decl_js(my binder, jsdoc_type, true), .jsdoc_modifiers = jsdoc_modifiers,
+        });
+        return;
+    }
     bool merged;
     Symbol* member = declare_symbol(me, *table, name.sv, name, SYMBOL_PROPERTY, 0, false, &merged);
     if (!merged) {
