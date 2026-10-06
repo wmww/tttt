@@ -1936,9 +1936,10 @@ static Ternary compare_signatures(
         }
         return result & related;
     }
-    // Return types of callbacks are related both ways, or the type containing them wouldn't be covariant
+    // Return types of callbacks are related both ways, or the type containing them wouldn't be covariant (only
+    // those: tsc's compareSignaturesRelated relates a comparable relation's returns source to target)
     Ternary related = TERNARY_FALSE;
-    if (st->relation == TY_RELATION_COMPARABLE || callback == CALLBACK_BIVARIANT) {
+    if (callback == CALLBACK_BIVARIANT) {
         related = is_related_to(me, st, target_return, source_return, false);
     }
     if (!related) related = is_related_to(me, st, source_return, target_return, report);
