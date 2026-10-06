@@ -13284,7 +13284,8 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             return parse_success(&p);
         }
         Span first = vec_spanned_modifier_front(&modifiers.spanned)->span;
-        if (!check_modifiers(&p, &modifiers, modified)) {
+        // (tsc's checker never checks an `export as namespace`'s modifiers, its binder says TS1184: scope_add_port())
+        if (modified.kind != MODIFIED_NAMESPACE_EXPORT && !check_modifiers(&p, &modifiers, modified)) {
             if (code == 1120) parse_error(&p, first, 1120, "An export assignment cannot have modifiers.");
             if (code == 1191) parse_error(&p, first, 1191, "An import declaration cannot have modifiers.");
             if (code == 1193) parse_error(&p, first, 1193, "An export declaration cannot have modifiers.");
