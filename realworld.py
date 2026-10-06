@@ -6,7 +6,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   ./realworld.py                 # tttt -p thirdparty/tsc/src/compiler (its tsconfig.json)
   ./realworld.py path/to/entry.ts --options '--strict' -n 40
   ./realworld.py --code TS1005   # list the places a code is reported
-  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue, effect, vscode; tsc-src and typescript-eslint: -b on a solution config)
+  ./realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue, effect, vscode, excalidraw, tanstack-router; tsc-src and typescript-eslint: -b on a solution config)
 """
 import argparse, collections, os, re, resource, subprocess, sys, time
 
@@ -37,6 +37,10 @@ CORPORA = {
     'effect': 'thirdparty/corpora/effect/packages/effect/tsconfig.corpus.json',
     # VS Code's src: the large application (1.39M lines), decorator-based DI, browser/node/electron in one program
     'vscode': 'thirdparty/corpora/vscode/src',
+    # excalidraw: the JSX-heavy React 19 application (whiteboard editor, its packages and tests)
+    'excalidraw': 'thirdparty/corpora/excalidraw/tsconfig.corpus.json',
+    # TanStack Router's react-router and its type tests: route-tree inference, template-literal path unions, Register
+    'tanstack-router': 'thirdparty/corpora/tanstack-router/tsconfig.corpus.json',
     # typescript-eslint's root solution config, checked with -b (plan 41 stage 3): 38 composite projects, workspace
     # packages importing each other through node_modules symlinks into dist/*.d.ts, `${configDir}`, nested solutions
     'typescript-eslint': 'thirdparty/corpora/typescript-eslint',

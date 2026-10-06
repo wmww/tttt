@@ -98,7 +98,7 @@ echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > th
 # a full check
 echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"~/*": ["./src/*"], "*": ["./*"]}}}' > thirdparty/corpora/drizzle/drizzle-orm/tsconfig.tsgo.json
 echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"@vue/compat": ["./packages/vue-compat/src"], "@vue/*": ["./packages/*/src"], "vue": ["./packages/vue/src"], "*": ["./*"]}}}' > thirdparty/corpora/vue/tsconfig.tsgo.json
-for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json vscode/src; do
+for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json vscode/src excalidraw/tsconfig.corpus.json tanstack-router/tsconfig.corpus.json; do
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
     TSC_EXTRA=""

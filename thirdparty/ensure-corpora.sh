@@ -18,7 +18,8 @@ if test "${1:-}" = --relock; then RELOCK=1; fi
 # directory GLOB matches, relative to the checkout, under its package.json name, as a workspace install does; `alias:A=T`
 # links node_modules/A to T instead). If corpora-locks/NAME.package.json exists, it
 # replaces PROJECT_DIR/package.json before installing (a monorepo whose package manager npm can't read). The files under
-# corpora-locks/NAME.overlay/ are copied into the checkout (a tsconfig of our own, when upstream's doesn't fit)
+# corpora-locks/NAME.overlay/ are copied into the checkout (a tsconfig of our own, when upstream's doesn't fit), and
+# corpora-locks/NAME.postinstall.sh runs in the checkout after installing (generated files a build would make)
 CORPORA=(
     # type-fest v4.26.1: type-level utilities (template literal types, key remapping, deep recursion) + tsd tests
     "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
@@ -92,6 +93,27 @@ CORPORA=(
     # code in one program, nodenext, noImplicitOverride, useDefineForClassFields off. Checked through upstream's
     # src/tsconfig.json (the extensions are separate projects, left out). The lock is upstream's
     "vscode https://github.com/microsoft/vscode.git 156e400b9d45c29eb9975b4ee01e72cf22c3549a ."
+    # excalidraw (Dec 2025, todo entry 7 of the tenth window): the JSX-heavy application (149k lines of .tsx/.ts: the
+    # whiteboard editor's React 19 components, hooks, jotai atoms, the element/math/common packages, the collab app,
+    # vitest/testing-library tests), at the commit that moved it to TypeScript 5.9.3. Checked through
+    # tsconfig.corpus.json from the overlay: upstream's root tsconfig (paths to the package sources, moduleResolution
+    # node, jsx react-jsx) plus lib-dom-5.9-shim.d.ts, which gives TextEncoder.encode() 5.9's Uint8Array<ArrayBuffer>
+    # (3 tsc 5.8 errors otherwise). A yarn workspace: the dependencies are the root's, excalidraw-app's and the
+    # excalidraw/utils packages' (lint, format and coverage tools dropped: npm's lock of @isaacs/cliui doesn't `npm ci`),
+    # from corpora-locks/excalidraw.package.json
+    "excalidraw https://github.com/excalidraw/excalidraw.git d080833f4d359e808cd12acdc7dd1c9187c956e5 ."
+    # TanStack Router (Mar 2026, todo entry 7 of the tenth window): the last commit before its move to TypeScript 6
+    # (its CI still checked the sources with 5.8). The inference-heavy corpus: react-router's src and tests, mostly
+    # *.test-d.tsx type tests (expectTypeOf on route trees: path/search/params/loader inference through createRoute()/
+    # createFileRoute() chains, Link/navigate `to` as template-literal unions over the whole tree, Register module
+    # augmentation), checked through tsconfig.corpus.json from the overlay against router-core's and history's
+    # declarations as upstream does (corpora-locks/tanstack-router.postinstall.sh builds them with tsc 5.8: checking
+    # router-core's sources inside react-router's program sees react-router's augmentations of its interfaces and
+    # fails). Three runtime test files need TypeScript 5.9's lib.dom (`textContent: string`) and are excluded.
+    # moduleResolution bundler, noUncheckedIndexedAccess, checkJs. A pnpm workspace: the dependencies are the type
+    # dependencies of react-router, router-core and the root at pnpm-lock.yaml's versions, from
+    # corpora-locks/tanstack-router.package.json
+    "tanstack-router https://github.com/TanStack/router.git 837917a40c1c232eb482677eef848ffe60e9413d . workspace:packages/*"
     # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (./sweep.py), every types/NAME with its own
     # tsconfig and tests. DT's pnpm workspace links each @types/X to types/X: node_modules/@types -> ../types does the
     # same for the latest version of each. The npm dependencies are the few non-@types ones that many packages need
@@ -141,5 +163,6 @@ for ENTRY in "${CORPORA[@]}"; do
             mkdir -p "$(dirname "$PROJECT/node_modules/${ALIAS%%=*}")"
             ln -s "${ALIAS#*=}" "$PROJECT/node_modules/${ALIAS%%=*}"
         elif test -n "$LINK"; then ln -s "$LINK" "$PROJECT/node_modules/$NAME"; fi
+        if test -e "corpora-locks/$NAME.postinstall.sh"; then (cd "corpora/$NAME" && "../../corpora-locks/$NAME.postinstall.sh"); fi
     fi
 done

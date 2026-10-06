@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["packages", "excalidraw-app", "lib-dom-5.9-shim.d.ts"]
+}

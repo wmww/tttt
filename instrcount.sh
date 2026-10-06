@@ -20,9 +20,11 @@ declare -A C=(
     [vue]=thirdparty/corpora/vue/tsconfig.corpus.json
     [effect]=thirdparty/corpora/effect/packages/effect/tsconfig.corpus.json
     [vscode]=thirdparty/corpora/vscode/src
+    [excalidraw]=thirdparty/corpora/excalidraw/tsconfig.corpus.json
+    [tanstack-router]=thirdparty/corpora/tanstack-router/tsconfig.corpus.json
 )
 NAMES=("$@")
-test ${#NAMES[@]} -gt 0 || NAMES=(tsc type-fest valibot react nest webpack zod xstate drizzle vue effect vscode)
+test ${#NAMES[@]} -gt 0 || NAMES=(tsc type-fest valibot react nest webpack zod xstate drizzle vue effect vscode excalidraw tanstack-router)
 ARGS=(--checkers 1 --threads 1 -q --keep-going -p)
 # perf needs kernel.perf_event_paranoid <= 2 (some days the machine has 4): then callgrind counts instead, all corpora
 # at once (a few minutes; its counts run ~3% above perf's, so compare only numbers of the same tool)
