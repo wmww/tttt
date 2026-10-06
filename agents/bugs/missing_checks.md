@@ -81,14 +81,16 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 - nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).
-- declarationEmitBindingPatternsUnused: TS2842 only reported once by tsc, and `typeof alias` in a call signature's
-  return type should see the signature's binding pattern names (we say TS2304).
+- declarationEmitBindingPatternsUnused: an interface setter `set x({ name: alias }: Named & { o: typeof alias })`
+  keeps only its parameter's type (interface_member.h: `setter_param`), so its binding pattern gets no TS2842 and
+  `typeof alias` in the parameter type is TS2304. Needs the setter's parameter as a parameter.
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
 
 ## Circularity tsc finds and tttt doesn't (plan 39 stage 3)
 - TS2310/TS2313 for cycles found while resolving: circularBaseTypes (TS2313 for a mapped type's `K in keyof T` with T
   the interface whose base is being resolved), circularConstraintYieldsAppropriateError (TS2310).
-- circularOptionalityRemoval (a parameter's default reading itself: TS2502).
+- A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
+  n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
 - limitDeepInstantiations (TS2589 at the reference, we say TS2502), circularInlineMappedGenericTupleTypeNoCrash
   (TS2589), recursiveMappedTypes (TS2502/TS2615 in a mapped type over keyof).
 - exportAssignmentImportMergeNoCrash, ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge.
@@ -112,8 +114,7 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
   TS2536), mappedTypeErrors (TS2339 on `Pick<T, K>.foo`: `check_access()` skips generic mapped types),
   controlFlowGenericTypes (`Box<T>` vs `Box<unknown>` display, a TS2536 at line 218), strictBindCallApply1
   (bind/call/apply inference with the `this` parameter: TS2684 instead of TS2345), variadicTuples2 (spread arguments
-  against variadic rest tuples), interfaceExtendsObjectIntersectionErrors (heritage errors name the alias, not the
-  resolved base).
+  against variadic rest tuples).
 - deeplyNestedMappedTypes (`Id2<T> = { [K in keyof T]: Id2<Id2<T[K]>> }` still ends in a Maybe),
   reactReduxLikeDeferredInferenceAllowsAssignment and
   circularlyConstrainedMappedTypeContainingConditionalNoInfiniteInstantiationDepth (TS2344 with long elaborations),
@@ -133,7 +134,8 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 contravariantOnlyInferenceFromAnnotatedFunction (A from an annotated arrow inside a reverse mapped type's source: tsc
 infers string, tttt unknown; mechanism not found), tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get
 tsc's TS2769 report), intraExpressionInferencesJsx, unionAndIntersectionInference3, mappedTypeRecursiveInference2,
-variadicTuples1, genericRestParameters3, genericCallWithGenericSignatureArguments3 (not investigated).
+variadicTuples1, genericCallWithGenericSignatureArguments3 (`(n: Object) => 1` returned where the contextual type is
+the outer call's U keeps its literal return type in tsc, `=> 1`; tttt widens to number).
 
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
@@ -143,8 +145,7 @@ conflictingDeclarationsImportFromNamespace1/2 (`import * as pick` + `export cons
 circularity), checkerInitializationCrash and jsExportMemberMergedWithModuleAugmentation2 (duplicates across an import
 and a declaration: TS2300 vs our TS2440/TS2671), overloadModifiersMustAgree/functionOverloadErrors types (tsc's local
 symbol has all of a block's overloads). Related interop: es6ExportEqualsInterop (TS2305 for `import { a }` of an
-interface `export =`, no TS2308 between export= modules), exportAsNamespace_augment (TS2451 across a UMD global
-augmentation).
+interface `export =`, no TS2308 between export= modules).
 
 ## JavaScript (plan 26)
 Binder gaps (spurious TS2339 and friends):
@@ -192,10 +193,12 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   land on it and are deduped); tttt skips it and reports '>' expected at the end.
 - dontShowCompilerGeneratedMembers (`<-` in a type literal: a call signature whose type parameter list fails),
   esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
+- reservedNamesInAliases (`type void = I` is both a TS2457 alias and an expression statement),
+  parseUnmatchedTypeAssertion, esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
   jsdocFunctionTypeFalsePositive (`@param {<} x`), scannerUnexpectedNullCharacter1 (a NUL outside a string ends
-  tttt's parse: `*p.pos` is the EOF test everywhere), conflictMarkerTrivia3, parser0_004152, jsxInvalidEsprimaTestSuite,
+  tttt's parse: `*p.pos` is the EOF test everywhere), parser0_004152, jsxInvalidEsprimaTestSuite,
   thisTypeInFunctionsNegative, manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
-- checkJsxNamespaceNamesQuestionableForms: parser recovery after `</b:c.x>` (tsc resolves `x`).
+- A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109.
 
 ## JSX
 - TS6229 isn't checked for union tag types or inside an overload chain.
@@ -210,7 +213,7 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   `@ts-expect-error`). Not reduced.
 - Elaboration chains: mappedTypes6 (`-?` template elaboration), indexedAccessRelation, jsxExcessPropsAndAssignability
   (an intersection target `T["x"] & string` elaborated through the intersection), invariantGenericErrorElaboration,
-  keyofAndIndexedAccessErrors, conditionalTypes1/2, flatArrayNoExcessiveStackDepth, bigintWithLib,
+  keyofAndIndexedAccessErrors, conditionalTypes1/2, bigintWithLib,
   recursiveConditionalTypes, mappedTypeInferenceErrors.
 - **Node reuse in error messages**: tsc's typeToString reuses syntactic nodes even without an enclosing declaration
   (a single `return x as T` prints `() => T` as written: baseClassImprovedMismatchErrors; an arrow's return type from a
