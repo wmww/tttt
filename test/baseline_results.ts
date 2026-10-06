@@ -18538,7 +18538,7 @@ const baselines = {
     'intersectionTypeNormalization': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionTypeWithLeadingOperator': {
         errors: true,

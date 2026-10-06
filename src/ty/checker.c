@@ -1597,6 +1597,16 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         buf.data[i] = my intrinsics[TY_UNDEFINED];
         has_missing = true;
     }
+    // (The same union twice is one member, before unions of primitives are intersected as sets, which would lose
+    // its alias: tsc's addTypeToIntersection dedupes by identity. Unions told apart by their origin or alias only are
+    // two members there)
+    u32 distinct = 0;
+    for (u32 i = 0; i < buf.len; i++) {
+        bool seen = false;
+        for (u32 j = 0; j < distinct && !seen && buf.data[i]->kind == TY_UNION; j++) seen = buf.data[j] == buf.data[i];
+        if (!seen) buf.data[distinct++] = buf.data[i];
+    }
+    buf.len = distinct;
     intersect_unions_of_primitives(me, &buf);
     dedupe_unions(&buf);
     if (buf.len == 1) {
