@@ -118,8 +118,12 @@ void baseline_test_file_drop(BaselineTestFile* me) {
     vec_line_numbered_str_drop(&my errors);
 }
 
-static bool parse_tag(csview line, csview* key, csview* value) {
+static bool parse_tag(csview original, csview* key, csview* value) {
+    csview line = original;
+    // (At the very start of the line: tsc's harness matches its optionRegex against each line, `^\/{2}`, so an indented
+    // `// @todo: x` is code)
     line = csview_trim_whitespace(line);
+    if (line.buf != original.buf) return false;
     if (!csview_starts_with(line, "//")) {
         return false;
     }

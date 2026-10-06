@@ -172,7 +172,7 @@ Binder gaps (spurious TS2339 and friends):
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
 const: TS18042), assignmentToVoidZero2,
 classCanExtendConstructorFunction, moduleExportWithExportPropertyAssignment4,
-templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
+templateInsideCallback,
 jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
 const: TS18042), assignmentToVoidZero2, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
 const: TS18042), lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,

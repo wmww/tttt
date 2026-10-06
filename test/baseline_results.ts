@@ -50051,8 +50051,8 @@ const baselines = {
         types: true,
     },
     'fixSignatureCaching': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'functionImplementationErrors': {
