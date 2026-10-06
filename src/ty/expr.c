@@ -4580,6 +4580,12 @@ static Ty const* generic_element_access(Checker* me, PropertyExpr const* access,
     key = ty_regular(me, key);
     if (!ty_is_generic_index(key)) return nullptr;
     if (object->flags & (TYF_ANY | TYF_UNKNOWN)) return object;
+    // (Of the non-nullable object: tsc's checkNonNullExpression has reported null and undefined, TS18048, and removed
+    // them; `obj[key]` with `obj: T extends R | undefined` is `R[K]`)
+    if (compiler_options()->strict_null_checks && (ty_can_be_null(me, object) || ty_can_be_undefined(me, object))) {
+        Ty const* non_null = ty_non_nullable(me, object);
+        if (!(non_null->flags & (TYF_NULLABLE | TYF_NEVER))) object = non_null;
+    }
     if (reads_string_index_only(me, object, key)) {
         Ty const* string = ty_intrinsic(me, TY_STRING);
         // (A compound assignment reads it too: tsc's AccessFlags.ExpressionPosition unless Definite)

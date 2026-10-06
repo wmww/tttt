@@ -1603,6 +1603,36 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         infer_to_template(me, inf, source, target);
     } else if (target->flags & TYF_OBJECT) {
         if (source->kind == TY_INTERSECTION) source = ty_reduced(me, source); // (tsc's inferFromTypes)
+        // An intersection's apparent type has its type variables' apparent types (tsc's getApparentTypeOfIntersectionType
+        // via getTypeWithThisArgument): `T & Box<unknown>` with `T extends Box<T> | undefined` infers from
+        // `Box<T> & Box<unknown>`. Not for a conditional type's `infer` (tsc's NoConstraints)
+        if (source->kind == TY_INTERSECTION && !inf->always_strict) {
+            TyList members = source->composite.types;
+            bool variables = false;
+            for (u32 i = 0; i < members.len && !variables; i++) {
+                variables = members.data[i]->kind == TY_TYPE_PARAM || (members.data[i]->flags & TYF_DEFERRED);
+            }
+            if (variables) {
+                Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+                panic_if(!parts, "out of memory");
+                bool changed = false;
+                for (u32 i = 0; i < members.len; i++) {
+                    Ty const* member = members.data[i];
+                    parts[i] = member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED) ? ty_apparent_type(me, member) : member;
+                    changed |= parts[i] != member;
+                }
+                Ty const* apparent = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : source;
+                free(parts);
+                if (apparent != source && !(apparent->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) {
+                    if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+                        infer_from(me, inf, apparent, target);
+                        inf->depth--;
+                        return;
+                    }
+                    source = apparent;
+                }
+            }
+        }
         if (!(source->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
             Ty const* apparent = ty_apparent_type(me, source);
             if (apparent != source && !(source->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) {

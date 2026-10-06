@@ -4031,7 +4031,17 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
         case TY_CONDITIONAL: {
             Ty const* distributive = distributive_constraint(me, ty, depth);
             if (distributive) {
-                if (distributive->kind != TY_TYPE_PARAM && !(distributive->flags & TYF_DEFERRED)) return distributive;
+                // (Of a union or intersection, its members' base constraints: tsc's getBaseConstraint of the constraint,
+                // `T & (string | undefined)` with T unconstrained is `string | undefined`)
+                if ((distributive->kind == TY_UNION || distributive->kind == TY_INTERSECTION) &&
+                    (distributive->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
+                ) {
+                    bool lacks;
+                    Ty const* base = composite_base_constraint(me, distributive, depth + 1, &lacks);
+                    if (!lacks) return base ? base : distributive;
+                } else if (distributive->kind != TY_TYPE_PARAM && !(distributive->flags & TYF_DEFERRED)) {
+                    return distributive;
+                }
                 Ty const* deeper = base_constraint(me, distributive, depth + 1);
                 if (deeper) return deeper;
             }
@@ -4084,6 +4094,13 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             for (u32 i = 0; i < parts.len; i++) {
                 Ty const* part = parts.data[i];
                 Ty const* base = part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED) ? base_constraint(me, part, depth + 1) : part;
+                // (`T & (string | undefined)` is normalized to `(T & string) | (T & undefined)`: its members' base
+                // constraints, `string | undefined` with T unconstrained)
+                if ((part->kind == TY_UNION || part->kind == TY_INTERSECTION) && (part->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+                    bool lacks;
+                    Ty const* composite = composite_base_constraint(me, part, depth + 1, &lacks);
+                    base = lacks ? nullptr : composite ? composite : part;
+                }
                 if (base) ty_buf_push(&bases, base);
             }
             Ty const* ret = bases.len ? ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0}) : nullptr;

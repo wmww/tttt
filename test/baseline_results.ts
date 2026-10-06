@@ -3463,7 +3463,7 @@ const baselines = {
     'circularlySimplifyingConditionalTypesNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'class2': {
         errors: true,
