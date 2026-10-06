@@ -5046,8 +5046,13 @@ static Ternary structured_related_members(
             // A member being related isn't enough for the target's optional properties, which the intersection as a
             // whole may have with another type: `{ a: null } & { b: string }` to `{ a?: number, b: string }` (tsc's
             // extra property check in structuredTypeRelatedTo)
+            // (Not when a member is non-inferrable, an object literal with a context-sensitive function skipped for now:
+            // tsc's `!some(source.types, t => t === target || NonInferrableType)`)
             bool member_is_target = false;
-            for (u32 i = 0; i < source->composite.types.len; i++) member_is_target |= source->composite.types.data[i] == target;
+            for (u32 i = 0; i < source->composite.types.len; i++) {
+                Ty const* member = source->composite.types.data[i];
+                member_is_target |= member == target || (member->flags & TYF_NON_INFERRABLE);
+            }
             if (!member_is_target && (target->flags & TYF_OBJECT) && !ty_is_generic_object(me, target) &&
                 !(target->kind == TY_REFERENCE && is_array_target(me, target->reference.target)) && !is_tuple(target)
             ) {
