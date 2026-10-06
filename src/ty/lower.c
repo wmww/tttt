@@ -612,6 +612,16 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         return ty_intrinsic(me, TY_ERROR);
     }
 
+    // A bare JSDoc `import("./m")` of a constructor function `module.exports =` assigns is its value, `typeof F`: tsc's
+    // export= symbol isn't the class (the function expression's own symbol is), and getExpandoSymbol doesn't see
+    // through its value declaration, the assignment. tttt makes export= the function's class symbol
+    if (identifier->jsdoc && span_valid(identifier_type_import_span(identifier)) && !identifier_type_namespace_count(identifier) &&
+        csview_equals(decl->name, "export=") && (decl->flags & SYMBOL_CLASS) && decl->decl_count &&
+        decl->decls[0].kind == SYMBOL_DECL_ASSIGNMENT && decl->decls[0].node &&
+        ((Expr const*)decl->decls[0].node)->tag == EXPR_FUNCTION
+    ) {
+        return ty_type_of_symbol(me, decl);
+    }
     Ty const* declared = ty_declared_type_of(me, decl);
     if (decl->flags & (SYMBOL_INTERFACE | SYMBOL_CLASS)) {
             // `this` is the class's or interface's own `this` type parameter
