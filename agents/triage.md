@@ -135,3 +135,10 @@ queues merged into one.
     (libTypeScriptOverride*/SubfileResolving*: `@typescript/lib-*` packages), noLib tests, and parser recovery
     (parser0_004152, parserSkippedTokens20, jsxInvalidEsprimaTestSuite, conflictMarkerTrivia3, reservedNamesInAliases,
     varianceAnnotationsWithCircularlyReferencesError, ...): not looked into.
+
+- (coordinator, 2026-10-06 fan-out) Instantiated conditional types and their root's alias change *relation results*,
+  not just display: 37702442 (an instantiation goes by its root's alias) cut flagflip spurious 63 -> 57, and its perf
+  fix ab972a46 (only an instance that already has an alias looks up the root's) brought back 3 spurious TS2345 in
+  effect/sloppy (`packages/effect/src/Schema.ts:7257`, 7283, 7306) while keeping 3 others gone. Likely alias-argument
+  variance shortcuts in relations seeing an alias tsc's instance has. Compare `cd /tmp/wt-x && ./flagflip.py` at
+  ab972a46^ and ab972a46; tsc's getConditionalTypeInstantiation passes the root's aliasSymbol to every instance.

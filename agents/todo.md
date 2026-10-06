@@ -17,9 +17,11 @@ commit.
 3. ~~Execution: plan 44 stage 3 item 2, `$ExpectType`~~ done 2026-10-06: `./expecttypes.py` built (69k assertions,
    ~30 s); 99.5% -> 99.7% match after six fixes (suite 13103 -> 13104, sweep/corpora/flagflip flat). The ranking for
    entry 4 is in plan 44 "`$ExpectType` ranking": union order (135, chrome 42), then singles.
-4. **Execution: fan-out on the `$ExpectType` ranking** plus the plan 35 queue where they overlap. The ranking is thin
-   (224 mismatches, mostly creation-order union order): one or two agents on it, the rest on the plan 35 queue /
-   displaydiff's kinds; `./expecttypes.py` next to the sweep as a gate.
+4. ~~Execution: fan-out on the `$ExpectType` ranking + plan 35 queue~~ done 2026-10-06: five sub-agents (A union
+   order, B singles/sweep then plan 35 item 10, C types semantics then the errors tail, D display then symbols, E
+   symbols), ~150 picks, 0 lost: suite 13104 -> 13227, `$ExpectType` 68416 -> 68610 (the oracle now checks before
+   reading types), sweep 8580 -> 8584, flagflip 81 / 63 -> 79 / 63. New `./expectprobe.py` (one cut-down DT project,
+   reducer). Instructions: measurements.md.
 5. **Planning: plan 47** (speculative checks). It may say no; if yes, entry 9 executes stage 1.
 6. **Execution: flagflip's queue and the mutation leftovers** (plan 46 "Open causes" 4, 6, 8; triage.md's seed 3-5
    notes, which a triage session may consolidate first). Both are thin now: start with the nuia sweep run (plan 46

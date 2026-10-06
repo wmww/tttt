@@ -141,7 +141,7 @@ arguments `[]` for unions (ty_realias), an alias of an alias of a homomorphic ma
 distribution that changes nothing is the union itself (underscore's `keyof X`), assertions through a property of an
 intersection (assert.strict.equal), `${Enum}` property annotations made at the interface check (chrome, partly).
 
-### Open, for the fan-out (todo entry 4); `./expecttypes.py --last -k KIND` lists each
+### Open after the 2026-10-06 fan-out (68610 / 68640 match); `./expecttypes.py --last -k KIND` lists each, `./expectprobe.py` reduces one
 - **Union order, 12 assertions / 9 packages left** (`union order`): creation order. Was 135: the oracle asked
   getTypeAtLocation lazily without checking (test/sweep_tsc.js --expect now checks every non-lib file first, like
   tttt). Fixed 2026-10-06 (agent A): the check walk makes references, unions (memoized per node), tuples and
@@ -159,26 +159,6 @@ intersection (assert.strict.equal), `${Enum}` property annotations made at the i
   - node test.ts `[a: number, b: number] | [a: number]`: tsc's tuple targets are keyed by the named member
     *declarations*, tttt's by name text, so tsc makes a new `[a: number]` where tttt reuses an older one.
   - json-merge-patch, node-red__util: not looked at.
-- **chillout (12)**: inference through a rest parameter of conditional tuple type keeps the fresh `true`:
-  `fe<T>(...args: T extends ArrayLike<unknown> ? [T, (v: T) => void] : [T, (v: T[keyof T]) => void])` with
-  `fe({ a: "x", b: true }, v => v)` gives `v: string | true` (tsc `string | boolean`); without the conditional it's right.
-- **node stream (we-any 36, we-unknown 6, other ~8 in node and node/v22, v24, v25)**: the sweep's known
-  `stream.pipeline(function*(){...}, async function*(source){...})` generic overloads with context-sensitive generator
-  arguments (plan 47's territory).
-- **Alias/display singles**: yargs `c: Color` printed as its union (an alias lost through inference), redux-saga-test-engine
-  `Effect<ThrowErrorKey, ...>` where tsc resolves the alias to its literal, core-object `MethodNames<{...}>` printed
-  resolved, webpack-config-utils `DefinedObjKeys<...>` resolved, conventional-changelog-config-spec (tsc expands a
-  spread-typed object, tttt keeps `JSONSchema7`), es-abstract / conventional-commits-parser print default type arguments
-  tsc omits (`PropertyDescriptor<unknown>`, `Commit<string | number | symbol>`: through an import? like the GeoJSON fix
-  but not a union), d3-dispatch `never[]` vs `never`, `[value: number] | [value: number]` (node test.ts: tsc keeps two
-  identical-looking tuples, labels differ in identity), secure-password / webidl-conversions `typeof X.y` where tsc
-  prints the bare `typeof y` without an enclosing declaration (5).
-- **Union order, 135 assertions / ~55 packages** (`union order` + `order (same tokens)`): creation order. chrome is 42
-  of them: its enums' string literals; ``folderType?: `${FolderType}` `` is right now except `"other"`, made earlier
-  somewhere in chrome's 15k-line index.d.ts by tttt and not by tsc; `"start_page"` the other way. Trace with a probe
-  that cuts chrome down. tsc asks for *every* property signature's type in checkPropertySignature; tttt only for
-  literal and template annotations (interface_member_typecheck: doing all moved 5 suite tests both ways, variance
-  measurement order). Others: xmpp__connection 7, yargs (3 versions) 12, postman-collection 4, formidable 4.
 - Done 2026-10-06 (agent B, 68416 -> 68483): chillout (rest arguments re-typed each inference round), node stream
   (the constraint pass resolved D before T: not plan 47 after all), yargs `Color` (distribution maps over the union's
   origin; now only a property-order mismatch), conventional-changelog-config-spec (namespace import further down an
