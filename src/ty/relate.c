@@ -4090,7 +4090,7 @@ static Ty const* effective_intersection_constraint(Checker* me, Ty const* source
             if ((member->flags & disjoint_flags) || ty_is_empty_anonymous_object(me, member)) ty_buf_push(&parts, member);
         }
         // (Normalized like the source was: `V[string | number | symbol] & {}` is `(V[string] & {}) | ...`)
-        ret = normalized_intersection(me, ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}), false);
+        ret = normalized_intersection(me, ty_intersection_no_constraint_reduction(me, parts.data, parts.len), false);
         // (Not when the expansion contains the source itself)
         TyList expanded = ret->kind == TY_UNION ? ret->composite.types : (TyList){ .data = &ret, .len = 1 };
         for (u32 i = 0; ret && i < expanded.len; i++) if (expanded.data[i] == source) ret = nullptr;

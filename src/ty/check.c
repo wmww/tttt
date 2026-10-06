@@ -752,7 +752,10 @@ static Error* report_unrelated_with_head(
     isize_t first = 0;
     TyReportLine const* natural = vec_ty_report_line_size(&lines) ? vec_ty_report_line_at(&lines, 0) : nullptr;
     Error* error;
-    if (natural && (span_valid(natural->span) || natural->replaces_head)) {
+    // (TS2678 is checkTypeComparableTo without a head message: a more specific line, a missing property, stands in
+    // for it like for TS2322)
+    bool default_head = ts_code == 2678 && natural && !natural->related && natural->ts_code != 2678;
+    if (natural && (span_valid(natural->span) || natural->replaces_head || default_head)) {
         // An error that knows exactly where it is (an excess property) replaces the head
         cstr_drop(&head);
         error = error_ctx_error_s(errs, span_valid(natural->span) ? natural->span : span, natural->ts_code,

@@ -1346,18 +1346,21 @@ bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty) {
         !members->mapped;
 }
 
-static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object);
+// Options of intersection(): keep `{}` next to non-nullable members; no reduction of `T & P` with T's primitive
+// constraint (tsc's IntersectionFlags.NoConstraintReduction, which the members it distributes into inherit)
+enum { INTERSECT_KEEP_EMPTY_OBJECT = 1, INTERSECT_NO_CONSTRAINT_REDUCTION = 2 };
+static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts);
 
 // Intersections without an alias are cached by their members (tsc's intersectionTypes by type list id, which it
 // looks up before distributing over unions, as this does): distributing `SyntaxKind & T` over a big union again at
 // every relation that asks was ~4% of the tsc corpus
-static Ty const* intersection_cached(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
-    if (alias || len < 2 || len > 14) return intersection(me, types, len, alias, alias_args, keep_empty_object);
-    u64 key[16] = { KEY_INTERSECTION_OF, keep_empty_object };
+static Ty const* intersection_cached(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
+    if (alias || len < 2 || len > 14) return intersection(me, types, len, alias, alias_args, opts);
+    u64 key[16] = { KEY_INTERSECTION_OF, opts };
     for (u32 i = 0; i < len; i++) key[2 + i] = types[i]->id;
     Ty const* cached = intern_get(&my links, key, len + 2);
     if (cached) return cached;
-    Ty const* ret = intersection(me, types, len, alias, alias_args, keep_empty_object);
+    Ty const* ret = intersection(me, types, len, alias, alias_args, opts);
     *intern_slot(me, &my links, key, len + 2) = ret;
     return ret;
 }
@@ -1367,7 +1370,11 @@ Ty const* ty_intersection(Checker* me, Ty const* const* types, u32 len, Symbol c
 }
 
 Ty const* ty_intersection_keeping_empty_object(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args) {
-    return intersection_cached(me, types, len, alias, alias_args, true);
+    return intersection_cached(me, types, len, alias, alias_args, INTERSECT_KEEP_EMPTY_OBJECT);
+}
+
+Ty const* ty_intersection_no_constraint_reduction(Checker* me, Ty const* const* types, u32 len) {
+    return intersection_cached(me, types, len, nullptr, (TyList){0}, INTERSECT_NO_CONSTRAINT_REDUCTION);
 }
 
 static bool union_has(Ty const* ty, u32 flag) {
@@ -1383,7 +1390,7 @@ static bool union_has(Ty const* ty, u32 flag) {
 // `(A & B) | undefined`; three or more members are intersected in halves, which usually makes far fewer combinations
 // than the whole cross product; one of 100000 or more combinations is the error type (tsc's TS2590, not reported).
 // Null if the plain cross product it is. `len`: how many types the intersection was asked for
-static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const* alias, TyList alias_args) {
+static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
     u32 flags[2] = { TYF_UNDEFINED, TYF_NULL };
     for (u32 f = 0; f < 2; f++) {
         bool all = true;
@@ -1408,18 +1415,19 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
             TyList members = buf->data[i]->composite.types;
             for (u32 j = 0; j < members.len && !missing; j++) missing = members.data[j] == my intrinsics[TY_MISSING];
         }
-        Ty const* both[2] = { ty_intersection(me, rest, buf->len, nullptr, (TyList){0}),
+        Ty const* both[2] = { intersection_cached(me, rest, buf->len, nullptr, (TyList){0}, opts & INTERSECT_NO_CONSTRAINT_REDUCTION),
             my intrinsics[missing ? TY_MISSING : f == 0 ? TY_UNDEFINED : TY_NULL] };
         free(rest);
         return ty_union(me, both, 2, alias, alias_args);
     }
     if (buf->len >= 3 && len > 2) {
         u32 middle = buf->len / 2;
+        u32 inherited = opts & INTERSECT_NO_CONSTRAINT_REDUCTION;
         Ty const* halves[2] = {
-            ty_intersection(me, buf->data, middle, nullptr, (TyList){0}),
-            ty_intersection(me, buf->data + middle, buf->len - middle, nullptr, (TyList){0}),
+            intersection_cached(me, buf->data, middle, nullptr, (TyList){0}, inherited),
+            intersection_cached(me, buf->data + middle, buf->len - middle, nullptr, (TyList){0}, inherited),
         };
-        return intersection(me, halves, 2, alias, alias_args, false);
+        return intersection(me, halves, 2, alias, alias_args, inherited);
     }
     // (tsc's checkCrossProductUnion)
     double size = 1;
@@ -1580,7 +1588,9 @@ static bool non_union_nullable(TyBuf const* buf) {
     return false;
 }
 
-static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
+static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
+    bool keep_empty_object = opts & INTERSECT_KEEP_EMPTY_OBJECT;
+    u32 inherited = opts & INTERSECT_NO_CONSTRAINT_REDUCTION;
     if (len == 1) return types[0];
     for (u32 i = 0; i < len; i++) {
         if (types[i] == my intrinsics[TY_WILDCARD]) return types[i];
@@ -1638,8 +1648,8 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         // "b")` is undefined, not never (tsc's getIntersectionType sees a union only as a union in its includes)
         u32 kept = 0;
         for (u32 i = 0; i < buf.len; i++) if (buf.data[i]->kind != TY_UNION) buf.data[kept++] = buf.data[i];
-        ret = ty_intersection(me, buf.data, kept, nullptr, (TyList){0});
-    } else if (first_union && (ret = intersect_unions(me, &buf, len, alias, alias_args))) {
+        ret = intersection_cached(me, buf.data, kept, nullptr, (TyList){0}, inherited);
+    } else if (first_union && (ret = intersect_unions(me, &buf, len, alias, alias_args, opts))) {
         // (Handled)
     } else if (first_union) {
         // tsc's getCrossProductIntersections: A & (B | C) & (D | E) is A & B & D | A & B & E | A & C & D | A & C & E,
@@ -1660,7 +1670,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
                 parts.data[j] = t->composite.types.data[n % l];
                 n /= l;
             }
-            Ty const* r = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+            Ty const* r = intersection_cached(me, parts.data, parts.len, nullptr, (TyList){0}, inherited);
             if (r->flags & TYF_NEVER) continue;
             any_intersection |= r->kind == TY_INTERSECTION;
             ty_buf_push(&results, r);
@@ -1762,7 +1772,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             ret = buf.data[0] == my intrinsics[TY_UNDEFINED] && has_missing ? my intrinsics[TY_MISSING] : buf.data[0];
         } else {
             bool constrained = false;
-            Ty const* reduced = out == 2 ? reduce_type_variable_intersection(me, buf.data[0], buf.data[1], &constrained) : nullptr;
+            Ty const* reduced = out == 2 && !inherited ? reduce_type_variable_intersection(me, buf.data[0], buf.data[1], &constrained) : nullptr;
             if (reduced) {
                 ret = reduced;
             } else {
