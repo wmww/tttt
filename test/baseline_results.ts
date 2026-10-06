@@ -32288,7 +32288,7 @@ const baselines = {
     'unresolvableSelfReferencingAwaitedUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unresolvedTypeAssertionSymbol': {
         errors: true,

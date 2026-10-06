@@ -3224,9 +3224,11 @@ typedef struct AwaitedFrame {
     struct AwaitedFrame const* up;
 } AwaitedFrame;
 
+// (Null, which a union leaves out, and the error type at the top: tsc's getAwaitedTypeNoAlias returns undefined,
+// mapType drops it, checkAwaitedType makes it errorType)
 static Ty const* awaited_cycle(Checker* me) {
     ty_error_at_current_node_d(me, 1062, "Type is referenced directly or indirectly in the fulfillment callback of its own 'then' method.");
-    return ty_intrinsic(me, TY_ERROR);
+    return nullptr;
 }
 
 static bool awaited_in_progress(AwaitedFrame const* stack, Ty const* ty) {
@@ -3401,12 +3403,14 @@ static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFr
         AwaitedFrame frame = { ty, stack };
         Ty const** parts = malloc(sizeof(Ty const*) * ty->composite.types.len);
         bool changed = false;
+        u32 len = 0;
         for (u32 i = 0; i < ty->composite.types.len; i++) {
-            parts[i] = awaited_type_in(me, ty->composite.types.data[i], wrap, &frame);
-            changed |= parts[i] != ty->composite.types.data[i];
+            Ty const* part = awaited_type_in(me, ty->composite.types.data[i], wrap, &frame);
+            changed |= part != ty->composite.types.data[i];
+            if (part) parts[len++] = part;
         }
         // (tsc's mapType: the union itself when no member changed)
-        Ty const* ret = changed ? ty_union(me, parts, ty->composite.types.len, nullptr, (TyList){0}) : ty;
+        Ty const* ret = changed ? ty_union(me, parts, len, nullptr, (TyList){0}) : ty;
         free(parts);
         return ret;
     }
@@ -3454,7 +3458,10 @@ static bool awaits_thenable(Checker* me, Ty const* ty, u32 depth) {
 
 bool ty_awaits_thenable(Checker* me, Ty const* ty) { return awaits_thenable(me, ty, 0); }
 
-static Ty const* awaited_type(Checker* me, Ty const* ty, bool wrap) { return awaited_type_in(me, ty, wrap, nullptr); }
+static Ty const* awaited_type(Checker* me, Ty const* ty, bool wrap) {
+    Ty const* ret = awaited_type_in(me, ty, wrap, nullptr);
+    return ret ? ret : ty_intrinsic(me, TY_ERROR);
+}
 
 Ty const* ty_awaited(Checker* me, Ty const* ty) { return awaited_type(me, ty, true); }
 
