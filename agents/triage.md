@@ -79,3 +79,11 @@ queues merged into one.
   (`ConditionalRequired<...>[0]`-like), tttt's `X | undefined`, which then counts as an exact-optional mismatch.
 - (agent c) drizzle sloppy/nosnc mysql-proxy/migrator.ts:25: tsc's `....orderBy(...)` result is undefined-ish (TS2532 +
   TS2722 at the chain), tttt's `.limit` is never (TS2349): non-strict drizzle builder types diverge.
+- Union best match (seed-3 mut3155): an object argument against `string | Intl.Locale | readonly string[]` gets no
+  elaboration in tsc; tttt's findBestTypeForObjectLiteral picks `string` and adds "Type '{...}' is not assignable to
+  type 'string'". Probe /tmp/b-probes/bm.ts shape (`const o = {...} as const; f(o)`); tsc's reason not found yet.
+- Return type inference from a contextual `never` (seed-3 mut5211): `const b: never = cm({ a: 12 }, { foo() {...} })`
+  with `cm<S, A>(s: S, a: A): { s: S } & A` is TS2345 on the second argument in tsc (A fixed to never via the return
+  mapper), TS2322 on the declaration in tttt.
+- Spread copies print their optional property's annotation in errors (`{ sn?: number; }` for `{ ...o }`, seed-3
+  mut7379) while the declared type literal prints `number | undefined`; tttt adds `| undefined` to both.
