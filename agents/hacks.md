@@ -779,6 +779,10 @@ src` finds the code-side markers; every significant one has an entry here.
   for every property's type there; doing it for all moved 5 suite tests both ways (strictFunctionTypesErrors,
   covariantCallbacks... variance measured in another order). chrome's `$ExpectType` union order needs more of it.
 
+- `unknown_symbol_text()` (baseline_test_traversal.c): the symbols baseline names tsc's unknownSymbol (names after an
+  import of an unresolved module, in `import x = a.B` paths and heritage `extends a.B`) by the first alias of an
+  unresolved import in the innermost table, rebuilt in the harness: tttt has no unknownSymbol to run the symbol chain on.
+
 ## Harness and tools
 - `apply_setting`: `@baselineFile`, `@fullEmitPaths`, bad values ignored.
 - `mount_test_lib_folder` copies tsc's `tests/lib` per test; `baseline_test_cache_get_program_with_libs` keeps one lib

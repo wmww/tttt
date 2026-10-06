@@ -482,12 +482,12 @@ const baselines = {
     },
     'aliasesInSystemModule1': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'aliasesInSystemModule2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'allowImportClausesToMergeWithTypes': {
@@ -18917,7 +18917,7 @@ const baselines = {
     },
     'isolatedModulesImportExportElision': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'isolatedModulesNoEmitOnError': {

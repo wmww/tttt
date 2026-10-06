@@ -339,6 +339,30 @@ static void nested_expando_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     add_symbol_override(ctx, entity->inner_span, left->property->declares);
 }
 
+// Whether an alias resolves to nothing (tsc's unknownSymbol: an import of a module that doesn't resolve)
+static bool alias_of_unknown(Symbol const* symbol) {
+    return symbol && (symbol->flags & SYMBOL_ALIAS) && symbol->alias && symbol->alias->state == ALIAS_DONE &&
+        (!symbol->alias->target || symbol->alias->target->is_placeholder);
+}
+
+// How tsc's symbolToString names its unknownSymbol (what a name after an unresolved import resolves to) from here:
+// by the first alias of it in the innermost symbol table that has one (getAccessibleSymbolChain matches aliases by
+// what they resolve to; a namespace's table is its exports), else not at all
+static cstr unknown_symbol_text(BaselineTestCase const* ctx) {
+    for (Scope const* scope = ctx->enclosing; scope; scope = scope->parent) {
+        SymbolTable const* tables[2] = { &scope->locals, nullptr };
+        if (scope->kind == SCOPE_NAMESPACE && scope->container) tables[1] = symbol_members(scope->container)->exports;
+        if (scope->kind == SCOPE_GLOBAL) break;
+        for (u32 t = 0; t < 2; t++) {
+            for (u32 i = 0; tables[t] && i < tables[t]->count; i++) {
+                Symbol const* entry = tables[t]->entries[i].symbol;
+                if (alias_of_unknown(entry)) return cstr_from_sv(entry->name);
+            }
+        }
+    }
+    return cstr_init();
+}
+
 // `A.B.C` as spans
 // What the symbols baseline says about a property access, gathered over the members of a union or intersection
 typedef struct PropSymbolInfo {
@@ -1410,6 +1434,13 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 // Part of a qualified name: any is written like any other type, else it's the intrinsic name
                 ctx->any_keeps_underline = vec_span_size(&my main.alias_path) > 1;
                 if (i_index >= vec_symbol_cptr_size(&my main.alias_path_symbols)) {
+                    // (After an import of an unresolved module: tsc's unknownSymbol, no declarations)
+                    bool next = i_index && i_index == vec_symbol_cptr_size(&my main.alias_path_symbols);
+                    if (next && alias_of_unknown(*vec_symbol_cptr_at(&my main.alias_path_symbols, i_index - 1))) {
+                        baseline_test_case_add_symbol(ctx, (BaselineSym){
+                            .allow_declaration_empty = true, .span = *i, .text = unknown_symbol_text(ctx),
+                        });
+                    }
                     baseline_test_case_add_type_node(ctx, *i, &type_any);
                     continue;
                 }
@@ -1886,6 +1917,18 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
     }
     if (!n || e->tag != EXPR_IDENTIFIER || expr_is_perenthisized(e) || e->identifier.keyword || !ctx->enclosing) return;
     Symbol const* found = scope_resolve(ctx->enclosing, e->inner_span.sv, SYMBOL_NAMESPACE);
+    if (alias_of_unknown(found)) {
+        // (An import of an unresolved module: the names after it are tsc's unknownSymbol, see unknown_symbol_text())
+        for (u32 k = n; k-- > 0 && ctx->symbol_override_count + 2 <= c_arraylen(ctx->symbol_overrides);) {
+            Span spans[2] = { nodes[k]->inner_span, expr_outer_span(&nodes[k]->property->prop) };
+            for (u32 j = 0; j < 2; j++) {
+                ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                    .span = spans[j], .text = unknown_symbol_text(ctx), .declarations = vec_span_init(),
+                };
+            }
+        }
+        return;
+    }
     if (!found || found->is_placeholder || !symbol_for_meaning(found, SYMBOL_NAMESPACE)) return;
     if (!e->identifier.target && !e->identifier.namespace_as_value && !e->identifier.invalid_initializer_reference) {
         // (Not a value: the identifier shows nothing of its own, `M` of `extends M.C` with an uninstantiated M)
