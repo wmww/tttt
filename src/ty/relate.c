@@ -664,7 +664,10 @@ static Ty const* apparent_intersection(Checker* me, Ty const* ty) {
     if (ty->kind != TY_INTERSECTION) return ty;
     TyList types = ty->composite.types;
     bool primitive = false;
-    for (u32 i = 0; i < types.len && !primitive; i++) primitive = !(types.data[i]->flags & (TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED));
+    // (Or a type parameter: `T & {}` with T unconstrained is `{}`)
+    for (u32 i = 0; i < types.len && !primitive; i++) {
+        primitive = !(types.data[i]->flags & (TYF_OBJECT | TYF_TYPE_PARAM | TYF_DEFERRED)) || types.data[i]->kind == TY_TYPE_PARAM;
+    }
     if (!primitive) return ty;
     Ty const** apparent = malloc(sizeof(Ty const*) * types.len);
     panic_if(!apparent, "out of memory");
