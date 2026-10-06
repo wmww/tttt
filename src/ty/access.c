@@ -422,6 +422,9 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             }
             return nullptr;
         }
+        // A negative index of a tuple without a rest element finds nothing (TS2514), with an access node (tsc's
+        // getPropertyTypeForIndexType)
+        if (n < 0 && !(flags & ACCESS_NO_NODE) && ty_tuple_fixed_length(shape) == shape->arity) return nullptr;
     }
     if (numeric && (ty_is_tuple(object) || ty_is_array(me, object))) {
         Ty const* element = ty_rest_element_type(me, object);

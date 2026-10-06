@@ -2648,6 +2648,12 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         // (`unknown[K]` with a generic K is unknown, like any's: tsc's getIndexedAccessTypeOrUndefined)
         return object->flags & TYF_UNKNOWN ? object : nullptr;
     }
+    // A negative index of a tuple without a rest element written as a type is undefined (TS2514, tsc's
+    // getPropertyTypeForIndexType with an access node)
+    if (written && (index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number < 0 && ty_is_tuple(object)) {
+        TupleShape const* shape = object->reference.target->declared.tuple;
+        if (ty_tuple_fixed_length(shape) == shape->arity) return my intrinsics[TY_UNDEFINED];
+    }
     Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
     if (!ret && (index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) {
