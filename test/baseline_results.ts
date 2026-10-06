@@ -31113,7 +31113,7 @@ const baselines = {
     'typeInferenceLiteralUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeInferenceReturnTypeCallback': {
         errors: true,
@@ -48163,7 +48163,7 @@ const baselines = {
     'typeGuardOfFormTypeOfFunction': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeGuardOfFormTypeOfIsOrderIndependent': {
         errors: true,
@@ -64083,7 +64083,7 @@ const baselines = {
     'templateLiteralTypesPatterns': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateLiteralTypesPatternsPrefixSuffixAssignability': {
         errors: true,
@@ -64128,7 +64128,7 @@ const baselines = {
     'mappedTypeAsClauses': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeConstraints': {
         errors: true,
