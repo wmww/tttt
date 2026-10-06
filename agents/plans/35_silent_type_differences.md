@@ -166,14 +166,28 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
    is a Span; tsc uses the numeric literal's canonical text and the cooked string.
 
 **Semantics (types component)**
-10. **Inference**: generic function nested in a returned literal (tsc's instantiateTypeWithSingleGenericCallSignature
-    runs for any identifier with a contextual signature inside an inferring call; tttt only for argument-level
-    `generic_function`/`nested_generic` Args in call.c): inferentialTypingWithFunctionTypeNested,
-    nestedGenericSpreadInference. Variadic middle rest parameters (`...args: [unknown, ...T, unknown]`,
-    typeParameterConstModifiers: param_shape() can't represent it), genericRestParameters1 (`f10(...v)` gives `[...V]`,
-    `f11(1, ...u)` keeps `1`), isomorphicMappedTypeInference (f22/f24 infer unknown),
-    dependentDestructuredVariablesFromNestedPatterns, arrayFrom, inferConditionalConstraintMappedMember (tsc: never),
-    typeArgumentInferenceWithObjectLiteral (single-member `enum E1 { X }`: tsc ends with the fresh E1.X).
+10. **Inference** (2026-10-06, agent B: done for inferentialTypingWithFunctionTypeNested (a generic function among
+    a function argument's return expressions is instantiated in context while the call infers: Checker.
+    argument_return_depth in check_with()), genericRestParameters1 (an instantiated rest type parameter keeps its arity,
+    a lone spread of a tuple-constrained V is V, rest arguments' contextual T[i] by position despite spreads),
+    typeParameterConstModifiers (readonly parameter tuple for a const rest type parameter), isomorphicMappedTypeInference
+    (K's constraint in inferToMappedType, Pick<T & U, K>), typeArgumentInferenceWithObjectLiteral (single-member enum
+    regular literal is its own base type), narrowingDestructuring (IIFE argument checked with contextual any); arrayFrom
+    passed already). Left:
+    - nestedGenericSpreadInference: `call(wrap(<T>(x: T) => x), 1)`. tsc resolves `wrap(...)` in the first pass (it
+      doesn't return a function, so SkipGenericFunctions doesn't skip it) and prints `{ x: (x: A[0]) => A[0] }`: the
+      arrow is instantiated in the context of wrap's X as the outer contextual type *as written* says (returnMapper
+      over the raw `{ x: (...args: A) => T }`); tttt's X comes from the contextual type instantiated with the outer
+      inferences (A silent never, so `any`). Doing that (tried: infer X from the raw contextual when a generic
+      function argument's parameter is a naked type parameter) gives the right wrap type but the outer call then ends
+      with T = A[0] where tsc has number: how tsc gets number isn't understood (instrument a tsc copy).
+      source_type_at() now gives `A[0]` for a generic rest parameter (tryGetTypeAtPosition), part of it.
+    - inferConditionalConstraintMappedMember: tsc gives never only when the check type is an inline mapped type
+      (`{ [K in keyof T]: ... } extends { [_ in keyof T]: infer U }`); through an alias `M<T>` it gives "foo" | "bar"
+      like tttt. Probably mapped-to-mapped inference (inferFromObjectTypes) on the unresolved instantiation; not
+      investigated further.
+    - dependentDestructuredVariablesFromNestedPatterns: union order of `[undefined, Error] | [unknown, undefined]`
+      (creation order: the tuple from the `as` type node is made first in tsc), agent A's family.
 11. **Narrowable references** (2026-10-06, agent C: done for intersectionSatisfiesConstraint (an intersection whose
     apparent type is a union isn't related structurally, seen in a tsc trace), voidReturnIndexUnionInference (property
     accesses retyped outside inference), mappedTypeIndexedAccessConstraint (base constraint of an indexed access),
