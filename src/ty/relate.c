@@ -1226,6 +1226,9 @@ static Ty const* apparent_type_resolve(Checker* me, Ty const* ty) {
         }
         Ty const* ret = changed ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : ty;
         if (parts != stack_buf) free(parts);
+        // (What the members made of it may be apparent itself: `T & object` without strictNullChecks is `{} & object`,
+        // which is `object`, apparently `{}`)
+        if (ret != ty && ret->kind != TY_INTERSECTION) ret = apparent_type(me, ret);
         return ret;
     }
     if (ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || ty->kind == TY_SUBSTITUTION) {

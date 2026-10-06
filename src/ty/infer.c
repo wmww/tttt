@@ -293,7 +293,7 @@ static void infer_from_signatures(Checker* me, Inference* inf, Signature const* 
     TyMapper const* base = base_signature_mapper(me, source);
     // Parameters are a contravariant position. Without strictFunctionTypes they compare bivariantly and tsc infers as
     // if they were covariant; the parameters of a method (and everything nested in them) are bivariant too
-    bool flip = compiler_options()->strict_function_types;
+    bool flip = compiler_options()->strict_function_types || inf->always_strict;
     bool saved_bivariant = inf->bivariant;
     inf->bivariant |= (target->flags & SIGNATURE_METHOD) != 0;
     if (flip) inf->contravariant = !inf->contravariant;
@@ -797,6 +797,23 @@ static bool is_variadic_element(Checker* me, TupleShape const* shape, TyList arg
     return (shape->flags[i] & TUPLE_ELEMENT_REST) && !ty_is_array(me, args.data[i]) && !ty_is_tuple(args.data[i]);
 }
 
+static u32 tuple_min_length(TupleShape const* shape) {
+    u32 n = 0;
+    for (u32 i = 0; i < shape->arity; i++) if (!(shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) n = i + 1;
+    return n;
+}
+
+// Tuples of arities that can't match: nothing to infer from their elements (tsc's tupleTypesDefinitelyUnrelated).
+// `[A, B]` against `[T]` (AsArray<T>'s false branch) infers nothing to T
+static bool tuples_definitely_unrelated(Checker* me, TupleShape const* source, TupleShape const* target, TyList target_args) {
+    bool target_variadic = false;
+    for (u32 i = 0; i < target->arity; i++) target_variadic |= is_variadic_element(me, target, target_args, i);
+    if (!target_variadic && tuple_min_length(target) > tuple_min_length(source)) return true;
+    bool target_variable = tuple_fixed_length(target) < target->arity;
+    bool source_variable = tuple_fixed_length(source) < source->arity;
+    return !target_variable && (source_variable || tuple_fixed_length(target) < tuple_fixed_length(source));
+}
+
 // An array or tuple against a tuple (tsc's inferFromObjectTypes): the fixed elements at the start and at the end pair
 // up, what's between goes to the variadic or rest element in the middle of the target
 static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
@@ -820,6 +837,7 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
         }
     }
     bool target_variable = tuple_fixed_length(target_shape) < target_arity;
+    if (source_shape && tuples_definitely_unrelated(me, source_shape, target_shape, target_args)) return;
     u32 start = source_shape ? tuple_fixed_length(source_shape) : 0;
     if (tuple_fixed_length(target_shape) < start) start = tuple_fixed_length(target_shape);
     u32 end = 0;
@@ -1255,14 +1273,19 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
     free(source_done);
 }
 
-// tsc's inferFromTypes on an intersection target with a type variable of the inference in it: members identical in
+// tsc's inferFromTypes on an intersection target that isn't only non-generic objects: members identical in
 // source and target cancel out first (`string & T` from `string & U` infers T from U, not from `string & U`). Returns
 // whether anything is left to infer between, in *source / *target
-static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** source, Ty const** target) {
+static bool reduce_intersection_target(Checker* me, Ty const** source, Ty const** target) {
     TyList targets = (*target)->composite.types;
-    bool any_param = false;
-    for (u32 i = 0; i < targets.len && !any_param; i++) any_param = inference_param(inf, targets.data[i]) != nullptr;
-    if (!any_param) return true;
+    // (Unless the target is only non-generic object types: `string[] & Iterable<T>` keeps the source's string[])
+    bool reduce = false;
+    for (u32 i = 0; i < targets.len && !reduce; i++) {
+        Ty const* t = targets.data[i];
+        bool generic_mapped = t->kind == TY_ANONYMOUS && (t->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, t)->mapped;
+        reduce = !(t->flags & TYF_OBJECT) || generic_mapped;
+    }
+    if (!reduce) return true;
     TyList sources = (*source)->kind == TY_INTERSECTION ? (*source)->composite.types : (TyList){ .data = source, .len = 1 };
     TyBuf kept_sources = {0};
     TyBuf kept_targets = {0};
@@ -1352,7 +1375,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
         return;
     }
-    if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, inf, &source, &target)) return;
+    if (target->kind == TY_INTERSECTION && source->kind != TY_UNION && !reduce_intersection_target(me, &source, &target)) return;
     if (target->kind == TY_SUBSTITUTION || target->kind == TY_INDEXED) target = ty_actual_type_variable(me, target);
     if (target->kind == TY_TYPE_PARAM || (target->kind == TY_INDEXED && inference_param(inf, target))) {
         InferParam* param = inference_param(inf, target);

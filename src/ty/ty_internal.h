@@ -211,6 +211,9 @@ typedef struct Inference {
     // Inside the parameters of a method (tsc's bivariant): contravariant positions there give covariant candidates, and
     // that holds for the callbacks nested in them too
     bool bivariant;
+    // A conditional type's `infer`: parameters are contravariant even without strictFunctionTypes (tsc's
+    // InferencePriority.AlwaysStrict)
+    bool always_strict;
     Ty const* original_target;
     u32 depth;
     Ty const* visiting_sources[INFER_MAX_DEPTH];

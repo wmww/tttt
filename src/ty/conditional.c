@@ -429,6 +429,7 @@ Ty const* ty_conditional_resolve(
     if (infers.len) {
         Inference inf;
         inference_init(&inf, infers);
+        inf.always_strict = true;
         infer_types(me, &inf, check_type, extends, INFER_PRIORITY_NORMAL);
         Ty const** params = arena_new_n(&my arena, Ty const*, inf.len);
         Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);

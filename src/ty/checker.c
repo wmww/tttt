@@ -1575,6 +1575,11 @@ static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 
     return len;
 }
 
+static bool non_union_nullable(TyBuf const* buf) {
+    for (u32 i = 0; i < buf->len; i++) if (buf->data[i]->kind != TY_UNION && (buf->data[i]->flags & TYF_NULLABLE)) return true;
+    return false;
+}
+
 static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symbol const* alias, TyList alias_args, bool keep_empty_object) {
     if (len == 1) return types[0];
     for (u32 i = 0; i < len; i++) {
@@ -1618,6 +1623,12 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         ret = my intrinsics[silent ? TY_SILENT_NEVER : TY_NEVER];
     } else if (includes & TYF_ANY) {
         ret = my intrinsics[includes_error ? TY_ERROR : TY_ANY];
+    } else if (first_union && !compiler_options()->strict_null_checks && non_union_nullable(&buf)) {
+        // Without strictNullChecks null or undefined decides before the unions are distributed: `undefined & ("a" |
+        // "b")` is undefined, not never (tsc's getIntersectionType sees a union only as a union in its includes)
+        u32 kept = 0;
+        for (u32 i = 0; i < buf.len; i++) if (buf.data[i]->kind != TY_UNION) buf.data[kept++] = buf.data[i];
+        ret = ty_intersection(me, buf.data, kept, nullptr, (TyList){0});
     } else if (first_union && (ret = intersect_unions(me, &buf, len, alias, alias_args))) {
         // (Handled)
     } else if (first_union) {
