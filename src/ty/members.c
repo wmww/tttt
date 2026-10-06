@@ -1066,6 +1066,34 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
             }
             existing->decl->decl_spans = all;
             existing->decl->decl_span_count = total;
+        } else if (existing && existing->decl->decl_span_count) {
+            // `C.prototype.x = v` with a member x of the class body: more declarations of it (tsc's
+            // bindPrototypePropertyAssignment into the class's members), unless a function value (a method) meets a
+            // property, a duplicate that is a symbol of its own. (`this.x = v` never adds one: replaced by the method
+            // declared after it, or not added to the symbol declared before it)
+            u32 extra = 0;
+            for (u32 d = 0; d < member->decl_count; d++) {
+                SymbolDecl const* decl = &member->decls[d];
+                if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->assignment != ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
+                Expr const* value = decl->node;
+                if (value && value->tag == EXPR_FUNCTION && !(existing->flags & PROP_METHOD)) continue;
+                extra++;
+            }
+            if (extra) {
+                u32 total = existing->decl->decl_span_count + extra;
+                Span* all = arena_new_n(&my arena, Span, total);
+                memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
+                u32 at = existing->decl->decl_span_count;
+                for (u32 d = 0; d < member->decl_count; d++) {
+                    SymbolDecl const* decl = &member->decls[d];
+                    if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->assignment != ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
+                    Expr const* value = decl->node;
+                    if (value && value->tag == EXPR_FUNCTION && !(existing->flags & PROP_METHOD)) continue;
+                    all[at++] = decl->full;
+                }
+                existing->decl->decl_spans = all;
+                existing->decl->decl_span_count = total;
+            }
         }
         vec_span_drop(&spans);
     }

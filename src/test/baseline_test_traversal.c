@@ -179,6 +179,28 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
     // (A class's `prototype` is its instance type, where the access finds the member)
     if (symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
+        // A member the class body declares is the symbol the assignment adds a declaration to (tsc's
+        // bindPrototypePropertyAssignment): the checker's member has them all (builder_add_assignment_members)
+        Checker* checker = current_checker;
+        Ty const* instance = ty_declared_type_of(checker, symbol);
+        Prop const* prop = instance && (instance->flags & TYF_OBJECT) ? ty_get_prop(checker, instance, checker_atom(checker, name.sv)) : nullptr;
+        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+        bool merged = false;
+        for (u32 i = 0; prop && prop->decl->symbol != member && i < prop->decl->decl_span_count; i++) {
+            merged |= span_eq(prop->decl->decl_spans[i], expr_outer_span(left));
+        }
+        if (merged) {
+            for (int k = 0; k < 3; k++) {
+                Span at = k == 0 ? left->inner_span : k == 1 ? left->property->expr.inner_span : expr_outer_span(&left->property->prop);
+                if (k == 2 && left->property->form == PROPERTY_EXPR_BRACKET) break;
+                VecSpan spans = vec_span_init();
+                for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&spans, prop->decl->decl_spans[i]);
+                ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                    .span = at, .text = symbol_text(ctx, member), .declarations = spans,
+                };
+            }
+            return;
+        }
         add_symbol_override(ctx, left->inner_span, member);
     } else {
         ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
@@ -1640,6 +1662,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                 Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
                 Prop const* prop = ty_get_prop(checker, owner, checker_atom(checker, cstr_sv(&my method.name_string)));
+                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target; // (Of the instantiated class)
                 bool mine = false;
                 for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], my span);
                 if (mine && prop->decl->decl_span_count > (u32)vec_span_size(&declarations)) {
