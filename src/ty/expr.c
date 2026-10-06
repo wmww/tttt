@@ -4681,7 +4681,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // looks at the index before the object)
             bool deferred_never = (object->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_BRACKET &&
                 ty_is_generic_index(ty_regular(me, key));
+            // (An element access of a generic tuple past its leading fixed elements is deferred: `args[args.length -
+            // 1]` of `[...T, F]` is `[...T, F][number]`, tsc's getIndexedAccessTypeOrUndefined with an access node)
+            bool deferred_tuple = expr->property->form == PROPERTY_EXPR_BRACKET && ty_is_tuple(object) &&
+                ty_is_generic_tuple(me, object) && !(key->flags & (TYF_ANY | TYF_ERROR));
             Ty const* ret = deferred_never ? nullptr :
+                deferred_tuple ? ty_indexed_include_undefined(me, object, ty_regular(me, key),
+                    compiler_options()->no_unchecked_indexed_access && expr->property->assignment_target != FLOW_TARGET_DEFINITE) :
                 expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);
             // (An element access: a property access of what an object literal lacks is TS2339, checkPropertyAccessExpression)

@@ -65818,7 +65818,7 @@ const baselines = {
     'variadicTuples2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'variadicTuples3': {
         errors: true,
@@ -67638,7 +67638,7 @@ const baselines = {
     'uniqueSymbolsErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'uniqueSymbolsPropertyNames': {
         errors: true,

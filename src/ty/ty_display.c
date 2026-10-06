@@ -1611,7 +1611,8 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
 // Whether an annotation says what is printed (tsc's typeNodeIsEquivalentToType: an optional parameter or property
 // without its `undefined`), so that it can be reprinted
 static bool annotation_is(Checker* me, TypeNode const* node, Ty const* ty, bool optional) {
-    if (!node->parsed || node->tag == TYPE_UNIQUE_SYMBOL) return false;
+    // (A `unique symbol` where it can't be one is plain symbol, which it says as well as any annotation: tsc reuses it)
+    if (!node->parsed || (node->tag == TYPE_UNIQUE_SYMBOL && node->unique_symbol.key)) return false;
     Ty const* annotated = node_type(me, (TyDisplay){0}, node);
     // (An annotation that is the error type is reused whatever the type is: tsc's canReuseTypeNodeAnnotation)
     return annotated == ty || (optional && annotated == ty_without_undefined(me, ty)) ||
