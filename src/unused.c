@@ -314,7 +314,7 @@ static void report_imports(Reporter const* r, PortStatement const* me, Span stat
         PortItem const* item = i < 0 ? main : vec_port_item_at(&my items, i);
         if (item->tag == PORT_NOOP || port_item_is_export(item) || item->export_import) continue;
         count++;
-        if (!is_unused(item->symbol)) continue;
+        if (item->duplicate || !is_unused(item->symbol)) continue;
         // `import x = N.y` and `import x = require("m")` aren't grouped, and underscores don't excuse them
         if (item->tag == PORT_IMPORT_ALIAS || item->is_require) {
             report_never_read(r, false, item->decl_name, item->decl_name);

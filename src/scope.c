@@ -1687,6 +1687,7 @@ void scope_add_port(Scope* me, PortItem* item) {
     Symbol* symbol = declare_symbol(
         me, table, name, item->decl_name, SYMBOL_ALIAS, SYMBOL_ALIAS_EXCLUDES, default_export, &merged
     );
+    item->duplicate = !merged && symbol_table_get(table, name) != symbol;
     if (!merged) {
         symbol->parent = my container;
         symbol->name_span = item->decl_name;

@@ -67,6 +67,9 @@ typedef struct PortItem {
     // Of a statement in a function or block (TS1232/TS1233): declared there, but tsc's checker never resolves it
     // (checkGrammarModuleElementContext): what resolving it says is said by no one
     bool wrong_context;
+    // Its name conflicted (TS2300): a symbol of its own outside the scope's table (tsc's declareSymbol), which
+    // checkUnusedLocalsAndParameters never sees
+    bool duplicate;
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {
