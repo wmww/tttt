@@ -576,6 +576,15 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
         cstr_drop(&ret);
         return symbol_text(ctx, exported);
     }
+    // (A class expression a CommonJS module exports, through an alias of the module: `wat.D`)
+    if (info->member_count == 1 && member && !member->parent && (member->flags & SYMBOL_CLASS)) {
+        cstr aliased = baseline_test_case_module_alias_text(ctx, member);
+        if (cstr_size(&aliased)) {
+            cstr_drop(&ret);
+            return aliased;
+        }
+        cstr_drop(&aliased);
+    }
     if (info->member_count == 1 && member && member->parent && !info->name_is_value &&
         (!info->parent || info->parent->is_module || member->parent == info->parent)
     ) {

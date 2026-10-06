@@ -60372,7 +60372,7 @@ const baselines = {
     },
     'moduleExportAlias4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'moduleExportAlias5': {

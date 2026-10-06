@@ -1,3 +1,4 @@
+#include "../class_decl.h"
 #include "baseline_test_case.h"
 #include "baseline_test_traversal.h"
 #include <strings.h>
@@ -1890,11 +1891,21 @@ void baseline_test_case_add_type_node(BaselineTestCase* me, Span span, TypeNode 
 
 cstr baseline_test_case_module_alias_text(BaselineTestCase const* me, Symbol const* declaration) {
     cstr text = cstr_init();
-    if (declaration && declaration->parent && declaration->parent->is_module && my enclosing) {
+    // (A class expression a CommonJS module exports has no parent, its container is the module: containers_of())
+    ClassDecl const* class_expression = declaration && (declaration->flags & SYMBOL_CLASS) ? symbol_find_node(declaration, SYMBOL_DECL_CLASS) : nullptr;
+    bool commonjs_class = class_expression && class_expression->is_expression && class_expression->commonjs_module;
+    if (declaration && ((declaration->parent && declaration->parent->is_module) || commonjs_class) && my enclosing) {
         SymbolChain chain = symbol_chain_at(my enclosing, declaration, 0, false);
         // (Only the module's own export, not an export specifier re-exporting it under another name: tsc doesn't
         // name `export { f as g } from "./self"` through `self.g` there. Why is unverified)
-        if (chain.len > 1 && (chain.items[0]->flags & SYMBOL_ALIAS) && chain.items[chain.len - 1] == declaration) {
+        // (Or an alias that is the declaration: `var wat = require("./self")` of `module.exports = class C {}`)
+        // (The last is the export that is an alias of the class expression, `exports.D = class D {}`)
+        Symbol const* last = chain.len ? chain.items[chain.len - 1] : nullptr;
+        bool last_is_declaration = last == declaration ||
+            (last && (last->flags & SYMBOL_ALIAS) && last->alias && last->alias->class_expr && last->alias->class_expr->symbol == declaration);
+        if (chain.len && (chain.items[0]->flags & SYMBOL_ALIAS) &&
+            (chain.len > 1 ? last_is_declaration : chain.items[0] != declaration)
+        ) {
             symbol_chain_append(&text, my enclosing, &chain);
         }
     }

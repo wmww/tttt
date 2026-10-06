@@ -160,6 +160,9 @@ static bool namespace_import_is_clone(Symbol const* symbol) {
 
 // The identity of what a symbol stands for: a namespace import (`import * as ns`) is its module
 static Symbol const* identity(ChainCtx const* me, Symbol const* symbol) {
+    // (A CommonJS module's export= clone with its other exports, merged_export_equals(), is what it clones: tsc's
+    // getCommonJsExportEquals records it as that symbol's merged symbol)
+    if (symbol && symbol_rare(symbol)->merged_export_equals_of) symbol = symbol_rare(symbol)->merged_export_equals_of;
     return merged(me, symbol_members(merged(me, symbol)));
 }
 
