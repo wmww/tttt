@@ -3184,7 +3184,8 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 }
                 error_ctx_error_d(errs, item->full_span, 2484,
                     "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
-                return nullptr;
+                // (Its own target: tsc's getSymbolFlags then stops at it, a type alias is only a type)
+                return me;
             }
             if (!found || found == me) {
                 if (export_names_global_primitive(item->source_name.sv)) {
@@ -3287,7 +3288,8 @@ static u32 resolved_flags(Symbol const* me, int depth) {
     if (my flags & SYMBOL_ALIAS && depth < ALIAS_CHAIN_MAX) {
         Symbol const* target = symbol_resolve_alias((Symbol*)me);
         // An alias still being resolved (a circular one) has every meaning, like tsc's unknownSymbol in getSymbolFlags
-        flags |= target ? resolved_flags(target, depth + 1) : SYMBOL_ANY_MEANING;
+        // (one that is its own target has its own: tsc's `target === symbol` stop)
+        if (target != me) flags |= target ? resolved_flags(target, depth + 1) : SYMBOL_ANY_MEANING;
         if (my alias->value_target) flags |= my alias->value_target->flags;
     }
     return flags;

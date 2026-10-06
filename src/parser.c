@@ -13584,6 +13584,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
 // TS1223 (tsc's checkJSDocSatisfiesTag: `/** @satisfies {T} */ (v)` is the first of the initializer's)
 static void jsdoc_apply_satisfies_initializer(Parser* p, VecJsDocTag* tags, InitializedBinding* initializer) {
     JsDocTag* tag = jsdoc_find_typed(tags, JSDOC_TAG_SATISFIES);
+    // (Not under a type annotation, which tsc's checkVariableLikeDeclaration checks the initializer against instead:
+    // checkDeclarationInitializer, which looks at `@satisfies`, only infers an unannotated declaration's type)
+    if (initializer->binding.has_explicit_type || jsdoc_find_typed(tags, JSDOC_TAG_TYPE)) return;
     // (Not an empty object literal: that's a JavaScript container, whose type isn't the initializer's, tsc's
     // getJSContainerObjectType)
     if (!tag || initialized_binding_value(initializer)->tag == EXPR_IMPLICIT_ANY ||
