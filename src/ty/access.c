@@ -209,38 +209,6 @@ static bool reads_own_prop(Checker* me, Ty const* member, Ty const* index) {
     return name && (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_find_prop(me, apparent, name).found;
 }
 
-// Whether a union of objects none of which has the property itself has an index signature for `index`: tsc's
-// getUnionIndexInfos keeps the first member's index signatures whose key type every member has exactly
-// (getIndexInfoOfType), so `T[] | Record<string, T>` has none. Unknown shapes (tuples, intersections, primitives) say yes
-static bool union_index_applies(Checker* me, Ty const* object, Ty const* index) {
-    Ty const* first = nullptr;
-    for (u32 i = 0; i < object->composite.types.len; i++) {
-        Ty const* member = object->composite.types.data[i];
-        if (member->flags & TYF_NULLABLE) continue;
-        Ty const* apparent = ty_apparent_type(me, member);
-        if (apparent->kind != TY_DECLARED && apparent->kind != TY_ANONYMOUS && apparent->kind != TY_REFERENCE) return true;
-        if (!(apparent->flags & TYF_OBJECT) || ty_tuple_shape(apparent) || reads_own_prop(me, member, index)) return true;
-        if (!first) first = apparent;
-    }
-    if (!first) return true;
-    Members const* first_members = ty_members(me, first);
-    for (u32 k = 0; k < first_members->index_count; k++) {
-        IndexInfo const* info = &first_members->index[k];
-        if (!find_applicable_index_info(me, info, 1, index)) continue;
-        bool every = true;
-        for (u32 i = 0; i < object->composite.types.len && every; i++) {
-            Ty const* member = object->composite.types.data[i];
-            if (member->flags & TYF_NULLABLE) continue;
-            Members const* members = ty_members(me, ty_apparent_type(me, member));
-            bool has = false;
-            for (u32 j = 0; j < members->index_count && !has; j++) has = members->index[j].key == info->key;
-            every = has;
-        }
-        if (every) return true;
-    }
-    return false;
-}
-
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool include_undefined = (flags & ACCESS_INCLUDE_UNDEFINED) != 0;
     if (depth > 16) return nullptr;
@@ -369,7 +337,6 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         }
         missing |= padded && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
-        if (ret && !padded && !union_index_applies(me, object, index)) ret = nullptr;
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;
         if (name && ty_union_non_public_conflict(me, object, name)) ret = nullptr;

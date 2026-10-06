@@ -1574,6 +1574,17 @@ static void check_access(
 ) {
     if (depth > 8) return;
     if (object->flags & TYF_ERROR) return; // (tsc's checkElementAccessExpression: nothing to say about an error type)
+    // An unknown object expression is TS18046/TS2571 whatever the index (tsc's checkNonNullExpression comes first)
+    if ((object->flags & TYF_UNKNOWN) && compiler_options()->strict_null_checks && span_valid(object_span)) {
+        if (object_is_named) {
+            cstr name = entity_name_text(object_span);
+            error_ctx_error_d(errs, object_span, 18046, "'", name, "' is of type 'unknown'.");
+            cstr_drop(&name);
+        } else {
+            error_ctx_error_d(errs, object_span, 2571, "Object is of type 'unknown'.");
+        }
+        return;
+    }
     // `string & Tag` is a string as far as indexing goes (tsc's isTypeAssignableToKind)
     u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     if (index->kind == TY_UNION || (index->kind == TY_INTERSECTION && !(ty_key_flags(index) & key_like))) {
@@ -1695,12 +1706,6 @@ static void check_access(
             }
         } else if (!span_valid(object_span)) {
             if (error_if_not_found) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
-        } else if (object_is_named) {
-            cstr name = entity_name_text(object_span);
-            error_ctx_error_d(errs, object_span, 18046, "'", name, "' is of type 'unknown'.");
-            cstr_drop(&name);
-        } else {
-            error_ctx_error_d(errs, object_span, 2571, "Object is of type 'unknown'.");
         }
         return;
     }
