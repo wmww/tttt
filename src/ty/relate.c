@@ -6422,7 +6422,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     // (Errors name an alias as it was: tsc's reportErrorResults)
     // (And a class or interface that adds nothing to its base, as written: tsc's reportErrorResults)
     Ty const* report_target = original_target->alias ? original_target : target;
-    if (unnormalized_target != original_target && ty_non_augmenting_base(me, unnormalized_target)) report_target = unnormalized_target;
+    if (report && unnormalized_target != original_target && ty_non_augmenting_base(me, unnormalized_target)) report_target = unnormalized_target;
     Ty const* report_source = source_has_base ? unnormalized_source : source;
     // Comparability is mostly bidirectional (tsc's isRelatedTo: simple relations the other way around count too)
     if (st->relation == TY_RELATION_COMPARABLE && !(target->flags & TYF_NEVER) && is_simple_related(me, st, target, source)) {

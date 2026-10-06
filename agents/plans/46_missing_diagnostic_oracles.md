@@ -123,6 +123,23 @@ only tttt on the last set. Mutants whose tsc baseline gains a TS1xxx code are se
 The report counts, per operator, the mutants that change tsc's codes at all ("productive": swap-stmts and
 bool-literal-type rarely are, member-typo / never-const / add-arg / drop-type-arg almost always).
 
+### Drained the same session (five Opus sub-agents, ~70 commits)
+Seed 2: 94 -> **6** mismatches. Seeds 3, 4, 5 (8000 each, `MUTATE_DIR=... ./mutate.py -n 8000 --seed N` reproduces):
+67 -> 29, 50 -> 31, 43 -> 40 (seed 5 only got 30 minutes). Yield per fresh seed is ~1.2% of productive mutants and
+falling; what's left is mostly one-mutant causes of type text / elaboration (union order, reduced annotations as
+written, `as const` display), tsc evaluation-order artifacts (loop passes reporting twice, class-expression checks
+inside base resolution) and parser recovery. Their notes are in triage.md (prefixed with the agent / seed). Real
+gaps found and fixed include: template literal type placeholders never checked (TS2322), bare `return;` in async
+functions/generators never checked, unions with a type-parameter member silently skipped in property access (any
+missing property went unreported), mapped types over member-less type parameters likewise, decorators on
+undecoratable nodes checked, TS2794 missing entirely, `&&=`/`||=`/`??=` checking the whole expression, a parser
+crash on an unterminated `(function () {` and another on `else }` at a block end.
+
+Next use: rerun a fresh seed after big checker changes (it's a cheap regression net for *missing* checks: ~3 min
+including tsc); the per-seed yield no longer justifies a fan-out on its own. Widening ideas, not done: mutants of
+multi-file tests (`@filename`), JS tests (`@allowJs`), and corpus files (needs per-project tsc runs; flagflip's
+machinery could host it).
+
 ### The first run (seed 2, 8000 mutants of 4739 tests): 94 mismatches of 3744 productive mutants (2.5%), +53 syntax
 Root causes, by count (`./mutate.py -k KEY` after a run of the same seed):
 - **Crash** (2, fixed in the same session): `(function () {` or `(() => {` unterminated at EOF panicked in

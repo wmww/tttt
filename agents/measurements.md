@@ -10,6 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Mutation drain (2026-10-06, tenth window's todo entry 2, plan 46 stage 2, five sub-agents)
+`./mutate.py`: seed 2 (8000 mutants) 94 -> 6 mismatches, seeds 3/4/5 67 -> 29, 50 -> 31, 43 -> 40. `./flagflip.py`
+103 / 68 / 17 -> **81 / 63 / 12**. Suite 13099 -> **13103** (0 lost), corpora unchanged (effect 7, the rest 0), sweep
+8580 / 8595 flat. Instructions (callgrind, `./instrcount.sh`), b05e2950 -> end: tsc 4.621 -> 4.639 (+0.4%), type-fest
+3.110 -> 3.115, valibot 3.905 -> **4.097 (+4.9%**: template literal placeholders now checked; nearly all of it is one
+`${IssueDotPath<TSchema>}` relation that tsc pays proportionally too, accepted), react 1.620 -> 1.597 (-1.4%, the
+inferred true branch cached), nest 1.255 flat, webpack 3.845 -> 3.842, zod 4.489 -> 4.523 (+0.75%), xstate 2.893 ->
+2.897, drizzle 13.278 -> 13.353 (+0.6%), vue 7.713 -> 7.797 (+1.1%), effect 9.750 -> 9.753, vscode 32.081 -> 32.119.
+vue bisected: +0.55% at c762615d (relation error heads name a non-augmenting class as written: two locals and a
+lookup in is_related_to, now gated on `report`, which only won 0.1%: probably GCC inlining/layout of is_related_to);
+the other +0.5% vue and zod's +0.75% not bisected: todo entry 8.
+
 ## Flag flips (2026-10-06, tenth window's todo entry 1, plan 46 stage 1, four sub-agents)
 `./flagflip.py` (12 corpora x 13 flag sets, tsc 5.8 cached): 47455 tsc diagnostics; tttt missing / spurious / other
 code 603 / 1460 / 1029 -> **103 / 68 / 17** (per flag: plan 46). Suite 13099 -> 13099 (0 lost), corpora at default

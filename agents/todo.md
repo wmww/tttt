@@ -10,16 +10,17 @@ commit.
 1. ~~Planning: plan 46 stage 1~~ done 2026-10-06: `./flagflip.py` built (156 cells, 47k tsc diagnostics) and drained
    in the same session by four sub-agents' prototypes: 603 / 1460 / 1029 (missing / spurious / other code) -> 103 / 68
    / 17; suite 13099 flat, sweep 8580, instructions +0.3%. Stage 2 (mutations) prototyped and judged worth a tool.
-2. **Execution: plan 46 stage 2, the mutation tool** (`./mutate.py` from `plans/46_prototypes/`, spec in plan 46),
-   one ~2000-mutant run root-caused into the plan, then a fan-out (Opus agents in worktrees, disjoint causes, 0 lost at
-   merge) on its top causes plus flagflip's open causes 2-3 (union index infos, `typesDefinitelyUnrelated`: both were
-   tried and lost a corpus or DT package, read the plan first). Every merge: `./flagflip.py` must not regress.
+2. ~~Execution: plan 46 stage 2~~ done 2026-10-06: `./mutate.py` built, seeds 2-5 (32k mutants) drained by five
+   sub-agents: seed 2 94 -> 6 mismatches, the fresh seeds' yield now ~1%; flagflip 103 / 68 / 17 -> 81 / 63 / 12 (open
+   causes 2, 3, 5 done, 1 judged not worth porting, 4/6/8 partly); suite 13099 -> 13103, sweep 8580 flat, two parser
+   crashes fixed. Instructions: plan 46 / measurements.md.
 3. **Execution: plan 44 stage 3 item 2, `$ExpectType`** (tool: tttt prints the types on the asserted lines, compared
    with tsc 5.8's `typeToString`, cached; ranked with displaydiff's kinds). Fix the top kinds if time is left.
 4. **Execution: fan-out on the `$ExpectType` ranking** plus the plan 35 queue where they overlap.
 5. **Planning: plan 47** (speculative checks). It may say no; if yes, entry 9 executes stage 1.
-6. **Execution: drain the mutation ranking and flagflip's queue** (plan 46 "Open causes": TS2589 fidelity is the
-   biggest; plan it if it's plan-sized). If both are thin, the nuia sweep run (plan 46 "Not done").
+6. **Execution: flagflip's queue and the mutation leftovers** (plan 46 "Open causes" 4, 6, 8; triage.md's seed 3-5
+   notes, which a triage session may consolidate first). Both are thin now: start with the nuia sweep run (plan 46
+   "Not done"), then a mutation widening (multi-file or JS tests, plan 46 stage 2 "Next use").
 7. **Corpora: pin two new ones** chosen for what the current ones don't exercise: a JSX-heavy application (eg
    excalidraw) and an inference-heavy router/RPC library (eg TanStack Router or tRPC); clean under tsc 5.8, drained to
    0 the same session like effect/vscode (plan 19 has the loop); `./flagflip.py --tsc -c NAME` gives them flag-flip cells.
