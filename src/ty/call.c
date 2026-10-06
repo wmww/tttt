@@ -2446,10 +2446,38 @@ static Ty const* resolve_call(Checker* me, Ty const* callee, CallInfo const* inf
     return ret;
 }
 
+// TS2507 about a class's base (tsc's getBaseConstructorTypeOfClass), which for a type parameter suggests a constraint
+// constructing what its constraint's first construct signature does
+static void report_not_constructor_type(Checker* me, Ty const* callee, Span span, ErrorCtx* errs) {
+    cstr rendered = ty_to_cstr(me, callee);
+    Error* error = error_ctx_error_d(errs, span, 2507, "Type '", rendered, "' is not a constructor function type.");
+    cstr_drop(&rendered);
+    if (!error || callee->kind != TY_TYPE_PARAM || callee->param.state->is_this || !callee->param.state->item) return;
+    Ty const* returned = ty_intrinsic(me, TY_UNKNOWN_);
+    Ty const* constraint = ty_param_constraint(me, callee);
+    if (constraint) {
+        Ty const* apparent = ty_apparent_type(me, constraint);
+        if (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+            Members const* members = ty_members(me, apparent);
+            if (members->construct_count) returned = signature_return_type(me, members->construct[0]);
+        }
+    }
+    cstr name = ty_to_cstr(me, callee), returned_str = ty_to_cstr(me, returned);
+    error_add_related_d(error, callee->param.state->item->name, 2735, "Did you mean for '", name,
+        "' to be constrained to type 'new (...args: any[]) => ", returned_str, "'?");
+    c_drop(cstr, &name, &returned_str);
+}
+
 static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo const* info, Span call_span, ErrorCtx* errs) {
     CallExpr const* call = info->call;
     Ty const* any = ty_intrinsic(me, TY_ANY);
     Ty const* apparent = callee->flags & TYF_ANY ? callee : ty_apparent_type(me, callee);
+    // A type variable whose constraint is the error type isn't a constructor type (tsc's isConstructorType: no
+    // signatures, nor a mixin constructor constraint)
+    if (call->is_extends && !(callee->flags & TYF_ANY) && (apparent->flags & TYF_ANY) && errs) {
+        report_not_constructor_type(me, callee, expr_outer_span(&call->callable), errs);
+        return ty_intrinsic(me, TY_ERROR);
+    }
     if (apparent->flags & TYF_ANY) {
         // tsc's resolveCallExpression/resolveNewExpression: an untyped call can't take type arguments
         if (info->type_arg_nodes && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {
@@ -2571,9 +2599,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         if (!errs) {
             // Reported by the typecheck pass
         } else if (call->is_extends) {
-            cstr rendered = ty_to_cstr(me, callee);
-            error_ctx_error_d(errs, expr_outer_span(&call->callable), 2507, "Type '", rendered, "' is not a constructor function type.");
-            cstr_drop(&rendered);
+            report_not_constructor_type(me, callee, expr_outer_span(&call->callable), errs);
         } else if (call->uses_new && other_count) {
             if (compiler_options()->no_implicit_any) {
                 error_ctx_error_d(errs, call_span, 7009,

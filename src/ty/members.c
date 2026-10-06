@@ -802,7 +802,10 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
     Ty const* type = ty_expr_type(me, extends);
     Ty const* variable = nullptr;
     if ((type->flags & TYF_TYPE_PARAM) || type->kind == TY_INDEXED) {
-        variable = type;
+        // (Not a constructor type, TS2507: the base constructor is the error type, tsc's getBaseConstructorTypeOfClass)
+        Ty const* apparent = ty_apparent_type(me, type);
+        bool constructor = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_members(me, apparent)->construct_count;
+        variable = constructor ? type : nullptr;
     } else if (type->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < type->composite.types.len && !variable; i++) {
             Ty const* part = type->composite.types.data[i];

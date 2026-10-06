@@ -12,6 +12,7 @@
 #include "error.h"
 #include "unused.h"
 #include "source_file.h"
+#include "block.h"
 
 void class_item_drop(ClassItem* me) {
     vec_expr_drop(&my decorators);
@@ -1100,8 +1101,16 @@ static void class_check_mixin(ClassDecl* me, ErrorCtx* errs) {
     if (extends->tag == EXPR_IMPLICIT_ANY || !my symbol) return;
     Ty const* base_constructor = ty_expr_type(checker, extends);
     if (!(base_constructor->flags & TYF_TYPE_PARAM) && base_constructor->kind != TY_INDEXED) return;
-    Span span = span_valid(my name) ? my name : my full_span;
-    if (!is_mixin_constructor_type(checker, ty_static_type_of(checker, my symbol))) {
+    // (Not a constructor type, TS2507: the base constructor is the error type, no mixin. tsc's
+    // getBaseConstructorTypeOfClass, isConstructorType)
+    Ty const* apparent = ty_apparent_type(checker, base_constructor);
+    if (apparent->flags & TYF_ANY) return;
+    if ((apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && !ty_members(checker, apparent)->construct_count) return;
+    // (Without a name, the first token: tsc's getErrorSpanForNode)
+    Span span = span_valid(my name) ? my name : block_first_token(my full_span);
+    // (Of the class's value type, `typeof C & T`: the variable's construct signatures count unless they're a mixin's,
+    // tsc's getTypeOfSymbol, resolveIntersectionTypeMembers)
+    if (!is_mixin_constructor_type(checker, ty_type_of_symbol(checker, my symbol))) {
         error_ctx_error_d(errs, span, 2545, "A mixin class must have a constructor with a single rest parameter of type 'any[]'.");
         return;
     }
@@ -2039,10 +2048,12 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         Ty const* extends_type = ty_expr_type(current_checker, &my extends);
         if (extends_type->flags & TYF_NULL) {
         } else {
+            // (Errors are about the expression, without its type arguments: tsc's baseTypeNode.expression)
+            Expr const* expression = my extends.tag == EXPR_GENERIC_PARAMS ? &my extends.generic_params->expr : &my extends;
             CallExpr call_expr = {
                 .uses_new = true,
                 .is_extends = true,
-                .callable = expr_implicit_any(expr_outer_span(&my extends)),
+                .callable = expr_implicit_any(expr_outer_span(expression)),
                 .args = vec_expr_init(),
             };
             ty_call_typecheck(current_checker, extends_type, &call_expr, nullptr, expr_outer_span(&my extends), errs);

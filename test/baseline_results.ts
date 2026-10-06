@@ -2286,9 +2286,9 @@ const baselines = {
         types: true,
     },
     'baseConstraintOfDecorator': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'baseExpressionTypeParameters': {
         errors: true,
