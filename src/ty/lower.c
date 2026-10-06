@@ -1828,6 +1828,12 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         return ty_namespace_type(me, symbol);
     }
     bool assignments = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT;
+    // (A declaration that isn't an assignment is the value declaration, whatever came first: tsc's setValueDeclaration,
+    // `f.x = 1` in one file and `namespace f { export var x }` in another is the variable)
+    for (u32 i = 1; assignments && i < symbol->decl_count; i++) {
+        SymbolDeclKind kind = symbol->decls[i].kind;
+        assignments = kind == SYMBOL_DECL_ASSIGNMENT || kind == SYMBOL_DECL_EXPANDO || !(symbol->decls[i].flags & SYMBOL_VALUE);
+    }
     if (assignments && (symbol->decl_count > 1 || symbol->decls[0].assignment != ASSIGNMENT_DECL_PROPERTY ||
         symbol_decl_jsdoc_type(&symbol->decls[0]))
     ) {

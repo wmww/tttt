@@ -176,7 +176,7 @@ Binder gaps (spurious TS2339 and friends):
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
 const: TS18042), assignmentToVoidZero2,
 classCanExtendConstructorFunction, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
-typeFromPropertyAssignment32, templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
+templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
 jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
 jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan
 40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge (TS6232),

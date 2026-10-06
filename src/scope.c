@@ -1002,6 +1002,14 @@ static bool umd_global_conflict(Scope* scope, Symbol const* existing, u32 includ
     return true;
 }
 
+// tsc's SymbolFlags.Assignment: declared by an assignment (`f.x = 1`, `this.x = 1`)
+static bool symbol_has_assignment_decl(Symbol const* me) {
+    for (u32 i = 0; i < my decl_count; i++) {
+        if (my decls[i].kind == SYMBOL_DECL_ASSIGNMENT) return true;
+    }
+    return false;
+}
+
 static Symbol* declare_symbol(
     Scope* scope, SymbolTable* table, csview name, Span name_span, u32 includes, u32 excludes, bool default_export,
     bool* merged
@@ -1051,8 +1059,11 @@ static Symbol* declare_symbol(
         // Assignment flag)
         bool expando_only = existing->decl_count > 0;
         for (u32 i = 0; i < existing->decl_count && expando_only; i++) expando_only = existing->decls[i].kind == SYMBOL_DECL_EXPANDO;
+        // (A variable merges with what assignments declared: tsc's declareSymbol, `includes & Variable && flags &
+        // Assignment`, `f.x = 1` in one file and `namespace f { export var x }` in another)
         if (existing->flags & excludes && !(expando_only && table == &binder->globals) &&
-            !(table == &binder->globals && global_merges_by_assignment(scope, existing, name))
+            !(table == &binder->globals && global_merges_by_assignment(scope, existing, name)) &&
+            !((includes & SYMBOL_VARIABLE) && symbol_has_assignment_decl(existing))
         ) {
             if (default_export && existing->decl_count) report_multiple_defaults(binder_errs(scope->binder), existing, name_span);
             else report_conflicts(binder_errs(scope->binder), existing, name_span, includes, false,
