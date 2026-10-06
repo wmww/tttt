@@ -3793,6 +3793,10 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
     Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
     TyList infers = ty_conditional_own_infers(me, root);
     if (!infers.len || !(conditional->conditional.check->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return branch;
+    // (Cached like tsc's resolvedInferredTrueType: every relation of the conditional type as a source asks)
+    u64 key[2] = { KEY_INFERRED_TRUE_BRANCH, conditional->id };
+    Ty const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached;
     Ty const* stack_buf[16];
     Ty const** targets = infers.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * infers.len);
     panic_if(!targets, "out of memory");
@@ -3803,6 +3807,7 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
     }
     Ty const* ret = ty_instantiate(me, branch, ty_mapper_new(me, infers, (TyList){ .data = targets, .len = infers.len }));
     if (targets != stack_buf) free(targets);
+    *intern_slot(me, &my links, key, 2) = ret;
     return ret;
 }
 

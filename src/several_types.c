@@ -766,6 +766,18 @@ void template_type_drop(TemplateType* me) {
     vec_span_drop(&my type_spans);
 }
 
+// A placeholder made of primitives and literals (or any/never) fits without a relation
+static bool template_placeholder_trivially_fits(Ty const* type) {
+    u32 fits = TYF_ANY | TYF_NEVER | TYF_NULLABLE | TYF_STRING_LIKE | TYF_NUMBER | TYF_BIGINT | TYF_LITERAL | TYF_BOOLEAN |
+        TYF_ENUM | TYF_ENUM_LITERAL;
+    if (type->kind != TY_UNION) return type->kind != TY_INTERSECTION && (type->flags & fits) && !(type->flags & ~(fits |
+        TYF_UNION | TYF_ERROR | TYF_COULD_CONTAIN_TYPE_VARIABLES | TYF_FRESH_LITERAL | TYF_NON_INFERRABLE));
+    for (u32 i = 0; i < type->composite.types.len; i++) {
+        if (!template_placeholder_trivially_fits(type->composite.types.data[i])) return false;
+    }
+    return true;
+}
+
 // tsc's checkTemplateLiteralType: each placeholder is string | number | bigint | boolean | null | undefined
 // (templateConstraintType), as the type node lowers (`${K}` in the true branch of `K extends string ? ...` is a
 // substitution type, fine)
@@ -781,7 +793,11 @@ void template_type_typecheck(TemplateType const* me, ErrorCtx* errs) {
             };
             allowed = ty_union(checker, parts, 6, nullptr, (TyList){0});
         }
-        ty_check_assignable(checker, ty_of_node(i), allowed, *vec_span_at(&my type_spans, i_index), errs);
+        Ty const* type = ty_of_node(i);
+        if (template_placeholder_trivially_fits(type)) continue;
+        // (The silent, cached relation first: the reporting one only for what fails)
+        if (ty_is_related(checker, type, allowed, TY_RELATION_ASSIGNABLE)) continue;
+        ty_check_assignable(checker, type, allowed, *vec_span_at(&my type_spans, i_index), errs);
     }
 }
 
