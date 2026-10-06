@@ -115,6 +115,8 @@ extern _Thread_local TypeParamDefaultScope identifier_type_default_scope;
 void identifier_type_typecheck(IdentifierType const* me, ErrorCtx* errs);
 // tsc's getTypeFromClassOrInterfaceReference arity check of a reference to `symbol` with arg_count type arguments
 // (TS2314/TS2707, TS2315 for a type that isn't generic). Whether it reported
+bool identifier_type_is_jsdoc_function(IdentifierType const* me);
+bool several_types_is_generic(struct Symbol const* symbol);
 bool several_types_arity_fits(struct Symbol const* symbol, u32 arg_count, struct SourceFile const* source);
 // missing_extends: a JavaScript class's heritage clause without an `@extends` tag, which the message asks for (TS8026)
 bool several_types_check_arity(struct Symbol const* symbol, u32 arg_count, Span span, bool missing_extends, ErrorCtx* errs);

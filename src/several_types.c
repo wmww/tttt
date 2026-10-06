@@ -548,6 +548,12 @@ Span identifier_type_span(IdentifierType const* me) {
     return span_make(my name.source, start, end);
 }
 
+// JSDoc's `Function`/`function`: the global Function type, type arguments or not (tsc's
+// getIntendedTypeFromJSDocTypeReference)
+bool identifier_type_is_jsdoc_function(IdentifierType const* me) {
+    return my jsdoc && !identifier_type_namespace_count(me) && (span_equals(my name, "Function") || span_equals(my name, "function"));
+}
+
 // tsc's getTypeFromClassOrInterfaceReference/getTypeFromTypeAliasReference/checkNoTypeArguments: the number of type
 // arguments has to fit the type parameters (TS2314, TS2707), and a type without any takes none (TS2315)
 static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs) {
@@ -555,9 +561,7 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     // JSDoc's own names take no type arguments (tsc's checkNoTypeArguments in getIntendedTypeFromJSDocTypeReference)
     bool jsdoc_named = my jsdoc_intrinsic && my jsdoc_intrinsic != JSDOC_INTRINSIC_INDEX_SIGNATURE &&
         !(my jsdoc_intrinsic == JSDOC_INTRINSIC_ANY && vec_spanned_type_size(&my generic_params) == 2);
-    if (my jsdoc && !identifier_type_namespace_count(me) && (span_equals(my name, "Function") || span_equals(my name, "function"))) {
-        jsdoc_named = true;
-    }
+    if (identifier_type_is_jsdoc_function(me)) jsdoc_named = true;
     if (!jsdoc_named && (!symbol || symbol->is_placeholder)) return;
     if (my keyword || !span_valid(my name) || !my name.source) return;
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
@@ -571,8 +575,8 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
     }
 }
 
-// Whether a reference to symbol with arg_count type arguments has the right number of them (in source)
-bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile const* source) {
+// The arity memo of a class, interface or type alias (0 for other symbols): 1 << 12 | count << 6 | min
+static uint16_t several_types_arity_memo(Symbol const* symbol) {
     bool generic_kind = symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_TYPE_ALIAS);
     u32 min = 0;
     MergedTypeParams params;
@@ -584,13 +588,25 @@ bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile co
         memo = (uint16_t)(1u << 12 | count << 6 | min);
         __atomic_store_n(&((Symbol*)symbol)->type_args_arity, memo, __ATOMIC_RELAXED);
     }
+    return memo;
+}
+
+// Whether symbol is a class, interface or type alias with type parameters
+bool several_types_is_generic(Symbol const* symbol) {
+    return (several_types_arity_memo(symbol) >> 6) & 63;
+}
+
+// Whether a reference to symbol with arg_count type arguments has the right number of them (in source)
+bool several_types_arity_fits(Symbol const* symbol, u32 arg_count, SourceFile const* source) {
+    uint16_t memo = several_types_arity_memo(symbol);
     if (!memo) return !arg_count || !(symbol->flags & SYMBOL_TYPE);
-    min = memo & 63;
+    u32 min = memo & 63;
     u32 count = (memo >> 6) & 63;
-    // In JavaScript without noImplicitAny any number of type arguments goes (tsc's isJsImplicitAny: the missing ones
-    // are any)
-    // (Not for a type alias: tsc's getTypeFromTypeAliasReference has no such leniency)
-    bool js_implicit_any = source && source->is_js && !compiler_options()->no_implicit_any && !(symbol->flags & SYMBOL_TYPE_ALIAS);
+    // In JavaScript without noImplicitAny any number of type arguments goes to a generic class or interface (tsc's
+    // isJsImplicitAny: the missing ones are any)
+    // (Not for a type alias: tsc's getTypeFromTypeAliasReference has no such leniency, nor for a type without type
+    // parameters: checkNoTypeArguments)
+    bool js_implicit_any = source && source->is_js && !compiler_options()->no_implicit_any && !(symbol->flags & SYMBOL_TYPE_ALIAS) && count;
     return (arg_count >= min && arg_count <= count) || js_implicit_any;
 }
 
