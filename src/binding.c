@@ -924,7 +924,8 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     initialized_binding_check_value(me);
-    check_quick_callee(initialized_binding_value(me), errs);
+    // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
+    if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
     Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
     binding_typecheck_at(&my binding, initializer, span_null, initializer, true, errs);
@@ -935,7 +936,8 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
     if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
     initialized_binding_check_value(me);
-    check_quick_callee(initialized_binding_value(me), errs);
+    // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
+    if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
     Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
     binding_typecheck_at(&my binding, initializer, span, initializer, true, errs);

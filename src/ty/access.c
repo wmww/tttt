@@ -283,15 +283,19 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             Ty const** parts = malloc(sizeof(Ty const*) * members.len);
             panic_if(!parts, "out of memory");
             u32 len = 0;
-            for (u32 i = 0; i < members.len; i++) {
+            // (null and undefined don't count, as below: the caller reports them, tsc's checkNonNullExpression)
+            bool all = true;
+            for (u32 i = 0; i < members.len && all; i++) {
+                if (members.data[i]->flags & TYF_NULLABLE) continue;
                 Ty const* member = ty_apparent_type(me, members.data[i]);
                 IndexInfo const* info = (member->flags & TYF_OBJECT) ? ty_applicable_index_info(me, member, index) : nullptr;
-                if (!info) break;
-                parts[len++] = info->value;
+                if (info) parts[len++] = info->value;
+                else all = false;
             }
-            Ty const* ret = len == members.len ? ty_union(me, parts, len, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ANY);
+            all &= len > 0;
+            Ty const* ret = all ? ty_union(me, parts, len, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ANY);
             free(parts);
-            return include_undefined && len == members.len ? with_missing(me, ret) : ret;
+            return include_undefined && all ? with_missing(me, ret) : ret;
         }
         IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return ty_intrinsic(me, TY_ANY);

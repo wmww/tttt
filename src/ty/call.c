@@ -1829,10 +1829,11 @@ static Span report_unfit_argument(
         return info->this_span;
     }
     ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
-    check_args(me, &shape, args, false);
     Ty const* arg_type = nullptr;
     Ty const* param_type = nullptr;
-    i32 index = first_unfit_argument(me, &shape, args, TY_RELATION_ASSIGNABLE, false, &arg_type, &param_type);
+    // (The arguments after the first that doesn't fit aren't checked against it: tsc's getSignatureApplicabilityError
+    // returns there, so a callback after it is typed by what the failed call is taken to be instead)
+    i32 index = check_args_until_unfit(me, &shape, args, TY_RELATION_ASSIGNABLE, false, false, &arg_type, &param_type);
     Span span = call_span;
     if (index >= 0 && info->jsx) {
         // The attributes, at the tag name (tsc's checkApplicableSignatureForJsxCallLikeElement)
@@ -2047,6 +2048,77 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
         mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
     }
     return mapper;
+}
+
+// The signature a call none of several non-generic overloads fits is taken to have (tsc's
+// createUnionOfSignaturesForOverloadFailure): each parameter the union of the overloads' at its position, a rest
+// parameter the array of the union of their rest elements, `this` the union of theirs, all of their returns at once
+// (`string & number` is never)
+static Signature const* overload_failure_union_signature(Checker* me, Signature* const* signatures, u32 count) {
+    u32 min_args = UINT32_MAX, max_params = 0;
+    bool some_rest = false, some_this = false;
+    for (u32 i = 0; i < count; i++) {
+        bool rest = signatures[i]->param_count && signatures[i]->params[signatures[i]->param_count - 1].rest;
+        some_rest |= rest;
+        some_this |= signatures[i]->this_type != nullptr;
+        u32 non_rest = signatures[i]->param_count - (rest ? 1 : 0);
+        if (non_rest > max_params) max_params = non_rest;
+        if (signatures[i]->min_args < min_args) min_args = signatures[i]->min_args;
+    }
+    SigParam* params = arena_new_n(&my arena, SigParam, max_params + 1);
+    Ty const** types = malloc(sizeof(Ty const*) * (count + 1));
+    panic_if(!types, "out of memory");
+    for (u32 p = 0; p < max_params; p++) {
+        u32 len = 0;
+        Atom const* name = nullptr;
+        for (u32 i = 0; i < count; i++) {
+            Ty const* type = ty_signature_param_type_at(me, signatures[i], p);
+            if (!type) continue;
+            if (!name) name = signatures[i]->params[p < signatures[i]->param_count ? p : signatures[i]->param_count - 1].name;
+            types[len++] = type;
+        }
+        params[p] = (SigParam){ .name = name, .type = ty_union_subtype_reduced(me, types, len), .optional = p >= min_args };
+    }
+    u32 param_count = max_params;
+    if (some_rest) {
+        u32 len = 0;
+        Atom const* name = nullptr;
+        for (u32 i = 0; i < count; i++) {
+            Signature const* sig = signatures[i];
+            if (!sig->param_count || !sig->params[sig->param_count - 1].rest) continue;
+            if (!name) name = sig->params[sig->param_count - 1].name;
+            types[len++] = ty_rest_element_type(me, sig->params[sig->param_count - 1].type);
+        }
+        params[param_count++] = (SigParam){
+            .name = name, .type = ty_array(me, ty_union_subtype_reduced(me, types, len), false), .rest = true,
+        };
+    }
+    Ty const* this_type = nullptr;
+    if (some_this) {
+        u32 len = 0;
+        for (u32 i = 0; i < count; i++) {
+            if (signatures[i]->this_type) types[len++] = signatures[i]->this_type;
+        }
+        this_type = ty_union(me, types, len, nullptr, (TyList){0});
+    }
+    Ty const** return_types = malloc(sizeof(Ty const*) * count);
+    panic_if(!return_types, "out of memory");
+    for (u32 i = 0; i < count; i++) return_types[i] = signature_return_type(me, signatures[i]);
+    Ty const* ret = ty_intersection(me, return_types, count, nullptr, (TyList){0});
+    free(return_types);
+    free(types);
+    Signature* sig = arena_new(&my arena, Signature);
+    *sig = (Signature){
+        .state = LAZY_STATE_DONE,
+        .params = params,
+        .param_count = param_count,
+        .min_args = min_args,
+        .this_type = this_type,
+        .ret_state = LAZY_STATE_DONE,
+        .ret = ret,
+        .predicate_done = true,
+    };
+    return sig;
 }
 
 // The type arguments a failed call is taken to have (tsc's getTypeArgumentsFromNodes in pickLongestCandidateSignature):
@@ -2317,10 +2389,13 @@ static Resolution resolve_with_signatures_inner(
             some_generic |= signatures[i]->type_params.len > 0;
         }
         if (count > 1 && !some_generic) {
-            Ty const** return_types = malloc(sizeof(Ty const*) * count);
-            for (u32 i = 0; i < count; i++) return_types[i] = signature_return_type(me, signatures[i]);
-            ret.ret = ty_intersection(me, return_types, count, nullptr, (TyList){0});
-            free(return_types);
+            // (The arguments are checked against it: a callback's parameters get the union of what each overload
+            // gives them, which is no contextual signature unless they agree)
+            Signature const* failure = overload_failure_union_signature(me, signatures, count);
+            ParamShape shape = call_param_shape(me, info, failure, nullptr);
+            check_args(me, &shape, args, false);
+            free(shape.types);
+            ret.ret = failure->ret;
         } else if (unfit_count) {
             // Inferred again from what doesn't depend on the candidate: context-sensitive and generic function
             // arguments left out (tsc's inferSignatureInstantiationForOverloadFailure). Which one: tsc's
@@ -2367,6 +2442,10 @@ static Resolution resolve_with_signatures_inner(
                 check_args(me, &shape, args, false);
                 free(shape.types);
             }
+            // (What the error report left unchecked, after the argument that didn't fit, is typed by it)
+            ParamShape shape = call_param_shape(me, info, fallback.sig, fallback.mapper);
+            check_args(me, &shape, args, false);
+            free(shape.types);
             ret.ret = resolved_return_type(me, &fallback);
             ret.failure = fallback;
         } else if (count == 1 && !signatures[0]->type_params.len) {

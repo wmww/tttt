@@ -1299,6 +1299,7 @@ TyPredicate const* ty_infer_type_predicate(Checker* me, FunctionImpl const* func
 Ty const* ty_tuple_as_array(Checker* me, Ty const* tuple);
 // The type of parameter i (a rest parameter stands for every position from its own on), null if there's none
 Ty const* ty_signature_param_type_at(Checker* me, Signature const* sig, u32 i);
+Ty const* ty_rest_element_type(Checker* me, Ty const* rest); // The element type of a rest parameter's type
 // How many parameters a signature has, a rest tuple of fixed length counted as its elements (tsc's getParameterCount)
 u32 ty_signature_param_count(Signature const* sig);
 // Takes any number of arguments: a rest parameter that isn't a tuple of fixed length (tsc's hasEffectiveRestParameter)

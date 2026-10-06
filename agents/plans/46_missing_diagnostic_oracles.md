@@ -136,9 +136,15 @@ undecoratable nodes checked, TS2794 missing entirely, `&&=`/`||=`/`??=` checking
 crash on an unterminated `(function () {` and another on `else }` at a block end.
 
 Next use: rerun a fresh seed after big checker changes (it's a cheap regression net for *missing* checks: ~3 min
-including tsc); the per-seed yield no longer justifies a fan-out on its own. Widening ideas, not done: mutants of
-multi-file tests (`@filename`), JS tests (`@allowJs`), and corpus files (needs per-project tsc runs; flagflip's
-machinery could host it).
+including tsc); the per-seed yield no longer justifies a fan-out on its own. Widening idea not done: corpus files
+(needs per-project tsc runs; flagflip's machinery could host it).
+
+### Widened to multi-file and JS tests (todo entry 6 of the tenth window, 2026-10-06)
+`./mutate.py --tests multi,js` mutates the passing `@filename` (1436) and `@allowJs` (750) tests; diagnostics compare
+by (file, line, code). Yield ~6.5% of productive mutants (seed 1: 92 of 1429, seed 2: 177 of 2371), against ~1% for
+fresh single-file seeds: JS/JSDoc semantics, module resolution and the harness are less drilled than single-file TS.
+Seed 2 found a hang (a function whose `@type` names itself). Drained by three sub-agents (modules / JS / text):
+see the commit log of that session for the numbers.
 
 ### The first run (seed 2, 8000 mutants of 4739 tests): 94 mismatches of 3744 productive mutants (2.5%), +53 syntax
 Root causes, by count (`./mutate.py -k KEY` after a run of the same seed):

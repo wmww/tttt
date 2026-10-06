@@ -63588,7 +63588,7 @@ const baselines = {
     'contextuallyTypedStringLiteralsInJsxAttributes02': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypeLogicalAnd01': {
         errors: true,

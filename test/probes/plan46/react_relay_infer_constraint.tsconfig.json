@@ -1,0 +1,1 @@
+{"compilerOptions":{"strict":true,"target":"es2022","noEmit":true,"jsx":"react","noUncheckedIndexedAccess":false,"baseUrl":"/home/ai/tttt/thirdparty/corpora/DefinitelyTyped/types","typeRoots":["/home/ai/tttt/thirdparty/corpora/DefinitelyTyped/types"],"types":[],"paths":{"*":["/home/ai/tttt/thirdparty/corpora/DefinitelyTyped/types/*"]}},"files":["a.tsx"]}

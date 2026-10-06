@@ -4575,8 +4575,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->property->form == PROPERTY_EXPR_BRACKET) key = ty_string_index_only_key(me, object, key);
             // `o[k]` with k any and no index signature that takes it is errorType (tsc's getPropertyTypeForIndexType
             // finds nothing for an access expression)
+            // (Of the non-nullable object: tsc's checkElementAccessExpression has reported and removed null and undefined)
             if (expr->property->form == PROPERTY_EXPR_BRACKET && (key->flags & TYF_ANY) && !(object->flags & TYF_ANY)) {
-                Ty const* apparent = ty_apparent_type(me, object);
+                Ty const* apparent = ty_apparent_type(me, ty_non_nullable(me, object));
                 if ((apparent->flags & TYF_OBJECT) && !(apparent->flags & TYF_ANY) && !ty_is_js_literal_type(me, apparent) &&
                     !ty_applicable_index_info(me, apparent, key)
                 ) {

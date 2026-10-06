@@ -142,3 +142,11 @@ queues merged into one.
   effect/sloppy (`packages/effect/src/Schema.ts:7257`, 7283, 7306) while keeping 3 others gone. Likely alias-argument
   variance shortcuts in relations seeing an alias tsc's instance has. Compare `cd /tmp/wt-x && ./flagflip.py` at
   ab972a46^ and ab972a46; tsc's getConditionalTypeInstantiation passes the root's aliasSymbol to every instance.
+
+- (2026-10-06, nuia sweep) react-relay under noUncheckedIndexedAccess: spurious TS2322 x5 at `entryPointReference=` (the
+  only nuia-specific sweep mismatch left). Not nuia itself: `EntryPointComponent<infer A, infer B, ...>` matched
+  against `any` gives B `unknown` where tsc gives B's implied constraint `Record<string, EntryPoint<any, any> |
+  undefined>` (A's is right). In conditional.c the constraint has TYF_COULD_CONTAIN_TYPE_VARIABLES (EntryPoint<any, any>
+  is itself a conditional over EntryPointComponent, apparently still deferred while that alias's constraints resolve),
+  so the "HACK: a constraint that stays generic" skip leaves unknown. Probe: test/probes/plan46/react_relay_infer_constraint.tsx
+  (+ .tsconfig.json; tsc says `[Record<string, OperationType>, Record<string, EntryPoint<any, any> | undefined>, {}, {} | null]`).
