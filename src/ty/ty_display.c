@@ -1227,10 +1227,12 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
     out_lit(d, "]");
 }
 
-// A computed name that isn't a literal or unique symbol isn't a member (tsc's shouldRemoveDeclaration)
+// A computed name that isn't a literal or unique symbol isn't a member (tsc's shouldRemoveDeclaration), except an
+// unresolved entity name (`[Symbol.match]` without the lib that has it: the baseline allows unresolved names)
 static bool member_printed(Checker* me, InterfaceMember const* member) {
-    return member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref ||
-        ty_expr_type(me, member->key.expr.ref)->kind == TY_LITERAL;
+    if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref) return true;
+    Ty const* key = ty_expr_type(me, member->key.expr.ref);
+    return key->kind == TY_LITERAL || ((key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr.ref));
 }
 
 // A JSDoc type literal the way tsc's printer reprints it, one member per line, which the types baseline flattens:
@@ -1321,7 +1323,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                     out(d, i->key.span.sv);
                 }
                 if (i->optional) out_lit(d, "?");
-                if (i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_member_function && i->type.tag == TYPE_CALLABLE) {
+                if ((i->key.tag == INTERFACE_KEY_NAME ? i->key.name_is_member_function : i->is_method) && i->type.tag == TYPE_CALLABLE) {
                     display_node_signature(me, d, i->type.callable->function, ": ");
                 } else {
                     out_lit(d, ": ");
