@@ -315,7 +315,9 @@ static bool elaborate_object_literal(Checker* me, Expr const* expr, Ty const* so
             bool is_number = false;
             item.name = ty_property_name_of_key(me, ty_expr_type(me, i->computed_key), &is_number);
             Expr const* key = i->computed_key;
-            item.computed_non_literal = !(key->tag == EXPR_LITERAL &&
+            // (Only a property assignment's: a method or accessor gets the plain message, tsc's
+            // generateObjectLiteralElements)
+            item.computed_non_literal = i->tag == OBJECT_ITEM_PROPERTY && !(key->tag == EXPR_LITERAL &&
                 (key->literal.tag == VALUE_STRING || key->literal.tag == VALUE_NUMBER));
         } else {
             item.name = checker_atom(me, cstr_sv(&i->name_string));
@@ -3516,7 +3518,12 @@ void ty_check_index_constraints(
                 is_local_span(owner, info->decl_span) ? span_with_member_separator(info->decl_span) :
                 interface && !base_has_both(me, bases, base_count, prop->name, nullptr, info->key) ? name : (Span){0};
             if (!span_valid(at)) continue;
-            if (!prop_ty) prop_ty = prop_type(me, prop);
+            // (An optional property's type has undefined: tsc's getTypeOfSymbol, but not exactOptionalPropertyTypes'
+            // missing type, which tsc's checkIndexConstraintForProperty doesn't see: getNonMissingTypeOfSymbol)
+            if (!prop_ty) {
+                prop_ty = prop_type(me, prop);
+                if ((prop->flags & PROP_OPTIONAL) && !compiler_options()->exact_optional_property_types) prop_ty = ty_optional_prop_type(me, prop_ty);
+            }
             if (ty_is_related(me, prop_ty, info->value, TY_RELATION_ASSIGNABLE)) continue;
             cstr prop_str = ty_prop_written_name(me, prop);
             cstr type_str = ty_to_cstr(me, prop_ty);
