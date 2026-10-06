@@ -2610,6 +2610,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // A module's variable (a namespace's member, spread or not): its declaration's annotation, or a `const`'s
         // literal initializer (tsc's serializeTypeOfDeclaration through the property's declarations)
         Expr const* literal_initializer = nullptr;
+        FunctionImpl const* initializer_function = nullptr;
         Symbol const* variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable;
         if (!annotation && !placeholder && variable && d.underline && d.enclosing) {
             Binding const* binding = variable->decl_count == 1 && variable->decls[0].kind == SYMBOL_DECL_VARIABLE ?
@@ -2617,8 +2618,15 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable) {
                 if (binding->has_explicit_type) {
                     annotation = &binding->explicit_type;
-                } else if (variable->is_const) {
+                } else {
                     Expr const* value = initialized_binding_value((InitializedBinding const*)binding);
+                    // (A function expression: its parameter declarations reused, tsc's typeFromExpression)
+                    if (value && value->tag == EXPR_FUNCTION && !value->function->syntactically_contextual &&
+                        ty_expr_type(me, value) == type
+                    ) {
+                        initializer_function = value->function;
+                    }
+                    if (!variable->is_const) value = nullptr;
                     bool literal = value && value->tag == EXPR_LITERAL && (value->literal.tag == VALUE_BOOLEAN ||
                         value->literal.tag == VALUE_NUMBER || value->literal.tag == VALUE_BIGINT);
                     if (literal && (type->flags & TYF_LITERAL)) literal_initializer = value;
@@ -2648,6 +2656,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // typeFromAccessor -> typeFromSingleReturnExpression)
         TyDisplay type_d = d;
         if (syntactic_getter && d.underline && d.enclosing) type_d.syntactic_function = single_return_function(me, syntactic_getter, type);
+        if (initializer_function) type_d.syntactic_function = initializer_function;
         // (Instantiated in a signature that has fresh type parameters in tsc, not tttt: see TyDisplay.fresh_params)
         if (origin != prop && mentions(me, type, d.fresh_params)) annotation = nullptr;
         // (Printed, not reused: tsc doesn't reuse the `unique symbol` annotation that declares the symbol)

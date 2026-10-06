@@ -8608,7 +8608,7 @@ const baselines = {
     'declarationEmitResolveTypesIfNotReusable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRetainedAnnotationRetainsImportInOutput': {
         errors: true,
