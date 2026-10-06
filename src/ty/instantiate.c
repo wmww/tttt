@@ -659,11 +659,15 @@ static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMap
         if (check_type->kind == TY_UNION) {
             TyList members = check_type->composite.types;
             Ty const** results = malloc(sizeof(Ty const*) * members.len);
+            bool changed = false;
             for (u32 i = 0; i < members.len; i++) {
                 TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, members.data[i]);
                 results[i] = conditional_from_root(me, root, members.data[i], member_mapper);
+                changed |= results[i] != members.data[i];
             }
-            Ty const* ret = ty_union(me, results, members.len, nullptr, (TyList){0});
+            // (Every member mapped to itself: the union itself, with its origin, tsc's mapType: `Extract<keyof M,
+            // string>` is still `keyof M`)
+            Ty const* ret = changed ? ty_union(me, results, members.len, nullptr, (TyList){0}) : check_type;
             free(results);
             *distributed = true;
             return ret;
