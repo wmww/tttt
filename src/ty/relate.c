@@ -3626,6 +3626,12 @@ static Ternary generic_mapped_target_related(
             );
             Ty const* indexed = ty_indexed(me, source, keys);
             related = is_related_to(me, st, indexed, ty_instantiate(me, template, mapper), report);
+        } else if (!known.len && !mapped->name_type) {
+            // Only generic keys in common (`{ x: 1 }` to `{ [K in keyof T]?: number }`): S[common & P] against the
+            // template (tsc's structuredTypeRelatedToWorker with filteredByApplicability)
+            Ty const* parts[2] = { common, mapped->type_param };
+            Ty const* indexing = ty_intersection(me, parts, 2, nullptr, (TyList){0});
+            related = is_related_to(me, st, ty_indexed(me, source, indexing), template, report);
         }
         ty_buf_drop(&known);
         return related;
