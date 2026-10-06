@@ -51592,12 +51592,12 @@ const baselines = {
     },
     'jsDeclarationsImportAliasExposedWithinNamespace': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsImportAliasExposedWithinNamespaceCjs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsImportNamespacedType': {
