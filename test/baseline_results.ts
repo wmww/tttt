@@ -52233,7 +52233,7 @@ const baselines = {
     'jsdocParamTag2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocParamTagTypeLiteral': {
         errors: false,

@@ -4029,6 +4029,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
 // whitespace and at most one `*`, or after whitespace and before something else anywhere; not in backticks of a tag's
 // comment)
 static bool jsdoc_is_object_type(JsDocTag const* tag, bool* array);
+static bool jsdoc_name_is_under(csview name, csview prefix);
 
 static void parse_jsdoc_comment(Parser* parent, JsDocRange range, VecJsDocTag* tags) {
     const char* c = range.start + 3;
@@ -4286,6 +4287,31 @@ static void jsdoc_apply_type_to_binding(VecJsDocTag* tags, Binding* binding) {
     binding->has_explicit_type = true;
 }
 
+// The type of a tag whose type a declaration took already, parsed again from its text (a pattern parameter matched by
+// position to the tag of a parameter matched by name: tsc's two parameters share the type node). Its errors were
+// reported the first time
+static bool jsdoc_reparse_type(Parser* parent, JsDocTag const* tag, TypeNode* ret) {
+    if (!span_valid(tag->type_span)) return false;
+    Parser p = parser(parent);
+    p.pos = span_start_ptr(tag->type_span);
+    p.whitespace_end = nullptr;
+    bool outer_in_jsdoc = p.shared->in_jsdoc;
+    const char* outer_end = p.shared->jsdoc_end;
+    p.shared->in_jsdoc = true;
+    p.shared->jsdoc_end = span_end_ptr(tag->type_span);
+    isize jsdoc_errors = vec_error_size(&p.shared->jsdoc_errors);
+    bool parsed = parse_type(&p, TYPE_PRECEDENCE_NULL, ret);
+    if (parsed) hop_jsdoc_optional(&p, ret);
+    while (vec_error_size(&p.shared->jsdoc_errors) > jsdoc_errors) {
+        error_drop(vec_error_back_mut(&p.shared->jsdoc_errors));
+        vec_error_pop(&p.shared->jsdoc_errors);
+    }
+    p.shared->in_jsdoc = outer_in_jsdoc;
+    p.shared->jsdoc_end = outer_end;
+    parse_fail(&p);
+    return parsed;
+}
+
 // The `@param` tag for a function's parameter (tsc's getJSDocParameterTags): by name, or for a pattern by position
 static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
     Binding const* binding = &arg->initializer.binding;
@@ -4297,10 +4323,16 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
         }
         return nullptr;
     }
+    // (By position among the tags, the `o.a` children of an `{Object} o` aside: tsc's parser makes them its type)
     isize index = arg - function->args.data;
+    JsDocTag const* parent = nullptr;
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_PARAM || i->nested) continue;
-        if (!index--) return i->has_type ? i : nullptr;
+        if (parent && span_valid(i->name) && jsdoc_name_is_under(i->name.sv, parent->name.sv)) continue;
+        bool array;
+        parent = span_valid(i->name) && (jsdoc_is_object_type(i, &array) || i->type.tag == TYPE_INTERFACE) ? i : nullptr;
+        // (One a parameter took by name already is this one's too: see jsdoc_reparse_type())
+        if (!index--) return i->has_type || span_valid(i->type_span) ? i : nullptr;
     }
     return nullptr;
 }
@@ -4766,8 +4798,13 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             tag->type = literal;
             tag->type_span = type_span;
         }
-        Span type_span;
-        binding->explicit_type = jsdoc_take_type(tag, &type_span);
+        Span type_span = tag->type_span;
+        if (tag->has_type) {
+            binding->explicit_type = jsdoc_take_type(tag, &type_span);
+        } else if (!jsdoc_reparse_type(p, tag, &binding->explicit_type)) {
+            continue;
+        }
+        binding->explicit_type.from_jsdoc = true;
         binding_set_explicit_type_span(binding, type_span);
         binding->has_explicit_type = true;
         if (binding->explicit_type.jsdoc_optional || bracketed) {
