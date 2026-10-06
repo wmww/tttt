@@ -2235,6 +2235,7 @@ static Resolution resolve_with_signatures_inner(
             check_args(me, &shape, args, false);
             free(shape.types);
             ret.ret = resolved_return_type(me, &(Candidate){ .sig = signatures[0] });
+            ret.failure = (Candidate){ .sig = signatures[0] };
         } else if (info->type_arg_nodes && !type_argument_arity_ok) {
             // tsc's pickLongestCandidateSignature with getTypeArgumentsFromNodes: the first candidate that takes the
             // arguments (else the one with the most parameters), its type arguments cut or filled in
@@ -2254,6 +2255,7 @@ static Resolution resolve_with_signatures_inner(
             check_args(me, &shape, args, false);
             free(shape.types);
             ret.ret = candidate_return_type(me, &candidate);
+            ret.failure = candidate;
         } else if (!info->type_arg_nodes) {
             // No candidate was checked (wrong argument counts): tsc's pickLongestCandidateSignature, inferred from
             // what doesn't depend on the candidate (inferSignatureInstantiationForOverloadFailure)
@@ -2275,6 +2277,7 @@ static Resolution resolve_with_signatures_inner(
             check_args(me, &shape, args, false);
             free(shape.types);
             ret.ret = signatures[best]->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, signatures[best]);
+            ret.failure = candidate; // (What control flow goes by too: tsc's getEffectsSignature, a type predicate's)
         } else {
             Ty const** return_types = malloc(sizeof(Ty const*) * count);
             u32 len = 0;
