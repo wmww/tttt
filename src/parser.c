@@ -11711,8 +11711,9 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
 
 // tsc's isVariableDeclarationInitializedToBareOrAccessedRequire: in a JavaScript file `const x = require("m")`,
 // `const { a, b: c } = require("m")` and `const a = require("m").a` (`.x.a`) declare aliases, like imports
+// (a TypeScript annotation, TS8010, is ignored: only a JSDoc type tag makes it a variable)
 static void note_require_declaration(InitializedBinding* initializer) {
-    if (initializer->binding.has_explicit_type) return;
+    if (initializer->binding.has_explicit_type && initializer->binding.explicit_type.from_jsdoc) return;
     Expr* value = initialized_binding_value(initializer);
     Span accessed = span_null;
     // (`require("m").a.b` too: the alias is of b, looked up in the module, tsc's getCommonJSPropertyAccess)
@@ -13444,8 +13445,9 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                     .span = span,
                 });
             }
+            bool type_tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
             jsdoc_apply_type_to_binding(&tags, &initializer->binding);
-            if (initializer->binding.has_explicit_type && initialized_binding_rare(initializer)->require_port_count) {
+            if (type_tag && initialized_binding_rare(initializer)->require_port_count) {
                 // `/** @type {T} */ const x = require("m")` is a variable, whose initializer is checked against T
                 // (tsc's bindVariableDeclarationOrBindingElement: isVariableDeclarationInitializedToBareOrAccessedRequire
                 // doesn't apply with a type tag)
