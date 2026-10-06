@@ -789,6 +789,15 @@ src` finds the code-side markers; every significant one has an entry here.
   import of an unresolved module, in `import x = a.B` paths and heritage `extends a.B`) by the first alias of an
   unresolved import in the innermost table, rebuilt in the harness: tttt has no unknownSymbol to run the symbol chain on.
 
+- `ty_report_enclosing()` / `statement_scope_at()` (`ty_display.c`): tsc prints a relation message's type from its
+  value declaration when that is a non-context-sensitive expression (getTypeNamesForErrorDisplay), which turns on
+  annotation reuse and qualifies names from there. tttt types don't know their expression: a function expression is
+  printed from its first parameter's scope (none: the file), an object literal from the innermost namespace / function
+  declaration body / block around a property written in it (function expressions aren't entered), a literal of spread
+  properties only from nowhere (tsc: `typeof stuff.klass` for a spread namespace member). Context sensitivity of a
+  literal is guessed from its members' types. Real fix: the type of a literal or function expression knowing its node
+  (or a scope pointer stored on the Expr by the resolve walk).
+
 ## Harness and tools
 - `apply_setting`: `@baselineFile`, `@fullEmitPaths`, bad values ignored.
 - `mount_test_lib_folder` copies tsc's `tests/lib` per test; `baseline_test_cache_get_program_with_libs` keeps one lib

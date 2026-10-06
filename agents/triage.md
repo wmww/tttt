@@ -150,3 +150,14 @@ queues merged into one.
   is itself a conditional over EntryPointComponent, apparently still deferred while that alias's constraints resolve),
   so the "HACK: a constraint that stays generic" skip leaves unknown. Probe: test/probes/plan46/react_relay_infer_constraint.tsx
   (+ .tsconfig.json; tsc says `[Record<string, OperationType>, Record<string, EntryPoint<any, any> | undefined>, {}, {} | null]`).
+- (mutate.py multi/js, text/render bucket, 2026-10-06) Left after fixing the mechanisms: a reused annotation with an
+  unresolved computed name (`{ [Enum.A]: 0 }`) prints the member where tsc drops it, and an optional property
+  reused from another file's annotation says `| undefined` (declarationEmitComputedPropertyNameEnum2/3 mutants, a
+  spread-only literal: no enclosing, see hacks.md ty_report_enclosing()); reuse of an annotation from another file
+  qualifies `import("a").X` where tsc keeps `X` (declarationEmitTopLevelNodeFromCrossFile, types baseline side too?);
+  TS2344's elaboration through a type parameter with an `Object` constraint against a union (tsc repeats the Object
+  hint and adds "Type 'D' is not assignable to type 'B'", declarationEmitReexportedSymlinkReference3 mutant);
+  ambientPropertyDeclarationInJs: TS2728 points at `this.prop` where tsc points at a later `declare prop` (which
+  declaration tsc's JS class members keep as valueDeclaration); quickIntersectionCheckCorrectlyCachesErrors with a
+  required `children`: tsc's chain goes through the constraint first (relation cache order); jsdocThisType with a TS
+  annotation on the JS variable: the function expression doesn't get `this: Foo` from the statement's `@type`.
