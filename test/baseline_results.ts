@@ -42177,8 +42177,8 @@ const baselines = {
     },
     'objectBindingPatternKeywordIdentifiers02': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'objectBindingPatternKeywordIdentifiers03': {
         errors: true,
@@ -42187,8 +42187,8 @@ const baselines = {
     },
     'objectBindingPatternKeywordIdentifiers04': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'objectBindingPatternKeywordIdentifiers05': {
         errors: true,
