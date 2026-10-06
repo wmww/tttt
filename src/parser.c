@@ -6924,11 +6924,11 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     hop_whitespace(&p);
 
     // tsc's parser takes a `?` and a `!` after any member name, its checker reports them (grammar errors, see
-    // parse_file())
+    // parse_file()). A property's `?` is reported by the checker (object_check_grammar(): not in a destructuring
+    // target), a method's below
     Span question = span_null;
     if (*p.pos == '?' && p.pos[1] != '?' && p.pos[1] != '.') {
         question = span_make(p.shared->source, p.pos, p.pos + 1);
-        parse_error(&p, question, 1162, "An object member cannot be declared optional.");
         p.pos++;
         hop_whitespace(&p);
     }
@@ -7015,6 +7015,14 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         expect_expr(&p, expr_ctx_null, &item.value);
     }
 
+    if (span_valid(question)) {
+        if (item.tag != OBJECT_ITEM_PROPERTY && item.tag != OBJECT_ITEM_SHORTHAND) {
+            parse_error(&p, question, 1162, "An object member cannot be declared optional.");
+        } else {
+            isize offset = span_start_ptr(question) - span_end_ptr(item.name_span) + 1;
+            item.question_offset = offset < UINT16_MAX ? (uint16_t)offset : 0; // (Past a 64k comment: not reported)
+        }
+    }
     item.span = span_from(a);
     // (A shorthand property ends with its name, not with the whitespace looked past for a `:`)
     if (item.tag == OBJECT_ITEM_SHORTHAND && !item.shorthand_default) {

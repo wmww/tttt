@@ -3097,8 +3097,9 @@ static Atom const* object_item_effective_name(ObjectExprItem const* item) {
     return ty_property_name_of_key(current_checker, ty_expr_type(current_checker, key), &is_number);
 }
 
-// tsc's checkGrammarObjectLiteralExpression: a name can be one property, one method or one get/set pair
-static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
+// tsc's checkGrammarObjectLiteralExpression (which a destructuring target never gets, and which stops at TS1118 and
+// TS1119): a property can't be optional, a name can be one property, one method or one get/set pair
+static void object_check_grammar(Expr const* me, ErrorCtx* errs) {
     if (!expr_outer_span(me).source || expr_outer_span(me).source->has_parse_errors || is_destructuring_target(me)) return;
     enum { GET = 1, SET = 2, PROPERTY = 4, METHOD = 8, ACCESSOR = GET | SET };
     ObjectExpr const* object = &my object;
@@ -3110,7 +3111,14 @@ static void object_check_duplicate_names(Expr const* me, ErrorCtx* errs) {
         ObjectExprItem const* item = vec_object_expr_item_at(object, n);
         uint8_t kind;
         switch (item->tag) {
-            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND: kind = PROPERTY; break;
+            case OBJECT_ITEM_PROPERTY: case OBJECT_ITEM_SHORTHAND:
+                kind = PROPERTY;
+                if (item->question_offset) {
+                    char const* question = span_end_ptr(item->name_span) + item->question_offset - 1;
+                    error_ctx_grammar_error_d(errs, span_make(item->name_span.source, question, question + 1), 1162,
+                        "An object member cannot be declared optional.");
+                }
+                break;
             case OBJECT_ITEM_METHOD: kind = METHOD; break;
             case OBJECT_ITEM_GETTER: kind = GET; break;
             case OBJECT_ITEM_SETTER: kind = SET; break;
@@ -4313,7 +4321,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_OBJECT: {
             object_bind_members(me, errs);
-            object_check_duplicate_names(me, errs);
+            object_check_grammar(me, errs);
             ty_check_object_literal_pattern(current_checker, me, errs);
             TyWrittenProp* written = nullptr;
             u32 written_count = 0;
