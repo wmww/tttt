@@ -2281,6 +2281,12 @@ static Resolution resolve_with_signatures_inner(
                 ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
                 check_args(me, &shape, args, false);
                 free(shape.types);
+            } else if (!fallback.sig->type_params.len && fallback.sig != unfit[unfit_count - 1].sig) {
+                // (A non-generic one checked before the last candidate: the arguments are typed by it again, tsc's
+                // getContextualTypeForArgument going by the resolved failure signature)
+                ParamShape shape = call_param_shape(me, info, fallback.sig, nullptr);
+                check_args(me, &shape, args, false);
+                free(shape.types);
             }
             ret.ret = resolved_return_type(me, &fallback);
             ret.failure = fallback;
