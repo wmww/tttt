@@ -3145,9 +3145,12 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
 static inline __attribute__((always_inline)) Ty const* lower(
     Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args
 ) {
-    // A union node outside an alias body is lowered once: the check walk makes it (tsc's checkUnionOrIntersectionType)
-    // before the declaration it annotates asks (tsc's links.resolvedType)
-    if (node->tag == TYPE_UNION && !alias && !ctx.in_alias && !ctx.method && !node->flow) {
+    // A union node or a generic reference outside an alias body is lowered once: the check walk makes it (tsc's
+    // checkUnionOrIntersectionType, checkTypeReferenceNode) before the declaration it annotates asks (tsc's
+    // links.resolvedType)
+    bool memo_node = node->tag == TYPE_UNION ||
+        (node->tag == TYPE_IDENTIFIER && vec_spanned_type_size(&node->identifier->generic_params));
+    if (memo_node && !alias && !ctx.in_alias && !ctx.method && !node->flow) {
         u64 key[2] = { KEY_UNION_NODE | (u64)ctx.generic << 32, (u64)(uintptr_t)node };
         Ty const* memo = intern_get(&my links, key, 2);
         if (memo) return memo;
