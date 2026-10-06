@@ -9183,6 +9183,13 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     ) {
         goto operators;
     }
+    // tsc's parseUpdateExpression: a JSX element is no left-hand side expression either (`<a />.b` is missing a `;`)
+    if ((left_and_ret->tag == EXPR_JSX_ELEMENT || left_and_ret->tag == EXPR_JSX_FRAGMENT) && !expr_is_perenthisized(left_and_ret) &&
+        (c == '(' || c == '[' || c == '.' || c == '`' || (c == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')) ||
+            (c == '!' && p.pos[1] != '=') || (c == '+' && p.pos[1] == '+') || (c == '-' && p.pos[1] == '-'))
+    ) {
+        goto operators;
+    }
     // tsc's parseBinaryExpressionRest: `x as T` is no left-hand side expression either, a call, member access or
     // template doesn't continue it (`(x as any(1))` is missing a `)`). Not a JSDoc assertion, whose type comes first
     if (left_and_ret->tag == EXPR_AS_TYPE && !expr_is_perenthisized(left_and_ret) &&

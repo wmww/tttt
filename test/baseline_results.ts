@@ -52861,9 +52861,9 @@ const baselines = {
         types: true,
     },
     'checkJsxNamespaceNamesQuestionableForms': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsxSubtleSkipContextSensitiveBug': {
         errors: true,
