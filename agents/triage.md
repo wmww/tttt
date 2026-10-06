@@ -25,8 +25,5 @@ queues merged into one.
   deleted): tttt adds TS2510 at `class C extends Mixin2(Mixin1(Object))`; tsc's types there show the class expression
   whose base got TS2507 as `typeof (Anonymous class) & C` (a standalone probe gives plain `typeof`): some tsc
   resolution-order effect worth understanding before matching it.
-- (agent c) report_no_property's uniform-declaration test uses ty_find_prop on each member's apparent type: of an
-  intersection that is the first member's property, so two members declaring it count as uniform (tsc: none, TS2728
-  dropped).
 - (agent c) Types: `class L<RT> extends Object<RT[...]>` (TS2508) then `class X extends L<X>` (TS2507): tsc prints the
   extends expression `>L : L<X>`, tttt `typeof L` (mut7384's types component).
