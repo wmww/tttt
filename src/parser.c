@@ -5116,10 +5116,6 @@ static bool only_trivia_until(const char* at, const char* end) {
     return true;
 }
 
-// Binds the declaration tags (`@typedef`, `@callback`, `@import`) of the JSDoc comments from `from` to `to` that no
-// statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
-// declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
-// containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
 // The types of the tags tsc's checker visits (checkSourceElementWorker: `@type`, `@param`, `@satisfies`, `@enum`) that
 // no host took, as check-only declarations appended to `out`: a tag is checked whatever its host makes of it
 // templates: the comment's `@template`s have no host to go to (no typedef either): tsc declares them in the enclosing
@@ -5162,6 +5158,10 @@ static void jsdoc_push_check_only(VecJsDocTag* tags, bool templates, VecStatemen
     }
 }
 
+// Binds the declaration tags (`@typedef`, `@callback`, `@import`) of the JSDoc comments from `from` to `to` that no
+// statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
+// declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
+// containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
 // eof: the comments are the end of the file's, whose JSDoc host is the end of file token (checked like any other)
 static void jsdoc_bind_comments(
     Parser* parent, const char* from, const char* to, const char* inner_from, const char* inner_to, bool bind, bool toplevel,
@@ -5180,7 +5180,11 @@ static void jsdoc_bind_comments(
         comments->data[c].claimed = true;
         if (!bind) continue;
         csview text = csview_from_range(range.start, range.end);
-        if (!eof && !csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
+        // A comment before another one right before the statement is the statement's too (tsc's getJSDocCommentRanges),
+        // whose host takes nothing of it but `@overload`s: its tags are only checked
+        bool earlier = inner_from && c + 1 < comments->size && comments->data[c + 1].end <= inner_from &&
+            only_trivia_until(range.end, inner_from);
+        if (!eof && !earlier && !csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
             !csview_contains(text, "@template")
         ) {
             continue;
@@ -5297,7 +5301,7 @@ static void jsdoc_bind_comments(
             Statement alias = vec_statement_pull(out);
             vec_statement_push(out, jsdoc_wrap_in_namespaces(alias, full_name, i->name, span));
         }
-        if (eof) jsdoc_push_check_only(&tags, true, out);
+        if (eof || earlier) jsdoc_push_check_only(&tags, !csview_contains(text, "@overload"), out);
         vec_jsdoc_tag_drop(&tags);
     }
 }
