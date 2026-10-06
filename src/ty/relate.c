@@ -4038,14 +4038,16 @@ static Ty const* intersection_constraint(Checker* me, Ty const* ty) {
     for (u32 i = 0; i < members.len; i++) {
         Ty const* member = members.data[i];
         if (member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED)) {
+            // (One without a constraint is left out, tsc's computeBaseConstraint: `"a" & K` is at least "a")
             Ty const* constraint = base_constraint(me, member, 0);
-            if (!constraint || constraint == member) {
-                ty_buf_drop(&parts);
-                return nullptr;
-            }
+            if (!constraint || constraint == member) continue;
             member = constraint;
         }
         ty_buf_push(&parts, member);
+    }
+    if (!parts.len) {
+        ty_buf_drop(&parts);
+        return nullptr;
     }
     Ty const* ret = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
     ty_buf_drop(&parts);
