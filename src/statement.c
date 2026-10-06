@@ -2677,8 +2677,11 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 }
             } else if (ctx.unwrapped_return) {
                 // (A bare `return;` returns `undefined` to what an async function awaits to or a generator's TReturn
-                // too: tsc's checkReturnStatement)
-                return_typecheck(me, &my expr, ctx.unwrapped_return, false, ctx.await_returned, errs);
+                // too, with strictNullChecks: tsc's checkReturnStatement only checks it without for a declared `never`,
+                // which `Promise<never>` isn't)
+                if (!statement_is_bare_return(me) || compiler_options()->strict_null_checks) {
+                    return_typecheck(me, &my expr, ctx.unwrapped_return, false, ctx.await_returned, errs);
+                }
             } else if (ctx.specified_return) {
                 return_typecheck(me, &my expr, ty_of_node(ctx.specified_return), false, false, errs);
             }
