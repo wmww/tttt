@@ -3958,6 +3958,11 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
                 // (Not an alias in flight itself: tsc's tryResolveAlias)
                 symbol->alias->state != ALIAS_IN_FLIGHT && symbol->alias->state != ALIAS_CIRCULAR &&
                 (symbol_resolved_flags(symbol) & meaning)));
+        // (An alias of nothing is tsc's unknownSymbol, a Property: no module member)
+        if (fits && exports && (symbol->flags & SYMBOL_ALIAS) && !(symbol->flags & meaning)) {
+            Symbol const* target = symbol_resolve_alias((Symbol*)symbol);
+            if (!target || (target->is_placeholder && target->is_unresolved)) fits = false;
+        }
         if (fits && exports && symbol->decl_count) {
             bool expression = true;
             for (u32 d = 0; d < symbol->decl_count && expression; d++) expression = symbol->decls[d].kind == SYMBOL_DECL_EXPR;
