@@ -3327,6 +3327,22 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
         Ty const* apparent = ty_apparent_type(me, contextual);
         return apparent->kind == TY_INTRINSIC && (apparent->flags & TYF_UNKNOWN) ? contextual : apparent;
     }
+    if (contextual->kind == TY_INTERSECTION && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        // tsc's getApparentTypeOfIntersectionType: each member's apparent type (getTypeWithThisArgument with
+        // needApparentType), so `T & { prop: boolean }` with T constrained to an error type is any
+        TyList types = contextual->composite.types;
+        TyBuf parts = {0};
+        bool changed = false;
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* part = types.data[i];
+            Ty const* apparent = is_contextual_type_variable(part) ? ty_apparent_type(me, part) : part;
+            changed |= apparent != part;
+            ty_buf_push(&parts, apparent);
+        }
+        Ty const* ret = changed ? ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}) : contextual;
+        ty_buf_drop(&parts);
+        return ret;
+    }
     if (contextual->kind != TY_UNION || (contextual->flags & TYF_BOOLEAN)) return contextual;
     bool primitive = false;
     for (u32 i = 0; i < contextual->composite.types.len && !primitive; i++) {

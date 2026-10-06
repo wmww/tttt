@@ -125,13 +125,16 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
   TS2589), inferFromGenericFunctionReturnTypes3, baseConstraintOfDecorator, contextuallyTypedParametersOptionalInJSDoc
   (JSDoc optional parameter contextual typing), mixinAccessModifiers (protected members of `Protected & Protected2`:
   tsc names the intersection, no TS2415/TS2446 there).
-- tsxUnionElementType3/4: a union of class components gets its props from the union signature's parameters
-  intersected ({x: number} & {x: string}: x is never), tttt reads the union instance's props.
+- tsxUnionElementType3/4: the props intersection prints `{ children?: ReactNode; }` once where tsc has it twice.
+  Mechanism (2026-10-06): react.d.ts's `props: P & { children?: ReactNode }` is in `class Component<P, S>`, which is
+  merged with `interface Component<P, S>`; tsc's isTypeParameterPossiblyReferenced says yes for any type parameter
+  whose symbol has more than one declaration (the merged P, S and the class's `this`), so the type literal is
+  instantiated per instance (RC1's and RC2's are two types). tttt's collect_free_params() is purely syntactic. A fix
+  needs the owner's merged type parameters at ty_anonymous_from_node() (LowerCtx carries no owner).
 
 ## Inference
 contravariantOnlyInferenceFromAnnotatedFunction (A from an annotated arrow inside a reverse mapped type's source: tsc
-infers string, tttt unknown; mechanism not found), objectLiteralExcessProperties (`prop: true` kept literal against `T
-& { prop: boolean }`, tsc widens), tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get
+infers string, tttt unknown; mechanism not found), tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get
 tsc's TS2769 report), intraExpressionInferencesJsx, unionAndIntersectionInference3, mappedTypeRecursiveInference2,
 variadicTuples1, genericRestParameters3, genericCallWithGenericSignatureArguments3 (not investigated).
 

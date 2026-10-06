@@ -24411,9 +24411,9 @@ const baselines = {
         types: true,
     },
     'objectLiteralExcessProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectLiteralFreshnessWithSpread': {
         errors: true,
