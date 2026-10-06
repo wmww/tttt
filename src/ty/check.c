@@ -100,11 +100,16 @@ static Error* report_unassignable(
         error = error_ctx_error_s(errs, span, natural_head->ts_code, cstr_clone(natural_head->message));
         first_nested = 1;
     } else {
-        if (head.ts_code == HEAD_ARGUMENT.ts_code && natural_head && natural_head->ts_code == 2375) {
+        // (The argument head says exactOptionalPropertyTypes whenever an optional property of the parameter's type is
+        // one the argument has with an undefined, whatever failed: tsc's reportRelationError,
+        // getExactOptionalUnassignableProperties)
+        if (head.ts_code == HEAD_ARGUMENT.ts_code && ((natural_head && natural_head->ts_code == 2375) ||
+            ty_has_exact_optional_unassignable(me, source, target))
+        ) {
             error = error_ctx_error_d(errs, span, 2379, "Argument of type '", source_str,
                 "' is not assignable to parameter of type '", target_str,
                 "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.");
-            first_nested = 1;
+            if (natural_head && natural_head->ts_code == 2375) first_nested = 1;
         } else if (head.ts_code == HEAD_EXACT_PROP.ts_code) {
             error = error_ctx_error_d(errs, span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
                 "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
