@@ -6539,6 +6539,19 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     source = ty_regular(me, source);
     target = ty_regular(me, target);
     if (source == target) return TERNARY_TRUE;
+    // An object type to a primitive is what the simple relation says, before normalizing anything and with nothing
+    // cached (tsc's isRelatedTo): `{ setup() {...} }` against each of `keyof HTMLElementTagNameMap`'s literals
+    u32 const primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL |
+        TYF_BOOLEAN_LITERAL | TYF_ES_SYMBOL_LIKE | TYF_ENUM | TYF_VOID | TYF_NULLABLE;
+    if ((source->flags & TYF_OBJECT) && (((target->flags & primitive) && target->kind != TY_UNION) || (target->flags & TYF_BOOLEAN))) {
+        if ((st->relation == TY_RELATION_COMPARABLE && is_simple_related(me, st, target, source)) ||
+            is_simple_related(me, st, source, target)
+        ) {
+            return TERNARY_TRUE;
+        }
+        if (report) report_relation_error(me, st, source, target, top, false);
+        return TERNARY_FALSE;
+    }
     // (And reduced: getNormalizedType's getReducedType)
     Ty const* unreduced_target = target;
     if (source->kind == TY_UNION || source->kind == TY_INTERSECTION) source = ty_reduced(me, source);

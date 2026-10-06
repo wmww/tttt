@@ -480,6 +480,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
                 Checker const* checker = program_checker_at(program, i);
                 out_eprintln(out, "time: checker ", i, ": ", checker->check_ms, " ms, arena ", (i64)(checker->arena.total >> 20),
                     " MB, ", checker->next_type_id, " types");
+                // (Comparable with tsc --extendedDiagnostics's cache sizes, which count failures and nested pairs too)
+                out_eprintln(out, "time: checker ", i, " relation cache: assignable ", checker->relations[TY_RELATION_ASSIGNABLE].len,
+                    ", comparable ", checker->relations[TY_RELATION_COMPARABLE].len, ", subtype ",
+                    checker->relations[TY_RELATION_SUBTYPE].len, ", strict subtype ", checker->relations[TY_RELATION_STRICT_SUBTYPE].len,
+                    ", identity ", checker->relations[TY_RELATION_IDENTITY].len);
             }
 #ifdef TTTT_ARENA_SITES
             arena_sites_print();
