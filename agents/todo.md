@@ -22,7 +22,12 @@ commit.
    symbols), ~150 picks, 0 lost: suite 13104 -> 13227, `$ExpectType` 68416 -> 68610 (the oracle now checks before
    reading types), sweep 8580 -> 8584, flagflip 81 / 63 -> 79 / 63. New `./expectprobe.py` (one cut-down DT project,
    reducer). Instructions: measurements.md.
-5. **Planning: plan 47** (speculative checks). It may say no; if yes, entry 9 executes stage 1.
+5. ~~Planning: plan 47 (speculative checks)~~ done 2026-10-06: **no mechanism needed**, executed in the same session.
+   Lifting `first_unfit_skipped_literal`'s restrictions (generic overloads, parameters with type variables, single
+   candidates) left nothing harmful behind once it did tsc's two other skip-round rules (object literals regularised:
+   no excess properties; nested generic calls skipped, else they're resolved once under the trial type: effect +6).
+   Suite 13227 -> 13228 (1 types component lost to a latent alias-argument bug, bugs/display.md "Aliases"), sweep
+   8584 -> 8588, flagflip missing 78 -> 65, corpora / `$ExpectType` flat; instructions vue +1.8%, xstate +1.2%.
 6. **Execution: flagflip's queue and the mutation leftovers** (plan 46 "Open causes" 4, 6, 8; triage.md's seed 3-5
    notes, which a triage session may consolidate first). Both are thin now: start with the nuia sweep run (plan 46
    "Not done"), then a mutation widening (multi-file or JS tests, plan 46 stage 2 "Next use").
@@ -32,7 +37,7 @@ commit.
 8. **Perf session**: instruction counts since the start of this window, bisect anything above +1%; then the cheapest of
    plan 45 stage 2 (JS resolve), the sweep's per-package startup (lib loading, plan 44 "Perf side-product") or
    perf_leads.md's top item, by measurement.
-9. **Execution: plan 47 stage 1** if planned; otherwise a suite-tail fan-out (missing_checks.md buckets, plan 35 queue,
-   plan 19 "effect"'s last 7).
+9. **Execution: suite-tail fan-out** (missing_checks.md buckets, plan 35 queue, plan 19 "effect"'s last 7, and
+   bugs/display.md's alias-argument bug: why variance measurement pays for the right alias arguments).
 10. **Triage.**
 11. **Insights.**

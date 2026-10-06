@@ -30,8 +30,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   and symbol chains, JSDoc + CommonJS + expandos, parallel checking, loading and resolving, declaration diagnostics
   (plan 40), project references / `-b` (plan 41), tsc's laziness and resolution barriers (plan 42), tsc's deferred
   checks (checkNodeDeferred: functions, class expressions, JSX, `void`). ~113k lines of C.
-- **Absent or approximated tsc mechanisms**: side-effect-free speculative checks (overloads skip context-sensitive
-  literals: plan 47); contextual instantiation (push-down, not tsc's leaf-wise pull; type_core.md); permissive
+- **Absent or approximated tsc mechanisms**: contextual instantiation (push-down, not tsc's leaf-wise pull; type_core.md); permissive
   instantiation; TS7056 and TS5088; member identity (members aren't Symbols; the symbols *harness* rebuilds tsc's
   merges for display, decided acceptable). Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
 
@@ -47,9 +46,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   `--exactOptionalPropertyTypes` 747 (tttt never reports TS2412/TS2375, the flag's own codes). Flag flips over every
   corpus are the cheap first stage (and non-strict modes, which no corpus runs); mutation testing is the planned
   second. Also `$ExpectType` (plan 44 stage 3 item 2): a *types* oracle at breadth (69.6k assertions).
-- **One mechanism to plan rather than patch**: speculative checks (plan 47). `first_unfit_skipped_literal` and plan
-  38's leftover are the same missing mechanism, and the sweep keeps finding overload cases behind it. The planning
-  session may say no.
+- **One mechanism to plan rather than patch**: speculative checks (plan 47). Planned 2026-10-06 and answered no: the
+  feared memo side effects of checking a literal under a trial contextual type weren't real (a literal's memo goes by
+  its contextual type); what was missing were two of tsc's skip-round rules (regular object literals, nested generic
+  calls skipped). The hack is gone and nothing replaced it. Lesson: prototype the deletion before designing the
+  mechanism.
 - **Effect's last 7 and the plan 35 queue stay open; the suite tail gets one fan-out.**
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
@@ -124,6 +125,6 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 9. ~~Wider oracles (effect, vscode, the breadth sweep of plan 44), plan 42 stages 3-4, AST memory (43), parallel
    name resolution (45 stage 1)~~ done.
 10. **Now**: oracles for missing diagnostics (46: flag flips, then mutations), `$ExpectType` at breadth (44 stage 3),
-   speculative checks (47), two new corpora (a JSX application, an inference-heavy router/RPC library), a perf session.
+   speculative checks (47: not needed), two new corpora (a JSX application, an inference-heavy router/RPC library), a perf session.
 11. Then: plan 45 stages 2-3 (JS resolve, declare/link), the check phase's load balance and file-to-checker affinity,
    a token cache / node arenas in the parser, compact instantiated Props / the `Signature` split.

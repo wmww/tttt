@@ -165,8 +165,7 @@ Not done (each tried, measured, left):
    function only where isContextSensitive-style checks find a contextual signature (checkFunctionExpressionOrObject
    LiteralMethod under CheckMode.SkipGenericFunctions returns anyFunctionType); a port has to mark from the contextual
    type, not the syntax. (Triage 2026-09-29, routed here unstarted.)
-5. hacks.md `first_unfit_skipped_literal` named resolve-once as its real fix; it isn't: that is about a literal
-   argument's member memos under another contextual type (side-effect-free speculative checks), not calls.
+5. (`first_unfit_skipped_literal`'s member memos: not a problem, see the plan 47 commit of 2026-10-06.)
 
 xstate's 12 left (none is known to be an inference-flow bug; plan 19 "xstate" has them by cause): spawnChild.test.ts:107
 TS7031 (`spawnChild(child, { id: ({ context }) => ... })` nested in `entry: [...]`, the nested-generic-call path),

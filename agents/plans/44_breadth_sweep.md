@@ -94,9 +94,11 @@ order, i.e. creation order. Same in latest chai at 1418, 1428).
   `{ bar: number }` from the factory's return; tttt lowers the factory's return type eagerly, MapStateToProps gets the
   lower id and wins with `() => { bar: number }`: TS2741 at every `<Test foo="bar" />`). Swapping the union's
   declaration order flips tsc's answer too. Part of the union-order family (displaydiff `union order`).
-- **Generic overloads skip the whole context-sensitive literal** (async, steed, chai, mithril's `m(Comp2, { title,
-  onremove(vnode) {} })` against `<A, S>(component, ...args: Children[])` first; C/2769 B): hacks.md
-  `first_unfit_skipped_literal`; needs side-effect-free speculative checks (plan 38).
+- (Done 2026-10-06, plan 47's planning session: generic overloads now relate a context-sensitive literal in the skip
+  round, async/steed/mithril/node match.) **chai** (`assert.deepInclude(new Map([["a", { a: 1 }]]), { a: 1 })`, TS2769,
+  also chai/v4) was filed under that cause but has no context-sensitive argument: inference from a `Map` into
+  `readonly T[] | ReadonlySet<T> | ReadonlyMap<any, T>` against the `T extends WeakSet<any> ? never : Partial<T>`
+  overload. Uninvestigated.
 - **Perf**: carbon-components-react, d3-geo (bugs/sweep_perf.md).
 - **d3-tip**: a `declare module "d3"` augmentation isn't visible through d3's UMD global in tsc (its
   getTargetOfNamespaceExportDeclaration -> resolveExternalModuleSymbol returns the *unmerged* module symbol when there

@@ -286,13 +286,12 @@ src` finds the code-side markers; every significant one has an entry here.
   source's keys only outside return-type inference: there tttt's `return_inference_mapper()` would make K2 of
   twiceNestedKeyofIndexInference `never` (tsc's return mapper evidently differs). `infer_to_mapped()` finding nothing
   returns (tsc goes per property; neutral).
-- Skip-sensitive rounds: `first_unfit_skipped_literal()` (`resolve_with_signatures`, HACK): tsc's SkipContextSensitive
-  round still relates a context-sensitive object/array literal argument or JSX attributes (its sensitive functions as
-  anyFunctionType) to the parameter; tttt skips the whole argument in that round, and does the literal check only for
-  non-generic overloads of a call with several, against a parameter type without type variables (checking the literal
-  under another contextual type leaves member memos behind). Real fix: side-effect-free speculative checks.
-  `return_only_type()` gives generators anyFunctionType; `first_unfit_argument` skips such arguments in the first
-  overload round.
+- Skip-sensitive rounds (`resolve_with_signatures`): tsc's SkipContextSensitive round checks every argument once, its
+  context-sensitive functions as anyFunctionType; tttt leaves context-sensitive arguments out of
+  `check_args_until_unfit` (`skipped_function_unfit()` relates anyFunctionType for bare functions) and relates the
+  literal ones afterwards (`first_unfit_skipped_literal()`, regularised, nested generic calls skipped), so a literal is
+  related after the arguments behind it (creation order). `return_only_type()` gives generators anyFunctionType;
+  `first_unfit_argument` skips such arguments in the first overload round.
 - Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): with explicit type
   arguments, fitting arity and no candidate checked, the result is the union of every candidate's inferred return
   (not tsc's).

@@ -19876,7 +19876,7 @@ const baselines = {
         types: true,
     },
     'jsxComplexSignatureHasApplicabilityError': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: false,
     },
@@ -64156,9 +64156,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeInferenceErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeModifiers': {
         errors: true,

@@ -5,6 +5,17 @@ rules. Plan 21 (closed) did the bulk. Named tests were checked failing on 2026-1
 (`*.ts` without a test name) weren't re-run.
 
 ## Aliases
+- **Alias arguments a body doesn't mention** (found 2026-10-06, plan 47's session): `type H<A, B = Option<A>> = (b:
+  B) => void; interface P<U> { f: H<U> }` prints `f`'s type as `H<A, Option<U>>` (tsc: `H<U, Option<U>>`):
+  `instantiate_anonymous()` instantiates the alias arguments with the mapper cut down to the parameters the body
+  mentions (B), and its cache key leaves the alias arguments out. tsc's getObjectTypeInstantiation keeps *every*
+  outer type parameter when the type has alias arguments. jsxComplexSignatureHasApplicabilityError's types component
+  depends on it (it passed by creation order and fails under `./filetest.sh` at the same commit). Both fixes measured
+  (callgrind): instantiating the alias arguments with the whole mapper (in the miss branch, not keyed) fixes the probe,
+  0 lost, but drizzle +5%, vue +3.4%, valibot +1.8%; keying on them as tsc does: valibot +34%, drizzle +9%. The cost is
+  `get_variances`/`measure_variances` (+650M on drizzle): with the right arguments, measuring an alias's variances
+  instantiates what it doesn't mention. Needs a look at why tsc's variance probes don't pay that (or do, and tttt
+  measures more often) before either fix lands.
 - `shows_alias()` (ty_display.c) hides type aliases declared in a block/function body when printing for a place.
   tsc's isDeclarationVisible also hides non-exported aliases inside namespaces in some cases; unverified.
 tsc's rule, as far as it is understood (getTypeAliasInstantiation, getConditionalType, instantiateMappedType,

@@ -10,6 +10,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Plan 47 skip-round literals (2026-10-06, tenth window's todo entry 5)
+Suite 13227 -> **13228** (mappedTypeInferenceErrors gained, jsxComplexSignatureHasApplicabilityError's types component
+lost: bugs/display.md "Aliases"), sweep 8584 / 10 / 1 -> **8588 / 6 / 1**, flagflip **78** (HEAD re-measured) / 63 / 12
+-> **65 / 63 / 12**, `$ExpectType` 68610 and corpora (effect 7, the rest 0) unchanged. Instructions (callgrind,
+e48bd25d -> this commit): tsc 4.614 -> 4.613, type-fest 3.135, valibot 4.270, react 1.543 -> 1.544, nest 1.258, webpack
+3.836 -> 3.837, zod 4.572 -> 4.576, xstate 2.932 -> 2.967 (+1.2%), drizzle 13.062 -> 13.140 (+0.6%), vue 7.890 ->
+8.033 (+1.8%: more overloads rejected in the skip round, `call_param_shape` +88M; tsc does that work too), effect
+9.785 -> 9.802, vscode 32.348 -> 32.363.
+
 ## `$ExpectType` fan-out (2026-10-06, tenth window's todo entry 4; oracle: plan 44 stage 3 item 2)
 `./expecttypes.py`: 68640 compared assertions in 2703 DefinitelyTyped packages, tttt ~27 s at -j4. The oracle now
 checks every non-lib file before reading types (agent A; ~90 assertions had differed only by tsc's lazy creation

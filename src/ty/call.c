@@ -1526,15 +1526,22 @@ static i32 check_args_until_unfit(
 // tsc's CheckMode.SkipContextSensitive checks a context-sensitive object or array literal argument (or JSX attributes) too, its
 // context-sensitive functions as anyFunctionType: `{ start(c) {} }` doesn't fit a parameter that requires `type`, so
 // that overload isn't the one whose contextual types the functions get. Whether they fit (else -1 as in
-// first_unfit_argument()). HACK: only for the non-generic overloads of a call with several, see hacks.md
+// first_unfit_argument()). As a regular object literal: what isn't inferred yet makes no excess properties (tsc's
+// getSignatureApplicabilityError). Checking it under this candidate's parameter leaves nothing behind that matters:
+// a literal's memo goes by its contextual type, the functions left out aren't typed, and neither are the generic calls
 static i32 first_unfit_skipped_literal(Checker* me, ParamShape const* shape, Args const* args, TyRelation relation) {
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
         if (!arg->context_sensitive || arg->spread || arg->part_of_spread) continue;
         if (arg->expr->tag != EXPR_OBJECT && arg->expr->tag != EXPR_ARRAY && arg->expr->tag != EXPR_JSX_ATTRIBUTES) continue;
         Ty const* target = i < shape->count ? shape->types[i] : shape->rest_element;
-        if (!target || (target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) continue;
-        Ty const* source = ty_check_expr_skipping_sensitive(me, arg->expr, target, false);
+        if (!target) continue;
+        // (the inference left them out, so do we: tsc's SkipGenericFunctions; resolved here they'd be remembered with this
+        // contextual type)
+        GenericFunctionMode mode = {0};
+        Ty const* checked = arg->nested_generic ? ty_check_literal_argument(me, arg->expr, target, false, true, &mode) :
+            ty_check_expr_skipping_sensitive(me, arg->expr, target, false);
+        Ty const* source = ty_regular_object_literal(me, checked);
         if (!ty_is_related(me, source, target, relation)) return (i32)i;
     }
     return -1;
@@ -2247,7 +2254,7 @@ static Resolution resolve_with_signatures_inner(
             Ty const* param_type;
             bool fits = check_args_until_unfit(me, &shape, args, rounds[round], skip_sensitive || skipped_generic,
                 skipped_generic, &arg_type, &param_type) < 0;
-            if (fits && skip_sensitive && count > 1 && !sig->type_params.len) {
+            if (fits && skip_sensitive) {
                 fits = first_unfit_skipped_literal(me, &shape, args, rounds[round]) < 0;
             }
             if (fits && (skip_sensitive || skipped_generic)) {
