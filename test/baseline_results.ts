@@ -8243,7 +8243,7 @@ const baselines = {
     'declarationEmitInlinedDistributiveConditional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitInterfaceWithNonEntityNameExpressionHeritage': {
         errors: true,
@@ -26483,7 +26483,7 @@ const baselines = {
     'ramdaToolsNoInfinite': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ramdaToolsNoInfinite2': {
         errors: true,
@@ -26793,12 +26793,12 @@ const baselines = {
     'recursiveConditionalCrash1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveConditionalCrash2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveConditionalCrash3': {
         errors: true,

@@ -2093,7 +2093,13 @@ typedef struct TyParamNames {
     TyParamName* given;
     u32 len;
     u32 cap;
+    // Conditional types printed so far and where (tsc's serializedTypes: printed again, a type is the same text, names
+    // and all, and isn't worked out twice). Freed with ty_param_names_drop()
+    struct TyPrinted* printed;
+    u32 printed_len;
+    u32 printed_cap;
 } TyParamNames;
+void ty_param_names_drop(TyParamNames* names);
 
 // Declaration emit's SymbolTracker (tsc's declarations.ts symbolTracker, plan 40): what the printer reports while it
 // prints a type the way a `.d.ts` would write it (TyDisplay.tracker)

@@ -46,6 +46,61 @@ static void out(TyDisplay d, csview sv) {
 }
 #define out_lit(d, s) out(d, c_sv(s))
 
+typedef struct PrintedRange {
+    isize_t start, end, underline_start, underline_end;
+} PrintedRange;
+static PrintedRange printed_range_start(TyDisplay d) {
+    return (PrintedRange){ .start = cstr_size(d.target), .underline_start = d.underline ? cstr_size(d.underline) : 0 };
+}
+static void printed_range_end(TyDisplay d, PrintedRange* range) {
+    range->end = cstr_size(d.target);
+    range->underline_end = d.underline ? cstr_size(d.underline) : 0;
+}
+// Prints again what was printed in `range` (tsc's serializedTypes cache: the same type printed twice is the same node,
+// type parameter names and all, and isn't worked out twice)
+static void reprint_range(TyDisplay d, PrintedRange range) {
+    if (d.tracker && d.tracker->truncated) return;
+    cstr text = cstr_from_sv(csview_slice(cstr_sv(d.target), range.start, range.end));
+    cstr_append_sv(d.target, cstr_sv(&text));
+    cstr_drop(&text);
+    if (d.underline) {
+        cstr underline = cstr_from_sv(csview_slice(cstr_sv(d.underline), range.underline_start, range.underline_end));
+        cstr_append_sv(d.underline, cstr_sv(&underline));
+        cstr_drop(&underline);
+    }
+}
+
+
+typedef struct TyPrinted {
+    Ty const* ty;
+    cstr const* target;
+    PrintedRange range;
+} TyPrinted;
+
+void ty_param_names_drop(TyParamNames* names) {
+    free(names->given);
+    free(names->printed);
+}
+
+static TyPrinted const* printed_before(TyDisplay d, Ty const* ty) {
+    if (!d.param_names) return nullptr;
+    for (u32 i = 0; i < d.param_names->printed_len; i++) {
+        TyPrinted const* printed = &d.param_names->printed[i];
+        if (printed->ty == ty && printed->target == d.target) return printed;
+    }
+    return nullptr;
+}
+
+static void remember_printed(TyDisplay d, Ty const* ty, PrintedRange range) {
+    TyParamNames* names = d.param_names;
+    if (!names) return;
+    if (names->printed_len == names->printed_cap) {
+        names->printed_cap = names->printed_cap ? names->printed_cap * 2 : 8;
+        names->printed = realloc(names->printed, names->printed_cap * sizeof(TyPrinted));
+    }
+    names->printed[names->printed_len++] = (TyPrinted){ .ty = ty, .target = d.target, .range = range };
+}
+
 static TyDisplay reused_if(TyDisplay d, bool reused) {
     d.reused = reused;
     return d;
@@ -2565,6 +2620,95 @@ static void display_parenthesized_if(Checker* me, TyDisplay d, Ty const* ty, boo
     if (parens) out_lit(d, ")");
 }
 
+// A distributive conditional type whose check type is no longer a type parameter, after ` extends `: written as is it
+// wouldn't distribute, so tsc's conditionalTypeToTypeNode (GenerateNamesForShadowedTypeParams: the types baseline and
+// declaration emit) makes the check type a new type parameter T first: `C extends infer T ? T extends C ? T extends
+// E<T> ? X<T> : Y<T> : never : never`
+static void display_distributive_conditional(Checker* me, TyDisplay d, Ty const* ty, PrintedRange check_range) {
+    Ty const* root = ty->conditional.root;
+    Ty const* param = ty_synthetic_type_param(me, c_sv("T"));
+    // (prependTypeMapping(root.checkType, T, type.mapper))
+    TyMapper const* outer = ty->conditional.mapper;
+    u32 len = 1 + (outer ? outer->len : 0);
+    Ty const** sources = malloc(len * sizeof(Ty const*));
+    Ty const** targets = malloc(len * sizeof(Ty const*));
+    sources[0] = root->conditional.check;
+    targets[0] = param;
+    for (u32 i = 1; i < len; i++) {
+        sources[i] = outer->sources[i - 1];
+        targets[i] = outer->targets[i - 1];
+    }
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
+    free(sources);
+    free(targets);
+    Ty const* extends = ty_instantiate(me, root->conditional.extends, mapper);
+    Ty const* when_true = ty_instantiate(me, ty_conditional_branch(me, root, true), mapper);
+    Ty const* when_false = ty_instantiate(me, ty_conditional_branch(me, root, false), mapper);
+    TyDisplay fresh = reused_if(d, false);
+    out(fresh, c_sv("infer "));
+    out_type_param_name(me, fresh, param, false);
+    out(fresh, c_sv(" ? "));
+    out_type_param_name(me, fresh, param, false);
+    out(fresh, c_sv(" extends "));
+    reprint_range(d, check_range);
+    out(fresh, c_sv(" ? "));
+    out_type_param_name(me, fresh, param, false);
+    out(fresh, c_sv(" extends "));
+    TyDisplay extends_d = d;
+    extends_d.infer_params = ty_conditional_own_infers(me, root);
+    display_parenthesized_if(me, extends_d, extends, extends->kind == TY_CONDITIONAL && !shows_alias(d, extends));
+    out(fresh, c_sv(" ? "));
+    ty_display(me, d, when_true);
+    out(fresh, c_sv(" : "));
+    ty_display(me, d, when_false);
+    out(fresh, c_sv(" : never : never"));
+}
+
+static bool conditional_elided(TyDisplay d, Ty const* ty) {
+    Ty const* root = ty->conditional.root ? ty->conditional.root : ty;
+    u32 depth = 0;
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        Ty const* other = i->ty;
+        depth += other->kind == TY_CONDITIONAL && (other->conditional.root ? other->conditional.root : other) == root;
+    }
+    return depth > 10;
+}
+
+static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
+    // Eleven instantiations of one conditional type deep, the next is the elided information placeholder (tsc's
+    // visitAndTransformType counts conditional types by their root's node); `any` without truncation (the
+    // types baseline, declaration emit), `...` in messages
+    if (conditional_elided(d, ty)) {
+        out(d, d.enclosing ? c_sv("any") : c_sv("..."));
+        return;
+    }
+    TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
+    d.visiting = &visit;
+    PrintedRange check_range = printed_range_start(d);
+    display_parenthesized_if(
+        me, d, ty->conditional.check,
+        is_function_like(me, d, ty->conditional.check) ||
+            (ty->conditional.check->kind == TY_CONDITIONAL && !shows_alias(d, ty->conditional.check))
+    );
+    printed_range_end(d, &check_range);
+    out_lit(d, " extends ");
+    if (d.param_names && ty->conditional.root && ty->conditional.root->conditional.distributive &&
+        ty->conditional.check->kind != TY_TYPE_PARAM
+    ) {
+        display_distributive_conditional(me, d, ty, check_range);
+        return;
+    }
+    TyDisplay extends_d = d;
+    extends_d.infer_params = ty_conditional_own_infers(me, ty->conditional.root);
+    display_parenthesized_if(me, extends_d, ty->conditional.extends, ty->conditional.extends->kind == TY_CONDITIONAL &&
+        !shows_alias(d, ty->conditional.extends));
+    out_lit(d, " ? ");
+    ty_display(me, d, ty_conditional_branch(me, ty, true));
+    out_lit(d, " : ");
+    ty_display(me, d, ty_conditional_branch(me, ty, false));
+}
+
+
 // A union of every member of one enum (and nothing else) prints as the enum, see display_union()
 static bool is_whole_enum(Checker* me, Ty const* ty) {
     if (ty->kind != TY_UNION) return false;
@@ -2590,7 +2734,9 @@ static bool needs_parens_in_array(Checker* me, TyDisplay d, Ty const* ty) {
         (ty_is_tuple(ty) && ty->reference.target->declared.tuple->readonly));
     // (`(unique symbol)[]`, `(typeof sym)[]`: a type operator or query)
     bool unique_symbol = ty->kind == TY_LITERAL && (ty->flags & TYF_UNIQUE_ES_SYMBOL);
-    return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || ty->kind == TY_CONDITIONAL || ty->kind == TY_KEYOF ||
+    // (A conditional type printed as the elided information placeholder is `any`)
+    bool conditional = ty->kind == TY_CONDITIONAL && !conditional_elided(d, ty);
+    return ty->kind == TY_UNION || ty->kind == TY_INTERSECTION || conditional || ty->kind == TY_KEYOF ||
         type_query || readonly || unique_symbol || is_function_like(me, d, ty);
 }
 
@@ -3002,20 +3148,17 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
 
         case TY_SUBSTITUTION: impossible;
 
-        case TY_CONDITIONAL:
-            display_parenthesized_if(
-                me, d, ty->conditional.check,
-                is_function_like(me, d, ty->conditional.check) || ty->conditional.check->kind == TY_CONDITIONAL
-            );
-            out_lit(d, " extends ");
-            TyDisplay extends_d = d;
-            extends_d.infer_params = ty_conditional_own_infers(me, ty->conditional.root);
-            display_parenthesized_if(me, extends_d, ty->conditional.extends, ty->conditional.extends->kind == TY_CONDITIONAL);
-            out_lit(d, " ? ");
-            ty_display(me, d, ty_conditional_branch(me, ty, true));
-            out_lit(d, " : ");
-            ty_display(me, d, ty_conditional_branch(me, ty, false));
-            break;
+        case TY_CONDITIONAL: {
+            TyPrinted const* before = printed_before(d, ty);
+            if (before) {
+                reprint_range(d, before->range);
+                break;
+            }
+            PrintedRange whole = printed_range_start(d);
+            display_conditional(me, d, ty);
+            printed_range_end(d, &whole);
+            remember_printed(d, ty, whole);
+        }   break;
 
         case TY_TEMPLATE_LITERAL:
             out_lit(d, "`");

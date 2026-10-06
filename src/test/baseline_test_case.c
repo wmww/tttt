@@ -1741,7 +1741,7 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
         .target = &rendered, .enclosing = my enclosing, .underline = &underline,
         .param_names = &param_names, .at = inner_span,
     }, type);
-    free(param_names.given);
+    ty_param_names_drop(&param_names);
     my error_type = (type->flags & TYF_ERROR) != 0;
     my unresolved_type = my error_type && type->kind == TY_INTRINSIC && type != ty_intrinsic(current_checker, TY_ERROR);
     add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
