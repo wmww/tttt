@@ -347,12 +347,12 @@ static bool alias_of_unknown(Symbol const* symbol) {
 
 // How tsc's symbolToString names its unknownSymbol (what a name after an unresolved import resolves to) from here:
 // by the first alias of it in the innermost symbol table that has one (getAccessibleSymbolChain matches aliases by
-// what they resolve to; a namespace's table is its exports), else not at all
+// what they resolve to; a namespace's table is its exports; the globals last), else not at all
 static cstr unknown_symbol_text(BaselineTestCase const* ctx) {
     for (Scope const* scope = ctx->enclosing; scope; scope = scope->parent) {
         SymbolTable const* tables[2] = { &scope->locals, nullptr };
         if (scope->kind == SCOPE_NAMESPACE && scope->container) tables[1] = symbol_members(scope->container)->exports;
-        if (scope->kind == SCOPE_GLOBAL) break;
+        if (scope->kind == SCOPE_GLOBAL) tables[1] = &scope->binder->globals;
         for (u32 t = 0; t < 2; t++) {
             for (u32 i = 0; tables[t] && i < tables[t]->count; i++) {
                 Symbol const* entry = tables[t]->entries[i].symbol;
@@ -1004,9 +1004,12 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
 
         case TYPE_ANY:
             if (span_valid(my any.unkown_symbol_span)) {
+                // (Named by an alias of it in scope if there is one, see unknown_symbol_text())
+                cstr text = unknown_symbol_text(ctx);
+                if (!cstr_size(&text)) cstr_assign(&text, "unknown");
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .allow_declaration_empty = true,
-                    .name = sv_make_span(c_sv("unknown")),
+                    .text = text,
                     .span = my any.unkown_symbol_span,
                 });
             }
@@ -1348,6 +1351,10 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
         type_predicate_compile_test_info(my predicate, ctx);
     } else if (my ret_explicit && !my is_constructor) {
         type_compile_test_info(&my ret, ctx);
+    } else if (span_valid(function_impl_rare(me)->constructor_missing_type)) {
+        // (A constructor's annotation is an error, TS1093, but still a type node: a missing one is unknownSymbol)
+        TypeNode missing = { .tag = TYPE_ANY, .any.unkown_symbol_span = function_impl_rare(me)->constructor_missing_type };
+        type_compile_test_info(&missing, ctx);
     }
     block_compile_test_info(&my body, ctx);
     baseline_test_case_leave_generic(ctx, saved);

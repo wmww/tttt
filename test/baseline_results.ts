@@ -6052,7 +6052,7 @@ const baselines = {
     },
     'constructorWithIncompleteTypeAnnotation': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'constructorWithParameterPropertiesAndPrivateFields.es2015': {

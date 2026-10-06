@@ -86,6 +86,9 @@ typedef struct TypePredicateNode {
 // Read through function_impl_rare(), written through function_impl_rare_mut()
 typedef struct FunctionImplRare {
     Span asterisk; // The `*` of a generator
+    // A constructor's return annotation (TS1093) that is a missing type: where tsc's unknownSymbol is (symbols baseline;
+    // the annotation itself is dropped)
+    Span constructor_missing_type;
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
     // A function expression or arrow written as an argument of `new X(...)`: the X when it's an identifier (TS2794:

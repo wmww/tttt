@@ -528,6 +528,9 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
                     1093,
                     "Type annotation cannot appear on a constructor declaration."
                 );
+                if (i->constructor.func.ret.tag == TYPE_ANY && span_valid(i->constructor.func.ret.any.unkown_symbol_span)) {
+                    function_impl_rare_mut(&i->constructor.func)->constructor_missing_type = i->constructor.func.ret.any.unkown_symbol_span;
+                }
                 type_drop(&i->constructor.func.ret);
             }
             check(i->constructor.func.ret.tag == TYPE_ANY);
