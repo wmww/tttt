@@ -37861,7 +37861,7 @@ const baselines = {
         types: true,
     },
     'controlFlowGenericTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

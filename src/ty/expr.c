@@ -1750,6 +1750,14 @@ static bool has_generic_without_nullable_constraint(Checker* me, Ty const* type)
     TyList members = type->kind == TY_UNION ? type->composite.types : (TyList){ .data = &type, .len = 1 };
     for (u32 i = 0; i < members.len; i++) {
         Ty const* member = members.data[i];
+        // (An intersection if some member is: tsc's isGenericTypeWithoutNullableConstraint)
+        if (member->kind == TY_INTERSECTION) {
+            for (u32 j = 0; j < member->composite.types.len; j++) {
+                Ty const* part = member->composite.types.data[j];
+                if (part->kind != TY_UNION && has_generic_without_nullable_constraint(me, part)) return true;
+            }
+            continue;
+        }
         if (!(member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
         Ty const* constraint = base_constraint_or_type(me, member);
         if (!ty_can_be_null(me, constraint) && !ty_can_be_undefined(me, constraint)) return true;
