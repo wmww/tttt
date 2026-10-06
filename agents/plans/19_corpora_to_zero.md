@@ -1,5 +1,6 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
+**Status 2026-10-06**: excalidraw and tanstack-router pinned and drained to 0 the same session (see their sections).
 **Status 2026-10-05**: effect pinned (6300 -> 63, see its section); vscode pinned (129 -> 0); the rest as below. **Status 2026-09-29 (seventh
 window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
 zod 0, zod-root = tsc's own 55, webpack 6 (0 since 2026-10-05), xstate 19, and two new corpora pinned and worked down the same day: **vue 0**
@@ -9,7 +10,7 @@ type-fest items is in git (this file before the corpus sessions) and in the comm
 
 ## The loop
 `./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
-nest, webpack, zod, xstate, drizzle, vue, effect, vscode (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
+nest, webpack, zod, xstate, drizzle, vue, effect, vscode, excalidraw, tanstack-router (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
 tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce each to a probe in
 `test/probes/plan19/<corpus>/`, fix the tsc rule behind it. Record the counts in the commit message and
 `measurements.md`; the suite and the other corpora are the regression checks.
@@ -237,6 +238,38 @@ boolean filter of the return mapper, union inference with one member left, union
 never-reduced members of union property lookups, optional-chain return inference, `any & X` lowering, for-of
 widening, predicate methods not thisless, constructor overloads erased with the class's type parameters. Several
 moved effect and xstate too. Scale numbers in measurements.md ("vscode").
+
+### excalidraw (0; 9 at pinning)
+Pinned 2026-10-06 (tenth window, todo entry 7) as the JSX-heavy application: excalidraw at d080833f (Dec 2025, the
+commit that moved it to TypeScript 5.9.3), 149k lines of React 19 .tsx/.ts (the editor, element/math/common packages,
+the collab app, vitest/testing-library tests), through `corpora-locks/excalidraw.overlay/tsconfig.corpus.json`
+(upstream's root tsconfig + `lib-dom-5.9-shim.d.ts`: TS 5.9's lib types `TextEncoder.encode()` as
+`Uint8Array<ArrayBuffer>`, which excalidraw relies on; the shim's overload merges in first). Yarn workspace: lint,
+format and coverage tools dropped (npm's lock of @isaacs/cliui doesn't `npm ci`). tsc 5.8: 0 in 8 s. tttt: 9, drained
+by a sub-agent (probes `test/probes/plan19/excalidraw/`): side-effect imports of a `.d.ts` (TS2846 only under
+noUncheckedSideEffectImports), contextual types for arguments of a union-of-arrays rest parameter generic in an outer
+type parameter, the discriminated-union relation (optional target properties take undefined; intersection sources),
+alias variances after a distributed union target fails (`Mutable<E>` to `Mutable<El>`), Pick's modifiers from a
+generic modifiers type's apparent type, spread operands reduced first (never-reducing union members). Flag flips
+(26 cells with tanstack-router, 5757 tsc diagnostics) found: an eopt write keeping the missing type of a non-optional
+property (`r.current = cb`), TS2339 on a union that reduces to never (sloppy), tsc's per-union TS2488 cache order
+(triage).
+
+### tanstack-router (0; 4 at pinning)
+Pinned 2026-10-06 (same session) as the inference-heavy library: TanStack Router at 837917a4 (Mar 2026, the last
+commit before TypeScript 6; its CI checked src with 5.8), react-router's src and tests (mostly `*.test-d.tsx`
+expectTypeOf over route trees: path/search/params/loader inference through createRoute()/createFileRoute() chains,
+`to` as template-literal unions over the whole tree, Register augmentation) through
+`corpora-locks/tanstack-router.overlay/tsconfig.corpus.json`, against router-core's and history's declarations built
+by `corpora-locks/tanstack-router.postinstall.sh` (tsc 5.8 `emitDeclarationOnly`), as upstream checks against its
+dist: router-core's sources inside react-router's program fail under tsc (react-router augments their interfaces).
+Three runtime tests need 5.9's lib.dom (`textContent: string`) and are excluded. tsc 5.8: 0 in 17.5 s (41k lines +
+101k of .d.ts; tttt 0.43 s at one checker). Drained by a sub-agent (probes `test/probes/plan19/tanstack-router/`):
+optional discriminants with their undefined, a homomorphic mapped type inferring nothing from a source that isn't
+reverse mappable (`window.scrollTo = vi.fn()`), inference from identical intersection members with tsc's
+getImplementationSignature for recursive calls (hacks.md), conditional sources against weak intersection members.
+Flag flips found the base constraint of a union with an unconstrained type variable (none, tsc's
+computeBaseConstraint: NavigateFn's `TFrom extends RoutePaths<...> | string` widens '/posts').
 
 ### vue (0; 107 at pinning)
 Pinned 2026-09-29 (same session): vue core at b5f85183 (the last commit before TypeScript 6), every package's src and

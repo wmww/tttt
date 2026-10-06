@@ -344,6 +344,10 @@ src` finds the code-side markers; every significant one has an entry here.
 - Contextual `this` (`ty_contextual_this_type`): literal context/parent remembered at check
   (`KEY_LITERAL_CONTEXT`/`KEY_LITERAL_PARENT`, last wins); `ThisType<T>` by name, instantiated with
   `ty_instantiate_fixing()`.
+- `implementation_signature()` (src/ty/call.c, tsc's getImplementationSignature): clones a generic signature for a call
+  inside the function that declares its type parameters by span containment of `sig->function`; skips construct
+  signatures (tsc goes by the class declaration for `new C()` inside class C, tttt doesn't track where class type
+  parameters are declared).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
 - `apply_type_arguments_part` (instantiation expressions): signatures whose type arguments violate the constraints
@@ -808,4 +812,3 @@ src` finds the code-side markers; every significant one has an entry here.
 - `failstats.py`'s `line_ratio` is multiset overlap, not a diff. `bench/make_corpus.py` replicates passing tests
   (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
-- `implementation_signature()` (src/ty/call.c, tsc's getImplementationSignature): clones a generic signature for a call inside the function that declares its type parameters by span containment of `sig->function`; skips construct signatures (tsc goes by the class declaration for `new C()` inside class C, tttt doesn't track where class type parameters are declared).

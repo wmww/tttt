@@ -200,3 +200,13 @@ queues merged into one.
   Schema.ts 7257/7283/7306 `transform(NullOr(value), ...)` (\"Type 'Value' is not assignable to type
   'NullOr<Value>'\"): with the alias they relate (alias variances, presumably). Worth a perf session: why tttt's alias
   instantiation is that much dearer than tsc's (perf_leads.md candidate).
+- (todo entry 7, excalidraw agent) An array literal spreading a generic mapped tuple, `[...x, { bar: "abc" }]` with
+  `x: M<Elements>`, is `[...{ bar: unknown; }[], ...]` in tttt, `[...M<Elements>, { bar: "abc"; }]` in tsc
+  (circularInlineMappedGenericTupleTypeNoCrash, whose types component bce92c5b gave up: tsc only matches its baseline
+  through a TS2589 that widens the literal). tsc also reports TS2345 on `new Foo<[...Elements, "abc"]>({ bar: "abc" })`
+  ("Source has 1 element(s) but target requires 2") and on calling a function whose rest parameter is a mapped type
+  over `[...Elements, "abc"]`; tttt reports neither.
+- (same) `.types` `^^^` markers under spreads of `Readonly<...>` intersections differ from tsc's (printed types equal).
+- (todo entry 7, tanstack-router agent) Its probes still differ from tsc in error text: `hash?: string | undefined`
+  where tsc prints `hash?: string`, and reversed union order in a conditional constraint's message
+  (test/probes/plan19/tanstack-router/conditional_source_weak_target.ts).

@@ -10,6 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Two corpora pinned: excalidraw, tanstack-router (2026-10-06, tenth window's todo entry 7, two sub-agents)
+excalidraw (JSX app, 149k lines; tsc 5.8 0 in 8 s) 9 -> **0**, tanstack-router (react-router + type tests, 41k lines +
+101k .d.ts; tsc 0 in 17.5 s, tttt 0.43 s at one checker) 4 -> **0**; checkerdiff 1 vs 4 checkers identical on both.
+Flagflip with their 26 new cells: 182 cells, 53212 tsc diagnostics; the old 156 cells 65 / 63 / 12 -> 67 / 57 / 11
+(missing / spurious / other code; the new cells 4 / 5 / 4 at pinning -> 0 / 6 / 0, the 6 effect sloppy ones a side
+effect, triage "Distributed conditionals"). Suite 13229 -> **13232** (one types component traded: bce92c5b), sweep
+8588 / 6 / 1 flat, `$ExpectType` 68610 flat, other corpora flat (effect 7). Instructions (callgrind, session start ->
+end): tsc 4.622 -> 4.625, type-fest 3.139 -> 3.142, valibot 4.275 -> 4.273, react 1.547 -> 1.545, nest 1.261 -> 1.261,
+webpack 3.861 -> 3.866, zod 4.587 -> 4.596, xstate 2.976 -> 3.003 (+0.9%), drizzle 13.150 -> 13.090, vue 8.044 -> 8.071,
+effect 9.846 -> 9.850, vscode 32.428 -> 32.485; new: excalidraw 5.040, tanstack-router 4.712. A mid-session drizzle
++25% (distributed conditionals named by their root's alias) was caught by the end-of-session instrcount and reverted.
+
 ## Flag sweeps and multi-file/JS mutants (2026-10-06, tenth window's todo entry 6; plan 46)
 `./sweep.py --flags nuia` 8585 -> **8588** / 8595, `--flags eopt` **8588** (both equal to the default sweep's 8588 /
 6 / 1 but react-relay under nuia). `./mutate.py --tests multi,js`: seed 1 (3000) 92 -> **12**, seed 2 (5000) 177 ->

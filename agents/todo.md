@@ -33,12 +33,14 @@ commit.
    multi,js` built (~7% yield, 3x single-file's), drained by three sub-agents: seeds 1/2 92 / 177 -> 12 / 40, fresh seed 3
    2.0%; one hang fixed. Suite 13228 -> 13229 (+1 errors component), flagflip 65 / 63 / 12 flat. Instructions:
    measurements.md.
-7. **Corpora: pin two new ones** chosen for what the current ones don't exercise: a JSX-heavy application (eg
-   excalidraw) and an inference-heavy router/RPC library (eg TanStack Router or tRPC); clean under tsc 5.8, drained to
-   0 the same session like effect/vscode (plan 19 has the loop); `./flagflip.py --tsc -c NAME` gives them flag-flip cells.
+7. ~~Corpora: pin two new ones~~ done 2026-10-06: **excalidraw** (JSX app, 149k lines, TS 5.9 lib shim) 9 -> 0 and
+   **tanstack-router** (react-router + type tests against router-core's built .d.ts, new postinstall hook) 4 -> 0, by
+   two sub-agents; their flag-flip cells added (26, 5757 tsc diagnostics). Suite 13229 -> 13232, sweep/`$ExpectType`
+   flat, instructions flat (a +25% drizzle mid-session caught and reverted: triage "Distributed conditionals").
 8. **Perf session**: instruction counts since the start of this window, bisect anything above +1%; then the cheapest of
    plan 45 stage 2 (JS resolve), the sweep's per-package startup (lib loading, plan 44 "Perf side-product") or
-   perf_leads.md's top item, by measurement.
+   perf_leads.md's top item, by measurement. Candidate: why naming distributed conditionals by their root's alias
+   (tsc does) cost drizzle +25% in tttt (triage "Distributed conditionals").
 9. **Execution: suite-tail fan-out** (missing_checks.md buckets, plan 35 queue, plan 19 "effect"'s last 7, and
    bugs/display.md's alias-argument bug: why variance measurement pays for the right alias arguments).
 10. **Triage.**
