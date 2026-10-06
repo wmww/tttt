@@ -236,3 +236,10 @@ queues merged into one.
     method data2 from tsc's type: circularity?); lateBoundAssignmentDeclarationSupport7 (`x.F.F[_str]`);
     moduleExportPropertyAssignmentDefault (`module.exports = axios; module.exports.default = axios` makes the local
     `axios` the getCommonJsExportEquals clone: tsc's recordMergedSymbol, `typeof axios` everywhere in the file).
+  - (same) typedefCrossModule3: getCommonJsExportEquals' clone merges the module's typedef Foo into `ns.Foo`
+    (mergeSymbol, not "the target's own wins" as in merged_export_equals()), and local references see the clone.
+    sourceFileMergeWithFunction: the checker merges the script's `foo` into the UMD module (merge_into_umd_globals),
+    but the suite's baseline still prints the function's own symbol at its name and the module as `"types"` where tsc
+    names the merged symbol `foo` with both declarations. declarationFileNoCrashOnExtraExportModifier: an
+    `export { Sub }` specifier inside `declare namespace exports` prints `exports.Sub` in tsc (tttt `Sub`; tsc's
+    reason not found, its getAccessibleSymbolChain would seem to find it unqualified).
