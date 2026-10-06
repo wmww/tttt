@@ -43,9 +43,15 @@ function check(dir) {
             configFileParsingDiagnostics: ts.getConfigFileParsingDiagnostics(parsed),
             projectReferences: parsed.projectReferences,
         });
+        // Types are read after checking every file but the default libs, like tttt does (and the suite harness, with
+        // skipDefaultLibCheck): union member order is type creation order, and asking getTypeAtLocation lazily
+        // creates the declarations' types in another order than checking them does (chrome's enum strings)
+        if (expectMode) {
+            for (const f of program.getSourceFiles()) if (!program.isSourceFileDefaultLibrary(f)) program.getSemanticDiagnostics(f);
+            return { project: dir, ms: Date.now() - start, asserts: expectTypes(dir, program) };
+        }
         // What `tsc -p` reports (emitFilesAndReportErrors): config, options, global, syntactic, then semantic
         // diagnostics if there were no syntactic ones; declaration diagnostics with `declaration` on
-        if (expectMode) return { project: dir, ms: Date.now() - start, asserts: expectTypes(dir, program) };
         diags.push(...program.getConfigFileParsingDiagnostics(), ...program.getOptionsDiagnostics(),
             ...program.getGlobalDiagnostics());
         const syntactic = program.getSyntacticDiagnostics();

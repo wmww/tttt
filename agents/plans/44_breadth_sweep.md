@@ -134,12 +134,9 @@ distribution that changes nothing is the union itself (underscore's `keyof X`), 
 intersection (assert.strict.equal), `${Enum}` property annotations made at the interface check (chrome, partly).
 
 ### Open, for the fan-out (todo entry 4); `./expecttypes.py --last -k KIND` lists each
-- **Union order, 135 assertions / ~55 packages** (`union order` + `order (same tokens)`): creation order. chrome is 42
-  of them: its enums' string literals; ``folderType?: `${FolderType}` `` is right now except `"other"`, made earlier
-  somewhere in chrome's 15k-line index.d.ts by tttt and not by tsc; `"start_page"` the other way. Trace with a probe
-  that cuts chrome down. tsc asks for *every* property signature's type in checkPropertySignature; tttt only for
-  literal and template annotations (interface_member_typecheck: doing all moved 5 suite tests both ways, variance
-  measurement order). Others: xmpp__connection 7, yargs (3 versions) 12, postman-collection 4, formidable 4.
+- **Union order, 44 + 1 assertions / ~20 packages** (`union order` + `order (same tokens)`): creation order. Was 135:
+  the oracle asked getTypeAtLocation lazily without checking, so declarations' types were made in lookup order
+  (chrome's enum strings, 42); test/sweep_tsc.js --expect now checks every non-lib file first, like tttt (2026-10-06).
 - **chillout (12)**: inference through a rest parameter of conditional tuple type keeps the fresh `true`:
   `fe<T>(...args: T extends ArrayLike<unknown> ? [T, (v: T) => void] : [T, (v: T[keyof T]) => void])` with
   `fe({ a: "x", b: true }, v => v)` gives `v: string | true` (tsc `string | boolean`); without the conditional it's right.

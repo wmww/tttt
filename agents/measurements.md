@@ -13,7 +13,8 @@ there than a clean run.
 ## `$ExpectType` (2026-10-06, tenth window's todo entry 3, plan 44 stage 3 item 2)
 `./expecttypes.py`: 68640 compared assertions in 2703 DefinitelyTyped packages (69229 in 2737 recorded; declarations
 not compared), tttt 27 s for all at -j4 (tsc's side 108 s). 68312 -> **68416 match (99.7%)**, 2630 -> 2637 packages
-all match. Suite 13103 -> **13104** (0 lost), corpora unchanged (effect 7, the rest 0), sweep 8580 / 8595 flat,
+all match. Oracle regenerated with a full check before reading types (2026-10-06, agent A): **68506 match**, 2665
+packages all match (same tttt; ~90 assertions differed only by lazy creation order). Suite 13103 -> **13104** (0 lost), corpora unchanged (effect 7, the rest 0), sweep 8580 / 8595 flat,
 flagflip 81 / 63 / 12 flat. Instructions (callgrind, `./instrcount.sh`), 39bed00b -> end: tsc 4.639 -> 4.638,
 type-fest 3.115 -> 3.114, valibot 4.097 -> 4.120 (+0.56%), react 1.597 -> 1.596, nest 1.254, webpack 3.842, zod
 4.523 -> 4.533 (+0.2%), xstate 2.897, drizzle 13.353 -> 13.286 (-0.5%), vue 7.797 -> 7.799, effect 9.753 -> 9.758,

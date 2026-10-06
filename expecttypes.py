@@ -2,9 +2,11 @@
 """`$ExpectType` at breadth (plan 44 stage 3 item 2): a *types* oracle over DefinitelyTyped. Every package with
 `// $ExpectType` assertions in its tests is checked by tttt, which prints the type of each asserted node; that is
 compared with what tsc 5.8 prints for the same node (not with the comment: DT's CI runs a newer TypeScript). tsc's
-side is cached in test/sweep/DefinitelyTyped.expect.jsonl.gz (`--tsc` regenerates it, ~2 minutes on 4 cores): the node
+side is cached in test/sweep/DefinitelyTyped.expect.jsonl.gz (`--tsc` regenerates it, ~2-10 minutes on 4 cores): the node
 DefinitelyTyped's `expect` lint rule picks for each assertion (test/sweep_tsc.js --expect), its span and kind, and
-`typeToString(getTypeAtLocation(node), undefined, NoTruncation)`. tttt gets the spans (`--expect-types FILE`) and
+`typeToString(getTypeAtLocation(node), undefined, NoTruncation)` read after checking every file but the default libs
+(tttt's order: union member order is creation order, and lazy getTypeAtLocation without the check made ~100
+assertions differ by order alone; DT's own comments come from that lazier order). tttt gets the spans (`--expect-types FILE`) and
 prints its own type for each.
 
 Mismatches are bucketed with displaydiff's kinds (union order, import() qualification, any where tsc has a type...)
