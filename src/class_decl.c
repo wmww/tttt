@@ -984,7 +984,8 @@ static void check_member_override(OverrideCtx const* ctx, Atom const* name, bool
         if (!has_override && !no_implicit) return;
         Prop const* prop = override_find_prop(checker, is_static ? ctx->static_type : ctx->type, name);
         Ty const* base_type = is_static ? ctx->base_static : ctx->base;
-        Prop const* base_prop = ctx->base_any ? nullptr : override_find_prop(checker, base_type, name);
+        Prop const* base_prop = ctx->base_any && (!is_static || ctx->base_static == ctx->base) ? nullptr :
+            override_find_prop(checker, base_type, name);
         if (prop && !base_prop && has_override) {
             Atom const* suggestion = ctx->base_any ? nullptr : override_suggestion(checker, base_type, name);
             if (suggestion && js) {
@@ -1052,6 +1053,18 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
         else if ((constructor->flags & TYF_ANY) && !(constructor->flags & TYF_ERROR)) {
             ctx.base_any = true;
             ctx.base = ctx.base_static = constructor;
+        } else {
+            // A constructor of `any` (`new (...args: any[]) => any`): the base type is any, which has no properties,
+            // but the static side still inherits the constructor's, Function's among them (tsc's
+            // checkMembersForOverrideModifier with baseTypes [any], getBaseConstructorTypeOfClass)
+            Ty const* apparent = ty_apparent_type(checker, constructor);
+            Members const* members = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_members(checker, apparent) : nullptr;
+            Ty const* constructed = members && members->construct_count ? signature_return_type(checker, members->construct[0]) : nullptr;
+            if (constructed && (constructed->flags & TYF_ANY) && !(constructed->flags & TYF_ERROR)) {
+                ctx.base_any = true;
+                ctx.base = constructed;
+                ctx.base_static = constructor;
+            }
         }
     }
     for_each (i, vec_class_item, &my items) {
