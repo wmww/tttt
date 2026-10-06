@@ -60617,7 +60617,7 @@ const baselines = {
     },
     'prototypePropertyAssignmentMergeWithInterfaceMethod': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'prototypePropertyAssignmentMergedTypeReference': {

@@ -177,10 +177,10 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     Symbol const* symbol = constructor ? expr_entity_name_symbol(constructor) : nullptr;
     Symbol const* member = symbol && symbol_rare(symbol)->members ? symbol_table_get(symbol_rare(symbol)->members, name.sv) : nullptr;
     if (!member || ctx->symbol_override_count + 3 > c_arraylen(ctx->symbol_overrides)) return;
-    // (A class's `prototype` is its instance type, where the access finds the member)
-    if (symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
-        // A member the class body declares is the symbol the assignment adds a declaration to (tsc's
-        // bindPrototypePropertyAssignment): the checker's member has them all (builder_add_assignment_members)
+    // A member the class body (or an interface merged with the JavaScript class) declares is the symbol the assignment
+    // adds a declaration to (tsc's bindPrototypePropertyAssignment): the checker's member has them all
+    // (builder_add_assignment_members)
+    if (symbol->flags & SYMBOL_CLASS) {
         Checker* checker = current_checker;
         Ty const* instance = ty_declared_type_of(checker, symbol);
         Prop const* prop = instance && (instance->flags & TYF_OBJECT) ? ty_get_prop(checker, instance, checker_atom(checker, name.sv)) : nullptr;
@@ -193,6 +193,13 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
             for (int k = 0; k < 3; k++) {
                 Span at = k == 0 ? left->inner_span : k == 1 ? left->property->expr.inner_span : expr_outer_span(&left->property->prop);
                 if (k == 2 && left->property->form == PROPERTY_EXPR_BRACKET) break;
+                // (Only a class's `prototype` is its instance type, where the access finds the member)
+                if (k == 0 && !symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
+                    ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+                        .span = at, .text = cstr_init(), .declarations = vec_span_init(), .suppress = true,
+                    };
+                    continue;
+                }
                 VecSpan spans = vec_span_init();
                 for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&spans, prop->decl->decl_spans[i]);
                 ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
@@ -201,6 +208,9 @@ static void prototype_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
             }
             return;
         }
+    }
+    // (A class's `prototype` is its instance type, where the access finds the member)
+    if (symbol_find_node(symbol, SYMBOL_DECL_CLASS)) {
         add_symbol_override(ctx, left->inner_span, member);
     } else {
         ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
