@@ -651,9 +651,11 @@ static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty con
 
 // Whether the property an assignment writes is optional (tsc's prop.flags & SymbolFlags.Optional in
 // getFlowTypeOfAccessExpression, which only then removes the missing type): of a union, if some member's is. Only a
-// literal key names one (`o[k] = v` keeps it); `r.current = cb` with `current: T` and T inferred as `X | missing` keeps the missing type
+// literal key names one; `r.current = cb` with `current: T` and T inferred as `X | missing` keeps the missing type
 static bool written_prop_is_optional(Checker* me, Ty const* object, Ty const* key) {
-    if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return false;
+    // (A non-literal key writes the optional properties' write types, tsc's getWriteTypeOfSymbol, which drop the missing
+    // type themselves: `cache[key] = undefined` with `cache: Partial<Record<K, X>>` is TS2322; tttt's write types keep it)
+    if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL))) return true;
     Atom const* name = ty_literal_name(me, key);
     Ty const* apparent = ty_apparent_type(me, object);
     TyList members = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
