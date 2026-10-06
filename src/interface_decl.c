@@ -208,6 +208,10 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, my name, 2310, "Type '", declared, "' recursively references itself as a base type.");
     }
 
+    // The bases and index signatures are checked before the heritage clauses and members are walked (tsc's
+    // checkInterfaceDeclaration, its first lazy diagnostic), which decides union order: checkIndexConstraints makes
+    // the literal type of every property's name, `open` before `status: "new" | "open"` is walked
+    interface_heritage_typecheck(me, errs);
     check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {
         type_typecheck(&extends->type, errs);
@@ -270,5 +274,4 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         }
         if (index_count > 1) ty_check_duplicate_index_signatures(current_checker, indexes, index_count, errs);
     }
-    interface_heritage_typecheck(me, errs);
 }
