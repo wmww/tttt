@@ -443,9 +443,9 @@ static PackageJson const* package_json_of(State* me, csview directory) {
             readable = false;
         }
         if (readable) {
-            // A package.json that doesn't parse still marks a package, with nothing in it
+            // A package.json that doesn't parse cleanly still marks a package, with nothing in it (tsc's readJson)
             package.exists = true;
-            ignore json_parse(cstr_sv(&contents), &package.json);
+            ignore json_parse_strict(cstr_sv(&contents), &package.json);
             cstr_drop(&contents);
         }
     }

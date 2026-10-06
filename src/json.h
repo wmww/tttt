@@ -41,6 +41,9 @@ struct JsonMember {
 // False if text has no JSON value at all (*out is a null value then). What isn't JSON in it is recovered from like tsc's
 // parseJsonText does (see parse_container())
 bool json_parse(csview text, JsonValue* out);
+// False (and *out a null value) if text has anything tsc's parseConfigFileTextToJson reports: its readJson, which
+// takes a package.json with any syntax error (or a key that isn't a double-quoted string) as empty
+bool json_parse_strict(csview text, JsonValue* out);
 void json_drop(JsonValue* me);
 
 // Null unless me is an object with that member. The last one wins, like JSON.parse

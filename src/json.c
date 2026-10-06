@@ -5,6 +5,8 @@ typedef struct JsonParser {
     const char* at;
     const char* end;
     int depth;
+    // Something tsc's parseJsonText or convertToJson would report was recovered from (json_parse_strict())
+    bool dirty;
 } JsonParser;
 
 static void skip_trivia(JsonParser* me) {
@@ -54,10 +56,14 @@ static void append_utf8(cstr* out, unsigned code) {
 // An unterminated string (at a line break or the end) is what it has so far, like tsc's scanner's
 static void parse_string(JsonParser* me, cstr* out) {
     char quote = *my at; // tsc's config parser takes single quotes too
+    if (quote != '"') my dirty = true;
     my at++;
     *out = cstr_null;
     while (my at < my end && *my at != quote) {
-        if (*my at == '\n' || *my at == '\r') return;
+        if (*my at == '\n' || *my at == '\r') {
+            my dirty = true;
+            return;
+        }
         if (*my at != '\\') {
             const char* run = my at;
             while (my at < my end && *my at != quote && *my at != '\\' && *my at != '\n' && *my at != '\r') my at++;
@@ -88,6 +94,7 @@ static void parse_string(JsonParser* me, cstr* out) {
         }
     }
     if (my at < my end) my at++;
+    else my dirty = true;
 }
 
 static bool is_word_char(char c) {
@@ -103,18 +110,29 @@ static bool parse_value(JsonParser* me, JsonValue* out);
 static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
     isize cap = 0;
     my at++;
+    bool after_element = false; // (An element not followed by a comma yet)
     while (true) {
         skip_trivia(me);
-        if (my at >= my end) return true;
+        if (my at >= my end) {
+            my dirty = true;
+            return true;
+        }
         if (*my at == (is_object ? '}' : ']')) {
             my at++;
             return true;
         }
-        if (*my at == (is_object ? ']' : '}')) return true; // (The enclosing container's)
+        if (*my at == (is_object ? ']' : '}')) { // (The enclosing container's)
+            my dirty = true;
+            return true;
+        }
         if (*my at == ',') { // Also forgives `[,]`, which nobody writes
+            if (!after_element) my dirty = true;
+            after_element = false;
             my at++;
             continue;
         }
+        if (after_element) my dirty = true; // (A missing comma)
+        after_element = true;
         if (out->count == cap) {
             cap = cap ? cap * 2 : 4;
             if (is_object) {
@@ -133,15 +151,19 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
                 const char* word = my at;
                 while (my at < my end && is_word_char(*my at)) my at++;
                 member->key = cstr_from_sv((csview){ word, my at - word });
+                my dirty = true; // (Not a double-quoted string)
             } else {
                 my at++; // (Not a property)
+                my dirty = true;
                 continue;
             }
             member->key_end = (u32)(my at - my text);
             out->count++; // From here on json_drop() owns it
             skip_trivia(me);
             if (my at < my end && *my at == ':') my at++;
+            else my dirty = true;
             if (!parse_value(me, &member->value)) {
+                my dirty = true;
                 // A property without a value isn't one
                 out->count--;
                 cstr_drop(&member->key);
@@ -152,6 +174,7 @@ static bool parse_container(JsonParser* me, JsonValue* out, bool is_object) {
             out->items[out->count] = (JsonValue){0};
             out->count++;
             if (!parse_value(me, &out->items[out->count - 1])) {
+                my dirty = true;
                 json_drop(&out->items[--out->count]);
                 if (my at == before) my at++;
             }
@@ -233,6 +256,15 @@ static bool parse_value_at(JsonParser* me, JsonValue* out) {
 bool json_parse(csview text, JsonValue* out) {
     JsonParser parser = { .text = text.buf, .at = text.buf, .end = text.buf + text.size };
     if (parse_value(&parser, out)) return true;
+    json_drop(out);
+    return false;
+}
+
+bool json_parse_strict(csview text, JsonValue* out) {
+    JsonParser parser = { .text = text.buf, .at = text.buf, .end = text.buf + text.size };
+    bool parsed = parse_value(&parser, out);
+    skip_trivia(&parser);
+    if (parsed && !parser.dirty && parser.at == parser.end) return true;
     json_drop(out);
     return false;
 }
