@@ -2905,8 +2905,10 @@ u32 ty_nullable_facts(Checker* me, Ty const* ty) {
     return 0;
 }
 
+// (Without strictNullChecks only the null and undefined types themselves, tsc's getTypeFacts: `o.f()` where `f` is an
+// index signature's `never` that noUncheckedIndexedAccess made undefined)
 Ty const* ty_check_non_null_callee(Checker* me, Ty const* callee, Span span, ErrorCtx* errs) {
-    if (!compiler_options()->strict_null_checks) return callee;
+    if (!compiler_options()->strict_null_checks && !(callee->flags & (TYF_NULL | TYF_UNDEFINED))) return callee;
     u32 facts = ty_nullable_facts(me, callee);
     if (!facts) return callee;
     if (facts == 3) error_ctx_error_d(errs, span, 2723, "Cannot invoke an object which is possibly 'null' or 'undefined'.");

@@ -44,7 +44,8 @@ static Ty const* with_undefined(Checker* me, Ty const* type) {
 // noUncheckedIndexedAccess's undefined of an index signature read: tsc's missingType, which `"k" in o` takes out of
 // `o.k` (narrow_missing_by_presence()) and an optional property's undefined isn't
 static Ty const* with_missing(Checker* me, Ty const* type) {
-    if (!compiler_options()->strict_null_checks) return type;
+    // (Without strictNullChecks a union drops undefined, unless nothing else is left: `never` is undefined then)
+    if (!compiler_options()->strict_null_checks) return type == ty_intrinsic(me, TY_NEVER) ? ty_intrinsic(me, TY_UNDEFINED) : type;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_MISSING) };
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
