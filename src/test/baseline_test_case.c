@@ -597,14 +597,25 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     for_each (i, vec_baseline_test_file, &my files) {
         csview name = basename_of(cstr_sv(&i->path));
         if (!tag_equals(name, "tsconfig.json") && !tag_equals(name, "jsconfig.json")) continue;
+        // (tsc's harness parses it without the directives, parseJsonSourceFileConfigFileContent with no existing
+        // options: they don't decide its files, an `@allowJs` doesn't make a .js file a root. They apply after)
+        CompilerOptions* options = program_options(my program);
+        bool capture_suggestions = options->capture_suggestions;
+        bool case_insensitive = options->case_insensitive_file_names;
+        compiler_options_drop(options);
+        *options = compiler_options_init();
+        options->capture_suggestions = capture_suggestions;
+        options->case_insensitive_file_names = case_insensitive;
+        bool loaded = true;
         try (tsconfig_load(mock_fs_get_fs(my fs), cstr_sv(&i->path), program_options(my program), &my tsconfig_roots)) if_err (e) {
             ignore e;
             current_error_destroy();
-            break;
+            loaded = false;
         }
-        my has_tsconfig = true;
-        SourceFile const* config_source = program_set_config_file(my program, cstr_sv(&i->path), false);
-        i->config_source = config_source;
+        if (loaded) {
+            my has_tsconfig = true;
+            i->config_source = program_set_config_file(my program, cstr_sv(&i->path), false);
+        }
         VecCStr directives = my directives;
         my directives = (VecCStr){0};
         for (isize j = 0; j + 1 < vec_cstr_size(&directives); j += 2) {

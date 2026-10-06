@@ -1412,9 +1412,16 @@ static void program_validate_paths(Program* me) {
     for (isize p = 0; p < options->value.count; p++) {
         JsonMember const* paths = &options->value.members[p];
         if (!cstr_equals(&paths->key, "paths") || paths->value.tag != JSON_OBJECT) continue;
+        if (json_get(&options->value, "paths") != &paths->value) continue; // (The last one is the option)
         for (isize i = 0; i < paths->value.count; i++) {
             JsonMember const* pattern = &paths->value.members[i];
             JsonValue const* substitutions = &pattern->value;
+            // (tsc checks the converted options: a pattern written again later is that one)
+            bool overridden = false;
+            for (isize j = i + 1; j < paths->value.count && !overridden; j++) {
+                overridden = cstr_eq(&paths->value.members[j].key, &pattern->key);
+            }
+            if (overridden) continue;
             if (count_asterisks(cstr_sv(&pattern->key)) > 1) {
                 error_ctx_error_d(my errs, config_span(me, pattern->key_start, pattern->key_end), 5061, "Pattern '",
                     pattern->key, "' can have at most one '*' character.");
