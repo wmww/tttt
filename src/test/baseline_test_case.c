@@ -603,7 +603,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
             break;
         }
         my has_tsconfig = true;
-        SourceFile const* config_source = program_set_config_file(my program, cstr_sv(&i->path));
+        SourceFile const* config_source = program_set_config_file(my program, cstr_sv(&i->path), false);
         i->config_source = config_source;
         VecCStr directives = my directives;
         my directives = (VecCStr){0};

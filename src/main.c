@@ -182,7 +182,7 @@ static_failable apply_compiler_options(Options const* opts, Output* out, csview 
             tsconfig_diagnostics_drop(&diagnostics);
         }
         cstr relative = relative_path_of(cstr_sv(&cwd), config);
-        program_set_config_file(program, cstr_sv(&relative));
+        program_set_config_file(program, cstr_sv(&relative), true);
         // The config parsing diagnostics of its `extends` (at the name in this config, else without a location)
         cstr absolute = absolute_path_of(cstr_sv(&cwd), config);
         for (u32 i = 0; i < diagnostics.count; i++) {

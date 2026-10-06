@@ -237,7 +237,7 @@ static void program_drop(Program* me) {
     binder_destroy(my binder); // After the AST: type nodes in it may own things symbols point to
 }
 
-SourceFile const* program_set_config_file(Program* me, csview path) {
+SourceFile const* program_set_config_file(Program* me, csview path, bool report_syntax) {
     cstr contents = cstr_null;
     try (fs_read_file(my fs, path, &contents)) if_err (e) {
         ignore e;
@@ -255,10 +255,14 @@ SourceFile const* program_set_config_file(Program* me, csview path) {
     my config_source->is_config = true;
     my config_source->unchecked = true;
     // tsc's parseJsonText: the config's syntax errors (TS1005 & co) are its parsing diagnostics, reported whatever
-    // else is wrong (they stop nothing); what json_parse() recovers of a broken config is still what's read
+    // else is wrong (they stop nothing); what json_parse() recovers of a broken config is still what's read.
+    // Without report_syntax they're dropped, like tsc's test harness does (it ignores the ParsedCommandLine's errors,
+    // and the program only reports the config's program diagnostics)
     bool own_options = !compiler_options_private;
     if (own_options) set_compiler_options(&my options);
-    parse_file(my config_source, my errs);
+    ErrorCtx dropped = error_ctx_scratch(my errs);
+    parse_file(my config_source, report_syntax ? my errs : &dropped);
+    error_ctx_drop(&dropped);
     if (own_options) clear_compiler_options();
     if (!json_parse(cstr_sv(&my config_source->contents), &my config_json)) my config_json = (JsonValue){0};
     return my config_source;
