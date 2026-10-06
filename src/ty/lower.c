@@ -3217,6 +3217,13 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 Ty const* distributes_over = !declared ? nullptr :
                     declared->kind == TY_INDEXED ? declared->indexed.index :
                     declared->kind == TY_CONDITIONAL && declared->conditional.distributive ? declared->conditional.check : nullptr;
+                // (A deferred instance of the conditional type it declares, which instantiation names by the
+                // conditional type's root alias: tsc's getConditionalTypeInstantiation takes the alias given)
+                if (!renames && declared && declared->kind == TY_CONDITIONAL && ret->kind == TY_CONDITIONAL &&
+                    ret->conditional.root == declared->conditional.root
+                ) {
+                    renames = true;
+                }
                 if (!renames && ret->kind == TY_UNION && distributes_over) {
                     Ty const* args_buf[MAX_TYPE_ARGS];
                     TyList params = ty_type_params_of(me, symbol_type_generic(canonical(me, decl)));
@@ -3359,7 +3366,14 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 conditional_set_outer(me, ret, node);
             }
             ty_buf_drop(&infers);
-            return alias && ret->kind == TY_CONDITIONAL ? ty_realias(me, ret, alias, alias_args) : ret;
+            if (!alias || ret->kind != TY_CONDITIONAL) return ret;
+            Ty const* aliased = ty_realias(me, ret, alias, alias_args);
+            if (ret->conditional.root == ret) {
+                u64 key[2] = { KEY_CONDITIONAL_ROOT_ALIAS, ret->id };
+                void const** slot = intern_slot(me, &my links, key, 2);
+                if (!*slot) *slot = aliased;
+            }
+            return aliased;
         }
 
         case TYPE_UNION:

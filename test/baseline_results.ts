@@ -9208,7 +9208,7 @@ const baselines = {
     'deepKeysIndexing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyDependentLargeArrayMutation': {
         errors: true,
@@ -9248,7 +9248,7 @@ const baselines = {
     'deeplyNestedMappedTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyNestedTemplateLiteralIntersection': {
         errors: true,
@@ -9938,7 +9938,7 @@ const baselines = {
     'divideAndConquerIntersections': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doNotElaborateAssignabilityToTypeParameters': {
         errors: true,
@@ -17063,7 +17063,7 @@ const baselines = {
     'indexedAccessKeyofNestedSimplifiedSubstituteUnwrapped': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexedAccessNormalization': {
         errors: true,
