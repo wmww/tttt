@@ -122,8 +122,7 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
   mergedDeclarations7 (tsc relates the imported interface with an uninstantiated `this`), awaitedTypeNoLib.
 - distributiveConditionalTypeConstraints (constraint of a distributive conditional type is `boolean`, we print
   `IsArray<T>`), mappedTypeNotMistakenlyHomomorphic (Gen2<ABC.A> vs B relation), mappedTypeRecursiveInference (we hit
-  TS2589), inferFromGenericFunctionReturnTypes3, baseConstraintOfDecorator, contextuallyTypedParametersOptionalInJSDoc
-  (JSDoc optional parameter contextual typing).
+  TS2589), inferFromGenericFunctionReturnTypes3, baseConstraintOfDecorator.
 - tsxUnionElementType3/4: the props intersection prints `{ children?: ReactNode; }` once where tsc has it twice.
   Mechanism (2026-10-06): react.d.ts's `props: P & { children?: ReactNode }` is in `class Component<P, S>`, which is
   merged with `interface Component<P, S>`; tsc's isTypeParameterPossiblyReferenced says yes for any type parameter

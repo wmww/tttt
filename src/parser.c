@@ -4320,13 +4320,14 @@ static bool jsdoc_reparse_type(Parser* parent, JsDocTag const* tag, TypeNode* re
     return parsed;
 }
 
-// The `@param` tag for a function's parameter (tsc's getJSDocParameterTags): by name, or for a pattern by position
-static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
+// The `@param` tag for a function's parameter (tsc's getJSDocParameterTags): by name, or for a pattern by position,
+// with or without a type
+static JsDocTag* jsdoc_param_tag_any(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
     Binding const* binding = &arg->initializer.binding;
     if (binding->tag == BINDING_IDENTIFIER) {
         for_each (i, vec_jsdoc_tag, tags) {
             if (i->kind == JSDOC_TAG_PARAM && !i->nested && span_valid(i->name) && jsdoc_name_is(i->name.sv, binding->content_span.sv)) {
-                return i->has_type ? i : nullptr;
+                return i;
             }
         }
         return nullptr;
@@ -4339,10 +4340,17 @@ static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function
         if (parent && span_valid(i->name) && jsdoc_name_is_under(i->name.sv, parent->name.sv)) continue;
         bool array;
         parent = span_valid(i->name) && (jsdoc_is_object_type(i, &array) || i->type.tag == TYPE_INTERFACE) ? i : nullptr;
-        // (One a parameter took by name already is this one's too: see jsdoc_reparse_type())
-        if (!index--) return i->has_type || span_valid(i->type_span) ? i : nullptr;
+        if (!index--) return i;
     }
     return nullptr;
+}
+
+static JsDocTag* jsdoc_param_tag(VecJsDocTag* tags, FunctionImpl const* function, FunctionArg const* arg) {
+    JsDocTag* tag = jsdoc_param_tag_any(tags, function, arg);
+    if (!tag) return nullptr;
+    // (By position, one a parameter took by name already is this one's too: see jsdoc_reparse_type())
+    bool by_name = arg->initializer.binding.tag == BINDING_IDENTIFIER;
+    return tag->has_type || (!by_name && span_valid(tag->type_span)) ? tag : nullptr;
 }
 
 // The function an expression is, directly (tsc: a parenthesized one has no JSDoc host above it)
@@ -4808,7 +4816,14 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         Binding* binding = &i->initializer.binding;
         if (binding->has_explicit_type) continue;
         JsDocTag* tag = jsdoc_param_tag(tags, function, i);
-        if (!tag) continue;
+        if (!tag) {
+            // `@param [b]` without a type still makes b optional (tsc's isJSDocOptionalParameter)
+            JsDocTag const* untyped = jsdoc_param_tag_any(tags, function, i);
+            if (untyped && untyped->bracketed && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) {
+                i->explicit_optional = true;
+            }
+            continue;
+        }
         bool variadic = tag->variadic;
         bool bracketed = tag->bracketed;
         // `@param {Object} o` + `@param {string} o.a`: a literal of the nested ones

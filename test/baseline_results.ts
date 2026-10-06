@@ -6676,9 +6676,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedParametersOptionalInJSDoc': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedParametersWithInitializers1': {
         errors: true,
