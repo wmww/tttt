@@ -575,15 +575,17 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
     // The alias's own body with other type arguments, which it doesn't use (`type Foo<T> = { a: 1 }`, Foo<number>):
     // an instantiation of its own that prints with them (tsc's getObjectTypeInstantiation keys on the alias type
     // arguments too)
+    // (A union of the same alias with other arguments too: `G` through an import, alias arguments `[]`, next to
+    // `G<string, number>`)
+    if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
+        return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+    }
+    if (ty->kind == TY_INTERSECTION) {
+        return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
+    }
     if (ty->alias == alias) {
         if (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args || ty->anonymous.function) return ty;
     } else {
-        if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
-            return ty_union(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
-        }
-        if (ty->kind == TY_INTERSECTION) {
-            return ty_intersection(me, ty->composite.types.data, ty->composite.types.len, alias, alias_args);
-        }
         // (A deferred reference, `type L1<V> = L2<V>` of `type L2<V> = L3<V>`, goes by the new name too: tsc's
         // getObjectTypeInstantiation keys it on the alias)
         bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || (ty->kind == TY_REFERENCE && ty->reference.deferred);
