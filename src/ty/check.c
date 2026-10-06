@@ -827,8 +827,9 @@ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* rig
 // tsc's checkTypeComparableTo without a head message: TS2678 and why, or what replaces it (an excess property)
 void ty_check_comparable(Checker* me, Ty const* source, Ty const* target, Span span, ErrorCtx* errs) {
     if (ty_is_related(me, source, target, TY_RELATION_COMPARABLE)) return;
-    cstr source_str = ty_to_cstr(me, source);
-    cstr target_str = ty_to_cstr(me, target);
+    // (A literal source is shown widened unless the target could hold it: tsc's reportRelationError)
+    cstr source_str, target_str;
+    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
     report_unrelated_with_head(me, TY_RELATION_COMPARABLE, source, target, 2678, cstr_d(
         "Type '", source_str, "' is not comparable to type '", target_str, "'."
     ), false, span, errs);
