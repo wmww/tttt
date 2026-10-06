@@ -6250,7 +6250,9 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
 // shortcut, isSimpleTypeRelatedTo: an overload taking `any` wins over a generic one for an unresolved name's argument)
 static inline bool error_related(Ty const* source, Ty const* target, TyRelation relation) {
     if (target->flags & TYF_ERROR) return true;
-    return (source->flags & TYF_ERROR) && relation != TY_RELATION_SUBTYPE && relation != TY_RELATION_STRICT_SUBTYPE;
+    // (Not to never either, which any isn't: `isNever(unresolved)` is TS2345 to tsc)
+    return (source->flags & TYF_ERROR) && !(target->flags & TYF_NEVER) && relation != TY_RELATION_SUBTYPE &&
+        relation != TY_RELATION_STRICT_SUBTYPE;
 }
 
 static bool check_related(
