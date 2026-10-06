@@ -2497,6 +2497,8 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
         Members const* members = ty_members(me, apparent);
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
+            // (tsc's getLiteralTypeFromProperty of every property, in order: the creation order its union goes by)
+            if (!(prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) && !ty_private_name_class(me, prop->name)) ty_prop_name_literal(me, prop->name);
             if (ty_is_spreadable_prop(me, prop)) continue;
             // (A private or protected member, or a `#x`, has no key to omit: keyof lacks it already. tsc's
             // getLiteralTypeFromProperty gives never)

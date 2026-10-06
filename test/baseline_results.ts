@@ -9676,9 +9676,9 @@ const baselines = {
         types: true,
     },
     'destructuringUnspreadableIntoRest': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringWithConstraint': {
         errors: true,
