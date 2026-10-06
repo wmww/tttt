@@ -15078,7 +15078,7 @@ const baselines = {
     'genericIndexedAccessMethodIntersectionCanBeAccessed': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'genericIndexedAccessVarianceComparisonResultCorrect': {
         errors: true,
@@ -30433,7 +30433,7 @@ const baselines = {
     'thisIndexOnExistingReadonlyFieldIsNotNever': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisKeyword': {
         errors: true,
@@ -63851,7 +63851,7 @@ const baselines = {
         types: true,
     },
     'keyofAndIndexedAccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

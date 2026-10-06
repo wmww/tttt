@@ -3841,6 +3841,12 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             Ty const* simple = ty_simplified(me, ty, false);
             if (simple == ty) simple = mapped_generic_indexed_access(me, ty);
             if (simple && simple != ty) {
+                // (tsc's computeBaseConstraint of the simplified type: of a union or intersection its members', where
+                // `T[string] & X` with T unconstrained is X)
+                if ((simple->kind == TY_UNION || simple->kind == TY_INTERSECTION) && (simple->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+                    Ty const* base = base_constraint(me, simple, depth + 1);
+                    return base ? base : simple;
+                }
                 if (simple->kind != TY_TYPE_PARAM && !(simple->flags & TYF_DEFERRED)) return simple;
                 Ty const* deeper = base_constraint(me, simple, depth + 1);
                 return deeper ? deeper : nullptr;
@@ -3850,6 +3856,10 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             Ty const* object_constraint = base_constraint(me, object, depth + 1);
             Ty const* index_constraint = base_constraint(me, index, depth + 1);
             if (!object_constraint && !index_constraint) return nullptr;
+            // (A type variable without a constraint leaves nothing to know: tsc's computeBaseConstraint needs both,
+            // `T[K]` with `K extends keyof T` isn't `T[string] | T[number] | T[symbol]`)
+            if (!object_constraint && (object->kind == TY_TYPE_PARAM || (object->flags & TYF_DEFERRED))) return nullptr;
+            if (!index_constraint && (index->kind == TY_TYPE_PARAM || (index->flags & TYF_DEFERRED))) return nullptr;
             Ty const* ret = ty_indexed_include_undefined(me, object_constraint ? object_constraint : object,
                 index_constraint ? index_constraint : index, ty->indexed.include_undefined);
             if (ret == ty) return nullptr;
