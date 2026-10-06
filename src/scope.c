@@ -4920,6 +4920,9 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
 // `left = right`, or a JavaScript `/** @type {T} */ left;` (right is left then)
 static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level) {
     if (left->tag != EXPR_PROPERTY) return;
+    // `module.exports = v` in JavaScript is the module's `export =` whatever `module` is here, never a member of a local
+    // `module` (tsc's getAssignmentDeclarationKind: ModuleExports)
+    if (my file && my file->is_js && expr_is_module_exports(left)) return;
     Span name = expr_static_property_name(left);
     Expr* object = &left->property->expr;
     // `f[k] = v` with an entity name k: a late bound member of a function or class (tsc's
