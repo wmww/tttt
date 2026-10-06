@@ -820,12 +820,16 @@ Ty const* ty_class_base_type_variable(Checker* me, Symbol const* class_symbol) {
 
 // Whether a class or interface declaration adds members to what it inherits: anything but statics (tsc's
 // getMembersOfSymbol, where a constructor is a member too)
+// (Its own type parameters count: tsc's binder puts them in the symbol's members, so a generic class or interface is
+// never its base, getSingleBaseForNonAugmentingSubtype. Outer ones don't)
 static bool declaration_has_members(SymbolDecl const* node) {
     if (node->kind == SYMBOL_DECL_INTERFACE) {
         InterfaceDecl const* interface_decl = node->node;
-        return vec_interface_member_size(&interface_decl->type.interface.members) != 0;
+        return vec_interface_member_size(&interface_decl->type.interface.members) != 0 ||
+            vec_generic_item_size(&interface_decl->generic.items) != 0;
     }
     if (node->kind != SYMBOL_DECL_CLASS) return false;
+    if (vec_generic_item_size(&((ClassDecl const*)node->node)->generic.items)) return true;
     for_each (i, vec_class_item, &((ClassDecl const*)node->node)->items) {
         if (i->tag == CLASS_ITEM_STATIC_BLOCK) continue;
         if (i->tag == CLASS_ITEM_INTERFACE_MEMBER ? !i->interface_member_static : !class_item_is_static(i)) return true;
@@ -1699,6 +1703,7 @@ static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 d
 static bool declares_members(Symbol const* decl) {
     if (symbol_rare(decl)->members && symbol_rare(decl)->members->count) return true;
     for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (declaration_has_members(node)) return true;
         if (node->kind == SYMBOL_DECL_INTERFACE) {
             InterfaceDecl const* interface_decl = node->node;
             if (vec_interface_member_size(&interface_decl->type.interface.members)) return true;
