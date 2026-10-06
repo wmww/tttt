@@ -6221,9 +6221,9 @@ const baselines = {
         types: true,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeBasedOnIntersectionWithAnyInTheMix4': {
         errors: true,

@@ -663,7 +663,8 @@ static Ty const* get_prop_context_with_missing(Checker* me, Ty const* object, Pr
         object = ty_apparent_type(me, object);
         if (is_nullable_or_primitive(object) || object->kind == TY_TYPE_PARAM) return nullptr;
     }
-    if (object->kind == TY_INTERSECTION && (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+    // (Every intersection, tsc's getTypeOfPropertyOfContextualType: `{ type: "a" | "b" } & { type: any }` keeps "a")
+    if (object->kind == TY_INTERSECTION) {
         return intersection_prop_context(me, object, prop_context_key(me, k));
     }
     // A property the object has: no literal type for its name (not generic: a generic mapped type wants the key)
@@ -748,6 +749,13 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
         if (apparent != object && apparent->kind != TY_CONDITIONAL) return context_map(me, apparent, get_element_context, arg);
     }
     if (ty_is_tuple(object) && object->kind == TY_REFERENCE) return tuple_element_context(me, object, a);
+    // (An intersection by its members' properties, tsc's getTypeOfPropertyOfContextualType: `[any] & [1]` gives 1)
+    if (object->kind == TY_INTERSECTION) {
+        cstr name = cstr_d(index);
+        Ty const* ret = intersection_prop_context(me, object, ty_string_literal(me, cstr_sv(&name)));
+        cstr_drop(&name);
+        if (ret) return ret;
+    }
     if (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         cstr name = cstr_d(index);
         Ty const* mapped = ty_generic_mapped_prop_context(me, object, ty_string_literal(me, cstr_sv(&name)));
