@@ -1838,6 +1838,15 @@ static Signature const* candidate_instantiation(Checker* me, Candidate const* ca
     return ret;
 }
 
+// An error a candidate's check logs directly (Error.always_logged), once however many candidates do (tsc's
+// diagnostics collection drops duplicates)
+static void append_logged_once(ErrorCtx* errs, Error const* error) {
+    for_each (other, vec_error, &errs->errors) {
+        if (other->ts_code == error->ts_code && span_eq(other->span, error->span) && cstr_eq(&other->message, &error->message)) return;
+    }
+    error_ctx_append_error(errs, error_clone(*error));
+}
+
 static void report_no_match(
     Checker* me, Candidate const* unfit, u32 unfit_count, u32 signature_count, Args* args, CallInfo const* info,
     Span call_span, ErrorCtx* errs
@@ -1849,6 +1858,7 @@ static void report_no_match(
         report_unfit_argument(me, last, args, info, call_span, &collected);
         for_each (e, vec_error, &collected.errors) {
             Error error = *e;
+            if (unfit_count > 3 && e->always_logged) append_logged_once(errs, e);
             if (unfit_count > 3) {
                 error = (Error){ .ts_code = 2769, .phase = e->phase, .span = e->span,
                     .message = cstr_lit("No overload matches this call.") };
@@ -1897,6 +1907,13 @@ static void report_no_match(
             if (!any) common_span = e->span;
             any = true;
             same_span &= span_eq(e->span, common_span);
+            // (One the candidate's check logged directly has no "Overload" chain of its own, tsc's
+            // createDiagnosticForNode: its message is the line)
+            if (e->always_logged) {
+                append_logged_once(errs, e);
+                move_error_into_chain(e, &head, &related);
+                continue;
+            }
             error_sub_error_d(&head, span_null, TS_CODE_NONE,
                 "Overload ", i + 1, " of ", signature_count, ", '", rendered, "', gave the following error.");
             move_error_into_chain(e, vec_error_back_mut(&head.sub_errors), &related);

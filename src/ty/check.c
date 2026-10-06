@@ -261,6 +261,7 @@ static bool elaborate_element(
         cstr source_str = ty_to_cstr(me, specific), target_str = ty_to_cstr(me, target_prop);
         error = error_ctx_error_d(errs, item->error_span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
             "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
+        if (error) error->always_logged = true;
         c_drop(cstr, &source_str, &target_str);
     } else {
         // (An optional target property's type is shown without the missing type: tsc's removeMissingType)

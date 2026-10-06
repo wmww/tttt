@@ -28,6 +28,9 @@ typedef struct Error {
     // file's parse errors and in unchecked JavaScript, even with a grammar error's code (TS1206)
     bool js_syntax;
     bool suggestion; // tsc's DiagnosticCategory.Suggestion (only with CompilerOptions.capture_suggestions)
+    // Reported even where errors are only collected (an overload candidate's): tsc's elaborateElementwise adds its
+    // exactOptionalPropertyTypes error to the diagnostics directly
+    bool always_logged;
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
     // (the index of the file being checked), which is the one a single checker reports
