@@ -53,6 +53,24 @@ and noPropertyAccessFromIndexSignature were already right: those checks are done
   widening `undefined[]` without strictNullChecks.
 - Also: an unknown object in an element access is TS18046 whatever the index (it was skipped for generic keys).
 
+### Drain of 2026-10-06 (agent E, flagflip 67/57/11 -> 51/49/11)
+Done, probes in `test/probes/plan46/`: noUncheckedIndexedAccess without strictNullChecks (an index signature's `never`
+is undefined, an undefined callee is TS2722: drizzle proxy migrators); the comparable relation relates signature
+returns source to target only and keeps strict parameter variance (inherited class constructors stay bivariant:
+vscode extHostTestItem 191/192); TS7008 for a widening field initializer also when the constructor assigns it
+(vscode outlineModel 265); JS this-properties judge constructor-only types unwidened and leave `F.prototype.x` out
+(webpack FileSystemInfo 1319). Also from plan 19's effect pass: vue customElement.spec TS2769 x10 (item 4) is gone.
+Looked at, not fixed:
+- effect LayerMap 402 (sloppy/nosnc +TS2345): `make(options.lookup, options)` with options a NoExcessProperties
+  intersection: tsc infers `PreloadKeys` (the call is `any` in tsc at every flag, `undefined` in tttt; probe shape in
+  /tmp only: `make<K, P extends Iterable<K> | undefined = undefined>(lookup, options?: { preloadKeys?: P })` with
+  `"lookup" in options` narrowing a union of two NoExcess<..., Options>). Where tsc's any comes from is unknown.
+- valibot forwardAsync.ts 55 (nosnc -TS2578): tttt types `pathInput` (`let pathInput: unknown = dataset.value` after
+  `dataset = await action['~run'](...)`) so that `pathInput[key]` is TS7053 on `{}`; the sync forward.ts is fine, so
+  the awaited dataset's `value` differs (any in tsc?) without strictNullChecks.
+- excalidraw bounds.ts 821 vs 883 (nuia TS2488): tsc caches a union's noIterationTypes also from a lookup that
+  reports nothing, so its first report is elsewhere; order artefact.
+
 ### Open causes (ranked; the drain's queue). `./flagflip.py -k KEY` lists the instances
 1. **TS2589 fidelity, valibot sloppy/nosnc (~60 diagnostics, ~30% of what's left): investigated 2026-10-06, judged
    plan-sized, not attempted.** tttt already counts like tsc: `ty_instantiate()` checks depth 100 / count 5M,
