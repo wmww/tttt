@@ -3323,10 +3323,16 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             free(collisions);
         }   break;
 
-        case TY_KEYOF:
+        case TY_KEYOF: {
+            // (tsc's parenthesizeOperandOfTypeOperator: unions, intersections, conditional and function types, not
+            // another type operator or query: `keyof readonly any[]`, `keyof keyof T`)
+            Ty const* operand = ty->keyof.operand;
+            bool parens = needs_parens_in_array(me, d, operand) && !shows_alias(d, operand) &&
+                (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION ||
+                    (operand->kind == TY_CONDITIONAL && !conditional_elided(d, operand)) || is_function_like(me, d, operand));
             out_lit(d, "keyof ");
-            display_parenthesized_if(me, d, ty->keyof.operand, needs_parens_in_array(me, d, ty->keyof.operand));
-            break;
+            display_parenthesized_if(me, d, operand, parens);
+        }   break;
 
         case TY_INDEXED:
             display_parenthesized_if(me, d, ty->indexed.object, needs_parens_in_array(me, d, ty->indexed.object));

@@ -1590,7 +1590,11 @@ u32 ty_signature_param_count(Signature const* sig) {
     if (!sig->param_count || !sig->params[sig->param_count - 1].rest) return sig->param_count;
     TupleShape const* shape = ty_tuple_shape(sig->params[sig->param_count - 1].type);
     if (!shape) return sig->param_count;
-    return sig->param_count - 1 + shape->arity;
+    // (Of a tuple with a rest or variadic element, the elements before the first of those and one for the rest: tsc's
+    // getParameterCount with fixedLength)
+    u32 leading = 0;
+    while (leading < shape->arity && !(shape->flags[leading] & TUPLE_ELEMENT_REST)) leading++;
+    return sig->param_count - 1 + (leading < shape->arity ? leading + 1 : shape->arity);
 }
 
 // The arguments a signature needs, the required elements of a rest tuple included (tsc's getMinArgumentCount, less
@@ -1712,7 +1716,9 @@ static Ty const* effective_rest_type(Checker* me, Signature const* sig) {
             } else {
                 Ty const** parts = arena_new_n(&my arena, Ty const*, rest_shape->arity - first);
                 for (u32 k = first; k < rest_shape->arity; k++) parts[k - first] = elements.data[k];
-                TupleShape shape = { .arity = rest_shape->arity - first, .flags = rest_shape->flags + first };
+                // (Labels kept: tsc's sliceTupleType)
+                TupleShape shape = { .arity = rest_shape->arity - first, .flags = rest_shape->flags + first,
+                    .names = rest_shape->names ? rest_shape->names + first : nullptr };
                 effective = ty_reference(me, ty_tuple_target(me, &shape), (TyList){ .data = parts, .len = shape.arity });
             }
         }
@@ -5223,6 +5229,11 @@ static Ternary structured_related_members(
             Ty const* constraint = simplified_or_constraint(me, operand);
             if (constraint && constraint != operand) {
                 Ty const* keys = ty_keyof(me, constraint);
+                // (Without the `keyof C` origin: tsc's getIndexType with IndexFlags.NoReducibleCheck, not the default
+                // flags, prints the keys)
+                if (keys->kind == TY_UNION && keys->composite.origin && keys->composite.origin->kind == TY_KEYOF) {
+                    keys = ty_union(me, keys->composite.types.data, keys->composite.types.len, nullptr, (TyList){0});
+                }
                 if (keys != target) {
                     Ternary related = is_related_to(me, st, source, keys, report);
                     if (related == TERNARY_TRUE) return related;
