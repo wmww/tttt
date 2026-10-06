@@ -802,14 +802,18 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
 
         case TY_UNION:
         case TY_INTERSECTION: {
-            TyList types = ty->composite.types;
+            // A union with a union or intersection origin is that origin instantiated (tsc's instantiateTypeWorker):
+            // `T & ({} | undefined)` stays one for T = U
+            Ty const* origin = ty->kind == TY_UNION ? ty->composite.origin : nullptr;
+            if (origin && origin->kind != TY_UNION && origin->kind != TY_INTERSECTION) origin = nullptr;
+            TyList types = origin ? origin->composite.types : ty->composite.types;
             Ty const** buf = types.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * types.len);
             TyList mapped = instantiate_list(me, types, mapper, buf, types.len);
             Ty const* alias_buf[16];
             TyList alias_args = instantiate_alias_args(me, ty, mapper, alias_buf);
             Ty const* ret = ty;
             if (mapped.data != types.data || alias_args.data != ty->alias_args.data) {
-                ret = ty->kind == TY_UNION ?
+                ret = ty->kind == TY_UNION && !(origin && origin->kind == TY_INTERSECTION) ?
                     ty_union(me, mapped.data, mapped.len, ty->alias, alias_args) :
                     ty_intersection(me, mapped.data, mapped.len, ty->alias, alias_args);
             }
