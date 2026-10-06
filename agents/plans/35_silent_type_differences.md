@@ -227,27 +227,48 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
     "first alias a union was created with" cases.
 
 **Symbols component and binder (tsc's checker-time mergeSymbol through aliases; tttt's binder merges first)**
-15. importEqualsError45874 (`.St`), moduleAugmentationWithNonExistentNamedImport, duplicateVarsAcrossFileBoundaries,
-    moduleAugmentationDuringSyntheticDefaultCheck (`.St`), aliasesInSystemModule1/2 (unknown-symbol artefact),
-    declarationFileNoCrashOnExtraExportModifier (`exports.Sub`), reexportMissingDefault5 (`default` vs `"b"`).
-16. Spread of a namespace keeps tsc's export symbols (spreadExpressionContextualTypeWithNamespace `.St`: PropDecl.symbol
-    can't hold it without becoming the type source). mappedTypeConstraints (`Pick<T | U, ...>` declarations depend on
-    whether f3 follows: an order-dependent memo). isolatedDeclarationLazySymbols (`foo[o["a.b"]] = v` adds a declaration
-    but no member). objectBindingPatternKeywordIdentifiers02/04 (`.St`, parser recovery of `{ while: while }`).
-    Module elements in a function/block (moduleElementsInWrongContext{,2,3}, plainJSGrammarErrors, `.St`): tsc binds
-    them anyway; tttt's `wrong_context` declares nothing.
-
-**JavaScript (plan 26 territory)**
-17. `a: function () { this.x = v }` declares x in the function's own members (objectPropertyAsClass, thisInObjectJs,
-    functionExpressionNames: `.S.`, also `A = function () {}` and a binding default as constructors); JS this-members
-    merged with `F.prototype = {...}` accessors and `this` in a `defineProperty(F.prototype, ...)` descriptor
-    (jsDeclarationsFunctionLikeClasses2, checkExportsObjectAssignPrototypeProperty, `.St`). `@enum` on `exports.a = {}`
-    (enumTagOnExports `.St`).
+15. tsc's checker-time mergeSymbol through aliases (mergeSymbol resolves an alias target: unresolved, the source wins
+    the table; resolved, the source merges into a clone of the target, which then names it): importEqualsError45874,
+    duplicateVarsAcrossFileBoundaries, moduleAugmentationWithNonExistentNamedImport, moduleAugmentationDuringSyntheticDefaultCheck.
+    tttt's binder merges a global alias and a var of another file into one symbol. Needs a deferred pass at
+    binder_link() over cross-file global merges involving aliases. Also aliasesInSystemModule1/2 (unknown-symbol
+    artefact), declarationFileNoCrashOnExtraExportModifier (`exports.Sub`). (Agent D took the TS ones, 2026-10-06.)
+    Done 2026-10-06: reexportMissingDefault5 (synthetic default re-export named by path), modulePreserve4.
+16. spreadExpressionContextualTypeWithNamespace (`.St`: PropDecl.symbol can't hold the export symbol without becoming
+    the type source), mappedTypeConstraints (order-dependent memo), objectBindingPatternKeywordIdentifiers02/04 (parser
+    recovery of `{ while: while }`). Done 2026-10-06: module elements in a function/block are declared (TS1232/TS1233,
+    resolved quietly: PortItem.wrong_context), an export specifier where tsc's container puts it (function/script
+    locals, namespace/module exports); isolatedDeclarationLazySymbols (any dynamic element name binds the target's
+    namespaces). Left: moduleElementsInWrongContext names `"ambient"` through the block's `import * as Foo` (tsc
+    doesn't); the merged alias|function `foo` is any where tsc's getTypeOfSymbol takes the function first.
+17. JavaScript classes and expandos. Done 2026-10-06: top-level namespace assignments per tsc's
+    isTopLevelNamespaceAssignment (conditions, comma lists), TS function variables get namespace declarations,
+    `module` redeclared by each nested `module.exports`, @enum on exports/aliases/`A.B.C` (type alias + namespace
+    declarations, delayed JSDoc declarations last, one per node), `this.x` in a function expression that is its own
+    class, prototype assignments merging with class-body members and `F.prototype = {...}` members with `this.x`
+    (decl spans appended in builder_add_assignment_members), defineProperty descriptor methods' `this`, enum member +
+    JS assignment, `typeof import("./m").x` of an `export =` object. Left: multipleDeclarations' constructor function
+    (`this.m = null` then `C.prototype.m = function`: two symbols in tsc, TS2300 under checkJs; tttt declares the
+    prototype assignment in the declare step, before the this-assignment, and can't split it off later without the
+    access node); thisTypeInAccessors (an accessor without `this` takes its pair's `this` parameter: needs the pair's
+    parameter symbol before either is resolved); typedefCrossModule3 / jsExportMemberMergedWithModuleAugmentation{,3}
+    (getCommonJsExportEquals' recordMergedSymbol: `ns` resolves to the merged clone everywhere, `ns.Foo` gets the
+    typedef's declaration); misspelledJsDocTypedefTags (a JS global augmentation merging into lib's Animation);
+    allowJscheckJsTypeParameterNoCrash; expandoFunctionContextualTypesNoValue (expando on an import-merged function);
+    lateBoundMethodNameAssigmentJS (`this[s] = this[s].bind(this)` circular: error/any in tsc);
+    jsDeclarationsFunctionClassesCjsExportAssignment (tsc artefact: duplicated declaration, no `this` symbol);
+    thisPrototypeMethodCompoundAssignmentJs (`this` named `this`).
 18. CommonJS naming and aliases: moduleExportDuplicateAlias{,2,3} (every `exports.x = undefined`/`= a` is an alias in
-    tsc, left sides any; tried, see hacks.md), moduleExportAssignment4 (`module.exports = exports['default']`
-    circularity is errorType), moduleExportsElementAccessAssignment (`typeof mod1."d"`), lateBoundAssignmentDeclarationSupport6,
-    jsDeclarationsFunctionsCjs, moduleExportAliasImported, moduleExportPropertyAssignmentDefault,
-    jsdocTypeReferenceToImportOfFunctionExpression.
+    tsc, left sides any; tried, see hacks.md; moduleExportsAliasLoop1/2 show it: `Math.min : Symbol(fn2)`),
+    moduleExportAlias4 (class named through `var wat = require(itself)`: the chain doesn't see a require alias's
+    `export =` target), amdLikeInputDeclarationEmit and jsDeclarationsExportDoubleAssignmentInClosure (`module.exports =
+    v` inside a callback is the file's `export =` in tsc, any container; tttt looks into blocks and IIFEs only),
+    moduleExportsElementAccessAssignment (`typeof mod1."d"`), lateBoundAssignmentDeclarationSupport6/7 (`x.F.F[_str]`
+    naming), jsDeclarationsFunctionsCjs, moduleExportAliasImported, moduleExportPropertyAssignmentDefault,
+    jsdocTypeReferenceToImportOfFunctionExpression, jsdocReferenceGlobalTypeInCommonJs (`Puppeteer.connect` qualified).
+    Done 2026-10-06: the access of `exports.x = v` shows the property lookup (nothing on an `export =` of another type),
+    `module.exports = v` is never an expando of a local `module`, a top-level `module.exports.f.x = v` makes f a
+    namespace whatever its value (no expando type for a defineProperty value).
 
 ## Validation
 `./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an

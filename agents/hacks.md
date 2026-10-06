@@ -757,6 +757,13 @@ src` finds the code-side markers; every significant one has an entry here.
   redundant). Span-keyed overrides (`commonjs_symbol_overrides()`, `prototype_symbol_overrides()`,
   `this_property_symbol_overrides()`) stand in for getSpecialPropertyAssignmentSymbol. JSDoc tag Decls get no leading
   trivia (sniffed). A module's `default` export symbol is named like its first declaration.
+- JS class member merges (prototype assignments into class-body members, `F.prototype = {...}` members into `this.x`
+  members) only append declaration spans to the checker's `Prop` (`builder_add_assignment_members`); the harness reads
+  them back in `prototype_symbol_overrides()`, `this_property_symbol_overrides()` and the object literal walk. Enum
+  members take their symbol's spans the same way. `append_decl()` sniffs a JSDoc typedef's dotted name (after `}` or
+  `@typedef`) to drop leading trivia. `symbol_declaration_spans()` drops a JSDoc namespace declaration at the same start
+  as another declaration (tsc: the same identifier node). `KEY_UNDEFINED_PROPERTY` (members.c) only feeds declaration
+  spans, per checker.
 - Class members aren't `Symbol`s, so tsc's member-table merges are rebuilt for the symbols baseline: a field and the
   parameter property/interface member of its name take the class type's `Prop` declarations
   (`class_prop_declarations()`), and a class/interface type parameter with an instance member of its name is one
