@@ -503,6 +503,9 @@ typedef struct PropDeclRare {
     // Types baseline only: a mapped type's property is declared where the property it maps is (tsc's mapped symbol's
     // declarations), whose annotation is reused when it says the same
     struct Prop const* mapped_from;
+    // Symbols baseline only: the mapped type's modifiers type when it is an intersection, whose members' properties of
+    // this name declare it too (tsc's intersection property symbol; a union's are added when the property is made)
+    Ty const* mapped_intersection;
     // A property of a reverse mapped type: its type is inferred from `reverse_source` (the source property's type) on
     // first use (tsc's getTypeOfReverseMappedSymbol). `reverse_declared` is the source property's declared type
     struct ReverseMapped const* reverse_of;

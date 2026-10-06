@@ -2969,6 +2969,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                     prop->decl->decl_span_count = declared->decl->decl_span_count;
                     prop->decl->name_is_value = declared->decl->name_is_value;
                     prop_decl_rare_mut(me, prop->decl)->mapped_from = declared;
+                    if (modifiers->kind == TY_INTERSECTION) prop_decl_rare_mut(me, prop->decl)->mapped_intersection = modifiers;
                     // (Of a union, declared where each member's property is: tsc's union property symbol)
                     if (modifiers->kind == TY_UNION) {
                         for (u32 m = 0; m < modifiers->composite.types.len; m++) {

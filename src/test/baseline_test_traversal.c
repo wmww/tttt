@@ -532,6 +532,18 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         for (u32 k = 0; k < j; k++) repeated |= span_eq(root->decl->decl_spans[k], span);
         if (!repeated) vec_span_push(&info->declarations, span);
     }
+    // A mapped type over an intersection: where each member's property is declared too (tsc's intersection property)
+    Ty const* intersection = root->decl->rare ? prop_decl_rare(root->decl)->mapped_intersection : nullptr;
+    for (u32 m = 0; intersection && m < intersection->composite.types.len; m++) {
+        Ty const* part = ty_apparent_type(checker, intersection->composite.types.data[m]);
+        Prop const* other = (part->flags & TYF_OBJECT) ? ty_get_prop(checker, part, prop->name) : nullptr;
+        while (other && other->target && !other->decl->decl_span_count) other = other->target;
+        for (u32 k = 0; other && k < other->decl->decl_span_count; k++) {
+            bool seen = false;
+            for (isize q = 0; q < vec_span_size(&info->declarations) && !seen; q++) seen = span_eq(*vec_span_at(&info->declarations, q), other->decl->decl_spans[k]);
+            if (!seen) vec_span_push(&info->declarations, other->decl->decl_spans[k]);
+        }
+    }
 }
 
 // The name of a member's declaration from here: its container's chain (see prop_text) and its name as written (a
