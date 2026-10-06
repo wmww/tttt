@@ -4038,7 +4038,10 @@ Ty const* ty_object_literal_of(
             prop->decl->name_form = props[i].name_form;
             prop->decl->name_type = props[i].name_type;
             prop->decl->asserted = props[i].asserted;
-            if (props[i].spread_variable) prop_decl_rare_mut(me, prop->decl)->spread_variable = props[i].spread_variable;
+            if (props[i].spread_variable) {
+                prop_decl_rare_mut(me, prop->decl)->spread_variable = props[i].spread_variable;
+                prop_decl_rare_mut(me, prop->decl)->spread_namespace = props[i].spread_namespace;
+            }
             prop->parent = props[i].parent;
             prop_add_shared_decl_spans(me, prop, props[i].decl_spans, props[i].decl_span_count);
             // (What an accessor's type mentions isn't known yet: assume it could be anything in scope)
@@ -4182,6 +4185,7 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
             .name_is_value = prop->decl->name_is_value,
             .asserted = prop->decl->asserted,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
+            .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop->decl->name_type,
@@ -4421,6 +4425,7 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
             .name_is_value = prop->decl->name_is_value,
             .asserted = prop->decl->asserted,
             .spread_variable = prop_decl_rare(prop->decl)->spread_variable,
+            .spread_namespace = prop_decl_rare(prop->decl)->spread_namespace,
             .own = prop->decl->literal_own,
             .name_form = ty_prop_name_form_of(prop),
             .name_type = prop->decl->name_type,

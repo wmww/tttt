@@ -486,7 +486,10 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         if (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE) {
             info->namespace = object->declared.namespace_symbol;
         }
-        info->member_symbol = root->decl->symbol;
+        // (A namespace member spread into an object literal is still that member's symbol: tsc's getSpreadSymbol
+        // keeps it, see PropDeclRare.spread_variable)
+        info->member_symbol = root->decl->symbol ? root->decl->symbol : prop_decl_rare(root->decl)->spread_variable;
+        if (!root->decl->symbol && prop_decl_rare(root->decl)->spread_namespace) info->namespace = prop_decl_rare(root->decl)->spread_namespace;
         info->name_span = root->decl->name_span;
         info->name_is_value = root->decl->name_is_value;
         info->first_declaration = first_declaration;

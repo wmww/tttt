@@ -2728,6 +2728,9 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             .name_is_value = origin->decl->name_is_value,
             .parent = !partial && !setonly && !(prop->flags & PROP_READONLY) ? prop->parent : nullptr,
             .spread_variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable,
+            .spread_namespace = origin->decl->symbol ?
+                (object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_NAMESPACE ? object->declared.namespace_symbol : nullptr) :
+                prop_decl_rare(origin->decl)->spread_namespace,
         });
     }
     // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)

@@ -28887,8 +28887,8 @@ const baselines = {
     },
     'spreadExpressionContextualTypeWithNamespace': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'spreadIdenticalTypesRemoved': {
         errors: true,

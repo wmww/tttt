@@ -502,6 +502,7 @@ typedef struct PropDeclRare {
     // Types baseline only: a property spread from a module's variable (`{ ...ns }`) is declared by that variable (tsc's
     // getSpreadSymbol keeps the declarations), whose annotation or literal initializer is reused
     Symbol const* spread_variable;
+    Symbol const* spread_namespace; // The namespace or module whose export spread_variable is (symbols baseline)
 } PropDeclRare;
 
 typedef struct PropDecl {
@@ -1700,6 +1701,7 @@ typedef struct ObjectLiteralProp {
     // same symbol: that member's container (Prop.parent), which names it in the symbols baseline
     Symbol const* parent;
     Symbol const* spread_variable; // See PropDeclRare.spread_variable
+    Symbol const* spread_namespace;
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker

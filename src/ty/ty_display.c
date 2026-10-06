@@ -2536,8 +2536,8 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // Function or Method as methods)
         Prop const* declared = prop;
         while (declared->target) declared = declared->target;
-        bool function_symbol = declared->decl->symbol && (declared->decl->symbol->flags & SYMBOL_FUNCTION) &&
-            declared->decl->symbol->parent &&
+        Symbol const* member_symbol = declared->decl->symbol ? declared->decl->symbol : prop_decl_rare(declared->decl)->spread_variable;
+        bool function_symbol = member_symbol && (member_symbol->flags & SYMBOL_FUNCTION) && member_symbol->parent &&
             !(prop->flags & PROP_READONLY) && (type->flags & TYF_OBJECT);
         // (Not a readonly one, `as const`: tsc's addPropertyToElementList prints it as a property)
         Members const* type_members = ((prop->flags & PROP_METHOD) && !(prop->flags & PROP_READONLY)) || function_symbol ?
