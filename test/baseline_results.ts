@@ -60276,7 +60276,7 @@ const baselines = {
         types: true,
     },
     'jsContainerMergeTsDeclaration3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

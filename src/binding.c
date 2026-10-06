@@ -309,11 +309,23 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
         if (symbol->decls[i].flags & SYMBOL_VALUE && symbol->decls[i].kind != SYMBOL_DECL_EXPANDO) first = &symbol->decls[i];
     }
     if (!first || first->node == me) return;
+    Checker* checker = current_checker;
     // Not for a symbol a top-level assignment made a namespace (tsc: SymbolFlags.Assignment)
     for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (symbol->decls[i].kind == SYMBOL_DECL_EXPANDO && span_valid(symbol->decls[i].full)) return;
+        if (symbol->decls[i].kind != SYMBOL_DECL_EXPANDO || !span_valid(symbol->decls[i].full)) continue;
+        // The initializer is still checked against the declaration's type, which for a JavaScript `const A = {}`
+        // container is an object of the merged symbol's (tsc's getJSContainerObjectType): a class or function
+        // declared first makes it that one's type (`typeof A`)
+        Expr const* value = !my parent && my source && my source->tag == LAZY_TYPE_INITIALIZED_BINDING && !my has_explicit_type ?
+            initialized_binding_value(c_container_of(me, InitializedBinding, binding)) : nullptr;
+        if (value && value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object) && my content_span.source &&
+            my content_span.source->is_js && first->flags & (SYMBOL_CLASS | SYMBOL_FUNCTION)
+        ) {
+            ty_check_assignable_expr(checker, ty_expr_type(checker, value), ty_type_of_symbol(checker, symbol), my content_span,
+                value, errs);
+        }
+        return;
     }
-    Checker* checker = current_checker;
     Ty const* type = ty_type_of_symbol(checker, symbol);
     Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
     Ty const* error = ty_intrinsic(checker, TY_ERROR);
