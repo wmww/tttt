@@ -64118,7 +64118,7 @@ const baselines = {
     'isomorphicMappedTypeInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeAsClauseRelationships': {
         errors: true,

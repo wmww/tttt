@@ -730,6 +730,9 @@ static bool infer_to_mapped(Checker* me, Inference* inf, Ty const* source, Mappe
     }
     if (constraint->kind == TY_TYPE_PARAM && inference_param(inf, constraint)) {
         infer_with_priority(me, inf, ty_keyof(me, source), constraint, INFER_PRIORITY_MAPPED_TYPE_CONSTRAINT);
+        // K's own constraint, `K extends keyof T`, makes it the homomorphic mapped type over T (Pick<T, K>)
+        Ty const* extended = ty_param_constraint(me, constraint);
+        if (extended && extended != constraint && infer_to_mapped(me, inf, source, mapped, extended)) return true;
         Members const* members = ty_members(me, source);
         u32 count = members->prop_count + members->index_count;
         if (!count) return true;
@@ -1051,6 +1054,7 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         bool limited = constraint->kind == TY_INTERSECTION ||
             (constraint->kind == TY_UNION && constraint->composite.origin && constraint->composite.origin->kind == TY_INTERSECTION);
         if (template && keys_inferable && !keyof_blocked && !limited && template->kind == TY_INDEXED &&
+            (mapped->modifiers_type->kind != TY_INTERSECTION || constraint->kind != TY_TYPE_PARAM) &&
             template->indexed.object == mapped->modifiers_type && template->indexed.index == mapped->type_param &&
             ((mapped->readonly <= 0 && mapped->optional <= 0) || !inference_param(inf, mapped->modifiers_type))
         ) {
