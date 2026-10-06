@@ -1045,9 +1045,18 @@ static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32
     }
 }
 
-// `skip_sensitive`: the context-sensitive functions are left out (as anyFunctionType), not typed for good
+// The generic calls infer_rest_variadic() left out as silentNever are typed against the candidate chosen without them
+static void unskip_generic_calls(Checker* me, Args* args, u32 from) {
+    for (u32 i = from; i < args->len; i++) {
+        if (args->data[i].generic_call && args->data[i].type == ty_intrinsic(me, TY_SILENT_NEVER)) args->data[i].type = nullptr;
+    }
+}
+
+// `skip_sensitive`: the context-sensitive functions are left out (as anyFunctionType), not typed for good, and with
+// `skip_generic_functions` the generic calls returning functions (as silentNever) too, as in infer_type_arguments()
 static void infer_rest_variadic(
-    Checker* me, Inference* inf, ParamShape const* shape, Args* args, OuterInference* self, bool skip_sensitive
+    Checker* me, Inference* inf, ParamShape const* shape, Args* args, OuterInference* self, bool skip_sensitive,
+    bool skip_generic_functions
 ) {
     if (!shape->rest_variadic) return;
     u32 from = shape->count < args->len ? shape->count : args->len;
@@ -1062,15 +1071,27 @@ static void infer_rest_variadic(
     // SkipContextSensitive pass), then is checked with its element of the rest type as its contextual type (tsc's
     // getSpreadArgumentType, an indexed access with AccessFlags.Contextual): `gen(this, function*() { this.x })` under
     // `...args: [self: Self, body: (this: Self) => ...] | [body: ...]`
+    // A generic call returning a function waits likewise, as silentNever (tsc's resolveCallExpression under
+    // SkipGenericFunctions), then sees what the others inferred: `catchTag("A", fn(function*(e) {...}))` under
+    // `...args: [...tags: K, f: (e: Extract<E, { _tag: K[number] }>) => ...]` (tsc's inferences carry over from the
+    // skipping inference to the full one, tttt's full inference defers it itself)
     bool sensitive = false;
     for (u32 i = from; i < args->len; i++) {
-        sensitive |= !args->data[i].type && args->data[i].context_sensitive;
+        Arg const* arg = &args->data[i];
+        sensitive |= !arg->type && (arg->context_sensitive || arg->generic_call);
     }
+    bool skip_calls = skip_sensitive || skip_generic_functions;
     if (sensitive) {
         for (u32 i = from; i < args->len; i++) {
             Arg* arg = &args->data[i];
             if (arg->type) continue;
-            if (arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION) {
+            if (arg->generic_call) {
+                if (skip_calls && ty_call_resolved_return(me, arg->expr->call)) {
+                    check_rest_arg(me, shape, args, i, from, is_const, self);
+                } else {
+                    arg->type = ty_intrinsic(me, TY_SILENT_NEVER);
+                }
+            } else if (arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION) {
                 arg->type = ty_any_function_type(me);
             } else if (arg->context_sensitive) {
                 // (A literal with such functions in it: they are left out the same way)
@@ -1083,6 +1104,10 @@ static void infer_rest_variadic(
             shape->rest_variadic, INFER_PRIORITY_NORMAL);
         for (u32 i = from; i < args->len; i++) {
             Arg* arg = &args->data[i];
+            if (arg->generic_call && arg->type == ty_intrinsic(me, TY_SILENT_NEVER)) {
+                if (!skip_calls) check_rest_arg(me, shape, args, i, from, is_const, self);
+                continue;
+            }
             if (!arg->context_sensitive) continue;
             if (skip_sensitive) {
                 arg->type = nullptr; // (Typed against the candidate chosen without it)
@@ -1095,7 +1120,10 @@ static void infer_rest_variadic(
             self->fixing = false;
             my outer_inference = nullptr;
         }
-        if (skip_sensitive) return;
+        if (skip_sensitive) {
+            unskip_generic_calls(me, args, from);
+            return;
+        }
     }
     for (u32 i = from; i < args->len; i++) {
         if (!args->data[i].type) check_rest_arg(me, shape, args, i, from, is_const, self);
@@ -1103,6 +1131,7 @@ static void infer_rest_variadic(
     if (args->len > shape->count || args->spread_index < 0) {
         infer_types(me, inf, rest_args_tuple(me, args, from, !is_const, is_const && !ty_some_mutable_array_like(me, shape->rest_variadic)), shape->rest_variadic, INFER_PRIORITY_NORMAL);
     }
+    if (sensitive && skip_calls) unskip_generic_calls(me, args, from);
 }
 
 // `*inferred_out`: the type parameters of generic function arguments that the return type is now generic in
@@ -1330,7 +1359,7 @@ static TyMapper const* infer_type_arguments(
         bool rest_sensitive = false;
         for (u32 i = shape.count; i < args->len; i++) rest_sensitive |= args->data[i].context_sensitive || args->data[i].generic_call;
         if (!rest_sensitive) {
-            infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive);
+            infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive, skip_generic_functions);
             rest_inferred = true;
         }
     }
@@ -1398,7 +1427,7 @@ static TyMapper const* infer_type_arguments(
         my outer_inference = nullptr;
         infer_from_arg(me, &inf, &shape, args, i);
     }
-    if (!rest_inferred) infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive);
+    if (!rest_inferred) infer_rest_variadic(me, &inf, &shape, args, &self, skip_sensitive, skip_generic_functions);
     free(shape.types);
     free(self.sites);
 
