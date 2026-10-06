@@ -21352,7 +21352,7 @@ const baselines = {
     },
     'misspelledJsDocTypedefTags': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'misspelledNewMetaProperty': {

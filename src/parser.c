@@ -5131,12 +5131,11 @@ static Statement jsdoc_wrap_in_namespaces(Statement alias, Span full_name, Span 
 // `A.B.C = v` as a statement, A an identifier other than `exports`, `module` (CommonJS exports have containers of their
 // own in tsc) and `this`: the dotted name as written without trivia, an invalid span otherwise
 static Span jsdoc_namespace_assignment_name(Statement const* host) {
-    if (host->tag != STATEMENT_EXPR || host->expr.tag != EXPR_BINARY_OP || host->expr.binary_op->op != BINARY_OP_EQUAL ||
-        expr_is_perenthisized(&host->expr)
-    ) {
-        return span_null;
-    }
-    Expr const* left = &host->expr.binary_op->left;
+    if (host->tag != STATEMENT_EXPR || expr_is_perenthisized(&host->expr)) return span_null;
+    // (Or of a bare `A.B.C;`: tsc's nameForNamelessJSDocTypedef takes a property access statement's name too)
+    bool assignment = host->expr.tag == EXPR_BINARY_OP && host->expr.binary_op->op == BINARY_OP_EQUAL;
+    if (!assignment && host->expr.tag != EXPR_PROPERTY) return span_null;
+    Expr const* left = assignment ? &host->expr.binary_op->left : &host->expr;
     if (left->tag != EXPR_PROPERTY || !expr_is_entity_name(left)) return span_null;
     Expr const* root = left;
     while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
@@ -5301,7 +5300,7 @@ static void jsdoc_bind_comments(
                         Span dotted = jsdoc_namespace_assignment_name(host);
                         if (span_valid(dotted)) {
                             i->name = dotted;
-                            ((Statement*)host)->expr.binary_op->jsdoc_enum_export = true;
+                            if (host->expr.tag == EXPR_BINARY_OP) ((Statement*)host)->expr.binary_op->jsdoc_enum_export = true;
                         }
                     }
                     break;
@@ -13713,7 +13712,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             }
             JsDocTag* enum_tag = toplevel ? jsdoc_find_enum(&tags) : nullptr;
             Span export_name = enum_tag ? jsdoc_commonjs_export_assignment_name(p, statement) : span_null;
-            Span enum_name = enum_tag && !span_valid(export_name) ? jsdoc_namespace_assignment_name(statement) : span_null;
+            Span enum_name = enum_tag && !span_valid(export_name) && statement->expr.tag == EXPR_BINARY_OP ?
+                jsdoc_namespace_assignment_name(statement) : span_null;
             if (span_valid(export_name)) {
                 // `/** @enum {T} */ exports.C = {...}` (or `module.exports.C`) at the top level: C is also an exported type
                 // alias of T (delayedBindJSDocTypedefTag: an ExportsProperty declares into the file)
