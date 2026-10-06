@@ -580,6 +580,12 @@ static void out_unique_symbol_name(Checker* me, TyDisplay d, UniqueSymbolDecl co
         if (owner) out_symbol_name(me, d, owner, SYMBOL_VALUE);
         return;
     }
+    // Printed from nowhere, a member is its bare name (tsc's lookupSymbolChain without an enclosing declaration: the
+    // chain is the symbol alone): `typeof VALID` for a static `SecurePassword.VALID`, `typeof toStringTag`
+    if (d.typeof_unique_symbols && !d.enclosing && !d.fully_qualified && !d.tracker) {
+        out(d, decl->member.sv);
+        return;
+    }
     if (owner && (owner->flags & SYMBOL_INTERFACE)) {
         // A member of `SymbolConstructor` is reached through the global variable of that type, `Symbol`. HACK: tsc
         // finds any variable whose type is the interface (getSymbolChain), this only knows the `XConstructor` pattern
