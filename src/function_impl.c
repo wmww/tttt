@@ -294,7 +294,6 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         type_params_scope = names;
     }
 
-    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_lookup_names(&function_impl_rare(me)->jsdoc_unmatched[i].type, names, errs);
     Scope* function_scope = scope_new(names, SCOPE_FUNCTION);
     function_scope->flow = &flow;
     if (type_params_scope) scope_rare_mut(type_params_scope)->type_params_function = function_scope;
@@ -335,6 +334,10 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     TypeFlow const* saved_flow = type_flow_enter_parameter();
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body, errs);
+    }
+    // (The `@param` tags that name no parameter: their types are where the parameters' are)
+    for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) {
+        type_lookup_names(&function_impl_rare(me)->jsdoc_unmatched[i].type, parameter_scope, errs);
     }
     scope_release(parameter_scope, pending_mark);
     type_flow_restore(saved_flow);

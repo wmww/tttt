@@ -5122,7 +5122,32 @@ static bool only_trivia_until(const char* at, const char* end) {
 // containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
 // The types of the tags tsc's checker visits (checkSourceElementWorker: `@type`, `@param`, `@satisfies`, `@enum`) that
 // no host took, as check-only declarations appended to `out`: a tag is checked whatever its host makes of it
-static void jsdoc_push_check_only(VecJsDocTag* tags, VecStatement* out) {
+// templates: the comment's `@template`s have no host to go to (no typedef either): tsc declares them in the enclosing
+// container (bindTypeParameter without getEffectiveContainerForJSDocTemplateTag), where the types see them
+static void jsdoc_push_check_only(VecJsDocTag* tags, bool templates, VecStatement* out) {
+    bool typed = false, alias = false, named_templates = false;
+    Span template_span = span_null;
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->nested || i->earlier) continue;
+        typed |= i->has_type && (i->kind == JSDOC_TAG_TYPE || i->kind == JSDOC_TAG_PARAM || i->kind == JSDOC_TAG_SATISFIES || i->kind == JSDOC_TAG_ENUM);
+        alias |= i->kind == JSDOC_TAG_TYPEDEF || i->kind == JSDOC_TAG_CALLBACK;
+        if (!named_templates && i->kind == JSDOC_TAG_TEMPLATE && span_valid(i->name)) {
+            named_templates = true;
+            template_span = jsdoc_tag_decl_span(i);
+        }
+    }
+    if (!typed) return;
+    if (templates && named_templates && !alias) {
+        Span span = template_span;
+        vec_statement_push(out, (Statement){
+            .tag = STATEMENT_DECL_TYPE,
+            .decl.type = c_new(TypeDecl, {
+                .full_span = span, .generic = jsdoc_template_generic(tags), .type = type_any, .jsdoc = true,
+                .jsdoc_check_only = true, .jsdoc_free_templates = true,
+            }),
+            .span = span,
+        });
+    }
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->nested || i->earlier || !i->has_type) continue;
         if (i->kind != JSDOC_TAG_TYPE && i->kind != JSDOC_TAG_PARAM && i->kind != JSDOC_TAG_SATISFIES && i->kind != JSDOC_TAG_ENUM) continue;
@@ -5272,7 +5297,7 @@ static void jsdoc_bind_comments(
             Statement alias = vec_statement_pull(out);
             vec_statement_push(out, jsdoc_wrap_in_namespaces(alias, full_name, i->name, span));
         }
-        if (eof) jsdoc_push_check_only(&tags, out);
+        if (eof) jsdoc_push_check_only(&tags, true, out);
         vec_jsdoc_tag_drop(&tags);
     }
 }
@@ -13448,6 +13473,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
     VecJsDocTag tags = {0};
     if (!jsdoc_before(p, start, &tags)) return;
     bool hosts = false; // A function took the tags (which checks what it doesn't take itself)
+    bool class_host = false;
     switch (statement->tag) {
         case STATEMENT_DECL_VARIABLE: {
             VecInitializedBinding* list = &statement->decl.variable.initializers;
@@ -13534,7 +13560,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 function_impl_rare_mut(function)->jsdoc_host_type = &initializer->binding.explicit_type;
             }
             if (function) jsdoc_apply_function(p, &tags, function), hosts = true;
-            if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl);
+            if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl), class_host = true;
         }   break;
         case STATEMENT_DECL_FUNCTION: {
             // (tsc's checkJSDocAugmentsTag)
@@ -13549,6 +13575,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
         }   break;
         case STATEMENT_DECL_CLASS:
             jsdoc_apply_class(p, &tags, statement->decl.class);
+            class_host = true;
             break;
         case STATEMENT_EXPR:
             if (statement->expr.tag == EXPR_PROPERTY && !expr_is_perenthisized(&statement->expr)) {
@@ -13617,6 +13644,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                     hosts = true;
                 } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {
                     jsdoc_apply_class(p, &tags, assignment->right.class_decl);
+                    class_host = true;
                 } else {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
                     JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
@@ -13665,7 +13693,9 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
     }
     // (A parenthesized expression statement's comment is also its cast's, which checks the type)
     bool parenthesized = statement->tag == STATEMENT_EXPR && *span_start_ptr(statement->span) == '(';
-    if (!hosts && !parenthesized) jsdoc_push_check_only(&tags, &p->shared->jsdoc_checks);
+    // (A variable statement declares its `@template`s itself, a class takes them)
+    bool templates = statement->tag != STATEMENT_DECL_VARIABLE && !class_host;
+    if (!hosts && !parenthesized) jsdoc_push_check_only(&tags, templates, &p->shared->jsdoc_checks);
     vec_jsdoc_tag_drop(&tags);
 }
 
