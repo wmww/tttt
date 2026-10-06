@@ -1639,15 +1639,17 @@ static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty c
 // Results
 
 // tsc's literalTypesWithSameBaseType: literals (or unions of literals) of one primitive, or members of one enum
-static bool literal_base(Ty const* ty, u32* common, Symbol const** enum_decl, bool* first) {
+static bool literal_base(Checker* me, Ty const* ty, u32* common, Symbol const** enum_decl, bool* first) {
     if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
         for (u32 i = 0; i < ty->composite.types.len; i++) {
-            if (!literal_base(ty->composite.types.data[i], common, enum_decl, first)) return false;
+            if (!literal_base(me, ty->composite.types.data[i], common, enum_decl, first)) return false;
         }
         return ty->composite.types.len > 0;
     }
     if (ty->kind != TY_LITERAL) return false;
     Symbol const* decl = ty->flags & TYF_ENUM_LITERAL ? ty->literal.enum_decl : nullptr;
+    // (Not a literal that is its own base type: the regular member of a single-member enum, which is the enum)
+    if (decl && ty_enum_of_member(me, ty) == ty) return false;
     if (!*first && decl != *enum_decl) return false;
     *enum_decl = decl;
     *first = false;
@@ -1655,12 +1657,12 @@ static bool literal_base(Ty const* ty, u32* common, Symbol const** enum_decl, bo
     return decl || *common != 0;
 }
 
-static bool is_literal_of_same_base(TyList types) {
+static bool is_literal_of_same_base(Checker* me, TyList types) {
     u32 common = TYF_LITERAL;
     Symbol const* enum_decl = nullptr;
     bool first = true;
     for (u32 i = 0; i < types.len; i++) {
-        if (!literal_base(types.data[i], &common, &enum_decl, &first)) return false;
+        if (!literal_base(me, types.data[i], &common, &enum_decl, &first)) return false;
     }
     return types.len > 0;
 }
@@ -1670,7 +1672,7 @@ static bool is_literal_of_same_base(TyList types) {
 static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) {
     if (len == 1) return types[0];
     if (!compiler_options()->strict_null_checks) {
-        if (is_literal_of_same_base((TyList){ .data = types, .len = len })) return ty_union(me, types, len, nullptr, (TyList){0});
+        if (is_literal_of_same_base(me, (TyList){ .data = types, .len = len })) return ty_union(me, types, len, nullptr, (TyList){0});
         Ty const* ret = types[0];
         for (u32 i = 1; i < len; i++) {
             if (ret != types[i] && ty_is_related(me, ret, types[i], TY_RELATION_SUBTYPE)) ret = types[i];
@@ -1703,7 +1705,7 @@ static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) 
         primary[i] = t;
     }
     Ty const* ret;
-    if (is_literal_of_same_base((TyList){ .data = primary, .len = len })) {
+    if (is_literal_of_same_base(me, (TyList){ .data = primary, .len = len })) {
         ret = ty_union(me, primary, len, nullptr, (TyList){0});
     } else {
         ret = primary[0];

@@ -47443,7 +47443,7 @@ const baselines = {
     'typeArgumentInferenceWithObjectLiteral': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrowFunctionContexts': {
         errors: true,
