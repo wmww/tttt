@@ -3112,7 +3112,20 @@ static Symbol* resolve_alias_target(Symbol* me) {
             if (symbol_is_builtin_type(found)) found = nullptr;
             if (found == me && (my flags & SYMBOL_ANY_MEANING & ~(u32)SYMBOL_ALIAS)) {
                 // `export class F {}` + `export { F }`: one export symbol (TS2323), which tsc's resolveName finds for
-                // the specifier and is its own target, conflicting with itself in checkAliasSymbol
+                // the specifier and is its own target, conflicting with itself in checkAliasSymbol. In a JavaScript
+                // file a type target (a JSDoc typedef the file exports by itself) is TS18043 there first
+                if (item->source_name.source && item->source_name.source->is_js && !(my flags & SYMBOL_VALUE) &&
+                    !item->type_only
+                ) {
+                    Error* error = error_ctx_error_d(errs, item->source_name, 18043,
+                        "Types cannot appear in export declarations in JavaScript files.");
+                    for (u32 i = 0; i < my decl_count; i++) {
+                        if (my decls[i].kind != SYMBOL_DECL_TYPE_ALIAS || !((TypeDecl const*)my decls[i].node)->jsdoc) continue;
+                        error_add_related_d(error, my decls[i].full, 18044, "'", item->source_name, "' is automatically exported here.");
+                        break;
+                    }
+                    return nullptr;
+                }
                 error_ctx_error_d(errs, item->full_span, 2484,
                     "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
                 return nullptr;

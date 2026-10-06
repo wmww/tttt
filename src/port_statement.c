@@ -216,7 +216,15 @@ static void port_item_check_js_type(PortStatement const* me, PortItem const* ite
     // (A type-only one has its TS8006 already: tsc's isTypeOnlyImportOrExportDeclaration)
     if (!item->symbol || !item->symbol->alias || item->jsdoc || item->value_only || item->type_only || my main.type_only) return;
     Symbol const* target = symbol_resolve_alias(item->symbol);
-    if (!target || target->is_placeholder || target->is_unresolved || symbol_resolved_flags(target) & SYMBOL_VALUE) return;
+    if (!target || target->is_placeholder || target->is_unresolved) return;
+    // (A declaration merged with an alias that resolves to nothing, `export { T }` of the file's own typedef T:
+    // its own meanings)
+    u32 flags = symbol_resolved_flags(target);
+    if ((target->flags & SYMBOL_ALIAS) && (target->flags & SYMBOL_ANY_MEANING)) {
+        Symbol const* aliased = symbol_resolve_alias((Symbol*)target);
+        if (!aliased || aliased->is_placeholder) flags = target->flags & ~(u32)SYMBOL_ALIAS;
+    }
+    if (flags & SYMBOL_VALUE) return;
     Span at = span_valid(item->source_name) ? item->source_name : item->decl_name;
     if (!span_valid(at)) return;
     if (port_item_is_export(item)) {

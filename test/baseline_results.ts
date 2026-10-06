@@ -60206,7 +60206,7 @@ const baselines = {
         types: true,
     },
     'importingExportingTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

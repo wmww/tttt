@@ -174,7 +174,7 @@ Binder gaps (spurious TS2339 and friends):
   `@param {..} [config.additionalFiles]` binding type and TS7031 next to a JSDoc-typed sibling
   (destructuringParameterDeclaration9).
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
-const: TS18042), importingExportingTypes (TS18043 for re-exported typedefs), assignmentToVoidZero2,
+const: TS18042), assignmentToVoidZero2,
 classCanExtendConstructorFunction, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
 typeFromPropertyAssignment32, templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
 jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
