@@ -2077,7 +2077,9 @@ void scope_note_module_exports_access(Scope* me, Expr const* module) {
     Symbol* symbol = (Symbol*)module->identifier.symbol;
     Scope const* container = me;
     while (container->binder_transparent && container->parent) container = container->parent;
-    if (container->kind == SCOPE_MODULE || !symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_COMMONJS_MODULE) return;
+    // (An object literal is a container of its own to tsc's binder)
+    bool in_object_literal = my flow && my flow->object_literal_depth;
+    if ((container->kind == SCOPE_MODULE && !in_object_literal) || !symbol || !symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_COMMONJS_MODULE) return;
     Span name = expr_outer_span(module);
     Span first = symbol->decls[0].full;
     if (name.source != first.source || span_start_ptr(name) <= span_start_ptr(first)) return;

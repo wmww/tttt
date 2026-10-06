@@ -12492,7 +12492,7 @@ const baselines = {
     },
     'expandoFunctionContextualTypesJs': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionContextualTypesNoValue': {
