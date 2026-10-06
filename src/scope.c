@@ -2952,6 +2952,13 @@ static Symbol* resolve_entity_alias(Symbol* me) {
         if (!container || container->is_placeholder) return entity_value_symbol(me);
         Symbol* found = symbol_get_export(container, name);
         Symbol* next = resolve_if_pure_alias(found);
+        if (!next && !(container->flags & SYMBOL_VALUE & ~(u32)SYMBOL_VALUE_MODULE)) {
+            // A namespace's value has its exports as properties and nothing else: checking the expression finds no
+            // symbol (and says so), what tsc's resolveAlias takes as unknownSymbol, silent from there on
+            Symbol* unknown = binder_new_placeholder(my binder, my name_span, my name_span);
+            unknown->is_unresolved = true;
+            return unknown;
+        }
         if (!next || next == me) return entity_value_symbol(me);
         if (i > 0 && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder) {
             return entity_value_symbol(me);
