@@ -2676,9 +2676,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         "Return type of constructor signature must be assignable to the instance type of the class.");
                 }
             } else if (ctx.unwrapped_return) {
-                if (!statement_is_bare_return(me)) {
-                    return_typecheck(me, &my expr, ctx.unwrapped_return, false, ctx.await_returned, errs);
-                }
+                // (A bare `return;` returns `undefined` to what an async function awaits to or a generator's TReturn
+                // too: tsc's checkReturnStatement)
+                return_typecheck(me, &my expr, ctx.unwrapped_return, false, ctx.await_returned, errs);
             } else if (ctx.specified_return) {
                 return_typecheck(me, &my expr, ty_of_node(ctx.specified_return), false, false, errs);
             }
