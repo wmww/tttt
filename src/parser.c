@@ -104,6 +104,9 @@ typedef struct ParserShared {
     // The type alias an `@enum` on the statement just parsed declares (or the scope-level `@template`s of a variable
     // statement), for the statement list to append after it
     Statement* jsdoc_enum;
+    // The check-only declarations of the JSDoc types the statement just parsed didn't take (jsdoc_push_check_only()),
+    // for the statement list to append after it
+    VecStatement jsdoc_checks;
     u32 parsing_context; // The lists being parsed, a bit per ParsingContext
     // Where the statements being parsed are, for the modifier checks (modifier_list_check_grammar())
     bool in_ambient; // tsc's NodeFlags.Ambient context: a declaration file, a `declare` declaration's insides
@@ -172,6 +175,7 @@ void parser_shared_drop(ParserShared* me) {
         statement_drop(my jsdoc_enum);
         free(my jsdoc_enum);
     }
+    vec_statement_drop(&my jsdoc_checks);
     vec_error_drop(&my errors);
     vec_error_drop(&my jsdoc_errors);
     free(my await_statements);
@@ -5106,9 +5110,27 @@ static bool only_trivia_until(const char* at, const char* end) {
 // statement list inside claimed yet, as type alias and import declarations appended to `out`, and claims them. tsc
 // declares a typedef in the block scope of its host (delayedBindJSDocTypedefTag): the innermost statement list
 // containing the comment. bind: false only claims them (the comments before a block's `}` have no host)
+// The types of the tags tsc's checker visits (checkSourceElementWorker: `@type`, `@param`, `@satisfies`, `@enum`) that
+// no host took, as check-only declarations appended to `out`: a tag is checked whatever its host makes of it
+static void jsdoc_push_check_only(VecJsDocTag* tags, VecStatement* out) {
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->nested || i->earlier || !i->has_type) continue;
+        if (i->kind != JSDOC_TAG_TYPE && i->kind != JSDOC_TAG_PARAM && i->kind != JSDOC_TAG_SATISFIES && i->kind != JSDOC_TAG_ENUM) continue;
+        Span span = jsdoc_tag_decl_span(i);
+        TypeNode type = jsdoc_take_type(i, nullptr);
+        type.from_jsdoc = false;
+        vec_statement_push(out, (Statement){
+            .tag = STATEMENT_DECL_TYPE,
+            .decl.type = c_new(TypeDecl, { .full_span = span, .type = type, .jsdoc = true, .jsdoc_check_only = true }),
+            .span = span,
+        });
+    }
+}
+
+// eof: the comments are the end of the file's, whose JSDoc host is the end of file token (checked like any other)
 static void jsdoc_bind_comments(
     Parser* parent, const char* from, const char* to, const char* inner_from, const char* inner_to, bool bind, bool toplevel,
-    VecStatement* out
+    bool eof, VecStatement* out
 ) {
     VecJsDocRange* comments = &parent->shared->jsdoc_comments;
     isize lo = 0, hi = comments->size;
@@ -5123,7 +5145,7 @@ static void jsdoc_bind_comments(
         comments->data[c].claimed = true;
         if (!bind) continue;
         csview text = csview_from_range(range.start, range.end);
-        if (!csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
+        if (!eof && !csview_contains(text, "@typedef") && !csview_contains(text, "@callback") && !csview_contains(text, "@import") &&
             !csview_contains(text, "@template")
         ) {
             continue;
@@ -5240,6 +5262,7 @@ static void jsdoc_bind_comments(
             Statement alias = vec_statement_pull(out);
             vec_statement_push(out, jsdoc_wrap_in_namespaces(alias, full_name, i->name, span));
         }
+        if (eof) jsdoc_push_check_only(&tags, out);
         vec_jsdoc_tag_drop(&tags);
     }
 }
@@ -12471,6 +12494,7 @@ static void parse_statement_semicolon(Parser* parent, Statement* statement) {
 // ctx is the kind of list: source elements, block statements or a switch clause's statements
 // What a statement parsed outside of a statement list (an `if` arm) left behind
 static void jsdoc_drop_enum(Parser* p) {
+    vec_statement_clear(&p->shared->jsdoc_checks);
     if (!p->shared->jsdoc_enum) return;
     statement_drop(p->shared->jsdoc_enum);
     free(p->shared->jsdoc_enum);
@@ -12579,9 +12603,11 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
                 free(p.shared->jsdoc_enum);
                 p.shared->jsdoc_enum = nullptr;
             }
+            for_each (i, vec_statement, &p.shared->jsdoc_checks) list_push(vec_statement, ret, *i);
+            p.shared->jsdoc_checks.size = 0;
             if (p.shared->source->is_js) {
                 jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span),
-                    span_end_ptr(ret->data[statement_index].span), true, toplevel, ret);
+                    span_end_ptr(ret->data[statement_index].span), true, toplevel, false, ret);
                 jsdoc_from = p.pos;
             }
             parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
@@ -12614,7 +12640,10 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
     shrink_list(vec_statement, ret);
     p.shared->statement_parent = outer_parent;
     // (the end of the file has JSDoc in tsc, a block's `}` doesn't)
-    if (p.shared->source->is_js) jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, ret);
+    if (p.shared->source->is_js) {
+        bool eof = ctx == PARSING_SOURCE_ELEMENTS && toplevel && !*p.pos;
+        jsdoc_bind_comments(&p, jsdoc_from, p.pos, nullptr, nullptr, ctx == PARSING_SOURCE_ELEMENTS, toplevel, eof, ret);
+    }
 
     return parse_success(&p);
 }
@@ -13408,6 +13437,7 @@ static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable
 static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, Statement* statement) {
     VecJsDocTag tags = {0};
     if (!jsdoc_before(p, start, &tags)) return;
+    bool hosts = false; // A function took the tags (which checks what it doesn't take itself)
     switch (statement->tag) {
         case STATEMENT_DECL_VARIABLE: {
             VecInitializedBinding* list = &statement->decl.variable.initializers;
@@ -13417,7 +13447,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 // function gets the tags (their types go to the first)
                 for_each (i, vec_initialized_binding, list) {
                     FunctionImpl* function = jsdoc_function_of(initialized_binding_value(i));
-                    if (function) jsdoc_apply_function(p, &tags, function);
+                    if (function) jsdoc_apply_function(p, &tags, function), hosts = true;
                 }
                 break;
             }
@@ -13491,7 +13521,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 if (signature && signature->ret_explicit) function_impl_rare_mut(function)->jsdoc_tag_ret = &signature->ret;
                 function_impl_rare_mut(function)->jsdoc_host_type = &initializer->binding.explicit_type;
             }
-            if (function) jsdoc_apply_function(p, &tags, function);
+            if (function) jsdoc_apply_function(p, &tags, function), hosts = true;
             if (initialized_binding_value(initializer)->tag == EXPR_CLASS_DECL) jsdoc_apply_class(p, &tags, initialized_binding_value(initializer)->class_decl);
         }   break;
         case STATEMENT_DECL_FUNCTION: {
@@ -13503,6 +13533,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             }
             p->shared->jsdoc_declaration = true;
             jsdoc_apply_function(p, &tags, statement->decl.function.impl);
+            hosts = true;
         }   break;
         case STATEMENT_DECL_CLASS:
             jsdoc_apply_class(p, &tags, statement->decl.class);
@@ -13571,6 +13602,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 FunctionImpl* function = jsdoc_function_of(assigned);
                 if (function) {
                     jsdoc_apply_function(p, &tags, function);
+                    hosts = true;
                 } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {
                     jsdoc_apply_class(p, &tags, assignment->right.class_decl);
                 } else {
@@ -13595,6 +13627,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             if (function) {
                 function->jsdoc_indirect_host = statement->tag == STATEMENT_RETURN_EXPR;
                 jsdoc_apply_function(p, &tags, function);
+                hosts = true;
             } else if (statement->tag == STATEMENT_EXPORT_DEFAULT_EXPR && !statement->export_equals) {
                 // `/** @type {T} */ export default e`: e is checked against T and T is the export's type (tsc's
                 // checkExportAssignment, getEffectiveTypeAnnotationNode). `export default (e)` is a cast: the tag is
@@ -13618,6 +13651,9 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
         default:
             break;
     }
+    // (A parenthesized expression statement's comment is also its cast's, which checks the type)
+    bool parenthesized = statement->tag == STATEMENT_EXPR && *span_start_ptr(statement->span) == '(';
+    if (!hosts && !parenthesized) jsdoc_push_check_only(&tags, &p->shared->jsdoc_checks);
     vec_jsdoc_tag_drop(&tags);
 }
 
