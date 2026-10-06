@@ -346,6 +346,9 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_instantiate_fixing()`.
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
+- `apply_type_arguments_part` (instantiation expressions): signatures whose type arguments violate the constraints
+  are dropped when some other signature was dropped by arity (tsc keeps them uninstantiated); only the "nothing fits,
+  nothing dropped: the type unchanged" case is tsc's.
 - Expression memo (`check_with`, `LazyMemo.context`): an `Expr`'s memo is the last contextual check's;
   `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
   `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and

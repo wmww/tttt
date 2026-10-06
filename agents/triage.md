@@ -60,3 +60,22 @@ queues merged into one.
   inside destructuring assignment targets where tsc's checkGrammarObjectLiteralExpression never runs (TS1162 moved).
 - (agent a) `async function* f(): AsyncGenerator<...>` at target es2017 (no AsyncGenerator in lib): tsc also reports the
   global TS2318 "Cannot find global type 'AsyncIterableIterator'"; tttt doesn't.
+- (agent c, flag-flip cause 6/8 leftovers) tsc resolves JSDoc type literal members lazily: names inside `@returns
+  {{ new (): Set<T> }}` are only resolved (and reported, TS2304/TS2583) when the members are needed; tttt reports
+  them always (probe: a JS function whose return is never related). Same laziness decides TS6133 on an unused outer
+  `@template T`: tsc's resolveEntityNameFromAssignmentDeclaration also resolves every JSDoc type reference from the
+  host function (getAssignmentDeclarationLocation, isUse) and marks what it finds, so an inner `<T>` reference marks
+  the outer T once resolved (webpack deprecation.js:204 +TS6133 under `unused`).
+- (agent c) Missing elaboration line: a class static side against a generic construct signature type: tsc says
+  "Types of construct signatures are incompatible." / "Type 'new (v: boolean) => C' is not assignable to type 'new
+  <T = number>(v: T) => ...'" before "Types of parameters"; tttt starts at the parameters.
+- (agent c) vscode eopt extHostTypeConverters.ts:647/662 spurious TS2375 (tsc reports only the metadata TS2412 there):
+  the target is `Dto<...>` (a conditional over a homomorphic mapped type over intersections); tsc's indexed access /
+  missing-type handling there makes the optional props accept undefined. Needs a reduced repro.
+- (agent c) vscode eopt/nosnc extHostTestItem.ts:191/192 missing TS2352: comparability of TestItem vs TestItemImpl
+  (ITestItemLike has `uri?: URI`, TestItem `uri: Uri | undefined`); under nosnc too, so not only eopt.
+- (agent c) xstate eopt spawn.ts:132 TS2345->TS2379: the argument is a parameter contextually typed by a generic rest
+  `...[options]: ConditionalRequired<[options?: X], ...>`: tsc's parameter type is the conditional's element
+  (`ConditionalRequired<...>[0]`-like), tttt's `X | undefined`, which then counts as an exact-optional mismatch.
+- (agent c) drizzle sloppy/nosnc mysql-proxy/migrator.ts:25: tsc's `....orderBy(...)` result is undefined-ish (TS2532 +
+  TS2722 at the chain), tttt's `.limit` is never (TS2349): non-strict drizzle builder types diverge.
