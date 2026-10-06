@@ -3378,11 +3378,17 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             len -= placeholders;
             // A written `string & {}` (or number, bigint) stays as it is: the idiom for "any string, but show the
             // literals" (tsc's NoSupertypeReduction)
-            bool keep_empty_object = node->tag == TYPE_INTERSECTION && len == 2 &&
-                (types[0] == ty_intrinsic(me, TY_STRING) || types[0] == ty_intrinsic(me, TY_NUMBER) ||
-                    types[0] == ty_intrinsic(me, TY_BIGINT)) &&
-                vec_type_back(&node->composite)->tag == TYPE_INTERFACE &&
-                !vec_interface_member_size(&vec_type_back(&node->composite)->interface.members);
+            // (Either way round, `{} & string`, and a pattern template literal too)
+            bool keep_empty_object = false;
+            if (node->tag == TYPE_INTERSECTION && len == 2 && !placeholders) {
+                for (u32 e = 0; e < 2 && !keep_empty_object; e++) {
+                    TypeNode const* empty = vec_type_at(&node->composite, e);
+                    Ty const* t = types[1 - e];
+                    keep_empty_object = empty->tag == TYPE_INTERFACE && !vec_interface_member_size(&empty->interface.members) &&
+                        (t == ty_intrinsic(me, TY_STRING) || t == ty_intrinsic(me, TY_NUMBER) || t == ty_intrinsic(me, TY_BIGINT) ||
+                            (t->kind == TY_TEMPLATE_LITERAL && ty_is_pattern_literal(t)));
+                }
+            }
             Ty const* ret = node->tag == TYPE_UNION ? ty_union(me, types, len, alias, alias_args) :
                 keep_empty_object ? ty_intersection_keeping_empty_object(me, types, len, alias, alias_args) :
                 ty_intersection(me, types, len, alias, alias_args);
