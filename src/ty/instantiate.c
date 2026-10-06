@@ -879,9 +879,12 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             if (distributed || !same_root) return ret;
             // (tsc's getConditionalType names it by its root's alias, instantiated from the root, whatever alias this
             // one had: `type W<O> = Extract<O, string>` declares W<O>, but W<X> is Extract<X, string>)
-            Ty const* root_aliased = intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2);
+            // (Only one that goes by an alias asks: one without keeps none, as before)
+            Ty const* root_aliased = ty->alias ? intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2) : nullptr;
             if (root_aliased && ty->alias != root_aliased->alias) {
-                return instantiate_alias(me, root_aliased, ret, ty_compose_mappers(me, ty->conditional.mapper, mapper));
+                // (The alias arguments through the mapper the result was made from the root with: composing this one's
+                // mapper with the new one would instantiate every one of its targets, each time)
+                return instantiate_alias(me, root_aliased, ret, ret->conditional.mapper);
             }
             return instantiate_alias(me, ty, ret, mapper);
         }
