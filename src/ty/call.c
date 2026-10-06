@@ -892,6 +892,11 @@ static TyMapper const* fix_for_generic_function(Checker* me, Signature const* si
 
 static bool returns_single_signature(Checker* me, Signature const* sig);
 
+GenericFunctionMode ty_outer_generic_function_mode(Checker* me) {
+    OuterInference* outer = my outer_inference;
+    return (GenericFunctionMode){ .sig = outer ? outer->sig : nullptr, .inf = outer ? outer->inf : nullptr };
+}
+
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode) {
     Signature const* wanted = nullptr;
     Signature const* generic = generic_function_argument(me, type, contextual, &wanted);
@@ -1126,6 +1131,9 @@ static TyMapper const* infer_type_arguments(
     }
     OuterInference self = { .sig = sig, .inf = &inf };
     my inferential_depth++;
+    // (This call's own arguments aren't in the return of a function argument: see ExprCtx in expr.c)
+    u32 saved_argument_return_depth = my argument_return_depth;
+    my argument_return_depth = 0;
     // (tsc's impliedArity: a rest parameter that is a type parameter gets as many elements as there are arguments for
     // it, unless one is a spread)
     if (shape.rest_variadic && shape.rest_variadic->kind == TY_TYPE_PARAM && args->spread_index < 0) {
@@ -1398,6 +1406,7 @@ static TyMapper const* infer_type_arguments(
     inference_drop(&inf);
     my outer_inference = outer;
     my inferential_depth--;
+    my argument_return_depth = saved_argument_return_depth;
     return mapper;
 }
 

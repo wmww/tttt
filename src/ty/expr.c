@@ -330,6 +330,17 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         ctx.contextual = ctx.raw_contextual;
         return ty_generic_function_in_context(me, check_with(me, expr, ctx), instantiated, mode);
     }
+    // A generic function among the return expressions of a function argument whose contextual type wants a single
+    // non-generic signature: instantiated in that context while the call infers (tsc's
+    // instantiateTypeWithSingleGenericCallSignature under CheckMode.Inferential; getReturnTypeFromBody drops
+    // SkipGenericFunctions): `map("", () => ({ x: identity }))` returns `{ x: (y: string) => string }`
+    if (my argument_return_depth && my outer_inference && ctx.contextual &&
+        (expr->tag == EXPR_IDENTIFIER || expr->tag == EXPR_PROPERTY)
+    ) {
+        Ty const* type = compute(me, expr, ctx);
+        GenericFunctionMode mode = ty_outer_generic_function_mode(me);
+        return ty_generic_function_in_context(me, type, ctx.raw_contextual ? ctx.raw_contextual : ctx.contextual, &mode);
+    }
     LazyType* lazy = (LazyType*)&expr->lazy_type;
     if (lazy->tag != LAZY_TYPE_EXPR || !lazy->slot) return compute(me, expr, ctx); // implicit any and friends
     LazyMemo* memo = lazy_type_state_peek(lazy);
@@ -4228,7 +4239,11 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
         callee_type = ty_intrinsic(me, TY_ERROR); // (See expr_typecheck(): TS18046)
     }
     if (!call->uses_new && !call->is_extends) callee_type = ty_check_non_null_callee(me, callee_type, span_null, nullptr);
+    // (A call's arguments are checked as its own resolution says, not as members of an outer argument's return)
+    u32 saved_argument_return_depth = my argument_return_depth;
+    my argument_return_depth = 0;
     Ty const* ret = ty_call_return_type(me, callee_type, call, call_span, ctx.raw_contextual);
+    my argument_return_depth = saved_argument_return_depth;
     if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) {
         return ty_intrinsic(me, TY_VOID); // Whatever it resolved to, and even if it's an error (`new super()` too)
     }

@@ -242,6 +242,11 @@ static Ty const* source_type_at(Checker* me, Signature const* sig, u32 i, TyMapp
         if (shape->flags[j] & TUPLE_ELEMENT_REST) return ty_rest_element_type(me, elements.data[j]);
         return elements.data[j];
     }
+    // A generic rest type: its element by position (tsc's tryGetTypeAtPosition: `A[0]`)
+    if (rest->kind == TY_TYPE_PARAM || (rest->flags & TYF_DEFERRED)) {
+        Value index = value_number((double)(i + 1 - sig->param_count));
+        return ty_indexed(me, rest, ty_literal(me, &index));
+    }
     return ty_rest_element_type(me, rest);
 }
 

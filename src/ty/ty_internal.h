@@ -277,6 +277,7 @@ Ty const* ty_check_literal_argument(
     Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
 );
 Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* contextual, GenericFunctionMode* mode);
+GenericFunctionMode ty_outer_generic_function_mode(Checker* me); // The call inferring now's (my outer_inference)
 bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr);
 Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call); // call.c: a remembered resolution's return, or null
 void ty_late_contextual_return(Checker* me, FunctionImpl const* function); // expr.c

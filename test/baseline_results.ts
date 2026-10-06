@@ -17418,7 +17418,7 @@ const baselines = {
     'inferentialTypingWithFunctionTypeNested': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferentialTypingWithFunctionTypeSyntacticScenarios': {
         errors: true,

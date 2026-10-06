@@ -320,7 +320,10 @@ Ty const* ty_function_return_type(Checker* me, FunctionImpl const* function) {
 }
 
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
-    return function_return_type(me, function, true);
+    my argument_return_depth++;
+    Ty const* ret = function_return_type(me, function, true);
+    my argument_return_depth--;
+    return ret;
 }
 
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
