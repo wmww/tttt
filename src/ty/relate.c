@@ -3226,6 +3226,8 @@ static bool is_remapping(Checker* me, MappedInfo const* mapped) {
     return mapped->name_type && !ty_is_related(me, mapped->name_type, mapped->type_param, TY_RELATION_ASSIGNABLE);
 }
 
+bool ty_mapped_is_remapping(Checker* me, MappedInfo const* mapped) { return is_remapping(me, mapped); }
+
 // tsc's getCombinedMappedTypeOptionality: whether the mapped types a homomorphic mapped type takes its modifiers from
 // add `?` (1) or remove it (-1)
 static int combined_mapped_optionality(Checker* me, Ty const* ty, u32 depth) {
@@ -4940,7 +4942,14 @@ static Ternary structured_related_members(
                 // A generic mapped type's keys are at least its `as` type, or else its constraint, and with `as` over
                 // `keyof X` the `as` type of X's apparent keys (tsc's getApparentMappedTypeKeys)
                 MappedInfo const* mapped = ty_members(me, operand)->mapped;
-                Ty const* keys = mapped->name_type ? mapped->name_type : mapped->constraint;
+                Ty const* keys = mapped->constraint;
+                if (mapped->name_type) {
+                    // (The `as` type with the key parameter as the constraint: tsc's getIndexTypeForMappedType,
+                    // `get${P}` over K is `get${K}`)
+                    TyMapper const* key_mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 },
+                        (TyList){ .data = &mapped->constraint, .len = 1 });
+                    keys = ty_instantiate(me, mapped->name_type, key_mapper);
+                }
                 if (mapped->name_type && mapped->keyof_constraint && mapped->modifiers_type) {
                     Ty const* both[2] = { apparent_mapped_type_keys(me, mapped), mapped->name_type };
                     keys = ty_union(me, both, 2, nullptr, (TyList){0});
@@ -5135,7 +5144,16 @@ static Ternary structured_related_members(
 
         case TY_KEYOF: {
             Ty const* all[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
-            return is_related_to(me, st, ty_union(me, all, 3, nullptr, (TyList){0}), target, report);
+            Ty const* operand = source->keyof.operand;
+            // keyof a generic mapped type: also its keys, the `as` type (or the constraint) (tsc's isDeferredMappedIndex)
+            MappedInfo const* mapped = operand->kind == TY_ANONYMOUS && (operand->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) ?
+                ty_members(me, operand)->mapped : nullptr;
+            if (!mapped) return is_related_to(me, st, ty_union(me, all, 3, nullptr, (TyList){0}), target, report);
+            Ternary related = is_related_to(me, st, ty_union(me, all, 3, nullptr, (TyList){0}), target, false);
+            if (related) return related;
+            Ty const* keys = mapped->name_type && mapped->keyof_constraint && mapped->modifiers_type ?
+                apparent_mapped_type_keys(me, mapped) : mapped->name_type ? mapped->name_type : mapped->constraint;
+            return is_related_to(me, st, keys, target, report);
         }
 
         case TY_INDEXED: {

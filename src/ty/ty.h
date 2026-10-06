@@ -1591,6 +1591,7 @@ Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access); // What `
 Ty const* ty_compute_expr_without_context(Checker* me, Expr const* expr); // Only for the LazyType of an Expr
 Ty const* ty_rest_binding_initializer_type(Checker* me, Expr const* expr);
 Signature const* ty_call_resolved_signature(Checker* me, CallExpr const* call);
+bool ty_mapped_is_remapping(Checker* me, MappedInfo const* mapped);
 void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* errs);
 // The contextual type of the value of `a = v` (null for none): what its target gives it (tsc's
 // getContextualTypeForBinaryOperand and getContextualTypeForAssignmentDeclaration)
