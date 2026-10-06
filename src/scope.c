@@ -1407,6 +1407,14 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
         if (span_within(exported->decls[d].full, block)) exported_spaces |= declaration_spaces(exported, &exported->decls[d], resolve);
     }
     for (u32 d = 0; d < local->decl_count; d++) {
+        // (In an ambient export context an import without `declare` is exported too: tsc's getEffectiveDeclarationFlags)
+        SymbolDecl const* decl = &local->decls[d];
+        if (my export_context && decl->kind == SYMBOL_DECL_ALIAS && decl->node && decl->flags == SYMBOL_ALIAS &&
+            !((PortItem const*)decl->node)->declared
+        ) {
+            exported_spaces |= declaration_spaces(local, decl, resolve);
+            continue;
+        }
         if (local->decls[d].flags) local_spaces |= declaration_spaces(local, &local->decls[d], resolve);
         else default_spaces |= declaration_spaces(local, &local->decls[d], resolve);
     }
