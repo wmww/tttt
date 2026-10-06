@@ -19567,7 +19567,7 @@ const baselines = {
     },
     'jsFileESModuleWithEnumTag': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsFileFunctionOverloads': {

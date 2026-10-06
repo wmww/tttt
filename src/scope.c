@@ -319,6 +319,14 @@ Symbol* binder_ambient_module(Binder* me, csview name, Span name_span) {
     return ret;
 }
 
+// A JSDoc `@typedef`, `@callback` or `@enum` (or a namespace of a dotted typedef name): tsc's binder declares them once
+// the rest of the file is bound (delayedBindJSDocTypedefTag)
+static bool is_delayed_jsdoc_decl(SymbolDecl const* decl) {
+    if (decl->kind == SYMBOL_DECL_TYPE_ALIAS) return ((TypeDecl const*)decl->node)->jsdoc;
+    if (decl->kind == SYMBOL_DECL_NAMESPACE) return ((NamespaceDecl const*)decl->node)->jsdoc;
+    return false;
+}
+
 static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
     if (my decl_count == my decl_cap) {
         u32 cap = my decl_cap ? my decl_cap * 2 : 1; // Most symbols have one declaration
@@ -327,7 +335,16 @@ static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
         my decls = decls;
         my decl_cap = cap;
     }
-    my decls[my decl_count++] = decl;
+    // After the file's declarations of other kinds that tttt declares later than its JSDoc type aliases (expandos)
+    u32 at = my decl_count;
+    if (at && decl.full.source && is_delayed_jsdoc_decl(&my decls[at - 1]) && !is_delayed_jsdoc_decl(&decl)) {
+        while (at && my decls[at - 1].full.source == decl.full.source && is_delayed_jsdoc_decl(&my decls[at - 1])) at--;
+        // (Never in front of the value declaration)
+        if (at == 0) at = my decl_count;
+        memmove(&my decls[at + 1], &my decls[at], sizeof(SymbolDecl) * (my decl_count - at));
+    }
+    my decls[at] = decl;
+    my decl_count++;
 }
 
 // Stands for something that couldn't be resolved: has every meaning, and everything about it is any
@@ -4975,6 +4992,16 @@ static void add_expando_member(
         }
         add_expando_namespace_decls(me, object, top_level);
     } else if (late_bound_key) {
+        // Only the namespace declarations (tsc's bindSpecialPropertyAssignment for a dynamic name: the member is
+        // late bound into what isn't an expando, which the checker never looks at)
+        Expr const* root = object;
+        while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
+        Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
+        if (top_level && my file->is_js && root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
+            !(my file->is_commonjs && is_commonjs_root(object))
+        ) {
+            add_expando_namespace_decls(me, object, true);
+        }
         return;
     } else if (top_level && my file->is_js && is_global_expando_entity(me, left)) {
         host = global_expando_namespace(me, object);
