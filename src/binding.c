@@ -597,6 +597,8 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 }
                 if (i->computed_key) {
                     expr_typecheck(i->computed_key, errs);
+                    // (tsc's checkBindingElement: checkComputedPropertyName)
+                    ty_check_computed_name(current_checker, i->computed_key, i->source_span, false, errs);
                     // (tsc's getTypeForBindingElement: getIndexedAccessType with the name as the access node)
                     // (With a default, an object literal may lack it: AccessFlags.AllowMissing)
                     if (parent && !i->target.rest && !(i->target.default_value && parent->kind == TY_ANONYMOUS &&
