@@ -728,6 +728,12 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
         Ty const* apparent = ty_apparent_type(me, object);
         if (ty_is_tuple(apparent) && apparent->kind == TY_REFERENCE) return tuple_element_context(me, apparent, a);
     }
+    // A conditional type as its constraint, each member of a union one (`string | [unknown, ...unknown[]] | { [k in
+    // keyof D]: N<D[k]> }` gives N<D["0"]> next to unknown)
+    if (object->kind == TY_CONDITIONAL) {
+        Ty const* apparent = ty_apparent_type(me, object);
+        if (apparent != object && apparent->kind != TY_CONDITIONAL) return context_map(me, apparent, get_element_context, arg);
+    }
     if (ty_is_tuple(object) && object->kind == TY_REFERENCE) return tuple_element_context(me, object, a);
     if (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
         cstr name = cstr_d(index);
