@@ -1621,7 +1621,7 @@ static bool annotation_is(Checker* me, TypeNode const* node, Ty const* ty, bool 
     Ty const* annotated = node_type(me, (TyDisplay){0}, node);
     // (An annotation that is the error type is reused whatever the type is: tsc's canReuseTypeNodeAnnotation)
     return annotated == ty || (optional && annotated == ty_without_undefined(me, ty)) ||
-        annotated == ty_intrinsic(me, TY_ERROR);
+        (annotated->flags & TYF_ERROR);
 }
 
 // Prints `ty` by reprinting its declaration's annotation when that's allowed and says the same, else as a type

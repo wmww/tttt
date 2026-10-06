@@ -18748,7 +18748,7 @@ const baselines = {
     'isolatedDeclarationErrorTypes1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationErrors': {
         errors: true,
@@ -18823,7 +18823,7 @@ const baselines = {
     'isolatedDeclarationsAddUndefined2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationsAllowJs': {
         errors: true,
@@ -33403,7 +33403,7 @@ const baselines = {
     'wellKnownSymbolExpando': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'whileStatementInnerComments': {
         errors: true,

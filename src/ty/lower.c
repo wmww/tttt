@@ -1306,6 +1306,25 @@ static Ty const* assignment_declaration_type(Checker* me, Symbol const* symbol, 
     // (tsc's getWidenedTypeForAssignmentDeclaration pushes neverType for it)
     Expr const* node = decl->node;
     if (node && node->tag == EXPR_PROPERTY && span_eq(expr_outer_span(node), decl->full)) return ty_intrinsic(me, TY_NEVER);
+    // `f[k] = function () {}`: a late-bound member's value is contextually typed by the access it is assigned to (tsc's
+    // getContextualTypeForAssignmentDeclaration: the left has no symbol, getTypeOfExpression of it), which is this
+    // member's type again: circular, any (TS7022 under noImplicitAny). A value that asks for no contextual type (a
+    // literal) types it
+    if (symbol_rare(symbol)->late_bound_key && node && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR &&
+        decl->assignment != ASSIGNMENT_DECL_THIS_IN_METHOD
+    ) {
+        Expr const* value = node;
+        if (value->tag == EXPR_FUNCTION || value->tag == EXPR_OBJECT || value->tag == EXPR_ARRAY) {
+            if (compiler_options()->no_implicit_any && span_valid(decl->full) && span_valid(decl->name)) {
+                // (At the whole assignment, tsc's declaration)
+                Span value_span = expr_outer_span(value);
+                Span whole = span_make(decl->full.source, span_start_ptr(decl->full), span_end_ptr(value_span));
+                ty_error_at(me, span_end_ptr(value_span) > span_start_ptr(decl->full) ? whole : decl->full, 7022, cstr_d("'", decl->name, "' implicitly has type 'any' because it does not have a "
+                    "type annotation and is referenced directly or indirectly in its own initializer."));
+            }
+            return ty_intrinsic(me, TY_ANY);
+        }
+    }
     Ty const* type = ty_expr_type(me, decl->node);
     // `[]` is any[] in JavaScript, which noImplicitAny reports (tsc's getInitializerTypeFromAssignmentDeclaration:
     // isEmptyArrayLiteralType, see ty_js_assignment_implicit_any())
@@ -1368,7 +1387,9 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             }
             Ty const* type = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
             // `x?: T` is read as `T | undefined` inside the function. TODO: tsc also shows it in the signature
-            if (binding->optional_parameter && compiler_options()->strict_null_checks && !(type->flags & TYF_ANY)) {
+            if (binding->optional_parameter && compiler_options()->strict_null_checks) {
+                // (An unresolved name's error type with undefined is the plain error type: tsc's getUnionType)
+                if (type->flags & TYF_ANY) return type->flags & TYF_ERROR ? ty_intrinsic(me, TY_ERROR) : type;
                 Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
                 type = ty_union(me, types, 2, nullptr, (TyList){0});
             }
