@@ -242,11 +242,6 @@ static ParamShape param_shape(Checker* me, Signature const* sig, TyMapper const*
             shape.types[shape.count++] = param->optional ? ty_optional_param_type(me, type) : type;
             continue;
         }
-        if (type->kind == TY_TYPE_PARAM) {
-            // `...args: T` with `T extends [number, string]` is called like the constraint says
-            Ty const* constraint = ty_param_constraint(me, type);
-            if (constraint && (ty_is_tuple(constraint) || is_empty_tuple(constraint)) && mapper) type = constraint;
-        }
         if (is_empty_tuple(type)) {
             // No more parameters
         } else if (ty_is_tuple(type)) {
@@ -406,7 +401,7 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
         Ty const* constraint = variadic->kind == TY_TYPE_PARAM || (variadic->flags & TYF_DEFERRED) ? ty_base_constraint(me, variadic) : variadic;
         // (Not a tuple constraint yet: the arity check then reads the instantiated rest parameter as V's fixed
         // elements and reports TS2556 for `f10(...v)`, V extends [number, number])
-        if (constraint && ty_is_mutable_array_or_tuple(me, constraint) && !ty_tuple_shape(constraint)) return variadic;
+        if (constraint && ty_is_mutable_array_or_tuple(me, constraint)) return variadic;
     }
     unsigned char* flags = calloc(arity ? arity : 1, 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
@@ -947,12 +942,13 @@ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper
 // type is the rest type's element at its position, and a literal that has room in it isn't widened as a candidate
 // (`Literal("a")` under `...literals: Literals` with `Literals extends readonly LiteralValue[]` is `["a"]`)
 static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args const* args, u32 i, u32 from) {
-    if (args->spread_index >= 0) return nullptr;
     if (!ty_is_tuple(shape->rest_variadic)) {
-        // A rest type that isn't a tuple gives `T[i]` (with a `const T`, each argument is in a const context)
+        // A rest type that isn't a tuple gives `T[i]` (with a `const T`, each argument is in a const context), by
+        // position even with spreads among the arguments (tsc's getSpreadArgumentType): `f11(1, ...u)` keeps 1
         Value index = value_number((double)(i - from));
         return ty_indexed(me, shape->rest_variadic, ty_literal(me, &index));
     }
+    if (args->spread_index >= 0) return nullptr;
     // (A tuple's elements after a variadic one count from the end, tsc's getContextualTypeForElementExpression)
     return ty_contextual_element_type_of(me, shape->rest_variadic, i - from, args->len - from);
 }
