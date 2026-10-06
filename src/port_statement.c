@@ -163,7 +163,8 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
         if (!(my side_effect_only && my module_ref->failure == MODULE_REF_IS_JS)) {
             module_ref_report_unresolved(my module_ref, errs);
         }
-    } else if (my module_ref && my module_ref->file) {
+    } else if (my module_ref && my module_ref->file && !unchecked) {
+        // (nor about what a side effect import resolved to: tsc resolves it only for noUncheckedSideEffectImports)
         module_ref_report_resolved(my module_ref, my main.type_only, errs);
     }
 }
