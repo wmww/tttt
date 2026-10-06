@@ -2731,6 +2731,7 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             .decl_span_count = origin->decl->decl_span_count,
             .name_is_value = origin->decl->name_is_value,
             .parent = !partial && !setonly && !(prop->flags & PROP_READONLY) ? prop->parent : nullptr,
+            .spread_variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable,
         });
     }
     // (Not readonly outside a const context, like the properties: tsc's getIndexInfoWithReadonly in getSpreadType)

@@ -2607,6 +2607,24 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         ) {
             annotation = origin->decl->node;
         }
+        // A module's variable (a namespace's member, spread or not): its declaration's annotation, or a `const`'s
+        // literal initializer (tsc's serializeTypeOfDeclaration through the property's declarations)
+        Expr const* literal_initializer = nullptr;
+        Symbol const* variable = origin->decl->symbol ? origin->decl->symbol : prop_decl_rare(origin->decl)->spread_variable;
+        if (!annotation && !placeholder && variable && d.underline && d.enclosing) {
+            Binding const* binding = variable->decl_count == 1 && variable->decls[0].kind == SYMBOL_DECL_VARIABLE ?
+                variable->decls[0].node : nullptr;
+            if (binding && !binding->parent && binding->tag == BINDING_IDENTIFIER && binding->symbol == variable) {
+                if (binding->has_explicit_type) {
+                    annotation = &binding->explicit_type;
+                } else if (variable->is_const) {
+                    Expr const* value = initialized_binding_value((InitializedBinding const*)binding);
+                    bool literal = value && value->tag == EXPR_LITERAL && (value->literal.tag == VALUE_BOOLEAN ||
+                        value->literal.tag == VALUE_NUMBER || value->literal.tag == VALUE_BIGINT);
+                    if (literal && (type->flags & TYF_LITERAL)) literal_initializer = value;
+                }
+            }
+        }
         // An object literal's accessor: the getter's return annotation, else the setter's parameter's (tsc's
         // typeFromAccessor)
         FunctionImpl const* syntactic_getter = nullptr;
@@ -2649,6 +2667,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
             display_node(me, d, annotation);
             out(reused_if(d, false), c_sv(" | undefined"));
         }
+        else if (literal_initializer && !d.reused) out(reused_if(d, true), literal_initializer->inner_span.sv);
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
         else if (d.reused && annotation && annotation->tag != TYPE_UNIQUE_SYMBOL) ty_display(me, d, shown);
         else if (annotation && annotation->tag == TYPE_UNIQUE_SYMBOL && d.underline && d.enclosing && span_valid(d.decl_literal) &&

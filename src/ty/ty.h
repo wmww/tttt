@@ -499,6 +499,9 @@ typedef struct PropDeclRare {
     struct ReverseMapped const* reverse_of;
     Ty const* reverse_source;
     Ty const* reverse_declared;
+    // Types baseline only: a property spread from a module's variable (`{ ...ns }`) is declared by that variable (tsc's
+    // getSpreadSymbol keeps the declarations), whose annotation or literal initializer is reused
+    Symbol const* spread_variable;
 } PropDeclRare;
 
 typedef struct PropDecl {
@@ -1692,6 +1695,7 @@ typedef struct ObjectLiteralProp {
     // A spread or widened copy of a declared member that tsc's getSpreadSymbol / getWidenedProperty would keep as the
     // same symbol: that member's container (Prop.parent), which names it in the symbols baseline
     Symbol const* parent;
+    Symbol const* spread_variable; // See PropDeclRare.spread_variable
 } ObjectLiteralProp;
 typedef enum ObjectLiteralKind {
     OBJECT_SYNTHETIC, // Made up by the checker

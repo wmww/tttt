@@ -1404,6 +1404,7 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
                 .name = prop->name, .flags = prop->flags & (PROP_OPTIONAL | PROP_METHOD), .type = prop_type(me, prop),
                 .name_span = prop->decl->name_span, .name_form = ty_prop_name_form_of(prop),
                 .decl_spans = prop->decl->decl_spans, .decl_span_count = prop->decl->decl_span_count,
+                .spread_variable = prop->decl->symbol,
             };
         }
     }
@@ -2309,6 +2310,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
                 .name_is_value = origin && origin->decl->name_is_value,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
                 .asserted = origin ? prop_annotation(origin) : nullptr,
+                .spread_variable = origin ? origin->decl->symbol : nullptr,
             };
         }
     }

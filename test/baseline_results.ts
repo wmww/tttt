@@ -54748,12 +54748,12 @@ const baselines = {
     'nodeModulesDeclarationEmitDynamicImportWithPackageExports(module=node18)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesDeclarationEmitDynamicImportWithPackageExports(module=nodenext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesDeclarationEmitWithPackageExports(module=node16)': {
         errors: true,
