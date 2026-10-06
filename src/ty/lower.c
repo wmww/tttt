@@ -948,8 +948,7 @@ static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* nod
 }
 
 static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node, TyList alias_args) {
-    u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
-    if (intern_get(&my links, key, 2)) return;
+    if (root->conditional.outer) return;
     TyConditionalOuter* outer = collect_outer_params(me, node);
     // An alias's body keeps the alias's type parameters it doesn't mention too (tsc's getTypeFromConditionalTypeNode
     // filters by isTypeParameterPossiblyReferenced only without an alias): instantiation names a deferred instance by
@@ -975,7 +974,7 @@ static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* n
         csview text = cstr_sv(&decl.source->contents);
         outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.sv.buf < block;
     }
-    *intern_slot(me, &my links, key, 2) = outer;
+    ((Ty*)root)->conditional.outer = outer; // (Set once, right after lowering it: a root is never shared between checkers)
 }
 
 // The type parameters declared outside a deferred reference's node that it mentions: what its instantiations are
@@ -990,8 +989,8 @@ static TyConditionalOuter const* deferred_node_outer(Checker* me, TypeNode const
 }
 
 TyConditionalOuter const* ty_conditional_outer(Checker* me, Ty const* root) {
-    u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
-    return intern_get(&my links, key, 2);
+    (void)me;
+    return root->conditional.outer;
 }
 
 Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args) {
@@ -3444,11 +3443,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             ty_buf_drop(&infers);
             if (!alias || ret->kind != TY_CONDITIONAL) return ret;
             Ty const* aliased = ty_realias(me, ret, alias, alias_args);
-            if (ret->conditional.root == ret) {
-                u64 key[2] = { KEY_CONDITIONAL_ROOT_ALIAS, ret->id };
-                void const** slot = intern_slot(me, &my links, key, 2);
-                if (!*slot) *slot = aliased;
-            }
+            if (ret->conditional.root == ret && !ret->conditional.root_aliased) ((Ty*)ret)->conditional.root_aliased = aliased;
             return aliased;
         }
 

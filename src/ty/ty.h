@@ -387,6 +387,11 @@ struct Ty {
             // inside `Omit<T, K>` only distributes once T is known)
             Ty const* root;
             TyMapper const* mapper;
+            // Of a root lowered from a node (lower.c; null otherwise and on instances): the type parameters declared
+            // outside it that instantiations are keyed by, and the root as the type alias declaring it names it (tsc's
+            // root.aliasSymbol and aliasTypeArguments)
+            struct TyConditionalOuter const* outer;
+            Ty const* root_aliased;
         } conditional;
         struct {
             Ty const* base;

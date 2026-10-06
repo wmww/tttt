@@ -663,7 +663,7 @@ static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper co
             // A member that stays deferred goes by the root's alias (tsc's getConditionalType: root.aliasSymbol with
             // its arguments instantiated): `Awaited<T | Yadda>` is `Yadda | Awaited<T>`
             if (results[i]->kind == TY_CONDITIONAL && !results[i]->alias && results[i]->conditional.root == root) {
-                Ty const* root_aliased = intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2);
+                Ty const* root_aliased = root->conditional.root_aliased;
                 if (root_aliased) results[i] = instantiate_alias(me, root_aliased, results[i], results[i]->conditional.mapper);
             }
         }
@@ -886,7 +886,7 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             // (tsc's getConditionalType names it by its root's alias, instantiated from the root, whatever alias this
             // one had: `type W<O> = Extract<O, string>` declares W<O>, but W<X> is Extract<X, string>)
             // (Only one that goes by an alias asks: one without keeps none, as before)
-            Ty const* root_aliased = ty->alias ? intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2) : nullptr;
+            Ty const* root_aliased = ty->alias ? root->conditional.root_aliased : nullptr;
             if (root_aliased) {
                 // (The alias arguments through the mapper the result was made from the root with, tsc's
                 // instantiateTypes(root.aliasTypeArguments, mapper): instantiating this one's own alias arguments, or
