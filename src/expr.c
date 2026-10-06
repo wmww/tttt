@@ -1537,6 +1537,9 @@ static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview
         unused_mark_referenced(names, found, SYMBOL_VALUE);
         // (The factory is a name like any other: tsc's resolveName)
         if (jsx == JSX_REACT) check_umd_global_symbol_use(found, at, names, errs);
+    } else if (jsx == JSX_REACT && scope_resolve(names, name, SYMBOL_NAMESPACE_MODULE)) {
+        // (tsc's resolveName -> checkAndReportErrorForUsingNamespaceAsValue, before any suggestion)
+        error_ctx_error_d(errs, at, 2708, "Cannot use namespace '", name, "' as a value.");
     } else if (jsx == JSX_REACT) {
         // (tsc's resolveName: a misspelling is said to be one instead)
         scope_report_jsx_factory_not_found(names, at, name, meaning, errs);
