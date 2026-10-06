@@ -134,9 +134,23 @@ distribution that changes nothing is the union itself (underscore's `keyof X`), 
 intersection (assert.strict.equal), `${Enum}` property annotations made at the interface check (chrome, partly).
 
 ### Open, for the fan-out (todo entry 4); `./expecttypes.py --last -k KIND` lists each
-- **Union order, 44 + 1 assertions / ~20 packages** (`union order` + `order (same tokens)`): creation order. Was 135:
-  the oracle asked getTypeAtLocation lazily without checking, so declarations' types were made in lookup order
-  (chrome's enum strings, 42); test/sweep_tsc.js --expect now checks every non-lib file first, like tttt (2026-10-06).
+- **Union order, 12 assertions / 9 packages left** (`union order`): creation order. Was 135: the oracle asked
+  getTypeAtLocation lazily without checking (test/sweep_tsc.js --expect now checks every non-lib file first, like
+  tttt). Fixed 2026-10-06 (agent A): the check walk makes references, unions (memoized per node), tuples and
+  function-type parameters' types like tsc's checkSourceElement; union/intersection/tuple alias bodies after their
+  walk; discriminant lookups make the name literal when a member lacks the property; inference skips literal
+  arguments of type-variable-free parameters; interface heritage/index constraints before the member walk; tuple
+  length literals at target creation. Left, all relation side effects or identity:
+  - tsc's typeRelatedToSomeType under reportErrors (any check with an error node) computes getBestMatchingType when
+    no member relates directly, even if the relation then succeeds another way: findMostOverlappyType's getIndexType
+    makes property-name literals (levelup), findBestTypeForInvokable's getSignaturesOfType makes global Symbol
+    through getApparentType (node util_types, `keyof T` vs `string | number | symbol` in a mapped type check).
+    Emulating needs tttt's relation to know it is a reporting one: plan-sized.
+  - Structural comparisons tsc makes that tttt shortcuts (passport-discord: a 2-tuple in a lib signature's return type
+    resolved in a heritage relation; postman-collection: UrlMatchPattern made through a base relation).
+  - node test.ts `[a: number, b: number] | [a: number]`: tsc's tuple targets are keyed by the named member
+    *declarations*, tttt's by name text, so tsc makes a new `[a: number]` where tttt reuses an older one.
+  - json-merge-patch, node-red__util: not looked at.
 - **chillout (12)**: inference through a rest parameter of conditional tuple type keeps the fresh `true`:
   `fe<T>(...args: T extends ArrayLike<unknown> ? [T, (v: T) => void] : [T, (v: T[keyof T]) => void])` with
   `fe({ a: "x", b: true }, v => v)` gives `v: string | true` (tsc `string | boolean`); without the conditional it's right.
