@@ -108,7 +108,7 @@ static Error* report_unassignable(
         } else if (head.ts_code == HEAD_EXACT_PROP.ts_code) {
             error = error_ctx_error_d(errs, span, 2412, "Type '", source_str, "' is not assignable to type '", target_str,
                 "' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the type of the target.");
-            if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2719)) first_nested = 1;
+            if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2375 || natural_head->ts_code == 2719)) first_nested = 1;
         } else if (head.ts_code == HEAD_COMPUTED.ts_code) {
             error = error_ctx_error_d(errs, span, head.ts_code, "Type of computed property's value is '", source_str,
                 "', which is not assignable to type '", target_str, "'.");
@@ -116,7 +116,8 @@ static Error* report_unassignable(
             error = error_ctx_error_d(errs, span, head.ts_code, head.source_label, " '", source_str,
                 "' is not assignable to ", head.target_label, " '", target_str, "'.");
         }
-        if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2719)) first_nested = 1;
+        // (2375 is 2322 under exactOptionalPropertyTypes, which a head message stands in for)
+        if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2375 || natural_head->ts_code == 2719)) first_nested = 1;
     }
     attach_explanation(error, &lines, first_nested);
     vec_ty_report_line_drop(&lines);
@@ -750,7 +751,12 @@ static Error* report_unrelated_with_head(
     } else {
         error = report(errs, span, ts_code, head);
     }
-    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2719 || natural->ts_code == 2678) && !keep_natural_head) first = 1;
+    // (2375 is 2322 under exactOptionalPropertyTypes: tsc only picks it when there's no head message)
+    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2375 || natural->ts_code == 2719 || natural->ts_code == 2678) &&
+        !keep_natural_head
+    ) {
+        first = 1;
+    }
     attach_explanation(error, &lines, first);
     vec_ty_report_line_drop(&lines);
     return error;
@@ -1035,7 +1041,11 @@ bool ty_check_assignable_to_access(
         left->property->form == PROPERTY_EXPR_DOT && ty_exact_optional_mismatch(me, source, ty_intrinsic(me, TY_MISSING))
     ) {
         Atom const* name = ty_literal_name(me, ty_access_key_type(me, left->property));
-        FoundProp prop = name ? ty_find_prop(me, ty_expr_type(me, &left->property->expr), name) : (FoundProp){0};
+        // (Not a private name: tsc looks `#x` up by its text, which isn't the property's mangled name)
+        if (name && atom_sv(name).size && atom_sv(name).buf[0] == '#') name = nullptr;
+        // (Of the object's apparent type, a type parameter's constraint or a class's `this`: tsc's getTypeOfPropertyOfType)
+        FoundProp prop = name ? ty_find_prop(me, ty_apparent_type(me, ty_expr_type(me, &left->property->expr)), name) :
+            (FoundProp){0};
         if (prop.found && (prop.flags & PROP_OPTIONAL) &&
             ty_exact_optional_mismatch(me, source, ty_optional_prop_type(me, prop.type))
         ) {
@@ -1610,6 +1620,12 @@ static void check_access(
                     errs, object_span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
                     "Object is possibly '", what, "'."
                 );
+            }
+            // (Then the rest is looked into: tsc's checkNonNullExpression gives the non-nullable type, which may lack
+            // the property too)
+            Ty const* rest = ty_non_nullable(me, object);
+            if (rest != object && !(rest->flags & TYF_NEVER)) {
+                check_access(me, rest, index, object_span, index_span, object_is_named, error_if_not_found, depth + 1, errs);
             }
             return;
         }

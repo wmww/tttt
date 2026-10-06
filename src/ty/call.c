@@ -1914,6 +1914,25 @@ static TyMapper const* explicit_type_arguments(Checker* me, Signature const* sig
     return mapper;
 }
 
+// The type arguments a failed call is taken to have (tsc's getTypeArgumentsFromNodes in pickLongestCandidateSignature):
+// unlike explicit_type_arguments(), a missing one is its default as written, not instantiated: `f<A>(bad)` of
+// `f<T, F = G<T>>` returns its `F` as `G<T>`
+static TyMapper const* failure_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
+    TyList params = sig->type_params;
+    if (!params.len) return nullptr;
+    Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) {
+        if (i < info->type_args.len) {
+            results[i] = info->type_args.data[i];
+            continue;
+        }
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        if (!fallback) fallback = ty_param_constraint(me, params.data[i]);
+        results[i] = fallback ? fallback : ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    return ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+}
+
 static bool is_super_call(CallExpr const* call);
 
 // tsc's getTypeArgumentArityError: one signature states its range; overloads state the closest counts around the
@@ -2183,6 +2202,13 @@ static Resolution resolve_with_signatures_inner(
             // string, n: number): number; f<T>(n: number, t: T): T` returns number)
             Candidate fallback = longest && !longest->type_params.len && unfit[picked].sig != longest ?
                 (Candidate){ .sig = longest } : unfit[picked];
+            if (info->type_arg_nodes && fallback.sig->type_params.len && info->type_args.len < fallback.sig->type_params.len) {
+                fallback.mapper = failure_type_arguments(me, fallback.sig, info);
+                // (The arguments are checked against it again: an arrow's literal returns see its contextual type)
+                ParamShape shape = call_param_shape(me, info, fallback.sig, fallback.mapper);
+                check_args(me, &shape, args, false);
+                free(shape.types);
+            }
             if (longest && longest->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
                 // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
                 // accessor)` before `spyOn(o, k)`) is still the one, inferred from the arguments

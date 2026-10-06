@@ -634,8 +634,16 @@ static Ty const* intersection_prop_context(Checker* me, Ty const* object, Ty con
     return ret;
 }
 
+static Ty const* get_prop_context_with_missing(Checker* me, Ty const* object, PropContextKey const* k);
+
+// (An optional property says its declared type: under exactOptionalPropertyTypes without the missing type, tsc's
+// getTypeOfConcretePropertyOfContextualType)
 static Ty const* get_prop_context(Checker* me, Ty const* object, void const* arg) {
-    PropContextKey const* k = arg;
+    Ty const* type = get_prop_context_with_missing(me, object, arg);
+    return type ? ty_remove_missing(me, type, true) : nullptr;
+}
+
+static Ty const* get_prop_context_with_missing(Checker* me, Ty const* object, PropContextKey const* k) {
     // A type variable says what its constraint says, a generic mapped one included (tsc's
     // getApparentTypeOfContextualType)
     if (is_contextual_type_variable(object)) {
@@ -4433,7 +4441,11 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 if (write) ret = write;
                 ret = ty_remove_missing(me, ret, true); // (tsc's getFlowTypeOfAccessExpression)
             }
-            ret = access_flow_type(me, expr, ret, ctx.contextual);
+            // (A property of any isn't narrowed: tsc's checkPropertyAccessExpressionOrQualifiedName returns any before
+            // getFlowTypeOfAccessExpression. An element access is)
+            if (expr->property->form != PROPERTY_EXPR_DOT || !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
+                ret = access_flow_type(me, expr, ret, ctx.contextual);
+            }
             return propagate_optional(me, ret, expr->property->continues_chain, optional);
         }
 

@@ -1131,6 +1131,11 @@ static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
             bool everywhere = true;
             for (u32 other = 0; other < count && everywhere; other++) {
                 if (union_contains(unions[other], t)) continue;
+                // undefined and exactOptionalPropertyTypes' missing type match each other (tsc's eachUnionContains)
+                if (t == my intrinsics[TY_MISSING] || t == my intrinsics[TY_UNDEFINED]) {
+                    everywhere = union_contains(unions[other], my intrinsics[t == my intrinsics[TY_MISSING] ? TY_UNDEFINED : TY_MISSING]);
+                    continue;
+                }
                 // A literal is also matched by its primitive: `("a" | 1) & (string | 2)` keeps "a"
                 u32 family = t->kind == TY_LITERAL ? primitive_family(t) : 0;
                 Ty const* primitive =
@@ -1141,6 +1146,16 @@ static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
             }
             if (everywhere) ty_buf_push(&result, t);
         }
+    }
+    // (Both: the missing type, which a union with undefined would drop: tsc's intersectUnionsOfPrimitiveTypes)
+    bool has_missing = false;
+    for (u32 i = 0; i < result.len; i++) has_missing |= result.data[i] == my intrinsics[TY_MISSING];
+    if (has_missing) {
+        u32 kept = 0;
+        for (u32 i = 0; i < result.len; i++) {
+            if (result.data[i] != my intrinsics[TY_UNDEFINED]) result.data[kept++] = result.data[i];
+        }
+        result.len = kept;
     }
     buf->data[first] = ty_union(me, result.data, result.len, nullptr, (TyList){0});
     ty_buf_drop(&result);
@@ -1387,8 +1402,14 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
             rest[i] = ty_union(me, kept, kept_len, nullptr, (TyList){0});
             free(kept);
         }
+        // (The missing type if any has it: `(X | undefined) & (X | missing)` is `X | missing`)
+        bool missing = false;
+        for (u32 i = 0; f == 0 && i < buf->len && !missing; i++) {
+            TyList members = buf->data[i]->composite.types;
+            for (u32 j = 0; j < members.len && !missing; j++) missing = members.data[j] == my intrinsics[TY_MISSING];
+        }
         Ty const* both[2] = { ty_intersection(me, rest, buf->len, nullptr, (TyList){0}),
-            my intrinsics[f == 0 ? TY_UNDEFINED : TY_NULL] };
+            my intrinsics[missing ? TY_MISSING : f == 0 ? TY_UNDEFINED : TY_NULL] };
         free(rest);
         return ty_union(me, both, 2, alias, alias_args);
     }

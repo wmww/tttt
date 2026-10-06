@@ -3364,6 +3364,13 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
     } else {
         type = ty_from_node(me, prop->decl->node, prop->decl->ctx);
     }
+    // An optional parameter property has the parameter's type, with a real undefined even under
+    // exactOptionalPropertyTypes (tsc's addOptionality with isProperty false: it's not a property declaration)
+    if (prop->decl->parameter_property && !prop->target && (prop->flags & PROP_OPTIONAL) &&
+        compiler_options()->exact_optional_property_types && compiler_options()->strict_null_checks
+    ) {
+        type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+    }
     if (resolving && ty_resolving_pop(me)) prop->circular = true;
     if (prop->circular && prop->mapped) {
         // tsc's getTypeOfMappedSymbol when popTypeResolution fails

@@ -274,8 +274,10 @@ static void report_type_parameters(Reporter const* r, Generic const* generic, Sy
 }
 
 static void report_function(Reporter const* r, FunctionImpl const* me) {
-    // Of overloads only the last declaration reports its type parameters
-    if (!my symbol || my symbol->decls[my symbol->decl_count - 1].node == me) report_type_parameters(r, &my generic, nullptr, nullptr);
+    // Of overloads only the last declaration reports its type parameters (a class method's overload signatures have an
+    // implementation after them)
+    bool last = my symbol ? my symbol->decls[my symbol->decl_count - 1].node == me : !function_impl_rare(me)->overload_implementation;
+    if (last) report_type_parameters(r, &my generic, nullptr, nullptr);
     if (!my has_body || my is_type) return;
     for_each (i, vec_function_arg, &my args) {
         Binding const* binding = &i->initializer.binding;

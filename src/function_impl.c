@@ -807,11 +807,12 @@ static bool pattern_declares(Binding const* pattern, Span name) {
     return false;
 }
 
+// tsc's maybeTypeOfKind(type, Void): through unions and intersections, `void & { brand: void }` (tsc's __String) too
 static bool ty_maybe_void(Ty const* type) {
     if (type->flags & TYF_VOID) return true;
-    if (type->kind != TY_UNION) return false;
+    if (type->kind != TY_UNION && type->kind != TY_INTERSECTION) return false;
     for (u32 i = 0; i < type->composite.types.len; i++) {
-        if (type->composite.types.data[i]->flags & TYF_VOID) return true;
+        if (ty_maybe_void(type->composite.types.data[i])) return true;
     }
     return false;
 }

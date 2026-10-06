@@ -956,19 +956,42 @@ bool ty_exact_optional_mismatch(Checker* me, Ty const* source, Ty const* target)
 
 static Ty const* apparent_type(Checker* me, Ty const* ty);
 
-// tsc's getExactOptionalUnassignableProperties(...).length
-bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target) {
-    if (!compiler_options()->exact_optional_property_types || !compiler_options()->strict_null_checks) return false;
-    if (is_tuple(source) && is_tuple(target)) return false;
-    // (tsc's getPropertiesOfType: of a union, the properties every member has, which are some of its first member's)
-    bool is_union = target->kind == TY_UNION && !(target->flags & TYF_BOOLEAN);
-    Ty const* owner = is_union ? apparent_type(me, target->composite.types.data[0]) : target;
+// Whether a union lacks a property only in its object literals (and has it in some member)
+static bool union_literal_lacks(Checker* me, Ty const* source, Atom const* name) {
+    bool some_has = false;
+    for (u32 i = 0; i < source->composite.types.len; i++) {
+        Ty const* member = apparent_type(me, source->composite.types.data[i]);
+        if (ty_find_prop(me, member, name).found) {
+            some_has = true;
+        } else if (!ty_is_object_literal_without_spread(me, member)) {
+            return false;
+        }
+    }
+    return some_has;
+}
+
+// Whether a property of `owner` (some of tsc's getPropertiesOfType(target): of a union, the properties every member has,
+// which are some of its first member's; of an intersection, every member's) is an optional one of target that source
+// has with an undefined it can't take
+static bool exact_optional_unassignable_in(Checker* me, Ty const* source, Ty const* target, Ty const* owner, u32 depth) {
+    owner = apparent_type(me, owner);
+    if (depth > 8) return false;
+    if (owner->kind == TY_UNION && !(owner->flags & TYF_BOOLEAN)) {
+        return exact_optional_unassignable_in(me, source, target, owner->composite.types.data[0], depth + 1);
+    }
+    if (owner->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < owner->composite.types.len; i++) {
+            if (exact_optional_unassignable_in(me, source, target, owner->composite.types.data[i], depth + 1)) return true;
+        }
+        return false;
+    }
     if (!(owner->flags & TYF_OBJECT)) return false;
     Members const* members = ty_members(me, owner);
     for (u32 i = 0; i < members->prop_count; i++) {
         Prop const* target_prop = members->props[i];
         Ty const* target_type;
-        if (is_union) {
+        if (owner != target) {
+            // (A union's or an intersection's property is the combined one)
             FoundProp common = ty_find_prop(me, target, target_prop->name);
             if (!common.found || !(common.flags & PROP_OPTIONAL)) continue;
             target_type = ty_optional_prop_type(me, common.type);
@@ -977,11 +1000,31 @@ bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const*
             target_type = ty_optional_prop_type(me, prop_type(me, target_prop));
         }
         FoundProp source_prop = ty_find_prop(me, source, target_prop->name);
-        if (!source_prop.found) continue;
-        Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, source_prop.type) : source_prop.type;
+        if (!source_prop.found) {
+            // (A union's object literal that lacks it has it as missing, when another member has it: tsc's
+            // createUnionOrIntersectionProperty, CheckFlags.WritePartial)
+            if (source->kind == TY_UNION && union_literal_lacks(me, source, target_prop->name) &&
+                ty_exact_optional_mismatch(me, ty_intrinsic(me, TY_MISSING), target_type)
+            ) {
+                return true;
+            }
+            continue;
+        }
+        Ty const* source_type = source_prop.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, source_prop.type) :
+            source_prop.type;
         if (ty_exact_optional_mismatch(me, source_type, target_type)) return true;
     }
     return false;
+}
+
+// tsc's getExactOptionalUnassignableProperties(...).length
+bool ty_has_exact_optional_unassignable(Checker* me, Ty const* source, Ty const* target) {
+    if (!compiler_options()->exact_optional_property_types || !compiler_options()->strict_null_checks) return false;
+    if (is_tuple(source) && is_tuple(target)) return false;
+    // (Both through their apparent types, `this` or a type parameter as its constraint: tsc's getPropertiesOfType and
+    // getTypeOfPropertyOfType)
+    target = apparent_type(me, target);
+    return exact_optional_unassignable_in(me, apparent_type(me, source), target, target, 0);
 }
 
 static Ty const* indexed_or_null(Checker* me, Ty const* object, Ty const* index);
@@ -1338,12 +1381,11 @@ static FoundProp find_prop_in(Checker* me, Ty const* ty, Atom const* name, u32 d
             // `{ name?: X } & { name: undefined }` the property is required and `undefined`, not `X & undefined`.
             // (When all are optional the result is optional and its readers add undefined themselves.)
             bool optional_result = all_optional && any_member;
-            if (optional_parts && !optional_result && optional_adds_undefined()) {
-                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
+            // (Under exactOptionalPropertyTypes that's the missing type: `{ x: X | undefined } & { x?: X }` has a
+            // required x of `X | missing`, which an optional target property doesn't take)
+            if (optional_parts && !optional_result && compiler_options()->strict_null_checks) {
                 for (u32 i = 0; i < len; i++) {
-                    if (optional_parts & (1u << i)) {
-                        stack_buf[i] = ty_union(me, (Ty const*[]){ stack_buf[i], undefined }, 2, nullptr, (TyList){0});
-                    }
+                    if (optional_parts & (1u << i)) stack_buf[i] = ty_optional_prop_type(me, stack_buf[i]);
                 }
             }
             ret.type = ty_intersection(me, stack_buf, len, nullptr, (TyList){0});
@@ -2334,8 +2376,14 @@ static Ternary props_related_impl(
             source_prop = find_prop(me, source, target_prop->name, 0);
         }
         if (optionals_only && !source_prop.found) continue;
-        // The same property (tsc's `sourceProp !== targetProp`): a member a derived class inherits against its base
-        if (source_prop.found && source_prop.prop == target_prop) continue;
+        // The same property (tsc's `sourceProp !== targetProp`): a member a derived class inherits against its base.
+        // (Not an intersection's property combined from several members: tsc's is a synthetic symbol, `IC & V`'s
+        // `reference` against IC's own)
+        if (source_prop.found && source_prop.prop == target_prop &&
+            (source->kind != TY_INTERSECTION || !source_prop.type || source_prop.type == prop_type(me, target_prop))
+        ) {
+            continue;
+        }
         if (!source_prop.found) {
             if (is_static_private_name(me, target_prop)) continue;
             // Subtypes need the optional properties too, unless an object literal, [] or a tuple leaves them out
@@ -3589,6 +3637,12 @@ static Ternary generic_mapped_target_related(
     return info && !(info->key->flags & TYF_NUMBER);
 }
 
+// (An optional property is written its declared type, without exactOptionalPropertyTypes' missing type: tsc's
+// getWriteTypeOfSymbol)
+static Ty const* write_type_or_null(Checker* me, Ty const* type) {
+    return type ? ty_remove_missing(me, type, true) : nullptr;
+}
+
 static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
@@ -3602,7 +3656,7 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     bool no_index_signatures = base_object != object;
     if (base_index->kind != TY_UNION || (base_index->flags & TYF_BOOLEAN)) {
         if (no_index_signatures && through_non_number_index(me, base_object, base_index)) return nullptr;
-        return indexed_or_null(me, base_object, base_index);
+        return write_type_or_null(me, indexed_or_null(me, base_object, base_index));
     }
     TyList members = base_index->composite.types;
     Ty const** parts = malloc(sizeof(Ty const*) * members.len);
@@ -3610,7 +3664,7 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     bool resolved = true;
     for (u32 i = 0; i < members.len && resolved; i++) {
         parts[i] = no_index_signatures && through_non_number_index(me, base_object, members.data[i]) ? nullptr :
-            indexed_or_null(me, base_object, members.data[i]);
+            write_type_or_null(me, indexed_or_null(me, base_object, members.data[i]));
         resolved = parts[i] != nullptr;
     }
     Ty const* ret = resolved ? ty_intersection(me, parts, members.len, nullptr, (TyList){0}) : nullptr;
@@ -4384,10 +4438,9 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             if (part_count == 1 && source->flags & TYF_OBJECT && ty_get_prop(me, apparent_type(me, source), name) == part_props[0]) continue;
             for (u32 j = 0; j < part_count; j++) parts[j] = prop_type(me, part_props[j]);
             // (An optional part's undefined counts when the property is required: see find_prop_in())
-            if (optional_parts && !all_optional && optional_adds_undefined()) {
-                Ty const* undefined = ty_intrinsic(me, TY_UNDEFINED);
+            if (optional_parts && !all_optional && compiler_options()->strict_null_checks) {
                 for (u32 j = 0; j < part_count; j++) {
-                    if (optional_parts & (1u << j)) parts[j] = ty_union(me, (Ty const*[]){ parts[j], undefined }, 2, nullptr, (TyList){0});
+                    if (optional_parts & (1u << j)) parts[j] = ty_optional_prop_type(me, parts[j]);
                 }
             }
             FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0,

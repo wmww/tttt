@@ -1151,10 +1151,11 @@ static Ty const* annotated_expando_type(Checker* me, Symbol const* symbol) {
     Binding const* binding = symbol_find_node(host, SYMBOL_DECL_VARIABLE);
     if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER || !binding->has_explicit_type) return nullptr;
     Ty const* annotation = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
-    // (An optional property's type is read with its undefined: tsc's getTypeOfPropertyOfType). A late-bound expando
-    // (`f[sym] = v`) by its key's type
+    // (An optional property's type is read with its undefined, but not exactOptionalPropertyTypes' missing type: tsc's
+    // getNonMissingTypeOfSymbol). A late-bound expando (`f[sym] = v`) by its key's type
     Expr const* late_bound_key = symbol_rare(symbol)->late_bound_key;
-    return ty_access(me, annotation, late_bound_key ? ty_expr_type(me, late_bound_key) : ty_string_literal(me, symbol->name));
+    Ty const* type = ty_access(me, annotation, late_bound_key ? ty_expr_type(me, late_bound_key) : ty_string_literal(me, symbol->name));
+    return type ? ty_remove_missing(me, type, true) : nullptr;
 }
 
 // What a declaring assignment (`exports.x = v`, `f.x = v`) assigns, before widening object literals (tsc's
@@ -1471,7 +1472,11 @@ bool ty_is_constructor_declared(Symbol const* symbol) {
 static Ty const* base_class_property_type(Checker* me, Symbol const* member) {
     ClassDecl const* class_decl = member->parent ? symbol_find_node(member->parent, SYMBOL_DECL_CLASS) : nullptr;
     Ty const* base = class_decl ? ty_class_base_instance(me, class_decl) : nullptr;
-    return base ? ty_prop_type_of(me, base, checker_atom(me, member->name)) : nullptr;
+    if (!base) return nullptr;
+    // (Its getTypeOfSymbol: an optional one with its undefined, or exactOptionalPropertyTypes' missing type)
+    FoundProp found = ty_find_prop(me, ty_apparent_type(me, base), checker_atom(me, member->name));
+    if (!found.found) return nullptr;
+    return found.flags & PROP_OPTIONAL ? ty_optional_prop_type(me, found.type) : found.type;
 }
 
 // What `this.x` is at `flow` in the class constructor that declares x by assignment (tsc's getFlowTypeOfProperty: it
