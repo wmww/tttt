@@ -3160,10 +3160,15 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 SymbolLinks const* links = symbol_links(me, canonical(me, decl));
                 bool object = links->declared_state == LAZY_STATE_DONE ?
                     links->declared_type->kind == TY_ANONYMOUS : body->tag == TYPE_INTERFACE || body->tag == TYPE_CALLABLE;
-                // (The declared type's node when there is one: `{ [K in keyof T]: T[K] } & {}` is the mapped type)
-                TypeNode const* object_node = links->declared_state == LAZY_STATE_DONE &&
-                    links->declared_type->kind == TY_ANONYMOUS && links->declared_type->anonymous.node ?
-                    links->declared_type->anonymous.node : body;
+                // (The declared type's node when there is one: `{ [K in keyof T]: T[K] } & {}` is the mapped type;
+                // `type GP<T> = Partial<T>` declares an instantiation of Partial's, which is homomorphic too)
+                Ty const* declared_object = links->declared_state == LAZY_STATE_DONE &&
+                    links->declared_type->kind == TY_ANONYMOUS ? links->declared_type : nullptr;
+                if (declared_object && !declared_object->anonymous.node && declared_object->anonymous.target) {
+                    declared_object = declared_object->anonymous.target;
+                }
+                TypeNode const* object_node = declared_object && declared_object->kind == TY_ANONYMOUS &&
+                    declared_object->anonymous.node ? declared_object->anonymous.node : body;
                 // (A union is instantiated under the new name whatever name it had: tsc's instantiateTypeWorker passes the
                 // alias to getUnionType, `type T05 = T02<A>` with `T02<T> = keyof (T & B)`, the union `keyof T | "b"`)
                 bool union_body = links->declared_state == LAZY_STATE_DONE && links->declared_type->kind == TY_UNION &&
