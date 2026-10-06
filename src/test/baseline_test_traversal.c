@@ -1250,7 +1250,10 @@ static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool 
     // An import/export name (the harness's isImportStatementName, isExportStatementName: not `* as ns`, whose errorType
     // is `error`)
     ctx->any_keeps_underline = !((my tag == PORT_IMPORT_GATHER && !my is_require) || my tag == PORT_REEXPORT_GATHER);
-    if (type_declaration && my tag != PORT_IMPORT_GATHER && my tag != PORT_REEXPORT_GATHER) {
+    // (Only an identifier name: a string one, `export type { foo as "a b" }`, isn't a type declaration name to tsc's
+    // getTypeOfNode, and is the alias's value)
+    bool string_name = my decl_name.sv.size && (my decl_name.sv.buf[0] == '"' || my decl_name.sv.buf[0] == '\'');
+    if (type_declaration && !string_name && my tag != PORT_IMPORT_GATHER && my tag != PORT_REEXPORT_GATHER) {
         Symbol const* type_symbol = symbol_for_meaning(my symbol, SYMBOL_TYPE);
         bool declared = type_symbol && !type_symbol->is_placeholder &&
             (type_symbol->flags & (SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM | SYMBOL_TYPE_ALIAS));

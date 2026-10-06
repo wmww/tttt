@@ -39738,7 +39738,7 @@ const baselines = {
     'arbitraryModuleNamespaceIdentifiers_syntax': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es2022IntlAPIs': {
         errors: true,
