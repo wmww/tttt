@@ -1649,6 +1649,12 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
         // type of the export assignment)
         Symbol const* step = symbol;
         for (int depth = 0; step && (step->flags & SYMBOL_ALIAS) && depth < 32; depth++) {
+            // A namespace import along the way is the module type it makes (tsc's getTargetOfNamespaceImport resolves
+            // to resolveESModuleSymbol's clone): `export = Spec` of `import * as Spec` with a synthetic default
+            if (depth) {
+                Ty const* namespace_step = namespace_import_type(me, step);
+                if (namespace_step) return namespace_step;
+            }
             for (u32 i = 0; i < step->decl_count; i++) {
                 if (step->decls[i].kind == SYMBOL_DECL_ALIAS && symbol_decl_jsdoc_type(&step->decls[i])) {
                     return ty_of_node(symbol_decl_jsdoc_type(&step->decls[i]));
@@ -1657,7 +1663,23 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
             Symbol const* target = symbol_resolve_alias((Symbol*)step);
             // (An import's own step is the export it names, which may be an alias itself)
             PortItem const* item = step->alias ? step->alias->item : nullptr;
-            step = item && item->source_symbol ? item->source_symbol : target;
+            Symbol const* next = item && item->source_symbol ? item->source_symbol : target;
+            // (`export = Spec` names Spec, which may be a namespace import)
+            if (!item && step->alias && !step->alias->entity && !step->alias->class_expr && step->alias->scope &&
+                span_valid(step->alias->name)
+            ) {
+                Symbol* named = scope_resolve(step->alias->scope, step->alias->name.sv, SYMBOL_ANY_MEANING);
+                if (named && named != step && (named->flags & SYMBOL_ALIAS)) next = named;
+            }
+            step = next;
+            // (A default import that is what `export =` assigns: the `export =` alias, which may name a namespace import)
+            if (item && !item->source_symbol && item->tag == PORT_IMPORT_DEFAULT && item->module_ref && target) {
+                Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
+                Symbol* export_equals = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
+                if (export_equals && (export_equals->flags & SYMBOL_ALIAS) && symbol_resolve_alias(export_equals) == target) {
+                    step = export_equals;
+                }
+            }
         }
     }
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
