@@ -251,8 +251,12 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
     }
     type_typecheck(&my type, errs);
     // A property's literal annotation is made here (tsc's checkPropertySignature asks for the property's type, union
-    // order: `{ kind: "A" } | { kind: "B" | "C" }` makes "A" first; a union's literals are made by its walk)
-    if (!my is_method && my type.tag == TYPE_VALUE && (my key.tag == INTERFACE_KEY_NAME || my key.tag == INTERFACE_KEY_EXPR)) {
+    // order: `{ kind: "A" } | { kind: "B" | "C" }` makes "A" first; a union's literals are made by its walk), and so
+    // is a template literal's (`${Enum}` makes the members' strings, chrome's). HACK: tsc asks for every property's
+    // type here; doing that for all of them moves 5 suite tests both ways (variance measured in another order)
+    if (!my is_method && (my type.tag == TYPE_VALUE || my type.tag == TYPE_TEMPLATE) &&
+        (my key.tag == INTERFACE_KEY_NAME || my key.tag == INTERFACE_KEY_EXPR)
+    ) {
         ty_of_node(&my type);
     }
     if (my has_write_type) type_typecheck(&my accessor->write_type, errs);

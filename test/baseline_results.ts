@@ -6658,7 +6658,7 @@ const baselines = {
     'contextuallyTypedJsxAttribute2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedJsxChildren': {
         errors: true,
