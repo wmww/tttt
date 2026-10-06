@@ -33363,7 +33363,7 @@ const baselines = {
     'voidReturnIndexUnionInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'voidReturnLambdaValue': {
         errors: true,

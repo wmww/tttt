@@ -142,6 +142,8 @@ static bool has_generic_with_union_constraint(Checker* me, Ty const* ty);
 // A reference whose type has a type variable with a union constraint is narrowed as the constraint where the
 // contextual type isn't generic (see narrowable_type())
 static bool identifier_uses_context(Checker* me, Expr const* expr) {
+    // (A property access says so once it has been computed: access_flow_type())
+    if (expr->tag == EXPR_PROPERTY) return intern_get(&my links, (u64[]){ KEY_ACCESS_USES_CONTEXT, (u64)(uintptr_t)expr }, 2) != nullptr;
     if (expr->tag != EXPR_IDENTIFIER || expr->identifier.keyword || !expr->identifier.target) return false;
     return has_generic_with_union_constraint(me, ty_identifier_reference_type(me, &expr->identifier));
 }
@@ -1934,6 +1936,10 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
     if (!is_narrowable_access(expr)) return type;
     // Methods don't narrow
     if (type->kind == TY_ANONYMOUS && type->anonymous.function && type->anonymous.function->is_method) return type;
+    if (!access->constraint_position && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && has_generic_with_union_constraint(me, type)) {
+        // (What it is depends on the contextual type and on whether an inference is running, see check_with())
+        *intern_slot(me, &my links, (u64[]){ KEY_ACCESS_USES_CONTEXT, (u64)(uintptr_t)expr }, 2) = expr;
+    }
     type = narrowable_type(me, access->constraint_position, nullptr, type, contextual);
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
     // tsc's getFlowTypeOfReference: the operand of a non-null assertion is never nullish (see non_null_flow_type())
