@@ -15748,7 +15748,7 @@ const baselines = {
     'identityRelationNeverTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'ifElseWithStatements1': {
         errors: true,

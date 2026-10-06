@@ -1015,7 +1015,10 @@ static IdentifierReuse identifier_reuse(Checker* me, TyDisplay d, TypeNode const
     }
     Span first = qualified ? *vec_span_at(identifier_type_namespaces(identifier), 0) : identifier->name;
     // (A type parameter that the instantiation maps: tsc's canReuseTypeNode)
-    bool mapped = !qualified && d.mapped_by && symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) &&
+    // (Any reference whose type the instantiation changes: tsc's canReuseTypeNode with noMappedTypes, `State<T>` with
+    // T mapped prints its type, `State<{ foo: number; }>`, as a new node)
+    bool mapped = d.mapped_by && ((symbol && (symbol->flags & SYMBOL_TYPE_PARAMETER) && !qualified) ||
+        vec_spanned_type_size(&identifier->generic_params)) &&
         node_type(me, d, node) != node_type(me, (TyDisplay){0}, node);
     if (mapped) return IDENTIFIER_MAPPED;
     if (name_accessible(me, d, symbol, first.sv, qualified ? SYMBOL_NAMESPACE : SYMBOL_TYPE)) return IDENTIFIER_REUSED;
