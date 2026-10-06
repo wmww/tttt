@@ -9119,6 +9119,14 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     ) {
         goto operators;
     }
+    // tsc's parseBinaryExpressionRest: `x as T` is no left-hand side expression either, a call, member access or
+    // template doesn't continue it (`(x as any(1))` is missing a `)`). Not a JSDoc assertion, whose type comes first
+    if (left_and_ret->tag == EXPR_AS_TYPE && !expr_is_perenthisized(left_and_ret) &&
+        span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(expr_outer_span(&left_and_ret->as_type->expr)) &&
+        (c == '(' || c == '[' || c == '.' || c == '`' || (c == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')))
+    ) {
+        goto operators;
+    }
     bool missing_call_args = false;
     if (p.pos[0] == '?' && p.pos[1] == '.' && (p.pos[2] == '(' || p.pos[2] == '[')) {
         optional_chain = true;
@@ -10952,6 +10960,7 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
                 // (tsc's parseModuleSpecifier takes any expression, which isn't a string literal)
                 Expr skipped;
                 if (parse_expr(&require_p, expr_ctx_null, &skipped)) {
+                    parse_comma_ops_right_side(&require_p, &skipped); // (An Expression: commas too)
                     parse_error(&require_p, expr_outer_span(&skipped), 1141, "String literal expected.");
                     if (skipped.tag == EXPR_IDENTIFIER) statement->missing_specifier = skipped.inner_span;
                     expr_drop(&skipped);
