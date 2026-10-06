@@ -1215,8 +1215,9 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
     Atom const* name = object ? access_name(me, expr->property) : nullptr;
     if (!name) return nullptr;
     object = ty_apparent_type(me, object);
-    if (!(object->flags & TYF_OBJECT)) return nullptr;
-    Prop const* prop = ty_get_prop(me, object, name);
+    // (tsc's getPropertyOfType: of an intersection too, `assert.strict.equal` with `strict: Omit<...> & { equal }`)
+    if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return nullptr;
+    Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
     return prop && prop_has_explicit_type(prop) ? prop_type(me, prop) : nullptr;
 }
 
