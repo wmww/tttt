@@ -1879,7 +1879,11 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
     Ty const* constraint = ty_param_constraint(me, params.data[i]);
     if (constraint && constraint != params.data[i]) {
         if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
-            for (u32 j = 0; j < params.len; j++) if (j != i) constraint_pass_resolve(me, pass, j);
+            // (Only those it mentions, as tsc's non-fixing mapper infers them on demand: resolving the others first
+            // would show them this one in progress, `D extends Dest<T>` while `T extends Transform<S>` resolves)
+            for (u32 j = 0; j < params.len; j++) {
+                if (j != i && !pass->state[j] && ty_mentions_any(me, constraint, &params.data[j], 1)) constraint_pass_resolve(me, pass, j);
+            }
         }
         Ty const* instantiated = ty_instantiate(me, constraint, pass->mapper);
         // The constraint's `this` is the inference (tsc's getTypeWithThisArgument in getInferredType): a builder
