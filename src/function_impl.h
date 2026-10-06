@@ -88,6 +88,9 @@ typedef struct FunctionImplRare {
     Span asterisk; // The `*` of a generator
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
     struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
+    // A function expression or arrow written as an argument of `new X(...)`: the X when it's an identifier (TS2794:
+    // tsc's isPromiseResolveArityError)
+    struct Expr const* new_callee;
     // A constructor: its first `this` or `super.x` (not `super(...)`), not in a nested function or arrow function
     Span first_this_or_super;
     Symbol const* constructed_class; // The constructor of a class: what it returns

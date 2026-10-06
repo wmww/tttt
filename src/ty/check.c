@@ -1822,6 +1822,20 @@ static void check_access(
                 "Tuple type '", object_str, "' of length '", (i64)shape->arity,
                 "' has no element at index '", &index->literal.value, "'.");
             cstr_drop(&object_str);
+        } else if ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && !has_rest &&
+            ty_is_numeric_name(index->literal.string) && !ty_find_prop(me, object, index->literal.string).found
+        ) {
+            // A numeric name it lacks is an element past its end too (tsc's getPropertyTypeForIndexType:
+            // isNumericLiteralName(propName))
+            if (atom_sv(index->literal.string).buf[0] == '-') {
+                error_ctx_error_d(errs, index_span, 2514, "A tuple type cannot be indexed with a negative value.");
+            } else {
+                cstr object_str = ty_to_cstr(me, object);
+                error_ctx_error_d(errs, index_span, 2493, "Tuple type '", object_str, "' of length '", (i64)shape->arity,
+                    "' has no element at index '", atom_sv(index->literal.string), "'.");
+                cstr_drop(&object_str);
+            }
+            return;
         }
         if (!(index->flags & TYF_STRING_LITERAL)) return;
     } else if (ty_is_array(me, object) && !(index->flags & TYF_STRING_LITERAL)) {
@@ -2062,7 +2076,8 @@ static void report_invalid_generic_index(Checker* me, Ty const* object, Ty const
         Ty const* apparent = ty_apparent_type(me, object);
         TyList parts = apparent->kind == TY_UNION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
         Prop const* prop = nullptr;
-        for (u32 i = 0; i < parts.len && !prop; i++) prop = ty_property_of_type(me, parts.data[i], index->literal.string);
+        // (Each member by its apparent type: tsc's getPropertyOfType of a type parameter in the union)
+        for (u32 i = 0; i < parts.len && !prop; i++) prop = ty_property_of_type(me, ty_apparent_type(me, parts.data[i]), index->literal.string);
         if (prop && (prop->flags & (PROP_PRIVATE | PROP_PROTECTED))) {
             error_ctx_error_d(errs, span, 4105, "Private or protected member '", atom_sv(index->literal.string),
                 "' cannot be accessed on a type parameter.");
@@ -3239,6 +3254,40 @@ static Atom const* type_member_name(Checker* me, InterfaceMember const* member) 
     Expr const* key = member->key.expr.ref;
     if (key->tag != EXPR_LITERAL && !expr_is_entity_name(key)) return nullptr;
     return ty_literal_name(me, ty_expr_type(me, key));
+}
+
+// TS2717 across a class and the interfaces it merges with: a property signature after a field of its name (or the
+// other way around) is a secondary declaration of the one property symbol (tsc's checkVariableLikeDeclaration)
+void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, ErrorCtx* errs) {
+    ClassDecl const* class_decl = nullptr;
+    u32 class_at = 0;
+    for (u32 d = 0; d < symbol->decl_count && !class_decl; d++) {
+        if (symbol->decls[d].kind == SYMBOL_DECL_CLASS) {
+            class_decl = symbol->decls[d].node;
+            class_at = d;
+        }
+    }
+    if (!class_decl) return;
+    for (u32 d = 0; d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface_decl = symbol->decls[d].node;
+        if (interface_decl->name.source && interface_decl->name.source->is_stdlib) continue;
+        for_each (i, vec_interface_member, &interface_decl->type.interface.members) {
+            if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function || i->accessor) continue;
+            for_each (field, vec_class_item, &class_decl->items) {
+                if (field->tag != CLASS_ITEM_FIELD || field->field.is_static || field->field.computed_key) continue;
+                if (!cstr_eq(&field->field.name_string, &i->key.name_string)) continue;
+                Ty const* field_type = class_item_get_type(field);
+                Ty const* member_type = member_declared_type(me, i);
+                if (class_at < d) {
+                    check_subsequent_property(me, i->key.span, field_type, member_type, field->field.name_span, errs);
+                } else {
+                    check_subsequent_property(me, field->field.name_span, member_type, field_type, i->key.span, errs);
+                }
+                break;
+            }
+        }
+    }
 }
 
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {

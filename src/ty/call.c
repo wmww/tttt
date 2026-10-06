@@ -1619,6 +1619,23 @@ static Span span_of_args(Args const* args, u32 from, u32 to) {
     return span_between(expr_outer_span(args->data[from].expr), expr_outer_span(args->data[to].expr));
 }
 
+// tsc's isPromiseResolveArityError: the callee is a parameter of a function written as an argument of `new Promise(...)`
+// (the global Promise)
+static bool is_promise_resolve_call(Checker* me, CallInfo const* info) {
+    if (!info->call || info->call->uses_new || info->tagged_template || info->decorator) return false;
+    Expr const* callee = &info->call->callable;
+    if (callee->tag != EXPR_IDENTIFIER || !callee->identifier.target) return false;
+    Symbol const* symbol = callee->identifier.target;
+    if (!symbol->decl_count || symbol->decls[0].kind != SYMBOL_DECL_VARIABLE || !symbol->function) return false;
+    Binding const* binding = symbol->decls[0].node;
+    if (!binding->is_parameter || binding->parent) return false;
+    Expr const* constructor = function_impl_rare(symbol->function)->new_callee;
+    if (!constructor || !constructor->identifier.target) return false;
+    Binder const* binder = program_get_binder(my program);
+    Symbol const* promise = symbol_table_get(&binder->globals, c_sv("Promise"));
+    return promise && binder_redirect(binder, promise) == binder_redirect(binder, constructor->identifier.target);
+}
+
 // `mapper`: the signatures instantiated with it (the one candidate whose instantiated rest type didn't fit)
 static void report_arity(
     Checker* me, Signature* const* signatures, u32 count, Args const* args, CallInfo const* info, TyMapper const* mapper,
@@ -1666,6 +1683,9 @@ static void report_arity(
             cstr_append_d(&error->message, DEFAULT_DISPLAY, ".");
         } else if (has_rest) {
             error = error_ctx_error_d(errs, span, 2555, "Expected at least ", min, " arguments, but got ", args->len, ".");
+        } else if (min == max && min == 1 && args->len == 0 && is_promise_resolve_call(me, info)) {
+            error = error_ctx_error_d(errs, span, 2794, "Expected ", min, " arguments, but got ", args->len,
+                ". Did you forget to include 'void' in your type argument to 'Promise'?");
         } else if (min == max) {
             error = error_ctx_error_d(errs, span, 2554, "Expected ", min, " arguments, but got ", args->len, ".");
         } else {

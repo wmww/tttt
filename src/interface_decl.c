@@ -248,6 +248,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
         // (The declared type first: it makes the later declarations' type parameters the first one's)
         if (list_count > 1) ty_declared_type_of(current_checker, my symbol);
         ty_check_object_type_duplicate_members(current_checker, lists, list_count, errs);
+        if (my symbol->flags & SYMBOL_CLASS) ty_check_class_interface_property_types(current_checker, my symbol, errs);
     }
     if (first_checked == me && !(my symbol->flags & SYMBOL_CLASS)) { // A class checks its own
         ty_check_type_parameter_lists_identical(current_checker, my symbol, errs);

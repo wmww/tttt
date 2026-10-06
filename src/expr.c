@@ -2057,6 +2057,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (!my call->uses_new) flow->contextual_depth++;
             mark_indirect_call(&my call->callable);
             if (my call->uses_new) my call->enclosing_class = scope_enclosing_class(names);
+            Expr const* constructor = my call->callable.tag == EXPR_GENERIC_PARAMS ? &my call->callable.generic_params->expr : &my call->callable;
+            if (my call->uses_new && constructor->tag == EXPR_IDENTIFIER) {
+                for_each (arg, vec_expr, &my call->args) {
+                    if (arg->tag == EXPR_FUNCTION && !expr_is_perenthisized(arg)) function_impl_rare_mut(arg->function)->new_callee = constructor;
+                }
+            }
             // JavaScript `Object.defineProperty(F.prototype, "x", { value/get/set: function () {} })`: `this` in the
             // functions is F's (tsc's getClassNameFromPrototypeMethod)
             if (names->file && names->file->is_js && expr_is_define_property_call(me, nullptr)) {
