@@ -67461,9 +67461,9 @@ const baselines = {
         types: true,
     },
     'unionAndIntersectionInference3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unionTypeInference': {
         errors: true,

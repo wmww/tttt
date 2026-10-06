@@ -1255,6 +1255,31 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
     }
     bool circularity = inf->circularity;
     inf->circularity |= outer_circularity;
+    if (!naked_count) {
+        // Every target an intersection with the same single naked type variable: what is left of the source to it, at
+        // a lower priority (tsc's getSingleTypeVariableFromIntersectionTypes: `A | B` to `T & (X | Y)` infers A | B)
+        Ty const* variable = nullptr;
+        bool single = true;
+        for (u32 t = 0; t < targets.len && single; t++) {
+            if (target_done[t]) continue;
+            Ty const* found = nullptr;
+            if (targets.data[t]->kind == TY_INTERSECTION) {
+                TyList parts = targets.data[t]->composite.types;
+                for (u32 i = 0; i < parts.len && !found; i++) if (inference_param(inf, parts.data[i])) found = parts.data[i];
+            }
+            single = found && (!variable || variable == found);
+            variable = found;
+        }
+        if (single && variable) {
+            // (tsc's inferFromTypes has remade the source union of what is left, without its alias)
+            Ty const** left = malloc(sizeof(Ty const*) * sources_left);
+            u32 len = 0;
+            for (u32 s = 0; s < sources.len; s++) if (!source_done[s]) left[len++] = sources.data[s];
+            Ty const* rest = ty_union(me, left, len, nullptr, (TyList){0});
+            free(left);
+            infer_with_priority(me, inf, rest, variable, INFER_PRIORITY_NAKED_TYPE_VARIABLE);
+        }
+    }
     if (naked_count) {
         Ty const** unmatched = malloc(sizeof(Ty const*) * sources.len);
         u32 unmatched_len = 0;
