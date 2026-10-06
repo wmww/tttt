@@ -2827,6 +2827,19 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             some_have |= has;
             if (!has && !lacking) lacking = apparent->composite.types.data[i];
         }
+        // (`new` of a union whose members share call signatures but not construct ones calls them: tsc's
+        // resolveNewExpression, TS7009)
+        if (lacking && call->uses_new && construct && !super_call && !info->tagged_template && !info->jsx) {
+            u32 call_count = 0;
+            ty_union_signatures(me, apparent->composite.types, false, &call_count);
+            if (call_count) {
+                if (errs && compiler_options()->no_implicit_any) {
+                    error_ctx_error_d(errs, call_span, 7009,
+                        "'new' expression, whose target lacks a construct signature, implicitly has an 'any' type.");
+                }
+                return any;
+            }
+        }
         if (lacking && !super_call && !info->tagged_template && !info->decorator && !info->jsx) {
             if (errs) {
                 cstr rendered = ty_to_cstr(me, apparent);
