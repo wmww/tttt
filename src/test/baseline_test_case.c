@@ -454,9 +454,45 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     bool seen_filename = false;
     csview current_filename = basename_of(my source_path);
     my current_unit = current_filename;
-    for_each (i, lines_sv, contents_sv) {
+    // tsc's Utils.splitContentByNewlines: a file with a `\r\n` is split at those only, so a "line" may hold `\n`s. One that
+    // starts as an option is an option line whole (its other options still apply: tsc's extractCompilerSettings scans
+    // the whole file), a `@filename` after its first line included
+    bool crlf_only = csview_find_sv(contents_sv, c_sv("\r\n")) != c_NPOS;
+    csview* chunks = nullptr;
+    isize chunk_count = 0, chunk_cap = 0;
+#define PUSH_CHUNK(sv) do { \
+        if (chunk_count == chunk_cap) { chunk_cap = chunk_cap ? chunk_cap * 2 : 64; chunks = realloc(chunks, sizeof(csview) * (size_t)chunk_cap); } \
+        chunks[chunk_count++] = (sv); \
+    } while (0)
+    if (crlf_only) {
+        csview rest = contents_sv;
+        for (;;) {
+            isize at = csview_find_sv(rest, c_sv("\r\n"));
+            if (at == c_NPOS) {
+                if (rest.size) PUSH_CHUNK(rest); // (like lines_sv: no empty line after the last line break)
+                break;
+            }
+            PUSH_CHUNK(csview_slice(rest, 0, at));
+            rest = csview_slice(rest, at + 2, rest.size);
+        }
+    } else {
+        for_each (i, lines_sv, contents_sv) PUSH_CHUNK(i);
+    }
+#undef PUSH_CHUNK
+    for (isize chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
+        csview whole = chunks[chunk_index];
+        isize newline = csview_find_sv(whole, c_sv("\n"));
+        csview i_value = newline == c_NPOS ? whole : csview_slice(whole, 0, newline);
+        csview* i = &i_value;
         csview tag_key, tag_value;
-        if (parse_tag(i, &tag_key, &tag_value)) {
+        if (parse_tag(*i, &tag_key, &tag_value)) {
+            for (csview rest = newline == c_NPOS ? csview_slice(whole, whole.size, whole.size) : csview_slice(whole, newline + 1, whole.size); rest.size;) {
+                isize next = csview_find_sv(rest, c_sv("\n"));
+                csview line = next == c_NPOS ? rest : csview_slice(rest, 0, next);
+                csview k, v;
+                if (parse_tag(line, &k, &v) && !tag_equals(k, "filename")) apply_setting(me, k, v);
+                rest = next == c_NPOS ? csview_slice(rest, rest.size, rest.size) : csview_slice(rest, next + 1, rest.size);
+            }
             if (tag_equals(tag_key, "filename")) {
                 // (what precedes the first `@filename` is dropped: tsc's harness only allows comments there)
                 if (seen_filename) {
@@ -477,12 +513,15 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
             // tsc's makeUnitsFromTest: a unit's lines joined by line breaks, leading empty lines dropped (so there's
             // no line break before the next `@filename`)
             if (cstr_size(&source_contents)) cstr_append(&source_contents, "\r\n");
-            cstr_append_sv(&source_contents, i);
+            cstr_append_sv(&source_contents, whole);
         }
     }
+    free(chunks);
     // (the empty line after the test file's last line break is a line of the last unit too; a lone `\r` at the end,
     // which tsc's harness keeps, breaks a line when rendered)
-    if (cstr_size(&source_contents) && (csview_ends_with(contents_sv, "\n") || csview_ends_with(contents_sv, "\r"))) {
+    bool ends_with_break = crlf_only ? csview_ends_with(contents_sv, "\r\n") :
+        csview_ends_with(contents_sv, "\n") || csview_ends_with(contents_sv, "\r");
+    if (cstr_size(&source_contents) && ends_with_break) {
         cstr_append(&source_contents, "\r\n");
     }
 

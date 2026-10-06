@@ -10337,8 +10337,8 @@ const baselines = {
     },
     'duplicateIdentifierShouldNotShortCircuitBaseTypeBinding': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicateIdentifiersAcrossContainerBoundaries': {
         errors: true,
@@ -14657,8 +14657,8 @@ const baselines = {
     },
     'genericArray0': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'genericArray1': {
         errors: true,
@@ -38227,8 +38227,8 @@ const baselines = {
     },
     'decoratedClassExportsCommonJS1': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'decoratedClassExportsCommonJS2': {
         errors: true,
