@@ -627,6 +627,14 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             (identifier->symbol->flags & SYMBOL_ALIAS) && ret->alias == decl
         ) {
             ret = ty_realias(me, ret, decl, (TyList){0});
+        } else if (identifier->symbol && identifier->symbol != identifier->target && (identifier->symbol->flags & SYMBOL_ALIAS) &&
+            ret->alias != decl && ret->kind == TY_CONDITIONAL && declared->kind == TY_CONDITIONAL &&
+            ret->conditional.root == declared->conditional.root
+        ) {
+            // (With type arguments through an import, the alias is passed down: a deferred conditional type, which
+            // instantiation names by its root's alias, `Exclude<X, null>` of `import { NonNullable as N }` with
+            // `N<U> = Exclude<U, null>`, is N<X>; tsc's getTypeFromTypeAliasReference)
+            ret = ty_realias(me, ret, decl, args);
         }
         return ret;
     }
