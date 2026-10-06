@@ -3150,7 +3150,8 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     if (array) {
         u32 first = builder.props_count;
         builder_add_inherited(me, &builder, array);
-        if (tuple->kind == TY_REFERENCE) retarget_this_props(me, &builder, first, array, tuple);
+        // (The empty tuple too, which is its own target: `[]`'s `sort()` returns `[]`)
+        if (tuple->kind == TY_REFERENCE || !shape->arity) retarget_this_props(me, &builder, first, array, tuple);
     }
     return builder_finish(me, &builder);
 }

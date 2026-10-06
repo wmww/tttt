@@ -42283,7 +42283,7 @@ const baselines = {
     'restPropertyWithBindingPattern': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of-excess-declarations': {
         errors: true,

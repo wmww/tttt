@@ -274,7 +274,16 @@ static void infer_from_params(
             break;
         }
         Ty const* source_type = source_type_at(me, source, i, mapper);
-        if (!source_type) break;
+        if (!source_type) {
+            // Past the source's parameters, a rest parameter of the target still gets the rest of them: none, `[]`
+            // (tsc's applyToParameterTypes: getRestTypeAtPosition(source, paramCount))
+            SigParam const* last = target->param_count ? &target->params[target->param_count - 1] : nullptr;
+            if (last && last->rest) {
+                bool readonly = ty_is_const_type_variable(me, last->type, 0) && !ty_some_mutable_array_like(me, last->type);
+                infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), last->type);
+            }
+            break;
+        }
         infer_step(me, inf, step, source_type,
             target_param->optional ? ty_optional_param_type(me, target_param->type) : target_param->type);
     }
@@ -1938,7 +1947,18 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
 
 Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i) {
     InferParam* param = &inf->params[i];
-    if (param->co_len) return ty_union(me, param->co, param->co_len, nullptr, (TyList){0});
+    // (Subtype reduced: tsc's getTypeFromInference)
+    if (param->co_len == 1) return param->co[0];
+    // (Not among reverse mapped types, which tttt resolves eagerly: comparing them structurally runs into their
+    // recursion where tsc's stay deferred, reverseMappedTypeRecursiveInference)
+    bool reverse = false;
+    for (u32 c = 0; c < param->co_len && !reverse; c++) {
+        reverse = param->co[c]->kind == TY_ANONYMOUS && param->co[c]->anonymous.is_reverse;
+    }
+    if (param->co_len) {
+        return reverse ? ty_union(me, param->co, param->co_len, nullptr, (TyList){0}) :
+            ty_union_subtype_reduced(me, param->co, param->co_len);
+    }
     if (param->contra_len) return ty_intersection(me, param->contra, param->contra_len, nullptr, (TyList){0});
     return nullptr;
 }

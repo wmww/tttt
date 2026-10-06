@@ -791,6 +791,9 @@ static Ty const* get_element_context(Checker* me, Ty const* object, void const* 
     if (object->kind == TY_TYPE_PARAM) {
         Ty const* apparent = ty_apparent_type(me, object);
         if (ty_is_tuple(apparent) && apparent->kind == TY_REFERENCE) return tuple_element_context(me, apparent, a);
+        // (A union constraint member by member, unreduced: `R extends "x" | Array<"a">` gives `string | "a"`, which
+        // has room for the literal "a")
+        if (apparent->kind == TY_UNION) return context_map(me, apparent, get_element_context, arg);
     }
     // A conditional type as its constraint, each member of a union one (`string | [unknown, ...unknown[]] | { [k in
     // keyof D]: N<D[k]> }` gives N<D["0"]> next to unknown)
