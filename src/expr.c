@@ -1761,12 +1761,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
     flow->chain_continues = false;
     flow->assignment_target = FLOW_TARGET_NONE;
 
-    // `undefined` is a name: a declaration of it other than a global one (`var undefined` in a module, an import)
-    // hides tsc's undefinedSymbol
+    // `undefined` is a name: a declaration of it (`var undefined` in a module, an import, a script's `class undefined`,
+    // which tsc's addUndefinedToGlobalsOrErrorOnRedeclaration keeps as the global) hides tsc's undefinedSymbol
     if (is_written_undefined(me)) {
         Symbol const* declared = scope_resolve(names, my inner_span.sv, SYMBOL_VALUE);
-        Symbol const* global = names->binder ? symbol_table_get(&names->binder->globals, my inner_span.sv) : nullptr;
-        if (declared && declared != global) {
+        if (declared && !declared->is_placeholder) {
             Expr old = *me;
             *me = expr_identifier(old.inner_span, (IdentifierExpr){0});
             my paren_before = old.paren_before;

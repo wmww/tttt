@@ -31952,8 +31952,8 @@ const baselines = {
     },
     'undefinedTypeAssignment4': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'underscoreEscapedNameInEnum': {
         errors: true,
