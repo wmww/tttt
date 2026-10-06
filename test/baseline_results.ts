@@ -52321,7 +52321,7 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateClass': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

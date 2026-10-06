@@ -168,6 +168,9 @@ typedef struct ClassDecl {
     // field it assigns needs the key's type, so TS2564 (field_initialized_in_constructor()) tries these as the flow
     // reference of fields no `this.x = v` names. Set by the resolve walk
     VecExprCPtr computed_this_assignments;
+    // The scope of its type parameters (set by the resolve walk), where its members' JSDoc typedefs resolve names
+    // (TypeDecl.jsdoc_class)
+    struct Scope* jsdoc_scope;
 } ClassDecl;
 
 void class_decl_drop(ClassDecl* me);

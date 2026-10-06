@@ -521,6 +521,7 @@ void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs) {
         names->strict = names->class_strict = true;
     }
     names = scope_new_generic_merged(names, &my generic, my symbol, me, class_decl_display_name(me), errs);
+    my jsdoc_scope = names;
 
     for_each (i, vec_class_item, &my items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {

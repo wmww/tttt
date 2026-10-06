@@ -12767,9 +12767,22 @@ static bool parse_append_statement_sequence(Parser* parent, bool toplevel, Parsi
             for_each (i, vec_statement, &p.shared->jsdoc_checks) list_push(vec_statement, ret, *i);
             p.shared->jsdoc_checks.size = 0;
             if (p.shared->source->is_js) {
+                isize before = vec_statement_size(ret);
                 jsdoc_bind_comments(&p, jsdoc_from, p.pos, span_start_ptr(ret->data[statement_index].span),
                     span_end_ptr(ret->data[statement_index].span), true, toplevel, false, ret);
                 jsdoc_from = p.pos;
+                // The typedefs of the comments of a class declaration's members resolve names in the class
+                Statement const* host = vec_statement_at(ret, statement_index);
+                ClassDecl const* host_class = host->tag == STATEMENT_DECL_CLASS ? host->decl.class : nullptr;
+                for (isize i = before; host_class && i < vec_statement_size(ret); i++) {
+                    Statement* declaration = vec_statement_at_mut(ret, i);
+                    if (declaration->tag == STATEMENT_DECL_TYPE && declaration->decl.type->jsdoc &&
+                        span_start_ptr(declaration->span) > span_start_ptr(host_class->full_span) &&
+                        span_end_ptr(declaration->span) <= span_end_ptr(host_class->full_span)
+                    ) {
+                        declaration->decl.type->jsdoc_class = host_class;
+                    }
+                }
             }
             parse_statement_semicolon(&p, vec_statement_at_mut(ret, statement_index));
         } else if (*p.pos == '\\') {
