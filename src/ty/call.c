@@ -297,11 +297,10 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     if (arg->spread || arg->part_of_spread) return;
     Ty const* contextual = shape_type_at(shape, i);
     // An argument for a rest parameter that is a union of tuples: the element types at its position (tsc's
-    // getContextualTypeForArgumentAtIndex, an indexed access with AccessFlags.Contextual). A generic one is typed by
-    // infer_rest_variadic()
-    if (!contextual && i >= shape->count && shape->rest_variadic &&
-        !(shape->rest_variadic->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
-    ) {
+    // getContextualTypeForArgumentAtIndex, an indexed access with AccessFlags.Contextual), or of arrays. Also when it is
+    // generic in an outer type parameter, a signature that isn't generic itself: `(...h: S<[E]>[] | S<[E]>[][])`
+    // (a signature's own type parameters are inferred by infer_rest_variadic())
+    if (!contextual && i >= shape->count && shape->rest_variadic) {
         // (Elements after a variadic one count from the end: the arguments are its elements. After a spread argument
         // the position is just the index, tsc's argIndex - restIndex)
         u32 length = args->spread_index < 0 ? args->len - shape->count : UINT32_MAX;

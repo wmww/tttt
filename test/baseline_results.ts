@@ -3393,7 +3393,7 @@ const baselines = {
     'circularInlineMappedGenericTupleTypeNoCrash': {
         errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'circularInstantiationExpression': {
         errors: true,
