@@ -150,8 +150,7 @@ Still wrong: multipleExports (`export {x}` in a namespace whose other block expo
 conflictingDeclarationsImportFromNamespace1/2 (`import * as pick` + `export const pick` merge, tsc's TS7023
 circularity), checkerInitializationCrash and jsExportMemberMergedWithModuleAugmentation2 (duplicates across an import
 and a declaration: TS2300 vs our TS2440/TS2671), overloadModifiersMustAgree/functionOverloadErrors types (tsc's local
-symbol has all of a block's overloads). Related interop: es6ExportEqualsInterop (TS2305 for `import { a }` of an
-interface `export =`, no TS2308 between export= modules).
+symbol has all of a block's overloads).
 
 ## JavaScript (plan 26)
 Binder gaps (spurious TS2339 and friends):

@@ -11896,7 +11896,7 @@ const baselines = {
         types: true,
     },
     'es6ExportEqualsInterop': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

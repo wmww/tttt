@@ -2392,7 +2392,8 @@ static SymbolTable const* export_star_visit(ExportStarWalk* walk, Symbol* module
     u32 dup_count = 0, dup_cap = 0;
     for (u32 s = 0; s < star_count; s++) {
         PortItem const* star = module->module->export_stars[s];
-        Symbol* target = module_export_equals(binder_module_of_ref(module->binder, star->module_ref));
+        // (The module itself, not what its `export =` names: tsc's resolveExternalModuleName, TS2498 there)
+        Symbol* target = binder_module_of_ref(module->binder, star->module_ref);
         SymbolTable const* exported = export_star_visit(walk, target, false);
         if (!exported) continue;
         SymbolEntry* entries = symbol_table_collect(exported, &count);
