@@ -1308,6 +1308,12 @@ static u32 declaration_spaces(Symbol* owner, SymbolDecl const* decl, bool resolv
             for (u32 i = 0; i < target->decl_count; i++) ret |= declaration_spaces(target, &target->decls[i], false);
             return ret;
         }
+        case SYMBOL_DECL_EXPR: {
+            // `export default <expression>` exports a value; an entity name is an alias (tsc's getDeclarationSpaces)
+            Expr const* expr = decl->node;
+            while (expr && expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT) expr = &expr->property->expr;
+            return expr && expr->tag == EXPR_IDENTIFIER ? 0 : SPACE_VALUE;
+        }
         default:
             return 0;
     }

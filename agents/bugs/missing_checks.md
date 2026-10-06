@@ -93,7 +93,9 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
   n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
 - limitDeepInstantiations (TS2589 at the reference, we say TS2502), circularInlineMappedGenericTupleTypeNoCrash
   (TS2589), recursiveMappedTypes (TS2502/TS2615 in a mapped type over keyof).
-- exportAssignmentImportMergeNoCrash, ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge.
+- exportAssignmentImportMergeNoCrash (`import Obj from "./a"; export const Obj = void Obj`: tsc's merged local symbol
+  makes the `Obj` read the exported const, TS2448 and `any`; tttt reads the import),
+  ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge.
 - Resolution-order artifacts tsc reproduces on purpose: mixinWithBaseDependingOnSelfNoCrash1 (TS2345: BaseItem has no
   construct signature while Item's base resolves), selfReferentialDefaultNoStackOverflow (TS7022 on `export default`
   reaching itself through a self-import: the default export's type has no RESOLVING_DECLARATION frame),
