@@ -4528,6 +4528,27 @@ static Symbol const* constructor_declared_member(PropertyExpr const* access) {
     return !class_decl || !class_decl_find_member(class_decl, name, false) ? member : nullptr;
 }
 
+// `exports.x` in its own file of an export only alias assignments declare, several of them (tsc's getTypeOfAlias:
+// autoType, getFlowTypeOfAccessExpression types it by control flow from undefined). Null otherwise
+static Symbol const* duplicated_commonjs_export(Expr const* expr) {
+    SourceFile const* file = expr->inner_span.source;
+    if (!file || !file->is_js || !file->is_commonjs || !file->scope || !file->scope->container) return nullptr;
+    Span name = span_null;
+    if (expr_commonjs_target(expr, &name) != COMMONJS_TARGET_EXPORTS_PROPERTY) return nullptr;
+    Symbol const* module = file->scope->container;
+    Symbol const* symbol = module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
+    return ty_is_duplicated_commonjs_alias_export(symbol) ? symbol : nullptr;
+}
+
+static Ty const* duplicated_commonjs_export_type(Checker* me, Expr const* expr) {
+    PropertyExpr const* access = expr->property;
+    if (!duplicated_commonjs_export(expr)) return nullptr;
+    if (access->assignment_target == FLOW_TARGET_DEFINITE) return any_type(me);
+    if (!access->flow) return nullptr;
+    Ty const* ret = ty_flow_type(me, expr, ty_intrinsic(me, TY_AUTO), ty_intrinsic(me, TY_UNDEFINED), access->flow);
+    return ret == ty_intrinsic(me, TY_AUTO) ? any_type(me) : ret;
+}
+
 // An assignment to it: any
 static bool is_constructor_declared_target(Checker* me, PropertyExpr const* access) {
     (void)me;
@@ -4646,6 +4667,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (is_constructor_declared_target(me, expr->property)) return any_type(me);
             Ty const* in_constructor = constructor_declared_read(me, expr);
             if (in_constructor) return in_constructor;
+            Ty const* duplicated_export = duplicated_commonjs_export_type(me, expr);
+            if (duplicated_export) return duplicated_export;
             bool optional = false;
             Ty const* object = chain_object_type(me, &expr->property->expr, expr->property->optional_chain, &optional);
             // (tsc's getWidenedType: an object literal isn't one any more, a fresh literal widens)

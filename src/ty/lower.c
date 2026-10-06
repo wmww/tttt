@@ -1163,6 +1163,29 @@ Ty const* ty_namespace_type(Checker* me, Symbol const* symbol) {
 }
 
 // Whether a declaration of a symbol adds something to what the symbol is as a value
+// tsc's isAliasableExpression: an entity name (`undefined` too) or a class expression
+static bool is_aliasable_expression(Expr const* value) {
+    if (!value || expr_is_perenthisized(value)) return false;
+    if (value->tag == EXPR_LITERAL) return value->literal.tag == VALUE_UNDEFINED && csview_equals(value->inner_span.sv, "undefined");
+    return value->tag == EXPR_CLASS_DECL || expr_is_entity_name(value);
+}
+
+// A CommonJS export whose declarations are all `exports.x = <aliasable expression>` (tsc: an Alias symbol)
+static bool commonjs_alias_export(Symbol const* symbol) {
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        // (tttt binds `exports.x = f` as an alias of its own, `exports.x = undefined` as an assignment)
+        if (decl->kind == SYMBOL_DECL_ALIAS) continue;
+        if (decl->kind != SYMBOL_DECL_ASSIGNMENT || decl->assignment != ASSIGNMENT_DECL_PROPERTY) return false;
+        if (!decl->full.source || !decl->full.source->is_js || !is_aliasable_expression(decl->node)) return false;
+    }
+    return true;
+}
+
+bool ty_is_duplicated_commonjs_alias_export(Symbol const* symbol) {
+    return symbol && symbol->decl_count > 1 && symbol->parent && symbol->parent->is_module && commonjs_alias_export(symbol);
+}
+
 static bool decl_contributes_value(Symbol const* symbol, u32 index) {
     SymbolDecl const* decl = &symbol->decls[index];
     if (!(decl->flags & SYMBOL_VALUE)) return false;
@@ -1612,6 +1635,18 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
 // constructor function's) the union of the constructor's assignments. TODO: a JSDoc type on one of them is the type
 static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     if (is_js_container(symbol, symbol->decls[0].node, span_null)) return ty_namespace_type(me, symbol);
+    // An export every assignment of which is an alias (`exports.x = undefined; exports.x = f`) is what the last one
+    // names (tsc's exportAssignmentIsAlias declares an Alias, which getDeclarationOfAliasSymbol resolves by its last
+    // declaration)
+    // (tsc: autoType for the export itself, which its own file's accesses type by control flow, see
+    // duplicated_commonjs_export(); an importer gets the flow type at the end of the file, getFlowTypeFromCommonJSExport,
+    // which for top-level assignments is the last one's)
+    if (ty_is_duplicated_commonjs_alias_export(symbol)) {
+        SymbolDecl const* last = &symbol->decls[symbol->decl_count - 1];
+        if (last->kind != SYMBOL_DECL_ALIAS) return value_entry_type(me, symbol, last);
+        Symbol const* target = symbol_resolve_alias((Symbol*)symbol);
+        if (target && target != symbol) return ty_type_of_symbol(me, target);
+    }
     // A JavaScript function or class expression assigned first is the type, whatever the later assignments are (tsc's
     // getWidenedTypeForAssignmentDeclaration: an expando initializer of the value declaration is a container of its own)
     SourceFile const* first_file = symbol->decls[0].full.source;

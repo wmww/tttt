@@ -60436,14 +60436,14 @@ const baselines = {
         types: false,
     },
     'moduleExportDuplicateAlias': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportDuplicateAlias2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportDuplicateAlias3': {
         errors: false,
