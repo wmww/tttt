@@ -55557,17 +55557,17 @@ const baselines = {
     },
     'nodeModulesTypesVersionPackageExports(module=node16)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesTypesVersionPackageExports(module=node18)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodeModulesTypesVersionPackageExports(module=nodenext)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'nodePackageSelfName(module=node16)': {

@@ -390,6 +390,9 @@ typedef struct PropSymbolInfo {
     // declared symbol when its type has no type variables, the same type here)
     struct { Span decl; Ty const* type; TyMapper const* mapper; Ty const* tuple; } seen[16];
     bool non_public; // A member property is private or protected
+    bool readonly; // The (first) member property is readonly
+    // The object is an ES module's `import * as ns` of a CommonJS module (make_gather_target()'s synthetic default)
+    bool synthetic_namespace;
     u32 seen_count;
 } PropSymbolInfo;
 
@@ -493,6 +496,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         info->name_span = root->decl->name_span;
         info->name_is_value = root->decl->name_is_value;
         info->first_declaration = first_declaration;
+        info->readonly = (prop->flags & PROP_READONLY) != 0;
     } else if (!span_eq(info->first_declaration, first_declaration)) {
         info->non_uniform = true;
     }
@@ -562,6 +566,12 @@ static cstr prop_text(PropSymbolInfo const* info, BaselineTestCase* ctx, Span fa
     if (accessed.size >= 2 && (accessed.buf[0] == '"' || accessed.buf[0] == '\'')) accessed = csview_slice(accessed, 1, accessed.size - 1);
     Symbol const* exported = info->member_count == 1 && info->namespace ?
         symbol_get_export(info->namespace, accessed) : nullptr;
+    // (An ES module's `import * as ns` of a CommonJS one: tsc's getSpreadSymbol copies a readonly export into the
+    // synthetic namespace type, a symbol without a parent)
+    if (exported && info->readonly && info->synthetic_namespace) {
+        cstr_append_sv(&ret, name);
+        return ret;
+    }
     if (exported) {
         cstr_drop(&ret);
         return symbol_text(ctx, exported);
@@ -2728,6 +2738,9 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     // (`o["a"]`: tsc's getSymbolAtLocation of the literal is getPropertyOfType of the object's type, which has none
     // when a member like `undefined` doesn't have it: `o?.["a"]`)
     PropSymbolInfo info = { .qualified_name = my property->qualified_name, .strict_union = my property->form == PROPERTY_EXPR_BRACKET };
+    if (my property->expr.tag == EXPR_IDENTIFIER && my property->expr.identifier.target) {
+        info.synthetic_namespace = symbol_rare(my property->expr.identifier.target)->synthetic_default != nullptr;
+    }
     if ((key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL)) && !(key->flags & TYF_ENUM_LITERAL)) {
         collect_prop_symbol(checker, object, ty_literal_name(checker, key), &info, 0);
     }
