@@ -12,8 +12,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   drizzle, vue, tsc-src and typescript-eslint (`-b`), **vscode** (1.39M lines, pinned this window: 129 -> 0) at 0;
   **effect** (299k lines, pinned this window: 6300 -> 7; three need tsc's base-type resolution stack, one TS2590);
   zod-root at tsc's level. **Breadth sweep** (plan 44, this window): 8579 / 8595 DefinitelyTyped packages match tsc
-  5.8's (file, line, code) set exactly, no crash, nothing slower than tsc. **`$ExpectType`** (plan 44, 2026-10-06): 99.7% of DT's
-  68.6k type assertions print as tsc 5.8 prints them; the rest is mostly union (creation) order.
+  5.8's (file, line, code) set exactly, no crash, nothing slower than tsc. **`$ExpectType`** (plan 44, 2026-10-06): 68610 of DT's
+  68640 type assertions print as tsc 5.8 prints them (2026-10-06 fan-out); the 30 left are relation side effects on
+  creation order, tuple identity by label declarations and a few alias choices (plan 44).
 - **Flag flips** (plan 46 stage 1, 2026-10-06): the corpora rechecked under 13 flag sets give 47k real tsc
   diagnostics; tttt misses 103, adds 68 and reports 17 under another code (was 603 / 1460 / 1029 before the first
   drain). The non-strict modes and exactOptionalPropertyTypes were the weak spots.

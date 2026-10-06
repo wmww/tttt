@@ -10,15 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
-## `$ExpectType` (2026-10-06, tenth window's todo entry 3, plan 44 stage 3 item 2)
-`./expecttypes.py`: 68640 compared assertions in 2703 DefinitelyTyped packages (69229 in 2737 recorded; declarations
-not compared), tttt 27 s for all at -j4 (tsc's side 108 s). 68312 -> **68416 match (99.7%)**, 2630 -> 2637 packages
-all match. Oracle regenerated with a full check before reading types (2026-10-06, agent A): **68506 match**, 2665
-packages all match (same tttt; ~90 assertions differed only by lazy creation order). Suite 13103 -> **13104** (0 lost), corpora unchanged (effect 7, the rest 0), sweep 8580 / 8595 flat,
-flagflip 81 / 63 / 12 flat. Instructions (callgrind, `./instrcount.sh`), 39bed00b -> end: tsc 4.639 -> 4.638,
-type-fest 3.115 -> 3.114, valibot 4.097 -> 4.120 (+0.56%), react 1.597 -> 1.596, nest 1.254, webpack 3.842, zod
-4.523 -> 4.533 (+0.2%), xstate 2.897, drizzle 13.353 -> 13.286 (-0.5%), vue 7.797 -> 7.799, effect 9.753 -> 9.758,
-vscode 32.119 -> 32.121.
+## `$ExpectType` fan-out (2026-10-06, tenth window's todo entry 4; oracle: plan 44 stage 3 item 2)
+`./expecttypes.py`: 68640 compared assertions in 2703 DefinitelyTyped packages, tttt ~27 s at -j4. The oracle now
+checks every non-lib file before reading types (agent A; ~90 assertions had differed only by tsc's lazy creation
+order). 68416 -> **68610 match**, 2637 -> 2683 packages all match. Five sub-agents, 0 tests lost: suite 13104 ->
+**13227**, corpora unchanged (effect 7, the rest 0, vscode/typescript-eslint/tsc-src 0), sweep 8580 / 14 / 1 -> **8584
+/ 10 / 1**, flagflip 81 / 63 / 12 -> **79 / 63 / 12**. Instructions (callgrind, `./instrcount.sh`), 30f379db -> end:
+tsc 4.638 -> 4.614, type-fest 3.114 -> 3.135 (+0.7%), valibot 4.120 -> 4.270 (+3.6%: +2.7% is 1e72625d, tsc's
+forConstraint permissive check in distributive constraints, accepted as a cost tsc pays), react 1.596 -> 1.543,
+nest 1.254 -> 1.258, webpack 3.842 -> 3.836, zod 4.533 -> 4.572 (+0.9%), xstate 2.897 -> 2.932 (+1.2%), drizzle
+13.286 -> 13.062, vue 7.799 -> 7.890 (+1.2%), effect 9.758 -> 9.785, vscode 32.121 -> 32.348 (+0.7%). Two
+regressions caught mid-session and fixed by their authors: +30% drizzle (ab972a46), +1.1% effect (a9ca5fdf). The
+xstate/vue +1.2% are many small commits in the first half (not bisected; todo entry 8).
 
 ## Mutation drain (2026-10-06, tenth window's todo entry 2, plan 46 stage 2, five sub-agents)
 `./mutate.py`: seed 2 (8000 mutants) 94 -> 6 mismatches, seeds 3/4/5 67 -> 29, 50 -> 31, 43 -> 40. `./flagflip.py`
