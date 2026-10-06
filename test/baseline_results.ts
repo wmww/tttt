@@ -51842,7 +51842,7 @@ const baselines = {
     },
     'exportedAliasedEnumTag': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'exportedEnumTypeAndValue': {

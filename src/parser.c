@@ -4255,6 +4255,14 @@ static JsDocTag* jsdoc_find_typed(VecJsDocTag* tags, JsDocTagKind kind) {
     return nullptr;
 }
 
+// The `@enum` tag, typed or not (`@enum` alone is TS1110 Type expected, and still declares the alias)
+static JsDocTag* jsdoc_find_enum(VecJsDocTag* tags) {
+    for_each (i, vec_jsdoc_tag, tags) {
+        if (i->kind == JSDOC_TAG_ENUM && !i->nested) return i;
+    }
+    return nullptr;
+}
+
 // Moves a tag's type into an annotation slot
 static TypeNode jsdoc_take_type(JsDocTag* tag, Span* span_ret) {
     tag->has_type = false;
@@ -5060,7 +5068,9 @@ static Span jsdoc_namespace_assignment_name(Statement const* host) {
 }
 
 // `exports.C = v` or `module.exports.C = v` as a statement: C, an invalid span otherwise
-static Span jsdoc_commonjs_export_assignment_name(Statement const* host) {
+static bool is_exports_alias_name(Parser const* p, Expr const* e);
+
+static Span jsdoc_commonjs_export_assignment_name(Parser const* p, Statement const* host) {
     if (host->tag != STATEMENT_EXPR || host->expr.tag != EXPR_BINARY_OP || host->expr.binary_op->op != BINARY_OP_EQUAL ||
         expr_is_perenthisized(&host->expr)
     ) {
@@ -5070,7 +5080,7 @@ static Span jsdoc_commonjs_export_assignment_name(Statement const* host) {
     if (left->tag != EXPR_PROPERTY || left->property->form != PROPERTY_EXPR_DOT || !expr_is_entity_name(left)) return span_null;
     Expr const* object = &left->property->expr;
     bool exports = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) && span_equals(object->inner_span, "exports");
-    if (!exports && !expr_is_module_exports(object)) return span_null;
+    if (!exports && !expr_is_module_exports(object) && !is_exports_alias_name(p, object)) return span_null;
     return left->property->prop.inner_span;
 }
 
@@ -11739,8 +11749,19 @@ static bool is_exports_alias_name(Parser const* p, Expr const* e) {
 static void note_exports_alias(Parser* p, InitializedBinding const* initializer) {
     if (p->shared->function_depth || initializer->binding.tag != BINDING_IDENTIFIER) return;
     Expr const* value = initialized_binding_value(initializer);
-    bool alias = expr_is_module_exports(value) || is_exports_alias_name(p, value) || (value->tag == EXPR_IDENTIFIER &&
-        !value->identifier.keyword && !expr_is_perenthisized(value) && span_equals(value->inner_span, "exports"));
+    bool alias = false;
+    // (`var m = module.exports = {}`: either side of an assignment, tsc's isExportsOrModuleExportsOrAlias)
+    for (Expr const* e = value; e && !alias;) {
+        alias = expr_is_module_exports(e) || is_exports_alias_name(p, e) || (e->tag == EXPR_IDENTIFIER &&
+            !e->identifier.keyword && !expr_is_perenthisized(e) && span_equals(e->inner_span, "exports"));
+        bool assignment = e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
+        if (assignment && !alias) {
+            Expr const* left = &e->binary_op->left;
+            alias = expr_is_module_exports(left) || is_exports_alias_name(p, left) || (left->tag == EXPR_IDENTIFIER &&
+                !left->identifier.keyword && !expr_is_perenthisized(left) && span_equals(left->inner_span, "exports"));
+        }
+        e = assignment ? &e->binary_op->right : nullptr;
+    }
     if (!alias) return;
     ParserShared* shared = p->shared;
     if (shared->exports_alias_count == shared->exports_alias_cap) {
@@ -13373,7 +13394,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             }
             if (vec_initialized_binding_size(list) != 1) break;
             InitializedBinding* initializer = list->data;
-            JsDocTag* enum_tag = jsdoc_find_typed(&tags, JSDOC_TAG_ENUM);
+            JsDocTag* enum_tag = jsdoc_find_enum(&tags);
             if (enum_tag && initializer->binding.tag == BINDING_IDENTIFIER) {
                 // `/** @enum {T} */ const E = {...}`: E is also a type alias of T (tsc's JSDocEnumTag)
                 Span span = jsdoc_tag_decl_span(enum_tag);
@@ -13381,7 +13402,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                     statement_drop(p->shared->jsdoc_enum);
                     free(p->shared->jsdoc_enum);
                 }
-                TypeNode type = jsdoc_take_type(enum_tag, nullptr);
+                TypeNode type = enum_tag->has_type ? jsdoc_take_type(enum_tag, nullptr) : (TypeNode){ .tag = TYPE_ANY };
                 type.from_jsdoc = false;
                 if (initialized_binding_value(initializer)->tag == EXPR_OBJECT) initialized_binding_value(initializer)->jsdoc_enum_literal = true;
                 p->shared->jsdoc_enum = c_new(Statement, (Statement){
@@ -13461,15 +13482,15 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
                 if (tag) statement->expr_jsdoc_type = c_new(TypeNode, jsdoc_take_type(tag, nullptr));
             }
-            JsDocTag* enum_tag = toplevel ? jsdoc_find_typed(&tags, JSDOC_TAG_ENUM) : nullptr;
-            Span enum_name = enum_tag ? jsdoc_namespace_assignment_name(statement) : span_null;
-            Span export_name = enum_tag && !span_valid(enum_name) ? jsdoc_commonjs_export_assignment_name(statement) : span_null;
+            JsDocTag* enum_tag = toplevel ? jsdoc_find_enum(&tags) : nullptr;
+            Span export_name = enum_tag ? jsdoc_commonjs_export_assignment_name(p, statement) : span_null;
+            Span enum_name = enum_tag && !span_valid(export_name) ? jsdoc_namespace_assignment_name(statement) : span_null;
             if (span_valid(export_name)) {
                 // `/** @enum {T} */ exports.C = {...}` (or `module.exports.C`) at the top level: C is also an exported type
                 // alias of T (delayedBindJSDocTypedefTag: an ExportsProperty declares into the file)
                 Span span = jsdoc_tag_decl_span(enum_tag);
                 jsdoc_drop_enum(p);
-                TypeNode type = jsdoc_take_type(enum_tag, nullptr);
+                TypeNode type = enum_tag->has_type ? jsdoc_take_type(enum_tag, nullptr) : (TypeNode){ .tag = TYPE_ANY };
                 type.from_jsdoc = false;
                 Expr* value = &statement->expr.binary_op->right;
                 if (value->tag == EXPR_OBJECT) value->jsdoc_enum_literal = true;
@@ -13487,7 +13508,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 // (tsc's delayedBindJSDocTypedefTag with isTopLevelNamespaceAssignment)
                 Span span = jsdoc_tag_decl_span(enum_tag);
                 jsdoc_drop_enum(p);
-                TypeNode type = jsdoc_take_type(enum_tag, nullptr);
+                TypeNode type = enum_tag->has_type ? jsdoc_take_type(enum_tag, nullptr) : (TypeNode){ .tag = TYPE_ANY };
                 type.from_jsdoc = false;
                 Expr* value = &statement->expr.binary_op->right;
                 if (value->tag == EXPR_OBJECT) value->jsdoc_enum_literal = true;

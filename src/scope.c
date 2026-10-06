@@ -1916,6 +1916,17 @@ void scope_add_commonjs_export(Scope* me, Expr* assignment) {
 }
 
 // Declared by the assignment expression (tsc's declaration node, `exports = module.exports = C` has two)
+// `/** @enum */ exports.C = {}`: C's name is a namespace declaration of the export (BinaryOpExpr.jsdoc_enum_export)
+static void add_jsdoc_enum_export_namespace_decl(Scope* me, BinaryOpExpr* op, Span name) {
+    Symbol* exported = op->jsdoc_enum_export && my container->exports ? symbol_table_get(my container->exports, name.sv) : nullptr;
+    if (!exported) return;
+    Span id = expr_outer_span(&op->left.property->prop);
+    symbol_ensure_exports(exported);
+    symbol_add_decl(exported, (SymbolDecl){
+        .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = &op->left, .name = id, .full = id,
+    });
+}
+
 static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, bool in_function) {
     BinaryOpExpr* op = assignment->binary_op;
     Span statement = expr_outer_span(assignment);
@@ -1931,20 +1942,14 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             if (span_equals(object->inner_span, "exports")) break; // (binary_commonjs_declaration()'s)
             left->property->commonjs_export_alias = true;
             declare_commonjs_export(me, name.sv, name, rightmost_assigned(&op->right), op->jsdoc_type, expr_outer_span(left), statement, ASSIGNMENT_DECL_EXPORTS_ALIAS_PROPERTY, top_level, false);
+            add_jsdoc_enum_export_namespace_decl(me, op, name);
         }   break;
         case COMMONJS_TARGET_EXPORTS_PROPERTY: {
             // (`exports["b"] = v` is named `"b"` where it's shown, like tsc's symbol of a string literal name)
             Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
                 op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
             declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
-            Symbol* exported = op->jsdoc_enum_export && my container->exports ? symbol_table_get(my container->exports, name.sv) : nullptr;
-            if (exported) {
-                Span id = expr_outer_span(&op->left.property->prop);
-                symbol_ensure_exports(exported);
-                symbol_add_decl(exported, (SymbolDecl){
-                    .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = &op->left, .name = id, .full = id,
-                });
-            }
+            add_jsdoc_enum_export_namespace_decl(me, op, name);
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);
