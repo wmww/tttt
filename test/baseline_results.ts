@@ -9823,12 +9823,12 @@ const baselines = {
     'discriminateWithOptionalProperty2(exactoptionalpropertytypes=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminateWithOptionalProperty2(exactoptionalpropertytypes=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminateWithOptionalProperty3(exactoptionalpropertytypes=false)': {
         errors: true,

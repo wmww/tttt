@@ -893,24 +893,6 @@ static u32 ty_flags_in_parts(Ty const* ty) {
 
 // tsc's isLiteralOfContextualType: a literal type stays as it is where the contextual type has room for literals of
 // its kind
-// A conditional type with a union branch that has an unconstrained type variable in it has no base constraint in tsc
-// (computeBaseConstraint: a union has one only if each member has), where ty_base_constraint() leaves the member out:
-// a contextual `T extends undefined ? never : T | string` keeps no literal
-static bool conditional_branch_lacks_constraint(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_CONDITIONAL) return false;
-    for (u32 b = 0; b < 2; b++) {
-        Ty const* branch = ty_conditional_branch(me, ty, b);
-        if (branch->kind != TY_UNION) continue;
-        for (u32 i = 0; i < branch->composite.types.len; i++) {
-            Ty const* member = branch->composite.types.data[i];
-            if (member->kind != TY_TYPE_PARAM && !(member->flags & TYF_DEFERRED)) continue;
-            Ty const* constraint = ty_base_constraint(me, member);
-            if (!constraint || constraint == member) return true;
-        }
-    }
-    return false;
-}
-
 static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty const* contextual, u32 depth) {
     if (!contextual || depth > 8) return false;
     if (contextual->kind == TY_UNION || contextual->kind == TY_INTERSECTION) {
@@ -925,7 +907,7 @@ static bool is_literal_of_contextual_type(Checker* me, Ty const* literal, Ty con
     if (contextual->kind == TY_KEYOF) return (literal->flags & TYF_STRING_LITERAL) != 0;
     if (contextual->kind == TY_TYPE_PARAM || (contextual->flags & TYF_DEFERRED)) {
         // A type parameter or deferred type: what its constraint has room for. `T extends string` keeps "a"
-        Ty const* constraint = conditional_branch_lacks_constraint(me, contextual) ? nullptr : ty_base_constraint(me, contextual);
+        Ty const* constraint = ty_base_constraint(me, contextual);
         if (!constraint || constraint == contextual) return false;
         // (tsc's maybeTypeOfKind: `string` anywhere in a union or intersection counts)
         u32 kinds = ty_flags_in_parts(constraint);

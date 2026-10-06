@@ -660,6 +660,12 @@ static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper co
         } else {
             TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, member);
             results[i] = conditional_from_root(me, root, member, member_mapper);
+            // A member that stays deferred goes by the root's alias (tsc's getConditionalType: root.aliasSymbol with
+            // its arguments instantiated): `Awaited<T | Yadda>` is `Yadda | Awaited<T>`
+            if (results[i]->kind == TY_CONDITIONAL && !results[i]->alias && results[i]->conditional.root == root) {
+                Ty const* root_aliased = intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2);
+                if (root_aliased) results[i] = instantiate_alias(me, root_aliased, results[i], results[i]->conditional.mapper);
+            }
         }
         changed |= results[i] != member;
     }
