@@ -2373,7 +2373,7 @@ const baselines = {
     'bigintArbirtraryIdentifier': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'bigintIndex': {
         errors: true,
@@ -6088,7 +6088,7 @@ const baselines = {
     'contextualOuterTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualOverloadListFromArrayUnion': {
         errors: true,
@@ -9373,7 +9373,7 @@ const baselines = {
     'deferredConditionalTypes2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deferredLookupTypeResolution': {
         errors: true,
@@ -21848,7 +21848,7 @@ const baselines = {
     'moduleExportNonStructured': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExports1': {
         errors: true,

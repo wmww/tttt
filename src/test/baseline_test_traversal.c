@@ -1547,7 +1547,11 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
         port_item_add_alias(i, ctx, my main.type_only);
     }
     if (span_valid(my missing_specifier)) baseline_test_case_add_type(ctx, my missing_specifier, ty_intrinsic(current_checker, TY_ANY));
-    if (my bad_specifier) expr_compile_test_info(my bad_specifier, ctx);
+    // (A literal there isn't an expression to tsc's writer: isInExpressionContext is false under an import)
+    Expr const* bad = my bad_specifier;
+    bool bad_literal = bad && bad->tag == EXPR_LITERAL && *bad->inner_span.sv.buf != '-' &&
+        (bad->literal.tag == VALUE_NUMBER || bad->literal.tag == VALUE_BIGINT);
+    if (bad && !bad_literal) expr_compile_test_info(my bad_specifier, ctx);
     // `with { type: "json" }`: the keys written as identifiers are errorType (tsc resolves them as nothing)
     if (my attributes) {
         for_each (i, vec_import_attribute, &my attributes->elements) {

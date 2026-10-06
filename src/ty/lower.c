@@ -251,8 +251,9 @@ Ty const* ty_declared_type_of(Checker* me, Symbol const* symbol) {
         if (decl->kind == SYMBOL_DECL_TYPE_ALIAS) {
             TypeDecl const* type_decl = decl->node;
             TyList params = ty_type_params_of(me, &type_decl->generic);
-            // (A local alias can mention the type parameters around it too)
-            LowerCtx ctx = { .generic = params.len > 0 || type_decl->outer_generics, .in_alias = true };
+            // (A local alias can mention the type parameters around it too, through `typeof` of a contextually typed
+            // parameter as well: `t => { type A = (typeof t)[] extends ... }` with t a contextual signature's T)
+            LowerCtx ctx = { .generic = params.len > 0 || type_decl->outer_generics || type_decl->local, .in_alias = true };
             TypeNode const* body = &type_decl->type;
             if (is_intrinsic_body(body)) {
                 // `type X = intrinsic`: what the checker makes of the name. The string mappings and NoInfer are made
@@ -1517,7 +1518,11 @@ static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     Ty const* type = ty_type_of_symbol(me, assigned);
     if (type->flags & TYF_ERROR) return nullptr;
     if (esm_usage && target && target->is_json) return with_synthetic_default(me, type, false);
-    bool esm_cjs = esm_usage && target && !target->is_esm && !target->is_json;
+    // (tsc's isESMFormatImportImportingCommonjsFormatFile: the import's emit syntax and the target's format for emit,
+    // with any module setting)
+    ModuleKind usage = importer ? source_file_emit_module_kind(importer) : MODULE_KIND_NONE;
+    bool esm_syntax = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
+    bool esm_cjs = esm_syntax && target && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
     if (!options->es_module_interop && !esm_cjs) return nullptr;
     Ty const* apparent = ty_apparent_type(me, type);
     // (tsc's getSignaturesOfStructuredType: an intersection has the signatures of its members)
@@ -3455,7 +3460,13 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 );
             }
             ty_buf_drop(&infers);
-            if (!alias || ret->kind != TY_CONDITIONAL) return ret;
+            // (Only the conditional type this node makes goes by the alias: a branch it resolved to that is another
+            // conditional type is that one, tsc's getConditionalType passes the alias to the deferred type alone)
+            if (!alias || ret->kind != TY_CONDITIONAL || ret->conditional.root != ret || ret->conditional.check != check_type ||
+                ret->conditional.extends != extends
+            ) {
+                return ret;
+            }
             Ty const* aliased = ty_realias(me, ret, alias, alias_args);
             if (ret->conditional.root == ret && !ret->conditional.root_aliased) ((Ty*)ret)->conditional.root_aliased = aliased;
             return aliased;
