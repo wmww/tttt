@@ -4983,9 +4983,14 @@ static void add_expando_member(
     if (exported) {
         // `module.exports.f.x = v` at the top level: f is the export (tsc's forEachIdentifierInEntityName starts from
         // the file's symbol), it becomes a namespace like any entity name there
-        host = symbol_is_expando_host(exported, my file, true, &init) ? exported : nullptr;
-        if (!host) return;
-        set_expando_initializer_host(init, host);
+        // (Whatever its value: bindPotentiallyMissingNamespaces makes it a namespace, which is an expando symbol. Only
+        // an assigned function or class gets the members in its type: tsc's getSymbolOfExpando knows no
+        // `Object.defineProperty` value)
+        SymbolDecl const* value_decl = exported->decl_count ? &exported->decls[0] : nullptr;
+        bool define_property = value_decl && value_decl->kind == SYMBOL_DECL_ASSIGNMENT && value_decl->assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY;
+        if (symbol_is_expando_host(exported, my file, true, &init) && !define_property) set_expando_initializer_host(init, exported);
+        host = exported;
+        symbol_ensure_exports(host);
         add_commonjs_export_namespace_decls(module, object);
     } else if (host) {
         set_expando_initializer_host(init, host);

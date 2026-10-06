@@ -51502,7 +51502,7 @@ const baselines = {
     },
     'jsDeclarationsExportDefinePropertyEmit': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsExportDoubleAssignmentInClosure': {
