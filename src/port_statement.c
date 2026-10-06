@@ -121,7 +121,9 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
                 "An export declaration can only be used at the top level of a namespace or module." :
                 "An import declaration can only be used at the top level of a namespace or module.");
         }
-        return;
+        // (Declared all the same, in the block: tsc's binder doesn't mind, its checker stops at the grammar error)
+        my main.wrong_context = true;
+        for_each (i, vec_port_item, &my items) i->wrong_context = true;
     }
 
     my main.keyword_span = my keyword_span;

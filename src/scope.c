@@ -1651,12 +1651,14 @@ void scope_add_port(Scope* me, PortItem* item) {
     bool exported = port_item_declares_export(item);
     // (`declare global { export { a as b } }` declares globals, TS2666 aside)
     bool global_export = item->tag == PORT_EXPORT_SPECIFIC && my kind == SCOPE_GLOBAL_AUGMENTATION;
-    if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM) && !global_export) {
+    // (In a function or block, TS1233: tsc's binder declares it in the block's locals all the same)
+    bool block_export = port_item_is_export(item) && (my kind == SCOPE_FUNCTION || my kind == SCOPE_BLOCK);
+    if (port_item_is_export(item) && !(my container && my kind != SCOPE_ENUM) && !global_export && !block_export) {
         return; // TODO: TS1194 export declarations are not permitted in a namespace... and nowhere else either
     }
     // (An alias is exported only by `export`: an ambient export context doesn't export imports, tsc's
     // declareModuleMember)
-    SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? &my locals :
+    SymbolTable* table = (!exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE)) || block_export ? &my locals :
         scope_declaration_table(me, exported);
     bool merged;
     csview name = port_item_name(item->decl_name);
@@ -2932,7 +2934,7 @@ static Symbol* resolve_entity_alias(Symbol* me) {
 
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
-    ErrorCtx* errs = my alias->scope->binder->errs;
+    ErrorCtx* errs = item && item->wrong_context ? nullptr : my alias->scope->binder->errs;
     if (my alias->class_expr) return my alias->class_expr->symbol;
     if (my alias->entity) return resolve_entity_alias(me);
     if (!item) {
@@ -3125,7 +3127,9 @@ Symbol* symbol_resolve_alias(Symbol* me) {
         PortItem const* item = my alias->item;
         Span at = !item ? my decls[0].full :
             item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
-        error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
+        if (!(item && item->wrong_context)) {
+            error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
+        }
         // (tsc's resolveAlias: the inner visit made the target unknownSymbol, and it stays that)
         target = nullptr;
     }

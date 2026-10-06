@@ -64,6 +64,9 @@ typedef struct PortItem {
     bool value_use_checked;
     // Of a statement in a namespace (TS1147), which resolves nothing: a use of the alias does (tsc's resolveAlias)
     bool in_namespace;
+    // Of a statement in a function or block (TS1232/TS1233): declared there, but tsc's checker never resolves it
+    // (checkGrammarModuleElementContext): what resolving it says is said by no one
+    bool wrong_context;
 } PortItem;
 
 static inline bool port_item_is_export(PortItem const* me) {

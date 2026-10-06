@@ -21837,12 +21837,12 @@ const baselines = {
     },
     'moduleElementsInWrongContext2': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleElementsInWrongContext3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportNonStructured': {
@@ -60518,7 +60518,7 @@ const baselines = {
     'plainJSGrammarErrors': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'plainJSGrammarErrors2': {
         errors: true,
