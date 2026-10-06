@@ -1689,7 +1689,9 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         if ((includes & TYF_NON_PRIMITIVE) && (family || (includes & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)))) {
             is_never = true;
         }
-        if (literal) {
+        // (A computed enum type is a unit type, but not a literal: `number & E` for an empty enum stays, tsc's
+        // removeRedundantSupertypes only drops `number` next to a number literal)
+        if (literal && !(literal->flags & TYF_ENUM)) {
             // "a" & string is "a"
             u32 kept = 0;
             for (u32 i = 0; i < out; i++) {
