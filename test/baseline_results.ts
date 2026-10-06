@@ -21843,7 +21843,7 @@ const baselines = {
     'moduleElementsInWrongContext3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportNonStructured': {
         errors: true,

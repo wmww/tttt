@@ -1666,8 +1666,17 @@ void scope_add_port(Scope* me, PortItem* item) {
     }
     // (An alias is exported only by `export`: an ambient export context doesn't export imports, tsc's
     // declareModuleMember)
-    SymbolTable* table = (!exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE)) || block_export ? &my locals :
+    SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? &my locals :
         scope_declaration_table(me, exported);
+    if (block_export) {
+        // (tsc's declareSymbolAndAddToSymbolTable goes by the container: a block's is the function or file around it)
+        Scope* container = me;
+        while (container->kind == SCOPE_BLOCK && container->parent) container = container->parent;
+        // (declareModuleMember puts an export specifier in a namespace's or module's exports)
+        table = container->kind == SCOPE_SCRIPT ? scope_declaration_table(container, false) :
+            (container->kind == SCOPE_NAMESPACE || container->kind == SCOPE_MODULE) && container->container ?
+            scope_declaration_table(container, true) : &container->locals;
+    }
     bool merged;
     csview name = port_item_name(item->decl_name);
     bool default_export = exported && my container && my container->is_module && csview_equals(name, "default");
