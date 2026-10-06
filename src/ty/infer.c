@@ -1967,7 +1967,17 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
             }
             if (changed) mapper = inference_mapper_of(me, inf, params, results);
         }
-        results[i] = fallback ? ty_instantiate(me, fallback, mapper) : nothing;
+        if (fallback && (fallback->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_mentions_any(me, fallback, params.data + i, params.len - i)) {
+            // This type parameter or a later one in its own default is unknown (tsc's createBackreferenceMapper):
+            // `<T = T>` without inferences is unknown
+            Ty const** backref = malloc(sizeof(Ty const*) * params.len);
+            panic_if(!backref, "out of memory");
+            for (u32 j = 0; j < params.len; j++) backref[j] = j >= i ? ty_intrinsic(me, TY_UNKNOWN_) : results[j];
+            results[i] = ty_instantiate(me, fallback, ty_mapper_new(me, params, (TyList){ .data = backref, .len = params.len }));
+            free(backref);
+        } else {
+            results[i] = fallback ? ty_instantiate(me, fallback, mapper) : nothing;
+        }
         if (results[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // A default that mentions a type parameter that has none itself
             bool self = false;
