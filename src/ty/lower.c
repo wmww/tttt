@@ -2710,7 +2710,7 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     Ty const* ret;
     if (in_array && !array_like) {
         Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
-        ret = binding->rest ? ty_array(me, element, false) : element;
+        ret = binding->rest ? ty_array(me, element, false) : ty_possibly_out_of_bounds(me, element);
     } else if (binding->rest && in_array) {
         // Of a tuple (or a union of them, or a type variable constrained to one), the tuple of the elements from here
         // on; of anything else a mutable array of its elements (tsc's getTypeForBindingElement)

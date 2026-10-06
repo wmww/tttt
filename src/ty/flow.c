@@ -917,21 +917,29 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
         case FLOW_PATH_ELEMENT: {
             if (!ty_extends_array(me, object)) return nullptr;
             Value index = value_number(path->index);
-            ret = ty_access(me, object, ty_literal(me, &index));
-            if (!ret) ret = ty_access(me, object, ty_intrinsic(me, TY_NUMBER));
+            // (noUncheckedIndexedAccess's undefined: tsc's getTypeOfDestructuredArrayElement)
+            ret = ty_access_reading(me, object, ty_literal(me, &index));
+            if (!ret) ret = ty_access_reading(me, object, ty_intrinsic(me, TY_NUMBER));
             break;
         }
         case FLOW_PATH_PROPERTY: {
             ObjectExprItem const* item = path->item;
+            // (undefined and null have no properties: the union has none, tsc's getTypeOfDestructuredProperty gives
+            // the error type, which leaves the declared type)
+            if (compiler_options()->strict_null_checks && object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+                for (u32 i = 0; i < object->composite.types.len; i++) {
+                    if (object->composite.types.data[i]->flags & TYF_NULLABLE) return nullptr;
+                }
+            }
             if (item->computed_key) {
                 // A computed name only if it has a literal type (tsc's getTypeOfDestructuredProperty)
                 Ty const* key = ty_regular(me, ty_flow_expr_type(me, item->computed_key));
                 bool is_number = false;
                 if (!ty_property_name_of_key(me, key, &is_number)) return nullptr;
-                ret = ty_access(me, object, key);
+                ret = ty_access_reading(me, object, key);
                 break;
             }
-            ret = ty_access(me, object, ty_string_literal(me, cstr_sv(&item->name_string)));
+            ret = ty_access_reading(me, object, ty_string_literal(me, cstr_sv(&item->name_string)));
             break;
         }
         case FLOW_PATH_REST:
@@ -1702,7 +1710,15 @@ static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, Discrimina
     bool optional_chain = access && access->optional_chain;
     bool remove_nullable = compiler_options()->strict_null_checks && has_type_facts(me, type, TF_EQ_UNDEFINED_OR_NULL) &&
         (optional_chain || (access && access->expr.tag == EXPR_UNARY_OP && access->expr.unary_op->op == UNARY_OP_RIGHT_BANG));
-    Ty const* prop = prop_type_by_name(me, remove_nullable ? type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL) : type, name);
+    Ty const* holder = remove_nullable ? type_with_facts(me, type, TF_NE_UNDEFINED_OR_NULL) : type;
+    // (A nullable member has no such property: the union's property is partial, tsc's getTypeOfPropertyOfType finds
+    // none and doesn't narrow)
+    if (holder->kind == TY_UNION) {
+        for (u32 i = 0; i < holder->composite.types.len; i++) {
+            if (holder->composite.types.data[i]->flags & (TYF_NULLABLE | TYF_VOID)) return type;
+        }
+    }
+    Ty const* prop = prop_type_by_name(me, holder, name);
     if (!prop) return type;
     if (remove_nullable && optional_chain) prop = union_of(me, prop, ty_intrinsic(me, TY_UNDEFINED));
     DiscriminantFilter filter = { name, narrow(q, prop, arg) };

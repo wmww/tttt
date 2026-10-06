@@ -894,6 +894,18 @@ static void report_errors_from_widening(InitializedBinding* me, Span parameter, 
     cstr_drop(&type);
 }
 
+// The declaration's type takes a call's return type from its callee checked not to be nullish
+// (getQuickTypeOfExpression's checkNonNullExpression): a possibly undefined callee is TS2532/TS18048 besides the
+// call's own TS2722
+static void check_quick_callee(Expr const* quick, ErrorCtx* errs) {
+    if (quick->tag == EXPR_UNARY_OP && quick->unary_op->op == UNARY_OP_AWAIT) quick = &quick->unary_op->expr;
+    if (quick->tag != EXPR_CALL || quick->call->uses_new || expr_is_optional_chain(quick) || expr_is_require_call(quick)) return;
+    Expr const* callee = &quick->call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER) return;
+    ty_check_non_null_type(current_checker, ty_expr_type(current_checker, callee), callee, errs);
+}
+
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
@@ -909,6 +921,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
         ty_type_of_symbol(checker, my binding.symbol);
     }
     initialized_binding_check_value(me);
+    check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
     Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
     binding_typecheck_at(&my binding, initializer, span_null, initializer, true, errs);
@@ -919,6 +932,7 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
 void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
     if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
     initialized_binding_check_value(me);
+    check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
     Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
     binding_typecheck_at(&my binding, initializer, span, initializer, true, errs);

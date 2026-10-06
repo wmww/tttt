@@ -1530,6 +1530,7 @@ Ty const* ty_destructured_assignment_flow_type(
     Checker* me, void const* owner, Expr const* source, Value key, Span key_span, Ty const* declared
 );
 // ty_access() of an expression that reads: with noUncheckedIndexedAccess, index signatures give undefined too
+Ty const* ty_possibly_out_of_bounds(Checker* me, Ty const* element);
 Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index);
 
 // expr.c: the types of expressions. One entry point, with the contextual type (null for none) as a parameter:

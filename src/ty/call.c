@@ -80,6 +80,7 @@ typedef struct Candidate {
 
 typedef struct Resolution {
     Candidate chosen; // sig is null if nothing fit
+    Candidate failure; // If nothing fit, the candidate the call is taken to be anyway (tsc's getCandidateForOverloadFailure)
     Ty const* ret;
 } Resolution;
 
@@ -97,6 +98,7 @@ typedef struct CallInfo {
     VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
     TyList type_args;
     Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
+    bool failure_out; // chosen_out gets the overload failure candidate if nothing fit
     Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
     Span this_span; // Where a `this` that doesn't fit is reported
     Span call_span; // The whole call expression
@@ -2093,7 +2095,9 @@ static Resolution resolve_with_signatures_inner(
                     skipped_generic |= args->data[a].generic_function || args->data[a].generic_call || args->data[a].nested_generic;
                 }
             }
-            if (info->type_arg_nodes && candidate.mapper &&
+            // (A `super(...)`'s are the heritage clause's, checked there: tsc's getInstantiatedConstructorsForTypeArguments
+            // instantiates without checking constraints)
+            if (info->type_arg_nodes && candidate.mapper && !(info->call && is_super_call(info->call)) &&
                 !check_type_argument_constraints(me, sig, candidate.mapper, info, nullptr)
             ) {
                 type_arg_candidate = sig;
@@ -2221,6 +2225,7 @@ static Resolution resolve_with_signatures_inner(
                 free(shape.types);
             }
             ret.ret = resolved_return_type(me, &fallback);
+            ret.failure = fallback;
         } else if (count == 1 && !signatures[0]->type_params.len) {
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
@@ -2671,7 +2676,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
     Args args = collect_args(me, info);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
     ret = resolution.ret;
-    if (info->chosen_out) *info->chosen_out = resolution.chosen;
+    if (info->chosen_out) *info->chosen_out = !resolution.chosen.sig && info->failure_out ? resolution.failure : resolution.chosen;
     free(args.data);
     free(signatures);
     return ret;
@@ -2819,7 +2824,7 @@ static Ty const* resolve_into(
 ) {
     CallInfo info = {
         .call = call, .tagged_template = tagged_template, .contextual = contextual, .chosen_out = chosen_out,
-        .call_span = call_span,
+        .call_span = call_span, .failure_out = chosen_out && !errs,
     };
     Ty const* type_args[32];
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's

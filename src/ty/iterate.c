@@ -567,12 +567,12 @@ static void explain_not_iterable(Checker* me, u32 use, Ty const* input, Span spa
 
 // tsc's reportTypeNotIterableError: TS2488/TS2504, suggesting `await` for a promise, and for an async iterable in a
 // `for...of` (the `for await` it probably meant)
-static void report_not_iterable(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
+static Error* report_not_iterable(Checker* me, u32 use, Ty const* input, Span span, ErrorCtx* errs) {
     bool async = (use & ITERATION_ALLOWS_ASYNC) != 0;
     Error* e = error_ctx_error_d(errs, span, async ? 2504 : 2488, "Type '", input, async ?
         "' must have a '[Symbol.asyncIterator]()' method that returns an async iterator." :
         "' must have a '[Symbol.iterator]()' method that returns an iterator.");
-    if (!e) return;
+    if (!e) return nullptr;
     bool suggest = ty_awaited_of_promise(me, input) != nullptr;
     Ty const* async_iterable = iteration_state(me)->globals[IG_ASYNC_ITERABLE];
     if (!suggest && !async && (use & ITERATION_FOR_OF_FLAG) && async_iterable) {
@@ -584,6 +584,7 @@ static void report_not_iterable(Checker* me, u32 use, Ty const* input, Span span
     }
     suggest_await(e, span, suggest);
     explain_not_iterable(me, use, input, span, e);
+    return e;
 }
 
 // tsc's getIterationTypesOfMethod errors for an iterable's own (not global) iterator: `return`/`throw` that aren't
@@ -695,7 +696,25 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
     bool downlevel = !uplevel && compiler_options()->downlevel_iteration;
     if (uplevel || downlevel || async) {
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
-        if (!types && uplevel && errs) report_not_iterable(me, use, input, span, errs);
+        // A union is reported once: tsc caches its noIterationTypes (getIterationTypesOfIterable) and
+        // later lookups say nothing
+        bool reported = false;
+        if (!types && uplevel && errs && input->kind == TY_UNION && !(input->flags & TYF_BOOLEAN)) {
+            u64 key[3] = { KEY_UNION_NOT_ITERABLE_REPORTED, input->id, async };
+            reported = intern_get(&my links, key, 3) != nullptr;
+            *intern_slot(me, &my links, key, 3) = input;
+        }
+        if (!types && uplevel && errs && !reported) {
+            Error* e = report_not_iterable(me, use, input, span, errs);
+            if (e && input->kind == TY_UNION && !(input->flags & TYF_BOOLEAN)) {
+                // (Once per program, not per checker: keyed by the message, which names the union the same way in
+                // every checker; the top bit keeps it apart from the tslib helper keys)
+                u64 hash = 14695981039346656037ull;
+                for (isize i = 0; i < cstr_size(&e->message); i++) hash = (hash ^ (unsigned char)cstr_str(&e->message)[i]) * 1099511628211ull;
+                e->once_key = hash | (1ull << 63);
+                e->once_order = my file_order;
+            }
+        }
         if (types && errs) report_iterator_methods(me, input, async, span, errs);
         if (types && errs) check_sent_type(me, use, sent, types->next_type, span, errs);
         if (types) return types->yield_type;

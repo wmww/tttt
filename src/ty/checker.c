@@ -1584,10 +1584,18 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     ty_buf_add_flattened(&buf, TY_INTERSECTION, types, len);
     // The members of an intersection are regular (freshLiteralTypesInIntersections)
     for (u32 i = 0; i < buf.len; i++) buf.data[i] = ty_regular(me, buf.data[i]);
+    // The missing type is undefined in an intersection, and what it leaves of undefined is missing again (tsc's
+    // addTypeToIntersection with IncludesMissingType)
+    bool has_missing = false;
+    for (u32 i = 0; i < buf.len; i++) {
+        if (buf.data[i] != my intrinsics[TY_MISSING]) continue;
+        buf.data[i] = my intrinsics[TY_UNDEFINED];
+        has_missing = true;
+    }
     intersect_unions_of_primitives(me, &buf);
     dedupe_unions(&buf);
     if (buf.len == 1) {
-        Ty const* only = buf.data[0];
+        Ty const* only = buf.data[0] == my intrinsics[TY_UNDEFINED] && has_missing ? my intrinsics[TY_MISSING] : buf.data[0];
         ty_buf_drop(&buf);
         return only;
     }
@@ -1728,7 +1736,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         } else if (out == 0) {
             ret = my intrinsics[TY_UNKNOWN_];
         } else if (out == 1) {
-            ret = buf.data[0];
+            ret = buf.data[0] == my intrinsics[TY_UNDEFINED] && has_missing ? my intrinsics[TY_MISSING] : buf.data[0];
         } else {
             bool constrained = false;
             Ty const* reduced = out == 2 ? reduce_type_variable_intersection(me, buf.data[0], buf.data[1], &constrained) : nullptr;

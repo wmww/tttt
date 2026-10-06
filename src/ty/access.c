@@ -209,6 +209,38 @@ static bool reads_own_prop(Checker* me, Ty const* member, Ty const* index) {
     return name && (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_find_prop(me, apparent, name).found;
 }
 
+// Whether a union of objects none of which has the property itself has an index signature for `index`: tsc's
+// getUnionIndexInfos keeps the first member's index signatures whose key type every member has exactly
+// (getIndexInfoOfType), so `T[] | Record<string, T>` has none. Unknown shapes (tuples, intersections, primitives) say yes
+static bool union_index_applies(Checker* me, Ty const* object, Ty const* index) {
+    Ty const* first = nullptr;
+    for (u32 i = 0; i < object->composite.types.len; i++) {
+        Ty const* member = object->composite.types.data[i];
+        if (member->flags & TYF_NULLABLE) continue;
+        Ty const* apparent = ty_apparent_type(me, member);
+        if (apparent->kind != TY_DECLARED && apparent->kind != TY_ANONYMOUS && apparent->kind != TY_REFERENCE) return true;
+        if (!(apparent->flags & TYF_OBJECT) || ty_tuple_shape(apparent) || reads_own_prop(me, member, index)) return true;
+        if (!first) first = apparent;
+    }
+    if (!first) return true;
+    Members const* first_members = ty_members(me, first);
+    for (u32 k = 0; k < first_members->index_count; k++) {
+        IndexInfo const* info = &first_members->index[k];
+        if (!find_applicable_index_info(me, info, 1, index)) continue;
+        bool every = true;
+        for (u32 i = 0; i < object->composite.types.len && every; i++) {
+            Ty const* member = object->composite.types.data[i];
+            if (member->flags & TYF_NULLABLE) continue;
+            Members const* members = ty_members(me, ty_apparent_type(me, member));
+            bool has = false;
+            for (u32 j = 0; j < members->index_count && !has; j++) has = members->index[j].key == info->key;
+            every = has;
+        }
+        if (every) return true;
+    }
+    return false;
+}
+
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool include_undefined = (flags & ACCESS_INCLUDE_UNDEFINED) != 0;
     if (depth > 16) return nullptr;
@@ -269,6 +301,19 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (!simple) return nullptr;
 
     if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
+        // A member's own property makes a union property, whose other members' index signatures are read without
+        // undefined (tsc's createUnionOrIntersectionProperty: noUncheckedIndexedAccess is getPropertyTypeForIndexType's,
+        // for the union's own index signatures)
+        if (include_undefined) {
+            for (u32 i = 0; i < object->composite.types.len; i++) {
+                Ty const* member = object->composite.types.data[i];
+                if (!(member->flags & TYF_NULLABLE) && reads_own_prop(me, member, index)) {
+                    flags &= ~(u32)ACCESS_INCLUDE_UNDEFINED;
+                    include_undefined = false;
+                    break;
+                }
+            }
+        }
         // Every member has to have it. null and undefined don't count: what to say about them is the caller's business
         Ty const** parts = malloc(sizeof(Ty const*) * object->composite.types.len);
         Ty const* ret = nullptr;
@@ -324,6 +369,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         }
         missing |= padded && !found_in_some;
         if (!missing && len) ret = ty_union(me, parts, len, nullptr, (TyList){0});
+        if (ret && !padded && !union_index_applies(me, object, index)) ret = nullptr;
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;
         if (name && ty_union_non_public_conflict(me, object, name)) ret = nullptr;
@@ -418,6 +464,12 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     bool own_enum = (index->flags & TYF_ENUM_LITERAL) && object->kind == TY_DECLARED && object->declared.kind == TY_DECLARED_ENUM_OBJECT &&
         index->literal.enum_decl == object->declared.symbol;
     return value && include_undefined && !own_enum ? with_missing(me, value) : value;
+}
+
+// What an iterated element out of bounds may be (tsc's includeUndefinedInIndexSignature with
+// IterationUse.PossiblyOutOfBounds): undefined too with noUncheckedIndexedAccess
+Ty const* ty_possibly_out_of_bounds(Checker* me, Ty const* element) {
+    return element && compiler_options()->no_unchecked_indexed_access ? with_missing(me, element) : element;
 }
 
 Ty const* ty_access_reading(Checker* me, Ty const* object, Ty const* index) {

@@ -336,14 +336,19 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
         if (!source || !is_tuple_like(me, source)) return false;
     }
     bool target_tuple_like = is_tuple_like(me, target);
+    // A tuple's properties are its elements before the first rest one (tsc's createTupleTargetType)
+    u32 fixed = 0;
+    if (ty_is_tuple(target)) {
+        TupleShape const* shape = target->reference.target->declared.tuple;
+        while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    }
     bool reported = false;
     for_each (i, vec_expr, &expr->array) {
         // Elements the target doesn't have: a length error on the whole is likely better
         char digits[16];
         snprintf(digits, sizeof(digits), "%u", (unsigned)i_index);
         Atom const* name = checker_atom(me, csview_from(digits));
-        if (target_tuple_like && !target_prop_of(me, target, name) && !(ty_is_tuple(target) && i_index <
-            (isize_t)target->reference.target->declared.tuple->arity)) {
+        if (target_tuple_like && !target_prop_of(me, target, name) && !(ty_is_tuple(target) && i_index < (isize_t)fixed)) {
             continue;
         }
         if (!expr_outer_span(i).sv.size) continue; // omitted
@@ -1572,6 +1577,13 @@ static void check_access(
     // `string & Tag` is a string as far as indexing goes (tsc's isTypeAssignableToKind)
     u32 key_like = TYF_ANY | TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     if (index->kind == TY_UNION || (index->kind == TY_INTERSECTION && !(ty_key_flags(index) & key_like))) {
+        // A generic member makes the whole index generic: the access is deferred and only checked against the
+        // object's keys (TS2536), not member by member (tsc's getIndexedAccessTypeOrUndefined: isGenericIndexType)
+        if (index->kind == TY_UNION) {
+            for (u32 i = 0; i < index->composite.types.len; i++) {
+                if (ty_is_generic_index(index->composite.types.data[i])) return;
+            }
+        }
         for (u32 i = 0; i < index->composite.types.len; i++) {
             check_access(
                 me, object, index->composite.types.data[i], object_span, index_span, object_is_named,
@@ -2086,7 +2098,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     Ty const* full_index = ty_regular(me, ty_access_key_type(me, access));
     u32 key_like = TYF_STRING_LIKE | TYF_NUMBER | TYF_ES_SYMBOL_LIKE | TYF_NUMBER_LITERAL | TYF_ENUM;
     // (`any` is a key like any other: tsc's isTypeAssignableToKind)
-    if ((full_index->flags & TYF_ERROR) || (full_index->flags &
+    if ((full_index->flags &
         (TYF_NEVER | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_NULLABLE | TYF_COULD_CONTAIN_TYPE_VARIABLES))) {
         return;
     }

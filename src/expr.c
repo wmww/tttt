@@ -2483,6 +2483,7 @@ static void assignment_target_typecheck_of(
                             element = ty_destructured_assignment_flow_type(checker, i, reference, key, expr_outer_span(i), element);
                         }
                     }
+                    if (!array_like) element = ty_possibly_out_of_bounds(checker, element);
                     assignment_target_typecheck(i, element, nullptr, site, errs);
                 }
                 index++;
@@ -2503,7 +2504,15 @@ static void assignment_target_typecheck_of(
                 Ty const* property = nullptr;
                 if (source && (i->tag == OBJECT_ITEM_PROPERTY || i->tag == OBJECT_ITEM_SHORTHAND) && !i->computed_key) {
                     Ty const* key = ty_string_literal(checker, cstr_sv(&i->name_string));
-                    property = ty_access_reading(checker, source, key);
+                    // (undefined and null have no properties: a union with them has none either, tsc's
+                    // getIndexedAccessType on the source as it is)
+                    bool nullable_member = false;
+                    if (compiler_options()->strict_null_checks && source->kind == TY_UNION && !(source->flags & TYF_BOOLEAN)) {
+                        for (u32 m = 0; m < source->composite.types.len; m++) {
+                            nullable_member |= (source->composite.types.data[m]->flags & TYF_NULLABLE) != 0;
+                        }
+                    }
+                    property = nullable_member ? nullptr : ty_access_reading(checker, source, key);
                     // (Narrowed like the reference `source.name` would be there: tsc's getFlowTypeOfDestructuring)
                     Expr const* reference = source_expr ? skip_outer_expressions(source_expr) : nullptr;
                     if (property && reference && (reference->tag == EXPR_IDENTIFIER || reference->tag == EXPR_PROPERTY)) {
