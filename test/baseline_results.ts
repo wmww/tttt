@@ -5591,9 +5591,9 @@ const baselines = {
         types: true,
     },
     'conflictMarkerTrivia3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'conflictMarkerTrivia4': {
         errors: true,
@@ -10046,9 +10046,9 @@ const baselines = {
         types: true,
     },
     'dontShowCompilerGeneratedMembers': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dottedModuleName': {
         errors: true,

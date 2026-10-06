@@ -58,6 +58,9 @@ typedef struct ParserShared {
     bool in_static_block; // Directly in a class `static {}` block, not in a function inside it
     bool in_parameters; // In the parameter list of the current function: `yield`/`await` there are TS2523/TS2524
     int jsx_children_depth; // Inside the children of a JSX element (at any depth): see parse_jsx_attributes()
+    // A conflict marker ended the JSX children (tsc's scanJsxToken gives a ConflictMarkerTrivia token that starts with
+    // the text before it): where that token starts, for the closing tag's '</' expected. Null otherwise
+    const char* jsx_conflict_start;
     // What moduleDetection looks at (SourceFile.has_import_meta, has_jsx): set by attempts that backtrack too
     bool saw_import_meta;
     bool saw_jsx;
@@ -6116,6 +6119,16 @@ static bool parse_function_args_inner(
         // An arrow function's type parameters don't commit it (tsc's parseParenthesizedArrowFunctionExpression
         // without allowAmbiguity): `<T>(x => y)` is a type assertion of a parenthesized arrow function
         is_definitely_function = parse_abstract_and_new || parse_type_return_syntax || commit_on_paren;
+    } else if (parse_abstract_and_new && *p.pos == '<') {
+        // A `<` in a type or a type member is a signature's (tsc's isStartOfFunctionTypeOrConstructorType,
+        // isTypeMemberStart): `<-` is missing its type parameters, the list's recovery leaves the token
+        ret->generic = (Generic){0};
+        p.pos++;
+        hop_whitespace(&p);
+        parse_error(&p, span_from_token(&p), 1139, "Type parameter declaration expected.");
+        expected_token_error(&p, ">");
+        is_definitely_function = true;
+        unambiguous_function_type = parse_type_return_syntax;
     } else {
         ret->generic = (Generic){0};
     }
@@ -10140,6 +10153,11 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
             }
             return;
         }
+        if (c == '<' && is_conflict_marker(p, p->pos)) {
+            p->pos = hop_conflict_marker(p, p->pos);
+            p->shared->jsx_conflict_start = a.start;
+            return;
+        }
         if (c == '<') {
             if (p->pos[1] == '/') return;
             JsxChild child = { .tag = JSX_CHILD_ELEMENT };
@@ -10169,6 +10187,13 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
         // Text (tsc's scanJsxToken). Whitespace only with a line break before anything else is JsxTextAllWhiteSpaces
         int first_non_whitespace = 0;
         while (*p->pos && *p->pos != '{' && *p->pos != '<') {
+            // (A `<` conflict marker ends the text, which is part of its token: tsc's scanJsxToken)
+            const char* next_line = p->pos + 1 + (p->pos[0] == '\r' && p->pos[1] == '\n');
+            if (jsx_is_line_break(*p->pos) && *next_line == '<' && is_conflict_marker(p, next_line)) {
+                p->pos = hop_conflict_marker(p, next_line);
+                p->shared->jsx_conflict_start = a.start;
+                return;
+            }
             char ch = *p->pos;
             if (ch == '>') {
                 parse_error(p, span_make(p->shared->source, p->pos, p->pos + 1), 1382,
@@ -10197,6 +10222,7 @@ static void parse_jsx_children_inner(Parser* p, JsxElement* el, bool is_fragment
 __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_expression_context, JsxElement const* enclosing,
     bool must_be_unary, const char* top_invalid_pos, Expr* ret
 ) {
+    const char* conflict = nullptr; // Where a conflict marker's token that ended the children starts
     Parser p = parser(parent);
     Anchor a = anchor(&p);
     if (!hop_char(&p, '<')) return parse_fail(&p);
@@ -10298,7 +10324,9 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
         } else {
             Anchor closing_a = anchor(&p);
             if (!hop_start(&p, "</")) {
-                parse_error(&p, span_from_pos(&p), 1005, "'</' expected.");
+                conflict = p.shared->jsx_conflict_start;
+                p.shared->jsx_conflict_start = nullptr;
+                parse_error(&p, conflict ? span_make(p.shared->source, conflict, p.pos) : span_from_pos(&p), 1005, "'</' expected.");
                 // tsc's parseJsxClosingElement goes on with a missing name
                 if (!is_fragment) el->closing_name = expr_identifier(span_from_pos(&p), (IdentifierExpr){0});
             } else if (is_fragment) {
@@ -10333,8 +10361,10 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     *ret = (Expr){
         .tag = is_fragment ? EXPR_JSX_FRAGMENT : EXPR_JSX_ELEMENT,
         .jsx = el,
-        .inner_span = span_from(a),
+        // (Without the conflict marker's token: the missing closing tag is before it)
+        .inner_span = conflict ? span_make(p.shared->source, a.start, conflict) : span_from(a),
     };
+    if (conflict) expr_set_outer_span(ret, ret->inner_span);
 
     // `<a></a><b></b>` where an expression is expected: the second element is parsed too, and the two are a comma
     // expression (tsc's recovery, so that the error is about both)
