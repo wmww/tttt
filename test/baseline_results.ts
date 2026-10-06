@@ -20923,7 +20923,7 @@ const baselines = {
     'mappedTypeNotMistakenlyHomomorphic': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeOverArrayWithBareAnyRestCanBeUsedAsRestParam1': {
         errors: true,

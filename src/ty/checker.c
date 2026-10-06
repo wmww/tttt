@@ -2453,12 +2453,22 @@ static Ty const* keyof_keyof(Checker* me) {
     return ret;
 }
 
+static bool is_generic_reducible(Checker* me, Ty const* ty);
 Ty const* ty_keyof(Checker* me, Ty const* operand) {
     if (operand->kind == TY_UNION || operand->kind == TY_INTERSECTION) operand = ty_reduced(me, operand); // (tsc's getIndexType)
     if (ty_is_no_infer(operand)) return ty_no_infer(me, ty_keyof(me, operand->substitution.base));
     if (operand->flags & TYF_ANY) {
         Ty const* all[3] = { my intrinsics[TY_STRING], my intrinsics[TY_NUMBER], my intrinsics[TY_ES_SYMBOL] };
         return ty_union(me, all, 3, nullptr, (TyList){0});
+    }
+    // (A union an instantiation can take members out of stays `keyof` it: tsc's shouldDeferIndexType with
+    // isGenericReducibleType, `keyof Gen<T>` with `Gen<T> = { v: T } & ({ v: A; a: X } | { v: B; b: Y })`)
+    if (operand->kind == TY_UNION && is_generic_reducible(me, operand)) {
+        u64 key[2] = { KEY_KEYOF, operand->id };
+        Ty* fresh;
+        Ty const* ret = intern_deferred(me, key, 2, TY_KEYOF, operand->flags, &fresh);
+        if (fresh) fresh->keyof.operand = operand;
+        return ret;
     }
     if (operand->kind == TY_UNION) {
         // keyof (A | B) is keyof A & keyof B

@@ -4914,6 +4914,18 @@ static Ternary structured_related_members(
                 Ternary related = is_related_to(me, st, source, known, report);
                 if (related) return related;
             }
+            // A union kept as `keyof` it because an instantiation may reduce it (ty_keyof()): keyof each member,
+            // without that check (tsc's IndexFlags.NoReducibleCheck)
+            if (operand->kind == TY_UNION) {
+                TyBuf parts = {0};
+                for (u32 i = 0; i < operand->composite.types.len; i++) ty_buf_push(&parts, ty_keyof(me, operand->composite.types.data[i]));
+                Ty const* keys = ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0});
+                ty_buf_drop(&parts);
+                if (keys != target) {
+                    Ternary related = is_related_to(me, st, source, keys, report);
+                    if (related == TERNARY_TRUE) return related;
+                }
+            }
             // Through the simplified operand, or its constraint (tsc's getSimplifiedTypeOrConstraint)
             Ty const* constraint = simplified_or_constraint(me, operand);
             if (constraint && constraint != operand) {
