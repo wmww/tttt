@@ -1852,6 +1852,23 @@ bool ty_interface_in_base_cycle(Checker* me, Symbol const* symbol) {
     return links->base_cycle & BASE_CYCLE_IN_CYCLE;
 }
 
+// An extends expression (not a class name) whose type has no construct signatures (TS2507) or none that take the
+// written type arguments (TS2508): errorType, no base at all (tsc's getBaseConstructorTypeOfClass,
+// resolveBaseTypesOfClass)
+bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
+    Expr const* extends = &class_decl->extends;
+    u32 count = 0;
+    if (extends->tag == EXPR_GENERIC_PARAMS) {
+        count = (u32)vec_spanned_type_size(&extends->generic_params->params);
+        extends = &extends->generic_params->expr;
+    }
+    if (extends->tag == EXPR_IMPLICIT_ANY) return false;
+    Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
+    if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    SourceFile const* file = extends->inner_span.source;
+    return !ty_members(me, constructor)->construct_count || !ty_base_constructors_fit(me, constructor, count, file && file->is_js);
+}
+
 // Whether a class (instance or static side) has a base that class_base() can't see: an `extends` expression it can't
 // resolve or that constructs `any` (tsc: the class gets anyBaseTypeIndexInfo, `[x: string]: any`). Members can be
 // missing from such a class
@@ -1880,19 +1897,8 @@ static bool has_unresolved_base(Checker* me, Ty const* ty, u32 depth) {
             // (A constructor without construct signatures, TS2507, or none that take the written type arguments,
             // TS2508, is errorType, and one that constructs something that can't be a base, TS2509, no base: tsc's
             // getBaseConstructorTypeOfClass, resolveBaseTypesOfClass)
-            if (!class_decl->jsdoc_base) {
-                if (base && !(base->flags & TYF_ANY)) continue;
-                Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
-                if (constructor->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
-                    u32 count = class_decl->extends.tag == EXPR_GENERIC_PARAMS ?
-                        (u32)vec_spanned_type_size(&class_decl->extends.generic_params->params) : 0;
-                    SourceFile const* file = class_decl->extends.inner_span.source;
-                    if (!ty_members(me, constructor)->construct_count ||
-                        !ty_base_constructors_fit(me, constructor, count, file && file->is_js)
-                    ) {
-                        continue;
-                    }
-                }
+            if (!class_decl->jsdoc_base && (base ? !(base->flags & TYF_ANY) : ty_class_base_constructor_unfit(me, class_decl))) {
+                continue;
             }
             return true;
         }

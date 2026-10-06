@@ -1720,6 +1720,9 @@ static void class_check_base_arity(ClassDecl const* me, ErrorCtx* errs) {
         }
     }
     if (!target) return;
+    // (A class without construct signatures, its default ones filtered by its own base's type arguments, is TS2507:
+    // the base constructor is errorType, there's no reference to check)
+    if (!span_valid(my jsdoc_extends) && !ty_members(current_checker, ty_static_type_of(current_checker, target))->construct_count) return;
     // (An `@augments` tag is the heritage clause: its type arguments, reported at it)
     if (span_valid(my jsdoc_extends)) missing_extends = false;
     several_types_check_arity(target, arg_count, span_valid(my jsdoc_extends) ? my jsdoc_extends : expr_outer_span(&my extends),

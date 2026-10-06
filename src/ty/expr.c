@@ -1489,6 +1489,8 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
         Ty const* base = ty_expr_type(me, extends);
         // Not a constructor type (TS2507): the error type (tsc's getBaseConstructorTypeOfClass)
         if (base->kind == TY_ANONYMOUS && !ty_members(me, base)->construct_count) return ty_intrinsic(me, TY_ERROR);
+        // (Nor is one whose construct signatures don't take the type arguments, TS2508: no base type)
+        if (ty_class_base_constructor_unfit(me, class_decl)) return ty_intrinsic(me, TY_ERROR);
         return base;
     }
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_expr_type(me, &class_decl->extends);
@@ -1499,7 +1501,9 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
         Ty const* constructor = ty_expr_type(me, extends);
-        return constructor->flags & TYF_ANY ? constructor : any_type(me);
+        if (constructor->flags & TYF_ANY) return constructor;
+        // (No construct signature takes the type arguments, TS2508, or none at all: no base, the error type)
+        return ty_class_base_constructor_unfit(me, class_decl) ? ty_intrinsic(me, TY_ERROR) : any_type(me);
     }
     Ty const* declared = ty_declared_type_of(me, identifier->target);
     Ty const* this_param = declared->kind == TY_DECLARED ? declared->declared.this_param : nullptr;
