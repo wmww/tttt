@@ -128,7 +128,7 @@ static void resolve_super(IdentifierExpr* me, Scope const* names, ErrorCtx* errs
     bool in_computed_name = false, skip_class = false;
     bool through_arrow = false; // (tsc's isInConstructorArgumentInitializer stops at a function)
     for (; scope; scope = scope->parent) {
-        if (scope->no_super == NO_SUPER_LITERAL_COMPUTED_NAME) {
+        if (scope->no_super == NO_SUPER_LITERAL_COMPUTED_NAME || scope->no_super == NO_SUPER_LITERAL_METHOD_COMPUTED_NAME) {
             in_computed_name = true;
             continue;
         }
@@ -2104,8 +2104,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER && !my call->uses_new) {
                 callee->identifier.super_call = true;
                 // (tsc's findFirstSuperCall looks in the body only)
+                bool in_method_name = false;
+                for (Scope const* s = names; s && s->kind == SCOPE_BLOCK && !in_method_name; s = s->parent) {
+                    in_method_name = s->no_super == NO_SUPER_LITERAL_METHOD_COMPUTED_NAME;
+                }
                 if (names->function && names->function->is_constructor && !function_impl_rare(names->function)->first_super_call &&
-                    names->no_super != NO_SUPER_CONSTRUCTOR_ARGS
+                    names->no_super != NO_SUPER_CONSTRUCTOR_ARGS && !in_method_name
                 ) {
                     function_impl_rare_mut(names->function)->first_super_call = me;
                 }
@@ -2152,7 +2156,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (i->computed_key) {
                     // (A scope of its own only for resolve_super())
                     Scope* key_scope = scope_new(names, SCOPE_BLOCK);
-                    key_scope->no_super = NO_SUPER_LITERAL_COMPUTED_NAME;
+                    key_scope->no_super = i->tag != OBJECT_ITEM_PROPERTY || (i->value.tag == EXPR_FUNCTION && i->value.function->is_method) ?
+                        NO_SUPER_LITERAL_METHOD_COMPUTED_NAME : NO_SUPER_LITERAL_COMPUTED_NAME;
                     // The name of a method or accessor is deferred like it, as far as a class initializer is concerned
                     // (TS2729), unless it reads the field it is in
                     uint8_t initializer_context = flow->initializer_context;

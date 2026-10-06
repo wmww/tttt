@@ -424,6 +424,9 @@ typedef enum NoSuper : uint8_t {
     NO_SUPER_NONE,
     NO_SUPER_COMPUTED_NAME, // Of a class member
     NO_SUPER_LITERAL_COMPUTED_NAME, // Of an object literal member: only picks the error message
+    // ... of an object literal method or accessor: a super call in it isn't the constructor's (tsc's findFirstSuperCall
+    // stops at function-like nodes, their names included)
+    NO_SUPER_LITERAL_METHOD_COMPUTED_NAME,
     NO_SUPER_DECORATOR,
     NO_SUPER_CONSTRUCTOR_ARGS,
 } NoSuper;

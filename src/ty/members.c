@@ -1873,7 +1873,8 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
     }
     if (extends->tag == EXPR_IMPLICIT_ANY) return false;
     Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
-    if (constructor->flags & TYF_NEVER) return true; // (No construct signatures either)
+    // (No construct signatures either; `extends null` has no base type, tsc's resolveBaseTypesOfClass)
+    if (constructor->flags & (TYF_NEVER | TYF_NULL)) return true;
     if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     SourceFile const* file = extends->inner_span.source;
     return !ty_members(me, constructor)->construct_count || !ty_base_constructors_fit(me, constructor, count, file && file->is_js);

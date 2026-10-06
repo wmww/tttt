@@ -2060,13 +2060,26 @@ void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs) 
         ) {
             continue;
         }
+        // The next declaration of the function in this list (an implementation followed by an overload after an empty
+        // statement, `function f() {};`, counts too)
+        isize next_at = i + 1;
+        if (!(next && name_equals(next->name.sv, overload->name.sv)) && (overload->has_body || overload->body_missing)) {
+            for (isize j = i + 1; j < count; j++) {
+                FunctionImpl const* other = function_declaration(vec_statement_at(statements, j));
+                if (other && name_equals(other->name.sv, overload->name.sv)) {
+                    next = other;
+                    next_at = j;
+                    break;
+                }
+            }
+        }
         if (next && name_equals(next->name.sv, overload->name.sv)) {
             // A declaration the next one of the function doesn't directly follow (a token was skipped in between) is
             // missing its implementation, body or not, unless the next is a second implementation (tsc's
             // checkFunctionOrConstructorSymbol: previousDeclaration.end !== node.pos)
             Statement const* here = vec_statement_at(statements, i);
-            Statement const* after = vec_statement_at(statements, i + 1);
-            bool adjacent = span_only_trivia_between(span_end_ptr(here->span), span_start_ptr(after->span),
+            Statement const* after = vec_statement_at(statements, next_at);
+            bool adjacent = next_at == i + 1 && span_only_trivia_between(span_end_ptr(here->span), span_start_ptr(after->span),
                 !overload->has_body && !overload->body_missing);
             bool some_body = false;
             for (isize j = 0; j <= i && next->has_body && !some_body; j++) {

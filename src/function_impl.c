@@ -751,6 +751,9 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             );
         }
         if ((is_type || !my has_body) && is_pattern) report_pattern_initializers(&i->initializer.binding, errs);
+        // (A type's signature has no other check of its parameters: the elements of a pattern have to exist too, tsc's
+        // checkParameter -> checkBindingElement)
+        if (is_type && is_pattern) binding_typecheck((Binding*)&i->initializer.binding, nullptr, errs);
 
         if (i->rest) {
             // `(...args: infer A) => any` is fine: the implied constraint of A is `unknown[]`
