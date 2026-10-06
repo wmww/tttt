@@ -5010,7 +5010,15 @@ static Ternary structured_related_members(
                 // A branch that can't be picked doesn't count: not the true one when not even the permissive
                 // instantiations (type variables the wildcard) are assignable (tsc's skipTrue), not the false one when
                 // the restrictive ones are (skipFalse, asked only when the false branch isn't related anyway)
+                // (The check type as tsc's ConditionalType.checkType has it: with the substitution an outer true branch
+                // gave it, which an instance resolves without: `T[K] extends unknown[] ? ...` inside `K extends keyof T`)
                 Ty const* check = target->conditional.check;
+                Ty const* root_check = target_root->conditional.check;
+                if (root_check != check && root_check->kind != TY_TYPE_PARAM && target->conditional.mapper &&
+                    ty_actual_type_variable(me, root_check) != root_check
+                ) {
+                    check = ty_instantiate(me, root_check, target->conditional.mapper);
+                }
                 Ty const* extends = target->conditional.extends;
                 bool skip_true = ty_definitely_unassignable(me, check, extends);
                 Ternary related = skip_true ? TERNARY_TRUE :
