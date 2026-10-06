@@ -797,23 +797,6 @@ static bool is_variadic_element(Checker* me, TupleShape const* shape, TyList arg
     return (shape->flags[i] & TUPLE_ELEMENT_REST) && !ty_is_array(me, args.data[i]) && !ty_is_tuple(args.data[i]);
 }
 
-static u32 tuple_min_length(TupleShape const* shape) {
-    u32 n = 0;
-    for (u32 i = 0; i < shape->arity; i++) if (!(shape->flags[i] & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) n = i + 1;
-    return n;
-}
-
-// Tuples of arities that can't match: nothing to infer from their elements (tsc's tupleTypesDefinitelyUnrelated).
-// `[A, B]` against `[T]` (AsArray<T>'s false branch) infers nothing to T
-static bool tuples_definitely_unrelated(Checker* me, TupleShape const* source, TupleShape const* target, TyList target_args) {
-    bool target_variadic = false;
-    for (u32 i = 0; i < target->arity; i++) target_variadic |= is_variadic_element(me, target, target_args, i);
-    if (!target_variadic && tuple_min_length(target) > tuple_min_length(source)) return true;
-    bool target_variable = tuple_fixed_length(target) < target->arity;
-    bool source_variable = tuple_fixed_length(source) < source->arity;
-    return !target_variable && (source_variable || tuple_fixed_length(target) < tuple_fixed_length(source));
-}
-
 // An array or tuple against a tuple (tsc's inferFromObjectTypes): the fixed elements at the start and at the end pair
 // up, what's between goes to the variadic or rest element in the middle of the target
 static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
@@ -837,7 +820,6 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
         }
     }
     bool target_variable = tuple_fixed_length(target_shape) < target_arity;
-    if (source_shape && tuples_definitely_unrelated(me, source_shape, target_shape, target_args)) return;
     u32 start = source_shape ? tuple_fixed_length(source_shape) : 0;
     if (tuple_fixed_length(target_shape) < start) start = tuple_fixed_length(target_shape);
     u32 end = 0;
