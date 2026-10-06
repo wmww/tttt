@@ -1088,7 +1088,7 @@ const baselines = {
     'argumentsSpreadRestIterables(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsSpreadRestIterables(target=esnext)': {
         errors: true,

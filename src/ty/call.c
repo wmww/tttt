@@ -388,10 +388,11 @@ static Ty const* rest_args_tuple_skipping(Checker* me, Args const* args, u32 fro
     u32 arity = args->len > from ? args->len - from : 0;
     // Just a spread of something of type any: any, not `any[]` (tsc's getSpreadArgumentType for a last spread argument
     // takes an array-like type as it is), so `f(...x as any)` fits a rest parameter `L extends [A, ...A[]]`
+    // (That very any: an unresolved `Iterable<number>` is an error type that prints by its name)
     if (arity == 1 && args->data[from].spread && !args->data[from].variadic && args->data[from].expr->tag == EXPR_SPREAD &&
         (ty_expr_type(me, args->data[from].expr->spread)->flags & TYF_ANY)
     ) {
-        return ty_intrinsic(me, TY_ANY);
+        return ty_expr_type(me, args->data[from].expr->spread);
     }
     // A lone spread of a generic array-like whose constraint is a mutable array or tuple: that type itself (tsc's
     // getSpreadArgumentType, getMutableArrayOrTupleType), `f10(...u)` with U extends string[] infers U
