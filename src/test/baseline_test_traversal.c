@@ -244,6 +244,13 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     if (this->this_kind == THIS_CLASS_STATIC && this->target) table = this->target->exports;
     Symbol const* js_class = (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && identifier_this_function(this) ?
         ty_js_this_class(identifier_this_function(this)) : nullptr;
+    // (A function expression that is a class of its own whose `this` is something else: an object literal's property,
+    // a callback with a contextual `this`. The name is still the member it declares)
+    if (!js_class && (this->this_kind == THIS_ANY || this->this_kind == THIS_PARAMETER) && identifier_this_function(this) &&
+        function_impl_rare(identifier_this_function(this))->own_class_symbol
+    ) {
+        js_class = function_impl_rare(identifier_this_function(this))->class_symbol;
+    }
     if (js_class) table = symbol_rare(js_class)->members;
     Symbol const* member = table ? symbol_table_get(table, name.sv) : nullptr;
     // (Not when the class body declares it)
@@ -2606,7 +2613,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
     vec_span_drop(&info.declarations);
     if (!info.found && has_symbol_override(ctx, expr_outer_span(&my property->prop))) {
         // The target of a CommonJS assignment shows what it declares, even through an `exports` that is any
-        if (my property->form == PROPERTY_EXPR_DOT) {
+        if (my property->form == PROPERTY_EXPR_DOT && has_symbol_override(ctx, my inner_span)) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
         }
         ctx->any_keeps_underline = my property->form == PROPERTY_EXPR_DOT; // The object of a property access
