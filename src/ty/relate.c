@@ -4196,7 +4196,12 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             for (u32 d = 0; d < count && !seen; d++) seen = discriminants[d] == prop->name;
             if (seen || !ty_is_discriminant_property(me, object_target, prop->name)) continue;
             if (count == MAX_DISCRIMINANTS) return TERNARY_FALSE;
-            Ty const* type = apparent->kind == TY_INTERSECTION ? find_prop(me, apparent, prop->name, 0).type : prop_type(me, prop);
+            FoundProp found = apparent->kind == TY_INTERSECTION ? find_prop(me, apparent, prop->name, 0) : (FoundProp){0};
+            Ty const* type = apparent->kind == TY_INTERSECTION ? found.type : prop_type(me, prop);
+            // (Optional ones with their undefined: tsc's getNonMissingTypeOfSymbol)
+            if (((apparent->kind == TY_INTERSECTION ? found.flags : prop->flags) & PROP_OPTIONAL) && optional_adds_undefined()) {
+                type = ty_union(me, (Ty const*[]){ type, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+            }
             if (type->kind == TY_UNION) {
                 values[count] = type->composite.types;
             } else {
