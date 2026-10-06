@@ -5288,7 +5288,7 @@ const baselines = {
     'complicatedPrivacy': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'compositeContextualSignature': {
         errors: true,
@@ -7818,7 +7818,7 @@ const baselines = {
     'declarationEmitComputedPropertyNameEnum2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedPropertyNameEnum3': {
         errors: true,
@@ -10028,7 +10028,7 @@ const baselines = {
     'doYouNeedToChangeYourTargetLibraryES2016Plus': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'doYouNeedToChangeYourTargetLibraryES2023(target=es5)': {
         errors: true,
@@ -26518,7 +26518,7 @@ const baselines = {
     'reExportUndefined1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reExportUndefined2': {
         errors: true,
@@ -39178,7 +39178,7 @@ const baselines = {
     'useRegexpGroups': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'allowUnescapedParagraphAndLineSeparatorsInStringLiteral': {
         errors: true,
@@ -65723,7 +65723,7 @@ const baselines = {
     'indexerWithTuple': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'namedTupleMembers': {
         errors: true,
