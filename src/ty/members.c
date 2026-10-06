@@ -3643,6 +3643,14 @@ static Signature const* jsdoc_tag_single_signature(Checker* me, FunctionImpl con
     return members->call[0];
 }
 
+// (tsc's acceptsVoid through filterType: a union with a void member)
+static bool union_has_void(Ty const* ty) {
+    for (u32 i = 0; ty->kind == TY_UNION && i < ty->composite.types.len; i++) {
+        if (ty->composite.types.data[i]->flags & TYF_VOID) return true;
+    }
+    return false;
+}
+
 void signature_resolve(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
     if (sig->state != LAZY_STATE_NOT_STARTED) return;
@@ -3690,6 +3698,26 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         u32 count = (u32)vec_function_arg_size(&function->args);
         SigParam* params = arena_new_n(&my arena, SigParam, count ? count : 1);
         u32 iife_arg_count = function->is_iife ? ty_iife_effective_arg_count(me, function) : 0;
+        // tsc's first look at a signature's parameters is usually getMinArgumentCount (a call's hasCorrectArity, a
+        // signature relation), which asks for the type of the last required parameter, then the ones before it while
+        // they accept void, before any other: which decides union order (`(in1: Iterable<T>, in2: ArrayLike<T>)` makes
+        // ArrayLike<T> first). Those are typed first here
+        Ty const* early[8] = {0};
+        if (count <= c_arraylen(early) && !function->is_iife) {
+            i32 last_required = -1;
+            for_each (i, vec_function_arg, &function->args) {
+                Expr const* initial = initialized_binding_value(&i->initializer);
+                bool optional = i->explicit_optional || initial->tag != EXPR_IMPLICIT_ANY || initial->missing;
+                if (!optional && !i->rest) last_required = (i32)i_index;
+            }
+            for (i32 j = last_required; j >= 0; j--) {
+                FunctionArg const* arg = vec_function_arg_at(&function->args, (isize)j);
+                if (!arg->initializer.binding.has_explicit_type) break;
+                if (span_equals(arg->initializer.binding.content_span, "this")) break;
+                early[j] = ty_binding_type(me, &arg->initializer.binding, ctx);
+                if (!(early[j]->flags & (TYF_VOID | TYF_ANY | TYF_UNKNOWN)) && !union_has_void(early[j])) break;
+            }
+        }
         // The arguments it takes are up to its last required parameter: one with a default before it is required too
         // (tsc's minArgumentCount and isOptionalParameter)
         for_each (i, vec_function_arg, &function->args) {
@@ -3700,7 +3728,8 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
             // (A missing initializer, `n: number=)`, is one: tsc's missing identifier)
             Expr const* initial = initialized_binding_value(&i->initializer);
             param->optional = i->explicit_optional || initial->tag != EXPR_IMPLICIT_ANY || initial->missing;
-            param->type = ty_binding_type(me, &i->initializer.binding, ctx);
+            param->type = i_index < (isize)c_arraylen(early) && early[i_index] ? early[i_index] :
+                ty_binding_type(me, &i->initializer.binding, ctx);
             // (tsc's isOptionalParameter: an immediately invoked function's parameter past the arguments)
             // (the minimum argument count goes by the arguments as written, getSignatureFromDeclaration; whether it's
             // optional by the effective ones, tuple spreads expanded)

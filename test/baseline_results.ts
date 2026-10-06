@@ -1248,7 +1248,7 @@ const baselines = {
     'arrayFrom': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayFromAsync': {
         errors: true,
