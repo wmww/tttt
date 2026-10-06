@@ -946,10 +946,17 @@ static Ty const* type_without_signatures(Checker* me, Ty const* ty) {
 }
 
 // How TS2417 names (part of) the base static side, `without` being it without signatures (tsc names the type without
-// signatures, which keeps the symbol: a class's static side still says `typeof Base`)
+// signatures, which keeps the symbol: a class's static side still says `typeof Base`, as do an enum's and a namespace's
+// objects, tsc's createAnonymousTypeNode. An interface's, `ArrayConstructor`, is written out without its signatures)
 static Ty const* static_side_for_display(Ty const* part, Ty const* without) {
     Ty const* declared = part->kind == TY_REFERENCE ? part->reference.target : part;
-    return declared->kind == TY_DECLARED ? part : without;
+    if (declared->kind != TY_DECLARED) return without;
+    switch (declared->declared.kind) {
+        case TY_DECLARED_CLASS_STATIC:
+        case TY_DECLARED_ENUM_OBJECT:
+        case TY_DECLARED_NAMESPACE: return part;
+        default: return part == without ? part : without;
+    }
 }
 
 bool ty_check_static_heritage(Checker* me, Ty const* static_type, Ty const* base_static, Span span, ErrorCtx* errs) {
