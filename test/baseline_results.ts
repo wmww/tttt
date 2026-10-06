@@ -12566,7 +12566,7 @@ const baselines = {
         types: true,
     },
     'exportAsNamespace_augment': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },

@@ -3776,8 +3776,10 @@ static void merge_into_umd_globals(Binder* me) {
 }
 
 void binder_link(Binder* me) {
-    merge_augmentations(me);
+    // (tsc's initializeTypeChecker merges the globals, a UMD global's `declare global` namespaces with it, before the
+    // module augmentations)
     merge_into_umd_globals(me);
+    merge_augmentations(me);
     // Resolving makes placeholder symbols: by index
     for (u32 i = 0; i < my symbol_count; i++) {
         Symbol* symbol = my symbols[i];
