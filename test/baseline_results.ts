@@ -60432,7 +60432,7 @@ const baselines = {
     },
     'moduleExportAssignment7': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'moduleExportDuplicateAlias': {

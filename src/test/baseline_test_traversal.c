@@ -999,6 +999,29 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             }
             if (my identifier->keyword == KEYWORD_IDENTIFIER_THIS) break; // A `this` type isn't an identifier to tsc
             if (my identifier->intrinsic_keyword) break; // (Nor `type T = intrinsic`: a keyword)
+            // `typeof import("./m").x` of a module that is `export =` an object: x is a property of the module's type
+            // (tsc's getTypeFromImportTypeNode: symbolFromVariable)
+            if (identifier_type_import_ref(my identifier) && identifier_type_import_typeof(my identifier) && span_valid(my identifier->name) &&
+                !identifier_type_namespace_count(my identifier) && my identifier->target && !span_valid(my identifier->target->name_span) &&
+                !my identifier->target->is_module
+            ) {
+                // (The target is what the module's `export =` assigns)
+                Checker* checker = current_checker;
+                Ty const* module_type = ty_type_of_symbol(checker, my identifier->target);
+                Prop const* prop = module_type && (module_type->flags & TYF_OBJECT) ?
+                    ty_get_prop(checker, module_type, checker_atom(checker, my identifier->name.sv)) : nullptr;
+                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+                if (prop && prop->decl->decl_span_count) {
+                    VecSpan spans = vec_span_init();
+                    for (u32 k = 0; k < prop->decl->decl_span_count; k++) vec_span_push(&spans, prop->decl->decl_spans[k]);
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = spans,
+                        .allow_declaration_empty = true,
+                        .span = my identifier->name,
+                        .text = cstr_from_sv(my identifier->name.sv),
+                    });
+                }
+            }
             // (An alias of an anonymous class, `import C = require()` of `export = class {}`, is shown)
             if (my identifier->target && !span_valid(my identifier->target->name_span) &&
                 !(my identifier->target->is_module && my identifier->target->module->file && my identifier->target->decl_count) &&
