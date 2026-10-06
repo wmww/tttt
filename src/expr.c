@@ -3707,7 +3707,7 @@ static bool binary_op_typecheck(
             u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
                 TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE | TYF_VOID | TYF_NULLABLE;
             TyList parts = left->kind == TY_UNION ? left->composite.types : (TyList){ .data = &left, .len = 1 };
-            bool all_primitive = !(left->flags & (TYF_ANY | TYF_NEVER));
+            bool all_primitive = !(left->flags & TYF_ANY); // (never too: tsc's isTypeAssignableToKind, never fits every kind)
             for (u32 i = 0; i < parts.len && all_primitive; i++) all_primitive = assignable_to_kind(parts.data[i], primitive, false);
             if (all_primitive) {
                 error_ctx_error_d(errs, expr_error_span(&expr->binary_op->left), 2358, "The left-hand side of an 'instanceof' "
@@ -4312,6 +4312,11 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             }
             for_each (i, vec_expr, &my call->args) {
                 expr_typecheck(i, errs);
+                // A spread argument is checked as iterable even when never, which every array type takes (tsc's
+                // checkSpreadExpression; an array literal's spread elements go by isArrayLikeType instead)
+                if (i->tag == EXPR_SPREAD && (expr_get_type(i->spread)->flags & TYF_NEVER)) {
+                    ty_iterated_type(checker, ITERATION_SPREAD, expr_get_type(i->spread), expr_outer_span(i->spread), errs);
+                }
             }
         }   break;
 

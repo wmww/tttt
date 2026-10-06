@@ -1451,6 +1451,12 @@ static PropDecl const* prop_root_decl(Checker* me, Ty const* ty, Atom const* nam
     return prop ? prop->decl : nullptr;
 }
 
+// A property tsc gives declarations but no valueDeclaration: a mapped or reverse mapped type's, a spread's fresh copy, a
+// namespace's export that is an alias (`export { f }`: the export specifier)
+static bool no_value_declaration(Prop const* prop) {
+    return prop->mapped || (prop->flags & PROP_NO_VALUE_DECLARATION) || prop_decl_rare(prop->decl)->reverse_of;
+}
+
 // destructured: a binding element's property (tsc's getIndexedAccessType reports it, without saying which union member
 // lacks it)
 static void report_no_property(Checker* me, Ty const* object, Ty const* index, unsigned ts_code, Span span, bool destructured,
@@ -1501,10 +1507,10 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         // (A mapped or reverse mapped type's property, or a spread's fresh copy, has declarations but no
         // valueDeclaration in tsc: no related information)
         Prop const* declared = suggestion;
-        bool synthetic = declared->mapped || (declared->flags & PROP_SYNTHETIC_COPY) || prop_decl_rare(declared->decl)->reverse_of;
+        bool synthetic = no_value_declaration(declared);
         while (declared->target && !declared->decl->decl_span_count) {
             declared = declared->target;
-            synthetic |= declared->mapped || (declared->flags & PROP_SYNTHETIC_COPY) || prop_decl_rare(declared->decl)->reverse_of;
+            synthetic |= no_value_declaration(declared);
         }
         // (A union's property has a declaration only if every member's is the same one: tsc's
         // createUnionOrIntersectionProperty with hasNonUniformValueDeclaration)

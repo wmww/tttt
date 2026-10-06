@@ -456,9 +456,10 @@ typedef enum PropFlags {
     PROP_PATTERN_OPTIONAL = 1 << 13,
     PROP_PROTOTYPE = 1 << 14, // A class's `prototype` (tsc's SymbolFlags.Prototype): relations skip it as a target
     PROP_CLASS_GETTER = 1 << 15, // A class accessor with a getter (tsc's SymbolFlags.GetAccessor, PROP_GETTER for literals)
-    // A copy a spread or rest made as a fresh symbol (tsc's getSpreadSymbol for a property whose readonly-ness changes,
-    // getAnonymousPartialType): declared where its original is, but without a valueDeclaration ("declared here")
-    PROP_SYNTHETIC_COPY = 1 << 16,
+    // tsc's symbol has declarations but no valueDeclaration (no "declared here"): a copy a spread or rest made as a fresh
+    // symbol (getSpreadSymbol for a property whose readonly-ness changes, getAnonymousPartialType), a namespace's export
+    // through an alias (`export { f }`)
+    PROP_NO_VALUE_DECLARATION = 1 << 16,
 } PropFlags;
 
 // How a property's name prints (tsc's getPropertyNameNodeForSymbol), from how its declarations wrote it. Without

@@ -464,7 +464,7 @@ static void builder_add_interface_member(
 static u32 interface_computed_index_kind(Checker* me, InterfaceMember const* i) {
     if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr.ref || !expr_is_entity_name(i->key.expr.ref)) return 0;
     Ty const* key_type = ty_regular(me, ty_expr_type(me, i->key.expr.ref));
-    if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_NEVER)) return 0;
+    if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM)) return 0;
     Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
     if (!ty_is_related(me, key_type, ty_union(me, keys, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) return 0;
     bool number = ty_is_related(me, key_type, keys[1], TY_RELATION_ASSIGNABLE);
@@ -1087,7 +1087,7 @@ static u32 computed_index_kind(Checker* me, ClassItem const* item, bool static_s
     if (!key || !expr_is_entity_name(key)) return 0;
     Ty const* key_type = ty_regular(me, ty_expr_type(me, key));
     // (A literal or unique symbol names a property, late bound: tsc's isLateBindableName comes first)
-    if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM | TYF_NEVER)) return 0;
+    if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM)) return 0;
     Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
     if (!ty_is_related(me, key_type, ty_union(me, keys, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) return 0;
     bool number = ty_is_related(me, key_type, keys[1], TY_RELATION_ASSIGNABLE);
@@ -1512,6 +1512,7 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     // tsc's isReadonlySymbol: a `const` variable. Not through an alias (`export { c }`, `export default c`, `export
     // import c = require(...)`): the property is the alias symbol, which has no Variable flag
     if (member->is_const && member == symbol) prop->flags |= PROP_READONLY;
+    if (member != symbol && (symbol->flags & SYMBOL_ALIAS)) prop->flags |= PROP_NO_VALUE_DECLARATION;
     // (`Object.defineProperty(o, "x", { value: 1 })`: isReadonlyAssignmentDeclaration)
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
         member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && expr_define_property_readonly(member->decls[0].node)
@@ -1867,6 +1868,7 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
     }
     if (extends->tag == EXPR_IMPLICIT_ANY) return false;
     Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
+    if (constructor->flags & TYF_NEVER) return true; // (No construct signatures either)
     if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     SourceFile const* file = extends->inner_span.source;
     return !ty_members(me, constructor)->construct_count || !ty_base_constructors_fit(me, constructor, count, file && file->is_js);

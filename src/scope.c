@@ -3825,7 +3825,9 @@ typedef struct Suggestion {
 } Suggestion;
 
 // tsc's getSuggestionForSymbolNameLookup on one table
-static bool suggest_in_table(SymbolTable const* table, bool globals, csview name, u32 meaning, Suggestion* out) {
+// `exports`: a module's or namespace's exports, where `export default <expr>` is tsc's SymbolFlags.Property (no module
+// member)
+static bool suggest_in_table(SymbolTable const* table, bool globals, bool exports, csview name, u32 meaning, Suggestion* out) {
     u32 count = 0;
     SymbolEntry* entries = symbol_table_collect(table, &count);
     // (tsc's globals start with its undefinedSymbol, a value)
@@ -3856,6 +3858,11 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, csview name
                 // (Not an alias in flight itself: tsc's tryResolveAlias)
                 symbol->alias->state != ALIAS_IN_FLIGHT && symbol->alias->state != ALIAS_CIRCULAR &&
                 (symbol_resolved_flags(symbol) & meaning)));
+        if (fits && exports && symbol->decl_count) {
+            bool expression = true;
+            for (u32 d = 0; d < symbol->decl_count && expression; d++) expression = symbol->decls[d].kind == SYMBOL_DECL_EXPR;
+            fits = !expression;
+        }
         names[extra + i] = fits ? candidate : (csview){0};
     }
     isize best = spelling_suggestion(name, names, count + extra);
@@ -3870,9 +3877,15 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
     for (Scope const* scope = me; scope; scope = scope->parent) {
         bool globals = scope->kind == SCOPE_GLOBAL;
         SymbolTable const* table = globals ? &scope->binder->globals : &scope->locals;
-        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, name, meaning, out)) return true;
-        if (scope->container && scope->container->exports && scope->kind != SCOPE_GLOBAL &&
-            suggest_in_table(scope->container->exports, false, name, meaning, out)
+        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) return true;
+        // (A module's or namespace's exports by tsc's `meaning & SymbolFlags.ModuleMember`: not `export default <expr>`,
+        // a property; an enum's by `meaning & SymbolFlags.EnumMember`)
+        u32 const module_member = SYMBOL_VARIABLE | SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM |
+            SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_TYPE_ALIAS | SYMBOL_ALIAS;
+        u32 exports_meaning = scope->container && (scope->container->flags & SYMBOL_ENUM) &&
+            !(scope->container->flags & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE)) ? meaning & SYMBOL_ENUM_MEMBER : meaning & module_member;
+        if (scope->container && scope->container->exports && scope->kind != SCOPE_GLOBAL && exports_meaning &&
+            suggest_in_table(scope->container->exports, false, true, name, exports_meaning, out)
         ) {
             out->export_local = (meaning & SYMBOL_VARIABLE) != 0; // (A value meaning: the type meaning has no variables)
             return true;
