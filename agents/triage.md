@@ -38,3 +38,12 @@ queues merged into one.
   T[symbol]` (tsc `T[K]`), so `t[k].foo` misses TS2339 on 'T[K]'. Probe: /tmp/d-probes/idx.ts shape.
 - (agent d) intersection()'s dedupe_unions() merges unions with the same members but different alias/origin; tsc keeps
   them apart (origin is part of the union's identity) and then intersects them as sets, losing the alias.
+- A class field and a property signature of an interface merged with the class are one property symbol in tsc
+  (symbols baseline `Symbol(C.x, Decl(class), Decl(interface))`, the type the first declaration's); tttt keeps one per
+  declaration (probe: `interface C { x: number } class C { x: string }`). TS2717 is reported since 2026-10-06.
+- `typeof x` of an auto-typed `let x = undefined` inside a signature without a body (interface member, function type)
+  is TS7005 + TS7034 in tsc (the signature is its own flow container), tttt reads the outer flow (seed-3 mut3837;
+  setting outer_reference for bodiless signatures in identifier name resolution wasn't enough).
+- Nested destructuring defaults: `var [a, [b, { x, y: c }] = ["abc", { y: false }]] = [1, ["hello", { x: 5, y: true }]]`
+  reports TS2339 'x' on `{ y: boolean }` in tttt, nothing in tsc (the nested literal default isn't given the pattern's
+  implied properties, with_pattern_props() only applies at the top of a default).

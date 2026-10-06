@@ -12051,7 +12051,8 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
     )) {
         is_for_each = true;
         // tsc's checkGrammarForInOrForOfStatement: `for (async of x)` reads like the start of an async arrow function
-        if (!keyword_is_in && !is_await && statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER &&
+        // (not in an await context: an async function or a static block)
+        if (!keyword_is_in && !is_await && !p.shared->in_async && !p.shared->in_static_block && statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER &&
             !expr_is_perenthisized(&statement.expr) && span_equals(statement.expr.inner_span, "async")
         ) {
             parse_error(&p, statement.expr.inner_span, 1106, "The left-hand side of a 'for...of' statement may not be 'async'.");

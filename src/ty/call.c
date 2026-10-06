@@ -99,6 +99,9 @@ typedef struct CallInfo {
     TyList type_args;
     Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
     bool failure_out; // chosen_out gets the overload failure candidate if nothing fit
+    // The signatures before reorder_candidates(): tsc's getArgumentArityError reads the original list (whose first
+    // signature needing the fewest arguments names the missing parameter). Null: the same order
+    Signature* const* declared_order;
     Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
     Span this_span; // Where a `this` that doesn't fit is reported
     Span call_span; // The whole call expression
@@ -1514,13 +1517,19 @@ static Span overload_error_span(CallInfo const* info) {
     return callee->inner_span;
 }
 
+// The callee of a `new` or `extends` without its type arguments (tsc's NewExpression.expression,
+// ExpressionWithTypeArguments.expression)
+static Span constructor_span(Expr const* callee) {
+    if (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
+    return expr_outer_span(callee);
+}
+
 // Where tsc's invocationError reports TS2349/TS2351: the callee, but a call's (not `new`'s) is at the method name like
 // getDiagnosticSpanForCallNode's
 static Span invocation_error_span(CallInfo const* info) {
     Expr const* callee = &info->call->callable;
-    if (info->jsx || info->tagged_template || info->decorator || info->call->uses_new || info->call->is_extends) {
-        return expr_outer_span(callee);
-    }
+    if (info->call->uses_new || info->call->is_extends) return constructor_span(callee);
+    if (info->jsx || info->tagged_template || info->decorator) return expr_outer_span(callee);
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
     if (callee->tag == EXPR_PROPERTY && callee->property->form == PROPERTY_EXPR_DOT && !expr_is_perenthisized(callee)) {
         return callee->property->prop.inner_span;
@@ -2189,8 +2198,9 @@ static Resolution resolve_with_signatures_inner(
                 // (Of the signatures that take as many type arguments: tsc's signaturesWithCorrectTypeArgumentArity)
                 Signature** fitting = malloc(sizeof(Signature*) * count);
                 u32 fitting_count = 0;
+                Signature* const* in_order = info->declared_order ? info->declared_order : signatures;
                 for (u32 i = 0; i < count; i++) {
-                    if (has_correct_type_argument_arity(me, signatures[i], info)) fitting[fitting_count++] = signatures[i];
+                    if (has_correct_type_argument_arity(me, in_order[i], info)) fitting[fitting_count++] = in_order[i];
                 }
                 report_arity(me, fitting, fitting_count, args, info, nullptr, errs);
                 free(fitting);
@@ -2642,7 +2652,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 }
             }
         } else if (call->uses_new) {
-            Error* e = error_ctx_error_d(errs, expr_outer_span(&call->callable), 2351, "This expression is not constructable.");
+            Error* e = error_ctx_error_d(errs, constructor_span(&call->callable), 2351, "This expression is not constructable.");
             // (tsc's invocationErrorDetails: about the apparent type)
             cstr rendered = ty_to_cstr(me, apparent);
             error_sub_error_d(e, span_null, TS_CODE_NONE, "Type '", rendered, "' has no construct signatures.");
@@ -2723,9 +2733,13 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         }
         if (any_this) with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
     }
+    Signature** declared_order = errs && count > 1 ? malloc(sizeof(Signature*) * count) : nullptr;
+    if (declared_order) memcpy(declared_order, signatures, sizeof(Signature*) * count);
+    with_this.declared_order = declared_order;
     reorder_candidates(me, signatures, count);
     Args args = collect_args(me, info);
     Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &with_this, call_span, errs);
+    free(declared_order);
     ret = resolution.ret;
     if (info->chosen_out) *info->chosen_out = !resolution.chosen.sig && info->failure_out ? resolution.failure : resolution.chosen;
     free(args.data);

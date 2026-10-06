@@ -2348,20 +2348,23 @@ bool expr_check_reference_not_optional(Expr const* target, unsigned code, char c
 }
 
 static void assignment_target_typecheck_of(
-    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, ErrorCtx* errs
+    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, Span at, ErrorCtx* errs
 );
 
 static void assignment_target_typecheck(
     Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, ErrorCtx* errs
 ) {
-    assignment_target_typecheck_of(target, source, source_expr, site, false, errs);
+    assignment_target_typecheck_of(target, source, source_expr, site, false, span_null, errs);
 }
 
-// `rest`: the target of an object rest (`{ ...target } = o`), which is said to be so (tsc's checkReferenceAssignment)
+// `rest`: the target of an object rest (`{ ...target } = o`), which is said to be so (tsc's checkReferenceAssignment).
+// `at`: where a source that doesn't fit is reported, if not at the target (`(x!) = v`, `(x satisfies T) = v`: the
+// whole left side, tsc's checkBinaryLikeExpression reports at it)
 static void assignment_target_typecheck_of(
-    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, ErrorCtx* errs
+    Expr const* target, Ty const* source, Expr const* source_expr, AccessSite const* site, bool object_rest, Span at, ErrorCtx* errs
 ) {
     Checker* checker = current_checker;
+    Span report_at = span_valid(at) ? at : expr_outer_span(target);
     if (!expr_check_reference_not_optional(target, 2779,
         "The left-hand side of an assignment expression may not be an optional property access.", errs)
     ) {
@@ -2387,10 +2390,10 @@ static void assignment_target_typecheck_of(
             if (source && target->identifier.target) {
                 Ty const* declared = ty_type_of_symbol(checker, target->identifier.target);
                 if (target->identifier.compound_like_target) declared = ty_base_type_of_literal(checker, declared);
-                ty_check_assignable_expr(checker, source, declared, expr_outer_span(target), source_expr, errs);
+                ty_check_assignable_expr(checker, source, declared, report_at, source_expr, errs);
             } else if (source && target->identifier.is_arguments) {
                 // `arguments = x` in a function: the arguments object (IArguments)
-                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), expr_outer_span(target), source_expr, errs);
+                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), report_at, source_expr, errs);
             }
             return;
 
@@ -2401,19 +2404,21 @@ static void assignment_target_typecheck_of(
             if (target->property->assignment_target == FLOW_TARGET_COMPOUND) {
                 target_type = ty_compound_assignee_type(checker, target, target_type);
             }
-            ty_check_assignable_to_access(checker, source, target_type, expr_outer_span(target), source_expr, target, errs);
+            ty_check_assignable_to_access(checker, source, target_type, report_at, source_expr, target, errs);
         }   return;
 
         case EXPR_UNARY_OP:
             // `x! = 1`
-            if (target->unary_op->op == UNARY_OP_RIGHT_BANG) assignment_target_typecheck(&target->unary_op->expr, source, source_expr, site, errs);
-            else break;
+            if (target->unary_op->op != UNARY_OP_RIGHT_BANG) break;
+            assignment_target_typecheck_of(&target->unary_op->expr, source, source_expr, site, false, report_at, errs);
             return;
 
         case EXPR_AS_TYPE:
-            // `(x as T) = 1`: T is what's assigned to
-            if (source && !target->as_type->is_satisfies) {
-                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), expr_outer_span(target), source_expr, errs);
+            // `(x as T) = 1`: T is what's assigned to; `(x satisfies T) = 1` assigns to x
+            if (target->as_type->is_satisfies) {
+                assignment_target_typecheck_of(&target->as_type->expr, source, source_expr, site, false, report_at, errs);
+            } else if (source) {
+                ty_check_assignable_expr(checker, source, ty_expr_type(checker, target), report_at, source_expr, errs);
             }
             return;
 
@@ -2581,7 +2586,7 @@ static void assignment_target_typecheck_of(
                             rest = ty_object_rest_type(checker, source, (TyList){ .data = keys, .len = len });
                             free(keys);
                         }
-                        assignment_target_typecheck_of(&i->value, rest, nullptr, site, true, errs);
+                        assignment_target_typecheck_of(&i->value, rest, nullptr, site, true, span_null, errs);
                     }
                 } else if (i->tag == OBJECT_ITEM_SHORTHAND && i->shorthand_default) {
                     // `{ a = 1 } = o`: the default is assigned to `a` (checked with a's type as its contextual type),
@@ -4469,13 +4474,17 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 if (compiler_options()->target < SCRIPT_TARGET_ES2015) {
                     ty_check_emit_helpers(current_checker, my inner_span, EMIT_HELPER_MAKE_TEMPLATE_OBJECT, errs);
                 }
-                expr_typecheck(my template_->tag, errs);
+                // (Explicit type arguments are the call's, as for a call: not an instantiation expression)
+                Expr const* tag = my template_->tag;
+                if (tag->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(tag)) {
+                    for_each (i, vec_spanned_type, &tag->generic_params->params) type_typecheck(&i->type, errs);
+                    tag = &tag->generic_params->expr;
+                }
+                expr_typecheck((Expr*)tag, errs);
                 // Resolving the call gives the substitutions their contextual types, so it comes before checking them
                 Checker* checker = current_checker;
                 LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);
                 Ty const* contextual = memo && memo->done ? memo->context : nullptr;
-                Expr const* tag = my template_->tag;
-                if (tag->tag == EXPR_GENERIC_PARAMS) tag = &tag->generic_params->expr;
                 ty_tagged_template_typecheck(checker, ty_expr_type(checker, tag), me, contextual, errs);
             }
             for_each (i, vec_expr, &my template_->substitutions) {
