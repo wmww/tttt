@@ -13445,6 +13445,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 // tsc's getNextJSDocCommentLocation takes the statement's JSDoc for the initializer of any of its
                 // declarations (getSingleVariableOfVariableStatement is the first, which is always there): each
                 // function gets the tags (their types go to the first)
+                // (The first one's `@type`: getJSDocCommentsAndTags of the statement's first declaration)
+                if (!list->data[0].binding.parent) jsdoc_apply_type_to_binding(&tags, &list->data[0].binding);
                 for_each (i, vec_initialized_binding, list) {
                     FunctionImpl* function = jsdoc_function_of(initialized_binding_value(i));
                     if (function) jsdoc_apply_function(p, &tags, function), hosts = true;
