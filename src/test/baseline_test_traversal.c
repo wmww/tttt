@@ -2834,7 +2834,10 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
             if (my call->optional_chain && after_callee[0] == '?' && after_callee[1] == '.') expr_compile_test_info(&my call->callable, ctx);
             else callee_compile_test_info(&my call->callable, ctx);
             // The specifier of `import("./a")` names the module (tsc's getSymbolAtLocation of a module name)
-            ModuleRef* ref = my call->callable.tag == EXPR_IDENTIFIER ? identifier_module_ref(&my call->callable.identifier) : nullptr;
+            // (`import<T>("./a")` too, TS1326)
+            Expr const* callee = &my call->callable;
+            if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+            ModuleRef* ref = callee->tag == EXPR_IDENTIFIER ? identifier_module_ref(&callee->identifier) : nullptr;
             SourceFile const* in_file = my inner_span.source;
             Symbol const* module = ref && in_file && in_file->scope ? binder_module_of_ref(in_file->scope->binder, ref) : ref ? ref->module : nullptr;
             if (module && vec_expr_size(&my call->args) && vec_expr_at(&my call->args, 0)->tag == EXPR_LITERAL) {

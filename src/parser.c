@@ -9179,6 +9179,18 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 ref->syntax = MODULE_REF_REQUIRE;
                 left_and_ret->call->callable.identifier.module_ref_ = ref;
             }
+        } else if (left_and_ret->call->callable.tag == EXPR_GENERIC_PARAMS && !optional_chain &&
+            left_and_ret->call->callable.generic_params->expr.tag == EXPR_IDENTIFIER &&
+            left_and_ret->call->callable.generic_params->expr.identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
+            vec_expr_size(&left_and_ret->call->args) &&
+            vec_expr_at(&left_and_ret->call->args, 0)->tag == EXPR_LITERAL &&
+            vec_expr_at(&left_and_ret->call->args, 0)->literal.tag == VALUE_STRING
+        ) {
+            // `import<T>("./a")` (TS1326) is an import call all the same (tsc's collectDynamicImportOrRequireOrJsDocImportCalls)
+            Expr const* arg = vec_expr_at(&left_and_ret->call->args, 0);
+            ModuleRef* ref = add_module_ref(&p, cstr_clone(arg->literal.string), arg->inner_span);
+            ref->syntax = MODULE_REF_DYNAMIC;
+            left_and_ret->call->callable.generic_params->expr.identifier.module_ref_ = ref;
         } else if (p.shared->source->is_js && expr_is_define_property_call(left_and_ret, nullptr) &&
             expr_is_exports_object(vec_expr_at(&left_and_ret->call->args, 0))
         ) {

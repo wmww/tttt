@@ -38952,8 +38952,8 @@ const baselines = {
     },
     'importCallExpressionWithTypeArgument': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'emitter.asyncGenerators.classMethods.es2015': {
         errors: true,

@@ -3040,10 +3040,12 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
 
 // `import("./a")`: a promise of the module (of what its `export =` names)
 static Ty const* dynamic_import_type(Checker* me, CallExpr const* call) {
-    if (call->callable.tag != EXPR_IDENTIFIER || call->callable.identifier.keyword != KEYWORD_IDENTIFIER_IMPORT) {
+    // (`import<T>("./a")` too: TS1326, typed all the same)
+    Expr const* callee = call->callable.tag == EXPR_GENERIC_PARAMS ? &call->callable.generic_params->expr : &call->callable;
+    if (callee->tag != EXPR_IDENTIFIER || callee->identifier.keyword != KEYWORD_IDENTIFIER_IMPORT) {
         return nullptr;
     }
-    ModuleRef const* ref = identifier_module_ref(&call->callable.identifier);
+    ModuleRef const* ref = identifier_module_ref(&callee->identifier);
     Ty const* module = ty_intrinsic(me, TY_ANY);
     if (ref && ref->module && !ref->module->is_shorthand_module) {
         module = ty_dynamic_import_module_type(me, ref->module, ref->span.source);
