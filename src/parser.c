@@ -3987,10 +3987,11 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                 jsdoc_keep_errors(&e);
                 parse_fail(&e);
             } else if ((tag.kind == JSDOC_TAG_TYPE || tag.kind == JSDOC_TAG_ENUM || tag.kind == JSDOC_TAG_EXTENDS ||
-                    tag.kind == JSDOC_TAG_IMPLEMENTS) && after < end && after > c &&
+                    tag.kind == JSDOC_TAG_IMPLEMENTS || tag.kind == JSDOC_TAG_THIS) && after < end && after > c &&
                 !memchr(c, '\n', (size_t)(after - c)) && *after != '@'
             ) {
-                // Braces may be omitted (tsc's parseJSDocTypeExpression(mayOmitBraces)): `@type object`, `@enum number`
+                // Braces may be omitted (tsc's parseJSDocTypeExpression(mayOmitBraces)): `@type object`, `@enum number`,
+                // `@this Node`
                 const char* type_start = after;
                 TypeNode type;
                 if (parse_jsdoc_bare_type(parent, &after, end, &type)) {
@@ -13787,6 +13788,14 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                     }
                 }
                 assignment->jsdoc_modifiers = jsdoc_modifiers(&tags);
+            } else if (statement->expr.tag == EXPR_BINARY_OP && binary_op_is_assignment(statement->expr.binary_op->op)) {
+                // A compound assignment's function (`F.prototype.m ??= function () {}`): tsc's getNextJSDocCommentLocation
+                // goes up from it through any assignment expression (isAssignmentExpression, compound ones too)
+                FunctionImpl* function = jsdoc_function_of(&statement->expr.binary_op->right);
+                if (function) {
+                    jsdoc_apply_function(p, &tags, function);
+                    hosts = true;
+                }
             }
             break;
         case STATEMENT_RETURN_EXPR:

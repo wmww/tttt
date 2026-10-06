@@ -52622,8 +52622,8 @@ const baselines = {
     },
     'thisPrototypeMethodCompoundAssignmentJs': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'thisTag1': {
         errors: true,
