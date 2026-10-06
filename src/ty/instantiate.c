@@ -660,6 +660,12 @@ static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper co
         } else {
             TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, member);
             results[i] = conditional_from_root(me, root, member, member_mapper);
+            // A member that stays deferred goes by the root's alias (tsc's getConditionalType: root.aliasSymbol with
+            // its arguments instantiated): `Awaited<T | Yadda>` is `Yadda | Awaited<T>`
+            if (results[i]->kind == TY_CONDITIONAL && !results[i]->alias && results[i]->conditional.root == root) {
+                Ty const* root_aliased = intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2);
+                if (root_aliased) results[i] = instantiate_alias(me, root_aliased, results[i], results[i]->conditional.mapper);
+            }
         }
         changed |= results[i] != member;
     }
@@ -881,9 +887,10 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
             // one had: `type W<O> = Extract<O, string>` declares W<O>, but W<X> is Extract<X, string>)
             // (Only one that goes by an alias asks: one without keeps none, as before)
             Ty const* root_aliased = ty->alias ? intern_get(&my links, (u64[]){ KEY_CONDITIONAL_ROOT_ALIAS, root->id }, 2) : nullptr;
-            if (root_aliased && ty->alias != root_aliased->alias) {
-                // (The alias arguments through the mapper the result was made from the root with: composing this one's
-                // mapper with the new one would instantiate every one of its targets, each time)
+            if (root_aliased) {
+                // (The alias arguments through the mapper the result was made from the root with, tsc's
+                // instantiateTypes(root.aliasTypeArguments, mapper): instantiating this one's own alias arguments, or
+                // composing its mapper with the new one, would instantiate whole types each time)
                 return instantiate_alias(me, root_aliased, ret, ret->conditional.mapper);
             }
             return instantiate_alias(me, ty, ret, mapper);

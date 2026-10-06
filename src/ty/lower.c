@@ -947,10 +947,25 @@ static TyConditionalOuter* collect_outer_params(Checker* me, TypeNode const* nod
     return outer;
 }
 
-static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node) {
+static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* node, TyList alias_args) {
     u64 key[2] = { KEY_CONDITIONAL_OUTER, root->id };
     if (intern_get(&my links, key, 2)) return;
     TyConditionalOuter* outer = collect_outer_params(me, node);
+    // An alias's body keeps the alias's type parameters it doesn't mention too (tsc's getTypeFromConditionalTypeNode
+    // filters by isTypeParameterPossiblyReferenced only without an alias): instantiation names a deferred instance by
+    // the root's alias with its arguments through the instance's mapper (instantiate.c), `C<X, number>`, not `C<X, U>`
+    if (!outer->unknown) {
+        TyBuf params = {0};
+        for (u32 i = 0; i < outer->params.len; i++) ty_buf_push(&params, outer->params.data[i]);
+        for (u32 i = 0; i < alias_args.len; i++) {
+            Ty const* arg = alias_args.data[i];
+            bool known = arg->kind != TY_TYPE_PARAM;
+            for (u32 j = 0; !known && j < params.len; j++) known = params.data[j] == arg;
+            if (!known) ty_buf_push(&params, arg);
+        }
+        if (params.len != outer->params.len) outer->params = ty_list_copy(me, params.data, params.len);
+        ty_buf_drop(&params);
+    }
     char const* block = node->ternary->enclosing_block;
     Ty const* check = root->conditional.check;
     if (block && check->kind == TY_TYPE_PARAM && check->param.symbol && span_valid(check->param.symbol->name_span)) {
@@ -3424,7 +3439,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                     *list = ty_list_copy(me, infers.data, infers.len);
                     *intern_slot(me, &my links, key, 2) = list;
                 }
-                conditional_set_outer(me, ret, node);
+                conditional_set_outer(me, ret, node, alias ? alias_args : (TyList){0});
             }
             ty_buf_drop(&infers);
             if (!alias || ret->kind != TY_CONDITIONAL) return ret;

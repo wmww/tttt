@@ -3594,11 +3594,7 @@ Ty const* ty_awaited_of_promise(Checker* me, Ty const* ty) {
 static Ty const* awaited_type_in(Checker* me, Ty const* ty, bool wrap, AwaitedFrame const* stack) {
     Symbol const* awaited = awaited_alias(me);
     if (awaited && ty->alias == awaited) return ty;
-    // (A union is awaited member by member: tsc's `Awaited<T | Yadda>` distributes to `Awaited<T> | Yadda`, its deferred
-    // members named by the alias; distribute_conditional() doesn't name them, which cost drizzle +25% instructions)
-    if (wrap && awaited && ty->kind != TY_UNION && awaited_type_needed(me, ty, awaited)) {
-        return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
-    }
+    if (wrap && awaited && awaited_type_needed(me, ty, awaited)) return ty_alias_instance(me, awaited, (TyList){ .data = &ty, .len = 1 });
     if (ty->kind == TY_UNION) {
         // `type T = string | Promise<T>` awaits T again (a deferred reference makes it an infinite structure)
         if (awaited_in_progress(stack, ty)) return awaited_cycle(me);
