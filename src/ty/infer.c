@@ -1944,7 +1944,8 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
     pass->state[i] = 1;
     TyList params = pass->sig->type_params;
     Ty const* constraint = ty_param_constraint(me, params.data[i]);
-    if (constraint && constraint != params.data[i]) {
+    // (Silent never, inference_mapper_no_default()'s nothing, fits any constraint)
+    if (constraint && constraint != params.data[i] && pass->results[i] != ty_intrinsic(me, TY_SILENT_NEVER)) {
         if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
             // (Only those it mentions, as tsc's non-fixing mapper infers them on demand: resolving the others first
             // would show them this one in progress, `D extends Dest<T>` while `T extends Transform<S>` resolves)
@@ -1974,7 +1975,20 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
 
 // The mapper for what has been inferred so far: common supertypes of the candidates, then defaults, then constraints
 // `fixing`: for the contextual type of a context-sensitive argument, which decides the type parameters it mentions
+static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, Inference* inf, bool fixing, bool no_default);
+
 TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing) {
+    return inference_mapper_impl(me, sig, inf, fixing, false);
+}
+
+// What has been inferred so far as a call nested in an argument sees it: type parameters without inferences are silent
+// never, which nothing is inferred from, the rest checked against their constraints like inference_mapper() (tsc's
+// getMapperFromContext(cloneInferenceContext(outerContext, InferenceFlags.NoDefault)))
+TyMapper const* inference_mapper_no_default(Checker* me, Signature const* sig, Inference* inf) {
+    return inference_mapper_impl(me, sig, inf, false, true);
+}
+
+static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, Inference* inf, bool fixing, bool no_default) {
     TyList params = sig->type_params;
     // (Of a type predicate, its type: tsc's isTypeParameterAtTopLevelInReturnType)
     TyPredicate const* predicate = signature_predicate(me, sig);
@@ -2004,6 +2018,12 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
     TyMapper const* mapper = inference_mapper_of(me, inf, params, results);
     for (u32 i = 0; i < params.len; i++) {
         if (inferred[i]) continue;
+        if (no_default) {
+            results[i] = ty_intrinsic(me, TY_SILENT_NEVER);
+            inferred[i] = true; // (Fits any constraint)
+            mapper = inference_mapper_of(me, inf, params, results);
+            continue;
+        }
         Ty const* fallback = ty_param_default(me, params.data[i]);
         if (fallback) inferred[i] = true; // (Only for the constraint check below)
         Ty const* nothing = ty_intrinsic(me, inf->any_default ? TY_ANY : TY_UNKNOWN_); // (tsc's getDefaultTypeArgumentType)

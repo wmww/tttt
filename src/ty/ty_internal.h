@@ -298,6 +298,7 @@ Ty const* inference_conditional_result(Checker* me, Inference* inf, u32 i);
 // What `inf` (over sig's type parameters) has inferred for them: call results, then defaults, then unknown; one that
 // doesn't satisfy its constraint is the constraint. `fixing`: for the contextual type of a context-sensitive argument
 TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* inf, bool fixing);
+TyMapper const* inference_mapper_no_default(Checker* me, Signature const* sig, Inference* inf);
 // `sig` with its type parameters replaced by `args` and dropped (tsc's getSignatureInstantiationWithoutFillingIn
 // TypeArguments), memoised
 Signature const* ty_signature_instantiation(Checker* me, Signature const* sig, TyList args);

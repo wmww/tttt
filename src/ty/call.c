@@ -507,6 +507,9 @@ typedef struct OuterInference {
     // (Cache of the non-fixing mapper, valid while the candidate count is `cached_count`)
     TyMapper const* cached_mapper;
     u64 cached_count;
+    // (Likewise of outer_inference_mapper())
+    TyMapper const* cached_no_default;
+    u64 cached_no_default_count;
 } OuterInference;
 
 static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper const* mapper);
@@ -570,16 +573,14 @@ Ty const* ty_instantiate_contextual_type(Checker* me, Ty const* contextual) {
     return ty_instantiate_contextual_type_for(me, contextual, false);
 }
 
-// What the outer call has inferred so far, the rest being silent never (which nothing is inferred from): tsc's
-// cloneInferenceContext(outerContext, InferenceFlags.NoDefault)
-static TyMapper const* outer_inference_mapper(Checker* me, OuterInference const* outer) {
-    TyList params = outer->sig->type_params;
-    Ty const** results = arena_new_n(&my arena, Ty const*, params.len ? params.len : 1);
-    for (u32 i = 0; i < params.len; i++) {
-        results[i] = inference_call_result(me, outer->inf, i, false);
-        if (!results[i]) results[i] = ty_intrinsic(me, TY_SILENT_NEVER);
-    }
-    return ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+// What the outer call has inferred so far, the rest being silent never (which nothing is inferred from), checked
+// against the constraints: tsc's getMapperFromContext(cloneInferenceContext(outerContext, InferenceFlags.NoDefault))
+static TyMapper const* outer_inference_mapper(Checker* me, OuterInference* outer) {
+    u64 count = inference_count(outer->inf);
+    if (outer->cached_no_default && outer->cached_no_default_count == count) return outer->cached_no_default;
+    outer->cached_no_default = inference_mapper_no_default(me, outer->sig, outer->inf);
+    outer->cached_no_default_count = count;
+    return outer->cached_no_default;
 }
 
 // What the contextual return type alone says about the type parameters (tsc's InferenceContext.returnMapper, from
@@ -1277,11 +1278,12 @@ static TyMapper const* infer_type_arguments(
             any_sensitive |= mode.skipped;
         } else if (return_mapper && !arg->spread && !arg->part_of_spread) {
             // What the return type says about the type parameters helps type the argument (a tuple, a literal). tsc
-            // instantiates the contextual type of each expression as it is asked for, so a function argument (whose
-            // parameters are annotated if it gets here) returns into the instantiated return type
+            // instantiates the contextual type of each expression as it is asked for (instantiateInstantiableTypes: a
+            // function type stays as written, its return expressions instantiated where they are looked at, and a call
+            // returned there infers from the raw type, the return mapper only in its own: `promise(() => new
+            // Promise(...))` against `Effect<A2>` infers nothing for Promise's T)
             Ty const* param_type = shape_type_at(&shape, i);
-            Ty const* context = !param_type ? nullptr : arg->expr->tag == EXPR_FUNCTION ?
-                ty_instantiate(me, param_type, return_mapper) : instantiate_instantiable(me, param_type, return_mapper);
+            Ty const* context = !param_type ? nullptr : instantiate_instantiable(me, param_type, return_mapper);
             // (tsc's contextual signature is the uninstantiated one, which decides whether its widening is reported)
             if (param_type && arg->expr->tag == EXPR_FUNCTION) ty_function_note_widening_context(me, arg->expr->function, param_type);
             // A call's own inference reads its contextual type as it is (tsc's inferTypeArguments: getContextualType,
