@@ -13548,12 +13548,12 @@ const baselines = {
     'fakeInfinity2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fakeInfinity3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'fallFromLastCase1': {
         errors: true,
@@ -25918,7 +25918,7 @@ const baselines = {
     'privacyGloFunc': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyGloGetter': {
         errors: true,
@@ -25958,7 +25958,7 @@ const baselines = {
     'privacyInterface': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privacyInterfaceExtendsClauseDeclFile': {
         errors: true,
@@ -29193,7 +29193,7 @@ const baselines = {
     'strictFunctionTypesErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictModeEnumMemberNameReserved': {
         errors: true,

@@ -442,6 +442,7 @@ void checker_drop(Checker* me) {
     poison_verify(me);
 #endif
     free(my deferred);
+    free(my painted_kept);
     // Not current while dropping: memos contain LazyTypes of their own, which mustn't look for slots in here anymore
     if (current_checker == me) checker_make_current(nullptr);
     lazy_slots_drop(&my lazy);

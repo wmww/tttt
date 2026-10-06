@@ -2293,6 +2293,14 @@ void declaration_diagnostics_check(SourceFile const* file, ErrorCtx* errs) {
     }
     symbol_chain_set_painted(nullptr, nullptr);
     symbol_chain_set_module_specifier(nullptr, nullptr);
+    Checker* checker = walk.checker;
+    for (u32 i = 0; i < walk.painted_count; i++) {
+        if (checker->painted_kept_count == checker->painted_kept_cap) {
+            checker->painted_kept_cap = checker->painted_kept_cap ? checker->painted_kept_cap * 2 : 8;
+            checker->painted_kept = realloc(checker->painted_kept, checker->painted_kept_cap * sizeof(Symbol const*));
+        }
+        checker->painted_kept[checker->painted_kept_count++] = walk.painted[i];
+    }
     free(walk.exported_locals);
     free(walk.painted);
     free(walk.painted_done);

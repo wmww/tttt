@@ -876,6 +876,11 @@ struct Checker {
     // Where its diagnostics go (ty_error_at()): its own while it checks its files (program_typecheck() merges them into
     // the program's), the program's otherwise. Only reported in the typecheck phase
     struct ErrorCtx* errs;
+    // What its declaration walks painted (declaration_diagnostics_check()), kept: tsc's isVisible stays set on them, so
+    // the suite's walk after emit names through a painted namespace (baseline_test_case.c)
+    struct Symbol const** painted_kept;
+    u32 painted_kept_count;
+    u32 painted_kept_cap;
     double check_ms; // How long program_typecheck() spent checking its files (tttt --time)
     u32 file_order; // The index (among the checked files) of the file it checks, for Error.once_order
     // What the walk of the file being checked meets and tsc checks after the file's statements, in that order (tsc's

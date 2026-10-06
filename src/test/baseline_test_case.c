@@ -985,6 +985,15 @@ BaselineTestCase run_baseline_test_case(
     walk_errs.parent = errs;
     errs->frozen = true;
     for (u32 c = 0; c < program_checker_count(program); c++) program_checker_at(program, c)->errs = &walk_errs;
+    // (After emit: what declaration emit painted is visible, see Checker.painted_kept)
+    u32 kept_count = 0;
+    for (u32 c = 0; c < program_checker_count(program); c++) kept_count += program_checker_at(program, c)->painted_kept_count;
+    Symbol const** kept = kept_count ? malloc(kept_count * sizeof(Symbol const*)) : nullptr;
+    for (u32 c = 0, at = 0; c < program_checker_count(program); c++) {
+        Checker const* checker = program_checker_at(program, c);
+        for (u32 j = 0; j < checker->painted_kept_count; j++) kept[at++] = checker->painted_kept[j];
+    }
+    symbol_chain_set_kept_painted(kept, kept_count);
     for_each (i, vec_baseline_test_file, &ret.files) {
         if (!i->source) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
@@ -994,6 +1003,8 @@ BaselineTestCase run_baseline_test_case(
         block_compile_test_info(&i->source->ast, &ret);
     }
     checker_make_current(program_get_checker(program));
+    symbol_chain_set_kept_painted(nullptr, 0);
+    free(kept);
     clear_compiler_options();
     for (u32 c = 0; c < program_checker_count(program); c++) program_checker_at(program, c)->errs = errs;
     errs->frozen = false;

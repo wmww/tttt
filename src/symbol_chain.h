@@ -65,6 +65,9 @@ bool symbol_has_visible_declarations(Symbol const* symbol);
 // Declaration emit's late painted declarations on this thread (null: none): a painted namespace is visible like an
 // exported one (tsc's addVisibleAlias sets its isVisible). `symbols` and `count` are read where they are each time
 void symbol_chain_set_painted(Symbol const* const* const* symbols, u32 const* count);
+// What declaration walks painted earlier (null: nothing), visible like what the current walk painted: tsc's isVisible
+// stays set once emit painted it, which the suite's types and symbols walk after emit sees
+void symbol_chain_set_kept_painted(Symbol const* const* symbols, u32 count);
 // How a module's file is named from where symbols are being named on this thread (tsc's getSpecifierForModuleSymbol,
 // with the declaration emitter's resolver host), which decides between the containers a symbol can be named through
 // (getSymbolChain's sortByBestName). Null (the default): by the file's path, as tsc's printer without a host does

@@ -957,7 +957,18 @@ static AccessMemo* access_memo_slot(Scope const* enclosing, Symbol const* symbol
     return &access_memo[hash % ACCESS_MEMO_SIZE];
 }
 
+static thread_local Symbol const* const* kept_painted;
+static thread_local u32 kept_painted_count;
+
+void symbol_chain_set_kept_painted(Symbol const* const* symbols, u32 count) {
+    kept_painted = symbols;
+    kept_painted_count = count;
+}
+
 static bool is_painted(Symbol const* symbol) {
+    for (u32 i = 0; i < kept_painted_count; i++) {
+        if (kept_painted[i] == symbol) return true;
+    }
     if (!painted_symbols) return false;
     for (u32 i = 0; i < *painted_count; i++) {
         if ((*painted_symbols)[i] == symbol) return true;

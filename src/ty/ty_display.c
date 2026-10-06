@@ -778,6 +778,8 @@ static void param_names_leave(TyDisplay d, u32 saved) {
     if (d.param_names) d.param_names->len = saved;
 }
 
+static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symbol);
+
 // tsc's trackExistingEntityName(): the first name of an entity name means the same where the type is printed
 static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csview first, u32 meaning) {
     // Unresolved names are an error type; type parameters and parameters in scope where they're printed (tsc checks
@@ -812,6 +814,14 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
     if (!d.enclosing) return true; // (A message's type: tsc has no enclosing declaration to check against)
     Symbol const* found = scope_resolve(d.enclosing, first, meaning);
     if (!found) return false;
+    if (!name_means_same(me, found, symbol)) return false;
+    // (and it must be accessible from there: a local of a namespace no visible declaration contains isn't, unless
+    // declaration emit painted it)
+    return symbol_accessibility_at(d.enclosing, found, meaning).kind == SYMBOL_ACCESSIBLE;
+}
+
+// Whether `found`, where the type is printed, is the `symbol` the written name resolved to
+static bool name_means_same(Checker* me, Symbol const* found, Symbol const* symbol) {
     if (same_symbol(me, found, symbol)) return true;
     // (Another alias of the same thing: `m4.d` written under `import m4 = require("./m")` in one file is reused in
     // another that imports the module as m4 too; or the thing itself, where an imported name is printed in the file
