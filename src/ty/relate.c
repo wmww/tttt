@@ -74,6 +74,10 @@ typedef struct RelationState {
     // down into their properties; doing that here made zod's deep-partial test run into the instantiation limits
     bool intersection_source;
     bool member_of_intersection_source;
+    // Reporting: a tuple source related as the array it extends (structured_related_members) is still named as the
+    // tuple where the explanation names the source (tsc relates the tuple reference itself)
+    Ty const* tuple_array_source;
+    Ty const* tuple_source;
     // The failure just reported heads the error itself (a weak type): no "not assignable" line for it
     bool head_reported;
     // The pairs assumed related while they're being compared (tsc's maybeKeys), and a hash index of them (tsc's
@@ -2300,7 +2304,8 @@ static Ternary props_related_impl(
         }
         if (missing_count) {
             cstr source_str, target_str;
-            display_pair(me, apparent_intersection(me, normalized_reference(me, source)), true,
+            Ty const* shown = source == st->tuple_array_source && st->tuple_source ? st->tuple_source : source;
+            display_pair(me, apparent_intersection(me, normalized_reference(me, shown)), true,
                 normalized_reference(me, target), &source_str, &target_str);
             if (missing_count == 1) {
                 cstr name = missing_prop_name(me, missing_prop);
@@ -4806,11 +4811,15 @@ static Ternary structured_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 ) {
     bool saved_source = st->intersection_source, saved_member = st->member_of_intersection_source;
+    Ty const* saved_array = st->tuple_array_source;
+    Ty const* saved_tuple = st->tuple_source;
     st->member_of_intersection_source = st->intersection_source;
     st->intersection_source = false;
     Ternary ret = structured_related_members(me, st, source, target, report, use_variances);
     st->intersection_source = saved_source;
     st->member_of_intersection_source = saved_member;
+    st->tuple_array_source = saved_array;
+    st->tuple_source = saved_tuple;
     return ret;
 }
 
@@ -5451,7 +5460,12 @@ static Ternary structured_related_members(
         ((target->kind == TY_REFERENCE && is_array_target(me, target->reference.target)) ||
             (!has_literal_length(me, target) && !has_numeric_props(me, target)))
     ) {
+        Ty const* tuple = source;
         source = tuple_as_array(me, source);
+        if (report) {
+            st->tuple_array_source = source;
+            st->tuple_source = tuple;
+        }
     }
 
     // A class or interface with a `this` type is a reference to itself (tsc: its declared type is one)
@@ -6718,6 +6732,7 @@ static bool check_related(
     st->intersection_target = false;
     st->intersection_source = false;
     st->member_of_intersection_source = false;
+    st->tuple_array_source = st->tuple_source = nullptr;
     st->maybe_keys = nullptr;
     st->maybe_next = st->maybe_heads = nullptr;
     st->maybe_count = st->maybe_cap = 0;
