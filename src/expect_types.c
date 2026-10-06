@@ -40,6 +40,14 @@ static AstWalk find_span(Expr const* expr, void* arg) {
         find->found = expr;
         return AST_WALK_STOP;
     }
+    // The name of a property access is the access to tsc's getTypeAtLocation (getRegularTypeOfExpression)
+    if (expr->tag == EXPR_PROPERTY && expr->property->form != PROPERTY_EXPR_BRACKET) {
+        Span name = expr_outer_span(&expr->property->prop);
+        if (span_start_ptr(name) == find->start && span_end_ptr(name) == find->end) {
+            find->found = expr;
+            return AST_WALK_STOP;
+        }
+    }
     return start > find->end || end < find->start ? AST_WALK_SKIP : AST_WALK_CONTINUE;
 }
 

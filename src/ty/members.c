@@ -4474,11 +4474,24 @@ Ty const* ty_param_constraint(Checker* me, Ty const* param) {
     return ty_param_constraint_is_circular(me, param) ? nullptr : constraint;
 }
 
+// The declaration of a type parameter's default: the first of its declarations that has one (tsc's
+// getResolvedTypeParameterDefault), a later interface declaration's `interface I<T, R = undefined>` too
+static GenericItem const* default_item(Ty const* param) {
+    GenericItem const* item = param->param.state->item;
+    if (item && item->fallback_explicit) return item;
+    Symbol const* symbol = param->param.symbol;
+    for (u32 i = 0; symbol && i < symbol->decl_count; i++) {
+        GenericItem const* other = symbol->decls[i].kind == SYMBOL_DECL_TYPE_PARAMETER ? symbol->decls[i].node : nullptr;
+        if (other && other->fallback_explicit) return other;
+    }
+    return nullptr;
+}
+
 bool ty_param_has_default(Ty const* param) {
     check(param->kind == TY_TYPE_PARAM);
     TyParamState const* state = param->param.state;
     if (state->clone_of) return ty_param_has_default(state->clone_of);
-    return state->item && state->item->fallback_explicit;
+    return state->item && default_item(param);
 }
 
 Ty const* ty_param_default(Checker* me, Ty const* param) {
@@ -4492,9 +4505,8 @@ Ty const* ty_param_default(Checker* me, Ty const* param) {
     }
     if (state->fallback_state == LAZY_STATE_NOT_STARTED) {
         state->fallback_state = LAZY_STATE_IN_FLIGHT;
-        if (state->item && state->item->fallback_explicit) {
-            state->fallback = ty_from_node(me, state->item->fallback, (LowerCtx){ .generic = true });
-        }
+        GenericItem const* item = state->item ? default_item(param) : nullptr;
+        if (item) state->fallback = ty_from_node(me, item->fallback, (LowerCtx){ .generic = true });
         // (tsc's getResolvedTypeParameterDefault: asked for while being resolved, it's circularConstraintType)
         if (state->fallback_circular) state->fallback = nullptr;
         state->fallback_state = LAZY_STATE_DONE;
