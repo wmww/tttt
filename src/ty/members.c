@@ -85,6 +85,8 @@ typedef struct MembersBuilder {
     // Members whose props have the same names in the same order as these will (an instantiation's source): their
     // props_by_name gives the order without sorting
     Members const* same_names;
+    // Only the members a class names syntactically, not the computed (late-bound) ones: see early_static_members()
+    bool skip_computed;
 } MembersBuilder;
 
 #define builder_push(me, field, value) do { \
@@ -960,7 +962,7 @@ static Prop* builder_add_class_prop(
     Ty const* key = nullptr;
     if (computed_key) {
         // Only a literal or unique symbol key names a member (tsc's late bound names), anything else is left out
-        if (!computed_key_may_name(computed_key)) return nullptr;
+        if (!computed_key_may_name(computed_key) || builder->skip_computed) return nullptr;
         bool is_number = false;
         key = ty_expr_type(me, computed_key);
         name = ty_property_name_of_key(me, key, &is_number);
@@ -1165,6 +1167,7 @@ static u32 computed_index_kind(Checker* me, ClassItem const* item, bool static_s
 // it; any counts as a number) makes an index signature for that key of every member of the class (tsc's
 // getIndexInfosOfIndexSymbol with hasLateBindableIndexSignature), unless the class declares one itself
 static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builder, ClassDecl const* class_decl, bool static_side) {
+    if (builder->skip_computed) return;
     static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
     bool computed[3] = {0}, readonly[3] = { true, true, true };
     for_each (i, vec_class_item, &class_decl->items) {
@@ -1549,6 +1552,22 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
             }
         }
     }
+}
+
+// A class whose static members have computed names: while their keys are evaluated, the static side already has the
+// members it names syntactically (tsc's getResolvedMembersOrExportsOfSymbol publishes the early-bound symbols before
+// late binding), so `static [A.p1] = 0` finds `A.p1`
+static void early_static_members(Checker* me, Ty const* ty, ClassDecl const* class_decl) {
+    bool computed = false;
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag == CLASS_ITEM_FIELD && i->field.is_static && i->field.computed_key) computed = true;
+        if (i->tag == CLASS_ITEM_METHOD && i->method.is_static && i->method.computed_key) computed = true;
+    }
+    TyObjectState* state = object_state(ty);
+    if (!computed || !state || state->members_state != LAZY_STATE_IN_FLIGHT || state->members) return;
+    MembersBuilder early = { .skip_computed = true };
+    builder_add_class_static_side(me, &early, ty, class_decl);
+    state->members = builder_finish(me, &early);
 }
 
 static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry);
@@ -2222,6 +2241,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
         case TY_DECLARED_CLASS_STATIC:
             for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
                 if (node->kind != SYMBOL_DECL_CLASS) continue;
+                early_static_members(me, ty, node->node);
                 builder_add_class_static_side(me, &builder, ty, node->node);
                 builder_late_bound_last(&builder, 0);
                 // `var C = class {}; C.x = 1`

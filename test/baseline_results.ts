@@ -3523,7 +3523,7 @@ const baselines = {
     'classDeclarationShouldBeOutOfScopeInComputedNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'classDeclaredBeforeClassFactory': {
         errors: true,
@@ -20828,7 +20828,7 @@ const baselines = {
     'mappedArrayTupleIntersections': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedToToIndexSignatureInference': {
         errors: true,

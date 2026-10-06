@@ -248,72 +248,16 @@ static Ty const* mapped_element_optionality(Checker* me, MappedInfo const* mappe
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
 
-// A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
-// the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
-// primitive (tsc's instantiateMappedType). Null if this isn't that
-static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
-    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
-    MappedInfo const* mapped = nullptr;
-    Ty const* variable = homomorphic_variable(me, ty, &mapped);
-    if (!variable) return nullptr;
-    // Like tsc (instantiateMappedType of the target with the combined mapper), an instance is looked at through its
-    // root: in `type DP<T> = { [P in keyof T]?: DP<T[P]> }`, the inner `DP<T[P]>` is an instance whose modifiers type
-    // is `T[P]`, and it still distributes once T[P] becomes `string | null`
-    // (The instance's mapper, then this one: composing them is only worth it when the result distributes, which is
-    // rare, and composing eagerly was 40% of valibot)
-    TyMapper const* outer = mapper;
-    Ty const* inner = root != ty ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable;
-    // Instantiating an object type eagerly only to find it stays one was a third of valibot
-    if (root != ty && !may_map_specially(me, inner, mapper, 0)) return nullptr;
-    Ty const* list = ty_instantiate(me, inner, mapper);
-    if (list == variable) return nullptr;
-    if (list->kind == TY_UNION || list->kind == TY_INTERSECTION) list = ty_reduced(me, list); // (tsc's instantiateMappedType)
-    u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
-    // (tsc's instantiateConstituent: of the deferred types only the instantiable non-primitive ones, an indexed access, a
-    // conditional or substitution type, are mapped; `keyof X`, a generic template literal or string mapping, and the
-    // error type, stay what they are)
-#define MAPS(t) (((t)->flags & mappable) && !((t)->flags & TYF_ERROR) && \
-    (!((t)->flags & TYF_DEFERRED) || (t)->kind == TY_INDEXED || (t)->kind == TY_CONDITIONAL || (t)->kind == TY_SUBSTITUTION || \
-        ((t)->flags & (TYF_TYPE_PARAM | TYF_OBJECT | TYF_INTERSECTION))))
-    // (The empty tuple is its tuple target, not a reference)
-    TupleShape const* empty = list->kind == TY_DECLARED ? ty_tuple_shape(list) : nullptr;
-    if (empty && !mapped->name_type) {
-        TupleShape new_shape = { .readonly = mapped->readonly ? mapped->readonly > 0 : empty->readonly };
-        return ty_tuple_target(me, &new_shape);
-    }
-    if (list->kind != TY_UNION && !MAPS(list)) return list;
-    // any for a T constrained to arrays or tuples maps to an array too: `{ [K in keyof T]: X }` with `T extends
-    // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent)
-    bool any_as_array = list->kind == TY_ANY && !mapped->name_type && mapped_variable_is_list(me, variable);
-    // (With an `as` clause, arrays and tuples map like any object)
-    if (list->kind != TY_UNION && !any_as_array && (list->kind != TY_REFERENCE || mapped->name_type)) return nullptr;
-    if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
-    if (any_as_array) {
-        TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
-        return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), mapped->readonly > 0);
-    }
-    if (list->kind == TY_UNION) {
-        // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
-        // name it was written with. Primitives map to themselves
-        u32 len = list->composite.types.len;
-        Ty const** parts = malloc(sizeof(Ty const*) * len);
-        panic_if(!parts, "out of memory");
-        for (u32 i = 0; i < len; i++) {
-            Ty const* part = list->composite.types.data[i];
-            parts[i] = MAPS(part) ? ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, part)) : part;
-        }
-        Ty const* alias_buf[16];
-        TyList alias_args = instantiate_alias_args(me, ty, outer, alias_buf);
-        Ty const* ret = ty_union(me, parts, len, ty->alias, alias_args);
-        free(parts);
-        return ret;
-    }
+// What a homomorphic mapped type makes of an array or a tuple (tsc's instantiateMappedArrayType and
+// instantiateMappedTupleType), null for anything else
+static Ty const* mapped_over_array_or_tuple(
+    Checker* me, Ty const* root, MappedInfo const* mapped, Ty const* variable, TyMapper const* mapper, Ty const* list
+) {
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
         TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
         return ty_array(me, mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), true), readonly);
     }
-#undef MAPS
     if (!ty_is_tuple(list)) return nullptr;
     TupleShape const* shape = list->reference.target->declared.tuple;
     TyList elements = ty_reference_args(me, list);
@@ -373,6 +317,91 @@ done:
         free(flags);
     }
     return ret;
+}
+
+// A homomorphic mapped type (`{ [P in keyof T]: X }`) instantiated with an array or tuple for T is an array or tuple of
+// the template, not an object with the array methods mapped, with a union for T a union, and with a primitive for T the
+// primitive (tsc's instantiateMappedType). Null if this isn't that
+static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMapper const* mapper) {
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    MappedInfo const* mapped = nullptr;
+    Ty const* variable = homomorphic_variable(me, ty, &mapped);
+    if (!variable) return nullptr;
+    // Like tsc (instantiateMappedType of the target with the combined mapper), an instance is looked at through its
+    // root: in `type DP<T> = { [P in keyof T]?: DP<T[P]> }`, the inner `DP<T[P]>` is an instance whose modifiers type
+    // is `T[P]`, and it still distributes once T[P] becomes `string | null`
+    // (The instance's mapper, then this one: composing them is only worth it when the result distributes, which is
+    // rare, and composing eagerly was 40% of valibot)
+    TyMapper const* outer = mapper;
+    Ty const* inner = root != ty ? ty_instantiate(me, variable, ty->anonymous.mapper) : variable;
+    // Instantiating an object type eagerly only to find it stays one was a third of valibot
+    if (root != ty && !may_map_specially(me, inner, mapper, 0)) return nullptr;
+    Ty const* list = ty_instantiate(me, inner, mapper);
+    if (list == variable) return nullptr;
+    if (list->kind == TY_UNION || list->kind == TY_INTERSECTION) list = ty_reduced(me, list); // (tsc's instantiateMappedType)
+    u32 const mappable = TYF_ANY | TYF_UNKNOWN | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_OBJECT | TYF_INTERSECTION;
+    // (tsc's instantiateConstituent: of the deferred types only the instantiable non-primitive ones, an indexed access, a
+    // conditional or substitution type, are mapped; `keyof X`, a generic template literal or string mapping, and the
+    // error type, stay what they are)
+#define MAPS(t) (((t)->flags & mappable) && !((t)->flags & TYF_ERROR) && \
+    (!((t)->flags & TYF_DEFERRED) || (t)->kind == TY_INDEXED || (t)->kind == TY_CONDITIONAL || (t)->kind == TY_SUBSTITUTION || \
+        ((t)->flags & (TYF_TYPE_PARAM | TYF_OBJECT | TYF_INTERSECTION))))
+    // (The empty tuple is its tuple target, not a reference)
+    TupleShape const* empty = list->kind == TY_DECLARED ? ty_tuple_shape(list) : nullptr;
+    if (empty && !mapped->name_type) {
+        TupleShape new_shape = { .readonly = mapped->readonly ? mapped->readonly > 0 : empty->readonly };
+        return ty_tuple_target(me, &new_shape);
+    }
+    if (list->kind != TY_UNION && !MAPS(list)) return list;
+    // any for a T constrained to arrays or tuples maps to an array too: `{ [K in keyof T]: X }` with `T extends
+    // readonly unknown[]` is `X[]` for any (tsc's instantiateConstituent)
+    bool any_as_array = list->kind == TY_ANY && !mapped->name_type && mapped_variable_is_list(me, variable);
+    // (With an `as` clause, arrays and tuples map like any object)
+    if (list->kind != TY_UNION && !any_as_array && ((list->kind != TY_REFERENCE && list->kind != TY_INTERSECTION) || mapped->name_type)) return nullptr;
+    if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
+    if (any_as_array) {
+        TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
+        return ty_array(me, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), mapped->readonly > 0);
+    }
+    if (list->kind == TY_UNION) {
+        // Distributes over a union (tsc's mapTypeWithAlias): `Mutable<A | B>` is `Mutable<A> | Mutable<B>` by the
+        // name it was written with. Primitives map to themselves
+        u32 len = list->composite.types.len;
+        Ty const** parts = malloc(sizeof(Ty const*) * len);
+        panic_if(!parts, "out of memory");
+        for (u32 i = 0; i < len; i++) {
+            Ty const* part = list->composite.types.data[i];
+            parts[i] = MAPS(part) ? ty_instantiate(me, root, ty_mapper_with(me, mapper, variable, part)) : part;
+        }
+        Ty const* alias_buf[16];
+        TyList alias_args = instantiate_alias_args(me, ty, outer, alias_buf);
+        Ty const* ret = ty_union(me, parts, len, ty->alias, alias_args);
+        free(parts);
+        return ret;
+    }
+    // An intersection of arrays and tuples maps each of them (tsc's isArrayOrTupleOrIntersection)
+    if (list->kind == TY_INTERSECTION && !mapped->name_type) {
+        TyList members = list->composite.types;
+        bool lists = true;
+        for (u32 i = 0; i < members.len && lists; i++) lists = ty_is_array(me, members.data[i]) || ty_is_tuple(members.data[i]);
+        if (!lists) return nullptr;
+        Ty const** parts = malloc(sizeof(Ty const*) * members.len);
+        panic_if(!parts, "out of memory");
+        Ty const* ret = nullptr;
+        u32 i = 0;
+        for (; i < members.len; i++) {
+            // (An array's elements are the template with T the array, a tuple's T[K] with T the intersection)
+            Ty const* member = members.data[i];
+            TyMapper const* member_mapper = ty_is_array(me, member) ? ty_mapper_with(me, mapper, variable, member) : mapper;
+            parts[i] = mapped_over_array_or_tuple(me, root, mapped, variable, member_mapper, member);
+            if (!parts[i]) break;
+        }
+        if (i == members.len) ret = ty_intersection(me, parts, members.len, nullptr, (TyList){0});
+        free(parts);
+        return ret;
+    }
+#undef MAPS
+    return mapped_over_array_or_tuple(me, root, mapped, variable, mapper, list);
 }
 
 // An object literal's type (ty_object_literal_of()) has its members already, and doesn't know which type parameters
