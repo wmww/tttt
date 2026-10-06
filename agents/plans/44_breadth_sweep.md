@@ -71,11 +71,14 @@ Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless sai
 -p DIR`). Packages = sweep packages affected. Ordered by value for effort within each group; **do the small ones first**,
 one commit each, `./sweep.py` before/after.
 
-### From the versioned packages (2026-10-05)
-Most mirror a latest package's open cause: node/v22, v24, v25 (node's TS2722/TS2345/TS2769/TS7006; v22/v24 add
-`stream.pipeline(function*(){...}, async function*(source){...})` overloads where `source` stays unknown, TS18046,
-then TS2339 'then' on never: generic overloads with context-sensitive generator arguments, the inference owner's), react-redux/v5, v6 (like react-redux's TS2741), ember/v3 (observable-tests TS2615/TS2578
-like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType, fixed e207f80c: re-check), chai/v4 (TS2769 at chai-tests 1777, 1787: not investigated).
+### From the versioned packages (2026-10-05; updated 2026-10-06 agent B)
+node, node/v22, v24, v25 all match now (fixed: the inference constraint pass, the typeof-operand `as` parse, optional
+callee effects, intersection constraints, regular literal arguments, the target conditional's substituted check type).
+Left: react-redux/v5, v6 (like react-redux's TS2741, union order), ember/v3 (observable-tests TS2615/TS2578 like ember's),
+d3-array/v2 (re-check), chai/v4 (TS2769 at chai-tests 1777, 1787: `deepInclude(new Map([...]), { a: 1 })` infers T =
+string for `readonly T[] | ReadonlySet<T> | ReadonlyMap<any, T>`: Map is related to ReadonlySet structurally, whose
+forEach/has give K = string, and the first candidate wins (getSupertypeOrUnion): candidate order follows union member
+order, i.e. creation order. Same in latest chai at 1418, 1428).
 
 ### Small (1-10 lines each)
 - **TS2303 on the import instead of the `export =` of a self-importing module** (koa-webpack, react-loadable;
@@ -113,6 +116,11 @@ like ember's), d3-array/v2 (d3-array's TS7006 was the skip-round anyFunctionType
   variances (TTTT_DUMP_VARIANCES: #2/#3 reliable invariant in tttt; tsc's not dumped yet, use ./tscinstcount.js
   VARIANCES=1). Repro: /tmp-style dir with a tsconfig `paths` to DT's react/relay-runtime, importing
   react-relay/relay-hooks/EntryPointTypes (see this commit's message).
+- **loadable__component** (TS18046 `props` unknown): `loadable(loader, { cacheKey: props => props.foo })` against
+  an overload that requires `resolveComponent` first: the arrow is typed for good under the failing overload (tsc's
+  first pass skips the context-sensitive member, the literal lacks resolveComponent, the overload is out). Repro:
+  two overloads `lf<P, M>(fn: (p: P) => Promise<M>, o: { resolveComponent; cacheKey?(p: P) })` and
+  `lf<P>(fn: (p: P) => Promise<{ default: P }>, o?: { cacheKey?(p: P) })`. Same family as the bullet above (plan 38).
 - Not investigated: google-apps-script (property named `''`), fabric's second `Image`, kefir; d3-tip and dynmap as
   above. `./sweep.py --last -k ...` lists each.
 
@@ -127,7 +135,7 @@ as `typeof x`. tttt's side: `tttt --expect-types SPANS` prints the regular type 
 parameters, binding elements: `DECLARATION_KINDS`) aren't compared: they'd need getTypeAtLocation of declarations.
 **Compared with tsc 5.8, not with the comment** (DT's CI runs TS 5.9+/7, the comments often list both orders with `||`).
 
-First run 68312 / 68640 (99.5%); after this session's fixes **68416 (99.7%), 2637 / 2703 packages all match**. Fixed:
+First run 68312 / 68640 (99.5%); after this session's fixes **68416 (99.7%), 2637 / 2703 packages all match**. After the 2026-10-06 fan-out (agent B's part): 68483 (99.8%), 2640 packages; sweep 8584 / 8595 match, spurious 10. Fixed:
 a merged interface's default from a later declaration (node's AsyncIterator), `G` through an import keeps alias
 arguments `[]` for unions (ty_realias), an alias of an alias of a homomorphic mapped type (lodash's PartialObject), a
 distribution that changes nothing is the union itself (underscore's `keyof X`), assertions through a property of an
@@ -165,6 +173,25 @@ intersection (assert.strict.equal), `${Enum}` property annotations made at the i
   but not a union), d3-dispatch `never[]` vs `never`, `[value: number] | [value: number]` (node test.ts: tsc keeps two
   identical-looking tuples, labels differ in identity), secure-password / webidl-conversions `typeof X.y` where tsc
   prints the bare `typeof y` without an enclosing declaration (5).
+- **Union order, 135 assertions / ~55 packages** (`union order` + `order (same tokens)`): creation order. chrome is 42
+  of them: its enums' string literals; ``folderType?: `${FolderType}` `` is right now except `"other"`, made earlier
+  somewhere in chrome's 15k-line index.d.ts by tttt and not by tsc; `"start_page"` the other way. Trace with a probe
+  that cuts chrome down. tsc asks for *every* property signature's type in checkPropertySignature; tttt only for
+  literal and template annotations (interface_member_typecheck: doing all moved 5 suite tests both ways, variance
+  measurement order). Others: xmpp__connection 7, yargs (3 versions) 12, postman-collection 4, formidable 4.
+- Done 2026-10-06 (agent B, 68416 -> 68483): chillout (rest arguments re-typed each inference round), node stream
+  (the constraint pass resolved D before T: not plan 47 after all), yargs `Color` (distribution maps over the union's
+  origin; now only a property-order mismatch), conventional-changelog-config-spec (namespace import further down an
+  alias chain; now union order inside), d3-dispatch (contextual rest parameter `never` stays), secure-password /
+  webidl-conversions (bare `typeof VALID`), es-abstract / conventional-commits-parser (fixed by then).
+- **Alias/display singles left**: core-object `MethodNames<{...}>` and webpack-config-utils `DefinedObjKeys<...>`
+  are the instantiate_inner() TY_INDEXED HACK (an indexed access over a union index keeps its alias except for unions
+  of unit keys): dropping the exception still costs type-fest +2.4% instructions (measured 2026-10-06), a fix needs
+  the aliased key union to share the mapped-type work with the plain one. redux-saga-test-engine: `@redux-saga/types`
+  isn't installed, so Effect is unresolved and tsc reprints the annotation's type arguments, expanding the
+  inaccessible local alias ThrowErrorKey (the mustache-express class, low value). `[value: number] | [value: number]`
+  (node test.ts x4): tsc's tuple targets are keyed by the named member *declarations* (getTupleTargetType), tttt's
+  TupleShape by label atoms: a design change for 4 assertions.
 - **Inference singles**: frida-gum (NativeFunction's return from a tuple), function-bind (`new () => Foo` vs `new
   (...args: readonly unknown[]) => Foo`), convict, redux-promise-listener (`AsyncFunction<unknown>` vs `<AnyAction>`),
   raphael (`[]` vs a huge mapped object), underscore NonIntersecting (union of records vs alias).
