@@ -3338,20 +3338,18 @@ static Ty const* apparent_literal_context(Checker* me, Ty const* contextual) {
         return apparent->kind == TY_INTRINSIC && (apparent->flags & TYF_UNKNOWN) ? contextual : apparent;
     }
     if (contextual->kind == TY_INTERSECTION && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-        // tsc's getApparentTypeOfIntersectionType: each member's apparent type (getTypeWithThisArgument with
-        // needApparentType), so `T & { prop: boolean }` with T constrained to an error type is any
+        // tsc's getApparentTypeOfIntersectionType is the intersection of each member's apparent type. The properties'
+        // contexts already take a type variable member as its constraint (intersection_prop_context()), so only what
+        // that intersection absorbs into is left: a member whose constraint is any (an unresolved one) makes it any,
+        // `T & { prop: boolean }` with `T extends Missing` widens `prop: true`. (Building the intersection here costs:
+        // xstate +2.4% instructions)
         TyList types = contextual->composite.types;
-        TyBuf parts = {0};
-        bool changed = false;
         for (u32 i = 0; i < types.len; i++) {
-            Ty const* part = types.data[i];
-            Ty const* apparent = is_contextual_type_variable(part) ? ty_apparent_type(me, part) : part;
-            changed |= apparent != part;
-            ty_buf_push(&parts, apparent);
+            if (!is_contextual_type_variable(types.data[i])) continue;
+            Ty const* apparent = ty_apparent_type(me, types.data[i]);
+            if (apparent->flags & TYF_ANY) return apparent;
         }
-        Ty const* ret = changed ? ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}) : contextual;
-        ty_buf_drop(&parts);
-        return ret;
+        return contextual;
     }
     if (contextual->kind != TY_UNION || (contextual->flags & TYF_BOOLEAN)) return contextual;
     bool primitive = false;
