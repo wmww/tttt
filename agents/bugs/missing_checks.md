@@ -53,9 +53,7 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 - **Iteration**: TS2489/TS2490 (iterator without `next`/`value`), TS2763-2765 (iterator next-type mismatches);
   generator next types aren't inferred from `yield` uses (tsc's `nextTypes`).
 - **Modules**: exports in non-module containers dropped silently (`scope_add_port()`, TODO TS1194); `import { type
-  require }` isn't type-only for TS2441; typeOnlyMerge3 (an import merged with a namespace of the same name is TS2440
-  and two symbols in tsc, one in tttt, so `symbol_type_only_declaration` stops at the merged value: TS1362 missing);
-  duplicatePackage_globalMerge prints TS2306 paths as `/node_modules/...` (tsc `/tests/node_modules/...`); a nested
+  require }` isn't type-only for TS2441; duplicatePackage_globalMerge prints TS2306 paths as `/node_modules/...` (tsc `/tests/node_modules/...`); a nested
   `declare module "m"` gets TS2435 but is still bound as a global ambient module (tsc: a local namespace).
 - **TS2303**: pushTypeGetTypeOfAlias (`exports.blah = exports.someProp`, see JavaScript below; the TS2303 there is
   getTypeOfAlias's type circularity through the module's type, not alias resolution), exportAsNamespaceConflict (an

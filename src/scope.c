@@ -3241,13 +3241,22 @@ Symbol const* symbol_for_meaning(Symbol const* me, u32 meaning) {
     return nullptr;
 }
 
-static PortItem const* type_only_declaration_at(Symbol const* me, int depth);
+static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Symbol const** named);
 
+// (A merge with a value along the chain makes it no type-only alias: tsc's getSymbolFlags with
+// excludeTypeOnlyMeanings collects the meanings of every alias it passes)
 PortItem const* symbol_type_only_declaration(Symbol const* me) {
-    return type_only_declaration_at(me, 0);
+    return type_only_declaration_at(me, 0, nullptr);
 }
 
-static PortItem const* type_only_declaration_at(Symbol const* me, int depth) {
+// tsc's getTypeOnlyAliasDeclaration: each alias of the chain is marked by its immediate target's, merged with a value
+// or not
+PortItem const* symbol_type_only_declaration_naming(Symbol const* me, Symbol const** named) {
+    *named = nullptr;
+    return type_only_declaration_at(me, 0, named);
+}
+
+static PortItem const* type_only_declaration_at(Symbol const* me, int depth, Symbol const** named) {
     for (; me && depth < ALIAS_CHAIN_MAX; depth++) {
         if (!(my flags & SYMBOL_ALIAS) || !my alias) return nullptr;
         if (!my alias->item) {
@@ -3260,13 +3269,21 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth) {
         }
         symbol_resolve_alias((Symbol*)me); // (what sets source_symbol)
         PortItem const* item = my alias->item;
-        if (item->type_only) return item;
-        if (my alias->type_only_star) return my alias->type_only_star;
+        if (item->type_only) {
+            if (named) *named = item->symbol;
+            return item;
+        }
+        if (my alias->type_only_star) {
+            // (What the star brings under the name: tsc's getTypeOnlyAliasDeclaration looks it up in the exports of the
+            // module with the `export type *`)
+            if (named) *named = item->source_symbol;
+            return my alias->type_only_star;
+        }
         if (item->tag == PORT_IMPORT_ALIAS) {
             // `import A = a.B`: type-only if a part of the name came through a type-only declaration (tsc marks the
             // alias while resolving the entity name)
             for_each (i, vec_symbol_cptr, &item->alias_path_symbols) {
-                PortItem const* found = type_only_declaration_at(*i, depth + 1);
+                PortItem const* found = type_only_declaration_at(*i, depth + 1, named);
                 if (found) return found;
             }
             return nullptr;
@@ -3279,7 +3296,7 @@ static PortItem const* type_only_declaration_at(Symbol const* me, int depth) {
             next = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
         }
         me = next;
-        if (me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
+        if (!named && me && me->flags & SYMBOL_VALUE) return nullptr; // Merged with a value along the way
     }
     return nullptr;
 }

@@ -49891,7 +49891,7 @@ const baselines = {
         types: true,
     },
     'typeOnlyMerge3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -430,10 +430,10 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
     for (Scope const* scope = names; scope; scope = scope->parent) {
         if (scope->ambient) return;
     }
-    PortItem const* item = symbol_type_only_declaration(found);
+    Symbol const* named = nullptr;
+    PortItem const* item = symbol_type_only_declaration_naming(found, &named);
     // (what the type-only declaration names has to be a value: a merge further down the chain may be what is)
-    // (An `export type *` has no symbol: what it brings is the name itself)
-    Symbol const* named = item && item->symbol ? item->symbol : found;
+    if (!named) named = found;
     if (!item || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) return;
     bool exported = port_item_is_export(item);
     Error* error = error_ctx_error_d(errs, identifier_expr_name(me), exported ? 1362 : 1361, "'", identifier_expr_name(me), "' cannot be used as a value "

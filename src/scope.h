@@ -380,6 +380,8 @@ Symbol* symbol_resolve_alias(Symbol* me);
 // tsc's getTypeOnlyAliasDeclaration(): the nearest `import type`/`export type` (or `type` specifier) along the chain of
 // aliases that ends in the symbol, if any. What it names can't be used as a value
 PortItem const* symbol_type_only_declaration(Symbol const* me);
+// Also what the type-only declaration names, whose meaning decides whether a value use is an error (null if `me` itself)
+PortItem const* symbol_type_only_declaration_naming(Symbol const* me, Symbol const** named);
 // tsc's addTypeOnlyDeclarationRelatedInfo: TS1376/TS1377 on the type-only import or export (expr.c)
 void port_item_add_type_only_related(Error* error, PortItem const* item, csview name);
 // Member of a namespace, enum or module (`export *` included), null if there is none

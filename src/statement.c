@@ -2820,9 +2820,10 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
     Symbol* symbol = scope_resolve(names, id.sv, SYMBOL_ANY_MEANING);
     if (!symbol || symbol->is_placeholder) return;
     // (tsc's getTypeOnlyAliasDeclaration(symbol, Value): only when what it names is a value)
-    PortItem const* type_only = symbol_type_only_declaration(symbol);
+    Symbol const* named_by = nullptr;
+    PortItem const* type_only = symbol_type_only_declaration_naming(symbol, &named_by);
     if (type_only) {
-        Symbol* named = type_only->symbol ? type_only->symbol : symbol;
+        Symbol* named = named_by ? (Symbol*)named_by : symbol;
         if (named->flags & SYMBOL_ALIAS) named = symbol_resolve_alias(named);
         if (!named || !(symbol_resolved_flags(named) & SYMBOL_VALUE)) type_only = nullptr;
     }
