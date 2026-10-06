@@ -453,8 +453,13 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             // A type literal (an interface's body is checked by interface_decl_typecheck())
             interface_typecheck(&my interface, errs);
             // Its type is made once its members are walked, before the declaration it annotates resolves its type (tsc's
-            // checkTypeLiteral), which decides union order: `{ a: string } | "xyz"`
-            ty_of_node(me);
+            // checkTypeLiteral), which decides union order: `{ a: string } | "xyz"`. An alias's body is the alias's type
+            // (`type Box = { content?: Foo | Box }` makes Foo first)
+            if (me == current_checker->alias_literal_body) {
+                ty_declared_type_of(current_checker, current_checker->alias_literal_symbol);
+            } else {
+                ty_of_node(me);
+            }
             // tsc's checkMappedType: a mapped type without a type (reportImplicitAny)
             if (vec_interface_member_size(&my interface.members) &&
                 vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED &&

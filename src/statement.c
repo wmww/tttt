@@ -279,7 +279,7 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
     // tsc's checkTypeReferenceNode resolves every reference it walks. When the reference is the body, that is the alias's
     // own type, which lowers it in the alias's context (a deferred reference, the alias name)
     // A type literal body likewise: the walk below makes the types of the literals it meets (tsc's checkTypeLiteral)
-    if (my symbol && my type.tag == TYPE_INTERFACE) ty_declared_type_of(current_checker, my symbol);
+    // (A type literal body is made by the walk below once its members are walked, as the alias's type)
     if (my symbol && my type.tag == TYPE_IDENTIFIER) {
         CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my type.identifier));
         ty_declared_type_of(current_checker, my symbol);
@@ -297,7 +297,15 @@ void type_decl_typecheck(TypeDecl* me, ErrorCtx* errs) {
         }
     }
     current_checker->alias_body_walks++;
+    void const* saved_body = current_checker->alias_literal_body;
+    Symbol const* saved_symbol = current_checker->alias_literal_symbol;
+    if (my symbol && my type.tag == TYPE_INTERFACE) {
+        current_checker->alias_literal_body = &my type;
+        current_checker->alias_literal_symbol = my symbol;
+    }
     type_typecheck(&my type, errs);
+    current_checker->alias_literal_body = saved_body;
+    current_checker->alias_literal_symbol = saved_symbol;
     current_checker->alias_body_walks--;
     // A union, intersection or tuple body is made once the walk has met its members (tsc's checkUnionOrIntersectionType
     // and checkTupleType ask getTypeFromTypeNode, the alias's type): `type Node = A | B` is older than the interface

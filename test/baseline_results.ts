@@ -28913,7 +28913,7 @@ const baselines = {
     'spreadObjectNoCircular1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadObjectPermutations(exactoptionalpropertytypes=false)': {
         errors: true,
