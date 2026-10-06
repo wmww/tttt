@@ -3133,8 +3133,28 @@ static Ternary each_related(Checker* me, RelationState* st, TyList sources, Ty c
     ) {
         fresh = st->fresh_union->composite.types;
     }
+    // Many unions are mappings of one another, or a union distributed over an intersection with it (`Node & X` is
+    // `N1 & X | N2 & X | ...`): members at the same index, modulo the target's length, are tried first (tsc's
+    // eachTypeRelatedToType). An undefined the source doesn't start with is left out of the target for that, as
+    // optionality adds it (getUndefinedStrippedTargetIfNeeded)
+    TyList corresponding = {0};
+    if (target->kind == TY_UNION && sources.len) {
+        corresponding = target->composite.types;
+        if (!(sources.data[0]->flags & TYF_UNDEFINED) && (corresponding.data[0]->flags & TYF_UNDEFINED)) {
+            corresponding.data++;
+            corresponding.len--;
+        }
+        if (!corresponding.len || sources.len < corresponding.len || sources.len % corresponding.len) corresponding = (TyList){0};
+    }
     for (u32 i = 0; i < sources.len; i++) {
         Ty const* member = fresh.len ? ty_regular(me, fresh.data[i]) : sources.data[i];
+        if (corresponding.len) {
+            Ternary related = is_related_to_side(me, st, member, corresponding.data[i % corresponding.len], false, 0);
+            if (related) {
+                result &= related;
+                continue;
+            }
+        }
         Ternary related = is_related_to_side(me, st, member, target, report, 2);
         if (!related) return TERNARY_FALSE;
         result &= related;

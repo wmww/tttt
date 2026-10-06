@@ -1889,8 +1889,8 @@ Ty const* inference_call_result_fallback(Checker* me, Inference* inf, u32 i, boo
         if (fallback) *fallback = co;
         if (co->flags & (TYF_NEVER | TYF_ANY)) return contra;
         bool fits_some = false;
-        for (u32 j = 0; j < param->contra_len; j++) {
-            fits_some |= ty_is_related(me, co, param->contra[j], TY_RELATION_ASSIGNABLE);
+        for (u32 j = 0; j < param->contra_len && !fits_some; j++) {
+            fits_some = ty_is_related(me, co, param->contra[j], TY_RELATION_ASSIGNABLE);
         }
         if (!fits_some) return contra;
         for (u32 j = 0; j < inf->len; j++) {
