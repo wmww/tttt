@@ -51147,8 +51147,8 @@ const baselines = {
     },
     'checkExportsObjectAssignPrototypeProperty': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'checkJsdocOnEndOfFile': {
         errors: true,

@@ -153,6 +153,9 @@ typedef struct FunctionImplRare {
     // A parenthesized property value `a: (function () {})`: this_literal says whose property it is, but tsc's
     // getContainingObjectLiteral doesn't see through the parentheses (no contextual `this`)
     bool this_literal_parenthesized;
+    // prototype_of comes from an `Object.defineProperty(F.prototype, "x", {...})` descriptor this is a function of:
+    // `this.y = v` in it still declares y in the descriptor (tsc's bindThisPropertyAssignment: the literal's members)
+    bool prototype_descriptor;
     // JavaScript: the name an anonymous function expression is called by where it is written (tsc's getAssignedName:
     // the variable, property or binding element it is directly the value of, the left of `=`), see mark_assigned_name()
     Span assigned_name;

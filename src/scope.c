@@ -5329,7 +5329,11 @@ void scope_add_this_declaration(Scope* me, Expr* access, TypeNode const* jsdoc_t
 // (declareSymbol's isReplaceableByMethod returns that one). False if `function` isn't such a method
 static bool add_this_literal_member(Scope* me, FunctionImpl* function, Span name, Expr* left) {
     Expr const* literal = function_impl_rare(function)->this_literal;
-    if (!literal || literal->tag != EXPR_OBJECT || function_impl_rare(function)->prototype_of) return false;
+    if (!literal || literal->tag != EXPR_OBJECT ||
+        (function_impl_rare(function)->prototype_of && !function_impl_rare(function)->prototype_descriptor)
+    ) {
+        return false;
+    }
     ObjectExprItem const* own = nullptr;
     SymbolTable* table = nullptr;
     for_each (i, vec_object_expr_item, &literal->object) {
