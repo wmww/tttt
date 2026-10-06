@@ -13647,8 +13647,8 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                 if (function) {
                     jsdoc_apply_function(p, &tags, function);
                     hosts = true;
-                } else if (assignment->right.tag == EXPR_CLASS_DECL && !expr_is_perenthisized(&assignment->right)) {
-                    jsdoc_apply_class(p, &tags, assignment->right.class_decl);
+                } else if (assigned->tag == EXPR_CLASS_DECL && !expr_is_perenthisized(assigned)) {
+                    jsdoc_apply_class(p, &tags, assigned->class_decl);
                     class_host = true;
                 } else {
                     // The declared type of what the assignment declares (`this.x`, `exports.x`, `module.exports`)
