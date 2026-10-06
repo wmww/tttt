@@ -2752,8 +2752,9 @@ Ty const* ty_indexed_instantiated(Checker* me, Ty const* object, Ty const* index
 }
 
 // `x!`: the type without null and undefined. TODO: tsc intersects a type variable with `{}` under strictNullChecks
+// (void isn't IsUndefined to tsc's getTypeFacts: a void callee has no call signatures, TS2349)
 u32 ty_nullable_facts(Checker* me, Ty const* ty) {
-    if (ty->flags & (TYF_UNDEFINED | TYF_VOID)) return 1;
+    if (ty->flags & TYF_UNDEFINED) return 1;
     if (ty->flags & TYF_NULL) return 2;
     if (ty->kind == TY_UNION) {
         u32 facts = 0;
