@@ -1185,6 +1185,20 @@ static TyMapper const* infer_type_arguments(
     for (u32 i = 0; i < args->len; i++) {
         Arg* arg = &args->data[i];
         if (i >= shape.count && shape.rest_variadic) break;
+        // An argument whose parameter can't mention a type parameter isn't checked to infer (tsc's inferTypeArguments
+        // asks couldContainTypeVariables first): the applicability check types it, after the arguments the inference
+        // checked, which decides union order (`propIf<E>(a: Falsy, value: any, alternate: E)` makes "alternate" before
+        // "value")
+        // (Only literals so far: whether any other argument is a generic function, which the applicability check's
+        // rounds go by, is decided here)
+        bool literal = arg->expr->tag == EXPR_LITERAL || arg->expr->tag == EXPR_TEMPLATE;
+        Ty const* plain_param = literal && i < shape.count && !arg->spread && !arg->part_of_spread ? shape_type_at(&shape, i) : nullptr;
+        if (plain_param && !(plain_param->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+            arg->type = nullptr;
+            arg->nested_generic = false;
+            arg->generic_function = false;
+            continue;
+        }
         if (arg->context_sensitive || arg->generic_call) {
             any_sensitive = true;
             // The rest of an object or array literal with a context-sensitive function in it is inferred from already
