@@ -2233,10 +2233,14 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         error_ctx_error_d(errs, span, 7052, "Element implicitly has an 'any' type because type '", object_str,
             "' has no index signature. Did you mean to call '", method, "'?");
     } else {
-        cstr full_str = index_type_str(me, full_index, span_null);
+        // (The key as the expression has it, fresh: a lone enum member prints as `E.x`, not its enum. tsc's
+        // getPropertyTypeForIndexType gets checkExpression's type)
+        Ty const* fresh_index = ty_access_key_type(me, access);
+        if (ty_regular(me, fresh_index) != full_index) fresh_index = full_index;
+        cstr full_str = index_type_str(me, fresh_index, span_null);
         Error* error = error_ctx_error_d(errs, span, 7053, "Element implicitly has an 'any' type because expression of type '",
             full_str, "' can't be used to index type '", object_str, "'.");
-        cstr index_str = index_name(me, index);
+        cstr index_str = index_name(me, index == full_index ? fresh_index : index);
         if (!error) {
         } else if (index->flags & TYF_UNIQUE_ES_SYMBOL) {
             // (index_name() has the brackets)
@@ -2465,7 +2469,7 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
         IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
             ty_applicable_index_info(me, apparent, ty_regular(me, ty_access_key_type(me, access))) : nullptr;
         if (info && info->readonly) {
-            cstr object_str = ty_to_cstr(me, access->form == PROPERTY_EXPR_DOT ? apparent : object);
+            cstr object_str = ty_to_cstr(me, apparent); // (tsc shows the apparent type either way)
             error_ctx_error_d(errs, operand->inner_span, 2542, "Index signature in type '", object_str, "' only permits reading.");
             cstr_drop(&object_str);
         }
@@ -3666,7 +3670,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ?
             ty_applicable_index_info(me, apparent, ty_regular(me, ty_access_key_type(me, access))) : nullptr;
         if (info && info->readonly) {
-            cstr object_str = ty_to_cstr(me, access->form == PROPERTY_EXPR_DOT ? apparent : object);
+            cstr object_str = ty_to_cstr(me, apparent); // (tsc shows the apparent type either way)
             error_ctx_error_d(errs, span, 2542, "Index signature in type '", object_str, "' only permits reading.");
             cstr_drop(&object_str);
         }
