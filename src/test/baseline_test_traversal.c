@@ -1029,7 +1029,10 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 vec_span_push(&so_far, *i);
             }
             vec_span_drop(&so_far);
-            if (!span_valid(my identifier->name)) break; // A bare `import("./a")`
+            if (!span_valid(my identifier->name)) { // A bare `import("./a")`, maybe with type arguments
+                for_each (i, vec_spanned_type, &my identifier->generic_params) type_compile_test_info(&i->type, ctx);
+                break;
+            }
             if (!my identifier->name.sv.size && !identifier_type_import_ref(my identifier)) {
                 // A missing name (`a.` at the end of a line): tsc's unknownSymbol, shown where the next token starts
                 const char* at = my identifier->name.sv.buf;
