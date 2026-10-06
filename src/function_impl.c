@@ -204,6 +204,16 @@ static bool parameters_see_body(FunctionImpl const* me) {
     return false;
 }
 
+static bool is_this_parameter(FunctionArg const* arg) {
+    return arg->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(arg->initializer.binding.content_span, "this");
+}
+
+bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class_declaration) {
+    return compiler_options()->experimental_decorators && in_class_declaration && my has_body && !my is_expression &&
+        (my is_constructor || my is_method || my accessor == 2) &&
+        !(index == 0 && is_this_parameter(vec_function_arg_at(&my args, 0)));
+}
+
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
     lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
     // (a declaration or method too: what it returns is in the same context)
@@ -213,15 +223,21 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         function_impl_rare_mut(me)->promise_decl = scope_get_type(names, c_sv("Promise"), nullptr);
     }
     Scope* decorator_names = nullptr;
-    for_each (i, vec_function_arg, &my args) {
-        for_each (decorator, vec_expr, function_arg_decorators(i)) {
+    for (isize a = 0; a < vec_function_arg_size(&my args); a++) {
+        VecExpr const* decorators = function_arg_decorators(vec_function_arg_at(&my args, a));
+        if (!vec_expr_size(decorators)) continue;
+        // (What can't be decorated, tsc doesn't check: its names are still resolved for the baselines)
+        ClassDecl const* class_decl = scope_enclosing_class(names);
+        ErrorCtx* decorator_errs = function_arg_decoratable(me, a, class_decl && !class_decl->is_expression) ? errs :
+            binder_discarded_errs(names->binder);
+        for_each (decorator, vec_expr, decorators) {
             // (A class member's parameter decorators see the `this` outside the class, like the member's own)
             if (!decorator_names) {
                 decorator_names = scope_new(names, SCOPE_BLOCK);
                 decorator_names->member_decorator = true;
                 scope_rare_mut(decorator_names)->decorated_function = me;
             }
-            expr_lookup_names(decorator, decorator_names, errs);
+            expr_lookup_names(decorator, decorator_names, decorator_errs);
         }
     }
 
@@ -490,9 +506,6 @@ static bool function_impl_check_grammar_parameters(FunctionImpl const* me, Error
     return false;
 }
 
-static bool is_this_parameter(FunctionArg const* arg) {
-    return arg->initializer.binding.tag == BINDING_IDENTIFIER && span_equals(arg->initializer.binding.content_span, "this");
-}
 
 // tsc's checkGrammarAccessor(), the parameter part
 static bool function_impl_check_grammar_accessor(FunctionImpl const* me, ErrorCtx* errs) {
@@ -1053,10 +1066,13 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     // which is what gives them their contextual type)
     bool class_member = !my is_expression && (span_valid(function_impl_member_name(me)) || function_impl_rare(me)->constructed_class);
     for_each (i, vec_function_arg, &my args) {
-        if (!class_member) {
+        if (!class_member && vec_expr_size(function_arg_decorators(i))) {
+            // (Never decorated: tsc's checkDecorators doesn't look at them)
+            ErrorCtx ignored = error_ctx_scratch(errs);
             for_each (decorator, vec_expr, function_arg_decorators(i)) {
-                expr_typecheck(decorator, errs);
+                expr_typecheck(decorator, &ignored);
             }
+            error_ctx_drop(&ignored);
         }
         // (The type of a JSDoc `@this {T}` isn't checked: tsc's checkJSDocThisTag only looks at its host)
         if (i->jsdoc_this) continue;

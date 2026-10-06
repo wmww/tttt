@@ -274,6 +274,9 @@ Span function_error_span(FunctionImpl const* me);
 FunctionImpl const* function_impl_jsdoc_tag_signature(FunctionImpl const* me);
 // tsc's isUnwrappedReturnTypeUndefinedVoidOrAny
 bool function_impl_return_void_any_or_undefined(FunctionImpl const* me, struct Ty const* return_type);
+// tsc's nodeCanBeDecorated for parameter `index`: legacy decorators of a constructor, method or setter with a body in
+// a class declaration (`in_class_declaration`), not its `this` parameter. checkDecorators looks at nothing else
+bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class_declaration);
 // tsc's checkFunctionOrMethodDeclarationDiagnostics under noImplicitAny: a declaration without a body or return type
 // (an overload, an ambient function, a method signature) returns an implicit any (TS7010 at `name`)
 void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, Span at, ErrorCtx* errs);

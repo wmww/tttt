@@ -214,10 +214,22 @@ static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, Er
     scope_release(scope, pending_mark);
 }
 
-void class_item_lookup_names(ClassItem* me, Scope* names, ErrorCtx* errs) {
-    // (A static block's decorators are TS1206 and nothing else: tsc's checkClassStaticBlockDeclaration doesn't check
-    // them. Their names are still resolved for the baselines)
-    ErrorCtx* decorator_errs = my tag == CLASS_ITEM_STATIC_BLOCK ? binder_discarded_errs(names->binder) : errs;
+// tsc's nodeCanBeDecorated for a class member: checkDecorators looks at nothing else (TS1206/TS1249 instead)
+static bool class_item_decoratable(ClassDecl const* class_decl, ClassItem const* item) {
+    bool legacy = compiler_options()->experimental_decorators;
+    if (legacy && span_valid(class_item_private_name(item))) return false;
+    switch (item->tag) {
+        case CLASS_ITEM_FIELD: return legacy ? !class_decl->is_expression : !(item->field.is_declare || item->field.is_abstract);
+        case CLASS_ITEM_METHOD: return item->method.func.has_body && (!legacy || !class_decl->is_expression);
+        default: return false;
+    }
+}
+
+static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, Scope* names, ErrorCtx* errs) {
+    // (What can't be decorated, a static block, a constructor, an overload..., is TS1206 and nothing else: tsc's
+    // checkDecorators doesn't check it. Their names are still resolved for the baselines)
+    ErrorCtx* decorator_errs = vec_expr_size(&my decorators) && !class_item_decoratable(class_decl, me) ?
+        binder_discarded_errs(names->binder) : errs;
     if (my tag == CLASS_ITEM_FIELD) {
         names = scope_new(names, SCOPE_BLOCK);
         names->in_field = true;
@@ -379,7 +391,7 @@ static void class_members_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* er
             if (i->tag == CLASS_ITEM_METHOD) {
                 i->method.func.private_ambient = class_item_private_in_ambient(me, i) || i->method.is_declare;
             }
-            class_item_lookup_names(i, scope, errs);
+            class_item_lookup_names(me, i, scope, errs);
         }
     }
 }
@@ -1900,24 +1912,10 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
         // tsc's checkGrammarModifiers via nodeCanBeDecorated(), at the `@` of the first decorator
         bool decorator_error = false;
         if (vec_expr_size(&i->decorators) && span_valid(i->span)) {
-            bool valid = false;
-            unsigned code = 1206;
-            switch (i->tag) {
-                case CLASS_ITEM_FIELD:
-                    valid = legacy ? !my is_expression : !(i->field.is_declare || i->field.is_abstract);
-                    break;
-                case CLASS_ITEM_METHOD:
-                    valid = i->method.func.has_body && (!legacy || !my is_expression);
-                    if (!i->method.func.has_body && !i->method.accessor) code = 1249;
-                    break;
-                default:
-                    break;
-            }
-            // (Legacy decorators can't decorate a private name)
-            if (legacy && span_valid(class_item_private_name(i))) {
-                valid = false;
-                code = 1206;
-            }
+            bool valid = class_item_decoratable(me, i);
+            // (Legacy decorators can't decorate a private name, TS1206 whatever else)
+            unsigned code = i->tag == CLASS_ITEM_METHOD && !i->method.func.has_body && !i->method.accessor &&
+                !(legacy && span_valid(class_item_private_name(i))) ? 1249 : 1206;
             if (!valid) {
                 decorator_error = true;
                 Span at = i->span;
@@ -2004,20 +2002,28 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
                 at.sv = csview_from_n(span_start_ptr(arg->span), 1);
                 error_ctx_grammar_error_d(errs, at, 1206, "Decorators are not valid here.");
             }
+            // (What can't be decorated isn't checked at all, a `this` parameter's decorators neither: tsc's checkDecorators)
+            bool checked = valid && span_valid(arg->span) && !(has_this && a == 0);
+            ErrorCtx ignored = error_ctx_scratch(errs);
             for_each (decorator, vec_expr, function_arg_decorators(arg)) {
-                if (valid && span_valid(arg->span) && !(has_this && a == 0)) {
+                if (checked) {
                     ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i,
                         .param_index = (i32)(a - (has_this ? 1 : 0)), .at = decorator_span(decorator) }, errs);
                 }
-                expr_typecheck(decorator, errs);
+                expr_typecheck(decorator, checked ? errs : &ignored);
             }
+            error_ctx_drop(&ignored);
         }
-        if (i->tag != CLASS_ITEM_STATIC_BLOCK) for_each (decorator, vec_expr, &i->decorators) {
-            if (!decorator_error) {
-                ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i, .param_index = -1,
-                    .at = decorator_span(decorator) }, errs);
+        if (i->tag != CLASS_ITEM_STATIC_BLOCK && vec_expr_size(&i->decorators)) {
+            ErrorCtx ignored = error_ctx_scratch(errs);
+            for_each (decorator, vec_expr, &i->decorators) {
+                if (!decorator_error) {
+                    ty_check_decorator(current_checker, decorator, (DecoratorSite){ .class_decl = me, .item = i, .param_index = -1,
+                        .at = decorator_span(decorator) }, errs);
+                }
+                expr_typecheck(decorator, decorator_error ? &ignored : errs);
             }
-            expr_typecheck(decorator, errs);
+            error_ctx_drop(&ignored);
         }
     }
 
