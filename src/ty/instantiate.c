@@ -358,6 +358,14 @@ static Ty const* instantiate_mapped_over_list(Checker* me, Ty const* ty, TyMappe
     bool any_as_array = list->kind == TY_ANY && !mapped->name_type && mapped_variable_is_list(me, variable);
     // (With an `as` clause, arrays and tuples map like any object)
     if (list->kind != TY_UNION && !any_as_array && ((list->kind != TY_REFERENCE && list->kind != TY_INTERSECTION) || mapped->name_type)) return nullptr;
+    // (An intersection only maps when all its members are arrays or tuples: decided before composing the mappers,
+    // which most intersections would pay for nothing)
+    if (list->kind == TY_INTERSECTION) {
+        TyList members = list->composite.types;
+        for (u32 i = 0; i < members.len; i++) {
+            if (!ty_is_array(me, members.data[i]) && !ty_is_tuple(members.data[i])) return nullptr;
+        }
+    }
     if (root != ty) mapper = ty_compose_mappers(me, ty->anonymous.mapper, mapper);
     if (any_as_array) {
         TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
