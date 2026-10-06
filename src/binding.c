@@ -733,7 +733,7 @@ void initialized_binding_lookup_names(InitializedBinding* me, Scope* names, Erro
     if (initialized_binding_value(me)->tag != EXPR_IMPLICIT_ANY) binding_flow_assign(&my binding, names);
 }
 
-void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, ErrorCtx* errs) {
+void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* names, bool value_unchecked, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     Binding const* saved = flow->parameter_initializing;
     Scope const* saved_scope = flow->parameter_function_scope;
@@ -741,7 +741,7 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->parameter_function_scope = names->parent; // `names` is the parameter list's own scope
     binding_lookup_names(&my binding, names, errs);
     flow->contextual_depth += my binding.has_explicit_type;
-    if (my value) expr_lookup_names_initializer(my value, names, errs);
+    if (my value) expr_lookup_names_initializer(my value, names, value_unchecked ? binder_discarded_errs(names->binder) : errs);
     flow->contextual_depth -= my binding.has_explicit_type;
     flow->parameter_initializing = saved;
     flow->parameter_function_scope = saved_scope;

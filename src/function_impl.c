@@ -334,7 +334,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     parameter_scope->parameters_see_body = my has_body && parameters_see_body(me);
     TypeFlow const* saved_flow = type_flow_enter_parameter();
     for_each (i, vec_function_arg, &my args) {
-        initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, errs);
+        initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body, errs);
     }
     scope_release(parameter_scope, pending_mark);
     type_flow_restore(saved_flow);
@@ -1090,6 +1090,12 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         }
         // (The type of a JSDoc `@this {T}` isn't checked: tsc's checkJSDocThisTag only looks at its host)
         if (i->jsdoc_this) continue;
+        // (An overload's or ambient function's initializer is TS2371 and nothing else: tsc's checkVariableLikeDeclaration
+        // returns there, after the annotation)
+        if (!my has_body && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
+            if (i->initializer.binding.has_explicit_type) type_typecheck(&i->initializer.binding.explicit_type, errs);
+            continue;
+        }
         initialized_binding_typecheck_parameter(&i->initializer, i->span, errs);
         if (i->initializer.binding.tag == BINDING_ARRAY && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY &&
             !i->initializer.binding.has_explicit_type
