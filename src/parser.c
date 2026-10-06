@@ -10283,6 +10283,7 @@ __attribute__((noinline)) static bool parse_jsx_element(Parser* parent, bool in_
     }
 
     p.shared->saw_jsx = true;
+    el->fragment = is_fragment;
     *ret = (Expr){
         .tag = is_fragment ? EXPR_JSX_FRAGMENT : EXPR_JSX_ELEMENT,
         .jsx = el,

@@ -20071,7 +20071,7 @@ const baselines = {
         types: true,
     },
     'jsxFragmentWrongType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

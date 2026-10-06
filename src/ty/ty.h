@@ -1668,6 +1668,7 @@ Ty const* ty_jsx_type(Checker* me, struct JsxElement const* element, csview name
 Ty const* ty_jsx_element_type(Checker* me, Expr const* expr); // Of an EXPR_JSX_ELEMENT or EXPR_JSX_FRAGMENT
 Atom const* ty_jsx_children_prop_name(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic(Checker* me, struct JsxElement const* element);
+Ty const* ty_jsx_fragment_type(Checker* me, struct JsxElement const* element);
 JsxIntrinsic ty_jsx_intrinsic_named(Checker* me, struct JsxElement const* element, csview name);
 void ty_check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs);
 bool ty_is_js_literal_type(Checker* me, Ty const* type);

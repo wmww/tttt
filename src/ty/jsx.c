@@ -41,6 +41,34 @@ Ty const* ty_jsx_element_type(Checker* me, Expr const* expr) {
     return type ? type : ty_intrinsic(me, expr->tag == EXPR_JSX_FRAGMENT ? TY_ANY : TY_ERROR);
 }
 
+// tsc's getJSXFragmentType: what a fragment resolves like a tag of. The fragment factory's first name (getJsxNamespace,
+// `React` by default) if it is `Fragment`, else its `Fragment` export. Null (any) when there's no factory reference to
+// resolve, the error type when it isn't there
+Ty const* ty_jsx_fragment_type(Checker* me, JsxElement const* element) {
+    CompilerOptions const* options = compiler_options();
+    SourceFile const* file = element->opening_span.source;
+    if (options->jsx != JSX_REACT && !cstr_size(&options->jsx_fragment_factory)) return nullptr;
+    Symbol const* factory = element->factory_value;
+    if (!factory) {
+        // (`null` as the fragment factory resolves nothing: any, else nothing found: the error type)
+        csview pragma = file ? file->jsx_pragmas.fragment_factory : c_sv("");
+        csview name = pragma.size ? pragma : cstr_sv(&options->jsx_fragment_factory);
+        return csview_equals(name, "null") ? nullptr : ty_intrinsic(me, TY_ERROR);
+    }
+    if (csview_equals(factory->name, "Fragment")) return ty_type_of_symbol(me, factory);
+    Symbol* resolved = (Symbol*)factory;
+    if (resolved->flags & SYMBOL_ALIAS) resolved = symbol_resolve_alias(resolved);
+    Symbol const* fragment = resolved ? export_with_meaning(resolved, c_sv("Fragment"), SYMBOL_BLOCK_SCOPED_VARIABLE) : nullptr;
+    return fragment ? ty_type_of_symbol(me, fragment) : ty_intrinsic(me, TY_ERROR);
+}
+
+// The type of what an element's tag names (a fragment's: ty_jsx_fragment_type(), any if none)
+static Ty const* jsx_tag_type(Checker* me, JsxElement const* element) {
+    if (!element->fragment) return ty_expr_type(me, &element->tag_name);
+    Ty const* fragment = ty_jsx_fragment_type(me, element);
+    return fragment ? fragment : ty_intrinsic(me, TY_ANY);
+}
+
 // tsc's getNameFromJsxElementAttributesContainer: the name of the one property of `JSX.<container>`, an empty name if
 // it has none, null if there is no such type (or it has several)
 static Atom const* container_prop_name(Checker* me, JsxElement const* element, csview container_name) {
@@ -98,7 +126,7 @@ static Ty const* managed_attributes(Checker* me, JsxElement const* element, Ty c
     Symbol const* managed = ns ? export_with_meaning(ns, c_sv("LibraryManagedAttributes"), SYMBOL_TYPE) : nullptr;
     if (!managed) return props;
     // (tsc's getStaticTypeOfReferencedJsxConstructor)
-    Ty const* args[2] = { ty_expr_type(me, &element->tag_name), props };
+    Ty const* args[2] = { jsx_tag_type(me, element), props };
     Ty const* ret = instantiate_with_defaults(me, managed, args, 2);
     return ret ? ret : props;
 }
@@ -352,9 +380,13 @@ static void check_jsx_element(Checker* me, Expr const* expr, ErrorCtx* errs) {
     // (tsc's checkJsxPreconditions has a TS2602 for a missing JSX.Element that can't happen: getJsxType() gives the
     // error type, not undefined)
     check_children(me, element, errs);
-    if (expr->tag == EXPR_JSX_FRAGMENT || !element->tag_name.inner_span.sv.size) {
-        return; // TODO(plan 22 stage 4): fragments resolve like calls of the fragment factory
+    if (element->fragment) {
+        // A fragment resolves like a call of what the fragment factory names, its children the attributes
+        // (resolveJsxOpeningLikeElement with getJSXFragmentType)
+        if (ty_jsx_fragment_type(me, element)) ty_resolve_jsx_element(me, element, errs);
+        return;
     }
+    if (!element->tag_name.inner_span.sv.size) return;
     if (!jsx_element_is_intrinsic(element)) {
         check_value_tag(me, element, errs);
         return;

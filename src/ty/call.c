@@ -1588,7 +1588,7 @@ static ParamShape call_param_shape(Checker* me, CallInfo const* info, Signature 
 // What the errors about a call are reported at (tsc's getDiagnosticForCallNode): the name of a method, else the callee;
 // the whole expression of `new` or a tagged template; a JSX element's tag name
 static Span callee_span(CallInfo const* info) {
-    if (info->jsx) return info->jsx->tag_name.inner_span;
+    if (info->jsx) return info->jsx->fragment ? info->jsx->opening_span : info->jsx->tag_name.inner_span;
     if ((info->call->uses_new || info->tagged_template) && span_valid(info->call_span)) return info->call_span;
     Expr const* callee = &info->call->callable;
     while (callee->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(callee)) callee = &callee->generic_params->expr;
@@ -1846,7 +1846,8 @@ static Span report_unfit_argument(
     if (index >= 0 && info->jsx) {
         // The attributes, at the tag name (tsc's checkApplicableSignatureForJsxCallLikeElement)
         span = callee_span(info);
-        ty_check_assignable_expr(me, arg_type, param_type, span, &info->jsx->attributes, errs);
+        // (A fragment's children aren't elaborated into: tsc has no attributes node to report them at)
+        ty_check_assignable_expr(me, arg_type, param_type, span, info->jsx->fragment ? nullptr : &info->jsx->attributes, errs);
     } else if (index >= 0 && (u32)index == args->len) {
         ty_report_unfit_argument(me, arg_type, param_type, span, nullptr, errs);
     } else if (index >= 0) {
@@ -3050,8 +3051,10 @@ static Signature* const* jsx_signatures_of(Checker* me, JsxElement const* elemen
 // getUninstantiatedJsxSignaturesOfType). `sig` is null if the tag isn't typed or nothing fit
 JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, ErrorCtx* errs) {
     JsxResolution ret = {0};
-    Ty const* tag_type = ty_expr_type(me, &element->tag_name);
+    Ty const* tag_type = element->fragment ? ty_jsx_fragment_type(me, element) : ty_expr_type(me, &element->tag_name);
+    if (!tag_type) return ret;
     Ty const* apparent = ty_apparent_type(me, tag_type);
+    Span at = element->fragment ? element->opening_span : element->tag_name.inner_span;
     if ((tag_type->flags & TYF_ANY) || (apparent->flags & TYF_ANY) || (tag_type->flags & TYF_STRING)) return ret;
     Signature* const* signatures = nullptr;
     u32 count = 0;
@@ -3081,12 +3084,12 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
         bool untyped = apparent->kind != TY_UNION && !(apparent->flags & TYF_NEVER) && function &&
             ty_is_related(me, tag_type, function, TY_RELATION_ASSIGNABLE);
         if (!untyped && errs) {
-            error_ctx_error_d(errs, element->tag_name.inner_span, 2604, "JSX element type '", element->tag_name.inner_span,
-                "' does not have any construct or call signatures.");
+            error_ctx_error_d(errs, at, 2604, "JSX element type '", at, "' does not have any construct or call signatures.");
         }
         return ret;
     }
-    CallInfo info = { .jsx = element, .jsx_class = ret.class_component };
+    // (A fragment's signatures take their props as a function component's: getEffectiveFirstArgumentForJsxSignature)
+    CallInfo info = { .jsx = element, .jsx_class = ret.class_component && !element->fragment };
     Ty const* type_args[32];
     if (!vec_spanned_type_is_empty(&element->type_args)) {
         info.type_arg_nodes = &element->type_args;
@@ -3100,8 +3103,8 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
     args_push(&args, (Arg){ .expr = &element->attributes, .context_sensitive = ty_expr_is_context_sensitive(&element->attributes) });
     // A component that needs more arguments than the factory gives fits no signature, which is all that's said
     // (checkApplicableSignatureForJsxCallLikeElement checks the arity before the attributes)
-    if (!ty_jsx_tag_arity_fits(me, element, tag_type, errs)) errs = nullptr;
-    Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &info, element->tag_name.inner_span, errs);
+    if (!element->fragment && !ty_jsx_tag_arity_fits(me, element, tag_type, errs)) errs = nullptr;
+    Resolution resolution = resolve_with_signatures(me, signatures, count, &args, &info, at, errs);
     free(args.data);
     ret.sig = resolution.chosen.sig;
     ret.mapper = resolution.chosen.mapper;

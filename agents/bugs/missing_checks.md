@@ -175,7 +175,7 @@ Binder gaps (spurious TS2339 and friends):
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
 const: TS18042), importingExportingTypes (TS18043 for re-exported typedefs), assignmentToVoidZero2,
 classCanExtendConstructorFunction, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
-typeFromJSInitializer, typeFromPropertyAssignment32, templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
+typeFromPropertyAssignment32, templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
 jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
 jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan
 40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge (TS6232),
@@ -198,8 +198,6 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
 - checkJsxNamespaceNamesQuestionableForms: parser recovery after `</b:c.x>` (tsc resolves `x`).
 
 ## JSX
-- jsxFragmentWrongType: fragments as calls of the fragment factory (plan 22 stage 4, `ty/jsx.c`: TS2322 for
-  `<>{fn}</>` against React.Fragment's props).
 - TS6229 isn't checked for union tag types or inside an overload chain.
 
 ## Messages: elaboration and printing (plan 34)
