@@ -1703,7 +1703,10 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     if (in_constructor) {
         for (u32 i = 0; i < symbol->decl_count && !constructor_only; i++) {
             if (symbol->decls[i].assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
-            constructor_only = !(ty_widened_for_declaration(me, ty_expr_type(me, symbol->decls[i].node), true)->flags & TYF_NULLABLE);
+            // (As assigned: without strictNullChecks a widened undefined would be any. A union counts whatever is in it,
+            // tsc's `t.flags & ~TypeFlags.Nullable`)
+            Ty const* assigned = ty_expr_type(me, symbol->decls[i].node);
+            constructor_only = assigned->kind == TY_UNION || !(assigned->flags & TYF_NULLABLE);
         }
     }
     u32 count = 0;
@@ -1711,6 +1714,9 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
         if (constructor_only && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
+        // (A constructor function's `F.prototype.x = v` is another symbol than its `this.x = v` to tsc: the
+        // prototype's member, not the instance's)
+        if ((in_constructor || in_method) && decl->assignment == ASSIGNMENT_DECL_PROTOTYPE_PROPERTY) continue;
         types[count++] = csview_equals(symbol->name, "export=") ? value_entry_type(me, symbol, decl) :
             assignment_declaration_type(me, symbol, decl);
     }
