@@ -11973,10 +11973,11 @@ static bool parse_if_else(Parser* parent, IfStatement* ret) {
         if (!parse_if_arm(&p, &condition, &statement)) {
             if (vec_expr_is_empty(&conditions)) {
                 return parse_fail(&p);
-            } else if (expect_statement(&p, false, &statement)) {
-                list_push(vec_statement, &statements, statement);
-                break;
             }
+            // (The else branch, a missing expression statement when there's none: `else }`)
+            expect_statement(&p, false, &statement);
+            list_push(vec_statement, &statements, statement);
+            break;
         }
 
         list_push(vec_expr, &conditions, condition);
