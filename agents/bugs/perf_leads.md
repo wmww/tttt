@@ -16,8 +16,11 @@ subtype pairs (tsc 15k) led to three ports worth -13% (measurements.md "Perf ses
 `ty_is_related()` with a temporary log of each top-level query that grows a cache by more than ~100 entries (current
 node span, both types), and compare one such query with a patched tsc (`isRelatedTo` wrapped to print both types and
 the result, memory note "instrument a tsc copy"); `TTTT_DEBUG_RELATE_NESTED=1` on a probe shows tttt's pairs. Left
-after that session: tanstack-router's assignable 236k vs tsc's 174k (not looked at), vue's identity 18k vs 28k and
-type-fest/react well below tsc (fine). Ratios of types created are no signal (tttt makes fewer everywhere).
+after that session: tanstack-router's assignable 236k vs tsc's 174k (looked at briefly: the biggest growers are
+variance probes of zod's classes from link.test.tsx, `Omit<UseLinkPropsOptions...>` against React's anchor props, and
+expect-type's `KeyType` against a ~300-literal key union per assertion in link.test-d.tsx, all of which tsc relates
+the same way as far as its code says; not compared with a patched tsc), vue's identity 18k vs 28k and type-fest/react
+well below tsc (fine). Ratios of types created are no signal (tttt makes fewer everywhere).
 
 ## Leftovers of the 2026-10-05 perf session (todo entry 8)
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
