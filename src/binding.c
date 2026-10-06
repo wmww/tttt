@@ -912,7 +912,13 @@ static void check_quick_callee(Expr const* quick, ErrorCtx* errs) {
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     // `const x = require("m")`, `const x = require("m").a`: an alias, which is all tsc checks
     // (checkVariableLikeDeclaration: checkAliasSymbol and return)
-    if (initialized_binding_rare(me)->require_port_count) return;
+    if (initialized_binding_rare(me)->require_port_count) {
+        // (`const { a } = require()`: tsc's getExternalModuleMember of each name. Not `require().a.b`)
+        for (u32 i = 0; my binding.tag == BINDING_OBJECT && i < initialized_binding_rare(me)->require_port_count; i++) {
+            port_item_check_export_equals_property(&initialized_binding_rare(me)->require_ports[i], errs);
+        }
+        return;
+    }
     // tsc's checkSourceElement of the VariableDeclaration: what goes wrong deep inside is reported at its name, and
     // checkVariableLikeDeclaration asks for the variable's type first, which takes a call's return type without
     // checking the call (getQuickTypeOfExpression): an instantiation limit it runs into is the declaration's (TS2589)

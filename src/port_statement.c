@@ -289,6 +289,20 @@ static void port_statement_check_json_import(PortStatement const* me, ErrorCtx* 
     }
 }
 
+// `import { x }` (or JavaScript's `const { x } = require()`) of a property of what `export =` names: tsc's
+// getExternalModuleMember finds none if the value has no such property (the binder leaves that to the checker, see
+// resolve_alias_target())
+void port_item_check_export_equals_property(PortItem const* item, ErrorCtx* errs) {
+    if ((item->tag != PORT_IMPORT_SPECIFIC && item->tag != PORT_REEXPORT_SPECIFIC) || !item->symbol || item->jsdoc) return;
+    Symbol const* target = symbol_resolve_alias(item->symbol);
+    if (!target || !target->decl_count || target->decls[0].kind != SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) return;
+    Symbol const* assigned = target->decls[0].node;
+    if (ty_type_of_symbol(current_checker, assigned)->flags & TYF_ERROR) return;
+    if (!ty_export_equals_property_missing(current_checker, target)) return;
+    Symbol const* module = binder_module_of_ref(item->symbol->binder, item->module_ref);
+    if (module) scope_report_non_exported_member(item, module, errs);
+}
+
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs) {
     if (my in_namespace && !my jsdoc) {
         if (port_statement_is_export_declaration(me)) {
@@ -429,18 +443,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         error_ctx_grammar_error_d(errs, span_make(my keyword_span.source, start, end), 1363,
             "A type-only import can specify a default import or named bindings, but not both.");
     }
-    // `import { x }` of a property of what `export =` names: tsc's getExternalModuleMember finds none if the value
-    // has no such property (the binder leaves that to the checker, see resolve_alias_target())
-    for_each (i, vec_port_item, &my items) {
-        if ((i->tag != PORT_IMPORT_SPECIFIC && i->tag != PORT_REEXPORT_SPECIFIC) || !i->symbol || i->jsdoc) continue;
-        Symbol const* target = symbol_resolve_alias(i->symbol);
-        if (!target || !target->decl_count || target->decls[0].kind != SYMBOL_DECL_EXPORT_EQUALS_PROPERTY) continue;
-        Symbol const* assigned = target->decls[0].node;
-        if (ty_type_of_symbol(current_checker, assigned)->flags & TYF_ERROR) continue;
-        if (!ty_export_equals_property_missing(current_checker, target)) continue;
-        Symbol const* module = binder_module_of_ref(i->symbol->binder, i->module_ref);
-        if (module) scope_report_non_exported_member(i, module, errs);
-    }
+    for_each (i, vec_port_item, &my items) port_item_check_export_equals_property(i, errs);
     if (span.source && span.source->is_js && !my jsdoc) {
         port_item_check_js_type(me, &my main, errs);
         for_each (i, vec_port_item, &my items) port_item_check_js_type(me, i, errs);

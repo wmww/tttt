@@ -138,3 +138,5 @@ void port_statement_drop(PortStatement* me);
 void port_statement_add_names(PortStatement* me, Scope* scope);
 void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs);
 void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, ErrorCtx* errs);
+// TS2305 for an import of a property the value `export =` names doesn't have (also a JavaScript require destructuring's)
+void port_item_check_export_equals_property(PortItem const* item, ErrorCtx* errs);

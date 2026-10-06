@@ -2605,7 +2605,15 @@ static Symbol* make_gather_target(Symbol* me, Symbol* module) {
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305) or by its path without the extension
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier) {
-    if (!module->module->file) return cstr_from_sv(module->name);
+    if (!module->module->file) {
+        // (An ambient module's symbol name is its name in double quotes whatever the declaration's: tsc's
+        // getDeclarationName of a string literal)
+        csview name = module->name;
+        if (name.size >= 2 && name.buf[0] == '\'' && name.buf[name.size - 1] == '\'') {
+            return cstr_d("\"", csview_slice(name, 1, name.size - 1), "\"");
+        }
+        return cstr_from_sv(name);
+    }
     if (by_specifier) return cstr_d("\"", ref->path, "\"");
     cstr shown = source_file_message_path(module->module->file);
     csview path = cstr_sv(&shown);
@@ -3043,7 +3051,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                     if (!found || item->value_only) return property;
                     my alias->value_target = property;
                 }
-                if (!found) return nullptr;
+                // (Neither the namespace nor the value has it: TS2305 below)
             }
             if (item->value_only && found && !(symbol_resolved_flags(found) & SYMBOL_VALUE)) return nullptr;
             if (!found) {
