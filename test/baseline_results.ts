@@ -3321,7 +3321,7 @@ const baselines = {
         types: true,
     },
     'checkerInitializationCrash': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

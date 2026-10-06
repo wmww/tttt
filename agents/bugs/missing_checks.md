@@ -148,8 +148,8 @@ tsc keeps one local symbol per block for a name's exported and local declaration
 (function_local_symbol_decls() and check_export_merge() patch over it; hacks.md "Exported and local declarations").
 Still wrong: multipleExports (`export {x}` in a namespace whose other block exports x: TS2484),
 conflictingDeclarationsImportFromNamespace1/2 (`import * as pick` + `export const pick` merge, tsc's TS7023
-circularity), checkerInitializationCrash and jsExportMemberMergedWithModuleAugmentation2 (duplicates across an import
-and a declaration: TS2300 vs our TS2440/TS2671), overloadModifiersMustAgree/functionOverloadErrors types (tsc's local
+circularity), jsExportMemberMergedWithModuleAugmentation2 (duplicates across an import and a declaration: TS2300 vs
+our TS2671; checkerInitializationCrash's symbols: tsc keeps the two conflicting cross-file symbols apart), overloadModifiersMustAgree/functionOverloadErrors types (tsc's local
 symbol has all of a block's overloads).
 
 ## JavaScript (plan 26)

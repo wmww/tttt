@@ -3863,6 +3863,21 @@ void binder_link(Binder* me) {
             }
             continue;
         }
+        // A later file's declaration merged into it (a global namespace's members): tsc's mergeSymbol resolves the
+        // alias it merges into and reports the conflict as a duplicate on both sides (reportMergeSymbolError)
+        bool cross_file = false;
+        for (u32 d = 1; d < symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ALIAS; d++) {
+            SymbolDecl const* other = &symbol->decls[d];
+            if (other->kind == SYMBOL_DECL_ALIAS || !(other->flags & excluded) || other->full.source == symbol->decls[0].full.source) {
+                continue;
+            }
+            Error* first = report_conflict(errs, symbol->decls[0].name, 2300);
+            add_duplicate_related(first, symbol->decls[0].name, other->name);
+            Error* second = report_conflict(errs, other->name, 2300);
+            add_duplicate_related(second, other->name, symbol->decls[0].name);
+            cross_file = true;
+        }
+        if (cross_file) continue;
         if (port_item_is_export(item)) {
             error_ctx_error_d(errs, item->full_span, 2484,
                 "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
