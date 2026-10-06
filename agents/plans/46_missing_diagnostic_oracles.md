@@ -54,11 +54,28 @@ and noPropertyAccessFromIndexSignature were already right: those checks are done
 - Also: an unknown object in an element access is TS18046 whatever the index (it was skipped for generic keys).
 
 ### Open causes (ranked; the drain's queue). `./flagflip.py -k KEY` lists the instances
-1. **TS2589 fidelity, valibot sloppy/nosnc (~60 diagnostics, ~30% of what's left)**: without strictNullChecks
-   `required(wrapped, undefined)` infers `TMessage = any`; tsc then hits the instantiation depth limit inside
-   expect-type's comparison and its cached error type silences later assertions; tttt computes on and reports
-   TS2554/TS2344. Not a null-handling bug: tsc's instantiation depth/count accounting (`instantiationDepth === 100 ||
-   instantiationCount >= 5000000`) per statement. Probably plan-sized; check what tttt counts first.
+1. **TS2589 fidelity, valibot sloppy/nosnc (~60 diagnostics, ~30% of what's left): investigated 2026-10-06, judged
+   plan-sized, not attempted.** tttt already counts like tsc: `ty_instantiate()` checks depth 100 / count 5M,
+   `ty_enter_node()` resets the count where checkSourceElement/checkExpression do, and the limit hit gives the error
+   type. What differs is how many instantiations happen. With a patched `_tsc.js` (log in instantiateTypeWithAlias at
+   the limit) every one of tsc's valibot hits is the **count** limit (5,000,000) at depth 0-25, never depth 100.
+   tsc makes ~25M instantiate calls in `required.test-d.ts` alone without strictNullChecks, and **none of them creates
+   a new type**: all are cache hits that are counted anyway (with strict flags: 213k calls, 3k new types). tttt's
+   worst node in the whole valibot run is ~140k. Where it happens: `toEqualTypeOf<Schema1>()`'s type-argument check
+   (checkTypeArguments) relates expect-type's DeepBrand, whose mapped properties (getTypeOfMappedSymbol) hit nested
+   conditional types that call isTypeAssignableTo, then RequiredEntries / InferEntriesOutput / anonymous object
+   instantiations at depth ~20. The calls come from getObjectTypeInstantiation computing
+   `map(typeParameters, t => getMappedType(t, combinedMapper))` *before* its cache lookup, and from tsc's composite and
+   merged mappers instantiating on every getMappedType. Each lookup through a chain of composed mappers is counted
+   again, so the count grows multiplicatively with nesting.
+   To reproduce tsc we'd have to count the instantiations tsc would perform, which means mirroring its mapper
+   representation (lazy composite/merged mappers, outer-type-parameter argument lists recomputed per instantiation)
+   and its relation traversal order and caching (where tsc misses its caches, tttt doesn't). That's a big
+   architectural change that only reproduces tsc's own blowup, and it costs performance. A "virtual count" (adding
+   what tsc would have counted at tttt's cache hits) would need a model of tsc's mapper chains: also plan-sized, and
+   fragile. Recommendation: accept this divergence and record valibot's sloppy/nosnc TS2589 cluster as a known flagflip
+   difference. Only revisit if real projects show tsc's TS2589 silencing errors that tttt reports (that's the user-visible
+   effect: TS2554/TS2344 where tsc gives one TS2589).
 2. **Done (2026-10-06)**: union index signatures (`union_index_applies`, tsc's getUnionIndexInfos) back in `access()`'s
    union branch. The earlier valibot/xstate TS2344s came from `TEntries[symbol]` in a constraint: without an access
    node tsc's getPropertyTypeForIndexType falls back to the string index signature for a symbol key, which the union
