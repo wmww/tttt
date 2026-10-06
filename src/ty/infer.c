@@ -1691,6 +1691,13 @@ static bool literal_base(Checker* me, Ty const* ty, u32* common, Symbol const** 
         }
         return ty->composite.types.len > 0;
     }
+    // (A template literal or string mapping's base type is string too: tsc's getBaseTypeOfLiteralType)
+    if (ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_STRING_MAPPING) {
+        if (!*first && *enum_decl) return false;
+        *first = false;
+        *common &= TYF_STRING_LITERAL;
+        return *common != 0;
+    }
     if (ty->kind != TY_LITERAL) return false;
     Symbol const* decl = ty->flags & TYF_ENUM_LITERAL ? ty->literal.enum_decl : nullptr;
     // (Not a literal that is its own base type: the regular member of a single-member enum, which is the enum)

@@ -64051,9 +64051,9 @@ const baselines = {
         types: true,
     },
     'templateLiteralTypes3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'templateLiteralTypes4': {
         errors: true,

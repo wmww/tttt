@@ -1539,7 +1539,8 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
         if (!prop) continue;
         if (!first) first = prop;
         non_uniform |= prop != first;
-        has_literal |= is_literal_type(prop);
+        // (A pattern template literal is a literal part too: tsc's isPatternLiteralType in createUnionOrIntersectionProperty)
+        has_literal |= is_literal_type(prop) || (prop->kind == TY_TEMPLATE_LITERAL && ty_is_pattern_literal(prop));
         generic |= (prop->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
     }
     bool ret = non_uniform && has_literal && !generic;
@@ -1932,17 +1933,6 @@ static bool keep_flags(Checker* me, Ty const* ty, void const* arg) {
 }
 
 // `string` narrowed by `"a" | "b"` is `"a" | "b"`
-static Ty const* map_primitive_to_literals(Checker* me, Ty const* ty, void const* arg) {
-    Ty const* literals = arg;
-    u32 kinds =
-        ty->flags & TYF_STRING ? TYF_STRING | TYF_STRING_LITERAL :
-        ty->flags & TYF_NUMBER ? TYF_NUMBER | TYF_NUMBER_LITERAL :
-        ty->flags & TYF_BIGINT ? TYF_BIGINT | TYF_BIGINT_LITERAL : 0;
-    if (!kinds || ty->kind != TY_INTRINSIC) return ty;
-    Ty const* extracted = filter_type(me, literals, keep_flags, &kinds);
-    return extracted->flags & TYF_NEVER ? ty : extracted;
-}
-
 static u32 union_flags(Ty const* ty) {
     if (ty->kind != TY_UNION) return ty->flags;
     u32 flags = 0;
@@ -1950,9 +1940,30 @@ static u32 union_flags(Ty const* ty) {
     return flags;
 }
 
+// tsc's replacePrimitivesWithLiterals, member by member
+static Ty const* map_primitive_to_literals(Checker* me, Ty const* ty, void const* arg) {
+    Ty const* literals = arg;
+    u32 kinds = 0;
+    if (ty->kind == TY_INTRINSIC && (ty->flags & TYF_STRING)) {
+        kinds = TYF_STRING | TYF_STRING_LITERAL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING;
+    } else if (ty->kind == TY_TEMPLATE_LITERAL && ty_is_pattern_literal(ty)) {
+        // (A pattern `foo-${string}` compared with "foo-test" is that literal)
+        if (union_flags(literals) & (TYF_STRING | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) return ty;
+        kinds = TYF_STRING_LITERAL;
+    } else if (ty->kind == TY_INTRINSIC && (ty->flags & TYF_NUMBER)) {
+        kinds = TYF_NUMBER | TYF_NUMBER_LITERAL;
+    } else if (ty->kind == TY_INTRINSIC && (ty->flags & TYF_BIGINT)) {
+        kinds = TYF_BIGINT | TYF_BIGINT_LITERAL;
+    }
+    if (!kinds) return ty;
+    Ty const* extracted = filter_type(me, literals, keep_flags, &kinds);
+    return extracted->flags & TYF_NEVER ? ty : extracted;
+}
+
 static Ty const* replace_primitives_with_literals(Checker* me, Ty const* with_primitives, Ty const* with_literals) {
-    if ((union_flags(with_primitives) & (TYF_STRING | TYF_NUMBER | TYF_BIGINT)) &&
-        (union_flags(with_literals) & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_BIGINT_LITERAL))
+    if ((union_flags(with_primitives) & (TYF_STRING | TYF_TEMPLATE_LITERAL | TYF_NUMBER | TYF_BIGINT)) &&
+        (union_flags(with_literals) & (TYF_STRING_LITERAL | TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING | TYF_NUMBER_LITERAL |
+            TYF_BIGINT_LITERAL))
     ) {
         return map_type(me, with_primitives, map_primitive_to_literals, with_literals);
     }
