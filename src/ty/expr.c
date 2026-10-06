@@ -3897,6 +3897,7 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
     Ty const* sources[64];
     Ty const* targets[64];
     u32 len = 0;
+    u32 total = 0, applicable = 0, fitting = 0;
     for (u32 pass = 0; pass < 2; pass++) {
         u32 sig_count = pass ? members->construct_count : members->call_count;
         Signature* const* sigs = pass ? members->construct : members->call;
@@ -3908,19 +3909,38 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
             for (u32 j = 0; j < params.len; j++) {
                 if (!ty_param_default(me, params.data[j])) min = j + 1;
             }
+            total++;
             if (!params.len || args.len < min || args.len > params.len) continue;
+            applicable++;
             if (len + params.len > c_arraylen(sources)) continue;
+            // (Type arguments that don't satisfy the constraints, TS2344, leave the signature as it is: tsc's
+            // getInstantiatedSignatures, checkTypeArguments)
+            Ty const* own[64];
+            for (u32 j = 0; j < params.len; j++) {
+                Ty const* target = j < args.len ? args.data[j] : ty_param_default(me, params.data[j]);
+                own[j] = target ? target : ty_intrinsic(me, TY_UNKNOWN_);
+            }
+            if (params.len > c_arraylen(own)) continue;
+            TyMapper const* own_mapper = ty_mapper_new(me, params, (TyList){ .data = own, .len = params.len });
+            bool fits = true;
+            for (u32 j = 0; j < params.len && fits; j++) {
+                Ty const* constraint = ty_param_constraint(me, params.data[j]);
+                fits = !constraint || ty_is_related(me, own[j], ty_instantiate(me, constraint, own_mapper), TY_RELATION_ASSIGNABLE);
+            }
+            if (!fits) continue;
+            fitting++;
             for (u32 j = 0; j < params.len; j++) {
                 bool seen = false;
                 for (u32 k = 0; k < len; k++) seen |= sources[k] == params.data[j];
                 if (seen) continue;
-                Ty const* target = j < args.len ? args.data[j] : ty_param_default(me, params.data[j]);
-                if (!target) target = ty_intrinsic(me, TY_UNKNOWN_);
                 sources[len] = params.data[j];
-                targets[len++] = target;
+                targets[len++] = own[j];
             }
         }
     }
+    // (None of them fits and none was dropped: the type as it is. HACK: with some dropped, the ones that don't fit are
+    // dropped too, where tsc keeps them uninstantiated)
+    if (!fitting && applicable && applicable == total) return ty;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     return ty_apply_type_arguments_mapper(me, ty, mapper);
 }
