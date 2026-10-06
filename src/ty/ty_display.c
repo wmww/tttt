@@ -309,8 +309,10 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out(d, ty_symbol_display_name(symbol).sv);
         return;
     }
-    // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module
-    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, true);
+    // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module. Not in a
+    // message (typeToString's UseAliasDefinedOutsideCurrentScope: no module symbol is yielded, what nothing reaches is
+    // its bare name)
+    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.underline || d.tracker);
     u32 start = 0;
     // (What an augmented `export =` assigns is a module to tsc's printer, not named by its own local, see
     // is_external_module_symbol() in symbol_chain.c, and not as the module it is assigned to either)
@@ -3336,6 +3338,36 @@ static bool object_literal_is_context_sensitive(Checker* me, Ty const* ty, u32 d
     return false;
 }
 
+// The innermost scope of the statements around `at` that declare something: a namespace's, a function declaration's
+// body, a block's (expressions aren't entered: a function expression's own scope isn't found)
+static Scope const* statement_scope_at(Block const* block, Scope const* scope, Span at, u32 depth) {
+    if (depth > 64) return scope;
+    for_each (i, vec_statement, &block->statements) {
+        if (!span_contains_span(i->span, at)) continue;
+        Block const* inner = nullptr;
+        Scope const* inner_scope = nullptr;
+        switch (i->tag) {
+            case STATEMENT_DECL_NAMESPACE:
+                inner = &i->decl.namespace->contents;
+                inner_scope = i->decl.namespace->inner_scope;
+                break;
+            case STATEMENT_DECL_FUNCTION:
+                if (!i->decl.function.impl) return scope;
+                inner = &i->decl.function.impl->body;
+                inner_scope = inner->scope;
+                break;
+            case STATEMENT_BLOCK:
+                inner = &i->block;
+                inner_scope = inner->scope;
+                break;
+            default:
+                return scope;
+        }
+        return statement_scope_at(inner, inner_scope ? inner_scope : scope, at, depth + 1);
+    }
+    return scope;
+}
+
 Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS || ty->anonymous.target || ty->anonymous.is_reverse) return nullptr;
     FunctionImpl const* function = ty->anonymous.function;
@@ -3360,9 +3392,14 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     }
     if (!ty->anonymous.object_literal || ty->anonymous.jsx_attributes) return nullptr;
     Members const* members = ty_members(me, ty);
-    SourceFile const* file = nullptr;
-    for (u32 i = 0; i < members->prop_count && !file; i++) file = members->props[i]->decl->name_span.source;
-    if (!file || object_literal_is_context_sensitive(me, ty, 0)) return nullptr;
-    // HACK: tsc prints it from the literal (its valueDeclaration), tttt from the file's scope
-    return file->scope;
+    // (Where a property written in the literal is: one spread from elsewhere says nothing)
+    Span at = span_null;
+    for (u32 i = 0; i < members->prop_count && !span_valid(at); i++) {
+        if (members->props[i]->decl->literal_own) at = members->props[i]->decl->name_span;
+    }
+    SourceFile const* file = span_valid(at) ? at.source : nullptr;
+    if (!file || !file->scope || object_literal_is_context_sensitive(me, ty, 0)) return nullptr;
+    // HACK: tsc prints it from the literal (its valueDeclaration), tttt from the innermost statement-level scope around
+    // it, which doesn't see into function expressions
+    return statement_scope_at(&file->ast, file->scope, at, 0);
 }
