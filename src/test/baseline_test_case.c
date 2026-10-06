@@ -993,6 +993,17 @@ BaselineTestCase run_baseline_test_case(
             try (fs_read_file(mock_fs_get_fs(fs), cstr_sv(&i->path), &i->raw_contents)) or_panic;
         }
     }
+    // The second copy of a package: walked as the first (BaselineTestFile.redirect_to)
+    for (u32 k = 0, count = program_source_count(program); k < count; k++) {
+        SourceFile const* file = program_source_at(program, k);
+        for (u32 r = 0; r < file->module_ref_count; r++) {
+            ModuleRef const* ref = file->module_refs[r];
+            if (!ref->redirected_from || !ref->file) continue;
+            for_each (i, vec_baseline_test_file, &ret.files) {
+                if (i->source && i->source == ref->redirected_from) i->redirect_to = ref->file;
+            }
+        }
+    }
     // A file of the program the test doesn't write, outside the current directory (the other path of a symlink): tsc
     // names it by its absolute path, not relative to /.src
     // (Pointers into the vector once it's complete: pushing moves the strings)
@@ -1343,6 +1354,12 @@ static void remove_test_path_prefixes(cstr* target, isize from) {
 // of that name (the last copy) found at each line
 static BaselineTestFile const* superseding_file(BaselineTestCase const* me, BaselineTestFile const* earlier) {
     BaselineTestFile const* ret = nullptr;
+    if (earlier->redirect_to) {
+        for_each (i, vec_baseline_test_file, &my files) {
+            if (i->source == earlier->redirect_to) return i;
+        }
+        return nullptr;
+    }
     for_each (i, vec_baseline_test_file, &my files) {
         if (i->source && cstr_eq(&i->path, &earlier->path)) ret = i;
     }
@@ -1352,7 +1369,7 @@ static BaselineTestFile const* superseding_file(BaselineTestCase const* me, Base
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
-        BaselineTestFile const* walked = i->superseded ? superseding_file(me, i) : i;
+        BaselineTestFile const* walked = i->superseded || i->redirect_to ? superseding_file(me, i) : i;
         if (!walked || !walked->source) continue;
         isize from = cstr_size(target);
         render_types_or_symbols_file(target, baseline_test_file_header(i),
@@ -1369,7 +1386,7 @@ bool baseline_test_case_has_errors(BaselineTestCase const* me) {
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, bool had_errors) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
-        BaselineTestFile const* walked = i->superseded ? superseding_file(me, i) : i;
+        BaselineTestFile const* walked = i->superseded || i->redirect_to ? superseding_file(me, i) : i;
         if (!walked || !walked->source) continue;
         isize from = cstr_size(target);
         render_types_or_symbols_file(target, baseline_test_file_header(i),

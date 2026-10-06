@@ -10427,13 +10427,13 @@ const baselines = {
     },
     'duplicatePackage': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicatePackage_globalMerge': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicatePackage_packageIdIncludesSubModule': {
         errors: true,
@@ -10462,8 +10462,8 @@ const baselines = {
     },
     'duplicatePackage_withErrors': {
         errors: false,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'duplicatePropertiesInStrictMode': {
         errors: true,
