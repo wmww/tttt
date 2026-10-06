@@ -258,6 +258,33 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
     lateBoundMethodNameAssigmentJS (`this[s] = this[s].bind(this)` circular: error/any in tsc);
     jsDeclarationsFunctionClassesCjsExportAssignment (tsc artefact: duplicated declaration, no `this` symbol);
     thisPrototypeMethodCompoundAssignmentJs (`this` named `this`).
+15. importEqualsError45874 (`.St`), moduleAugmentationWithNonExistentNamedImport, duplicateVarsAcrossFileBoundaries,
+    moduleAugmentationDuringSyntheticDefaultCheck (`.St`), sourceFileMergeWithFunction (a UMD `export as namespace foo`
+    merged with a global `declare function foo`), undefinedTypeAssignment4 (a script's `class undefined` merges with
+    tsc's undefinedSymbol), declarationFileNoCrashOnExtraExportModifier (`exports.Sub`), reexportMissingDefault5
+    (`default` vs `"b"`). Done 2026-10-06: tsc's unknownSymbol named by an alias of it (aliasesInSystemModule1/2,
+    isolatedModulesImportExportElision, constructorWithIncompleteTypeAnnotation; unknown_symbol_text(), hacks.md).
+16. Done 2026-10-06: spread namespace members keep their symbol (PropDeclRare.spread_variable/spread_namespace),
+    `{ while: while }` recovery, type predicates naming no parameter. Left: mappedTypeConstraints (`Pick<T | U, ...>`
+    declarations depend on whether f3 follows: an order-dependent memo). isolatedDeclarationLazySymbols
+    (`foo[o["a.b"]] = v` adds a declaration but no member). Module elements in a function/block
+    (moduleElementsInWrongContext{,2,3}, plainJSGrammarErrors, `.St`): tsc binds them anyway; tttt's `wrong_context`
+    declares nothing. Also from agent D's 2026-10-06 list: bivariantInferences (tsc's isTypeParameterPossiblyReferenced
+    is true for a type parameter with several declarations, `interface Array<T>` merged: every instantiation of a
+    member's type is new, so `(A[] | B[]).m` lists the declaration once per member; tttt's free-param scan shares
+    one), thisTypeInAccessors (an accessor without a `this` parameter takes the other accessor's, getSignatureFromDeclaration;
+    the later sibling's symbol doesn't exist yet at the resolve walk), dynamicNamesErrors (a late-bound member merges
+    into the early-bound one of its name, first declaration's name and type), defaultDeclarationEmitShadowedNamedCorrectly
+    (`export default class C` named `C`, not `me.default` through a self-import), nodeModulesJson (a CJS namespace
+    import's JSON properties print bare), templateStringMultiline3 (CR-only file: tsc's codeLines lose the leading
+    blank lines, mechanism not found).
+
+**JavaScript (plan 26 territory)**
+17. `a: function () { this.x = v }` declares x in the function's own members (objectPropertyAsClass, thisInObjectJs,
+    functionExpressionNames: `.S.`, also `A = function () {}` and a binding default as constructors); JS this-members
+    merged with `F.prototype = {...}` accessors and `this` in a `defineProperty(F.prototype, ...)` descriptor
+    (jsDeclarationsFunctionLikeClasses2, checkExportsObjectAssignPrototypeProperty, `.St`). `@enum` on `exports.a = {}`
+    (enumTagOnExports `.St`).
 18. CommonJS naming and aliases: moduleExportDuplicateAlias{,2,3} (every `exports.x = undefined`/`= a` is an alias in
     tsc, left sides any; tried, see hacks.md; moduleExportsAliasLoop1/2 show it: `Math.min : Symbol(fn2)`),
     moduleExportAlias4 (class named through `var wat = require(itself)`: the chain doesn't see a require alias's
