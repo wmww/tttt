@@ -4678,6 +4678,15 @@ static Ternary structured_related_members(
     return ret;
 }
 
+// Whether two instantiations of one generic type alias relate by its variances first (see structured_related_impl)
+static bool alias_variance_applies(Checker* me, RelationState const* st, Ty const* source, Ty const* target, bool use_variances) {
+    return ((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias && source->alias_args.len &&
+        source->alias == target->alias && source->alias_args.len == target->alias_args.len &&
+        source->kind != TY_REFERENCE && target->kind != TY_REFERENCE &&
+        !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
+        !(st->alias_fallback_source == source && st->alias_fallback_target == target);
+}
+
 // `use_variances` false: two instantiations of the same generic are compared by their members, as for an explanation
 static Ternary structured_related_impl(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
@@ -4742,6 +4751,19 @@ static Ternary structured_related_members(
         if (!related && (source->flags & TYF_OBJECT)) {
             related = related_to_discriminated(me, st, source, target);
             if (related) report_truncate(st, saved);
+        }
+        // An instantiation of a generic alias whose union instantiation is the target is still related by the alias's
+        // variances (tsc's structuredTypeRelatedToWorker goes on to them after unionOrIntersectionRelatedTo for an
+        // object source): `Mutable<E>` to `Mutable<El>`, a union of `Mutable` of each member, with `E extends El`
+        if (!related && alias_variance_applies(me, st, source, target, use_variances)) {
+            Variances const* variances = get_alias_variances(me, source->alias);
+            bool unreliable;
+            if (!variances) return TERNARY_MAYBE;
+            Ternary by_alias = type_args_related(me, st, variances, source->alias_args, target->alias_args, false, &unreliable);
+            if (by_alias) {
+                report_truncate(st, saved);
+                return by_alias;
+            }
         }
         if (related || (!source_is_generic && source->kind != TY_INTERSECTION)) return related;
     }
@@ -4825,12 +4847,7 @@ static Ternary structured_related_members(
     // fails with an unreliable variance, structurally
     // Not type references: tsc's getNormalizedType makes a deferred one a plain reference first, which has no alias
     // (`type A<T> = Box<T extends string ? C<T> : never>`: A<symbol | string> is Box<C<string>>, which A<string> is too)
-    if (((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias && source->alias_args.len &&
-        source->alias == target->alias && source->alias_args.len == target->alias_args.len &&
-        source->kind != TY_REFERENCE && target->kind != TY_REFERENCE &&
-        !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
-        !(st->alias_fallback_source == source && st->alias_fallback_target == target)
-    ) {
+    if (alias_variance_applies(me, st, source, target, use_variances)) {
         Variances const* variances = get_alias_variances(me, source->alias);
         if (!variances) return TERNARY_MAYBE;
         bool unreliable;
