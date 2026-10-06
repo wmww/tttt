@@ -202,3 +202,37 @@ queues merged into one.
 - (suite errors agent B, 2026-10-06) JavaScript `var { d = [] } = {};`: tsc reports TS2339 'd' does not exist on `{}`
   (an empty object literal initializer of a non-parameter JS declaration is getJSContainerObjectType's `{}`, not the
   pattern-padded literal); tttt types d as `never[]`/`any[]` and says nothing (TS7031 without strictNullChecks).
+- (2026-10-06 agent D, suite symbols + JS types) Left from /tmp/merge/D.txt, each worked out but not fixed:
+  - A class accessor without a `this` parameter should take its pair's (tsc's getSignatureFromDeclaration via
+    getAccessorThisParameter, done for object literals: FunctionImplRare.paired_this); a class `this` is
+    THIS_CLASS_INSTANCE, which keeps no function to look it up from. Untested in the suite.
+  - tsc's getAccessibleSymbolChain finds an alias in scope that resolves to a *property*: `import { version } from
+    "./config.json"` names `config3.version` `version` (nodeModulesJson x3), CommonJS `exports.fn2 = Math.min` names
+    `Math.min` `fn2` (moduleExportsAliasLoop1/2). tttt's props have no symbols to compare (member_symbol is null for
+    lib interface members and JSON literal properties).
+  - mergeSymbol into an alias merges into its resolved target (duplicateVarsAcrossFileBoundaries: `var p` of another
+    file joins `module P` through `import p = P`); an alias that resolves to unknownSymbol is replaced by the merged
+    declaration (importEqualsError45874). tttt declares globals of all files into one table at bind time.
+  - `module.exports = X` with other exports (typedefs too): tsc's getInitializerTypeFromAssignmentDeclaration copies
+    the type's members plus every export (type-only typedefs included) and keeps the type's symbol and alias only if
+    nothing was added. So `module.exports = function MC(){}` or `= /** @type {F} */(v)` next to any `@typedef` prints
+    structurally (`{ (): MW; new (): MC; }`, alias dropped). With an alias (`module.exports = D`) the initial members
+    are the clone's type's, which hold the typedefs except for classes with `D.prototype = {...}` plus this-assignments
+    or prototype members (instrumented tsc: members {prototype} only, reason not found). tttt's
+    merged_export_equals_type() counts value exports only. jsdocTypeReferenceToImportOfFunctionExpression,
+    jsDeclarationsFunctionClassesCjsExportAssignment, checkJsTypeDefNoUnusedLocalMarked, jsDeclarationsImportTypeBundled.
+  - A function declaration's name prints with the function as enclosing declaration, its parameters in scope: a
+    JSDoc `{{y: typeof b}} b` reuses `typeof b` only when b resolves to the same symbol there (the parameter shadows
+    the outer b: tsc prints `typeof import("index").b` for a plain outer function, `typeof b` when b has expandos;
+    tttt the other way round). jsDeclarationsFunctions, jsDeclarationsFunctionsCjs, callbackTag4.
+  - A JSDoc typedef reference reused from a parameter annotation prints bare from another file (`(p: MyType) =>
+    void` in b.js and in a TS importer; `import("/a").MyType` only without reuse), where a TS `export type U` reuses as
+    `import("/a").U`: tsc's trackExistingEntityName apparently doesn't apply to JSDoc typedefs; reason not found.
+    jsdocPropertyTagInvalid.
+  - `typeFromPropertyAssignment18`: `var G = m.G = {}` makes `G.p = 1` and `m.G.q = 2` members of one type
+    (`typeof m.G`, symbols stay apart); tttt keeps two containers.
+  - Smaller: jsFileFunctionOverloads (an overload's `@template T` is in scope for naming: identity prints `<T_1>`);
+    allowJscheckJsTypeParameterNoCrash (`this.data2 = 1` in a contextually typed literal's method drops the literal's
+    method data2 from tsc's type: circularity?); lateBoundAssignmentDeclarationSupport7 (`x.F.F[_str]`);
+    moduleExportPropertyAssignmentDefault (`module.exports = axios; module.exports.default = axios` makes the local
+    `axios` the getCommonJsExportEquals clone: tsc's recordMergedSymbol, `typeof axios` everywhere in the file).
