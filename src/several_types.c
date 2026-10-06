@@ -241,7 +241,7 @@ static bool jsdoc_lookup_intended(IdentifierType* me, Scope* names) {
     // (`Object<T>` with another number of arguments is TS2315, and any too)
     if (span_equals(my name, "Object") && (vec_spanned_type_size(&my generic_params) == 2 || implicit_any)) {
         // (tsc's isJSDocIndexSignature: a string or number key)
-        TypeNode const* key = no_args ? nullptr : &vec_spanned_type_at(&my generic_params, 0)->type;
+        TypeNode const* key = vec_spanned_type_size(&my generic_params) == 2 ? &vec_spanned_type_at(&my generic_params, 0)->type : nullptr;
         bool index = key && (key->tag == TYPE_STRING || key->tag == TYPE_NUMBER);
         my jsdoc_intrinsic = index ? JSDOC_INTRINSIC_INDEX_SIGNATURE : JSDOC_INTRINSIC_ANY;
         return true;
