@@ -1695,6 +1695,12 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
             bool duplicate = false;
             for (u32 j = 0; j < out; j++) duplicate |= buf.data[j] == t;
             if (duplicate) continue;
+            // (Only the first empty object type: tsc's addTypeToIntersection, `C & {}` with `type C = {}` is C)
+            if (ty_is_empty_anonymous_object(me, t)) {
+                bool seen_empty = false;
+                for (u32 j = 0; j < out && !seen_empty; j++) seen_empty = ty_is_empty_anonymous_object(me, buf.data[j]);
+                if (seen_empty) continue;
+            }
             u32 t_family = primitive_family(t);
             // (void and undefined are both void-like, which aren't disjoint: `undefined & void` is undefined)
             if (t_family == TYF_UNDEFINED) t_family = TYF_VOID;
