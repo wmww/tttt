@@ -1012,6 +1012,17 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
     if (ctx.generic) {
         FreeParams found = {0};
         collect_free_params(me, node, &found);
+        // An alias's body keeps the alias's type parameters it doesn't mention too (tsc's getObjectTypeInstantiation
+        // keeps every outer type parameter of a type with alias arguments): `type H<A, B = Option<A>> = (b: B) => void`
+        // instantiated by A prints H<U, Option<U>>
+        for (u32 i = 0; i < alias_args.len && !found.unknown; i++) {
+            Ty const* arg = alias_args.data[i];
+            bool known = arg->kind != TY_TYPE_PARAM;
+            for (u32 j = 0; !known && j < found.len; j++) known = found.params[j] == arg;
+            if (known) continue;
+            if (found.len == MAX_FREE_PARAMS) found.unknown = true;
+            else found.params[found.len++] = arg;
+        }
         anonymous_set_free_params(me, ret, found);
         // (In JS, a type node is JSDoc, see Ty.anonymous.jsdoc_references_all)
         Span span = node->tag == TYPE_CALLABLE ? function_impl_args_span(node->callable->function) : node->interface.span;

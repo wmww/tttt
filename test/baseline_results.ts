@@ -19878,7 +19878,7 @@ const baselines = {
     'jsxComplexSignatureHasApplicabilityError': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxComponentTypeErrors': {
         errors: true,

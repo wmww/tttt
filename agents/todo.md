@@ -42,9 +42,8 @@ commit.
    compared with tsc's to three missing tsc shortcuts (`tttt --time` prints them now): drizzle 13.09 -> 10.80 G
    (-17.5%), vue 8.07 -> 6.98 (-13.5%), react -3.6%, xstate -2.8%, zod +2.5% (variances now in tsc's order). The
    distributed members' root alias is back (+1% drizzle instead of +25%). Plan 45 stage 2 by a sub-agent: webpack
-   resolve 63 -> 37 ms. Suite/corpora/sweep/`$ExpectType`/flagflip flat. Instructions: measurements.md.
-9. **Execution: suite-tail fan-out** (missing_checks.md buckets, plan 35 queue, plan 19 "effect"'s last 7, and
-   bugs/display.md's alias-argument bug: why variance measurement pays for the right alias arguments; recheck it
-   after 871fdb11, which changed how conditional instances get their alias arguments).
+   resolve 63 -> 37 ms. bugs/display.md's alias-argument bug fixed at no cost now (tsc's rule, +1 types
+   component). Suite/corpora/sweep/`$ExpectType`/flagflip flat. Instructions: measurements.md.
+9. **Execution: suite-tail fan-out** (missing_checks.md buckets, plan 35 queue, plan 19 "effect"'s last 7).
 10. **Triage.**
 11. **Insights.**
