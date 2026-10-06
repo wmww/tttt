@@ -22868,7 +22868,7 @@ const baselines = {
     'narrowingDestructuring': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'narrowingInCaseClauseAfterCaseClauseWithReturn': {
         errors: true,

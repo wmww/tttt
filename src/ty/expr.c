@@ -4196,7 +4196,9 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
             // (then widened like a declaration's type: null is any without strictNullChecks). A spread element is
             // what it spreads (tsc's checkSyntheticExpression)
             EffectiveArg const* arg = &args[at];
-            Ty const* arg_type = arg->expr ? ty_expr_type(me, arg->expr) :
+            // (Checked with the contextual type of an argument of a call being resolved, any: tsc's resolvingSignature,
+            // so a generic reference with a union constraint is narrowed as its constraint, getNarrowableTypeForReference)
+            Ty const* arg_type = arg->expr ? ty_check_expr(me, arg->expr, ty_intrinsic(me, TY_ANY)) :
                 arg->spread ? ty_reference_args(me, arg->type).data[0] : arg->type;
             type = ty_widened_for_declaration(me, arg_type, true);
         } else if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) {
