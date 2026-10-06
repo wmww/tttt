@@ -28908,7 +28908,7 @@ const baselines = {
     'spreadInvalidArgumentType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadObjectNoCircular1': {
         errors: true,
@@ -65253,7 +65253,7 @@ const baselines = {
     'objectSpread': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectSpreadComputedProperty': {
         errors: true,
@@ -65338,7 +65338,7 @@ const baselines = {
     'spreadObjectOrFalsy': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadOverwritesProperty': {
         errors: true,

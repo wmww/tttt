@@ -2782,19 +2782,22 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
     *left = result;
 }
 
-// A member of the intersection a spread of generics makes (tsc's getSpreadType keeps `{ a } & T & { b }` in order,
-// merging only neighbouring non-generic objects): a generic object, or objects spread since the last one
+// What `{ ...a, x: 1, ...b }` is made of, as tsc's getSpreadType makes it: a union (one alternative per combination of
+// the members of the unions spread) of intersections, `{ a } & T & { b }` in order, only neighbouring non-generic
+// objects merged. A part is a generic object type or the objects spread since the last one
 typedef struct SpreadPart {
-    Ty const* generic;
-    LiteralBuilder* alts;
-    u32 alt_count;
+    Ty const* generic; // Else `object`
+    LiteralBuilder object;
 } SpreadPart;
 
-typedef struct SpreadAcc {
-    LiteralBuilder* alts; // What was spread since the last generic (tsc's `spread`): one object per member of a union
-    u32 alt_count;
-    SpreadPart* parts; // Finished members, when a generic object was spread
+typedef struct SpreadAlt {
+    SpreadPart* parts;
     u32 part_count;
+} SpreadAlt;
+
+typedef struct SpreadAcc {
+    SpreadAlt* alts; // None until something is spread (tsc's emptyObjectType)
+    u32 alt_count;
     bool any; // Something `any` was spread: the whole literal is any
     bool readonly; // In a const context: what's spread is readonly
     // The last thing spread was no object (TS2698): the literal is errorType (tsc's checkObjectLiteral; a spread after
@@ -2802,40 +2805,73 @@ typedef struct SpreadAcc {
     bool error;
 } SpreadAcc;
 
-static void spread_acc_push_part(SpreadAcc* acc, SpreadPart part) {
-    acc->parts = realloc(acc->parts, sizeof(SpreadPart) * (acc->part_count + 1));
-    panic_if(!acc->parts, "out of memory");
-    acc->parts[acc->part_count++] = part;
+static void spread_alt_push(SpreadAlt* alt, SpreadPart part) {
+    alt->parts = realloc(alt->parts, sizeof(SpreadPart) * (alt->part_count + 1));
+    panic_if(!alt->parts, "out of memory");
+    alt->parts[alt->part_count++] = part;
 }
 
-// The objects spread so far become a member of the intersection (nothing if they're empty: tsc's getSpreadType
-// returns the generic right side for an empty left)
-static void spread_acc_flush(SpreadAcc* acc) {
-    if (!acc->alt_count) return;
-    if (acc->alt_count == 1 && !acc->alts[0].count && !acc->alts[0].index_count) {
-        literal_builder_drop(&acc->alts[0]);
-        free(acc->alts);
-    } else {
-        spread_acc_push_part(acc, (SpreadPart){ .alts = acc->alts, .alt_count = acc->alt_count });
+static void spread_alt_drop(SpreadAlt* alt) {
+    for (u32 i = 0; i < alt->part_count; i++) {
+        if (!alt->parts[i].generic) literal_builder_drop(&alt->parts[i].object);
     }
-    acc->alts = nullptr;
-    acc->alt_count = 0;
+    free(alt->parts);
+    *alt = (SpreadAlt){0};
 }
 
-static void spread_acc_push(SpreadAcc* acc, LiteralBuilder alt) {
-    acc->alts = realloc(acc->alts, sizeof(LiteralBuilder) * (acc->alt_count + 1));
+static SpreadAlt spread_alt_clone(SpreadAlt const* alt) {
+    SpreadAlt ret = {0};
+    for (u32 i = 0; i < alt->part_count; i++) {
+        SpreadPart const* part = &alt->parts[i];
+        spread_alt_push(&ret, part->generic ? *part : (SpreadPart){ .object = literal_builder_clone(&part->object) });
+    }
+    return ret;
+}
+
+static void spread_acc_add_alt(SpreadAcc* acc, SpreadAlt alt) {
+    acc->alts = realloc(acc->alts, sizeof(SpreadAlt) * (acc->alt_count + 1));
     panic_if(!acc->alts, "out of memory");
     acc->alts[acc->alt_count++] = alt;
 }
 
+// An object spread into an alternative: into its last part if that's objects, else a new part
+static void spread_alt_object(Checker* me, SpreadAlt* alt, LiteralBuilder const* right) {
+    if (!alt->part_count || alt->parts[alt->part_count - 1].generic) {
+        spread_alt_push(alt, (SpreadPart){ .object = { .empty_object = true } });
+    }
+    spread_into(me, &alt->parts[alt->part_count - 1].object, right);
+}
+
+// A generic object spread into an alternative: the intersection with it, or itself after nothing (tsc's getSpreadType
+// returns the generic right side for an empty left)
+static void spread_alt_generic(SpreadAlt* alt, Ty const* generic) {
+    bool empty = true;
+    for (u32 i = 0; i < alt->part_count && empty; i++) {
+        SpreadPart const* part = &alt->parts[i];
+        empty = !part->generic && !part->object.count && !part->object.index_count;
+    }
+    if (empty) {
+        spread_alt_drop(alt);
+    }
+    spread_alt_push(alt, (SpreadPart){ .generic = generic });
+}
+
 // Properties spread into what was spread so far (the ones written since the last spread, an object spread)
 static void spread_acc_props(Checker* me, SpreadAcc* acc, LiteralBuilder const* right) {
-    if (!acc->alt_count) spread_acc_push(acc, (LiteralBuilder){ .empty_object = true });
-    for (u32 i = 0; i < acc->alt_count; i++) spread_into(me, &acc->alts[i], right);
+    if (!acc->alt_count) spread_acc_add_alt(acc, (SpreadAlt){0});
+    for (u32 i = 0; i < acc->alt_count; i++) spread_alt_object(me, &acc->alts[i], right);
 }
 
 // Empty for tsc's spread purposes (isEmptyObjectTypeOrSpreadsIntoEmptyObject): no properties, or a primitive
 static bool spreads_into_nothing(Checker* me, Ty const* ty) {
+    // (An intersection only if every member is an empty object, isEmptyObjectType: `T & undefined` is generic)
+    if (ty->kind == TY_INTERSECTION) {
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* member = ty->composite.types.data[i];
+            if (!(member->flags & TYF_OBJECT) || !spreads_into_nothing(me, member)) return false;
+        }
+        return true;
+    }
     if (ty->flags & (TYF_NULLABLE | TYF_BOOLEAN | TYF_BOOLEAN_LITERAL | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT |
         TYF_BIGINT_LITERAL | TYF_STRING_LIKE | TYF_ENUM | TYF_NON_PRIMITIVE | TYF_VOID)) {
         return true;
@@ -2844,6 +2880,23 @@ static bool spreads_into_nothing(Checker* me, Ty const* ty) {
     if (!(ty->flags & TYF_OBJECT) || (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return false;
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->index_count && !members->call_count && !members->construct_count;
+}
+
+// One type (not a union) spread into an alternative. False if it's any
+static bool spread_alt_type(Checker* me, SpreadAlt* alt, Ty const* member, bool partial, bool readonly) {
+    if (!partial && ty_is_generic_object(me, member)) {
+        spread_alt_generic(alt, member);
+        return true;
+    }
+    if (!partial && spreads_into_nothing(me, member) && !(member->flags & TYF_OBJECT)) return true;
+    Ty const* apparent = ty_apparent_type(me, member);
+    if (apparent->flags & TYF_ANY) return false;
+    if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return true;
+    LiteralBuilder right = { .empty_object = false };
+    spread_props_of(me, apparent, partial, readonly, &right);
+    spread_alt_object(me, alt, &right);
+    literal_builder_drop(&right);
+    return true;
 }
 
 // Something spread: `...x`
@@ -2870,57 +2923,41 @@ static void spread_acc_type(Checker* me, SpreadAcc* acc, Ty const* type) {
     }
     if (partial || members.len == 1) {
         Ty const* object = partial ? partial : members.data[0];
-        if (!partial && ty_is_generic_object(me, object)) {
-            spread_acc_flush(acc);
-            spread_acc_push_part(acc, (SpreadPart){ .generic = object });
-            return;
+        if (partial || !ty_is_generic_object(me, object)) {
+            Ty const* apparent = ty_apparent_type(me, object);
+            if (apparent->flags & TYF_ANY) {
+                acc->any = true;
+                return;
+            }
+            if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return;
+            // (An empty object still makes what was spread a new object rather than tsc's emptyObjectType: index
+            // signatures written after it are the ones both have, none)
+            if (!partial && spreads_into_nothing(me, object) && !(object->flags & TYF_OBJECT)) return;
         }
-        Ty const* apparent = ty_apparent_type(me, object);
-        if (apparent->flags & TYF_ANY) {
-            acc->any = true;
-            return;
+        if (!acc->alt_count) spread_acc_add_alt(acc, (SpreadAlt){0});
+        for (u32 i = 0; i < acc->alt_count; i++) {
+            if (!spread_alt_type(me, &acc->alts[i], object, partial != nullptr, acc->readonly)) {
+                acc->any = true;
+                return;
+            }
         }
-        if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return;
-        // (An empty object still makes what was spread a new object rather than tsc's emptyObjectType: index signatures
-        // written after it are the ones both have, none)
-        if (spreads_into_nothing(me, object) && !(object->flags & TYF_OBJECT)) return;
-        LiteralBuilder right = { .empty_object = false };
-        spread_props_of(me, apparent, partial != nullptr, acc->readonly, &right);
-        spread_acc_props(me, acc, &right);
-        literal_builder_drop(&right);
         return;
     }
-    // Member by member, each into each of what was spread so far
-    if (!acc->alt_count) spread_acc_push(acc, (LiteralBuilder){ .empty_object = true });
+    // Member by member, each into each of what was spread so far (tsc's getSpreadType maps over a union)
+    if (!acc->alt_count) spread_acc_add_alt(acc, (SpreadAlt){0});
     SpreadAcc next = {0};
     for (u32 i = 0; i < acc->alt_count; i++) {
         for (u32 j = 0; j < members.len; j++) {
-            LiteralBuilder alt = literal_builder_clone(&acc->alts[i]);
-            Ty const* apparent = ty_apparent_type(me, members.data[j]);
-            if (!spreads_into_nothing(me, members.data[j]) && ((apparent->flags & TYF_OBJECT) || apparent->kind == TY_INTERSECTION)) {
-                LiteralBuilder right = {0};
-                spread_props_of(me, apparent, false, acc->readonly, &right);
-                spread_into(me, &alt, &right);
-                literal_builder_drop(&right);
-            }
-            spread_acc_push(&next, alt);
+            SpreadAlt alt = spread_alt_clone(&acc->alts[i]);
+            Ty const* member = members.data[j];
+            if (!spreads_into_nothing(me, member)) spread_alt_type(me, &alt, member, false, acc->readonly);
+            spread_acc_add_alt(&next, alt);
         }
-        literal_builder_drop(&acc->alts[i]);
+        spread_alt_drop(&acc->alts[i]);
     }
     free(acc->alts);
     acc->alts = next.alts;
     acc->alt_count = next.alt_count;
-}
-
-static Ty const* spread_acc_objects(Checker* me, LiteralBuilder const* alts, u32 alt_count, ObjectLiteralKind kind) {
-    TyBuf objects = {0};
-    for (u32 i = 0; i < alt_count; i++) {
-        LiteralBuilder const* alt = &alts[i];
-        ty_buf_push(&objects, ty_object_literal(me, alt->props, alt->count, alt->index, alt->index_count, kind));
-    }
-    Ty const* ret = ty_union(me, objects.data, objects.len, nullptr, (TyList){0});
-    ty_buf_drop(&objects);
-    return ret;
 }
 
 // What the literal is. `own`: the properties written after the last spread (the whole literal if nothing was spread)
@@ -2928,33 +2965,31 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
     Ty const* ret;
     if (acc->any) {
         ret = acc->error ? ty_intrinsic(me, TY_ERROR) : any_type(me);
-    } else if (!acc->alt_count && !acc->part_count) {
+    } else if (!acc->alt_count) {
         // (`{}`: a type of its own, see ty_object_literal_of())
         bool empty = !own->count && !own->index_count && expr && expr->tag == EXPR_OBJECT && !vec_object_expr_item_size(&expr->object);
         ret = ty_object_literal_of(me, own->props, own->count, own->index, own->index_count, kind, empty ? expr : nullptr);
     } else {
         if (own->count || own->index_count) spread_acc_props(me, acc, own);
-        if (!acc->part_count) {
-            ret = acc->alt_count ? spread_acc_objects(me, acc->alts, acc->alt_count, kind) :
-                ty_object_literal(me, nullptr, 0, nullptr, 0, kind);
-        } else {
-            spread_acc_flush(acc);
-            TyBuf members = {0};
-            for (u32 i = 0; i < acc->part_count; i++) {
-                SpreadPart const* part = &acc->parts[i];
-                ty_buf_push(&members, part->generic ? part->generic : spread_acc_objects(me, part->alts, part->alt_count, kind));
+        TyBuf alts = {0};
+        TyBuf parts = {0};
+        for (u32 i = 0; i < acc->alt_count; i++) {
+            SpreadAlt const* alt = &acc->alts[i];
+            parts.len = 0;
+            for (u32 j = 0; j < alt->part_count; j++) {
+                SpreadPart const* part = &alt->parts[j];
+                ty_buf_push(&parts, part->generic ? part->generic :
+                    ty_object_literal(me, part->object.props, part->object.count, part->object.index, part->object.index_count, kind));
             }
-            ret = members.len == 1 ? members.data[0] : ty_intersection(me, members.data, members.len, nullptr, (TyList){0});
-            ty_buf_drop(&members);
+            ty_buf_push(&alts, parts.len == 0 ? ty_object_literal(me, nullptr, 0, nullptr, 0, kind) :
+                parts.len == 1 ? parts.data[0] : ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}));
         }
+        ret = alts.len == 1 ? alts.data[0] : ty_union(me, alts.data, alts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+        ty_buf_drop(&alts);
     }
-    for (u32 i = 0; i < acc->alt_count; i++) literal_builder_drop(&acc->alts[i]);
+    for (u32 i = 0; i < acc->alt_count; i++) spread_alt_drop(&acc->alts[i]);
     free(acc->alts);
-    for (u32 i = 0; i < acc->part_count; i++) {
-        for (u32 j = 0; j < acc->parts[i].alt_count; j++) literal_builder_drop(&acc->parts[i].alts[j]);
-        free(acc->parts[i].alts);
-    }
-    free(acc->parts);
     return ret;
 }
 
