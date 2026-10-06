@@ -10993,7 +10993,7 @@ const baselines = {
     'enumAssignmentCompat6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumAssignmentCompat7': {
         errors: true,
@@ -12478,7 +12478,7 @@ const baselines = {
     'expandoFunctionBlockShadowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionContextualTypes': {
         errors: true,

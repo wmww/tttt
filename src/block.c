@@ -14,6 +14,9 @@ void block_drop(Block* me) {
 
 void block_add_names(Block const* me, Scope* scope) {
     if (!scope->block) scope->block = me;
+    if (scope->kind == SCOPE_BLOCK || scope->kind == SCOPE_FUNCTION || scope->kind == SCOPE_STATIC_BLOCK) {
+        ((Block*)me)->scope = scope;
+    }
     bool hoist = scope_is_var_container(scope);
     // Function declarations first, like tsc's bindEachFunctionsFirst: that decides which of two conflicting
     // declarations is the first one
@@ -108,7 +111,7 @@ void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs) {
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     block_add_names(me, scope);
     block_lookup_names_as(me, true, scope, errs);
-    scope_release(scope, pending_mark);
+    if (scope_release(scope, pending_mark) && me->scope == scope) ((Block*)me)->scope = nullptr;
 }
 
 void block_collect_return_types(Block const* me, TyBuf* out) {

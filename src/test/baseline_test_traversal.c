@@ -3317,7 +3317,12 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
 }
 
 void block_compile_test_info(Block const* me, BaselineTestCase* ctx) {
+    // (Types are named from where they're printed, tsc's enclosing declaration: a declaration of the block shadows
+    // an outer one of the same name)
+    Scope const* outer = ctx->enclosing;
+    if (my scope) ctx->enclosing = my scope;
     for_each (i, vec_statement, &my statements) {
         statement_compile_test_info(i, ctx);
     }
+    ctx->enclosing = outer;
 }

@@ -37,6 +37,9 @@ typedef struct BlockTypecheckCtx {
 
 typedef struct Block {
     VecStatement statements;
+    // The scope of a function body or block whose declarations the resolve walk added (block_add_names()), null for
+    // a file's or namespace's statements and blocks that declare nothing: where the types baseline names types from
+    struct Scope* scope;
 } Block;
 
 void block_drop(Block* me);

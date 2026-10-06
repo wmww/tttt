@@ -701,7 +701,7 @@ Scope* scope_new(Scope* parent, ScopeKind kind);
 // binder arena (malloc'd lists, the AST) must keep the scope from being released: see the pending reports. `pending_mark` is scope_pending_mark() from when it was made
 typedef struct ScopePendingMark { u32 not_found, export_merges, deferred; } ScopePendingMark;
 ScopePendingMark scope_pending_mark(Binder const* binder);
-void scope_release(Scope* me, ScopePendingMark pending_mark);
+bool scope_release(Scope* me, ScopePendingMark pending_mark); // Whether it was released
 // The innermost for-in loop whose body `names` is in and whose variable is `variable` (null if none)
 struct ForEachLoopStatement const* scope_for_in_loop_of(Scope const* names, Symbol const* variable);
 // What tsc's getContainingFunction finds for a node in this scope: Scope.function, or the function whose parameter a

@@ -443,22 +443,24 @@ ScopePendingMark scope_pending_mark(Binder const* binder) {
     return (ScopePendingMark){ binder->pending_not_found_count, binder->pending_export_merge_count, 0 };
 }
 
-void scope_release(Scope* me, ScopePendingMark pending_mark) {
+bool scope_release(Scope* me, ScopePendingMark pending_mark) {
     ScopePendingMark now = scope_pending_mark(my binder);
     if (now.not_found != pending_mark.not_found || now.export_merges != pending_mark.export_merges ||
         now.deferred != pending_mark.deferred
     ) {
-        return;
+        return false;
     }
     Arena* arena = binder_arena(my binder);
     bool popped_rare = false;
     if (my rare) {
         // (Its rare part right after it, as when it was given one before anything else was allocated)
-        if ((char*)my rare != (char*)me + sizeof(Scope) || !arena_pop_last(arena, my rare, sizeof(ScopeRare))) return;
+        if ((char*)my rare != (char*)me + sizeof(Scope) || !arena_pop_last(arena, my rare, sizeof(ScopeRare))) return false;
         my rare = nullptr;
         popped_rare = true;
     }
-    if (!arena_pop_last(arena, me, sizeof(Scope)) && popped_rare) panic("a scope's rare part was the latest allocation, not the scope");
+    bool popped = arena_pop_last(arena, me, sizeof(Scope));
+    if (!popped && popped_rare) panic("a scope's rare part was the latest allocation, not the scope");
+    return popped;
 }
 
 void scope_reparent(Scope* me, Scope* parent) {
