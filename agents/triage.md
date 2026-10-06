@@ -107,3 +107,31 @@ queues merged into one.
 - (agent d, seed 4) Same-position diagnostics TS2552 and TS2538 at `[nameX]` in a destructuring pattern: tsc lists 2552
   first despite compareDiagnostics' code order (mut6126); with `/// <reference no-default-lib="true"/>` and a few empty
   global interfaces tsc reports nothing at all, tttt TS2304 (mut1536).
+
+- (agent C, 2026-10-06, the errors-component tail /tmp/merge/C2.txt) What was left after the fixes, by mechanism:
+  - Text only (codes and positions match; errtextdiff territory): 29 tests, e.g. genericRestParameters3 (tuple
+    sources print as arrays in elaborations), mappedTypeRelationships (constraint elaboration chain),
+    destructuringUnspreadableIntoRest (Omit key order), conditionalTypes1 (`T2` vs `Foo<T & U>` alias choice),
+    interfaceExtendsObjectIntersectionErrors (a tuple alias prints as the alias; tsc's tuple references carry none),
+    tsxUnionElementType3/4 (related info prints `{ children?: ReactNode }` once), mappedTypeNotMistakenlyHomomorphic
+    (TS2728 related info missing), objectLiteralExcessProperties (the error's source keeps `prop: true` where the
+    printed initializer type widened it: two types for one expression).
+  - Circularity / depth (plan 35 item 12 and plan 39): circularBaseTypes (TS2313), circularConstraintYieldsAppropriateError
+    (TS2310), circularOptionalityRemoval (TS2502), recursiveMappedTypes, recursivelyExpandingUnionNoStackoverflow,
+    limitDeepInstantiations, recursiveConditionalCrash4, circularIndexedAccessErrors, circularInlineMappedGenericTupleTypeNoCrash,
+    infiniteConstraints (spurious TS2321), functionImplementations (a return of a recursive call), the "NoCrash" ones.
+  - Limits not implemented: TS2563 (largeControlFlowGraph), TS2590 (normalizedIntersectionTooComplex,
+    templateLiteralTypes1), TS2859 (relationComplexityError), TS2799's position (excessivelyLargeTupleSpread).
+  - Mixins: class members inherited from an intersection base are the first member's property, not tsc's synthetic
+    one (mixinAccessModifiers: spurious TS2415 for `class C4 extends Mix(Protected, Protected2)`, c4.p/C4.s messages).
+  - Inference: contravariantOnlyInferenceFromAnnotatedFunction (A = string from an annotated `fn` inside a reverse
+    mapped source), inferFromGenericFunctionReturnTypes3 (Enum.A vs Enum: literal widening of class instantiations
+    across return inference), genericCallWithGenericSignatureArguments3 (messages `=> 1` vs `=> number`).
+  - thisTypeInFunctionsNegative: spurious TS2684 for `super.polymorphic()` with `this: this` (the this-argument of a
+    super access); exportEqualsDefaultProperty: a default import of an `export =` object with a "default" property
+    (needs the export= value's properties at bind time, TS1259 spurious); mergedDeclarations7 (named import of an
+    `export =` namespace's interface vs value property).
+  - JS (plan 26), declaration emit (plan 40: TS9005/TS9006/TS6232/TS5088/TS7056), lib resolution
+    (libTypeScriptOverride*/SubfileResolving*: `@typescript/lib-*` packages), noLib tests, and parser recovery
+    (parser0_004152, parserSkippedTokens20, jsxInvalidEsprimaTestSuite, conflictMarkerTrivia3, reservedNamesInAliases,
+    varianceAnnotationsWithCircularlyReferencesError, ...): not looked into.
