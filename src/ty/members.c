@@ -2354,9 +2354,16 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     if (apparent == mapped->modifiers_type || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return members;
     // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
     if (apparent->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
-    if (!(apparent->flags & TYF_OBJECT)) return members;
-    Members const* source = ty_members(me, apparent);
-    if (source->mapped || (!source->prop_count && !source->index_count)) return members;
+    if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN))) return members;
+    Members const* source = (apparent->flags & TYF_OBJECT) ? ty_members(me, apparent) : nullptr;
+    if (source && source->mapped) return members;
+    if (!source || (!source->prop_count && !source->index_count)) {
+        // (No constraint or one without members, `P extends {}`: none, and that's known, `Readonly<P>` has no `foo`)
+        MembersBuilder empty = { .mapped = mapped };
+        Members* ret = (Members*)builder_finish(me, &empty);
+        ret->generic_keys_known = true;
+        return ret;
+    }
     Prop* template = prop_new(me);
     template->type = ty_mapped_template(me, mapped);
     template->type_state = LAZY_STATE_DONE;
