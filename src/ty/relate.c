@@ -6664,6 +6664,9 @@ Ty const* ty_normalized_generic_tuple(Checker* me, Ty const* ty, bool writing) {
 Ty const* ty_report_source(Checker* me, Ty const* source) {
     if (source->alias) return source;
     for (u32 i = 0; i < 16 && (source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL || source->kind == TY_SUBSTITUTION); i++) {
+        // (A substitution source is its intersection, `Baz & V[P]` in the true branch of `V[P] extends Baz`: tsc's
+        // getNormalizedType reading, getSubstitutionIntersection)
+        if (source->kind == TY_SUBSTITUTION && !ty_is_no_infer(source)) return ty_substitution_intersection(me, source);
         Ty const* next = source->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, source, false)) :
             source->substitution.base;
         if (next == source || next->alias != source->alias) break;

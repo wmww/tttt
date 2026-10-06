@@ -2479,7 +2479,7 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
         }
         if (ty_is_related(me, filled[i], constraint, TY_RELATION_ASSIGNABLE)) continue;
         cstr source_str, target_str;
-        ty_report_pair_cstr(me, filled[i], constraint, &source_str, &target_str);
+        ty_report_pair_cstr(me, ty_report_source(me, filled[i]), constraint, &source_str, &target_str);
         report_unassignable_with_head(me, filled[i], constraint, 2344, cstr_d(
             "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."
         ), false, vec_spanned_type_at(args, i)->span, errs);
