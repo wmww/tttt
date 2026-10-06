@@ -4599,6 +4599,14 @@ static void jsdoc_find_param_issues(VecJsDocTag* tags, FunctionImpl* function) {
             rare->jsdoc_param_issues = realloc(rare->jsdoc_param_issues, sizeof(JsDocParamIssue) * (rare->jsdoc_param_issue_count + 1));
             panic_if(!rare->jsdoc_param_issues, "out of memory");
             rare->jsdoc_param_issues[rare->jsdoc_param_issue_count++] = (JsDocParamIssue){ i->missing_name, span_null };
+            if (i->has_type) {
+                // (Its type is still checked: tsc's checkJSDocParameterTag)
+                rare->jsdoc_unmatched = realloc(rare->jsdoc_unmatched, sizeof(JsDocUnmatchedParam) * (rare->jsdoc_unmatched_count + 1));
+                panic_if(!rare->jsdoc_unmatched, "out of memory");
+                rare->jsdoc_unmatched[rare->jsdoc_unmatched_count++] = (JsDocUnmatchedParam){
+                    .name = i->missing_name, .type = jsdoc_take_type(i, nullptr),
+                };
+            }
             continue;
         }
         csview name = i->name.sv;
