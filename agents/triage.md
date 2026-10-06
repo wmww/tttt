@@ -47,3 +47,16 @@ queues merged into one.
 - Nested destructuring defaults: `var [a, [b, { x, y: c }] = ["abc", { y: false }]] = [1, ["hello", { x: 5, y: true }]]`
   reports TS2339 'x' on `{ y: boolean }` in tttt, nothing in tsc (the nested literal default isn't given the pattern's
   implied properties, with_pattern_props() only applies at the top of a default).
+- (agent a, plan 46 mut0806) `class D extends class extends Base1 { root() { return undefined } }` with
+  `abstract root(): D` under strictNullChecks: tsc's checkClassExpression runs checkClassLikeDeclaration (member vs base
+  relation) inside D's base resolution, which needs D's members: TS2310/TS2506. tttt checks the class expression later.
+- (agent a, mut3125) AllowMissing for destructuring defaults (`binding.c`/`expr.c` `anonymous.object_literal` checks)
+  should go by tsc's isObjectLiteralType of the *unwidened* parent: `var a = [{y: 0}]; for (var {x = ""} of a)` is TS2339
+  in tsc. Switching to ty_is_unwidened_object_literal breaks `= { a: {} }` and `of [{}]` because tttt's binding parent
+  types (ty_binding_type) and array literal element types are already widened. Needs unwidened parent types.
+- (agent a, mut6649) tsc reports `x.slice()` in a loop twice (TS2339 on 'number' from an incomplete loop pass, then on the
+  final union); tttt once. Evaluation-order artifact of tsc's getTypeAtFlowLoopLabel.
+- (agent a) Object literal members' TS1255 `!` and modifier grammar errors are still the parser's, so they're reported
+  inside destructuring assignment targets where tsc's checkGrammarObjectLiteralExpression never runs (TS1162 moved).
+- (agent a) `async function* f(): AsyncGenerator<...>` at target es2017 (no AsyncGenerator in lib): tsc also reports the
+  global TS2318 "Cannot find global type 'AsyncIterableIterator'"; tttt doesn't.
