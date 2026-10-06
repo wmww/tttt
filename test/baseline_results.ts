@@ -22007,7 +22007,7 @@ const baselines = {
     },
     'modulePreserve4': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'modulePreserve5': {
@@ -27137,7 +27137,7 @@ const baselines = {
     },
     'reexportMissingDefault5': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'reexportMissingDefault6': {

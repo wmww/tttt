@@ -91,7 +91,8 @@ static cstr file_module_text(BaselineTestCase* ctx, Symbol const* module) {
     // CommonJS one is a symbol of its own here already)
     bool plain_namespace = item && item->tag == PORT_IMPORT_GATHER && (!compiler_options()->es_module_interop ||
         (!symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("export="))));
-    if (item && (item->is_require || plain_namespace)) {
+    // (A default import, or `{ default as d }`, that is the module itself, a synthetic default, names it too)
+    if (item && (item->is_require || plain_namespace || item->tag == PORT_IMPORT_DEFAULT || item->tag == PORT_IMPORT_SPECIFIC)) {
         cstr ret = cstr_init();
         symbol_chain_append(&ret, ctx->enclosing, &chain);
         return ret;
@@ -1376,7 +1377,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declarations,
                     .span = i->source_name,
-                    .text = symbol_text(ctx, module),
+                    .text = file ? file_module_text(ctx, module) : symbol_text(ctx, module),
                 });
             } else if (shorthand && !quoted) {
                 // (tsc's getExternalModuleMember: any member of a shorthand ambient module is the module)
