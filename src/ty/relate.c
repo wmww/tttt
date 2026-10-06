@@ -883,7 +883,9 @@ static void flush_incompatible(RelationState* st) {
 
 // tsc's reportErrorResults
 static bool is_mutable_array_or_tuple(Checker* me, Ty const* ty);
-static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top) {
+static void report_relation_error(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool top,
+    bool source_has_base
+) {
     bool suppress = st->override_next_head > 0;
     if (suppress) st->override_next_head--;
     // (the head stays when what stood in for it is an incompatible step, tsc's headMessage)
@@ -904,7 +906,9 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         c_drop(cstr, &source_str, &target_str);
     }
     // (tsc's reportErrorResults: about the global Object type as a source, unless the target is a primitive)
-    bool object_line = !wrapper_case && source == global_type(me, GLOBAL_OBJECT);
+    // (Not when the source as written was a class or interface adding nothing to it, which tsc reports about instead:
+    // `class C extends Object {}`, sourceHasBase)
+    bool object_line = !wrapper_case && !source_has_base && source == global_type(me, GLOBAL_OBJECT);
     if (object_line) {
         report_line(st, 2696, cstr_from("The 'Object' type is assignable to very few other types. Did you mean to use the 'any' type instead?"));
     }
@@ -5878,11 +5882,13 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
         // (Of an intersection, every member's properties; the types aren't needed otherwise)
         u32 prop_count;
         SourceProp* props = nullptr;
+        bool index_keys = false;
         if (source->kind == TY_INTERSECTION) {
             props = source_props(me, source, nullptr, &prop_count);
         } else {
             Members const* members = ty_members(me, source);
             prop_count = members->prop_count;
+            index_keys = members->index_count > 0;
             props = malloc(sizeof(SourceProp) * (prop_count ? prop_count : 1));
             panic_if(!props, "out of memory");
             for (u32 p = 0; p < prop_count; p++) props[p] = (SourceProp){ .prop = members->props[p] };
@@ -5890,6 +5896,13 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
         u32 best_count = 0;
         for (u32 i = 0; i < types.len; i++) {
             Ty const* t = types.data[i];
+            // A generic member: the source's keys `&` its `keyof` is a union of intersections, none a unit type, when
+            // the source has several keys (one is an intersection, no match): it matches with no overlap, if nothing
+            // before overlapped
+            if (t->kind == TY_TYPE_PARAM || t->kind == TY_INDEXED || t->kind == TY_CONDITIONAL || t->kind == TY_SUBSTITUTION) {
+                if ((prop_count >= 2 || index_keys) && !best_count) best = t;
+                continue;
+            }
             if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
             u32 count = 0;
             for (u32 p = 0; p < prop_count; p++) {
@@ -6158,9 +6171,13 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         return TERNARY_TRUE;
     }
     // A class or interface that adds nothing to its one base is that base (getNormalizedType)
+    bool source_has_base = false;
     if (source->kind == TY_DECLARED || source->kind == TY_REFERENCE) {
         Ty const* base;
-        for (u32 i = 0; i < 16 && (base = ty_non_augmenting_base(me, source)) && base != source; i++) source = ty_regular(me, base);
+        for (u32 i = 0; i < 16 && (base = ty_non_augmenting_base(me, source)) && base != source; i++) {
+            source = ty_regular(me, base);
+            source_has_base = true;
+        }
     }
     if (target->kind == TY_DECLARED || target->kind == TY_REFERENCE) {
         Ty const* base;
@@ -6214,7 +6231,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if (ty_is_fresh_object(source) && !st->intersection_target && is_structured(target) &&
         has_excess_properties(me, st, source, target, report)
     ) {
-        if (report) report_relation_error(me, st, source, report_target, top);
+        if (report) report_relation_error(me, st, source, report_target, top, source_has_base);
         return TERNARY_FALSE;
     }
     Ternary result = TERNARY_FALSE;
@@ -6240,7 +6257,7 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (unreduced_target != target && ty_never_intersection_elaboration(me, unreduced_target, &code, &message)) {
             report_line(st, code, message);
         }
-        report_relation_error(me, st, source, report_target, top);
+        report_relation_error(me, st, source, report_target, top, source_has_base);
     }
     return result;
 }
