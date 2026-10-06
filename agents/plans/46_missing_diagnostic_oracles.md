@@ -97,26 +97,34 @@ and noPropertyAccessFromIndexSignature were already right: those checks are done
   mismatches; when its queue is drained, one nuia sweep run is the cheap next widening (add a `--flags` to sweep.py
   with its own oracle file). Not before.
 
-## Stage 2: mutation testing — worth a tool (decided 2026-10-06)
-Prototype in `46_prototypes/` (README has the commands): 18 regex mutation operators on single-file suite tests that
-pass all three components, tsc baselines produced in one warm harness run (400 mutants in ~1.5 min), tttt through
-`fasttest.sh --dir`. Yield: 150 mutants gave 7 errors-component mismatches, 400 gave 12: ~3-5% of mutants, and about
-half are distinct real bugs, e.g. missing TS2377 when `super()` becomes `superX()` (computedPropertyNames28_ES6), the
-TS2728 related position on mixin members (mixinClassesAnonymous `.args` -> `.argsX`), TS2339 where tsc says TS2551
-"did you mean 'prototype'", a spurious TS2403 after `return;` (arrowFunctionExpressions), missing TS7053
-(mappedTypeGenericIndexedAccess with `extends Object`), the TS2420 elaboration line "The 'Object' type is assignable to
-very few other types", inference candidate order (iterableArrayPattern26 with `"0"`), type-argument display
-(nonPrimitiveAndTypeVariables). The other half are parser recovery (an argument replaced by `null` in a parameter
-list) and duplicates.
+## Stage 2: mutation testing — built (todo entry 2 of the tenth window, 2026-10-06)
+`./mutate.py` (docstring has the usage): 27 operators (24 regex ones plus delete-stmt, swap-stmts, delete-member) on
+single-file suite tests that pass all three components; tsc baselines by one warm harness process per core (8000
+mutants in ~70 s), cached in `/tmp/mutate/HASH` keyed by the mutants' contents and the tsc commit; `--recheck` reruns
+only tttt on the last set. Mutants whose tsc baseline gains a TS1xxx code are separated (parser recovery, `--syntax`).
+The report counts, per operator, the mutants that change tsc's codes at all ("productive": swap-stmts and
+bool-literal-type rarely are, member-typo / never-const / add-arg / drop-type-arg almost always).
 
-The tool (`./mutate.py`, the execution session builds it from the prototype):
-- Mutants from the passing suite tests *and* corpus files would be better, but corpora need whole-project tsc runs:
-  start with suite tests (fast, single-file, harness options already right).
-- Deterministic seeds; a run of N mutants caches tsc's baselines under /tmp keyed by (seed, N, tsc commit) so reruns
-  only rerun tttt; operators tagged in the name; a summary that buckets failures by operator and by the first
-  differing diagnostic (code, missing/spurious/position/text), like failstats.
-- Drop or separate the operators that produce syntax garbage (null-arg into parameter lists) into a parser-recovery
-  bucket. Add operators: delete a statement, swap two statements, remove a type argument, change `extends` targets
-  (already there), drop an `override`/`readonly`/`abstract`, change a literal type, delete an `implements` member.
-- Validation: the tool in CLAUDE.md's list; one run of ~2000 mutants triaged into root causes written into this
-  plan; the top causes fixed.
+### The first run (seed 2, 8000 mutants of 4739 tests): 94 mismatches of 3744 productive mutants (2.5%), +53 syntax
+Root causes, by count (`./mutate.py -k KEY` after a run of the same seed):
+- **Crash** (2, fixed in the same session): `(function () {` or `(() => {` unterminated at EOF panicked in
+  `expr_set_outer_span` (the parenthesized expression's whitespace trim walked into the inner expression).
+- **TS2355 missing** (12): an accessor/function with a declared return type whose `return` was deleted.
+- **Did-you-mean** (14 + 8 render): no TS2551 suggestion on the static side (`typeof C`, incl. `prototype`); TS2551
+  where tsc says TS2339 for private members accessed from outside/subclass; TS2728 "declared here" related info added
+  where tsc has none (TS2724 namespace members, object-literal types) or at the wrong column (TS2552 on a rest/binding
+  parameter) or order (union member's chain).
+- **`extends Object`** (~14): the TS2696 "'Object' type is assignable to very few" line placed where tsc doesn't or
+  missing (TS2741->TS2696, elaboration TS2345/TS2416/TS2322); `T extends Object` assignable to the primitive union
+  (missing TS2322); property access on classes/type parameters whose base became `Object` finds nothing to report
+  (missing TS2339 x5); mixin bases with a non-constructor constraint TS2545 where tsc says TS2507 (+ its span).
+- **Type text** (~12): TS2678 prints the case literal (`"1"`) where tsc widens (`string`) (5); TS2542 on `"0"` (tsc
+  `String`), TS7053 enum member (`MyEmusEnum.emu`), `number & Tag2`, `never[keyof T]`, alias `Kind | undefined`,
+  expando `extra: never`; elaboration: return type `X` vs `Y`, `Function` vs the type, a "no properties in common"
+  line, a missing union step.
+- **Computed property names** (3): TS2464 spurious for a void function call, missing for an `undefined`-initialised let.
+- Singletons: TS2345 `any` to `never` in exhaustive switches (2), TS2304 on a decorator whose declaration was deleted
+  (2, tsc says nothing), TS1162 on an optional member in an object literal (2), TS2349 vs TS2722 for a `void` callee,
+  TS2310/TS2506 base recursion through a call, TS2484 vs TS2304, for-of destructuring TS2339, expando TS7053,
+  TS7015 vs TS7053 on a tuple union, variadic tuple TS2322, a spurious TS2314/TS2347 after `extends Object`.
+

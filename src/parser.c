@@ -10400,7 +10400,9 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         hop_whitespace(&p);
         if (!expect_char(&p, ')')) {
             // Without its `)` it ends with its last token, not the whitespace after it (tsc's finishNode)
-            while (p.pos > a.start + 1 && is_js_ascii_space(p.pos[-1])) p.pos--;
+            // (never into the expression, which may end in whitespace itself: an unterminated `(function () {`)
+            char const* floor = span_end_ptr(expr_outer_span(ret));
+            while (p.pos > a.start + 1 && p.pos > floor && is_js_ascii_space(p.pos[-1])) p.pos--;
         }
         inner_span_set = true;
         if (p.shared->source->is_js) jsdoc_apply_parenthesized(&p, a.start, span_from(a), ret);
