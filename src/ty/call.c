@@ -998,6 +998,12 @@ static void infer_rest_variadic(
     if (!shape->rest_variadic) return;
     u32 from = shape->count < args->len ? shape->count : args->len;
     bool is_const = ty_is_const_type_variable(me, shape->rest_variadic, 0);
+    // Each inference types the other arguments again against the rest type (tsc's getSpreadArgumentType): a type left
+    // by an earlier round's applicability check came from the instantiated rest type, whose `boolean` keeps a `true`
+    // that the uninstantiated one widens (chillout's `forEach({ quux: true }, v => ...)` under a conditional rest)
+    for (u32 i = from; i < args->len; i++) {
+        if (!args->data[i].context_sensitive && !args->data[i].spread && !args->data[i].part_of_spread) args->data[i].type = nullptr;
+    }
     // A context-sensitive function waits for what the other arguments infer, as anyFunctionType (tsc's
     // SkipContextSensitive pass), then is checked with its element of the rest type as its contextual type (tsc's
     // getSpreadArgumentType, an indexed access with AccessFlags.Contextual): `gen(this, function*() { this.x })` under
