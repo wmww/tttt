@@ -22,7 +22,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   tests yielded 3x single-file's rate (JS/JSDoc, module resolution and the harness were less drilled); drained to ~2%.
 - **Perf**: callgrind flat over the window except where tsc caches were added (valibot -24%, effect -12%). vscode
   2.2 s / 2.1 GB vs tsgo 6.75 s / 3.7 GB; 1.5-7x faster than multi-threaded tsgo elsewhere. **Memory** below tsgo's
-  peak RSS on every corpus (plan 43: -20 to -42%). Name resolution is parallel for TypeScript files (plan 45 stage 1).
+  peak RSS on every corpus (plan 43: -20 to -42%). Name resolution is parallel per file (plan 45 stages 1-2).
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, tsc's inference flow (lazy fixing, contextual instantiation, intra-expression sites,
@@ -92,14 +92,15 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 (-> plan 04), checker state in the AST (-> per-`Checker` slots). What's left to watch:
 - **Parser**: error-recovery fidelity is essentially done (plan 27: 34 tests still differ, 2026-09-29; the framework held, no rewrite needed), unbounded recursion depth (binary chains need ~8 MB of
   stack; tsc walks them iteratively), backtracking cost.
-- **Binder**: declare and link are serial and write shared tables; the resolve walk shards per file for TypeScript
-  (plan 45: JavaScript files and merged type parameters still walk serially; `hacks.md`, "Parallelism contract"). JS support will add declarations from assignments; design it with that in mind.
+- **Binder**: declare and link are serial and write shared tables; the resolve walk shards per file, JavaScript too
+  (plan 45: a JS file's assignment declarations replay in program order; merged type parameters still walk serially;
+  `hacks.md`, "Parallelism contract"). JS support will add declarations from assignments; design it with that in mind.
 - **Threading**: checking is threaded (stage 3; nothing in the checker had to change once stage 2's audit fixes were
   in, which is evidence the "AST read-only while checking" contract holds). Any new checker-wide memo that *reports*
   must be tagged `Error.once_key`, and anything written to AST/binder state during checking is a race (the frozen
   guards log it; TSan on the corpora is the net: `plans/36_parallelism.md` has the build line). Loading is
   threaded too (a cache-warmer pool beside the unchanged sequential loader: `src/load_pool.c`; the shared state is the
-  resolver's locked caches). Name resolution shards per file for TypeScript (plan 45 stage 1); JavaScript files and declare/link are serial.
+  resolver's locked caches). Name resolution shards per file (plan 45 stages 1-2); declare/link are serial.
 
 ## Risks / concerns
 - Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by

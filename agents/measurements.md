@@ -113,6 +113,10 @@ the rest within 0.1%. The +4.3% effect regression of 3ec34a9e (inference restart
 was `any`/unions walked into recursive conditional aliases (Schema's `ElementsType<Tail, [...]>`: 112k infer_from
 calls for one restart; tsc's invokeOnce stops it at two levels).
 
+## Parallel name resolution of JavaScript (2026-10-06, plan 45 stage 2)
+webpack `--time` resolve names, best of 5, default threads: 63.3 -> 36.1 ms, wall 0.30 -> 0.27-0.28 s. Callgrind K1
+within +0.24% everywhere (nest; webpack +0.18%, vscode +0.12%); the numbers are in the plan.
+
 ## Parallel name resolution (2026-10-05, plan 45 stage 1, tenth window's todo entry 7)
 `--time` resolve names, best of 3, default threads (4 = 2 cores x SMT), load ~3: vscode 593 -> 283 ms (the walk 510
 -> ~200; declare 40 and link 28 stay serial), tsc `src/compiler` 77 -> 39, webpack 72 -> 63 (JavaScript walks

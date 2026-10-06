@@ -222,15 +222,18 @@ The parser creates an AST from the source code string, see below.
 2. **Link** (`binder_link()`): `export *` tables are flattened and every alias is resolved, so that nothing writes to a symbol afterwards; import conflicts (TS2440) are reported.
 3. **Resolve** (`*_lookup_names()`): the deep walk. It makes the function and block scopes as it enters them (declaring their names first, so uses before the declaration resolve) and stores on every identifier the symbol it found plus the symbol that has the meaning it is used with (`target`). The same walk builds the control flow graph, so it visits statements and expressions **in evaluation order** (`for`: init, condition, body, afterthought; an IIFE's arguments before its body), see "Control flow" below.
 
-**The parallel walk** (`program_resolve_walk()`): TypeScript files are walked in any order (biggest first) by a pool,
+**The parallel walk** (`program_resolve_walk()`): files are walked in any order (biggest first) by a pool,
 each into a `ResolveShard` of its own (thread-local `resolve_shard`): `binder_arena()` is the thread's arena,
 `binder_errs()` the file's `ErrorCtx` (parent: the program's, frozen meanwhile), new symbols and pending reports go to
 the shard's lists. What depends on the files walked before is *deferred* into the shard: tsc's first ten spelling
 suggestions (every not-found report, misspelling and count) and expandos (`f.x = v` in a function body) whose host
-another file can see. Then, in program order, each TypeScript file's shard is replayed and merged
-(`resolve_shard_merge()`) and each JavaScript file walked, on the main thread: JavaScript's assignment declarations
-write other files' symbols and read them back in the same walk. So are files whose class or interface shares type
-parameter symbols with an earlier declaration in another file (`binder_mark_serial_resolves()`). The order is the same
+another file can see. A JavaScript file defers *all* its assignment declarations (`this.x = v`, `F.prototype.x = v`,
+expandos, `Object.defineProperty`, a script's `this.x = v`, `@constructor` marks of symbols not local to a function:
+`DEFERRED_JS_*`), whose hosts may be other files' and which read what earlier ones declared: replayed in walk order,
+nothing in between, and the declaration a walk had yet to reach is linked then (`DeferredEvent.link`,
+`expr_link_assignment_declaration()`); `require`'s symbol is made before the walks. Then, in program order, each file's
+shard is replayed and merged (`resolve_shard_merge()`), and the files whose class or interface shares type parameter
+symbols with an earlier declaration in another file (`binder_mark_serial_resolves()`) are walked on the main thread. The order is the same
 at any thread count (the suite runs it at one); `TTTT_PARALLEL_RESOLVE=1` uses the threads even for a few files.
 
 Imported files are discovered while loading, from the parser's list of module names (`SourceFile.module_refs`; `program_handle_statement()` only follows `/// <reference>` directives and decides whether a file is a module), before any of this. Between declare and link every `ModuleRef` is resolved to its module symbol, which needs the ambient modules of all files.

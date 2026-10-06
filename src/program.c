@@ -2196,10 +2196,11 @@ static void resolve_file(SourceFile* source, ErrorCtx* errs) {
     if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
 }
 
-// Whether a file's resolve walk can run on a thread of its own (plan 45): not a JavaScript file's, which declares into
-// other files' symbols (`this.x = v`, prototype assignments, CommonJS) and reads it back in the same walk
+// Whether a file's resolve walk can run on a thread of its own (plan 45). A JavaScript file's does too: its assignment
+// declarations (`this.x = v`, `F.prototype.x = v`, expandos), which declare into other files' symbols, wait for its
+// replay (DEFERRED_JS_* in scope.c)
 static bool resolves_in_parallel(SourceFile const* source) {
-    return !source->is_js && !source->resolve_serial;
+    return !source->resolve_serial;
 }
 
 // The TypeScript files' walks, shared by the resolve threads
@@ -2265,10 +2266,14 @@ static void program_resolve_walk(Program* me) {
     lane.shard_of = c_new_n(u32, file_count ? file_count : 1);
     // Biggest first, so that one big file doesn't start last
     ResolveOrder* order = c_new_n(ResolveOrder, file_count ? file_count : 1);
+    bool any_js = false;
     for (isize i = 0; i < file_count; i++) {
         SourceFile* source = *vec_source_file_ptr_at(&my source_files_ordered, i);
         if (resolves_in_parallel(source)) order[lane.count++] = (ResolveOrder){ cstr_size(&source->contents), (u32)i };
+        any_js |= source->is_js;
     }
+    // (The `require` of a JavaScript file that doesn't declare one: one symbol, made before the walks share it)
+    if (any_js) binder_require_symbol(my binder);
     qsort(order, lane.count, sizeof(ResolveOrder), resolve_order_cmp);
     for (u32 i = 0; i < lane.count; i++) {
         lane.files[i] = *vec_source_file_ptr_at(&my source_files_ordered, order[i].index);

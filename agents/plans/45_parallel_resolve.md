@@ -83,11 +83,40 @@ suite forced parallel; sweep 8072 match, 0 crash (unchanged). Numbers (best of 3
 (its JS is serial). Single-threaded callgrind: tsc +0.2%, nest +0.6%, react +0.2%, vscode +0.2% (shard bookkeeping;
 a quadratic sort of the files by size was +2.8% on nest before `qsort`).
 
-### Stage 2: JavaScript files in the parallel lane
-Needs JS's nested assignment declarations to stop writing other files' symbols during the walk: classify each
-`add_this_property()` / `add_prototype_property()` / `add_expando_member()` host as file-private or shared and defer
-the shared ones (the flow container they need is on the `PropertyExpr`'s context, set the same walk: copy it at replay).
-`binder_require_symbol()` made up front for JS programs. webpack's walk is 62 ms: worth it after vscode-sized wins.
+### Stage 2: JavaScript files in the parallel lane: **done** (2026-10-06)
+Classifying hosts as private or shared (the original idea) doesn't hold for JavaScript: "a local all of whose
+declarations are in this file" is also what other files' aliases resolve to (`module.exports = Foo`, then
+`require()` elsewhere reads Foo's flags through `symbol_for_meaning()`), and the declarations read each other
+(`ns.C = function () { this.x = v }`: the expando sets the function's `class_symbol`, which the `this.x` reads; `a.b = {}`
+then `a.b.c = v` looks a.b up), so deferring only some reorders them. Instead a JavaScript shard defers **all** of its
+assignment declarations, in walk order, and replays them back to back (`js_shard()`, `DEFERRED_JS_*` in scope.c):
+`add_expando()` (nested `f.x = v`, the declare step's chains in function bodies; `op->expando_bound` is still set in the
+walk, which reads it), `add_define_property()`, `add_global_this_chain()` (a script's `{ this.x = v }` declares a
+global), `add_this_property()` (both `this.x = v` and `/** @type */ this.x;`), and `scope_mark_jsdoc_class()` unless the
+symbol is a function's local (`is_local && function`, which the file's walk made). What the audit found besides:
+- **The flow container read-back** (`expr_link_assignment_declaration()`) happens when the walk reaches the target: a
+  declaration made at a block's start was linked, one made after its left side was resolved (`this.x = v`, a nested
+  expando) never was. `DeferredEvent.link` records which (`walk_unvisited()`: no `PropertyContext` yet) and the replay
+  links only those; stage 1's TypeScript expandos linked always, now the same rule.
+- **`binder_require_symbol()`** is made before the walks when the program has a JavaScript file (a `log_error` if a
+  walk would make it).
+- `push_global_expando()` is only reached from deferred events now (and is dead after `binder_link_global_expandos()`
+  anyway); `scope_note_module_exports_access()` writes the file's own `module` local, the CommonJS exports are declared
+  before the walk (`add_nested_commonjs_exports()`), hoisted `var`s too: nothing else of the JS walk writes another
+  file's state.
+- The cost: the rest of a JS file's walk doesn't see its own declarations (SYMBOL_CLASS of a constructor function,
+  members) where the serial walk did after them. Nothing in the suite or the corpora read them (`hacks.md`).
+Validation: suite 13232 unchanged; `baseline_tests --dump` byte-identical old binary vs new and new
+`TTTT_PARALLEL_RESOLVE=1 --threads 4` vs one thread; `--all-errors` of webpack (695 lines, unchecked JS), react,
+vscode, tsc-src byte-identical to the old binary; every corpus 0 diagnostics (effect its 7); `./threadcheck.sh`
+identical on webpack, react, vue, excalidraw; TSan 0 warnings on webpack at 4 threads and on the 1051 JS suite tests
+forced parallel; sweep 8588 match / 6 spurious / 1 missing / 0 crash. Numbers: webpack `--time` resolve names, best of
+5, default threads (4 on 2 cores x SMT, the machine shared): **63.3 -> 36.1 ms** (the walk ~22 ms on 4 threads, the
+replay and merge ~3 ms; walking JS in parallel without any deferral measured 34.4, so deferral costs ~2 ms), wall
+0.30 -> 0.27-0.28 s. Callgrind K1 (`./instrcount.sh`) HEAD -> end: tsc 4.628 -> 4.629 G, type-fest 3.104 -> 3.104,
+valibot 4.221 -> 4.219, react 1.518 -> 1.520, nest 1.260 -> 1.263 (+0.24%), webpack 3.866 -> 3.873 (+0.18%), zod 4.565
+-> 4.569, xstate 2.961 -> 2.962, drizzle 10.783 -> 10.783, vue 7.956 -> 7.958, effect 9.812 -> 9.808, vscode 32.447 ->
+32.485 (+0.12%), excalidraw 5.040 -> 5.041, tanstack-router 4.627 -> 4.627.
 
 ### Stage 3 (maybe never): declare and link
 40 + 28 ms on vscode. Declare writes `Binder.globals`, ambient modules and namespace exports shared by files; it would

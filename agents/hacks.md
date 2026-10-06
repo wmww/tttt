@@ -29,8 +29,11 @@ src` finds the code-side markers; every significant one has an entry here.
   panic after 1G slots; per-file numbering would work. `lazy_type_drop` resets a slot if a checker is current
   (assumed a temporary); AST slots are dropped by `checker_drop` before the AST: an implicit ordering rule.
 - **Parallelism contract** (documentation.md "Resolve names" has the design): what is serial or shared rather than
-  designed away. JavaScript files walk serially (assignment declarations write other files' symbols: plan 45 stage 2);
-  so do files sharing merged type parameters (`binder_mark_serial_resolves()`; tsc makes them in its binder, tttt could
+  designed away. A JavaScript file's walk defers every assignment declaration to its replay (`DEFERRED_JS_*`, plan 45
+  stage 2), so the rest of its walk never sees what they declare (a `this.x = v`'s SYMBOL_CLASS, members, an
+  expando's `FunctionImpl.class_symbol`): the serial walk did, nothing in the suite or the corpora read it; the
+  `@constructor` mark of a function's local stays in the walk (no other file sees one). Files sharing merged type
+  parameters walk serially (`binder_mark_serial_resolves()`; tsc makes them in its binder, tttt could
   in declare). Deferred events replayed in program order: suggestion counting, expandos into a non-private host
   (`expando_host_is_private()` is conservative). Cross-file writes left by design: `Symbol.referenced` (atomic OR),
   `has_assignment_flow_containers` (atomic store), `flow_start` (only the first declaring file writes it;

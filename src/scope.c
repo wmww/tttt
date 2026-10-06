@@ -1843,8 +1843,16 @@ static void set_function_class_symbol(Expr* value, Symbol* symbol) {
     if (file && file->is_js && symbol) scope_mark_jsdoc_class(symbol->binder, symbol, value->function);
 }
 
+static void defer_jsdoc_class(ResolveShard* shard, Symbol* symbol, FunctionImpl const* function);
+
 void scope_mark_jsdoc_class(Binder* binder, Symbol* symbol, FunctionImpl const* function) {
     if (!symbol || !function->jsdoc_class) return;
+    // (A local of a function is made by the walk of its file, which no other file sees)
+    ResolveShard* shard = binder_shard(binder);
+    if (shard && !(symbol->is_local && symbol->function)) {
+        defer_jsdoc_class(shard, symbol, function);
+        return;
+    }
     symbol->flags |= SYMBOL_CLASS;
     if (!symbol_rare(symbol)->members) symbol_rare_mut(symbol)->members = arena_new(binder_arena(binder), SymbolTable);
 }
@@ -2132,6 +2140,7 @@ void scope_note_module_exports_access(Scope* me, Expr const* module) {
 
 Symbol* binder_require_symbol(Binder* me) {
     if (!my require_symbol) {
+        if (binder_shard(me)) log_error("the require symbol made by a resolve walk: program_resolve_walk() makes it first");
         my require_symbol = binder_new_symbol(me, c_sv("require"), SYMBOL_FUNCTION_SCOPED_VARIABLE);
         symbol_add_decl(my require_symbol, (SymbolDecl){
             .kind = SYMBOL_DECL_BUILTIN, .flags = SYMBOL_FUNCTION_SCOPED_VARIABLE, .node = &type_any,
@@ -4087,6 +4096,12 @@ typedef enum DeferredKind {
     DEFERRED_COUNT, // scope_count_suggestion()
     DEFERRED_PENDING, // the count of pending_not_found[index]
     DEFERRED_EXPANDO, // add_expando_member()
+    // A JavaScript file's assignment declarations, all of them: the file's walk then writes no symbol other files see
+    DEFERRED_JS_EXPANDO, // add_expando()
+    DEFERRED_JS_DEFINE_PROPERTY, // add_define_property()
+    DEFERRED_JS_GLOBAL_THIS, // add_global_this_chain()
+    DEFERRED_JS_THIS_PROPERTY, // add_this_property()
+    DEFERRED_JS_CLASS, // scope_mark_jsdoc_class()
 } DeferredKind;
 
 typedef struct DeferredEvent {
@@ -4109,6 +4124,15 @@ typedef struct DeferredEvent {
     Expr const* late_bound_key;
     AssignmentDeclKind assignment;
     bool top_level;
+    // The walk hadn't reached `left` yet (scope_add_expandos() at a block's start): it would have linked the
+    // declaration then, expr_link_assignment_declaration(), which the replay does instead
+    bool link;
+    // DEFERRED_JS_*
+    BinaryOpExpr* op;
+    Scope* arrow;
+    uint8_t jsdoc_modifiers;
+    Symbol* symbol;
+    FunctionImpl const* function;
 } DeferredEvent;
 
 // Where a shard's report that outlives the walk goes: the walk's contexts other than the file's are scratch ones it
@@ -4121,6 +4145,25 @@ static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope 
     DeferredEvent* ret = list_push((void**)&shard->deferred, &shard->deferred_count, &shard->deferred_cap, sizeof(DeferredEvent));
     *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs) };
     return ret;
+}
+
+// The shard of a JavaScript file's walk (plan 45 stage 2), whose assignment declarations wait for the replay: their
+// hosts may be other files' (globals, what aliases of other files resolve to), and most of them read what earlier ones
+// declared, so they all go in walk order
+static ResolveShard* js_shard(Scope const* me) {
+    ResolveShard* shard = binder_shard(my binder);
+    return shard && my file && my file->is_js ? shard : nullptr;
+}
+
+static void defer_jsdoc_class(ResolveShard* shard, Symbol* symbol, FunctionImpl const* function) {
+    DeferredEvent* event = defer_event(shard, DEFERRED_JS_CLASS, nullptr, nullptr);
+    event->symbol = symbol;
+    event->function = function;
+}
+
+// Whether the walk has yet to reach the assignment target `left` (see DeferredEvent.link)
+static bool walk_unvisited(Expr const* left) {
+    return left->tag == EXPR_PROPERTY && !left->property->context;
 }
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
@@ -5020,6 +5063,14 @@ static void add_expando_member(
 static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
     op->expando_bound = true;
+    ResolveShard* shard = js_shard(me);
+    if (shard) {
+        DeferredEvent* event = defer_event(shard, DEFERRED_JS_EXPANDO, me, nullptr);
+        event->op = op;
+        event->top_level = top_level;
+        event->link = walk_unvisited(&op->left);
+        return;
+    }
     add_expando_decl(me, &op->left, &op->right, op->jsdoc_type, top_level);
     Symbol* member = op->jsdoc_enum_export && op->left.tag == EXPR_PROPERTY ? (Symbol*)op->left.property->declares : nullptr;
     if (member) {
@@ -5077,6 +5128,13 @@ static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const*
 static void add_define_property(Scope* me, Expr* call, bool top_level) {
     Span name;
     if (!expr_is_define_property_call(call, &name)) return;
+    ResolveShard* shard = js_shard(me);
+    if (shard) {
+        DeferredEvent* event = defer_event(shard, DEFERRED_JS_DEFINE_PROPERTY, me, nullptr);
+        event->left = call;
+        event->top_level = top_level;
+        return;
+    }
     Expr* object = (Expr*)vec_expr_at(&call->call->args, 0);
     if (expr_is_exports_object(object)) return; // (add_define_property_export())
     add_expando_member(me, object, name, call, call, nullptr, top_level, nullptr, ASSIGNMENT_DECL_DEFINE_PROPERTY);
@@ -5116,6 +5174,7 @@ static void add_expando_member(
         event->top_level = top_level;
         event->late_bound_key = late_bound_key;
         event->assignment = kind;
+        event->link = walk_unvisited(left);
         return;
     }
     Symbol* exported = top_level && module ? commonjs_export_entity(module, object) : nullptr;
@@ -5265,6 +5324,13 @@ static bool this_is_global_script(Scope* me, Scope** arrow) {
 // for a SourceFile container: declareSymbolAndAddToSymbolTable as a FunctionScopedVariable). In an arrow function that
 // adds it to the arrow function's locals (tsc's container), where `this.x` doesn't find it
 static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
+    ResolveShard* shard = js_shard(me);
+    if (shard && e->tag == EXPR_BINARY_OP) {
+        DeferredEvent* event = defer_event(shard, DEFERRED_JS_GLOBAL_THIS, me, nullptr);
+        event->left = e;
+        event->arrow = arrow;
+        return;
+    }
     for (; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e); e = &e->binary_op->right) {
         Expr* left = &e->binary_op->left;
         Span name = expr_static_property_name(left);
@@ -5517,6 +5583,16 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
     // `this.x`, `var self = this; self.x` (tsc's isThisInitializedDeclaration)
     IdentifierExpr const* this = expr_this_or_alias(object);
     if (!this) return;
+    ResolveShard* shard = js_shard(me);
+    if (shard) {
+        DeferredEvent* event = defer_event(shard, DEFERRED_JS_THIS_PROPERTY, me, nullptr);
+        event->left = left;
+        event->right = value;
+        event->jsdoc_type = jsdoc_type;
+        event->jsdoc_modifiers = jsdoc_modifiers;
+        event->link = walk_unvisited(left);
+        return;
+    }
     if (late_bound_key && this->this_kind != THIS_CLASS_INSTANCE) return;
     // The function `this` belongs to (arrow functions have their container's)
     FunctionImpl const* function = nullptr;
@@ -5654,7 +5730,30 @@ void resolve_shard_merge(ResolveShard* me) {
             case DEFERRED_EXPANDO:
                 add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
                     event->top_level, event->late_bound_key, event->assignment);
-                expr_link_assignment_declaration(event->left, binder);
+                if (event->link) expr_link_assignment_declaration(event->left, binder);
+                break;
+            case DEFERRED_JS_EXPANDO:
+                add_expando(event->scope, event->op, event->top_level);
+                if (event->link) expr_link_assignment_declaration(&event->op->left, binder);
+                break;
+            case DEFERRED_JS_DEFINE_PROPERTY:
+                add_define_property(event->scope, event->left, event->top_level);
+                break;
+            case DEFERRED_JS_GLOBAL_THIS:
+                add_global_this_chain(event->scope, event->left, event->arrow);
+                // (At a block's start, before the walk reached any of them)
+                for (Expr* e = event->left; e->tag == EXPR_BINARY_OP && e->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(e);
+                    e = &e->binary_op->right
+                ) {
+                    expr_link_assignment_declaration(&e->binary_op->left, binder);
+                }
+                break;
+            case DEFERRED_JS_THIS_PROPERTY:
+                add_this_property(event->scope, event->left, event->right, event->jsdoc_type, event->jsdoc_modifiers);
+                if (event->link) expr_link_assignment_declaration(event->left, binder);
+                break;
+            case DEFERRED_JS_CLASS:
+                scope_mark_jsdoc_class(binder, event->symbol, event->function);
                 break;
         }
     }
