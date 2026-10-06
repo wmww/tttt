@@ -37347,8 +37347,8 @@ const baselines = {
     },
     'autoAccessorNoUseDefineForClassFields': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'canFollowGetSetKeyword': {
         errors: true,
@@ -49142,8 +49142,8 @@ const baselines = {
     },
     'moduleResolutionWithExtensions': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleResolutionWithoutExtension1': {
         errors: true,
@@ -49772,8 +49772,8 @@ const baselines = {
     },
     'importsNotUsedAsValues_error': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'mergedWithLocalValue': {
         errors: true,

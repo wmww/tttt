@@ -1300,12 +1300,24 @@ static void remove_test_path_prefixes(cstr* target, isize from) {
     }
 }
 
+// A unit whose name a later `@filename` repeats: tsc's harness shows its text with what the walk of the program's file
+// of that name (the last copy) found at each line
+static BaselineTestFile const* superseding_file(BaselineTestCase const* me, BaselineTestFile const* earlier) {
+    BaselineTestFile const* ret = nullptr;
+    for_each (i, vec_baseline_test_file, &my files) {
+        if (i->source && cstr_eq(&i->path, &earlier->path)) ret = i;
+    }
+    return ret;
+}
+
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
-        if (!i->source) continue;
+        BaselineTestFile const* walked = i->superseded ? superseding_file(me, i) : i;
+        if (!walked || !walked->source) continue;
         isize from = cstr_size(target);
-        render_types_or_symbols_file(target, baseline_test_file_header(i), cstr_sv(&i->source->contents), &i->symbols,
+        render_types_or_symbols_file(target, baseline_test_file_header(i),
+            i->superseded ? cstr_sv(&i->raw_contents) : cstr_sv(&i->source->contents), &walked->symbols,
             false);
         remove_test_path_prefixes(target, from);
     }
@@ -1318,9 +1330,11 @@ bool baseline_test_case_has_errors(BaselineTestCase const* me) {
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, bool had_errors) {
     cstr_append_d(target, DEFAULT_DISPLAY, "//// [", relative_test_path(my source_path), "] ////\r\n\r\n");
     for_each (i, vec_baseline_test_file, &my files) {
-        if (!i->source) continue;
+        BaselineTestFile const* walked = i->superseded ? superseding_file(me, i) : i;
+        if (!walked || !walked->source) continue;
         isize from = cstr_size(target);
-        render_types_or_symbols_file(target, baseline_test_file_header(i), cstr_sv(&i->source->contents), &i->types,
+        render_types_or_symbols_file(target, baseline_test_file_header(i),
+            i->superseded ? cstr_sv(&i->raw_contents) : cstr_sv(&i->source->contents), &walked->types,
             !had_errors);
         remove_test_path_prefixes(target, from);
     }
