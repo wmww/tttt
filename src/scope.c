@@ -2638,6 +2638,9 @@ cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_s
 // tsc's getFullyQualifiedName: the containers too, a file module as its quoted name (`"file".A.B`)
 cstr symbol_fully_qualified_name(Symbol const* me) {
     if (my is_module && my module) return module_name_for_error(me, nullptr, false);
+    // (`import * as ns`'s own namespace symbol, see make_gather_target(), is the module in tsc)
+    Symbol const* gathered = symbol_rare(me)->gather_module;
+    if (gathered && gathered->is_module && gathered->module) return module_name_for_error(gathered, nullptr, false);
     if (!my parent || (my parent->is_module && !my parent->module)) return cstr_from_sv(my name);
     // (A module's local isn't a member of it: tsc's symbol.parent is only set for exports)
     if (my parent->is_module && my parent->exports && !my is_default_export && !csview_equals(my name, "export=") &&
