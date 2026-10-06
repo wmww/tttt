@@ -5954,7 +5954,8 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
         }
     }
     // findBestTypeForObjectLiteral
-    if (source->kind == TY_ANONYMOUS && source->anonymous.object_literal) {
+    // (Of an object literal's type before widening: tsc's widened copy has no ObjectFlags.ObjectLiteral)
+    if (source->kind == TY_ANONYMOUS && source->anonymous.object_literal && (source->flags & TYF_FRESH_OBJECT)) {
         bool array_like = false;
         for (u32 i = 0; i < types.len; i++) array_like |= ty_is_array(me, types.data[i]) || is_tuple(types.data[i]);
         for (u32 i = 0; array_like && i < types.len; i++) {

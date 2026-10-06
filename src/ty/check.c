@@ -122,7 +122,8 @@ static Error* report_unassignable(
                 "' is not assignable to ", head.target_label, " '", target_str, "'.");
         }
         // (2375 is 2322 under exactOptionalPropertyTypes, which a head message stands in for)
-        if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2375 || natural_head->ts_code == 2719)) first_nested = 1;
+        if (natural_head && (natural_head->ts_code == 2322 || natural_head->ts_code == 2375 || natural_head->ts_code == 2719 ||
+            natural_head->ts_code == 2820)) first_nested = 1; // (2820: the did-you-mean form, tsc's only without a head)
     }
     attach_explanation(error, &lines, first_nested);
     vec_ty_report_line_drop(&lines);
@@ -766,7 +767,7 @@ static Error* report_unrelated_with_head(
         error = report(errs, span, ts_code, head);
     }
     // (2375 is 2322 under exactOptionalPropertyTypes: tsc only picks it when there's no head message)
-    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2375 || natural->ts_code == 2719 || natural->ts_code == 2678) &&
+    if (natural && (natural->ts_code == 2322 || natural->ts_code == 2375 || natural->ts_code == 2719 || natural->ts_code == 2678 || natural->ts_code == 2820) &&
         !keep_natural_head
     ) {
         first = 1;
