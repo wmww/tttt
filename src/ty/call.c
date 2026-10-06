@@ -2754,6 +2754,11 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 if (root && root->function && !(signature_return_type(me, chosen.sig)->flags & TYF_VOID)) {
                     error_ctx_error_d(errs, call_span, 2350, "Only a void function can be called with the 'new' keyword.");
                 }
+                if (chosen.sig) signature_resolve(me, chosen.sig);
+                if (chosen.sig && chosen.sig->this_type && chosen.sig->this_type == ty_intrinsic(me, TY_VOID)) {
+                    error_ctx_error_d(errs, call_span, 2679,
+                        "A function that is called with the 'new' keyword cannot have a 'this' type that is 'void'.");
+                }
             }
         } else if (call->uses_new) {
             Error* e = error_ctx_error_d(errs, constructor_span(&call->callable), 2351, "This expression is not constructable.");
