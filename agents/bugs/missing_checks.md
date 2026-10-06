@@ -194,8 +194,7 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
 - parserSkippedTokens20 (`X<T \`): tsc aborts the type argument list at an invalid character (all later errors
   land on it and are deduped); tttt skips it and reports '>' expected at the end.
 - dontShowCompilerGeneratedMembers (`<-` in a type literal: a call signature whose type parameter list fails),
-  reservedNamesInAliases (`type void = I` is both a TS2457 alias and an expression statement),
-  parseUnmatchedTypeAssertion, esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
+  esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
   jsdocFunctionTypeFalsePositive (`@param {<} x`), scannerUnexpectedNullCharacter1 (a NUL outside a string ends
   tttt's parse: `*p.pos` is the EOF test everywhere), conflictMarkerTrivia3, parser0_004152, jsxInvalidEsprimaTestSuite,
   thisTypeInFunctionsNegative, manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).

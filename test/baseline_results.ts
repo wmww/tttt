@@ -25441,9 +25441,9 @@ const baselines = {
         types: true,
     },
     'parseUnmatchedTypeAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserConstructorDeclaration12': {
         errors: true,
@@ -65921,9 +65921,9 @@ const baselines = {
         types: true,
     },
     'reservedNamesInAliases': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'typeAliases': {
         errors: true,

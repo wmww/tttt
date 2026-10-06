@@ -5548,8 +5548,9 @@ static bool parse_type_decl(Parser* parent, bool after_declare, TypeDecl* ret) {
         parse_error(&p, span_from_token(&p), 1142, "Line break not permitted here.");
     }
 
+    // (tsc's nextTokenIsIdentifierOnSameLine: `type void = I` is the expression statement `type`, then `void = I`)
     Span name;
-    if (!parse_identifier(&p, &name)) {
+    if (!parse_identifier(&p, &name) || is_reserved_word(name.sv)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
@@ -9667,7 +9668,21 @@ static bool parse_decorators(Parser* parent, VecExpr* ret) {
         ctx.reject_operators = true;
         ctx.decorator = true;
         Expr expr;
-        if (p.shared->in_async && starts_with_followed_by_word_break(&p, "await")) {
+        // A decorator is a left-hand side expression (tsc's parseLeftHandSideExpressionOrHigher): a unary operator or
+        // a type assertion starts none, it's a missing identifier, then whatever member accesses and calls follow
+        // (`@!x` is a non-null assertion of the missing identifier)
+        u32 unary_size = 0;
+        if (strchr("!~+-<", *p.pos) && *p.pos) unary_size = 1;
+        else if (starts_with_followed_by_word_break(&p, "typeof") || starts_with_followed_by_word_break(&p, "delete")) unary_size = 6;
+        else if (starts_with_followed_by_word_break(&p, "void")) unary_size = 4;
+        if (unary_size) {
+            if ((p.pos[0] == '+' || p.pos[0] == '-') && p.pos[1] == p.pos[0]) unary_size = 2;
+            parse_error(&p, span_make(p.shared->source, p.pos, p.pos + unary_size), 1109, "Expression expected.");
+            expr = expr_implicit_any(span_make(p.shared->source, p.pos, p.pos));
+            expr.missing = true;
+            parse_expr_right_side(&p, ctx, &expr);
+            vec_expr_push(ret, expr);
+        } else if (p.shared->in_async && starts_with_followed_by_word_break(&p, "await")) {
             // tsc's parseDecoratorExpression: `@await` in an await context is a missing identifier, then the rest
             parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 5), 1109, "Expression expected.");
             expr = expr_implicit_any(span_make(p.shared->source, p.pos, p.pos));
