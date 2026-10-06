@@ -168,6 +168,21 @@ Seed 2 found a hang (a function whose `@type` names itself). Drained by three su
 commits): seed 1 92 -> 12, seed 2 177 -> 40; a fresh seed 3 then had 46 of 2325 (2.0%), so the fixes generalised.
 What's left is in triage.md (mostly tsc binder/resolution quirks of broken CommonJS, and printing).
 
+### Fresh seeds after the suite-errors window (agent B, 2026-10-06)
+`MUTATE_DIR=... ./mutate.py -n 5000 --seed 7`: 21 mismatches of 2323 productive mutants (0.9%, the single-file yield
+keeps falling) -> 12. `--tests multi,js -n 3000 --seed 5`: 33 of 1407 (2.3%) -> 27. Fixed (8 commits): a returned
+anonymous class expression's error span (`class`), TS1141 for a non-string module specifier only in the right context
+(it also dropped the file's grammar errors as a parse error), `extends` a union without common construct signatures
+(TS2507 on the whole type, error base), `new` of a union with only common call signatures (TS7009), a union's readonly
+index signature on writes (TS2542), `T["1"]` on tuples as `T[1]`, never indexed by a non-key (error type), substitution
+sources named as their intersection in heads, optional-vs-required (TS2327) only against class members, an export
+specifier conflicting with its own export being its own alias target (TS2693), JS `@satisfies` ignored under an
+annotation, TS2303 through a failed `export =` name's spelling suggestion. Left (one mutant each): type text of spread
+properties and `typeof ns.K` in error messages (needs node reuse in error display, plan 34), elaboration of a
+substitution intersection (tsc names its constraint), TS2574 through an error-typed conditional, TS2564 for a
+`[k]` field whose key is `never`-annotated (tsc's tryGetNameFromEntityNameExpression falls back to the initializer),
+JS `new C0()` arity against a .d.ts generic constructor, the JS-lane TS2303, CommonJS export quirks.
+
 ### The first run (seed 2, 8000 mutants of 4739 tests): 94 mismatches of 3744 productive mutants (2.5%), +53 syntax
 Root causes, by count (`./mutate.py -k KEY` after a run of the same seed):
 - **Crash** (2, fixed in the same session): `(function () {` or `(() => {` unterminated at EOF panicked in
