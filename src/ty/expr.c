@@ -1073,7 +1073,9 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             continue;
         }
         if (index < i) return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
-        if (as_rest && i == index) return param->type;
+        // The rest parameter at the same position: its type as it is, `never` too (tsc's getRestTypeAtPosition with
+        // getEffectiveRestType: any is any[]). Past it: an array of the element type
+        if (as_rest && i == index) return (param->type->flags & TYF_ANY) ? ty_array(me, param->type, false) : param->type;
         if (as_rest && ty_is_tuple(param->type) && !ty_is_generic_tuple(me, param->type)) {
             return tuple_slice(me, param->type, index - i);
         }
@@ -1091,15 +1093,19 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             for (u32 k = 0; k < shape->arity; k++) variable |= (shape->flags[k] & TUPLE_ELEMENT_REST) != 0;
             if (!variable && index - i >= shape->arity) return nullptr;
         }
+        Ty const* element;
         if (ty_is_tuple(param->type)) {
             Value value = value_number(index - i);
-            return ty_access(me, param->type, ty_literal(me, &value));
+            element = ty_access(me, param->type, ty_literal(me, &value));
+        } else if (ty_is_array(me, param->type) || (param->type->flags & TYF_ANY)) {
+            element = ty_rest_element_type(me, param->type);
+        } else {
+            // By position (tsc's tryGetTypeAtPosition): a union of tuples gives each one's element there
+            Value value = value_number(index - i);
+            Ty const* at = ty_access(me, param->type, ty_literal(me, &value));
+            element = at ? at : ty_access(me, param->type, ty_intrinsic(me, TY_NUMBER));
         }
-        if (ty_is_array(me, param->type) || (param->type->flags & TYF_ANY)) return ty_rest_element_type(me, param->type);
-        // By position (tsc's tryGetTypeAtPosition): a union of tuples gives each one's element there
-        Value value = value_number(index - i);
-        Ty const* at = ty_access(me, param->type, ty_literal(me, &value));
-        return at ? at : ty_access(me, param->type, ty_intrinsic(me, TY_NUMBER));
+        return as_rest && element ? ty_array(me, element, false) : element;
     }
     // A rest parameter where the signature has plain ones: the tuple of those left
     return as_rest ? ty_signature_params_tuple(me, sig, index, nullptr) : nullptr;
@@ -1267,8 +1273,6 @@ Ty const* ty_contextual_synthetic_rest_type(Checker* me, FunctionImpl const* fun
     Signature const* sig = ty_function_assigned_contextual_signature(me, function);
     if (!sig) return nullptr;
     Ty const* type = signature_type_at(me, sig, index, true);
-    if (!type) return nullptr;
-    if (!ty_is_array(me, type) && !ty_tuple_shape(type) && !(type->flags & TYF_TYPE_PARAM)) type = ty_array(me, type, false);
     return type;
 }
 
@@ -1368,13 +1372,6 @@ static void assign_contextual_signature_as(
             if (raw && raw != sig) type = signature_type_at(me, raw, at, i->rest);
         }
         if (!type) continue;
-        // (A rest parameter's contextual type is array-like already when it's the rest parameter's, a union of tuples too)
-        // (Nor a generic one, a conditional type that makes a tuple: tsc's getRestTypeAtPosition takes it as it is)
-        if (i->rest && !ty_is_array(me, type) && !ty_tuple_shape(type) && !(type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) &&
-            !(type->kind == TY_UNION && !(type->flags & TYF_ANY) && ty_extends_array(me, type))
-        ) {
-            type = ty_array(me, type, false);
-        }
         if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
             // An initializer that doesn't fit the contextual type but is wider than it wins (tsc's
             // assignContextualParameterTypes): `(max = 3) => {}` against `(max: 1 | 2) => void` takes a number
