@@ -124,7 +124,9 @@ typedef struct FunctionImplRare {
     struct Symbol const* static_method_of; // A static method's class (display: `typeof C.m`), set by the resolve walk
     // A getter without a return type annotation whose setter's parameter has one: that annotation, which is the
     // getter's return type (tsc's getReturnTypeFromAnnotation). Set by the resolve walk
+    // Read through function_impl_setter_type(), which checks setter_key
     TypeNode const* setter_type;
+    struct Expr const* setter_key; // The computed name the pair shares (`[C.k]`), null if none
     u32 iife_arg_count; // See FunctionImpl.is_iife
     struct CallExpr const* iife_call; // The call it is the callee of, when is_iife
     // What a `this` in it may be typed by (tsc's getContextualThisParameterType), set when resolving: the object literal
@@ -307,6 +309,9 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me);
 // A setter's unannotated parameter has the type the getter of the same property returns
 // and a getter without a return type annotation returns what the setter's parameter annotation says (setter_type)
 void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, struct Expr const* key);
+// setter_type, unless the computed name the pair shares isn't late bindable after all (`[C.n]` with n a number: two
+// symbols to tsc's isLateBindableName, which goes by the name's type)
+TypeNode const* function_impl_setter_type(FunctionImpl const* me);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
 // The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_checks)

@@ -446,8 +446,8 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         // A constructor's return expressions replace the instance: its type is their context (tsc's
         // getContextualReturnType through the constructor's signature)
         checker->return_context = ty_instance_type_of_class(checker, function_impl_rare(me)->constructed_class);
-    } else if (my ret_explicit || function_impl_rare(me)->setter_type) {
-        Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : function_impl_rare(me)->setter_type, (LowerCtx){ .generic = true });
+    } else if (my ret_explicit || function_impl_setter_type(me)) {
+        Ty const* annotated = ty_from_node(checker, my ret_explicit ? &my ret : function_impl_setter_type(me), (LowerCtx){ .generic = true });
         checker->return_context = annotated->flags & (TYF_ANY | TYF_VOID) ? nullptr : annotated;
     } else {
         checker->return_context = ty_return_expressions_context(checker, me);
@@ -468,9 +468,20 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, Expr 
             rare->getter = getter;
             rare->getter_key = key;
         }
-        else if (!getter->ret_explicit) function_impl_rare_mut(getter)->setter_type = &i->initializer.binding.explicit_type;
+        else if (!getter->ret_explicit) {
+            function_impl_rare_mut(getter)->setter_type = &i->initializer.binding.explicit_type;
+            function_impl_rare_mut(getter)->setter_key = key;
+        }
         return;
     }
+}
+
+TypeNode const* function_impl_setter_type(FunctionImpl const* me) {
+    TypeNode const* type = function_impl_rare(me)->setter_type;
+    Expr const* key = function_impl_rare(me)->setter_key;
+    if (!type || !key || key->tag == EXPR_LITERAL) return type;
+    Ty const* key_type = ty_expr_type(current_checker, (Expr*)key);
+    return key_type->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL) ? type : nullptr;
 }
 
 // tsc's checkGrammarParameterList(): the first misplaced rest parameter, `?`, or required parameter after an optional one
@@ -871,9 +882,9 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         type = ty_unwrapped_return_type(checker, me);
         if (!type && my is_async && !my is_generator) type = ty_intrinsic(checker, TY_ANY);
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
-    } else if (my accessor == 1 && function_impl_rare(me)->setter_type) {
+    } else if (my accessor == 1 && function_impl_setter_type(me)) {
         // A getter's is its setter's parameter annotation (tsc's getReturnTypeFromAnnotation: getAnnotatedAccessorType)
-        type = ty_from_node(checker, function_impl_rare(me)->setter_type, (LowerCtx){ .generic = true });
+        type = ty_from_node(checker, function_impl_setter_type(me), (LowerCtx){ .generic = true });
         if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
     } else if ((function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) && !my is_async && !my is_generator) {
         // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation), reported at
@@ -1019,7 +1030,7 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
     CompilerOptions const* options = compiler_options();
     if (!options->no_implicit_any || options->strict_null_checks || my ret_explicit || !my has_body) return;
     // (A getter too, unless its type is its setter's parameter annotation: tsc's reportImplicitAny for a GetAccessor)
-    if (my is_constructor || my accessor == 2 || (my accessor && function_impl_rare(me)->setter_type) || my jsdoc_typed) return;
+    if (my is_constructor || my accessor == 2 || (my accessor && function_impl_setter_type(me)) || my jsdoc_typed) return;
     Checker* checker = current_checker;
     Span name = span_valid(my name) ? my name : function_impl_member_name(me);
     // (A generator's yields, then its returns: tsc's getReturnTypeFromBody)
@@ -1195,7 +1206,7 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
         .in_function = true,
         // TODO: returns in async functions and generators aren't checked, the declared type wraps what's returned
         .specified_return = my ret_explicit && !my is_async && !my is_generator ? &my ret :
-            function_impl_rare(me)->setter_type ? function_impl_rare(me)->setter_type : &type_any,
+            function_impl_setter_type(me) ? function_impl_setter_type(me) : &type_any,
         .constructed_class = my is_constructor ? function_impl_rare(me)->constructed_class : nullptr,
         .unwrapped_return = my ret_explicit && (my is_async || my is_generator) ? ty_unwrapped_return_type(current_checker, me) :
             tagged_return,

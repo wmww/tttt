@@ -305,7 +305,7 @@ Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function) {
 
 // The inferred return type depended on itself, so it's any (tsc's getReturnTypeOfSignature failing popTypeResolution)
 bool ty_function_return_circular(Checker* me, FunctionImpl const* function) {
-    if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body || function_impl_rare(function)->setter_type) return false;
+    if (function_impl_rare(function)->constructed_class || function->ret_explicit || !function->has_body || function_impl_setter_type(function)) return false;
     bool outer = return_type_speculative;
     return_type_speculative = true;
     ty_function_return_type(me, function);
@@ -326,7 +326,7 @@ Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)
-    if (!function->ret_explicit && function_impl_rare(function)->setter_type) return ty_from_node(me, function_impl_rare(function)->setter_type, function_lower_ctx);
+    if (!function->ret_explicit && function_impl_setter_type(function)) return ty_from_node(me, function_impl_setter_type(function), function_lower_ctx);
     if (function->ret_explicit || !function->has_body) return ty_from_node(me, &function->ret, function_lower_ctx);
     if (function_impl_rare(function)->jsdoc_signature_type || function_impl_rare(function)->jsdoc_host_type) {
         Ty const* tagged = ty_jsdoc_tag_return_type(me, function);
