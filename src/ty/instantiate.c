@@ -589,9 +589,7 @@ Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alia
         // (A deferred reference, `type L1<V> = L2<V>` of `type L2<V> = L3<V>`, goes by the new name too: tsc's
         // getObjectTypeInstantiation keys it on the alias)
         bool deferred = ty->kind == TY_INDEXED || ty->kind == TY_CONDITIONAL || (ty->kind == TY_REFERENCE && ty->reference.deferred);
-        if (!deferred && (ty->kind != TY_ANONYMOUS || (!ty->anonymous.target && !ty->anonymous.realiased) ||
-            ty->anonymous.applies_type_args)
-        ) {
+        if (!deferred && (ty->kind != TY_ANONYMOUS || (!ty->anonymous.target && !ty->anonymous.realiased))) {
             return ty;
         }
     }
