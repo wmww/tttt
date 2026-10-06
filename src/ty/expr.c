@@ -1735,13 +1735,16 @@ static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
         Ty const** parts = malloc(sizeof(Ty const*) * members.len);
         panic_if(!parts, "out of memory");
         u32 len = 0;
+        bool different = false;
         for (u32 i = 0; i < members.len; i++) {
             Ty const* member = members.data[i];
             bool instantiable = member->kind == TY_TYPE_PARAM || (member->flags & TYF_DEFERRED);
             Ty const* constraint = instantiable ? ty_base_constraint(me, member) : member;
             if (constraint) parts[len++] = constraint;
+            different |= constraint != member;
         }
-        Ty const* ret = len ? ty_intersection(me, parts, len, nullptr, (TyList){0}) : ty;
+        // (Nothing changed: the intersection itself, its alias kept)
+        Ty const* ret = !different ? ty : len ? ty_intersection(me, parts, len, nullptr, (TyList){0}) : ty;
         free(parts);
         return ret;
     }
@@ -2024,8 +2027,11 @@ static bool is_narrowable_access(Expr const* expr) {
 static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type, Ty const* contextual) {
     PropertyExpr const* access = expr->property;
     if (access->assignment_target == FLOW_TARGET_DEFINITE && access->compound_like_target) return base_type_of_literal(me, type);
-    if (!access->flow || access->assignment_target == FLOW_TARGET_DEFINITE) return type;
-    if (!is_narrowable_access(expr)) return type;
+    if (access->assignment_target == FLOW_TARGET_DEFINITE) return type;
+    bool narrowable = access->flow && is_narrowable_access(expr);
+    // (A reference that isn't narrowable still gets getNarrowableTypeForReference: `(x as M<S>)[k]` where the context
+    // isn't generic is the constraint of `M<S>[keyof S]`)
+    if (!narrowable && !(type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return type;
     // Methods don't narrow
     if (type->kind == TY_ANONYMOUS && type->anonymous.function && type->anonymous.function->is_method) return type;
     if (!access->constraint_position && (type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && has_generic_with_union_constraint(me, type)) {
@@ -2033,6 +2039,7 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
         *intern_slot(me, &my links, (u64[]){ KEY_ACCESS_USES_CONTEXT, (u64)(uintptr_t)expr }, 2) = expr;
     }
     type = narrowable_type(me, access->constraint_position, nullptr, type, contextual);
+    if (!narrowable) return type;
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
     // tsc's getFlowTypeOfReference: the operand of a non-null assertion is never nullish (see non_null_flow_type())
     if (access->non_null_operand && !(flow_type->flags & TYF_NEVER) && (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)) {
@@ -2453,8 +2460,11 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     ) {
         assigned_context = left;
     }
-    // (An any target is a context too, which a `yield` records as what its generator is sent)
-    if (!assigned_context && binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) {
+    // (An any target is a context too, which a `yield` records as what its generator is sent, and in which a reference
+    // of a generic type with a union constraint is its constraint: tsc's hasContextualTypeWithNoGenericTypes)
+    if (!assigned_context && ((binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) ||
+        binary->right.tag == EXPR_IDENTIFIER || binary->right.tag == EXPR_PROPERTY)
+    ) {
         assigned_context = left;
     }
     // `a.b = v` or `this.b = v` that declares b (an expando): v's type is what b is, so it gives v no context
@@ -4646,7 +4656,9 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // the error type (checkPropertyAccessExpressionOrQualifiedName)
             // (isErrorType: an unresolved type name is one too)
             if (object == ty_intrinsic(me, TY_SILENT_NEVER)) return object;
-            if (object->flags & TYF_ERROR) return ty_intrinsic(me, TY_ERROR);
+            // (An element access is the object's own error type: an unresolved name's, which prints as the name,
+            // tsc's checkElementAccessExpression)
+            if (object->flags & TYF_ERROR) return expr->property->form == PROPERTY_EXPR_BRACKET ? object : ty_intrinsic(me, TY_ERROR);
             // `never` has no properties (TS2339), `never[k]` is never
             if ((ty_reduced(me, object)->flags & TYF_NEVER) && expr->property->form == PROPERTY_EXPR_DOT) return any_type(me);
             Ty const* key = ty_access_key_type(me, expr->property);

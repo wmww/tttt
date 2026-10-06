@@ -2705,11 +2705,24 @@ static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index)
         count = index->composite.types.len;
     }
     for (u32 i = 0; i < count; i++) {
-        if (!(parts[i]->flags & TYF_NUMBER_LITERAL)) return false;
-        double n = parts[i]->literal.value.number;
+        double n;
+        if (parts[i]->flags & TYF_NUMBER_LITERAL) {
+            n = parts[i]->literal.value.number;
+        } else if (parts[i]->flags & TYF_STRING_LITERAL) {
+            // A string that is a numeric literal name counts too (tsc's indexTypeLessThan): a mapped type's key "0"
+            Atom const* name = ty_literal_name(me, parts[i]);
+            if (!name || !ty_is_numeric_name(name)) return false;
+            csview text = atom_sv(name);
+            char buf[64];
+            if (text.size >= (isize)sizeof(buf)) return false;
+            memcpy(buf, text.buf, (size_t)text.size);
+            buf[text.size] = 0;
+            n = strtod(buf, nullptr);
+        } else {
+            return false;
+        }
         if (!(n >= 0 && n < fixed && n == (u32)n)) return false;
     }
-    (void)me;
     return true;
 }
 

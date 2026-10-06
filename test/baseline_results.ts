@@ -27063,7 +27063,7 @@ const baselines = {
     'recursiveTypeRelations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'recursiveTypes1': {
         errors: true,
@@ -64228,7 +64228,7 @@ const baselines = {
     'mappedTypesGenericTuples': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypesGenericTuples2': {
         errors: true,
