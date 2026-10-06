@@ -35,15 +35,14 @@ up are in `triage.md`.
   jsxChildrenWrongType (an optional tuple element's missing type prints as `undefined` under exactOptionalPropertyTypes);
   bigintWithLib (tsc repeats one line three times: a relation through the Symbol.toStringTag overloads?).
 
-## Left (2026-10-06, agent D: 20 tests)
+## Left (2026-10-06, agent D: 19 tests)
 `./errtextdiff.py` after `./failstats.py`: 21 tests, one fixed (destructuringUnspreadableIntoRest: getRestType makes
 every property's literal in order, the creation order the Omit keys' union goes by). What remains is relation-path or
 identity work, no message rules:
 - Elaboration paths that take another route through the relation (chain:text/shallower/deeper): indexedAccessRelation,
   keyofAndIndexedAccessErrors (tsc explains `keyof T` through its constraint before splitting the intersection
-  target), mappedTypes6 and mappedTypeRelationships (`'P' could be instantiated with a different subtype of constraint
-  'string | number | symbol'`: tsc names the constraint's resolved base, tttt the declared `keyof T`; `T[P]` to `{}`
-  through NonNullable), complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, conditionalTypes1,
+  target), mappedTypes6 (`T[P]` to `{}` through NonNullable; the constraint named in TS5075's line is the resolved
+  base now, which fixed mappedTypeRelationships), complicatedIndexedAccessKeyofReliesOnKeyofNeverUpperBound, conditionalTypes1,
   recursiveConditionalTypes (tsc stops at the deferred conditionals), bigintWithLib (tsc repeats one line three
   times), jsxExcessPropsAndAssignability (tsc adds the `ComposedComponentProps["myProp"] & string` step).
 - invariantGenericErrorElaboration: tsc relates `Constraint<Runtype<any>>` to `Constraint<Num>` by its type arguments

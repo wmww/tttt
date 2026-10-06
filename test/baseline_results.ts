@@ -64176,7 +64176,7 @@ const baselines = {
         types: true,
     },
     'mappedTypeRelationships': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

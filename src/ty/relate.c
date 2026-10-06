@@ -1089,9 +1089,8 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
                 indexed_or_null(me, object ? object : target->indexed.object, index ? index : target->indexed.index);
             constraint = valid ? base_constraint(me, target, 0) : nullptr;
         } else {
-            for (u32 depth = 0; constraint && constraint->kind == TY_TYPE_PARAM && depth < 16; depth++) {
-                constraint = ty_param_constraint(me, constraint);
-            }
+            // (tsc's getBaseConstraintOfType: resolved all the way, `keyof T` to `string | number | symbol`)
+            constraint = base_constraint(me, target, 0);
         }
         bool generalized_fits = constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
         bool original_fits = constraint && !generalized_fits && ty_is_related(me, source, constraint, TY_RELATION_ASSIGNABLE);
