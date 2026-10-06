@@ -60071,9 +60071,9 @@ const baselines = {
         types: true,
     },
     'classCanExtendConstructorFunction': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commonJSAliasedExport': {
         errors: true,

@@ -1550,6 +1550,30 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
                 sig->drops_mapped_type_params = mapper != nullptr;
                 builder_push(builder, construct, sig);
             }
+        } else if (base_members && !base_members->construct_count && base_decl && base_instance &&
+            (base_decl->flags & SYMBOL_FUNCTION) && base_decl->decl_count && base_decl->decls[0].full.source &&
+            base_decl->decls[0].full.source->is_js
+        ) {
+            // A JavaScript constructor function: the construct signatures its function type has (tsc's
+            // resolveAnonymousTypeMembers of a function with SymbolFlags.Class), instantiated by the base's type arguments
+            // (an `@extends` tag's)
+            Ty const* function_type = ty_type_of_symbol(me, base_decl);
+            Members const* function_members = function_type->flags & TYF_OBJECT ? ty_members(me, function_type) : nullptr;
+            TyMapper const* mapper = base_instance->kind == TY_REFERENCE ?
+                ty_mapper_new(me, base_instance->reference.target->declared.type_params, ty_reference_args(me, base_instance)) :
+                nullptr;
+            u32 pushed = 0;
+            for (u32 i = 0; function_members && i < function_members->construct_count; i++) {
+                Signature const* base_sig = function_members->construct[i];
+                if (!base_sig->function || ty_js_constructor_class(base_sig->function) != base_decl) continue;
+                Signature* sig = class_construct_signature(me, class_decl, instance);
+                sig->target = base_sig;
+                sig->mapper = mapper;
+                sig->drops_mapped_type_params = mapper != nullptr;
+                builder_push(builder, construct, sig);
+                pushed++;
+            }
+            if (!pushed) builder_push(builder, construct, class_construct_signature(me, class_decl, instance));
         } else if (base_members && base_members->construct_count) {
             TyMapper const* mapper = base_instance->kind == TY_REFERENCE ?
                 ty_mapper_new(me, base_instance->reference.target->declared.type_params, ty_reference_args(me, base_instance)) :
