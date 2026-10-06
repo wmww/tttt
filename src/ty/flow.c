@@ -1429,6 +1429,20 @@ static bool is_discriminant_property(Checker* me, Ty const* type, Atom const* na
     bool non_uniform = false;
     bool has_literal = false;
     bool generic = false;
+    // tsc's createUnionOrIntersectionProperty looks up the index signature of a member without the property (nullish
+    // ones too) with the name's literal type, made then, before any member's property type: which decides union
+    // order (relating `Window & typeof globalThis` to a union makes the literals of Window's names). (A unique
+    // symbol's name is late-bound: nothing made)
+    if (!ty_unique_symbol_of_name(me, name)) {
+        for (u32 i = 0; i < type->composite.types.len; i++) {
+            Ty const* member = type->composite.types.data[i];
+            if (ty_reduced(me, member)->flags & TYF_NEVER) continue;
+            Ty const* holder = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ? member : ty_apparent_type(me, member);
+            if (!(member->flags & (TYF_NULLABLE | TYF_VOID)) && ty_find_prop(me, holder, name).found) continue;
+            ty_prop_name_literal(me, name);
+            break;
+        }
+    }
     for (u32 i = 0; i < type->composite.types.len; i++) {
         Ty const* member = type->composite.types.data[i];
         if (member->flags & (TYF_NULLABLE | TYF_VOID)) continue;

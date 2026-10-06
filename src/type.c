@@ -561,8 +561,7 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                 type_typecheck(i, errs);
             }
             // Made after its members are walked (tsc's checkUnionOrIntersectionType), which decides union order:
-            // `(string & {}) | "-moz-initial"`. Only intersections: a union's own id rarely shows, and lowering every
-            // union twice cost webpack 0.4% instructions
+            // `(string & {}) | "-moz-initial"`, `string[] | PathResult` (a union node is lowered once, see lower())
             if (!current_checker->alias_body_walks) {
                 ty_of_node(me);
             } else if (my tag == TYPE_UNION) {
