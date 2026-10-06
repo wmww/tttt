@@ -1569,6 +1569,47 @@ static bool is_union_of_fixed_tuples(Ty const* ty) {
     return true;
 }
 
+// What a type parameter's property access looks into: its apparent type, unless that can't say a property is missing
+// (null: any, other type variables, a generic mapped type, a base class nobody can see into)
+static Ty const* type_param_access_apparent(Checker* me, Ty const* param) {
+    Ty const* apparent = ty_apparent_type(me, param);
+    if (apparent->flags & TYF_UNKNOWN) return apparent;
+    // (Possibly null or undefined is checkNonNullExpression's business)
+    if (apparent->flags & (TYF_ANY | TYF_NEVER | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_ERROR)) return nullptr;
+    if (apparent->kind == TY_UNION) {
+        for (u32 i = 0; i < apparent->composite.types.len; i++) {
+            if (apparent->composite.types.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED)) return nullptr;
+        }
+    }
+    if (ty_is_js_literal_type(me, apparent)) return nullptr;
+    if (apparent->flags & TYF_OBJECT) {
+        Members const* members = ty_members(me, apparent);
+        if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+        if (ty_has_unresolved_base(me, apparent)) return nullptr;
+    }
+    return apparent;
+}
+
+// A union with type parameter members has a property every member's apparent type has (tsc's getPropertyOfType of a
+// union: getUnionOrIntersectionProperty, getReducedApparentType of each member). Null if a member can't say
+static Ty const* union_apparent_members(Checker* me, Ty const* object) {
+    u32 len = object->composite.types.len;
+    Ty const* buf[64];
+    if (len > c_arraylen(buf)) return nullptr;
+    for (u32 i = 0; i < len; i++) {
+        Ty const* member = object->composite.types.data[i];
+        if (member->flags & (TYF_ANY | TYF_DEFERRED)) return nullptr;
+        if (member->kind == TY_TYPE_PARAM && !member->param.state->is_this) {
+            member = type_param_access_apparent(me, member);
+            if (!member) return nullptr;
+        } else if (member->flags & TYF_TYPE_PARAM) {
+            return nullptr;
+        }
+        buf[i] = member;
+    }
+    return ty_union(me, buf, len, nullptr, (TyList){0});
+}
+
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -1665,8 +1706,13 @@ static void check_access(
             cstr_drop(&object_str);
             return;
         }
-        if (opaque || !error_if_not_found) return;
-        if (!ty_access(me, object, index)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
+        if (!error_if_not_found) return;
+        Ty const* looked_into = object;
+        if (opaque) {
+            looked_into = union_apparent_members(me, object);
+            if (!looked_into) return;
+        }
+        if (!ty_access(me, looked_into, index)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
     // `this` is checked as its apparent type, the class with this-argument `this` (tsc's isThisTypeParameter case of
@@ -1676,23 +1722,11 @@ static void check_access(
         // A type parameter has what its apparent type has, and is named in the message (tsc's
         // checkPropertyAccessExpressionOrQualifiedName). Without a constraint (or `extends unknown`) that's unknown with
         // strictNullChecks: no properties at all, not even Object's
-        Ty const* apparent = ty_apparent_type(me, object);
+        Ty const* apparent = type_param_access_apparent(me, object);
+        if (!apparent) return;
         if (apparent->flags & TYF_UNKNOWN) {
             report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
             return;
-        }
-        // (Possibly null or undefined is checkNonNullExpression's business)
-        if (apparent->flags & (TYF_ANY | TYF_NEVER | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_ERROR)) return;
-        if (apparent->kind == TY_UNION) {
-            for (u32 i = 0; i < apparent->composite.types.len; i++) {
-                if (apparent->composite.types.data[i]->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NULLABLE | TYF_TYPE_PARAM | TYF_DEFERRED)) return;
-            }
-        }
-        if (ty_is_js_literal_type(me, apparent)) return;
-        if (apparent->flags & TYF_OBJECT) {
-            Members const* members = ty_members(me, apparent);
-            if (members->mapped && (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return;
-            if (ty_has_unresolved_base(me, apparent)) return;
         }
         if (!ty_access(me, apparent, index)) report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
