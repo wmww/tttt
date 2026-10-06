@@ -2870,6 +2870,21 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
     cstr_drop(&module_name);
 }
 
+// TS1259: a default import of an `export =` module without a synthetic default (tsc's getTargetofModuleDefault)
+void scope_report_default_import_of_export_equals(PortItem const* item, Symbol const* module, ErrorCtx* errs) {
+    Symbol const* export_equals = symbol_get_export((Symbol*)module, c_sv("export="));
+    const char* option = compiler_options()->module >= MODULE_KIND_ES2015 ? "allowSyntheticDefaultImports" : "esModuleInterop";
+    cstr module_name = module_name_for_error(module, item->module_ref, false);
+    Error* error = error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
+        "' can only be default-imported using the '", option, "' flag");
+    if (error && export_equals && export_equals->decl_count) {
+        error_add_related_d(error, export_equals->decls[0].full, 2594,
+            "This module is declared with 'export =', and can only be used with a default import when "
+            "using the '", option, "' flag.");
+    }
+    cstr_drop(&module_name);
+}
+
 // tsc's canHaveSyntheticDefault: whether a default import of `module` is the module itself (what `export =` names)
 static bool can_have_synthetic_default(PortItem const* item, Symbol* module, SourceFile const* file) {
     ModuleKind module_kind = compiler_options()->module;
@@ -2928,17 +2943,23 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
     if (!found) {
         Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
         if (export_equals && !compiler_options()->allow_synthetic_default_imports) {
-            const char* option = compiler_options()->module >= MODULE_KIND_ES2015 ?
-                "allowSyntheticDefaultImports" : "esModuleInterop";
-            cstr module_name = module_name_for_error(module, item->module_ref, false);
-            Error* error = error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
-                "' can only be default-imported using the '", option, "' flag");
-            if (error && export_equals->decl_count) {
-                error_add_related_d(error, export_equals->decls[0].full, 2594,
-                    "This module is declared with 'export =', and can only be used with a default import when "
-                    "using the '", option, "' flag.");
+            // The `default` property of the value it assigns, if it has one (tsc's resolveExportByName:
+            // getPropertyOfType): the checker decides, TS1259 when it hasn't (port_item_check_export_equals_property())
+            if (assigned && !assigned->is_placeholder && symbol_resolved_flags(assigned) & SYMBOL_VALUE &&
+                item->tag == PORT_IMPORT_DEFAULT && !item->jsdoc
+            ) {
+                Symbol* property = binder_new_symbol(item->symbol ? item->symbol->binder : module->binder, c_sv("default"), SYMBOL_PROPERTY);
+                property->name_span = item->decl_name;
+                symbol_add_decl(property, (SymbolDecl){
+                    .kind = SYMBOL_DECL_EXPORT_EQUALS_PROPERTY,
+                    .flags = SYMBOL_PROPERTY,
+                    .node = assigned,
+                    .name = item->decl_name,
+                    .full = item->full_span,
+                });
+                return property;
             }
-            cstr_drop(&module_name);
+            scope_report_default_import_of_export_equals(item, module, errs);
         } else if (item->tag == PORT_IMPORT_DEFAULT) {
             report_non_default_export(item, module, errs);
         } else {
@@ -3782,7 +3803,14 @@ static void merge_into_umd_globals(Binder* me) {
         Symbol* target = module_export_equals(own);
         // (`export = N` naming the global N itself: tsc's mergeSymbol resolves the alias it merges into, which goes
         // through the module's `export =` back to the alias)
-        if (target == global && global->alias->item) {
+        // Only for one that merges after the alias: a `declare global` of the alias's own file (tsc merges the global
+        // augmentations last); a script's namespace merged first takes the alias in instead
+        bool augmentation_merges = false;
+        for (u32 d = 0; d < global->decl_count && target == global; d++) {
+            augmentation_merges |= global->decls[d].kind != SYMBOL_DECL_ALIAS && global->alias->item &&
+                global->decls[d].full.source == global->alias->item->full_span.source;
+        }
+        if (target == global && global->alias->item && augmentation_merges) {
             error_ctx_error_d(global->alias->scope->binder->errs, span_with_semicolon(global->alias->item->full_span), 2303,
                 "Circular definition of import alias '", global->alias->item->decl_name, "'.");
             continue;

@@ -71,9 +71,6 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 - **Regular expression patterns** (TS1487, TS1508, TS1535, TS1530, TS1517, TS1518, TS1507...): tsc's
   scanRegularExpressionWorker, ~1000 lines; only the flags are checked (`regex_check_flags`). Plan 27 stage 3.
 - **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
-- exportEqualsDefaultProperty: a default import of an `export =` module whose value has a `default` property is
-  that property (tsc's resolveExportByName via getPropertyOfType); `resolve_default_target` reports TS1259 instead.
-  Needs the value's type during alias resolution, like the specific-import path's synthetic property symbol.
 - duplicatePackage(_withErrors): the second copy of a package (same name+version) is still parsed and checked (tsc
   makes it a redirect to the first copy's AST), and the default-exported class prints `X`, not `default`, in
   `import("...").default` (display).

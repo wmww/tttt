@@ -13021,9 +13021,9 @@ const baselines = {
         types: true,
     },
     'exportEqualsDefaultProperty': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'exportEqualsOfModule': {
         errors: true,

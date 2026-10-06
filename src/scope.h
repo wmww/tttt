@@ -813,6 +813,7 @@ bool scope_report_misspelled_export(Symbol const* container, Span name, csview c
 // tsc's reportNonExportedMember: `import { x }` of a module without an export x (TS2305), which declares x locally
 // (TS2459/TS2460), or whose `export =` is x (TS2595-TS2598, TS2616/TS2617)
 void scope_report_non_exported_member(PortItem const* item, Symbol const* module, ErrorCtx* errs);
+void scope_report_default_import_of_export_equals(PortItem const* item, Symbol const* module, ErrorCtx* errs);
 // TS6203 "was also declared here" (TS6204 "and here" from the second on, at most 5) on the duplicate error at `at`,
 // pointing at `other` (tsc's addDuplicateDeclarationError)
 void add_duplicate_related(Error* error, Span at, Span other);
