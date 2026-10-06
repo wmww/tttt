@@ -292,7 +292,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         return;
     }
     Symbol const* parent = symbol->parent;
-    if ((!parent && !d.enclosing) || symbol->is_global_this || (!d.enclosing && !d.fully_qualified)) {
+    if ((!parent && !d.enclosing) || (symbol->is_global_this && !d.enclosing) || (!d.enclosing && !d.fully_qualified)) {
         out(d, ty_symbol_display_name(symbol).sv);
         return;
     }

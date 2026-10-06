@@ -1128,6 +1128,27 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             // (A name an import type can't find, in a module that doesn't resolve or doesn't export it, is nothing: tsc's
             // getSymbolAtLocation of an ImportTypeNode's qualifier resolves through the module)
             bool unresolved_import = identifier_type_import_ref(my identifier) && (!shown || shown->is_placeholder);
+            // `typeof import("./a").A.foo` with A a value that doesn't export foo: foo is a property of A's type (tsc's
+            // getTypeFromImportTypeNode; the checker reads it the same way, lower.c)
+            int prop_start = my identifier->rare ? my identifier->rare->import_prop_start : -1;
+            if (!unresolved_import && identifier_type_import_typeof(my identifier) && prop_start > 0 &&
+                prop_start == identifier_type_namespace_count(my identifier)
+            ) {
+                Checker* checker = current_checker;
+                Ty const* type = ty_type_of_symbol(checker, my identifier->target);
+                Atom const* name = checker_atom(checker, my identifier->name.sv);
+                if ((type->flags & TYF_OBJECT) && ty_get_prop(checker, type, name)) {
+                    PropSymbolInfo info = { .declarations = vec_span_init() };
+                    collect_prop_symbol(checker, type, name, &info, 0);
+                    baseline_test_case_add_symbol(ctx, (BaselineSym){
+                        .declarations = info.declarations,
+                        .allow_declaration_empty = true,
+                        .span = my identifier->name,
+                        .text = prop_text(&info, ctx, my identifier->name),
+                    });
+                    unresolved_import = true; // (shown above)
+                }
+            }
             if (!(heritage && !shown) && !unresolved_import) baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .namespaces = vec_span_clone(*identifier_type_namespaces(my identifier)),
                 .declarations = declaration_get_spans(shown),
@@ -1396,7 +1417,10 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                 Symbol const* decl = symbol_for_meaning(symbol, SYMBOL_ANY_MEANING);
                 if (!decl) decl = symbol;
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
-                    .declarations = symbol_declaration_spans(decl->is_placeholder ? decl : shown_declaration(symbol, decl)),
+                    // (globalThis has no declarations: `Symbol(mod)` named through the alias being declared)
+                    .declarations = decl->is_global_this ? vec_span_init() :
+                        symbol_declaration_spans(decl->is_placeholder ? decl : shown_declaration(symbol, decl)),
+                    .allow_declaration_empty = decl->is_global_this,
                     .span = *i,
                     .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });
@@ -1434,6 +1458,7 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
             if (i->source_symbol && !quoted) {
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = symbol_declaration_spans(i->source_symbol),
+                    .allow_declaration_empty = i->source_symbol->is_global_this, // (`Symbol(globalThis)`)
                     .span = i->source_name,
                     .text = i->source_symbol->is_placeholder ? cstr_init() : symbol_text(ctx, i->source_symbol),
                 });

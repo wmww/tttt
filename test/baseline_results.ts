@@ -15647,8 +15647,8 @@ const baselines = {
     },
     'globalThisDeclarationEmit3': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'grammarAmbiguities1': {
         errors: true,
@@ -16692,7 +16692,7 @@ const baselines = {
     },
     'importTypeTypeofClassStaticLookup': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'importTypeWithUnparenthesizedGenericFunctionParsed': {
@@ -39202,7 +39202,7 @@ const baselines = {
     },
     'globalThisGlobalExportAsGlobal': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'globalThisPropertyAssignment': {
