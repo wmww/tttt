@@ -680,18 +680,22 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
     return count;
 }
 
-static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
-    // (tsc's createReverseMappedType takes any object type, an intersection too)
-    if (!(source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION) return nullptr;
+// Whether a source can be reverse mapped through a homomorphic mapped type: an object type or an intersection with a
+// string index signature, or with properties and partially inferable (tsc's createReverseMappedType). A function type
+// without properties can't: `{ [P in keyof T]: T[P] }` infers nothing for T from it
+static bool reverse_mappable(Checker* me, Ty const* source) {
+    if (!(source->flags & TYF_OBJECT) && source->kind != TY_INTERSECTION) return false;
+    if (ty_applicable_index_info(me, source, ty_intrinsic(me, TY_STRING))) return true;
     ObjectLiteralProp* source_props;
     u32 source_prop_count = ty_reverse_mapped_source_props(me, source, &source_props);
-    // Reverse mappable: a string index signature, or properties and partially inferable (tsc's createReverseMappedType)
-    if (!ty_applicable_index_info(me, source, ty_intrinsic(me, TY_STRING)) &&
-        (!source_prop_count || !is_partially_inferable(me, source, 0))
-    ) {
-        free(source_props);
-        return nullptr;
-    }
+    free(source_props);
+    return source_prop_count && is_partially_inferable(me, source, 0);
+}
+
+static Ty const* reverse_mapped_type_uncached(Checker* me, Ty const* source, MappedInfo const* mapped, Ty const* operand) {
+    if (!reverse_mappable(me, source)) return nullptr;
+    ObjectLiteralProp* source_props;
+    u32 source_prop_count = ty_reverse_mapped_source_props(me, source, &source_props);
     if (ty_is_array(me, source) || ty_tuple_shape(source)) {
         free(source_props);
         if (my reverse_mapped_depth >= 4) return nullptr;
@@ -1066,7 +1070,11 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
             // A plain homomorphic `T[K]` template (Partial, Readonly...): the source itself is the candidate, as the
             // reverse mapped type it stands for (so a naked T elsewhere wins: tsc's inferToMappedType). Not when T is
             // inferred and a `readonly` or `?` of the mapped type would be taken off the source's properties
-            infer_with_priority(me, inf, source, mapped->modifiers_type, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
+            // (For a T being inferred: tsc's createReverseMappedType has nothing for a source that isn't reverse
+            // mappable. `Readonly<Record<K, T>>` goes on to Record's K and T whatever the source)
+            if (!inference_param(inf, mapped->modifiers_type) || reverse_mappable(me, source)) {
+                infer_with_priority(me, inf, source, mapped->modifiers_type, INFER_PRIORITY_HOMOMORPHIC_MAPPED_TYPE);
+            }
             // Pick's `{ [P in K]: T[P] }`: the keys go to K first (tsc's inferToMappedType with a type parameter
             // constraint, whose own `keyof T` constraint is what the line above stands for). HACK: not from a return
             // type, whose inference would then make the return mapper's K `never` in twiceNestedKeyofIndexInference
