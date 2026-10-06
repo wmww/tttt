@@ -4768,7 +4768,19 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (as_type_is_const(as_type)) {
                 return ty_regular(me, check_with(me, &as_type->expr, (ExprCtx){ .contextual = ctx.contextual, .is_const = true }));
             }
+            // (Resolved as the type node: tsc's checkAssertionWorker gets it under checkSourceElement(type), so what
+            // goes wrong inside it, TS2590 of `a as A & B`, is reported there)
+            CurrentNode saved_node = {0};
+            bool entered = !as_type->angle_bracket_syntax && !as_type->is_jsdoc && span_valid(as_type->keyword_span) &&
+                span_valid(expr->inner_span) && expr->inner_span.source == as_type->keyword_span.source;
+            if (entered) {
+                char const* start = span_end_ptr(as_type->keyword_span);
+                char const* end = span_end_ptr(expr->inner_span);
+                while (start < end && (*start == ' ' || *start == '\t' || *start == '\n' || *start == '\r')) start++;
+                saved_node = ty_enter_node(me, span_make(expr->inner_span.source, start, end));
+            }
             Ty const* type = ty_from_node(me, &as_type->type, expr_lower_ctx);
+            if (entered) ty_leave_node(me, saved_node);
             // The type of `e as T` doesn't depend on e, but checking it checks e right away (tsc's checkAssertionWorker:
             // only the comparison is deferred). A declaration's initializer and control flow don't check it
             // (ty_quick_expr_type(), tsc's getQuickTypeOfExpression): `const data = get(id) as Data` in a loop that
