@@ -1297,6 +1297,10 @@ static u32 declaration_spaces(Symbol* owner, SymbolDecl const* decl, bool resolv
         case SYMBOL_DECL_FUNCTION:
             return SPACE_VALUE;
         case SYMBOL_DECL_ALIAS: {
+            // (An import specifier is a value whatever it imports: tsc's getDeclarationSpaces, microsoft/TypeScript#7591)
+            if (decl->node && decl->flags == SYMBOL_ALIAS && ((PortItem const*)decl->node)->tag == PORT_IMPORT_SPECIFIC) {
+                return SPACE_VALUE;
+            }
             if (!resolve || !declaration_spaces_need_target(decl)) return 0;
             Symbol* target = symbol_resolve_alias(owner);
             if (!target || target->is_placeholder || target == owner) return 0;
