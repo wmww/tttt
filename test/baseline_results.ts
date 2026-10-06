@@ -12512,12 +12512,12 @@ const baselines = {
     },
     'expandoFunctionNestedAssigments': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'expandoFunctionNestedAssigmentsDeclared': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'expandoFunctionNullishProperty': {
@@ -60832,7 +60832,7 @@ const baselines = {
     },
     'typeFromPropertyAssignment29': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'typeFromPropertyAssignment3': {

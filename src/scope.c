@@ -4835,6 +4835,23 @@ static void add_prototype_property(
 
 static Symbol* js_constructor_symbol(Symbol* symbol);
 
+// Whether a symbol's value declaration is a function declaration or a variable initialized with a function or arrow
+// function (tsc's isFunctionSymbol)
+static bool is_function_symbol(Symbol const* symbol) {
+    if (!symbol || symbol->is_placeholder) return false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        SymbolDecl const* decl = &symbol->decls[i];
+        if (decl->kind == SYMBOL_DECL_FUNCTION) return true;
+        if (decl->kind == SYMBOL_DECL_VARIABLE) {
+            Binding const* binding = decl->node;
+            if (binding->parent || binding->tag != BINDING_IDENTIFIER) return false;
+            return initialized_binding_value((InitializedBinding const*)binding)->tag == EXPR_FUNCTION;
+        }
+        if (decl->flags & SYMBOL_VALUE) return false;
+    }
+    return false;
+}
+
 // `f.x = v` (tsc's bindStaticPropertyAssignment -> bindPropertyAssignment for AssignmentDeclarationKind.Property)
 static void add_expando_decl(Scope* me, Expr* left, Expr* right, TypeNode const* jsdoc_type, bool top_level);
 static void add_expando_member(
@@ -4945,6 +4962,16 @@ static void add_expando_member(
             root = &root->property->expr;
         }
         Symbol const* root_symbol = root->tag == EXPR_IDENTIFIER ? lookup_for_property_access(me, root) : nullptr;
+        // Outside JavaScript only an assignment to a property of a function (or a variable initialized with one) is
+        // bound (tsc's bindSpecialPropertyAssignment: isFunctionSymbol), which makes no member when the checker's
+        // expando rules (a const) don't hold: only the namespace declarations
+        if (top_level && !my file->is_js && expr_is_entity_name(object) && name.sv.buf[0] != '#' && !private_name &&
+            root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
+            is_function_symbol(lookup_for_property_access(me, object))
+        ) {
+            add_expando_namespace_decls(me, object, true);
+            return;
+        }
         if (top_level && my file->is_js && expr_is_entity_name(object) && name.sv.buf[0] != '#' && !private_name &&
             root_symbol && !(root_symbol->flags & SYMBOL_ALIAS) && !root_symbol->is_placeholder &&
             !(my file->is_commonjs && is_commonjs_root(object))
@@ -5066,12 +5093,43 @@ static void add_global_this_chain(Scope* me, Expr* e, Scope* arrow) {
     }
 }
 
+// Every assignment among the unparenthesized binary operators of an expression that is a direct child of a statement at
+// the top level of a file (`if (f.x = 1)`, `f.a = 1, f.b = 2`): top-level namespace assignments (tsc's
+// isTopLevelNamespaceAssignment: the outermost binary expression's parent's parent is the source file), preorder
+static void add_top_level_expandos(Scope* me, Expr* e) {
+    if (e->tag != EXPR_BINARY_OP || expr_is_perenthisized(e)) return;
+    if (e->binary_op->op == BINARY_OP_EQUAL) add_expando(me, e->binary_op, true);
+    add_top_level_expandos(me, &e->binary_op->left);
+    add_top_level_expandos(me, &e->binary_op->right);
+}
+
 void scope_add_expandos(Scope* me, Block const* block) {
     bool top_level = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT;
     Scope* arrow;
     bool global_this = this_is_global_script(me, &arrow);
     for_each (i, vec_statement, &block->statements) {
-        if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, top_level);
+        if (i->tag == STATEMENT_EXPR && top_level) add_top_level_expandos(me, &i->expr);
+        else if (i->tag == STATEMENT_EXPR) add_expando_chain(me, &i->expr, false);
+        if (top_level) {
+            switch (i->tag) {
+                case STATEMENT_IF_ELSE:
+                    if (i->if_else.conditions.size) add_top_level_expandos(me, (Expr*)vec_expr_at(&i->if_else.conditions, 0));
+                    break;
+                case STATEMENT_FOR_LOOP:
+                    if (i->for_loop->initialization.tag == STATEMENT_EXPR) add_top_level_expandos(me, &i->for_loop->initialization.expr);
+                    add_top_level_expandos(me, &i->for_loop->condition);
+                    add_top_level_expandos(me, &i->for_loop->afterthought);
+                    break;
+                case STATEMENT_FOR_EACH_LOOP:
+                    if (i->for_each_loop->variable.tag == FOR_EACH_LOOP_EXPR) add_top_level_expandos(me, &i->for_each_loop->variable.expr);
+                    add_top_level_expandos(me, &i->for_each_loop->iterable);
+                    break;
+                case STATEMENT_SWITCH: add_top_level_expandos(me, &i->switch_->needle); break;
+                case STATEMENT_WITH: add_top_level_expandos(me, &i->with->object); break;
+                case STATEMENT_EXPORT_DEFAULT_EXPR: case STATEMENT_THROW_EXPR: add_top_level_expandos(me, &i->expr); break;
+                default: break;
+            }
+        }
         if (i->tag == STATEMENT_EXPR && my file && my file->is_js) add_define_property(me, &i->expr, top_level);
         if (i->tag == STATEMENT_EXPR && global_this) add_global_this_chain(me, &i->expr, arrow);
         // `/** @type {T} */ a.b;` at the top level (tsc's bindSpecialPropertyDeclaration)
