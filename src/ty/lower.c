@@ -1408,7 +1408,8 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                     *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = symbol;
                     return ty_intrinsic(me, TY_ANY);
                 }
-                return type;
+                // (tsc's getWidenedType: without strictNullChecks `Foo.x = []` is any[]; `= undefined` is an alias)
+                return undefined_alias ? type : ty_widened_nullable(me, type);
             }
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
         case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
@@ -1709,7 +1710,7 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
         return ty_intrinsic(me, TY_ANY);
     }
-    return ret;
+    return ty_widened_nullable(me, ret);
 }
 
 // Whether the type of a JavaScript assignment declaration's member became any implicitly (tsc's reportImplicitAny in

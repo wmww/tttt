@@ -12513,7 +12513,7 @@ const baselines = {
     'expandoFunctionNestedAssigments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'expandoFunctionNestedAssigmentsDeclared': {
         errors: true,
