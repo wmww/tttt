@@ -469,6 +469,10 @@ src` finds the code-side markers; every significant one has an entry here.
   signatures.
 
 ## Type core (`src/ty/`)
+- `conditional_branch_lacks_constraint()` (expr.c, is_literal_of_contextual_type): tsc's base constraint of a union
+  needs every member's, ty_base_constraint() leaves unconstrained members out (relations depend on that: making it strict
+  broke doNotElaborateAssignabilityToTypeParameters). The literal-room check special-cases a conditional's union
+  branches only; other places asking "what is this at least" for `T | string` may be too permissive.
 - `instantiate_inner()` TY_INDEXED (HACK): an indexed access distributed over a union index keeps its alias (tsc's
   getIndexedAccessTypeOrUndefined), except when the result is a union of unit types (`ConditionalKeys<B, C>` of
   type-fest): the aliased identity made every mapped type over the keys (Pick, ConditionalPick) resolve again (+2%).

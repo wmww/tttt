@@ -311,6 +311,11 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
         contextual = ty_contextual_element_type_of(me, shape->rest_variadic, i - shape->count, args->len - shape->count);
     }
     arg->type = ty_check_expr(me, arg->expr, contextual);
+    // A literal its contextual type has room for is regular, so it isn't widened as a candidate (tsc's
+    // checkExpressionWithContextualType): "event1" against `K | keyof T` infers K = "event1"
+    if (contextual && (arg->type->flags & TYF_FRESH_LITERAL) && ty_is_literal_of_contextual_type(me, arg->type, contextual)) {
+        arg->type = ty_regular(me, arg->type);
+    }
 }
 
 // What a round without the context-sensitive arguments leaves out: them, and the generic calls that should see what
