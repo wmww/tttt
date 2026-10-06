@@ -496,18 +496,33 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         if (identifier_type_import_typeof(identifier) || identifier->rare->import_prop_start >= 0) {
             Ty const* ret = ty_type_of_symbol(me, decl);
             isize count = identifier_type_namespace_count(identifier) + 1;
+            Prop const* previous = nullptr;
             for (isize i = identifier->rare->import_prop_start; i >= 0 && i < count; i++) {
                 Span name = i == count - 1 ? identifier->name : *vec_span_at(identifier_type_namespaces(identifier), i);
                 Prop const* prop = ty_get_prop(me, ret, checker_atom(me, name.sv));
-                if (!prop && i == 0) {
-                    // A property of what `module.exports =` assigns, like the names before it (tsc's
-                    // getTypeFromImportTypeNode reports it as a missing export)
-                    cstr container_name = symbol_fully_qualified_name(decl);
+                if (!prop) {
+                    // A property of what `module.exports =` assigns or of a value, like the names before it (tsc's
+                    // getTypeFromImportTypeNode reports it as a missing export of what the previous name resolved
+                    // to: getFullyQualifiedName of that symbol, a property's with its parent's)
+                    cstr container_name = cstr_null;
+                    if (!previous) {
+                        container_name = symbol_fully_qualified_name(decl);
+                    } else if (previous->parent) {
+                        container_name = symbol_fully_qualified_name(previous->parent);
+                        cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", atom_sv(previous->name));
+                    } else {
+                        // (A property of an anonymous type: tsc's symbolToString names it by the declarations it is
+                        // reached through, `obj.a`)
+                        container_name = cstr_from_sv(decl->name);
+                        for (isize j = identifier->rare->import_prop_start; j < i; j++) {
+                            cstr_append_d(&container_name, DEFAULT_DISPLAY, ".", vec_span_at(identifier_type_namespaces(identifier), j)->sv);
+                        }
+                    }
                     ty_error_at(me, name, 2694, cstr_d("Namespace '", container_name, "' has no exported member '", name.sv, "'."));
                     cstr_drop(&container_name);
                     return ty_intrinsic(me, TY_ERROR);
                 }
-                if (!prop) return ty_intrinsic(me, TY_ANY); // TODO: TS2339
+                previous = prop;
                 ret = prop_type(me, prop);
             }
             // (A JSDoc `import("./m").C` of a class value means its instance, tsc's getTypeFromJSDocValueReference)
