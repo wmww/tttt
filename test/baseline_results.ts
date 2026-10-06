@@ -17283,7 +17283,7 @@ const baselines = {
     'inferTypeParameterConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypePredicates': {
         errors: true,

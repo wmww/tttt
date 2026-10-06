@@ -2236,20 +2236,38 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
     if (!*slot) {
+        Ty const** params = arena_new_n(&my arena, Ty const*, shape->arity);
+        unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
+        Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
+        bool variable = false;
+        u32 min_length = 0;
+        for (u32 i = 0; i < shape->arity; i++) {
+            params[i] = ty_synthetic_type_param(me, c_sv("T"));
+            flags[i] = shape->flags[i];
+            if (names) names[i] = shape->names[i];
+            variable |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+            if (!variable && !(shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) min_length = i + 1;
+        }
+        // The literal types of its lengths are made with it (tsc's createTupleTargetType makes its length property's
+        // type), which decides union order: a pair makes 2 (the members' length property is made from them again)
+        if (!variable) {
+            Ty const* stack_lengths[8];
+            u32 count = shape->arity - min_length + 1;
+            Ty const** lengths = count <= c_arraylen(stack_lengths) ? stack_lengths : malloc(sizeof(Ty const*) * count);
+            panic_if(!lengths, "out of memory");
+            for (u32 i = 0; i < count; i++) {
+                Value value = value_number(min_length + i);
+                lengths[i] = ty_literal(me, &value);
+            }
+            if (count > 1) ty_union(me, lengths, count, nullptr, (TyList){0});
+            if (lengths != stack_lengths) free(lengths);
+        }
         Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
         ret->declared.kind = TY_DECLARED_TUPLE_TARGET;
         ret->declared.state = arena_new(&my arena, TyObjectState);
         TupleShape* copy = arena_new(&my arena, TupleShape);
         copy->arity = shape->arity;
         copy->readonly = shape->readonly;
-        Ty const** params = arena_new_n(&my arena, Ty const*, shape->arity);
-        unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
-        Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
-        for (u32 i = 0; i < shape->arity; i++) {
-            params[i] = ty_synthetic_type_param(me, c_sv("T"));
-            flags[i] = shape->flags[i];
-            if (names) names[i] = shape->names[i];
-        }
         copy->flags = flags;
         copy->names = names;
         ret->declared.tuple = copy;
