@@ -16,7 +16,7 @@ export function f6<K extends string>(obj: Mapped6<K>, key: keyof Mapped6<K>) {
   const v = obj[key];
   v.zz; // TS2339 on Mapped6<K>[keyof Mapped6<K>]
 }
-// A distributive conditional's deferred members keep the root's alias: Yadda | Awaited<T>
+// An await of a union is each member's: Yadda | Awaited<T>
 export async function foo<T>(x: T): Promise<T> {
   let yaddable = await getXOrYadda(x);
   return yaddable;

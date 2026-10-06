@@ -121,7 +121,6 @@ static inline bool optional_adds_undefined(void) {
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report);
 static void report_variance(Checker* me, Ty const* ty, unsigned flag);
 static Ty const* base_constraint(Checker* me, Ty const* ty, u32 depth);
-static bool union_member_lacks_base_constraint(Checker* me, Ty const* ty, u32 depth);
 
 // Relation cache
 
@@ -1199,8 +1198,10 @@ static Ty const* apparent_type_resolve(Checker* me, Ty const* ty) {
         Ty const* param = ty;
         for (u32 depth = 0; ty->kind == TY_TYPE_PARAM && depth < 16; depth++) {
             Ty const* constraint = ty_param_constraint(me, ty);
-            // (`T extends R | string` with R unconstrained has no base constraint either: union_member_lacks_base_constraint)
-            if (!constraint || constraint == ty || union_member_lacks_base_constraint(me, constraint, 0)) {
+            // (`T extends R | string` with R unconstrained has no base constraint either: composite_base_constraint)
+            bool lacks = constraint && constraint->kind == TY_UNION && (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                !base_constraint(me, ty, 0);
+            if (!constraint || constraint == ty || lacks) {
                 // (tsc's getApparentType: the base constraint is unknown, which is `{}` only without strictNullChecks)
                 return compiler_options()->strict_null_checks ? ty_intrinsic(me, TY_UNKNOWN_) : global_type(me, GLOBAL_EMPTY_OBJECT);
             }
@@ -3830,15 +3831,35 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
     return ret;
 }
 
-// tsc's computeBaseConstraint of a union: none when a member is a type variable without one (`R | string` with R
-// unconstrained is no more than unknown, not string). An intersection keeps the members that have one
-static bool union_member_lacks_base_constraint(Checker* me, Ty const* ty, u32 depth) {
-    if (ty->kind != TY_UNION) return false;
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        Ty const* part = ty->composite.types.data[i];
-        if ((part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED)) && !base_constraint(me, part, depth + 1)) return true;
+// The base constraint of a union or intersection, the union or intersection of its members' (tsc's
+// computeBaseConstraint): `T["k"] & {}` with T["k"] constrained to `X | undefined` is X. A union has none when a member
+// is a type variable without one (`R | string` with R unconstrained is no more than unknown, not string): null with
+// `*lacks` set. Null without it: nothing replaced (itself). An intersection keeps the members that have one
+static Ty const* composite_base_constraint(Checker* me, Ty const* ty, u32 depth, bool* lacks) {
+    *lacks = false;
+    if (depth > 8 || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
+    TyList types = ty->composite.types;
+    TyBuf bases = {0};
+    bool different = false;
+    for (u32 i = 0; i < types.len; i++) {
+        Ty const* part = types.data[i];
+        bool variable = part->kind == TY_TYPE_PARAM || (part->flags & TYF_DEFERRED);
+        Ty const* base = variable || (part->flags & (TYF_UNION | TYF_INTERSECTION)) ? base_constraint(me, part, depth + 1) : part;
+        if (!base && variable && ty->kind == TY_UNION) {
+            ty_buf_drop(&bases);
+            *lacks = true;
+            return nullptr;
+        }
+        // (A nested union or intersection without type variables to replace has none of its own: itself)
+        if (!base && (part->kind == TY_UNION || part->kind == TY_INTERSECTION) && !(part->flags & TYF_DEFERRED)) base = part;
+        if (base != part) different = true;
+        if (base) ty_buf_push(&bases, base);
     }
-    return false;
+    Ty const* ret = !different ? nullptr : ty->kind == TY_UNION ?
+        ty_union(me, bases.data, bases.len, nullptr, (TyList){0}) :
+        ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0});
+    ty_buf_drop(&bases);
+    return ret;
 }
 
 // What a type variable is known to be at least: tsc's getBaseConstraintOfType, without the circularity reporting.
@@ -3857,8 +3878,9 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             if ((constraint->kind == TY_UNION || constraint->kind == TY_INTERSECTION) &&
                 (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
             ) {
-                if (union_member_lacks_base_constraint(me, constraint, depth + 1)) return nullptr;
-                Ty const* base = base_constraint(me, constraint, depth + 1);
+                bool lacks;
+                Ty const* base = composite_base_constraint(me, constraint, depth + 1, &lacks);
+                if (lacks) return nullptr;
                 if (base) return base;
             }
             return constraint;
@@ -3875,8 +3897,9 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 // (tsc's computeBaseConstraint of the simplified type: of a union or intersection its members', where
                 // `T[string] & X` with T unconstrained is X)
                 if ((simple->kind == TY_UNION || simple->kind == TY_INTERSECTION) && (simple->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-                    if (union_member_lacks_base_constraint(me, simple, depth + 1)) return nullptr;
-                    Ty const* base = base_constraint(me, simple, depth + 1);
+                    bool lacks;
+                    Ty const* base = composite_base_constraint(me, simple, depth + 1, &lacks);
+                    if (lacks) return nullptr;
                     return base ? base : simple;
                 }
                 if (simple->kind != TY_TYPE_PARAM && !(simple->flags & TYF_DEFERRED)) return simple;
@@ -3896,8 +3919,9 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 index_constraint ? index_constraint : index, ty->indexed.include_undefined);
             if (ret == ty) return nullptr;
             if (ret->kind == TY_UNION) {
-                if (union_member_lacks_base_constraint(me, ret, depth + 1)) return nullptr;
-                Ty const* base = base_constraint(me, ret, depth + 1);
+                bool lacks;
+                Ty const* base = composite_base_constraint(me, ret, depth + 1, &lacks);
+                if (lacks) return nullptr;
                 return base ? base : ret;
             }
             // (tsc's computeBaseConstraint takes the base constraint of the access too: `[T][0]` is T's)
@@ -3921,8 +3945,9 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 ) {
                     // (A union branch is its members' base constraints too, none if one has none: tsc's getBaseConstraint
                     // of the conditional's constraint)
-                    if (union_member_lacks_base_constraint(me, parts[i], depth + 1)) return nullptr;
-                    Ty const* base = base_constraint(me, parts[i], depth + 1);
+                    bool lacks;
+                    Ty const* base = composite_base_constraint(me, parts[i], depth + 1, &lacks);
+                    if (lacks) return nullptr;
                     if (base) parts[i] = base;
                 }
             }
@@ -3966,27 +3991,8 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
         }
         case TY_UNION:
         case TY_INTERSECTION: {
-            // The union or intersection of the members' (tsc's computeBaseConstraint): `T["k"] & {}` with T["k"]
-            // constrained to `X | undefined` is X
-            if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
-            if (union_member_lacks_base_constraint(me, ty, depth)) return nullptr;
-            TyList types = ty->composite.types;
-            TyBuf bases = {0};
-            bool different = false;
-            for (u32 i = 0; i < types.len; i++) {
-                Ty const* part = types.data[i];
-                Ty const* base = part->kind == TY_TYPE_PARAM || (part->flags & (TYF_DEFERRED | TYF_UNION | TYF_INTERSECTION)) ?
-                    base_constraint(me, part, depth + 1) : part;
-                // (A nested union or intersection without type variables to replace has none of its own: itself)
-                if (!base && (part->kind == TY_UNION || part->kind == TY_INTERSECTION) && !(part->flags & TYF_DEFERRED)) base = part;
-                if (base != part) different = true;
-                if (base) ty_buf_push(&bases, base);
-            }
-            Ty const* ret = !different ? nullptr : ty->kind == TY_UNION ?
-                ty_union(me, bases.data, bases.len, nullptr, (TyList){0}) :
-                ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0});
-            ty_buf_drop(&bases);
-            return ret;
+            bool lacks;
+            return composite_base_constraint(me, ty, depth, &lacks);
         }
         case TY_STRING_MAPPING: {
             Ty const* inner = ty->string_mapping.type;
