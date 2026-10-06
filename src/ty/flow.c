@@ -762,7 +762,16 @@ static u32 query_key(FlowQuery* q) {
     Checker* me = q->me;
     q->key_set = true;
     u64 words[24] = { KEY_FLOW_REFERENCE, q->declared->id, q->initial->id };
-    u32 count = reference_key_words(me, q->reference, words + 3, c_arraylen(words) - 3);
+    u32 count;
+    if (q->pattern || q->parameters_of) {
+        // A destructuring pattern's or a function's parameters' query (a placeholder reference): keyed by what it
+        // narrows, so loops narrow it too
+        words[3] = q->pattern ? 1 : 2;
+        words[4] = q->pattern ? (u64)(uintptr_t)q->pattern : (u64)(uintptr_t)q->parameters_of;
+        count = 2;
+    } else {
+        count = reference_key_words(me, q->reference, words + 3, c_arraylen(words) - 3);
+    }
     if (!count) return 0;
     void const** slot = intern_slot(me, &my links, words, count + 3);
     if (!*slot) *slot = (void const*)(uintptr_t)++my flow_key_count;
@@ -1797,6 +1806,13 @@ typedef struct DiscriminantFilter {
 static bool keep_by_discriminant(Checker* me, Ty const* member, void const* arg) {
     DiscriminantFilter const* filter = arg;
     Ty const* discriminant = prop_type_by_name(me, member, filter->name);
+    // (A tuple without that element has its number index signature: tsc's getTypeOfPropertyOrIndexSignatureOfType,
+    // `[5]` isn't kept by `y === 2` of `[x, y]: [1, 2] | [5]`)
+    if (!discriminant && ty_tuple_shape(member) && ty_is_numeric_name(filter->name)) {
+        discriminant = ty_access(me, member, ty_intrinsic(me, TY_NUMBER));
+        // (addOptionality: an index signature's value may be missing)
+        if (discriminant) discriminant = union_of(me, discriminant, ty_intrinsic(me, TY_UNDEFINED));
+    }
     if (!discriminant) discriminant = ty_intrinsic(me, TY_UNKNOWN_);
     if ((discriminant->flags & TYF_NEVER) || (filter->narrowed->flags & TYF_NEVER)) return false;
     return ty_is_comparable_either_way(me, filter->narrowed, discriminant);
@@ -1820,6 +1836,25 @@ static Ty const* narrow_by_discriminant(FlowQuery* q, Ty const* type, Discrimina
         }
     }
     Ty const* prop = prop_type_by_name(me, holder, name);
+    // (Tuples of different lengths: one without the element counts its rest element, else undefined, tsc's
+    // createUnionOrIntersectionProperty with a tuple's index signature)
+    if (!prop && holder->kind == TY_UNION && ty_is_numeric_name(name)) {
+        TyBuf parts = {0};
+        bool all = true;
+        for (u32 i = 0; i < holder->composite.types.len && all; i++) {
+            Ty const* member = holder->composite.types.data[i];
+            Ty const* element = prop_type_by_name(me, member, name);
+            TupleShape const* shape = element ? nullptr : ty_tuple_shape(member);
+            if (!element && shape) {
+                bool rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
+                element = rest ? ty_access(me, member, ty_intrinsic(me, TY_NUMBER)) : ty_intrinsic(me, TY_UNDEFINED);
+            }
+            if (element) ty_buf_push(&parts, element);
+            else all = false;
+        }
+        if (all && parts.len) prop = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
+        ty_buf_drop(&parts);
+    }
     if (!prop) return type;
     if (remove_nullable && optional_chain) prop = union_of(me, prop, ty_intrinsic(me, TY_UNDEFINED));
     DiscriminantFilter filter = { name, narrow(q, prop, arg) };
@@ -3296,9 +3331,13 @@ Ty const* ty_parameter_narrowed_type(Checker* me, Binding const* binding, FlowNo
     FlowType result = type_at_flow_node(&q, flow);
     my flow_shared_count = q.shared_start;
     Ty const* narrowed = result.type;
-    if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER) || narrowed == rest) return nullptr;
+    // (Narrowed or not: a parameter of a generic rest type is its element of the apparent union, `kind` of
+    // `<T extends ["a", number] | ["b", string]>(...args: T)` is "a" | "b", tsc's getNarrowedTypeOfSymbol)
+    if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return nullptr;
     Value key = value_number(index);
-    return ty_access(me, narrowed, ty_literal(me, &key));
+    Ty const* element = ty_access(me, narrowed, ty_literal(me, &key));
+    // (Past the end of the tuples it is undefined: tsc's getIndexedAccessType, getTupleElementTypeOutOfStartCount)
+    return element ? element : ty_indexed(me, narrowed, ty_literal(me, &key));
 }
 
 // Inferred type predicates (tsc's getTypePredicateFromBody): `x => x !== undefined` is `(x: T | undefined) => x is T`

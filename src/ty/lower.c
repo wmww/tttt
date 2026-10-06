@@ -2311,6 +2311,8 @@ Ty const* ty_binding_element_type_from(Checker* me, Binding const* binding, Ty c
         key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
     }
     Ty const* ret = ty_access_reading(me, object, key);
+    // (Past the end of tuples it is undefined: tsc's getTupleElementTypeOutOfStartCount; `[x, y]` narrowed to `[5]`)
+    if (!ret && parent->tag == BINDING_ARRAY && ty_tuple_shape(object)) ret = ty_indexed(me, object, key);
     if (!ret) return nullptr;
     if (!parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
     if (!parent->has_explicit_type && !binding_is_parameter(parent)) ret = ty_widened_for_declaration(me, ret, false);
