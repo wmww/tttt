@@ -290,7 +290,24 @@ static void this_property_symbol_overrides(Expr* left, BaselineTestCase* ctx) {
     }
     bool declares = false;
     for (u32 i = 0; member && i < member->decl_count; i++) declares |= span_eq(member->decls[i].full, expr_outer_span(left));
-    if (declares) add_symbol_override(ctx, expr_outer_span(&left->property->prop), member);
+    if (!declares) return;
+    // (A JavaScript class's member merged with what `F.prototype = {...}` declares: the checker's member has them all,
+    // builder_add_assignment_members())
+    Checker* checker = current_checker;
+    Ty const* instance = js_class ? ty_declared_type_of(checker, js_class) : nullptr;
+    Prop const* prop = instance && (instance->flags & TYF_OBJECT) ? ty_get_prop(checker, instance, checker_atom(checker, name.sv)) : nullptr;
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    bool own = false;
+    for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) own |= span_eq(prop->decl->decl_spans[i], expr_outer_span(left));
+    if (own && prop->decl->decl_span_count > member->decl_count && ctx->symbol_override_count < c_arraylen(ctx->symbol_overrides)) {
+        VecSpan spans = vec_span_init();
+        for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&spans, prop->decl->decl_spans[i]);
+        ctx->symbol_overrides[ctx->symbol_override_count++] = (typeof(ctx->symbol_overrides[0])){
+            .span = expr_outer_span(&left->property->prop), .text = symbol_text(ctx, member), .declarations = spans,
+        };
+        return;
+    }
+    add_symbol_override(ctx, expr_outer_span(&left->property->prop), member);
 }
 
 // JavaScript `module.exports.a.x = v` / `exports.a.x = v` declaring x (tsc's AssignmentDeclarationKind.ExportsProperty
@@ -2958,11 +2975,32 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
                     } else {
                         vec_span_push(&declarations, i->span);
                     }
+                    // A method or accessor of `F.prototype = {...}` merged with F's members of its name (`this.x = v`):
+                    // one symbol, the checker's member has its declarations (builder_add_assignment_members())
+                    cstr prototype_text = cstr_null;
+                    Expr const* prototype_of = i->value.tag == EXPR_FUNCTION && !i->computed_key ?
+                        function_impl_rare(i->value.function)->prototype_of : nullptr;
+                    Symbol const* js_class = prototype_of ? expr_entity_name_symbol(prototype_of) : nullptr;
+                    if (js_class && (js_class->flags & SYMBOL_CLASS)) {
+                        Checker* checker = current_checker;
+                        Ty const* instance = ty_declared_type_of(checker, js_class);
+                        Prop const* prop = instance && (instance->flags & TYF_OBJECT) ?
+                            ty_get_prop(checker, instance, checker_atom(checker, cstr_sv(&i->name_string))) : nullptr;
+                        while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+                        bool own = false;
+                        for (u32 k = 0; prop && k < prop->decl->decl_span_count; k++) own |= span_eq(prop->decl->decl_spans[k], i->span);
+                        if (own && prop->decl->decl_span_count > (u32)vec_span_size(&declarations)) {
+                            vec_span_clear(&declarations);
+                            for (u32 k = 0; k < prop->decl->decl_span_count; k++) vec_span_push(&declarations, prop->decl->decl_spans[k]);
+                            prototype_text = member_text(ctx, js_class, js_class->name_span, cstr_sv(&i->name_string), false);
+                        }
+                    }
                     baseline_test_case_add_symbol(ctx, (BaselineSym){
                         .declarations = declarations,
                         .span = i->name_span,
                         .name = named != i ? named->name_span : span_null,
                         .name_is_value = named->name_is_value,
+                        .text = prototype_text,
                     });
                     if (i->computed_key && i->computed_key->tag == EXPR_LITERAL &&
                         (i->computed_key->literal.tag == VALUE_STRING || i->computed_key->literal.tag == VALUE_NUMBER)

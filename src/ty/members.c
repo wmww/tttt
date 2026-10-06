@@ -1107,7 +1107,22 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
         if (prototype->decls[i].kind != SYMBOL_DECL_ASSIGNMENT || literal->tag != EXPR_OBJECT) continue;
         Members const* members = ty_members(me, ty_widened_objects(me, ty_expr_type(me, literal)));
         for (u32 j = 0; j < members->prop_count; j++) {
-            if (builder_find_prop(builder, members->props[j]->name)) continue;
+            Prop* existing = builder_find_prop(builder, members->props[j]->name);
+            if (existing) {
+                // (One symbol in tsc, merged: the literal's declarations follow the assignments' ones)
+                Prop const* other = members->props[j];
+                while (other->target && !other->decl->decl_span_count) other = other->target;
+                u32 extra = other->decl->decl_span_count;
+                if (extra && existing->decl->decl_span_count) {
+                    u32 total = existing->decl->decl_span_count + extra;
+                    Span* all = arena_new_n(&my arena, Span, total);
+                    memcpy(all, existing->decl->decl_spans, sizeof(Span) * existing->decl->decl_span_count);
+                    memcpy(all + existing->decl->decl_span_count, other->decl->decl_spans, sizeof(Span) * extra);
+                    existing->decl->decl_spans = all;
+                    existing->decl->decl_span_count = total;
+                }
+                continue;
+            }
             // (Not one a computed name that isn't a literal makes: tsc takes the binder's members, which don't have
             // those late-bound names, `[_sym]: v`)
             bool late_bound = false;

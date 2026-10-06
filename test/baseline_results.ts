@@ -51562,7 +51562,7 @@ const baselines = {
     },
     'jsDeclarationsFunctionLikeClasses2': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'jsDeclarationsFunctionPrototypeStatic': {
