@@ -1663,6 +1663,10 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
     symbol = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (symbol && symbol_rare(symbol)->merged_export_equals_of) return merged_export_equals_type(me, symbol, false);
     symbol = canonical(me, symbol);
+    // (`export { undefined }` names tsc's undefinedSymbol, which tttt has no symbol for)
+    if (symbol && symbol->is_placeholder && symbol->is_unresolved && csview_equals(symbol->name, "undefined")) {
+        return ty_intrinsic(me, TY_UNDEFINED);
+    }
     if (!symbol || symbol->is_placeholder) return ty_intrinsic(me, symbol && symbol->is_unresolved ? TY_ERROR : TY_ANY);
     // `typeof import("./a")`, `import("./a")`, `globalThis`. A shorthand ambient module is any
     if (symbol->is_module && symbol->is_shorthand_module) return ty_intrinsic(me, TY_ANY);
