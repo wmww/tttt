@@ -87,3 +87,11 @@ queues merged into one.
   mapper), TS2322 on the declaration in tttt.
 - Spread copies print their optional property's annotation in errors (`{ sn?: number; }` for `{ ...o }`, seed-3
   mut7379) while the declared type literal prints `number | undefined`; tttt adds `| undefined` to both.
+- (agent a, seed 5 mut5252) `a2.x` with `a2: ReturnType<T>` (`T extends () => unknown`) misses TS2339: tsc's default
+  constraint of a conditional leaves the `any` false branch out (true branch `R`, unconstrained, so apparently unknown);
+  making base_constraint_uncached's TY_CONDITIONAL do that wasn't enough, the property access path skips it elsewhere.
+- (agent a, seed 5) Unlooked-at seed 5 mismatches: missing TS2411 (mut4694/mut6347, optional property vs index
+  signature), missing TS2461/TS2722 with `let foo = undefined` evolving in a loop (mut6952/mut7343), spurious TS2322
+  with `const x: never =` (mut5018), missing TS2540, TS2741 (objectRestAssignment), TS2687, TS2403, TS2344, TS2353,
+  spurious TS2538/TS7015/TS2411/TS2339/TS2664; text/elaboration/render ones (~15). `MUTATE_DIR=... ./mutate.py -n 8000
+  --seed 5` reproduces them.
