@@ -2658,6 +2658,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
 
         case STATEMENT_EXPR:
             expr_typecheck(&my expr, errs);
+            ty_check_assertion_call_statement(current_checker, &my expr, errs);
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:

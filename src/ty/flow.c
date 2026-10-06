@@ -1180,7 +1180,17 @@ static bool symbol_has_explicit_type(Symbol const* symbol) {
     if (symbol->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_VALUE_MODULE)) return true;
     if (!(symbol->flags & SYMBOL_VARIABLE)) return false;
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
-    return binding && !binding->parent && binding->has_explicit_type;
+    if (!binding || binding->parent) return false;
+    if (binding->has_explicit_type) return true;
+    // In JavaScript, a function initializer with a declared return type (JSDoc) counts (tsc's
+    // isDeclarationWithExplicitTypeAnnotation)
+    if (binding->content_span.source && binding->content_span.source->is_js && binding->source &&
+        binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
+        return value->tag == EXPR_FUNCTION && value->function->ret_explicit;
+    }
+    return false;
 }
 
 static bool prop_has_explicit_type(Prop const* prop) {
@@ -1208,7 +1218,22 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
             return is_explicit ? ty_identifier_reference_type(me, &expr->identifier) : nullptr;
         }
         Symbol const* symbol = expr->identifier.target;
-        if (keyword || !symbol || !symbol_has_explicit_type(symbol)) return nullptr;
+        if (keyword || !symbol) return nullptr;
+        if (!symbol_has_explicit_type(symbol)) {
+            // A `for (const x of xs)` variable without annotation: what the dotted name it iterates yields (tsc's
+            // getExplicitTypeOfSymbol)
+            Binding const* binding = symbol->flags & SYMBOL_VARIABLE ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
+            if (!binding || binding->parent || binding->tag != BINDING_IDENTIFIER || !binding->source ||
+                binding->source->tag != LAZY_TYPE_FOR_EACH_LOOP_VAR
+            ) {
+                return nullptr;
+            }
+            ForEachLoopStatement const* loop = c_container_of(binding->source, ForEachLoopStatement, var_type);
+            if (loop->keyword != FOR_EACH_LOOP_OF) return nullptr;
+            Ty const* iterable = type_of_dotted_name(me, &loop->iterable);
+            if (!iterable) return nullptr;
+            return ty_iterated_type(me, loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable, span_null, nullptr);
+        }
         return ty_identifier_reference_type(me, &expr->identifier);
     }
     if (expr->tag != EXPR_PROPERTY) return nullptr;
@@ -1223,6 +1248,62 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
     if (!prop || !prop_has_explicit_type(prop)) return nullptr;
     // (An optional one has undefined in its type, an optional method's too: tsc's getTypeOfSymbol. Not callable then)
     return prop->flags & PROP_OPTIONAL ? ty_optional_prop_type(me, prop_type(me, prop)) : prop_type(me, prop);
+}
+
+// tsc's isDottedName: `a`, `this`, `super`, `a.b.c`
+static bool is_dotted_name(Expr const* expr) {
+    if (expr->tag == EXPR_IDENTIFIER) return true;
+    return expr->tag == EXPR_PROPERTY && expr->property->form == PROPERTY_EXPR_DOT && is_dotted_name(&expr->property->expr);
+}
+
+// The leftmost name of a dotted name that type_of_dotted_name() can't type, with where it's declared
+static Expr const* dotted_name_without_type(Checker* me, Expr const* expr) {
+    if (expr->tag == EXPR_PROPERTY) {
+        Expr const* inner = dotted_name_without_type(me, &expr->property->expr);
+        if (inner) return inner;
+    }
+    return type_of_dotted_name(me, expr) ? nullptr : expr;
+}
+
+static Span dotted_name_declaration(Checker* me, Expr const* expr) {
+    if (expr->tag == EXPR_IDENTIFIER) {
+        Symbol const* symbol = expr->identifier.target;
+        Binding const* binding = symbol && (symbol->flags & SYMBOL_VARIABLE) ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
+        return binding ? binding->content_span : span_null;
+    }
+    Ty const* object = type_of_dotted_name(me, &expr->property->expr);
+    Atom const* name = object ? access_name(me, expr->property) : nullptr;
+    if (!name) return span_null;
+    object = ty_apparent_type(me, object);
+    if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return span_null;
+    Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
+    while (prop && prop->target && !span_valid(prop->decl->name_span)) prop = prop->target;
+    return prop ? prop->decl->name_span : span_null;
+}
+
+// tsc's checkCallExpression on an assertion call statement: its callee must be a dotted name (TS2776) whose names all
+// have explicit types (TS2775), or it asserts nothing
+void ty_check_assertion_call_statement(Checker* me, Expr const* expr, ErrorCtx* errs) {
+    if (expr->tag != EXPR_CALL || expr->call->optional_chain || expr->call->uses_new) return;
+    Signature const* sig = ty_call_resolved_signature(me, expr->call);
+    if (!sig || !signature_predicate(me, sig) || !(signature_return_type(me, sig)->flags & TYF_VOID)) return;
+    Expr const* callee = &expr->call->callable;
+    if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+    Span span = expr_outer_span(callee);
+    if (!is_dotted_name(callee)) {
+        error_ctx_error_d(errs, span, 2776, "Assertions require the call target to be an identifier or qualified name.");
+        return;
+    }
+    CallEffects effects = call_effects(me, expr, true);
+    if (effects.has_predicate || effects.returns_never) return;
+    Error* error = error_ctx_error_d(errs, span, 2775,
+        "Assertions require every name in the call target to be declared with an explicit type annotation.");
+    Expr const* missing = dotted_name_without_type(me, callee);
+    Span declaration = missing ? dotted_name_declaration(me, missing) : span_null;
+    if (error && span_valid(declaration)) {
+        Span name = missing->tag == EXPR_PROPERTY ? missing->property->prop.inner_span : missing->inner_span;
+        error_add_related_d(error, declaration, 2782, "'", name.sv, "' needs an explicit type annotation.");
+    }
 }
 
 // tsc's getEffectsSignature(), remembered per call like there

@@ -3150,6 +3150,7 @@ static Ty const* require_type(Checker* me, CallExpr const* call) {
 // typecheck walk reports that. Outer inference rounds, overload rounds and the walk don't resolve it again
 typedef struct CallResolution {
     Ty const* ret;
+    Signature const* sig; // The signature it resolved to, null if none fit
     ErrorCtx errs; // (Registered in Checker.call_errors when not empty)
     bool in_flight;
 } CallResolution;
@@ -3180,7 +3181,9 @@ static Ty const* call_return_type(
     resolution = arena_new(&my arena, CallResolution);
     *resolution = (CallResolution){ .errs = { .phase = ERROR_PHASE_TYPECHECK }, .in_flight = true };
     *intern_slot(me, &my links, key, 2) = resolution;
-    resolution->ret = resolve_into(me, callee, call, tagged_template, contextual, call_span, &resolution->errs, nullptr);
+    Candidate chosen = {0};
+    resolution->ret = resolve_into(me, callee, call, tagged_template, contextual, call_span, &resolution->errs, &chosen);
+    resolution->sig = chosen.sig;
     resolution->in_flight = false;
     if (!error_ctx_empty(&resolution->errs)) {
         if (my call_errors_len == my call_errors_cap) {
@@ -3198,6 +3201,13 @@ Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call) {
     u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
     CallResolution const* resolution = intern_get(&my links, key, 2);
     return resolution && !resolution->in_flight ? resolution->ret : nullptr;
+}
+
+// The signature a call resolved to, if its resolution is remembered and done and something fit
+Signature const* ty_call_resolved_signature(Checker* me, CallExpr const* call) {
+    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
+    CallResolution const* resolution = intern_get(&my links, key, 2);
+    return resolution && !resolution->in_flight ? resolution->sig : nullptr;
 }
 
 // Reports what the call's resolution reported. One never remembered (a `class A extends B` stand-in, a call only

@@ -37736,9 +37736,9 @@ const baselines = {
         types: true,
     },
     'assertionTypePredicates1': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'assertionTypePredicates2': {
         errors: true,
