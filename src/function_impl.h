@@ -326,6 +326,7 @@ void function_impl_pair_setter(FunctionImpl* setter, FunctionImpl* getter, struc
 // symbols to tsc's isLateBindableName, which goes by the name's type)
 TypeNode const* function_impl_setter_type(FunctionImpl const* me);
 void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, ErrorCtx* errs);
+void function_impl_check_jsdoc_overloads(FunctionImpl const* me, Span name, ErrorCtx* errs);
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs);
 // The part of function_impl_typecheck() about the body, deferred for a function expression (Checker.defer_checks)
 void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs);

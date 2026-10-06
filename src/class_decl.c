@@ -1527,6 +1527,8 @@ static void class_check_overloads(ClassDecl* me, ErrorCtx* errs) {
         }
         if (first && implementation && overload_count) {
             ty_check_overloads_compatible(current_checker, implementation, implementation_name, overloads, names, overload_count, errs);
+        } else if (first && implementation && item->tag == CLASS_ITEM_CONSTRUCTOR) {
+            function_impl_check_jsdoc_overloads(implementation, implementation_name, errs); // (a JavaScript constructor's)
         }
     }
     // Two implementations of a method (constructors have TS2392)

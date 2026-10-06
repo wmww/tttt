@@ -1454,6 +1454,21 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
     }
     for_each (i, vec_class_item, &class_decl->items) {
         if (i->tag != CLASS_ITEM_CONSTRUCTOR || (has_overloads && i->constructor.func.has_body)) continue;
+        FunctionImplRare const* rare = function_impl_rare(&i->constructor.func);
+        if (rare->jsdoc_overload_count && !has_overloads) {
+            // JSDoc `@overload`s instead of the constructor's own signature, each making the instance type (tsc's
+            // getReturnTypeFromAnnotation of a JSDocSignature whose root is on a constructor)
+            for (u32 f = 0; f < rare->jsdoc_overload_count; f++) {
+                if (rare->jsdoc_overloads[f].tag != TYPE_CALLABLE) continue;
+                FunctionImpl const* overload = rare->jsdoc_overloads[f].callable->function;
+                Signature* sig = class_construct_signature(me, class_decl, instance);
+                sig->function = overload;
+                sig->name_span = overload->full_span;
+                sig->decl_span = overload->full_span;
+                builder_push(builder, construct, sig);
+            }
+            continue;
+        }
         Signature* sig = class_construct_signature(me, class_decl, instance);
         sig->function = &i->constructor.func;
         sig->name_span = i->constructor.name_span;
