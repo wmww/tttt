@@ -256,6 +256,16 @@ static void report_types_package(ModuleRef const* me, ErrorCtx* errs) {
         csview_slice(path, 7, path.size), "' instead of '", path, "'.");
 }
 
+void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, ErrorCtx* errs) {
+    // The import is `any`, which is only worth a word when that has to be explicit
+    if (!compiler_options()->no_implicit_any) return;
+    Error* error = error_ctx_error_d(errs, at, 7016,
+        "Could not find a declaration file for module '", my path, "'. '", my resolved_path,
+        "' implicitly has an 'any' type.");
+    // (tsc's errorOnImplicitAnyModule: for a bare name into a package)
+    if (error && cstr_size(&my package_name)) module_ref_add_not_found_chain(me, error, cstr_sv(&my package_name));
+}
+
 void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
@@ -263,14 +273,7 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
         case MODULE_REF_IS_JSON:
             return;
         case MODULE_REF_IS_JS:
-            // The import is `any`, which is only worth a word when that has to be explicit
-            if (options->no_implicit_any) {
-                Error* error = error_ctx_error_d(errs, my span, 7016,
-                    "Could not find a declaration file for module '", my path, "'. '", my resolved_path,
-                    "' implicitly has an 'any' type.");
-                // (tsc's errorOnImplicitAnyModule: for a bare name into a package)
-                if (error && cstr_size(&my package_name)) module_ref_add_not_found_chain(me, error, cstr_sv(&my package_name));
-            }
+            module_ref_report_implicit_any_at(me, my span, errs);
             return;
         case MODULE_REF_ARBITRARY_EXTENSION:
             error_ctx_error_d(errs, my span, 6263,

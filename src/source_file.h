@@ -255,6 +255,9 @@ void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct Error
 // The diagnostic for a module name that led to no module (neither a file nor an ambient module): TS2307 and its
 // flavours, by what module resolution found instead
 void module_ref_report_unresolved(ModuleRef const* me, struct ErrorCtx* errs);
+// TS7016 at `at` for a module that resolved to JavaScript (MODULE_REF_IS_JS), under noImplicitAny (tsc's
+// errorOnImplicitAnyModule)
+void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, struct ErrorCtx* errs);
 
 // 0-based index of the line `pos` (which must point into the contents, or at their end) is on
 unsigned source_file_line_index(SourceFile const* me, const char* pos);

@@ -1517,7 +1517,11 @@ static Symbol* jsx_runtime_module(Span at, Scope* names, ErrorCtx* errs) {
         module_ref_report_require_of_esm(ref, at, errs);
         return module;
     }
-    if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return nullptr; // TODO: TS7016 for a JavaScript module
+    if (!ref->ambient_only && ref->failure == MODULE_REF_IS_JS) {
+        module_ref_report_implicit_any_at(ref, at, errs); // (tsc's resolveExternalModule)
+        return nullptr;
+    }
+    if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return nullptr;
     if (compiler_options()->module_resolution == MODULE_RESOLUTION_CLASSIC) {
         error_ctx_error_d(errs, at, 2792, "Cannot find module '", ref->path, "'. Did you mean to set the "
             "'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?");

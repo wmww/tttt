@@ -65,6 +65,11 @@ void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs) {
         void const** reported = intern_slot(me, &my links, key, 2);
         if (!*reported) {
             *reported = me;
+            // (tsc's resolveExternalModule: a module that is JavaScript says so instead, under noImplicitAny)
+            if (ref->failure == MODULE_REF_IS_JS) {
+                module_ref_report_implicit_any_at(ref, at, errs);
+                return;
+            }
             error_ctx_error_d(errs, at, 2354,
                 "This syntax requires an imported helper but module 'tslib' cannot be found.");
         }
