@@ -19162,7 +19162,7 @@ const baselines = {
     },
     'jsEnumCrossFileExport': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsEnumFunctionLocalNoCrash': {

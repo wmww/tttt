@@ -1488,6 +1488,12 @@ static void append_decl(cstr* target, Span span) {
             }
         }
     }
+    // The name after a JSDoc tag's type (`@typedef {T} A.B`: tsc's JSDocNamespaceDeclaration) has none either
+    if (in_jsdoc) {
+        const char* c = start;
+        while (c > file_start && (c[-1] == ' ' || c[-1] == '\t')) c--;
+        if (c > file_start && c[-1] == '}') keep_going = false;
+    }
     // The space before the symbol is included in the span. Why? I have no idea.
     // Here we parse code backwards, which is an extremely silly thing to do
     while (keep_going && start > file_start) {

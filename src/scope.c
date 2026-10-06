@@ -339,8 +339,6 @@ static void symbol_add_decl(Symbol* me, SymbolDecl decl) {
     u32 at = my decl_count;
     if (at && decl.full.source && is_delayed_jsdoc_decl(&my decls[at - 1]) && !is_delayed_jsdoc_decl(&decl)) {
         while (at && my decls[at - 1].full.source == decl.full.source && is_delayed_jsdoc_decl(&my decls[at - 1])) at--;
-        // (Never in front of the value declaration)
-        if (at == 0) at = my decl_count;
         memmove(&my decls[at + 1], &my decls[at], sizeof(SymbolDecl) * (my decl_count - at));
     }
     my decls[at] = decl;
@@ -381,10 +379,20 @@ VecSpan symbol_declaration_spans(Symbol const* me) {
             bool assignments = false, jsdoc = false;
             for (u32 j = i; j < my decl_count; j++) {
                 if (!same_block(my decls[j], my decls[i]) || !span_valid(my decls[j].full)) continue;
+                // (The namespace of a JSDoc `@enum` or `@typedef` on `A.B.C = v` is the declaration the assignment's
+                // name made already: one node to tsc, which appendIfUnique adds once)
+                if (is_delayed_jsdoc_decl(&my decls[j])) {
+                    bool same_node = false;
+                    for (u32 k = 0; k < my decl_count && !same_node; k++) {
+                        same_node = k != j && !is_delayed_jsdoc_decl(&my decls[k]) && my decls[k].full.source == my decls[j].full.source &&
+                            span_start_ptr(my decls[k].full) == span_start_ptr(my decls[j].full);
+                    }
+                    if (same_node) continue;
+                }
                 if ((my decls[j].kind == SYMBOL_DECL_FUNCTION) == (pass == 0)) {
                     vec_span_push(&ret, my decls[j].full);
                     assignments |= my decls[j].kind == SYMBOL_DECL_ASSIGNMENT || my decls[j].kind == SYMBOL_DECL_EXPANDO;
-                    jsdoc |= span_is_jsdoc_tag(my decls[j].full);
+                    jsdoc |= span_is_jsdoc_tag(my decls[j].full) || is_delayed_jsdoc_decl(&my decls[j]);
                 }
             }
             if (!assignments || jsdoc) continue;
@@ -4915,6 +4923,14 @@ static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
     op->expando_bound = true;
     add_expando_decl(me, &op->left, &op->right, op->jsdoc_type, top_level);
+    Symbol* member = op->jsdoc_enum_export && op->left.tag == EXPR_PROPERTY ? (Symbol*)op->left.property->declares : nullptr;
+    if (member) {
+        // (The `@enum`'s namespace declarations reach the member's own name too)
+        Span id = expr_outer_span(&op->left.property->prop);
+        symbol_add_decl(member, (SymbolDecl){
+            .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = &op->left, .name = id, .full = id,
+        });
+    }
 }
 
 // `left = right`, or a JavaScript `/** @type {T} */ left;` (right is left then)

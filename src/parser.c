@@ -5167,7 +5167,10 @@ static void jsdoc_bind_comments(
                         // Of a top-level `A.B.C = v`: C in A.B's namespace (delayedBindJSDocTypedefTag with
                         // isTopLevelNamespaceAssignment)
                         Span dotted = jsdoc_namespace_assignment_name(host);
-                        if (span_valid(dotted)) i->name = dotted;
+                        if (span_valid(dotted)) {
+                            i->name = dotted;
+                            ((Statement*)host)->expr.binary_op->jsdoc_enum_export = true;
+                        }
                     }
                     break;
                 }
@@ -13533,6 +13536,7 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
                     .span = span,
                 };
                 p->shared->jsdoc_enum = c_new(Statement, jsdoc_wrap_in_namespaces(alias, enum_name, name, span));
+                statement->expr.binary_op->jsdoc_enum_export = true;
             }
             if (statement->expr.tag == EXPR_BINARY_OP && statement->expr.binary_op->op == BINARY_OP_EQUAL) {
                 BinaryOpExpr* assignment = statement->expr.binary_op;
