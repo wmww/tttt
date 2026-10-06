@@ -877,7 +877,15 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
         csview name = written_name(enclosing, symbol, i == 0);
         // (An entity name has no element accesses: a quoted name that is an identifier is written as one, tsc's
         // symbolToTypeNode of an `o["x"] = v` expando is `typeof o.x`)
-        if (entity && i && name.size >= 2 && is_quote(name.buf[0]) && name.buf[name.size - 1] == name.buf[0]) {
+        // (Not a module's export, `exports["d"] = v`: the binder declares it by the literal, which getNameOfSymbolAsWritten
+        // writes as it is, an identifier `"d"`, where an expando of an object is late bound by its name type)
+        bool quoted = entity && i && name.size >= 2 && is_quote(name.buf[0]) && name.buf[name.size - 1] == name.buf[0];
+        if (quoted && symbol->parent && symbol->parent->is_module && !restart) {
+            cstr_append_lit(out, ".");
+            cstr_append_sv(out, name);
+            continue;
+        }
+        if (quoted) {
             csview inner = csview_slice(name, 1, name.size - 1);
             bool plain = can_use_property_access(inner);
             for (isize k = 0; plain && k < inner.size; k++) plain = inner.buf[k] != '\\' && inner.buf[k] != '-' && inner.buf[k] != ' ';

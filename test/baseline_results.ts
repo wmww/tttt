@@ -52488,7 +52488,7 @@ const baselines = {
     'moduleExportsElementAccessAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportsElementAccessAssignment2': {
         errors: true,
