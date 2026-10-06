@@ -150,7 +150,14 @@ Ty const* ty_optional_param_type(Checker* me, Ty const* type) {
 
 // The parameters of `sig` from `from` on, as the tuple a rest parameter in that position would receive (tsc's
 // getRestTypeAtPosition, less its shortcut for a lone rest parameter)
+static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper, bool readonly);
+
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper) {
+    return signature_params_tuple(me, sig, from, mapper, false);
+}
+
+// `readonly`: the tuple is readonly (inferring to a const rest type parameter without a mutable array-like constraint)
+static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper, bool readonly) {
     // A rest parameter of a tuple type is its elements (tsc's createTupleType normalizing a variadic tuple element),
     // which `from` may be past the start of (tsc's getRestTypeAtPosition slices the tuple)
     Ty const* rest_tuple = nullptr;
@@ -192,7 +199,7 @@ Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from,
             elements[j] = rest_args.data[skip + k];
         }
     }
-    TupleShape shape = { .arity = arity, .flags = flags, .names = names };
+    TupleShape shape = { .arity = arity, .flags = flags, .names = names, .readonly = readonly };
     Ty const* target = ty_tuple_target(me, &shape);
     Ty const* ret = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
     free(flags);
@@ -253,7 +260,11 @@ static void infer_from_params(
             if (i < source->param_count && source->params[i].rest && i + 1 == source->param_count) {
                 infer_step(me, inf, step, ty_instantiate(me, source->params[i].type, mapper), target_param->type);
             } else {
-                infer_step(me, inf, step, ty_signature_params_tuple(me, source, i, mapper), target_param->type);
+                // (Readonly for a const type parameter that isn't constrained to a mutable array-like, tsc's
+                // applyToParameterTypes)
+                bool readonly = ty_is_const_type_variable(me, target_param->type, 0) &&
+                    !ty_some_mutable_array_like(me, target_param->type);
+                infer_step(me, inf, step, signature_params_tuple(me, source, i, mapper, readonly), target_param->type);
             }
             break;
         }

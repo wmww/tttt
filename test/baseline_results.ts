@@ -66108,7 +66108,7 @@ const baselines = {
     'typeParameterConstModifiers': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterConstModifiersReverseMappedTypes': {
         errors: true,
