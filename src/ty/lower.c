@@ -2878,9 +2878,32 @@ Ty const* ty_binding_default_type(Checker* me, Binding const* element) {
     return ty_check_expr(me, element->default_value, contextual);
 }
 
+static Ty const* binding_assigned_type(Checker* me, Binding const* binding);
+
 // What is assigned to a binding: the initializer for the root of a pattern, for an element the property or element
 // of what its pattern is assigned
 Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
+    Ty const* ret = binding_assigned_type(me, binding);
+    // In JavaScript an element with a default under no written type that is still an empty array literal's type is
+    // any[], which noImplicitAny reports (tsc's getTypeForBindingElement: widenTypeInferredFromInitializer,
+    // isEmptyArrayLiteralType, TS7031)
+    if (!binding->parent || !binding->default_value || binding->tag != BINDING_IDENTIFIER) return ret;
+    SourceFile const* file = binding->content_span.source;
+    if (!file || !file->is_js || !ty_is_array(me, ret)) return ret;
+    Binding const* root = binding->parent;
+    while (root->parent) root = root->parent;
+    if (root->has_explicit_type) return ret;
+    TyList args = ty_reference_args(me, ret);
+    if (args.len != 1 ||
+        args.data[0] != ty_intrinsic(me, compiler_options()->strict_null_checks ? TY_IMPLICIT_NEVER : TY_UNDEFINED_WIDENING)
+    ) {
+        return ret;
+    }
+    *intern_slot(me, &my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)binding }, 2) = ret;
+    return ty_array(me, ty_intrinsic(me, TY_ANY), false);
+}
+
+static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
     Binding const* parent = binding->parent;
     // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
     if (!parent && !binding->source) {

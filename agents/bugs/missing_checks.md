@@ -167,8 +167,8 @@ Binder gaps (spurious TS2339 and friends):
   statement lists. Needs a declare-step walk into function bodies (the link step must see them).
 - **`this.x = v` at the top level of a CommonJS module** should declare an export (bindThisPropertyAssignment,
   SourceFile container with commonJsModuleIndicator); only the script (global) case is done (`add_global_this_chain()`).
-- The nested `@param {..} [config.additionalFiles]` binding type and TS7031 next to a JSDoc-typed sibling
-  (destructuringParameterDeclaration9).
+- destructuringParameterDeclaration9(strict=false) types: `json = []` under a typed parent prints `any[] | string[]`
+  (tsc `string[]`).
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
 const: TS18042), assignmentToVoidZero2,
 classCanExtendConstructorFunction, moduleExportWithExportPropertyAssignment4,
