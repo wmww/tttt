@@ -189,17 +189,6 @@ queues merged into one.
 - (same) A type parameter default checked against a conditional constraint: `type RP<T> = unknown extends T ? string :
   'a' | 'b'; declare function b<R, F extends RP<R> = string>(): void` is TS2344 in tttt, fine in tsc (both branches
   are tried: string -> 'a' | 'b' fails; how tsc accepts it wasn't worked out).
-- (2026-10-06, todo entry 7) **Distributed conditionals don't keep their root's alias, and adding it costs drizzle
-  +25%.** tsc's getConditionalType names a deferred member of a distribution by `root.aliasSymbol` with
-  `instantiateTypes(root.aliasTypeArguments, mapper)` (`Awaited<T | Yadda>` is `Yadda | Awaited<T>`). Doing that in
-  distribute_conditional() (bd1273b6, instantiate_alias(root_aliased, member, member->conditional.mapper)) took
-  drizzle 13.15 -> 16.55 G instructions: instantiate_alias inclusive 1.8 -> 7.3 G, recursive (alias arguments
-  through composed mappers holding more aliased conditionals); memoizing per member result didn't help, so the cost
-  is downstream of the new identities. Reverted in 1ffeb2ac (await of a union is mapped member by member instead,
-  which keeps the three suite tests). Left behind: 6 spurious diagnostics in flagflip's effect sloppy/nosnc cells,
-  Schema.ts 7257/7283/7306 `transform(NullOr(value), ...)` (\"Type 'Value' is not assignable to type
-  'NullOr<Value>'\"): with the alias they relate (alias variances, presumably). Worth a perf session: why tttt's alias
-  instantiation is that much dearer than tsc's (perf_leads.md candidate).
 - (todo entry 7, excalidraw agent) An array literal spreading a generic mapped tuple, `[...x, { bar: "abc" }]` with
   `x: M<Elements>`, is `[...{ bar: unknown; }[], ...]` in tttt, `[...M<Elements>, { bar: "abc"; }]` in tsc
   (circularInlineMappedGenericTupleTypeNoCrash, whose types component bce92c5b gave up: tsc only matches its baseline

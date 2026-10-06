@@ -37,11 +37,14 @@ commit.
    **tanstack-router** (react-router + type tests against router-core's built .d.ts, new postinstall hook) 4 -> 0, by
    two sub-agents; their flag-flip cells added (26, 5757 tsc diagnostics). Suite 13229 -> 13232, sweep/`$ExpectType`
    flat, instructions flat (a +25% drizzle mid-session caught and reverted: triage "Distributed conditionals").
-8. **Perf session**: instruction counts since the start of this window, bisect anything above +1%; then the cheapest of
-   plan 45 stage 2 (JS resolve), the sweep's per-package startup (lib loading, plan 44 "Perf side-product") or
-   perf_leads.md's top item, by measurement. Candidate: why naming distributed conditionals by their root's alias
-   (tsc does) cost drizzle +25% in tttt (triage "Distributed conditionals").
+8. ~~Perf session~~ done 2026-10-06: no commit of the window above +0.6%; the biggest steps (conditional instances
+   named by their root's alias) led to tsc's way of computing their alias arguments, and relation cache sizes
+   compared with tsc's to three missing tsc shortcuts (`tttt --time` prints them now): drizzle 13.09 -> 10.80 G
+   (-17.5%), vue 8.07 -> 6.98 (-13.5%), react -3.6%, xstate -2.8%, zod +2.5% (variances now in tsc's order). The
+   distributed members' root alias is back (+1% drizzle instead of +25%). Plan 45 stage 2 by a sub-agent: webpack
+   resolve 63 -> 37 ms. Suite/corpora/sweep/`$ExpectType`/flagflip flat. Instructions: measurements.md.
 9. **Execution: suite-tail fan-out** (missing_checks.md buckets, plan 35 queue, plan 19 "effect"'s last 7, and
-   bugs/display.md's alias-argument bug: why variance measurement pays for the right alias arguments).
+   bugs/display.md's alias-argument bug: why variance measurement pays for the right alias arguments; recheck it
+   after 871fdb11, which changed how conditional instances get their alias arguments).
 10. **Triage.**
 11. **Insights.**

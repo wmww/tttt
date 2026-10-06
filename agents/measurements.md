@@ -10,6 +10,28 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Perf session (2026-10-06, tenth window's todo entry 8)
+Bisecting the window's growth (b66bb745 -> dd69f2c7: xstate +4.3%, vue +4.9%, zod +2.7%) found no single commit above
++0.6%; the two biggest steps were 37702442/ab972a46 (conditional instances named by their root's alias), whose cost
+turned out to be tttt instantiating an instance's own alias arguments where tsc takes the root's through the
+instance's mapper. Fixed that (871fdb11), moved two per-instantiation hash lookups into the root conditional type
+(2f7835df, 4dffac78), then compared relation cache sizes with tsc's `--extendedDiagnostics` (tttt `--time` prints them
+now) and ported three tsc shortcuts that the outlier, vue, lacked: same-index members of union pairs (c49283fb), an
+intersection's key property in subtype reduction and object-to-primitive decided simply (the commit after). Plan 45
+stage 2 by a sub-agent (6e216e42): webpack resolve names 63 -> 37 ms.
+Callgrind (`./instrcount.sh`), dd69f2c7 -> end: tsc 4.625 -> 4.619, type-fest 3.142 -> 3.097 (-1.4%), valibot 4.273
+-> 4.215 (-1.4%), react 1.545 -> 1.489 (-3.6%), nest 1.261 -> 1.259, webpack 3.866 -> 3.861, zod 4.596 -> **4.709
+(+2.5%**: same-index pairs order variance measurements like tsc: zod's variances differing from tsc's 19 -> 9),
+xstate 3.003 -> 2.920 (-2.8%), drizzle 13.090 -> **10.800 (-17.5%)**, vue 8.071 -> **6.981 (-13.5%)**, effect 9.850 ->
+9.797, vscode 32.485 -> 32.351, excalidraw 5.040 -> 5.016, tanstack-router 4.712 -> 4.598 (-2.4%). Suite 13232, corpora
+(effect 7, the rest 0), sweep 8588 / 6 / 1, `$ExpectType` 68610, flagflip 67 / 57 / 11, mutants (3000, seed 1) 13
+all flat. Relation cache sizes, tttt `--checkers 1` vs tsc 5.8 (assignable / subtype / strict subtype / identity):
+vue 578k / 93k / 15k / 18k vs 541k / 86k / 15k / 28k (was 708k / 213k / 228k), tanstack-router 236k assignable vs
+174k, type-fest 57k vs 111k, react 24k vs 55k; the other corpora within ~15%. Walls (best of 3, tttt default threads vs
+tsgo 7.0.2 on the same tsconfig): webpack 0.28 vs 0.60 s, react 0.12 vs 0.22, nest 0.11 vs 0.32, zod 0.35 vs 2.47
+(tsgo rejects the vue and drizzle corpus configs' `baseUrl`, TS5102, and checks nothing: bench.sh's file lists for
+those).
+
 ## Two corpora pinned: excalidraw, tanstack-router (2026-10-06, tenth window's todo entry 7, two sub-agents)
 excalidraw (JSX app, 149k lines; tsc 5.8 0 in 8 s) 9 -> **0**, tanstack-router (react-router + type tests, 41k lines +
 101k .d.ts; tsc 0 in 17.5 s, tttt 0.43 s at one checker) 4 -> **0**; checkerdiff 1 vs 4 checkers identical on both.

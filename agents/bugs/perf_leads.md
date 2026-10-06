@@ -8,6 +8,17 @@ checker's arena size and type count. Memory: `./memtrack.sh -p DIR` for the mall
 allocating function; massif's extra-heap estimate is wrong for glibc), `./arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
+## Compare relation counts with tsc first (2026-10-06 perf session)
+`tttt --time --checkers 1 -p X` prints each relation cache's size; `tsc -p X --noEmit --extendedDiagnostics` prints
+tsc's (Assignability / Subtype / Strict subtype / Identity cache size, both count failures and nested pairs). A
+corpus where tttt's count is several times tsc's is missing one of tsc's shortcuts: that is how vue's 228k strict
+subtype pairs (tsc 15k) led to three ports worth -13% (measurements.md "Perf session"). To find the source, wrap
+`ty_is_related()` with a temporary log of each top-level query that grows a cache by more than ~100 entries (current
+node span, both types), and compare one such query with a patched tsc (`isRelatedTo` wrapped to print both types and
+the result, memory note "instrument a tsc copy"); `TTTT_DEBUG_RELATE_NESTED=1` on a probe shows tttt's pairs. Left
+after that session: tanstack-router's assignable 236k vs tsc's 174k (not looked at), vue's identity 18k vs 28k and
+type-fest/react well below tsc (fine). Ratios of types created are no signal (tttt makes fewer everywhere).
+
 ## Leftovers of the 2026-10-05 perf session (todo entry 8)
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
   now (1.695 -> 1.682 G). The rest is first computations: ~120k instructions each through `ty_simplified` of nested
@@ -137,16 +148,6 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   `node_modules/webpack -> ..` realpaths to the other copy: two webpacks, 130 diagnostics (tsc gets 24 of its own).
   realworld.py now passes the real path, but some relation between the two copies' structurally-identical types
   runs away in tttt; a callgrind of that run would show which (probably the relation budget/recursion identity).
-
-- **A big union against an intersection containing it: ~1 M instructions per check** (vue, found 2026-10-05 when
-  65fe6860, tsc's inferFromAnnotatedParameters for nested functions, cost vue +0.45%: correct, tsc does the same
-  inference). `inference_call_result_fallback` relates babel's ~250-member `Node` union to `Node & { scopeIds?:
-  Set<string> }` (walker callbacks `enter(node: Node, ...)` in compiler-sfc's definePropsDestructure.ts) 4 times at
-  ~1 M each. tsc relates a source to each intersection member (Node to Node is identity, then the weak-type /
-  optional-property member); tttt probably distributes the union source over the intersection target member by member.
-  Measure with `TTTT_DEBUG_RELATE_NESTED=1` on a probe and compare with tsc's structure (relation.ts
-  structuredTypeRelatedTo: target intersection first, `eachTypeRelatedToType` only when the source union can't be
-  related as a whole).
 
 ## Base constraints of expect-type's conditional constraints
 In valibot's `*.test-d.ts`, `ty_base_constraint` of expect-type's `Expected` (constrained by
