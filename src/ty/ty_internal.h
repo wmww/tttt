@@ -95,6 +95,7 @@ enum {
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
     KEY_FUNCTION_CONTEXT, // Function expression's FunctionImpl -> the contextual type it was last checked with
     KEY_UNDEFINED_PROPERTY, // Property name atom -> the Prop the first normalized-in optional `undefined` property of the name was made of
+    KEY_SYNTHETIC_PROP_PARTS, // Prop (an intersection's property made of several, Prop.synthetic) -> SyntheticParts
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)

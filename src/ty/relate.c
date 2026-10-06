@@ -2157,6 +2157,39 @@ static Ty const* declaring_class(Checker* me, Prop const* prop) {
     return parent && (parent->flags & SYMBOL_CLASS) ? ty_declared_type_of(me, parent) : nullptr;
 }
 
+// tsc's isPropertyInClassDerivedFrom: the class of the property (of one of a synthetic property's parts) derives from
+// base_class
+static bool prop_in_class_derived_from(Checker* me, Prop const* prop, Ty const* base_class) {
+    Prop const* const* parts = nullptr;
+    u32 count = ty_synthetic_prop_parts(me, prop, &parts);
+    if (!count) {
+        Ty const* source_class = declaring_class(me, prop);
+        return source_class && ty_has_base_type(me, source_class, base_class);
+    }
+    for (u32 i = 0; i < count; i++) {
+        Ty const* source_class = declaring_class(me, parts[i]);
+        if (source_class && ty_has_base_type(me, source_class, base_class)) return true;
+    }
+    return false;
+}
+
+// tsc's isValidOverrideOf: the source property is in a class derived from the class of the target property (of every
+// protected part of a synthetic one)
+static bool valid_protected_override(Checker* me, Prop const* source, Prop const* target) {
+    Prop const* const* parts = nullptr;
+    u32 count = ty_synthetic_prop_parts(me, target, &parts);
+    if (!count) {
+        Ty const* target_class = declaring_class(me, target);
+        return !target_class || (source && prop_in_class_derived_from(me, source, target_class));
+    }
+    for (u32 i = 0; i < count; i++) {
+        if (!(parts[i]->flags & PROP_PROTECTED)) continue;
+        Ty const* target_class = declaring_class(me, parts[i]);
+        if (target_class && !(source && prop_in_class_derived_from(me, source, target_class))) return false;
+    }
+    return true;
+}
+
 // tsc's propertyRelatedTo on modifiers: a private property is only related to itself, a protected one to one declared
 // in a class derived from its class, and a protected source property isn't a public one
 static bool modifiers_related(
@@ -2171,9 +2204,7 @@ static bool modifiers_related(
         related = source_prop->prop && root_declaration(source_prop->prop) == root_declaration(target_prop);
         code = (source_flags & target_flags & PROP_PRIVATE) ? 2442 : 2325;
     } else if (target_flags & PROP_PROTECTED) {
-        Ty const* target_class = declaring_class(me, target_prop);
-        Ty const* source_class = source_prop->prop ? declaring_class(me, source_prop->prop) : nullptr;
-        related = !target_class || (source_class && ty_has_base_type(me, source_class, target_class));
+        related = valid_protected_override(me, source_prop->prop, target_prop);
         code = 2443;
     } else if (source_flags & PROP_PROTECTED) {
         related = false;
@@ -2191,7 +2222,10 @@ static bool modifiers_related(
             other_str, "'."));
         c_drop(cstr, &private_str, &other_str);
     } else if (code == 2443) {
-        Ty const* source_class = source_prop->prop ? declaring_class(me, source_prop->prop) : nullptr;
+        // (A synthetic property has no declaring class: the source is named)
+        Prop const* const* parts = nullptr;
+        bool synthetic = source_prop->prop && ty_synthetic_prop_parts(me, source_prop->prop, &parts);
+        Ty const* source_class = source_prop->prop && !synthetic ? declaring_class(me, source_prop->prop) : nullptr;
         cstr source_str = display_for_report(me, source_class ? source_class : source, true);
         cstr target_str = display_for_report(me, declaring_class(me, target_prop), false);
         report_line(st, code, cstr_d("Property '", name, "' is protected but type '", source_str,

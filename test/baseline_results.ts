@@ -37031,7 +37031,7 @@ const baselines = {
         types: true,
     },
     'mixinAccessModifiers': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: true,
     },

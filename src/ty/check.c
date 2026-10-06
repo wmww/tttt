@@ -3966,6 +3966,23 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         };
         synthetic_checked = check_synthetic_protected(me, &access_site, expr_outer_span(&access->prop), &refs, object, name, errs);
     }
+    Prop const* const* parts = nullptr;
+    u32 part_count = access->form == PROPERTY_EXPR_DOT && refs.len == 1 && !is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER) ?
+        ty_synthetic_prop_parts(me, refs.props[0], &parts) : 0;
+    if (part_count > 1) {
+        // A property a class inherits from an intersection (a mixin's base): the intersection's synthetic property
+        MemberRefs expanded = {0};
+        for (u32 i = 0; i < part_count && i < c_arraylen(expanded.props); i++) {
+            expanded.props[expanded.len] = parts[i];
+            expanded.objects[expanded.len++] = refs.objects[0];
+        }
+        AccessSite access_site = {
+            .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
+            .this_parameter = site->this_parameter, .this_function = site->this_function,
+            .initializer_context = site->initializer_context,
+        };
+        synthetic_checked = check_synthetic_protected(me, &access_site, expr_outer_span(&access->prop), &expanded, object, name, errs);
+    }
     if (access->form == PROPERTY_EXPR_DOT && !synthetic_checked) {
         bool is_super = is_keyword(&access->expr, KEYWORD_IDENTIFIER_SUPER);
         for (u32 i = 0; i < refs.len; i++) {

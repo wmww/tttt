@@ -539,6 +539,11 @@ static void builder_add_interface(
     }
 }
 
+typedef struct SyntheticParts {
+    u32 len;
+    Prop const* props[];
+} SyntheticParts;
+
 // Every member of every part of an intersection (only the properties if `props_only`); a property several parts have
 // is one of the intersection's own, with the intersected type (tsc's getPropertiesOfType on the base,
 // createUnionOrIntersectionProperty)
@@ -561,8 +566,16 @@ static void builder_add_intersection_members(Checker* me, MembersBuilder* builde
                 Prop* merged = arena_new(&my arena, Prop);
                 *merged = (Prop){
                     .name = prop->name, .flags = found.flags, .parent = prop->parent, .target = prop,
-                    .type = found.type, .type_state = LAZY_STATE_DONE, .decl = prop_decl_none(),
+                    .type = found.type, .type_state = LAZY_STATE_DONE, .decl = prop_decl_none(), .synthetic = true,
                 };
+                SyntheticParts* parts = arena_alloc(&my arena, sizeof(SyntheticParts) + sizeof(Prop const*) * owners);
+                parts->len = 0;
+                for (u32 k = 0; k < base->composite.types.len && parts->len < owners; k++) {
+                    Ty const* other = base->composite.types.data[k];
+                    Prop const* part = other->flags & TYF_OBJECT ? ty_get_prop(me, other, prop->name) : nullptr;
+                    if (part) parts->props[parts->len++] = part;
+                }
+                *intern_slot(me, &my links, (u64[]){ KEY_SYNTHETIC_PROP_PARTS, (u64)(uintptr_t)merged }, 2) = parts;
                 prop = merged;
             }
             builder_push(builder, props, prop);
@@ -576,6 +589,15 @@ static void builder_add_intersection_members(Checker* me, MembersBuilder* builde
             if (!has_own) builder_push(builder, index, members->index[j]);
         }
     }
+}
+
+u32 ty_synthetic_prop_parts(Checker* me, Prop const* prop, Prop const* const** out) {
+    while (prop && !prop->synthetic) prop = prop->target;
+    if (!prop) return 0;
+    SyntheticParts const* parts = intern_get(&my links, (u64[]){ KEY_SYNTHETIC_PROP_PARTS, (u64)(uintptr_t)prop }, 2);
+    if (!parts) return 0;
+    *out = parts->props;
+    return parts->len;
 }
 
 static void builder_add_inherited(Checker* me, MembersBuilder* builder, Ty const* base) {

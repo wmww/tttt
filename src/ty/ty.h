@@ -559,6 +559,9 @@ struct Prop {
     bool mapped : 1;
     // prop_write_type() is known: in the checker's links (KEY_PROP_WRITE_TYPE), null there for none
     bool write_type_known : 1;
+    // An intersection's property several of its members have (tsc's synthetic property): what they are is in the
+    // checker's links, see ty_synthetic_prop_parts()
+    bool synthetic : 1;
     Symbol const* parent; // the declared type it was declared in, may be null
     Prop const* target;
     TyMapper const* mapper;
@@ -1266,6 +1269,9 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 // members.c
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
+// The members' properties an intersection's synthetic property (of a class whose base is an intersection: a mixin)
+// is made of, through instantiations. 0 if it isn't one
+u32 ty_synthetic_prop_parts(Checker* me, Prop const* prop, Prop const* const** out);
 bool ty_is_valid_base_type(Checker* me, Ty const* ty); // members.c, tsc's isValidBaseType
 bool ty_class_base_constructors_differ(Checker* me, struct ClassDecl const* class_decl, Ty const* base); // members.c, TS2510
 bool ty_is_thenable(Checker* me, Ty const* ty); // call.c, tsc's isThenableType
