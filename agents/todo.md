@@ -44,6 +44,10 @@ commit.
    distributed members' root alias is back (+1% drizzle instead of +25%). Plan 45 stage 2 by a sub-agent: webpack
    resolve 63 -> 37 ms. bugs/display.md's alias-argument bug fixed at no cost now (tsc's rule, +1 types
    component). Suite/corpora/sweep/`$ExpectType`/flagflip flat. Instructions: measurements.md.
-9. **Execution: suite-tail fan-out** (missing_checks.md buckets, plan 35 queue, plan 19 "effect"'s last 7).
+9. ~~Execution: suite-tail fan-out~~ done 2026-10-06: five sub-agents (A/B errors-failing halves, C types, D symbols +
+   JS types, E effect + flagflip; second tasks `$ExpectType`/sweep, mutation seeds, plan 34), ~110 picks, 0 lost:
+   suite 13232 -> 13299 (errors failing 127 -> 85), effect 7 -> 3 (the TaggedClass cycle left is plan-sized, plan 19),
+   flagflip 67 / 57 / 11 -> 51 / 47 / 11, `$ExpectType` 68610 -> 68619, sweep 8588 / 6 / 1 flat. Instructions +0.4-1%
+   on most corpora (two mid-session regressions, +15% valibot and +2.4% xstate, sent back and fixed). measurements.md.
 10. **Triage.**
 11. **Insights.**

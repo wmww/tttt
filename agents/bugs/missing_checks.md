@@ -2,14 +2,13 @@
 The work queue for "suite checker bugs" sessions: diagnostics tttt doesn't report, or reports under another code, and
 the failing tests behind them. Find fresh buckets with `./failstats.py` (single-code tests: errors fail on one code
 alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Every test named
-here was failing on 2026-10-05 (suite 13098; harness-only causes are in `harness.md`, type-core causes in
+here was failing on 2026-10-06 (suite 13299; harness-only causes are in `harness.md`, type-core causes in
 `type_core.md`).
 
-## Buckets (2026-10-05, suite 13098)
-Errors component: 146 failing (43 both missing and spurious, 29 only missing, 27 same codes and positions with other
-text, 22 where tsc reports errors and tttt none, 13 only spurious, 12 where tttt reports errors tsc doesn't).
-Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS2589 3, missing TS1005 3, missing TS2344
-2, missing TS2303 2, misplaced TS2304 2, missing TS2590 2, spurious TS2339 2, then single tests.
+## Buckets (2026-10-06, suite 13299)
+Errors component: 85 failing (127 at the start of the 2026-10-06 suite-tail fan-out, which drained it by two agents'
+alphabetical halves; what they judged plan-sized or resolution-order artifacts is below). Single-code tests: missing
+TS2589 4, missing TS1005 3, missing TS2344 2, spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
 
 ## Known missing checks
 - TS4109/TS4110 (type arguments circularly referencing themselves: circularlyReferentialInterfaceAccessNoCrash,
@@ -110,9 +109,6 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 - mappedTypeRelationships (tsc substitutes `Partial<T>[K]` with `T[K] | undefined`, and TS2542 for writes through a
   `Readonly<T>` index), mappedTypeConstraints2 (indexed accesses of mapped types with template-literal keys: spurious
   TS2536), mappedTypeErrors (TS2339 on `Pick<T, K>.foo`: `check_access()` skips generic mapped types),
-  controlFlowGenericTypes (`Box<T>` vs `Box<unknown>` display, a TS2536 at line 218), strictBindCallApply1
-  (bind/call/apply inference with the `this` parameter: TS2684 instead of TS2345), variadicTuples2 (spread arguments
-  against variadic rest tuples).
   controlFlowGenericTypes (`Box<T>` vs `Box<unknown>` display, a TS2536 at line 218), variadicTuples2 (spread arguments
   against variadic rest tuples), interfaceExtendsObjectIntersectionErrors (heritage errors name the alias, not the
   resolved base).
@@ -134,9 +130,8 @@ Single-code tests (61 in all): missing TS2322 5, missing TS2304 3, missing TS258
 contravariantOnlyInferenceFromAnnotatedFunction (A from an annotated arrow inside a reverse mapped type's source: tsc
 infers string, tttt unknown; mechanism not found), tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get
 tsc's TS2769 report), intraExpressionInferencesJsx, unionAndIntersectionInference3, mappedTypeRecursiveInference2,
-variadicTuples1, genericCallWithGenericSignatureArguments3 (`(n: Object) => 1` returned where the contextual type is
+variadicTuples1 (types), genericCallWithGenericSignatureArguments3 (`(n: Object) => 1` returned where the contextual type is
 the outer call's U keeps its literal return type in tsc, `=> 1`; tttt widens to number).
-genericRestParameters3, genericCallWithGenericSignatureArguments3 (not investigated).
 
 ## Local vs export symbol split
 tsc keeps one local symbol per block for a name's exported and local declarations, tttt two symbols
@@ -170,15 +165,8 @@ Binder gaps (spurious TS2339 and friends):
 - destructuringParameterDeclaration9(strict=false) types: `json = []` under a typed parent prints `any[] | string[]`
   (tsc `string[]`).
 Other JS tests: jsDeclarationsImportAliasExposedWithinNamespace (a `@typedef ns.x` namespace merged with an exported
-const: TS18042), assignmentToVoidZero2,
-classCanExtendConstructorFunction, moduleExportWithExportPropertyAssignment4,
-templateInsideCallback,
-jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
-const: TS18042), assignmentToVoidZero2, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
-const: TS18042), lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
-typeFromJSInitializer, typeFromPropertyAssignment32, templateInsideCallback, overloadTag2 (constructor `@overload`s:
-TS2394 and the arity of the merged signature), fixSignatureCaching (an expando-heavy JS-like file),
-jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan
+const: TS18042), moduleExportWithExportPropertyAssignment4, templateInsideCallback, fixSignatureCaching (types; an
+expando-heavy JS-like file), jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan
 40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge (TS6232),
 jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
 (TS9006).
@@ -189,11 +177,7 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   and '</' expected); tttt's last-error dedupe drops the second.
 - tsxAttributeInvalidNames: `<test1 32data={32} />` wants ';' expected and TS1351 at the same position (scanner
   error order).
-- dontShowCompilerGeneratedMembers (`<-` in a type literal: a call signature whose type parameter list fails),
-  esDecorators-classDeclaration-exportModifier.2 (decorators around `export`/`abstract`),
-- reservedNamesInAliases (`type void = I` is both a TS2457 alias and an expression statement),
-  parseUnmatchedTypeAssertion,
-  jsdocFunctionTypeFalsePositive (`@param {<} x`), scannerUnexpectedNullCharacter1 (a NUL outside a string ends
+- jsdocFunctionTypeFalsePositive (`@param {<} x`), scannerUnexpectedNullCharacter1 (a NUL outside a string ends
   tttt's parse: `*p.pos` is the EOF test everywhere), parser0_004152, jsxInvalidEsprimaTestSuite,
   thisTypeInFunctionsNegative, manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
 - A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109.
@@ -219,8 +203,7 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   (`d.underline && d.enclosing`); error display would need the reuse path without name-accessibility checks.
 - **Alias/origin preservation and literal order**: `keyof Props` printed as `"when" | "error"`
   (reactDefaultPropsInferenceSuccess); literal creation order puts `1 | 4` where tsc says `4 | 1`
-  (assignmentCompatWithDiscriminatedUnion), and the omitted keys of `Omit<this, ...>` in another order
-  (destructuringUnspreadableIntoRest).
+  (assignmentCompatWithDiscriminatedUnion).
 
 ## Declaration emit (plan 40)
 arrayFakeFlatNoCrashInferenceDeclarations (TS5088), declarationEmitPrivatePromiseLikeInterface (TS7056).

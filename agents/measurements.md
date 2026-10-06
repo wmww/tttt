@@ -10,6 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Suite-tail fan-out (2026-10-06, tenth window's todo entry 9, five sub-agents)
+Suite 13232 -> **13299** (errors 13413 -> 13455, symbols 13469 -> 13489, types 13306 -> 13352; 0 lost), corpora 0 but
+effect 7 -> **3**, flagflip 67 / 57 / 11 -> **51 / 47 / 11**, `$ExpectType` 68610 -> **68619**, sweep 8588 / 6 / 1, scenarios
+214 / 0, threadcheck effect identical. Mutation seeds 7 (single-file, 5000) 21 -> 12 (0.9% yield) and 5 (multi/js, 3000)
+33 -> 27 (2.3%). Instructions (callgrind, 7f149fa9 -> end): tsc 4.619 -> 4.652 (+0.7%), type-fest 3.097 -> 3.089,
+valibot 4.215 -> 4.254 (+0.9%), react 1.489 -> 1.490, nest 1.259 -> 1.259, webpack 3.860 -> 3.892 (+0.8%), zod 4.709 ->
+4.714, xstate 2.920 -> 2.921, drizzle 10.789 -> 10.834 (+0.4%), vue 6.987 -> 7.041 (+0.8%), effect 9.797 -> 9.832,
+vscode 32.353 -> 32.482 (+0.4%), excalidraw 5.016 -> 5.069 (+1.1%), tanstack-router 4.598 -> 4.532 (-1.4%). Creep from
+~110 correct ports, not bisected per commit; the two big ones (+15% valibot / +9% drizzle from a homomorphic mapped type
+over intersections composing mappers eagerly, +2.4% xstate from intersecting apparent types per object literal) were
+caught by mid-session instrcounts and fixed by their authors.
+
 ## Perf session (2026-10-06, tenth window's todo entry 8)
 Bisecting the window's growth (b66bb745 -> dd69f2c7: xstate +4.3%, vue +4.9%, zod +2.7%) found no single commit above
 +0.6%; the two biggest steps were 37702442/ab972a46 (conditional instances named by their root's alias), whose cost
