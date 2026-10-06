@@ -1389,8 +1389,9 @@ static bool union_has(Ty const* ty, u32 flag) {
 // tsc's getIntersectionType with unions among `buf` (not yet distributed), before the cross product: when every member
 // is a union with undefined (or null) in it, that is taken out, `(A | undefined) & (B | undefined)` being
 // `(A & B) | undefined`; three or more members are intersected in halves, which usually makes far fewer combinations
-// than the whole cross product; one of 100000 or more combinations is the error type (tsc's TS2590, not reported).
-// Null if the plain cross product it is. `len`: how many types the intersection was asked for
+// than the whole cross product; one of 100000 or more combinations is the error type (tsc's TS2590, reported at the
+// current node; tsc doesn't cache it and reports it each time it makes the intersection, tttt only the first time, as it
+// may make one again where tsc has a node's or symbol's type cached). Null if the plain cross product it is. `len`: how many types the intersection was asked for
 static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const* alias, TyList alias_args, u32 opts) {
     u32 flags[2] = { TYF_UNDEFINED, TYF_NULL };
     for (u32 f = 0; f < 2; f++) {
@@ -1435,7 +1436,9 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
     for (u32 i = 0; i < buf->len; i++) {
         if (buf->data[i]->kind == TY_UNION) size *= buf->data[i]->composite.types.len;
     }
-    return size >= 100000 ? my intrinsics[TY_ERROR] : nullptr;
+    if (size < 100000) return nullptr;
+    ty_error_at_current_node_d(me, 2590, "Expression produces a union type that is too complex to represent.");
+    return my intrinsics[TY_ERROR];
 }
 
 static bool same_members(Ty const* a, Ty const* b) {

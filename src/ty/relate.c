@@ -4694,6 +4694,20 @@ static Ternary identity_structured(Checker* me, RelationState* st, Ty const* sou
     }
 }
 
+// The type of an intersection's property from its members' (`parts` is scratch)
+static Ty const* intersection_prop_type(
+    Checker* me, Ty const** parts, Prop const* const* part_props, u32 part_count, u32 optional_parts, bool all_optional
+) {
+    for (u32 j = 0; j < part_count; j++) parts[j] = prop_type(me, part_props[j]);
+    // (An optional part's undefined counts when the property is required: see find_prop_in())
+    if (optional_parts && !all_optional && compiler_options()->strict_null_checks) {
+        for (u32 j = 0; j < part_count; j++) {
+            if (optional_parts & (1u << j)) parts[j] = ty_optional_prop_type(me, parts[j]);
+        }
+    }
+    return part_count == 1 ? parts[0] : ty_intersection(me, parts, part_count, nullptr, (TyList){0});
+}
+
 // The properties of an intersection target, each the intersection of its members' (tsc's propertiesRelatedTo on the
 // intersection with IntersectionState.None)
 static Ternary intersection_props_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
@@ -4724,15 +4738,12 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
             // propertiesRelatedTo skips `sourceProp === targetProp`; its type may still be being computed: a class's
             // static `create = f(C)` relating `typeof C` to `C & ...`)
             if (part_count == 1 && source->flags & TYF_OBJECT && ty_get_prop(me, apparent_type(me, source), name) == part_props[0]) continue;
-            for (u32 j = 0; j < part_count; j++) parts[j] = prop_type(me, part_props[j]);
-            // (An optional part's undefined counts when the property is required: see find_prop_in())
-            if (optional_parts && !all_optional && compiler_options()->strict_null_checks) {
-                for (u32 j = 0; j < part_count; j++) {
-                    if (optional_parts & (1u << j)) parts[j] = ty_optional_prop_type(me, parts[j]);
-                }
-            }
-            FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0,
-                .type = part_count == 1 ? parts[0] : ty_intersection(me, parts, part_count, nullptr, (TyList){0}) };
+            FoundProp target_prop = { .found = true, .flags = all_optional ? PROP_OPTIONAL : 0 };
+            // (Of two parts, the intersection is made with the property, of more only when its type is asked for: tsc's
+            // createUnionOrIntersectionProperty defers `propTypes.length > 2`, which may explode when normalized. Of a
+            // property the source doesn't have, that is a cross product tsc never makes: the `ref` of every
+            // JSX.IntrinsicElements member)
+            if (part_count <= 2) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
             FoundProp source_prop = find_prop(me, apparent_type(me, source), name, 0);
             if (!source_prop.found) {
                 // Usually the members' business already, but a member can have been related without looking at its
@@ -4752,6 +4763,7 @@ static Ternary intersection_props_related(Checker* me, RelationState* st, Ty con
                 }
                 return TERNARY_FALSE;
             }
+            if (!target_prop.type) target_prop.type = intersection_prop_type(me, parts, part_props, part_count, optional_parts, all_optional);
             Ty const* target_type = target_prop.type;
             Ty const* source_type = source_prop.type;
             if (optional_adds_undefined()) {
