@@ -879,7 +879,7 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
 
     // What tsc reports a function-like node at: its name, the head of an arrow function, else its first token
     Span name = span_valid(my name) ? my name : function_impl_member_name(me);
-    Span at = my ret_explicit ? function_impl_ret_span(me) : function_error_span(me);
+    Span at = my ret_explicit && !my jsdoc_getter_type ? function_impl_ret_span(me) : function_error_span(me);
 
     if (my accessor == 1 && !my has_explicit_return) {
         // (tsc's checkAccessorDeclaration; checkAllCodePathsInNonVoidFunctionReturnOrThrow still runs after it)
@@ -895,10 +895,15 @@ static void function_impl_check_end(FunctionImpl* me, ErrorCtx* errs) {
         // A getter's is its setter's parameter annotation (tsc's getReturnTypeFromAnnotation: getAnnotatedAccessorType)
         type = ty_from_node(checker, function_impl_setter_type(me), (LowerCtx){ .generic = true });
         if (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED)) return;
-    } else if ((function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) && !my is_async && !my is_generator) {
+    } else if ((function_impl_rare(me)->jsdoc_signature_type || function_impl_rare(me)->jsdoc_host_type) && !my is_generator) {
         // A JSDoc `@type` signature's return type is the function's (tsc's getReturnTypeFromAnnotation), reported at
-        // that signature's return type node if it's written (getJSDocReturnType)
+        // that signature's return type node if it's written (getJSDocReturnType). An async function's is what it
+        // awaits to (unwrapReturnType)
         type = ty_jsdoc_tag_return_type(checker, me);
+        if (type && my is_async) {
+            type = ty_unwrap_return_type(checker, me, type);
+            if (!type) type = ty_intrinsic(checker, TY_ANY);
+        }
         if (type && (ty_maybe_void(type) || type->flags & (TYF_ANY | TYF_UNDEFINED))) return;
         FunctionImpl const* signature = function_impl_jsdoc_tag_signature(me);
         if (signature && signature->ret_explicit && span_valid(function_impl_ret_span(signature))) at = function_impl_ret_span(signature);

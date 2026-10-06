@@ -4802,6 +4802,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         function->ret = jsdoc_take_type(type_tag, &ret_span);
         function_impl_set_ret_span(function, ret_span);
         function->ret_explicit = true;
+        function->jsdoc_getter_type = true;
         type_tag = nullptr;
     }
     // A `@type` that isn't a written signature: its signature is resolved by the checker
