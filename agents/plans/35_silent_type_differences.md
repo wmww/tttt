@@ -211,18 +211,19 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
     narrowingDestructuring: an IIFE argument `(({ kind, ...rest }) => rest)(t)` is substituted in tsc (its contextual
     type comes from the resolving signature), and a nested pattern's rest element still takes the substituted type.
 12. **Circularity order**: circular returns are any in tsc (`let x = { foo: () => x }` gives foo `() => any`;
-    genericCallOnMemberReturningClosedOverObject; the opposite of plan 42's direction). Static side resolution lowers
-    the base's type arguments first (cloduleGenericOnSelfMember, classDeclarationShouldBeOutOfScopeInComputedNames:
-    `class S extends B<typeof S.Base>` cycles to any; tsc publishes the static members before default construct
-    signatures). cyclicGenericTypeInstantiation{,Inference}: tsc's `typeof z` circularity bottoms out in any 11 levels
+    genericCallOnMemberReturningClosedOverObject; the opposite of plan 42's direction).
+    cyclicGenericTypeInstantiation{,Inference}: tsc's `typeof z` circularity bottoms out in any 11 levels
     down, tttt's type is infinite. dynamicNames: `[rI.x]` in `interface RI<T>` needs the early-bound members while the
-    late-bound ones are resolved (tsc's getResolvedMembersOrExportsOfSymbol publishes earlySymbols first).
+    late-bound ones are resolved (tsc's getResolvedMembersOrExportsOfSymbol publishes earlySymbols first). Done
+    2026-10-06 for a class's static side (members.c early_static_members(), and the props published before
+    class_base() when the heritage has type arguments, plus a merged namespace's exports in builder_add_merged_value():
+    cloduleGenericOnSelfMember, classDeclarationShouldBeOutOfScopeInComputedNames); interfaces and instance sides
+    still see empty members in that cycle.
 13. Spreads: done (2026-10-06, SpreadAcc is a union of intersections, mapped over every union spread).
 14. One each: destructuringParameterDeclaration9/10 strict=false (a nested pattern's default `{}` padded with implied
     types, see binding_element_implied_type / ty_binding_element_type), `yield` as a call argument/assignment
     right side/return operand gets its TNext only once the statement is checked (fixed for `const y: T = yield` via
-    UnaryOpExpr.declared_context), fakeInfinity2/3 (`() => Infinity`, not the alias), wellKnownSymbolExpando (no
-    late-bound expando for `f[Symbol.iterator] = ...` in TS), instantiationExpressions' last line /
+    UnaryOpExpr.declared_context), fakeInfinity2/3 (`() => Infinity`, not the alias), instantiationExpressions' last line /
     typeofImportInstantiationExpression (`typeof import("./a").f<T>`, `fx<>` has no node), ramdaToolsNoInfinite2
     (alias chosen), inexistentPropertyInsideToStringType (`function toString()` in a JS script),
     declarationEmitPartialReuseComputedProperty (artefact). Not worth mimicking: awaitedType-like "first alias a union
@@ -237,7 +238,20 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
       is a union of two identical-looking function types (sliceResultCast, arrayDestructuringInSwitch1). tttt's
       free_params is exact; mimicking it costs instantiations on every lib method.
     - Accessor bodies in type literals (`get foo() { return 0 }`, TS1183) are typed from the body in tsc
-      (accessorBodyInTypeContext); a getter without a body in an object literal (`get e,`) names void.
+      (accessorBodyInTypeContext): the parser turns a type literal's accessor into an InterfaceMember with a TypeNode
+      and drops the FunctionImpl (parse_class_item -> interface members), so this needs a TypeNode that keeps the
+      function (names, flow, check walk for its `0` line). A getter without a body in an object literal (`get e,`)
+      names void.
+    - Found 2026-10-06 (agent C), not done: arrayLiteralComments (`[f, '1', 2, {a: 1}, [1,2,3]]`: tsc's widened
+      object literal is a new type, newer than `number[]`; the interned-object-literal item of 3), union order in
+      dependentDestructuredVariables (`"concat" | "add"`: tttt makes "concat" earlier, probably a lib member name
+      literal) and controlFlowGenericTypes (`"title" | keyof ...`), uniqueSymbolsPropertyNames (tsc prints `[Op.equal]`
+      for a member keyed by an interface's `unique symbol` property: getPropertyNameNodeForSymbolFromNameType's
+      symbolToExpression finds a value path tttt's naming doesn't), privateNamesUnique-2 (`import("b")` where tttt
+      prints `import("./b")` for a reused `import("./b").Foo` in another file), returnInfiniteIntersection (tttt
+      prints a circular `any` member as `(any)` and drops the parentheses around a function in an intersection),
+      augmentExportEquals7 / moduleAugmentationInDependency (`declare module "lib"` name of an augmented `export =`
+      is `typeof import("lib")` / error).
     - typeArgumentInferenceWithObjectLiteral: a single-member enum's regular member literal is the enum type itself
       (prints E1), the fresh one prints E1.X.
     - noCrashOnNoLib: without lib, array types are `{}` (missing global Array).
@@ -248,8 +262,7 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
       next to other exports prints any, tsc typeof x (the merged export= path).
     - shadowedInternalModule (`import any = b.A` prints the alias's type), typeFromPropertyAssignment30 (an expando
       `c.p = {}` of an annotated const is typed without context in tsc).
-    UnaryOpExpr.declared_context), reExportUndefined1 (`export { undefined }` is undefinedSymbol), wellKnownSymbolExpando (no late-bound expando for `f[Symbol.iterator] = ...` in
-    TS), instantiationExpressions (`fx<>`: the parser drops an empty type argument list, keeping it trips code that
+    UnaryOpExpr.declared_context), reExportUndefined1 (`export { undefined }` is undefinedSymbol), instantiationExpressions (`fx<>`: the parser drops an empty type argument list, keeping it trips code that
     assumes one; its StringBoxFunc line is done) / typeofImportInstantiationExpression (`typeof import("./a").f<T>`),
     ramdaToolsNoInfinite2 (left: literal `5` made later in tsc, union order), inexistentPropertyInsideToStringType (`function toString()`
     in a JS script), declarationEmitPartialReuseComputedProperty (artefact). Not worth mimicking: awaitedType-like
