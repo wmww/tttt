@@ -766,10 +766,23 @@ void template_type_drop(TemplateType* me) {
     vec_span_drop(&my type_spans);
 }
 
-// TODO: tsc's checkTemplateLiteralType (TS2322 unless a placeholder is string | number | bigint | boolean | null |
-// undefined) needs substitution types first: `${K}` in the true branch of `K extends string ? ...` is fine in tsc
+// tsc's checkTemplateLiteralType: each placeholder is string | number | bigint | boolean | null | undefined
+// (templateConstraintType), as the type node lowers (`${K}` in the true branch of `K extends string ? ...` is a
+// substitution type, fine)
 void template_type_typecheck(TemplateType const* me, ErrorCtx* errs) {
-    for_each (i, vec_type, &my types) type_typecheck(i, errs);
+    Checker* checker = current_checker;
+    Ty const* allowed = nullptr;
+    for_each (i, vec_type, &my types) {
+        type_typecheck(i, errs);
+        if (!allowed) {
+            Ty const* parts[6] = {
+                ty_intrinsic(checker, TY_STRING), ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_BIGINT),
+                ty_intrinsic(checker, TY_BOOLEAN), ty_intrinsic(checker, TY_NULL), ty_intrinsic(checker, TY_UNDEFINED),
+            };
+            allowed = ty_union(checker, parts, 6, nullptr, (TyList){0});
+        }
+        ty_check_assignable(checker, ty_of_node(i), allowed, *vec_span_at(&my type_spans, i_index), errs);
+    }
 }
 
 // Typeof
