@@ -4865,6 +4865,14 @@ bool expr_is_require_call(Expr const* me) {
         expr_is_plain_identifier(&my call->callable, "require");
 }
 
+bool expr_assigns_void_zero(Expr const* value) {
+    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
+        value = &value->binary_op->right;
+    }
+    return value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_VOID && value->unary_op->expr.tag == EXPR_LITERAL &&
+        value->unary_op->expr.literal.tag == VALUE_NUMBER && value->unary_op->expr.literal.number == 0;
+}
+
 CommonJsTarget binary_commonjs_declaration(BinaryOpExpr const* assignment, Span* name_ret) {
     if (assignment->op != BINARY_OP_EQUAL) return COMMONJS_TARGET_NONE;
     SourceFile const* file = assignment->left.inner_span.source;

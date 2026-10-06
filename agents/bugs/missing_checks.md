@@ -179,6 +179,7 @@ classCanExtendConstructorFunction, lateBoundAssignmentDeclarationSupport4, modul
 templateInsideCallback, fixSignatureCaching (an expando-heavy JS-like file),
 jsContainerMergeTsDeclaration3 (a d.ts class merged with a JS container const),
 const: TS18042), assignmentToVoidZero2, lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
+const: TS18042), lateBoundAssignmentDeclarationSupport4, moduleExportWithExportPropertyAssignment4,
 typeFromJSInitializer, typeFromPropertyAssignment32, templateInsideCallback, overloadTag2 (constructor `@overload`s:
 TS2394 and the arity of the merged signature), fixSignatureCaching (an expando-heavy JS-like file),
 jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError (the @ts-expect-error covers a declaration-emit error, plan

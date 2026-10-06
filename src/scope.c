@@ -5170,6 +5170,7 @@ static void add_expando_member(
 static void add_expando(Scope* me, BinaryOpExpr* op, bool top_level) {
     if (op->op != BINARY_OP_EQUAL) return;
     op->expando_bound = true;
+    if (expr_assigns_void_zero(&op->right)) return;
     ResolveShard* shard = js_shard(me);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_JS_EXPANDO, me, nullptr);
@@ -5675,6 +5676,7 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
 static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const* jsdoc_type, uint8_t jsdoc_modifiers);
 
 void scope_add_this_property(Scope* me, BinaryOpExpr* op) {
+    if (expr_assigns_void_zero(&op->right)) return;
     Expr* value = &op->right;
     while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
         value = &value->binary_op->right;

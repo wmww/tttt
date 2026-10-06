@@ -343,6 +343,9 @@ CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
 // What an assignment declares, in a CommonJS file (`file` of the assignment): tsc's getAssignmentDeclarationKind, which
 // ignores assignments of `void 0`
 CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment, Span* name_ret);
+// `void 0` as the rightmost value of an assignment chain: no assignment declaration (tsc's isVoidZero of
+// getRightMostAssignedExpression in getAssignmentDeclarationKind)
+bool expr_assigns_void_zero(Expr const* value);
 // `module.exports` (tsc's isModuleExportsAccessExpression)
 bool expr_is_module_exports(Expr const* me);
 // `require("m")` with a single argument (tsc's isRequireCall without the string literal requirement)

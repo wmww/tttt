@@ -60046,8 +60046,8 @@ const baselines = {
         types: true,
     },
     'assignmentToVoidZero2': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'binderUninitializedModuleExportsAssignment': {
