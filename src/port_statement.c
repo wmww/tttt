@@ -124,6 +124,8 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         // (Declared all the same, in the block: tsc's binder doesn't mind, its checker stops at the grammar error)
         my main.wrong_context = true;
         for_each (i, vec_port_item, &my items) i->wrong_context = true;
+    } else if (span_valid(my non_string_specifier)) {
+        error_ctx_error_d(binder_errs(scope->binder), my non_string_specifier, 1141, "String literal expected.");
     }
 
     my main.keyword_span = my keyword_span;

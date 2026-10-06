@@ -2764,6 +2764,16 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         report_not_constructor_type(me, callee, expr_outer_span(&call->callable), errs);
         return ty_intrinsic(me, TY_ERROR);
     }
+    // A union is a constructor type only through construct signatures every member has (tsc's isConstructorType of
+    // getSignaturesOfType): `C | undefined` is TS2507 as a whole
+    if (call->is_extends && apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+        u32 count = 0;
+        ty_union_signatures(me, apparent->composite.types, true, &count);
+        if (!count) {
+            if (errs) report_not_constructor_type(me, callee, expr_outer_span(&call->callable), errs);
+            return ty_intrinsic(me, TY_ERROR);
+        }
+    }
     if (apparent->flags & TYF_ANY) {
         // tsc's resolveCallExpression/resolveNewExpression: an untyped call can't take type arguments
         if (info->type_arg_nodes && !(callee->flags & TYF_ERROR) && !call->is_extends && !is_super_call(call)) {

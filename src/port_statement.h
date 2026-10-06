@@ -123,6 +123,9 @@ typedef struct PortStatement {
     // Any other expression as the module specifier (TS1141 from the checker: `import { * } from` parses `* }`): owned,
     // walked by the baselines
     struct Expr* bad_specifier;
+    // A module specifier that isn't a string literal: TS1141, the checker's (tsc's checkExternalImportOrExportDeclaration),
+    // so not in a statement in the wrong context, which only says that (port_statement_add_names())
+    Span non_string_specifier;
     ModuleRef* module_ref; // Made by the parser when there is a target path
     ImportAttributes* attributes; // Owned, null if there are none
     bool jsdoc; // A JavaScript file's `@import` tag (type-only, not part of the baselines' walk, no module indicator)

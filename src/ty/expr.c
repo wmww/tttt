@@ -1571,6 +1571,12 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
         Ty const* base = ty_expr_type(me, extends);
         // Not a constructor type (TS2507): the error type (tsc's getBaseConstructorTypeOfClass)
         if (base->kind == TY_ANONYMOUS && !ty_members(me, base)->construct_count) return ty_intrinsic(me, TY_ERROR);
+        Ty const* apparent_base = ty_apparent_type(me, base);
+        if (apparent_base->kind == TY_UNION && !(apparent_base->flags & TYF_BOOLEAN)) {
+            u32 count = 0;
+            ty_union_signatures(me, apparent_base->composite.types, true, &count);
+            if (!count) return ty_intrinsic(me, TY_ERROR);
+        }
         // (Nor is one whose construct signatures don't take the type arguments, TS2508: no base type)
         if (ty_class_base_constructor_unfit(me, class_decl)) return ty_intrinsic(me, TY_ERROR);
         return base;

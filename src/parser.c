@@ -11473,12 +11473,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             if (path_expr.tag == EXPR_IDENTIFIER) statement.missing_specifier = path_expr.inner_span;
             // The checker's (tsc's checkExternalImportOrExportDeclaration: any specifier that isn't missing, a
             // missing operand's binary expression `* }` included)
-            add_error_to_parser(&p, (Error){
-                .message = cstr_lit("String literal expected."),
-                .span = path_expr.inner_span,
-                .ts_code = 1141,
-                .phase = ERROR_PHASE_TYPECHECK,
-            });
+            statement.non_string_specifier = path_expr.inner_span;
             if (path_expr.tag != EXPR_IDENTIFIER) {
                 statement.bad_specifier = c_new(Expr, path_expr);
                 path_expr = expr_implicit_any(span_null);
