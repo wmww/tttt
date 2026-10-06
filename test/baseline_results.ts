@@ -18528,7 +18528,7 @@ const baselines = {
     'intersectionSatisfiesConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intersectionTypeInference1': {
         errors: true,

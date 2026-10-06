@@ -4591,6 +4591,18 @@ static Ternary structured_related(Checker* me, RelationState* st, Ty const* sour
     return structured_related_impl(me, st, source, target, report, true);
 }
 
+// Whether an intersection's apparent type is a union: a member type variable whose apparent type (its base
+// constraint) is one, which the intersection distributes over
+static bool intersection_apparent_is_union(Checker* me, Ty const* source) {
+    if (!(source->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    for (u32 i = 0; i < source->composite.types.len; i++) {
+        Ty const* member = source->composite.types.data[i];
+        if (member->kind != TY_TYPE_PARAM && !(member->flags & TYF_DEFERRED)) continue;
+        if (apparent_type(me, member)->kind == TY_UNION) return true;
+    }
+    return false;
+}
+
 static Ternary structured_related_members(
     Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, bool use_variances
 );
@@ -5349,6 +5361,13 @@ static Ternary structured_related_members(
         }
     }
 
+    // An intersection with a type variable whose constraint is a union is a union once apparent (tsc's
+    // getApparentTypeOfIntersectionType distributes `(A | B) & X`), which tsc's structuredTypeRelatedToWorker doesn't
+    // compare structurally: `T & { op: number }` with `T extends F | S` isn't assignable to `{ cp: number; op: number }`
+    // unless a member is (getInferredType then falls back to the constraint)
+    if (source->kind == TY_INTERSECTION && (target->flags & TYF_OBJECT) && intersection_apparent_is_union(me, source)) {
+        return TERNARY_FALSE;
+    }
     Ty const* apparent = source->kind == TY_INTERSECTION ? source : apparent_type(me, source);
     if (apparent != source && apparent->kind == TY_UNION && target->kind == TY_REFERENCE &&
         is_array_target(me, target->reference.target)
