@@ -915,6 +915,8 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
     Ty const* ret = nullptr;
     switch (path->kind) {
         case FLOW_PATH_ELEMENT: {
+            // (never iterates to nothing: tsc's getTypeOfDestructuredArrayElement falls back to the error type)
+            if (object->flags & TYF_NEVER) return ty_intrinsic(me, TY_ERROR);
             if (!ty_extends_array(me, object)) return nullptr;
             Value index = value_number(path->index);
             // (noUncheckedIndexedAccess's undefined: tsc's getTypeOfDestructuredArrayElement)

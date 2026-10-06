@@ -2148,7 +2148,7 @@ const baselines = {
     'autoTypeAssignedUsingDestructuringFromNeverNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'autolift3': {
         errors: true,
