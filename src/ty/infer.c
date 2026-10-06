@@ -1935,6 +1935,27 @@ TyMapper const* inference_mapper(Checker* me, Signature const* sig, Inference* i
             // doesn't satisfy that (tsc's getInferredType of it, which the default's back-reference mapper asks for):
             // `<C extends Component, S = C["state"]>` without inferences for C is S = Component["state"]
             bool changed = false;
+            // So is an earlier inference that doesn't satisfy its constraint (getInferredType through the default's
+            // non-fixing mapper): `<P extends "a" | "b", R = Cfg[P]>` called with "c" is R = Cfg["a" | "b"]
+            for (u32 j = 0; j < i; j++) {
+                if (!inferred[j] || ty_param_default(me, params.data[j]) == results[j]) continue;
+                if (!inf->params[j].co_len && !inf->params[j].contra_len) continue;
+                Ty const* constraint = ty_param_constraint(me, params.data[j]);
+                if (!constraint || constraint == params.data[j]) continue;
+                // (Not one that mentions a type parameter not known yet, this one or a later one: those resolve
+                // through each other in tsc, which the constraint pass below stands for)
+                if ((constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                    ty_mentions_any(me, constraint, params.data + i, params.len - i)
+                ) {
+                    continue;
+                }
+                Ty const* instantiated = ty_instantiate(me, constraint, mapper);
+                bool fits = inf->within_relation ? ty_is_related_within(me, results[j], ty_with_this_arg(me, instantiated, results[j])) :
+                    ty_is_related(me, results[j], ty_with_this_arg(me, instantiated, results[j]), TY_RELATION_ASSIGNABLE);
+                if (fits) continue;
+                results[j] = instantiated;
+                changed = true;
+            }
             for (u32 j = 0; j < i; j++) {
                 if (inferred[j] || results[j] != nothing) continue;
                 Ty const* constraint = ty_param_constraint(me, params.data[j]);
