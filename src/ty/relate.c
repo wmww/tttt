@@ -4164,11 +4164,12 @@ static bool is_single_generic_tuple(Checker* me, Ty const* ty) {
 
 // A source whose discriminants are unions is related to a union if each combination of their members is related to
 // some member, and those members are related in the rest (tsc's typeRelatedToDiscriminatedType):
-// `{ kind: A | B, x: X }` to `{ kind: A, x: X } | { kind: B, x: X }`
+// `{ kind: A | B, x: X }` to `{ kind: A, x: X } | { kind: B, x: X }`. The source may be an intersection (`{ x: X } &
+// { kind: A | B }`, as `Omit<T, K> & N` is)
 static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     enum { MAX_COMBINATIONS = 25, MAX_DISCRIMINANTS = 8 };
     Ty const* apparent = apparent_type(me, source);
-    if (!(apparent->flags & TYF_OBJECT)) return TERNARY_FALSE;
+    if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return TERNARY_FALSE;
     // The object members of the target
     TyBuf objects = {0};
     for (u32 i = 0; i < target->composite.types.len; i++) {
@@ -4179,26 +4180,34 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
     ty_buf_drop(&objects);
     if (!object_target || object_target->kind != TY_UNION) return TERNARY_FALSE;
 
-    Members const* source_members = ty_members(me, apparent);
-    Prop const* discriminants[MAX_DISCRIMINANTS];
+    // The source's properties: an intersection's are those of its members, each name once (tsc's getPropertiesOfType)
+    TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+    Atom const* discriminants[MAX_DISCRIMINANTS];
     TyList values[MAX_DISCRIMINANTS];
     u32 count = 0;
     u32 combinations = 1;
-    for (u32 i = 0; i < source_members->prop_count; i++) {
-        Prop const* prop = source_members->props[i];
-        if (!ty_is_discriminant_property(me, object_target, prop->name)) continue;
-        if (count == MAX_DISCRIMINANTS) return TERNARY_FALSE;
-        Ty const* type = prop_type(me, prop);
-        if (type->kind == TY_UNION) {
-            values[count] = type->composite.types;
-        } else {
-            Ty const** one = arena_new_n(&my arena, Ty const*, 1);
-            one[0] = type;
-            values[count] = (TyList){ .data = one, .len = 1 };
+    for (u32 p = 0; p < parts.len; p++) {
+        Ty const* part = apparent->kind == TY_INTERSECTION ? apparent_type(me, parts.data[p]) : apparent;
+        if (!(part->flags & TYF_OBJECT)) continue;
+        Members const* source_members = ty_members(me, part);
+        for (u32 i = 0; i < source_members->prop_count; i++) {
+            Prop const* prop = source_members->props[i];
+            bool seen = false;
+            for (u32 d = 0; d < count && !seen; d++) seen = discriminants[d] == prop->name;
+            if (seen || !ty_is_discriminant_property(me, object_target, prop->name)) continue;
+            if (count == MAX_DISCRIMINANTS) return TERNARY_FALSE;
+            Ty const* type = apparent->kind == TY_INTERSECTION ? find_prop(me, apparent, prop->name, 0).type : prop_type(me, prop);
+            if (type->kind == TY_UNION) {
+                values[count] = type->composite.types;
+            } else {
+                Ty const** one = arena_new_n(&my arena, Ty const*, 1);
+                one[0] = type;
+                values[count] = (TyList){ .data = one, .len = 1 };
+            }
+            combinations *= values[count].len;
+            if (combinations > MAX_COMBINATIONS) return TERNARY_FALSE;
+            discriminants[count++] = prop->name;
         }
-        combinations *= values[count].len;
-        if (combinations > MAX_COMBINATIONS) return TERNARY_FALSE;
-        discriminants[count++] = prop;
     }
     if (!count) return TERNARY_FALSE;
 
@@ -4215,7 +4224,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             for (u32 d = 0; d < count && fits; d++) {
                 Ty const* value = values[d].data[rest % values[d].len];
                 rest /= values[d].len;
-                FoundProp target_prop = find_prop(me, members.data[m], discriminants[d]->name, 0);
+                FoundProp target_prop = find_prop(me, members.data[m], discriminants[d], 0);
                 if (!target_prop.found) {
                     fits = false;
                     break;
@@ -4266,7 +4275,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                     snprintf(digits, sizeof(digits), "%u", i);
                     Atom const* name = checker_atom(me, csview_from(digits));
                     bool skip = false;
-                    for (u32 d = 0; d < count; d++) skip |= discriminants[d]->name == name;
+                    for (u32 d = 0; d < count; d++) skip |= discriminants[d] == name;
                     if (!skip) result &= is_related_to(me, st, source_elements.data[i], target_elements.data[i], false);
                 }
                 continue;
@@ -4275,7 +4284,7 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             for (u32 i = 0; i < part_members->prop_count && result; i++) {
                 Atom const* name = part_members->props[i]->name;
                 bool skip = false;
-                for (u32 d = 0; d < count; d++) skip |= discriminants[d]->name == name;
+                for (u32 d = 0; d < count; d++) skip |= discriminants[d] == name;
                 Ty const* name_type = ty_prop_name_literal(me, name);
                 for (u32 j = 0; j < seen.len && !skip; j++) skip = seen.data[j] == name_type;
                 if (skip) continue;
@@ -4748,7 +4757,7 @@ static Ternary structured_related_members(
         st->intersection_source = st->member_of_intersection_source;
         Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report && !source_is_generic);
         st->intersection_source = saved_source;
-        if (!related && (source->flags & TYF_OBJECT)) {
+        if (!related && ((source->flags & TYF_OBJECT) || source->kind == TY_INTERSECTION)) {
             related = related_to_discriminated(me, st, source, target);
             if (related) report_truncate(st, saved);
         }
