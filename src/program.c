@@ -803,7 +803,8 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
         case STATEMENT_DECL_CLASS:
         case STATEMENT_DECL_TYPE:
         case STATEMENT_DECL_INTERFACE:
-            if (statement->decl.props.exported) {
+            // (A JSDoc `@enum` of `exports.C = {}` is exported, but no module syntax)
+            if (statement->decl.props.exported && !(statement->tag == STATEMENT_DECL_TYPE && statement->decl.type->jsdoc)) {
                 source->is_module = true;
                 if (!span_valid(source->module_indicator)) {
                     Span name = statement->tag == STATEMENT_DECL_CLASS ? statement->decl.class->name :

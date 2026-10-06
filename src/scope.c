@@ -1937,6 +1937,14 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
                 op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
             declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
+            Symbol* exported = op->jsdoc_enum_export && my container->exports ? symbol_table_get(my container->exports, name.sv) : nullptr;
+            if (exported) {
+                Span id = expr_outer_span(&op->left.property->prop);
+                symbol_ensure_exports(exported);
+                symbol_add_decl(exported, (SymbolDecl){
+                    .kind = SYMBOL_DECL_EXPANDO, .flags = SYMBOL_VALUE_MODULE, .node = &op->left, .name = id, .full = id,
+                });
+            }
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
             Expr* value = rightmost_assigned(&op->right);

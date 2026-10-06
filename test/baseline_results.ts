@@ -51817,8 +51817,8 @@ const baselines = {
     },
     'enumTagOnExports': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'enumTagOnExports2': {
         errors: true,

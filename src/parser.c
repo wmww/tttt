@@ -5059,6 +5059,21 @@ static Span jsdoc_namespace_assignment_name(Statement const* host) {
     return name;
 }
 
+// `exports.C = v` or `module.exports.C = v` as a statement: C, an invalid span otherwise
+static Span jsdoc_commonjs_export_assignment_name(Statement const* host) {
+    if (host->tag != STATEMENT_EXPR || host->expr.tag != EXPR_BINARY_OP || host->expr.binary_op->op != BINARY_OP_EQUAL ||
+        expr_is_perenthisized(&host->expr)
+    ) {
+        return span_null;
+    }
+    Expr const* left = &host->expr.binary_op->left;
+    if (left->tag != EXPR_PROPERTY || left->property->form != PROPERTY_EXPR_DOT || !expr_is_entity_name(left)) return span_null;
+    Expr const* object = &left->property->expr;
+    bool exports = object->tag == EXPR_IDENTIFIER && !expr_is_perenthisized(object) && span_equals(object->inner_span, "exports");
+    if (!exports && !expr_is_module_exports(object)) return span_null;
+    return left->property->prop.inner_span;
+}
+
 // Whether there is nothing but whitespace and comments from `at` to `end`
 static bool only_trivia_until(const char* at, const char* end) {
     while (at < end) {
@@ -13448,6 +13463,25 @@ static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, S
             }
             JsDocTag* enum_tag = toplevel ? jsdoc_find_typed(&tags, JSDOC_TAG_ENUM) : nullptr;
             Span enum_name = enum_tag ? jsdoc_namespace_assignment_name(statement) : span_null;
+            Span export_name = enum_tag && !span_valid(enum_name) ? jsdoc_commonjs_export_assignment_name(statement) : span_null;
+            if (span_valid(export_name)) {
+                // `/** @enum {T} */ exports.C = {...}` (or `module.exports.C`) at the top level: C is also an exported type
+                // alias of T (delayedBindJSDocTypedefTag: an ExportsProperty declares into the file)
+                Span span = jsdoc_tag_decl_span(enum_tag);
+                jsdoc_drop_enum(p);
+                TypeNode type = jsdoc_take_type(enum_tag, nullptr);
+                type.from_jsdoc = false;
+                Expr* value = &statement->expr.binary_op->right;
+                if (value->tag == EXPR_OBJECT) value->jsdoc_enum_literal = true;
+                Statement alias = {
+                    .tag = STATEMENT_DECL_TYPE,
+                    .decl.type = c_new(TypeDecl, { .name = export_name, .full_span = span, .type = type, .jsdoc = true, .jsdoc_enum = true }),
+                    .span = span,
+                };
+                alias.decl.props.exported = DECL_EXPORTED_YES;
+                p->shared->jsdoc_enum = c_new(Statement, alias);
+                statement->expr.binary_op->jsdoc_enum_export = true;
+            }
             if (span_valid(enum_name)) {
                 // `/** @enum {T} */ A.B.C = {...}` at the top level: C is also a type alias of T in A.B's namespace
                 // (tsc's delayedBindJSDocTypedefTag with isTopLevelNamespaceAssignment)

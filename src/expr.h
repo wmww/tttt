@@ -504,6 +504,9 @@ typedef struct BinaryOpExpr {
     // JavaScript: the `a.b || {}` of `a.b = a.b || {}` (a function, class...: tsc's getDefaultedExpandoInitializer), whose
     // left side tsc doesn't check (checkBinaryExpression). Its type is its right side's. Set by the resolve walk
     bool defaulted_expando : 1;
+    // `/** @enum {T} */ exports.C = {}` at the top level: the parser declared C as a type alias too, the binder adds
+    // the namespace declaration of C's name (tsc's delayedBindJSDocTypedefTag: bindPotentiallyMissingNamespaces)
+    bool jsdoc_enum_export : 1;
     uint8_t jsdoc_modifiers; // JsDocModifiers: `/** @private */ this.x = v` (SymbolDecl.jsdoc_modifiers)
     Expr left;
     Expr right;
