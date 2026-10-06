@@ -645,6 +645,31 @@ static bool is_unit_union(Ty const* ty) {
     return true;
 }
 
+// A distributive conditional type instantiated once per member of union `check_type`, with the check type parameter
+// mapped to that member everywhere. tsc's mapType: over the members of the union's origin, a named union among them
+// mapped the same way, so one whose members all map to themselves is still itself (`Exclude<Color | undefined,
+// undefined>` is `Color`), and so is the whole union, origin and all (`Extract<keyof M, string>` is still `keyof M`)
+static Ty const* distribute_conditional(Checker* me, Ty const* root, TyMapper const* combined, Ty const* check_type) {
+    Ty const* origin = check_type->composite.origin;
+    TyList members = origin && origin->kind == TY_UNION ? origin->composite.types : check_type->composite.types;
+    Ty const* small[8];
+    Ty const** results = members.len <= c_arraylen(small) ? small : malloc(sizeof(Ty const*) * members.len);
+    bool changed = false;
+    for (u32 i = 0; i < members.len; i++) {
+        Ty const* member = members.data[i];
+        if (member->kind == TY_UNION) {
+            results[i] = distribute_conditional(me, root, combined, member);
+        } else {
+            TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, member);
+            results[i] = conditional_from_root(me, root, member, member_mapper);
+        }
+        changed |= results[i] != member;
+    }
+    Ty const* ret = changed ? ty_union(me, results, members.len, nullptr, (TyList){0}) : check_type;
+    if (results != small) free(results);
+    return ret;
+}
+
 // Start over from the conditional type as written, with everything that has happened to it since
 static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMapper const* combined, bool* distributed) {
     Ty const* check_type = ty_instantiate(me, ty_actual_type_variable(me, root->conditional.check), combined);
@@ -657,20 +682,8 @@ static Ty const* resolve_conditional_instance(Checker* me, Ty const* root, TyMap
         // parameter mapped to that member everywhere
         if (check_type->flags & TYF_NEVER) return check_type;
         if (check_type->kind == TY_UNION) {
-            TyList members = check_type->composite.types;
-            Ty const** results = malloc(sizeof(Ty const*) * members.len);
-            bool changed = false;
-            for (u32 i = 0; i < members.len; i++) {
-                TyMapper const* member_mapper = ty_mapper_with(me, combined, root->conditional.check, members.data[i]);
-                results[i] = conditional_from_root(me, root, members.data[i], member_mapper);
-                changed |= results[i] != members.data[i];
-            }
-            // (Every member mapped to itself: the union itself, with its origin, tsc's mapType: `Extract<keyof M,
-            // string>` is still `keyof M`)
-            Ty const* ret = changed ? ty_union(me, results, members.len, nullptr, (TyList){0}) : check_type;
-            free(results);
             *distributed = true;
-            return ret;
+            return distribute_conditional(me, root, combined, check_type);
         }
     }
     return conditional_from_root(me, root, check_type, combined);

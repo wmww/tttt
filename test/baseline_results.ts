@@ -26571,7 +26571,7 @@ const baselines = {
         types: true,
     },
     'reactDefaultPropsInferenceSuccess': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
