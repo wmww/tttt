@@ -3786,13 +3786,21 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     LiteralBuilder builder = {0}; // The attributes since the last spread
     SpreadAcc spread = {0};
     bool has_attribute = false, has_spread = false, has_children = false;
+    Ty const* to_intersect = nullptr;
     for_each (i, vec_jsx_attribute, &expr->jsx_attributes) {
         has_attribute |= i->tag != JSX_ATTRIBUTE_SPREAD;
         if (i->tag == JSX_ATTRIBUTE_SPREAD) {
             has_spread = true;
             if (builder.count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
-            spread_acc_type(me, &spread, check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual }));
+            Ty const* spread_type = check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual });
+            // A spread of no object (TS2698) is intersected with the rest instead (tsc's typeToIntersect)
+            if (!(spread_type->flags & TYF_ANY) && !ty_is_valid_spread_type(me, spread_type)) {
+                to_intersect = to_intersect ?
+                    ty_intersection(me, (Ty const*[]){ to_intersect, spread_type }, 2, nullptr, (TyList){0}) : spread_type;
+                continue;
+            }
+            spread_acc_type(me, &spread, spread_type);
             continue;
         }
         Atom const* name = checker_atom(me, i->name.sv);
@@ -3862,8 +3870,12 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
     // Fresh (excess properties are errors) if tsc made it with createJsxAttributesTypeHelper(): there's an attribute, or
     // nothing was spread into it (children are spread in)
     bool fresh = has_attribute || (!has_spread && !has_children);
+    bool spread_nothing = !spread.alt_count && !builder.count && !spread.any;
     Ty const* ret = spread_acc_finish(me, &spread, &builder, fresh ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES, nullptr);
     free(builder.props);
+    if (to_intersect && !(ret->flags & TYF_ANY)) {
+        ret = spread_nothing ? to_intersect : ty_intersection(me, (Ty const*[]){ to_intersect, ret }, 2, nullptr, (TyList){0});
+    }
     return ret;
 }
 
