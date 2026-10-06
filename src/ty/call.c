@@ -1203,6 +1203,8 @@ static TyMapper const* infer_type_arguments(
             Ty const* param_type = shape_type_at(&shape, i);
             Ty const* context = !param_type ? nullptr : arg->expr->tag == EXPR_FUNCTION ?
                 ty_instantiate(me, param_type, return_mapper) : instantiate_instantiable(me, param_type, return_mapper);
+            // (tsc's contextual signature is the uninstantiated one, which decides whether its widening is reported)
+            if (param_type && arg->expr->tag == EXPR_FUNCTION) ty_function_note_widening_context(me, arg->expr->function, param_type);
             // A call's own inference reads its contextual type as it is (tsc's inferTypeArguments: getContextualType,
             // not instantiateContextualType), instantiating it with what this call has inferred so far, and only its
             // return mapper with ours. With ours here, `succeed(none())` returning into `Eff<Opt<[A, S]>>` would infer

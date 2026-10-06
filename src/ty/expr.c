@@ -1598,13 +1598,31 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
     return is_generic_type(me, ty);
 }
 
+// The contextual signature tsc's shouldReportErrorsFromWideningWithContextualSignature sees when a call
+// with a return mapper checks a function argument: the parameter type's, not the deeply instantiated one tttt checks
+// the function with (KEY_CONTEXT_WIDENING, first one wins)
+void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type) {
+    if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any || function->ret_explicit) return;
+    Signature const** slot = (Signature const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
+    if (*slot) return;
+    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, param_type, true), function, 0);
+    if (sig) *slot = sig;
+}
+
+bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
+    // (Only when its first check had no contextual signature: one it had then decided its return type, no circularity)
+    return intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) &&
+        intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2);
+}
+
 // tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn (GeneratorYield with
 // `yield`): a function expression's contextual signature, if it has one, has a generic return type (a generator's: the
 // return or yield type it iterates with)
 bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield) {
     // (The first contextual signature, which tsc's getReturnTypeFromBody reports with: while a call infers, its type
     // parameters are still there)
-    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
+    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
+    if (!sig) sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
     if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
     if (!sig) {
         Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
@@ -1752,7 +1770,8 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
 static Ty const* non_null_flow_type(Checker* me, Expr const* expr, Ty const* declared, Ty const* initial) {
     Ty const* flow_type = ty_flow_type(me, expr, declared, initial, expr->identifier.flow);
     if (expr->identifier.non_null_operand && !(flow_type->flags & TYF_NEVER) &&
-        (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)
+        // (getTypeWithFacts(NEUndefinedOrNull), whatever strictNullChecks says: `undefined` has no non-nullish part)
+        (ty_non_nullish_part(me, flow_type)->flags & TYF_NEVER)
     ) {
         return declared;
     }

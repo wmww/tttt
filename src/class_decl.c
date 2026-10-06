@@ -1641,9 +1641,15 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     if (item->field.has_explicit_type || !compiler_options()->no_implicit_any || !span_valid(name)) return;
     if ((name.source && name.source->is_js) || class_item_private_in_ambient(me, item) || item->field.ts_assigned) return;
     if (item->field.value.tag != EXPR_IMPLICIT_ANY) {
+        // tsc's reportErrorsFromWidening: inside the type if it can (object literal properties), else at the member
+        // with the widened type (`x = null`: any, `x = []`: any[])
         if (compiler_options()->strict_null_checks) return;
         Ty const* value = ty_expr_type(current_checker, &item->field.value);
-        if (value->kind != TY_INTRINSIC || !(value->flags & TYF_NULLABLE)) return;
+        if (!(value->xflags & TYX_CONTAINS_WIDENING) || binding_report_widening_errors_in_type(value, errs)) return;
+        cstr type = ty_to_cstr(current_checker, ty_widened_nullable(current_checker, value));
+        error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an '", type, "' type.");
+        cstr_drop(&type);
+        return;
     }
     error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any' type.");
 }

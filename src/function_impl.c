@@ -1008,6 +1008,20 @@ static void function_check_widened_return(FunctionImpl const* me, ErrorCtx* errs
     Span name = span_valid(my name) ? my name : function_impl_member_name(me);
     // (A generator's yields, then its returns: tsc's getReturnTypeFromBody)
     Ty const* unwidened = ty_function_return_before_widening(checker, me);
+    // Its contextual signature is its own (an argument whose inferred type parameter is the function itself):
+    // tsc's shouldReportErrorsFromWideningWithContextualSignature asks for that signature's return type, which is the
+    // one being resolved, a circularity (TS7023/TS7024, and the return type is any)
+    if (unwidened && my is_expression && ty_function_context_is_self(checker, me)) {
+        Span circular = span_valid(name) ? name : function_impl_variable_name(me);
+        if (span_valid(circular)) {
+            error_ctx_error_d(errs, circular, 7023, "'", circular, "' implicitly has return type 'any' because it does not have a return "
+                "type annotation and is referenced directly or indirectly in one of its return expressions.");
+        } else {
+            error_ctx_error_d(errs, function_error_span(me), 7024, "Function implicitly has return type 'any' because it does not "
+                "have a return type annotation and is referenced directly or indirectly in one of its return expressions.");
+        }
+        return;
+    }
     if (unwidened && (!my is_expression || ty_function_widening_reportable(checker, me, my is_generator))) {
         report_widened_return(me, name, unwidened, my is_generator, errs);
     }

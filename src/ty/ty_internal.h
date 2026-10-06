@@ -98,6 +98,7 @@ enum {
     KEY_CONTEXT_NONE,   // FunctionImpl -> the call being resolved when its first check had a contextual type without signature
     KEY_FUNCTION_SIG_CONTEXT, // FunctionImpl -> the contextual type of its last check after KEY_CONTEXT_NONE
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
+    KEY_CONTEXT_WIDENING, // FunctionImpl -> its contextual signature before a return mapper instantiated it (see ty_function_note_widening_context())
     KEY_CONTEXT_UNFIXED, // FunctionImpl -> that signature before ty_fix_contextual_signature(), when that changed it
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id

@@ -2108,7 +2108,10 @@ static bool requires_optional_properties(Checker* me, Ty const* source) {
     if (ty_is_unwidened_object_literal(literal)) return false;
     if (is_tuple(source)) return false;
     // `[]` (never[]; tsc's isEmptyArrayLiteralType)
-    return !(ty_is_array(me, source) && (ty_reference_args(me, source).data[0]->flags & TYF_NEVER));
+    // (Without strictNullChecks its element is the widening undefined: isEmptyLiteralType)
+    if (!ty_is_array(me, source)) return true;
+    Ty const* element = ty_reference_args(me, source).data[0];
+    return compiler_options()->strict_null_checks ? !(element->flags & TYF_NEVER) : element != ty_intrinsic(me, TY_UNDEFINED_WIDENING);
 }
 
 static Prop const* root_declaration(Prop const* prop) {
@@ -5238,7 +5241,7 @@ static Ternary structured_related_members(
             // HACK: Array<S> and ReadonlyArray<T> relate like their element types. It's what comparing the two
             // interfaces member by member comes to, without depending on how well generic methods compare yet
             // (TS4104 is report_relation_error()'s)
-            if (source_target == my readonly_array_target && !comparable) return TERNARY_FALSE;
+            if (source_target == my readonly_array_target) return TERNARY_FALSE;
             return is_related_to(me, st, ty_reference_args(me, source).data[0], ty_reference_args(me, target).data[0], report);
         }
     }

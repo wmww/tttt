@@ -2116,9 +2116,13 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     // The rest of what check_access() lets through or reports itself
     // (Only what may be null or undefined loses it, tsc's checkNonNullType: a generic whose constraint is any stays itself)
     object = ty_non_nullable_if_needed(me, object);
+    // Without strictNullChecks unknown is apparently `{}` (tsc's getApparentType), and so is an unconstrained
+    // type parameter
+    bool sloppy_unknown = !compiler_options()->strict_null_checks &&
+        ((object->flags & TYF_UNKNOWN) || (object->kind == TY_TYPE_PARAM && !ty_param_constraint(me, object)));
+    if (sloppy_unknown) object = ty_empty_object_type(me);
     if (object->flags & (TYF_ANY | TYF_NEVER | TYF_UNKNOWN | TYF_DEFERRED)) return;
     if (object->kind == TY_TYPE_PARAM && !ty_param_constraint(me, object)) {
-        if (!compiler_options()->strict_null_checks) return; // TODO: `{}`
         object = ty_intrinsic(me, TY_UNKNOWN_);
     } else {
         object = ty_apparent_type(me, object);

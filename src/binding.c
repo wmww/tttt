@@ -846,10 +846,11 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
         for (u32 i = 0; i < ty->composite.types.len; i++) {
             if (ty_is_empty_object_type(checker, ty->composite.types.data[i])) return true;
         }
-        for (u32 i = 0; i < ty->composite.types.len; i++) reported |= report_widening_errors_in_type(checker, ty->composite.types.data[i], errs, depth + 1);
+        // (tsc's `errorReported ||= ...`: the members after the first one that reports aren't looked at)
+        for (u32 i = 0; i < ty->composite.types.len && !reported; i++) reported = report_widening_errors_in_type(checker, ty->composite.types.data[i], errs, depth + 1);
     } else if (ty->kind == TY_REFERENCE && (ty_is_array(checker, ty) || ty_tuple_shape(ty))) {
         TyList args = ty_reference_args(checker, ty);
-        for (u32 i = 0; i < args.len; i++) reported |= report_widening_errors_in_type(checker, args.data[i], errs, depth + 1);
+        for (u32 i = 0; i < args.len && !reported; i++) reported = report_widening_errors_in_type(checker, args.data[i], errs, depth + 1);
     } else if (ty->kind == TY_ANONYMOUS && ty->anonymous.object_literal) {
         Members const* members = ty_members(checker, ty);
         for (u32 i = 0; i < members->prop_count; i++) {

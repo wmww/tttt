@@ -1952,6 +1952,8 @@ bool ty_is_generic_type(Checker* me, Ty const* ty); // tsc's isGenericType (expr
 // A function expression without a contextual signature, or one with a generic return type (TS7010/TS7011 from widening)
 void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* right, Span left_span, Span right_span, ErrorCtx* errs);
 bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield);
+bool ty_function_context_is_self(Checker* me, FunctionImpl const* function);
+void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type);
 Ty const* ty_generator_return_before_widening(Checker* me, FunctionImpl const* function); // A generator's returns, if they widen to any
 bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs);
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);
