@@ -1150,8 +1150,8 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             Atom const* name = builder->props[j]->name;
             bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
-            // (A class's `prototype` isn't one of its members in tsc, it's made with the static side's type)
-            if (static_side && csview_equals(atom_sv(name), "prototype")) continue;
+            // (The static side's `prototype` too: tsc's class exports have it, "all static string indexers include the
+            // instance type")
             if (included) ty_buf_push(&types, prop_type(me, builder->props[j]));
         }
         IndexInfo info = {

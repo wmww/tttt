@@ -8643,7 +8643,7 @@ const baselines = {
     'declarationEmitSimpleComputedNames1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitSpreadStringlyKeyedEnum': {
         errors: true,
