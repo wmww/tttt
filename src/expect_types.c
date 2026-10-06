@@ -1,3 +1,5 @@
+// realpath(), which strict -std=c2x hides
+#define _XOPEN_SOURCE 700
 #include "expect_types.h"
 #include "ast_walk.h"
 #include "compiler_options.h"
