@@ -2531,7 +2531,14 @@ static Ternary props_related_impl(
             goto done;
         }
         // (the types first: their failure explains better)
-        if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable) {
+        // (Only against a property, method or accessor: tsc's `targetProp.flags & SymbolFlags.ClassMember`, which a
+        // namespace's exported variable, function or class isn't)
+        Prop const* target_root = target_prop;
+        while (target_root->target) target_root = target_root->target;
+        Symbol const* target_symbol = target_root->decl->symbol;
+        bool target_member = !target_symbol ||
+            (target_symbol->flags & (SYMBOL_PROPERTY | SYMBOL_METHOD | SYMBOL_GET_ACCESSOR | SYMBOL_SET_ACCESSOR));
+        if ((source_prop.flags & PROP_OPTIONAL) && !(target_prop->flags & PROP_OPTIONAL) && !comparable && target_member) {
             if (report) {
                 cstr source_str = display_for_report(me, source, true);
                 cstr target_str = display_for_report(me, target, false);

@@ -263,7 +263,13 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         return ret;
     }
     if (object->flags & TYF_ANY) return object;
-    if (object->flags & TYF_NEVER) return object;
+    if (object->flags & TYF_NEVER) {
+        // (Only by a key: tsc's getPropertyTypeForIndexType returns never for a string, number or symbol-like one, a
+        // bigint or object key is TS2538 and the error type)
+        bool key = (index->flags & TYF_ANY) || (!(index->flags & TYF_NULLABLE) &&
+            (ty_key_flags(index) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_ENUM | TYF_ES_SYMBOL_LIKE)));
+        return key || index->kind == TY_UNION || ty_is_generic_index(index) ? object : ty_intrinsic(me, TY_ERROR);
+    }
     if (index->flags & TYF_NEVER) {
         // What the index signatures say (never is assignable to every key type), else never (tsc's
         // getPropertyTypeForIndexType)
