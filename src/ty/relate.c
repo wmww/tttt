@@ -4220,7 +4220,14 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
                     fits = false;
                     break;
                 }
-                fits = is_related_to(me, st, value, target_prop.type, false) != TERNARY_FALSE;
+                // (An optional target property takes `undefined`, which a source property typed `T | undefined` has
+                // among its values: tsc's isPropertySymbolTypeRelated adds the optionality to the target's type)
+                Ty const* target_type = target_prop.type;
+                if ((target_prop.flags & PROP_OPTIONAL) && optional_adds_undefined()) {
+                    Ty const* target_parts[2] = { target_type, ty_intrinsic(me, TY_UNDEFINED) };
+                    target_type = ty_union(me, target_parts, 2, nullptr, (TyList){0});
+                }
+                fits = is_related_to(me, st, value, target_type, false) != TERNARY_FALSE;
             }
             if (fits) {
                 matching[m] = true;
