@@ -451,6 +451,17 @@ void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
     }
 }
 
+// A JavaScript `require("m")` call that isn't an alias (tsc's checkRequireCall -> resolveExternalModuleName): a file
+// that isn't a module is TS2306 too
+static void require_call_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
+    module_ref_report(ref, names, errs);
+    if (ref && ref->file && !binder_module_of_ref(names->binder, ref)) {
+        cstr shown = module_ref_file_message_path(ref);
+        error_ctx_error_d(errs, ref->span, 2306, "File '", shown, "' is not a module.");
+        cstr_drop(&shown);
+    }
+}
+
 // What an entity name expression (`a`, `a.b.c`) names with `meaning`, quietly: null if nothing
 static Symbol const* entity_name_symbol(Scope* names, Expr const* expr, u32 meaning) {
     if (expr->tag == EXPR_IDENTIFIER && !expr->identifier.keyword) {
@@ -643,14 +654,14 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     }
     if (my require_call && my target && names->file && names->file->is_js && expr_symbol_is_commonjs_require(my target)) {
         // An ambient `require` (@types/node's) is tsc's requireSymbol too (isCommonJsRequire)
-        if (my require_call == 1) module_ref_report(identifier_module_ref(me), names, errs);
+        if (my require_call == 1) require_call_report(identifier_module_ref(me), names, errs);
         return;
     }
     if (!my target && names->file && names->file->is_js) {
         if (my require_call) {
             // tsc's requireSymbol, and the module like an import's (a declaration's aliases report it themselves)
             my target = my symbol = binder_require_symbol(names->binder);
-            if (my require_call == 1) module_ref_report(identifier_module_ref(me), names, errs);
+            if (my require_call == 1) require_call_report(identifier_module_ref(me), names, errs);
             return;
         }
         if (names->file->is_commonjs && span_equals(identifier_expr_name(me), "exports")) {
