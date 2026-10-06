@@ -488,8 +488,14 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
         // checkVariableLikeDeclaration checks checkExpressionCached(initializer))
         bool padded = !my parent && initializer && my tag != BINDING_IDENTIFIER && binding_is_parameter(me);
         Ty const* assigned_type = padded ? ty_expr_type(current_checker, initializer) : ty_binding_assigned_type(current_checker, me);
-        ty_check_assignable_expr(current_checker, assigned_type,
-            ty_of_node(&my explicit_type), span_valid(span) ? span : my content_span, initializer, errs);
+        // (`x?: T = v`, TS1015: against the parameter's type, which has undefined, tsc's addOptionality)
+        Ty const* target = ty_of_node(&my explicit_type);
+        if (my optional_parameter && compiler_options()->strict_null_checks && !(target->flags & TYF_ANY)) {
+            Ty const* types[2] = { target, ty_intrinsic(current_checker, TY_UNDEFINED) };
+            target = ty_union(current_checker, types, 2, nullptr, (TyList){0});
+        }
+        ty_check_assignable_expr(current_checker, assigned_type, target, span_valid(span) ? span : my content_span,
+            initializer, errs);
     }
 
     if (my default_value) {

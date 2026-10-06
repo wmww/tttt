@@ -1844,6 +1844,18 @@ static Ty const* parameter_initial_type(Checker* me, Binding const* binding, Ty 
     // (Not from inside the default itself: `(x: number | undefined = x > 0 ? x : 0)`)
     LazyMemo const* memo = lazy_type_state_peek((LazyType*)&initialized_binding_value(initialized)->lazy_type);
     bool in_flight = memo && memo->evaluation_started && !memo->done;
+    // (There tsc's pushTypeResolution of the parameter's declared type fails: reportCircularityError)
+    if (in_flight && binding->tag == BINDING_IDENTIFIER) {
+        // (At the whole parameter: tsc's error(symbol.valueDeclaration))
+        Span at = span_between(binding->content_span, expr_outer_span(initialized_binding_value(initialized)));
+        if (binding->has_explicit_type) {
+            ty_error_at(me, at, 2502, cstr_d("'", binding->content_span,
+                "' is referenced directly or indirectly in its own type annotation."));
+        } else if (compiler_options()->no_implicit_any) {
+            ty_error_at(me, at, 7022, cstr_d("'", binding->content_span, "' implicitly has type 'any' "
+                "because it does not have a type annotation and is referenced directly or indirectly in its own initializer."));
+        }
+    }
     Ty const* value = initialized_binding_value(initialized)->tag == EXPR_IMPLICIT_ANY || in_flight ? nullptr : ty_expr_type(me, initialized_binding_value(initialized));
     // (`any` and `unknown` can't be undefined here, tsc's UnknownFacts)
     // (A type parameter by its constraint: tsc's hasTypeFacts(IsUndefined))

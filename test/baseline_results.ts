@@ -3416,7 +3416,7 @@ const baselines = {
         types: true,
     },
     'circularOptionalityRemoval': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
