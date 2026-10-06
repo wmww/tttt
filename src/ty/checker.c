@@ -1639,6 +1639,26 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
         if (t->kind == TY_UNION && !first_union) first_union = t;
     }
 
+    // `{}` next to boolean (a union that is BooleanLike to tsc's includes, DefinitelyNonNullable) goes before the
+    // unions are distributed: NonNullable<boolean> is boolean itself, no alias (tsc's getIntersectionType)
+    if (first_union && !(includes & (TYF_NEVER | TYF_ANY)) && (compiler_options()->strict_null_checks || !(includes & TYF_NULLABLE))) {
+        bool boolean = false;
+        u32 empty = buf.len;
+        for (u32 i = 0; i < buf.len; i++) {
+            boolean |= buf.data[i]->kind == TY_UNION && (buf.data[i]->flags & TYF_BOOLEAN);
+            if (empty == buf.len && buf.data[i]->kind != TY_UNION && ty_is_empty_anonymous_object(me, buf.data[i])) empty = i;
+        }
+        if (boolean && empty < buf.len && !keep_empty_object) {
+            for (u32 i = empty; i + 1 < buf.len; i++) buf.data[i] = buf.data[i + 1];
+            buf.len--;
+            if (buf.len == 1) {
+                Ty const* only = buf.data[0];
+                ty_buf_drop(&buf);
+                return only;
+            }
+        }
+    }
+
     Ty const* ret = nullptr;
     if (includes & TYF_NEVER) {
         // (The silent never, what inference hasn't found yet, survives: tsc's getIntersectionType)

@@ -26208,7 +26208,7 @@ const baselines = {
     'propTypeValidatorInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'propagateNonInferrableType': {
         errors: true,
