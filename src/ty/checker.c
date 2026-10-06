@@ -1647,9 +1647,16 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     } else if (first_union && !compiler_options()->strict_null_checks && non_union_nullable(&buf)) {
         // Without strictNullChecks null or undefined decides before the unions are distributed: `undefined & ("a" |
         // "b")` is undefined, not never (tsc's getIntersectionType sees a union only as a union in its includes)
+        // (boolean is a union that is BooleanLike to those includes, disjoint from a void-like undefined: `boolean &
+        // undefined` is never)
+        bool boolean = false, void_like = false;
+        for (u32 i = 0; i < buf.len; i++) {
+            boolean |= buf.data[i]->kind == TY_UNION && (buf.data[i]->flags & TYF_BOOLEAN);
+            void_like |= buf.data[i]->kind != TY_UNION && (buf.data[i]->flags & (TYF_UNDEFINED | TYF_VOID));
+        }
         u32 kept = 0;
         for (u32 i = 0; i < buf.len; i++) if (buf.data[i]->kind != TY_UNION) buf.data[kept++] = buf.data[i];
-        ret = intersection_cached(me, buf.data, kept, nullptr, (TyList){0}, inherited);
+        ret = boolean && void_like ? my intrinsics[TY_NEVER] : intersection_cached(me, buf.data, kept, nullptr, (TyList){0}, inherited);
     } else if (first_union && (ret = intersect_unions(me, &buf, len, alias, alias_args, opts))) {
         // (Handled)
     } else if (first_union) {
