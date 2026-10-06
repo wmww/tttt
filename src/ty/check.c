@@ -1745,6 +1745,12 @@ static void check_access(
         return;
     }
 
+    // A union of intersections that all reduce to never is never (tsc's getReducedApparentType): narrowing a union by a
+    // predicate it has nothing in common with intersects each member with the candidate
+    if (error_if_not_found && object->kind == TY_UNION && (ty_reduced(me, object)->flags & TYF_NEVER)) {
+        report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
+        return;
+    }
     if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
         // Possibly null/undefined is said once about the whole object, a missing property about the whole union
         bool has_null = false, has_undefined = false, opaque = false;
