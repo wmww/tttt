@@ -22571,7 +22571,7 @@ const baselines = {
         types: true,
     },
     'multipleExports': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

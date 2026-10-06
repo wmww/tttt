@@ -2995,6 +2995,13 @@ static Symbol* resolve_alias_target(Symbol* me) {
             Symbol* found = scope_resolve(my alias->scope, item->source_name.sv, SYMBOL_ANY_MEANING);
             // (tsc's primitive types and `undefined` aren't symbols its resolveName finds)
             if (symbol_is_builtin_type(found)) found = nullptr;
+            if (found == me && (my flags & SYMBOL_ANY_MEANING & ~(u32)SYMBOL_ALIAS)) {
+                // `export class F {}` + `export { F }`: one export symbol (TS2323), which tsc's resolveName finds for
+                // the specifier and is its own target, conflicting with itself in checkAliasSymbol
+                error_ctx_error_d(errs, item->full_span, 2484,
+                    "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
+                return nullptr;
+            }
             if (!found || found == me) {
                 if (export_names_global_primitive(item->source_name.sv)) {
                     report_non_local_export(errs, item->source_name);
