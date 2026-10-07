@@ -1273,7 +1273,9 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     // (tsc checks a function expression's body later, outside any unreachable code around it)
     bool was_within_unreachable = current_checker->within_unreachable;
     if (my is_expression) current_checker->within_unreachable = false;
+    bool flow_disabled = current_checker->flow_analysis_disabled;
     block_typecheck(&my body, ctx, errs);
+    current_checker->flow_analysis_disabled = flow_disabled;
     current_checker->within_unreachable = was_within_unreachable;
     current_checker->return_context = outer_context;
     function_impl_check_end(me, errs);

@@ -3146,10 +3146,40 @@ static bool type_at_flow_call(FlowQuery* q, FlowNode const* flow, FlowType* out)
 
 #define FLOW_MAX_DEPTH 2000
 
+// The body the flow graph belongs to: its start node's function, else the reference's file (a namespace body's start
+// node says nothing: its file then too)
+static void report_flow_control_error(Checker* me, Expr const* reference, FlowNode const* flow) {
+    for (u32 steps = 0; flow && !(flow->flags & FLOW_START) && steps < 10000000; steps++) {
+        if (flow->flags & (FLOW_BRANCH_LABEL | FLOW_LOOP_LABEL)) {
+            FlowList const* antecedents = flow->antecedents;
+            flow = antecedents && antecedents->count ? antecedents->items[0] : nullptr;
+        } else if (flow->flags & FLOW_UNREACHABLE) {
+            flow = nullptr;
+        } else {
+            flow = flow->antecedent;
+        }
+    }
+    FunctionImpl const* function = flow && (flow->flags & FLOW_START) ? flow->node : nullptr;
+    VecStatement const* statements = nullptr;
+    if (function && function->has_body) {
+        statements = &function->body.statements;
+    } else if (reference && expr_outer_span(reference).source) {
+        statements = &expr_outer_span(reference).source->ast.statements;
+    }
+    if (!statements || vec_statement_is_empty(statements)) return;
+    ty_error_at(me, block_first_token(vec_statement_front(statements)->span), 2563,
+        cstr_from("The containing function or module body is too large for control flow analysis."));
+}
+
 static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
     Checker* me = q->me;
     if (q->depth == FLOW_MAX_DEPTH) {
-        // TODO: TS2563 "The containing function or module body is too large for control flow analysis"
+        // tsc's getTypeAtFlowNode at 2000 recursions: TS2563 at the first token of the body (reportFlowControlError), and
+        // no more flow analysis in it
+        if (!my flow_analysis_disabled) {
+            my flow_analysis_disabled = true;
+            report_flow_control_error(me, q->reference, flow);
+        }
         return (FlowType){ ty_intrinsic(me, TY_ERROR), false };
     }
     q->depth++;
@@ -3240,6 +3270,7 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
 }
 
 Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, Ty const* initial, FlowNode const* flow) {
+    if (my flow_analysis_disabled) return ty_intrinsic(me, TY_ERROR);
     if (!flow) return declared;
     Expr const* inner = skip_reference_wrappers(reference);
     FlowQuery q = {

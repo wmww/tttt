@@ -665,7 +665,9 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
                 "Imports are not permitted in module augmentations. Consider moving them to the enclosing external module.");
         }
     }
+    bool flow_disabled = current_checker->flow_analysis_disabled;
     block_typecheck(&my contents, (BlockTypecheckCtx){ .ambient = declared }, errs);
+    current_checker->flow_analysis_disabled = flow_disabled;
 }
 
 // If statements

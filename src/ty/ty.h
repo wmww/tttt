@@ -1036,6 +1036,9 @@ struct Checker {
     u32 flow_loop_cap;
     FlowSharedEntry* flow_shared; // The shared nodes the queries in progress have been through
     u32 flow_shared_count;
+    // A query ran out of flow depth (TS2563): no more control flow analysis in the function or module body being
+    // checked (tsc's flowAnalysisDisabled, saved and restored around function and module blocks; per file here)
+    bool flow_analysis_disabled;
     u32 flow_shared_cap;
     u32 variance_depth; // Variances are being measured, which is only reliable while the marker types are compared
     unsigned char variance_reports; // VARIANCE_UNRELIABLE/UNMEASURABLE of what the measurement went through (relate.c)

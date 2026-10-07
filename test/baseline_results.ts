@@ -22331,7 +22331,7 @@ const baselines = {
         types: true,
     },
     'largeControlFlowGraph': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
