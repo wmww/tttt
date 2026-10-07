@@ -3477,7 +3477,28 @@ static void report_operator_error(Ty const* left, Ty const* right, Expr const* e
 // The right side of `instanceof`: callable, constructable or with a [Symbol.hasInstance] (of every union member, some
 // intersection member)
 static bool instanceof_target_ok(Checker* checker, Ty const* ty) {
-    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) {
+    // A union has the signatures all of its members have (tsc's getUnionSignatures: `AA | BB` of a call and a construct
+    // signature has neither), or a `[Symbol.hasInstance]` if they all do
+    if (ty->kind == TY_UNION) {
+        u32 count = 0;
+        ty_union_signatures(checker, ty->composite.types, false, &count);
+        if (count) return true;
+        ty_union_signatures(checker, ty->composite.types, true, &count);
+        if (count) return true;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            Ty const* apparent = ty_apparent_type(checker, ty->composite.types.data[i]);
+            if (!(apparent->flags & TYF_OBJECT)) return false;
+            Members const* members = ty_members(checker, apparent);
+            bool has_instance = false;
+            for (u32 p = 0; p < members->prop_count && !has_instance; p++) {
+                csview name = atom_sv(members->props[p]->name);
+                for (isize c = 0; c + 12 <= name.size && !has_instance; c++) has_instance = memcmp(name.buf + c, "@hasInstance", 12) == 0;
+            }
+            if (!has_instance) return false;
+        }
+        return true;
+    }
+    if (ty->kind == TY_INTERSECTION) {
         bool is_union = ty->kind == TY_UNION;
         for (u32 i = 0; i < ty->composite.types.len; i++) {
             bool fits = instanceof_target_ok(checker, ty->composite.types.data[i]);
@@ -3761,7 +3782,7 @@ static bool binary_op_typecheck(
                 expr_error_span(&expr->binary_op->right), errs);
             if (instanceof_target_ok(checker, right)) break;
             Ty const* function_type = ty_global_function_type(checker);
-            if (!function_type || ty_is_related(checker, right, function_type, TY_RELATION_ASSIGNABLE)) break;
+            if (!function_type || ty_is_related(checker, right, function_type, TY_RELATION_SUBTYPE)) break;
             error_ctx_error_d(errs, expr_error_span(&expr->binary_op->right), 2359, "The right-hand side of an 'instanceof' "
                 "expression must be either of type 'any', a class, function, or other type assignable to the 'Function' "
                 "interface type, or an object type with a 'Symbol.hasInstance' method.");
