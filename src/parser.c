@@ -7024,15 +7024,18 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     ModifierList modifiers;
     parse_modifier_list(&p, true, &modifiers);
     hop_whitespace(&p);
-    if (modifiers.includes[MODIFIER_ASYNC]) {
-        must_be_method = true;
-        flags.is_async = true;
-    }
+    // (An `async` modifier makes a method only if a parameter list follows: `{ async x }` is a property with a modifier
+    // that can't be used there, tsc's parseObjectLiteralElement)
+    if (modifiers.includes[MODIFIER_ASYNC]) flags.is_async = true;
+    Span async_modifier = span_null;
 
     // tsc's checkGrammarObjectLiteralExpression: every modifier but `async` (TS1184 on a method is checkGrammarMethod)
     bool report_modifiers_cannot_appear = false;
     for_each (i, vec_spanned_modifier, &modifiers.spanned) {
-        if (i->tag == MODIFIER_ASYNC) continue;
+        if (i->tag == MODIFIER_ASYNC) {
+            if (!span_valid(async_modifier)) async_modifier = i->span;
+            continue;
+        }
         parse_error(&p, i->span, 1042, "'", i->span, "' modifier cannot be used here.");
         report_modifiers_cannot_appear = true;
     }
@@ -7125,6 +7128,10 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_whitespace(&p);
     }
 
+    // (A property with an `async` modifier: a grammar error)
+    if (span_valid(async_modifier) && !must_be_method && *p.pos != '(' && *p.pos != '<') {
+        parse_error(&p, async_modifier, 1042, "'async' modifier cannot be used here.");
+    }
     FunctionImpl func;
     if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, flags, &func)) {
         if (report_modifiers_cannot_appear && item.tag == OBJECT_ITEM_PROPERTY) {
