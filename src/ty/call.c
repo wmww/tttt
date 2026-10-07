@@ -2069,6 +2069,28 @@ static void report_no_match(
         // The last candidate's errors (each with a chain of its own when there were many candidates)
         Candidate const* last = &unfit[unfit_count - 1];
         report_unfit_argument(me, last, args, info, call_span, &collected);
+        // tsc passes every diagnostic of the last candidate one shared "The last overload" chain object, and
+        // checkTypeRelatedTo concatenates each one's elaboration onto it in place (concatenateDiagnosticMessageChains
+        // appends at the deepest first child), so with several (an array literal's elements) every diagnostic shows
+        // all of their chains nested one under the other
+        Error shared = {0};
+        u32 chained = 0;
+        if (unfit_count > 3) {
+            for_each (e, vec_error, &collected.errors) chained += !e->always_logged;
+        }
+        if (chained > 1) {
+            Error* deepest = &shared;
+            for_each (e, vec_error, &collected.errors) {
+                if (e->always_logged) continue;
+                Error line = { .message = cstr_clone(e->message) };
+                for_each (sub, vec_error, &e->sub_errors) {
+                    if (!span_valid(sub->span)) vec_error_push(&line.sub_errors, error_clone(*sub));
+                }
+                vec_error_push(&deepest->sub_errors, line);
+                deepest = vec_error_back_mut(&deepest->sub_errors);
+                while (vec_error_size(&deepest->sub_errors)) deepest = vec_error_begin(&deepest->sub_errors).ref;
+            }
+        }
         for_each (e, vec_error, &collected.errors) {
             Error error = *e;
             if (unfit_count > 3 && e->always_logged) append_logged_once(errs, e);
@@ -2077,7 +2099,19 @@ static void report_no_match(
                     .message = cstr_lit("No overload matches this call.") };
                 error_sub_error_s(&error, span_null, TS_CODE_NONE, cstr_lit("The last overload gave the following error."));
                 VecError related = {0};
-                move_error_into_chain(e, vec_error_back_mut(&error.sub_errors), &related);
+                if (chained > 1 && !e->always_logged) {
+                    Error* head = vec_error_back_mut(&error.sub_errors);
+                    for_each (sub, vec_error, &shared.sub_errors) vec_error_push(&head->sub_errors, error_clone(*sub));
+                    for_each (sub, vec_error, &e->sub_errors) {
+                        if (span_valid(sub->span)) vec_error_push(&related, *sub);
+                        else error_drop(sub);
+                    }
+                    e->sub_errors.size = 0;
+                    vec_error_drop(&e->sub_errors);
+                    cstr_drop(&e->message);
+                } else {
+                    move_error_into_chain(e, vec_error_back_mut(&error.sub_errors), &related);
+                }
                 for_each (r, vec_error, &related) vec_error_push(&error.sub_errors, *r);
                 related.size = 0;
                 vec_error_drop(&related);
@@ -2089,6 +2123,7 @@ static void report_no_match(
         }
         collected.errors.size = 0;
         error_ctx_drop(&collected);
+        error_drop(&shared);
         return;
     }
     // Two or three: every candidate's errors, unless one of them had several (then only the one with the fewest)
