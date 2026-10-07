@@ -582,6 +582,20 @@ static void report_invalid_async_return(ErrorCtx* errs, Span location, Span ret_
     }
 }
 
+// A namespace import whose value would have fit: likely the wrong kind of import (tsc's checkTypeRelatedTo with
+// links.originatingImport)
+static void add_originating_import(Checker* me, Error* error, Symbol const* alias, Ty const* target) {
+    Ty const* original = alias && (alias->flags & SYMBOL_ALIAS) ? ty_namespace_import_original(me, alias) : nullptr;
+    if (original && ty_is_related(me, original, target, TY_RELATION_ASSIGNABLE)) {
+        PortItem const* item = alias->alias->item;
+        Span statement = span_valid(item->keyword_span) ?
+            span_between(item->keyword_span, span_with_semicolon(item->full_span)) : item->full_span;
+        error_add_related_d(error, statement, 7038, "Type originates at this import. A namespace-style import "
+            "cannot be called or constructed, and will cause a failure at runtime. Consider using a default import or "
+            "import require here instead.");
+    }
+}
+
 // Below ES2015 the annotation of an async function names a Promise constructor value whose type is
 // PromiseConstructorLike (tsc's checkAsyncFunctionReturnType)
 static void check_es5_async_return_annotation(Checker* me, TypeNode const* node, Ty const* ret, Span location,
@@ -599,7 +613,10 @@ static void check_es5_async_return_annotation(Checker* me, TypeNode const* node,
     bool qualified = id->rare && vec_span_size(&id->rare->namespaces);
     Span name = qualified ? span_between(*vec_span_at(&id->rare->namespaces, 0), id->name) : id->name;
     if (target && target->flags & SYMBOL_VALUE) {
-        Ty const* constructor = ty_type_of_symbol(me, target);
+        // (Through the alias the name found: a namespace import is the module object it makes, tsc's
+        // resolveEntityName resolving to resolveESModuleSymbol's clone)
+        Symbol const* alias = !qualified && id->symbol && (id->symbol->flags & SYMBOL_ALIAS) ? id->symbol : nullptr;
+        Ty const* constructor = ty_type_of_symbol(me, alias ? alias : target);
         if (constructor->flags & TYF_ERROR) return;
         Symbol const* like_symbol = program_get_global(my program, c_sv("PromiseConstructorLike"), SYMBOL_TYPE);
         Ty const* like = like_symbol ? ty_declared_type_of(me, like_symbol) : nullptr;
@@ -608,7 +625,8 @@ static void check_es5_async_return_annotation(Checker* me, TypeNode const* node,
         } else if (!ty_is_related(me, constructor, like, TY_RELATION_ASSIGNABLE)) {
             cstr head = cstr_d("Type '", constructor, message);
             if (span_eq(location, ret_span)) {
-                report_unassignable_with_head(me, constructor, like, 1055, head, false, location, errs);
+                Error* error = report_unassignable_with_head(me, constructor, like, 1055, head, false, location, errs);
+                if (error) add_originating_import(me, error, alias, like);
             } else {
                 // (A JSDoc `@type` signature's: the explanation under tsc's containing message)
                 VecTyReportLine lines = {0};
@@ -762,18 +780,8 @@ static bool check_assignable(
             error_add_related_d(error, span, 2773, "Did you forget to use 'await'?");
         }
     }
-    // A namespace import whose value would have fit: likely the wrong kind of import (tsc's checkTypeRelatedTo with
-    // links.originatingImport)
     Symbol const* alias = expr && expr->tag == EXPR_IDENTIFIER ? expr->identifier.symbol : nullptr;
-    Ty const* original = error && alias && (alias->flags & SYMBOL_ALIAS) ? ty_namespace_import_original(me, alias) : nullptr;
-    if (original && ty_is_related(me, original, target, TY_RELATION_ASSIGNABLE)) {
-        PortItem const* item = alias->alias->item;
-        Span statement = span_valid(item->keyword_span) ?
-            span_between(item->keyword_span, span_with_semicolon(item->full_span)) : item->full_span;
-        error_add_related_d(error, statement, 7038, "Type originates at this import. A namespace-style import "
-            "cannot be called or constructed, and will cause a failure at runtime. Consider using a default import or "
-            "import require here instead.");
-    }
+    if (error) add_originating_import(me, error, alias, target);
     return false;
 }
 

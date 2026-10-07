@@ -21596,7 +21596,7 @@ const baselines = {
         types: true,
     },
     'jsdocFunctionTypeFalsePositive': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -30921,7 +30921,7 @@ const baselines = {
         types: true,
     },
     'sourceMapValidationDestructuringForArrayBindingPattern(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33341,7 +33341,7 @@ const baselines = {
         types: true,
     },
     'transformNestedGeneratorsWithTry(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
