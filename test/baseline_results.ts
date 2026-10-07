@@ -12208,7 +12208,7 @@ const baselines = {
     'enumIdentifierLiterals': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumIndexer': {
         errors: true,
@@ -12298,7 +12298,7 @@ const baselines = {
     'enumWithBigint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumWithComputedMember': {
         errors: true,
@@ -12353,7 +12353,7 @@ const baselines = {
     'enumWithUnicodeEscape1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumWithoutInitializerAfterComputedMember': {
         errors: true,
@@ -71718,7 +71718,7 @@ const baselines = {
     'callSignaturesWithParameterInitializers2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'constructSignatureWithAccessibilityModifiersOnParameters': {
         errors: true,
@@ -71793,7 +71793,7 @@ const baselines = {
     'stringLiteralTypesInImplementationSignatures2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterAsTypeArgument': {
         errors: true,
