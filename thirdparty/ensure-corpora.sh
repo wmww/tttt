@@ -70,14 +70,16 @@ CORPORA=(
     # the dependencies are drizzle-orm's devDependencies at pnpm-lock.yaml's versions, from
     # corpora-locks/drizzle.package.json (npm floats the transitive ones)
     "drizzle https://github.com/drizzle-team/drizzle-orm.git 15454dbe49d827c6081f3d0231e2e7985e517295 drizzle-orm"
-    # vue core v3.5 (Jul 2026, same session): the last commit before its move to TypeScript 6. Every package's src and
-    # __tests__ (compiler, reactivity, runtime-core's component option overloads, runtime-dom's JSX types) plus the
-    # dts-test type tests (defineComponent, props inference, JSX), checked through tsconfig.corpus.json from the
-    # overlay (upstream's root tsconfig: paths to the package sources, not composite, no isolatedDeclarations, no
-    # noUnusedLocals: dts-test has one unused local; dts-test's built.test-d.ts needs a build). A pnpm workspace: the
-    # dependencies are every importer's (packages-private excluded) at pnpm-lock.yaml's versions, from
-    # corpora-locks/vue.package.json
-    "vue https://github.com/vuejs/core.git b5f8518379b77c3b62a7a9d2b52f6c76cda09bd5 ."
+    # vue core v3.5 (Oct 2026, plan 48 stage 5): main's head, on TypeScript ~6.0.3 (upstream dropped baseUrl). Every
+    # package's src and __tests__ (compiler, reactivity, runtime-core's component option overloads, runtime-dom's JSX
+    # types) plus the dts-test type tests (defineComponent, props inference, JSX), checked through tsconfig.corpus.json
+    # from the overlay (upstream's root tsconfig: paths to the package sources, not composite, no isolatedDeclarations,
+    # no noUnusedLocals: dts-test has one unused local; dts-test's built.test-d.ts needs a build). tsc 6 is clean;
+    # tsgo 7.0.2 is not (10: TS2769/TS2578 pairs in dts-test where it reports overload failures elsewhere, a TS2322,
+    # a TS2345 in vModel.ts; the same at the previous pin, upstream doesn't run tsgo). A pnpm workspace: the
+    # dependencies are every importer's (packages-private excluded; typescript the root's) at pnpm-lock.yaml's
+    # versions (its second YAML document), from corpora-locks/vue.package.json
+    "vue https://github.com/vuejs/core.git 4ab865a848a1da3d10fb674f857e5fff13094644 ."
     # typescript-eslint v8.57.2 (Mar 2026, plan 41 stage 3): the last commit before its move to TypeScript 6, the
     # second project-references corpus (`tttt -b` at the root solution config: 38 composite projects, nested solution
     # configs, `${configDir}` in the shared base config, NodeNext; workspace packages import each other through

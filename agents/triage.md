@@ -246,3 +246,8 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 ## Corpora re-pin (plan 48 stage 5): xstate, tanstack-router, vue
 - xstate @ 38dcaffb (Oct 2026, TS6 upstream): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0 (648 files, 0.74 s). The old
   pin's 30 strict-by-default errors are fixed upstream; the overlay is now just upstream's root tsconfig limited to core.
+- vue @ 4ab865a8 (Sep 2026, TypeScript ~6.0.3 upstream): tsc 4d4f005c 0, tttt 0 (760 files, 1.15 s). tsgo 7.0.2
+  reports 10 (also at the old pin, upstream doesn't run tsgo): TS2578+TS2769 x3 in dts-test/defineComponent.test-d.tsx
+  (the overload error lands lines below the `@ts-expect-error`), one pair in setupHelpers.test-d.ts, TS2322 in
+  functionalComponent.test-d.tsx:25, TS2345 in runtime-dom/src/directives/vModel.ts:446 (`DirectiveBinding<any,
+  string>` vs `<any, "number">`). tsgo-vs-tsc 6 divergences; worth a look when tsgo 7 becomes the oracle.
