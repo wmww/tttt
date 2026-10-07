@@ -682,16 +682,6 @@ static Ty const* instantiate_alias(Checker* me, Ty const* ty, Ty const* result, 
     return ty_realias(me, result, ty->alias, alias_args);
 }
 
-// A union of unit types (literal keys): see the TY_INDEXED case of instantiate_inner()
-static bool is_unit_union(Ty const* ty) {
-    for (u32 i = 0; i < ty->composite.types.len; i++) {
-        if (!(ty->composite.types.data[i]->flags & (TYF_LITERAL | TYF_ENUM_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE))) {
-            return false;
-        }
-    }
-    return true;
-}
-
 // A distributive conditional type instantiated once per member of union `check_type`, with the check type parameter
 // mapped to that member everywhere. tsc's mapType: over the members of the union's origin, a named union among them
 // mapped the same way, so one whose members all map to themselves is still itself (`Exclude<Color | undefined,
@@ -900,9 +890,8 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
                 me, ty_instantiate(me, ty->indexed.object, mapper), index, ty->indexed.include_undefined
             );
             // (A union of what the members of a union index give goes by the alias too: tsc's
-            // getIndexedAccessTypeOrUndefined passes it to getUnionType. HACK: not a union of literal keys, which
-            // mapped types over it would compute again for the aliased identity: +2% on type-fest's ConditionalKeys)
-            bool distributed = index->kind == TY_UNION && ret->kind == TY_UNION && !is_unit_union(ret);
+            // getIndexedAccessTypeOrUndefined passes it to getUnionType)
+            bool distributed = index->kind == TY_UNION && ret->kind == TY_UNION;
             return ret->kind == TY_INDEXED || distributed ? instantiate_alias(me, ty, ret, mapper) : ret;
         }
 
