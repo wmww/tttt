@@ -21046,7 +21046,7 @@ const baselines = {
         types: true,
     },
     'jsDocDeclarationEmitDoesNotUseNodeModulesPathWithoutError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

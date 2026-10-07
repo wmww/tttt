@@ -2112,6 +2112,8 @@ static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* acce
     Ty const* apparent = ty_apparent_type(me, object);
     if (!(apparent->flags & TYF_OBJECT)) return false;
     Prop const* prop = ty_property_of_type(me, apparent, ty_literal_name(me, ty_access_key_type(me, access)));
+    // (Of a class instance: the declared property, which an instantiation's `target` is)
+    while (prop && prop->target) prop = prop->target;
     Symbol const* symbol = prop && prop->decl ? prop->decl->symbol : nullptr;
     if (!symbol || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
