@@ -1383,17 +1383,17 @@ const baselines = {
     'arrayIterationLibES5TargetDifferent(nolib=true,target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayIterationLibES5TargetDifferent(nolib=true,target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayIterationLibES5TargetDifferent(nolib=true,target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiteral1': {
         errors: true,
@@ -25588,7 +25588,7 @@ const baselines = {
     'noCrashOnNoLib': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCrashOnParameterNamedRequire': {
         errors: true,

@@ -2247,6 +2247,9 @@ Ty const* ty_array(Checker* me, Ty const* element, bool readonly) {
     }
     // A lib without ReadonlyArray reads it as Array (tsc's getGlobalReadonlyArrayType)
     if (readonly && (*target)->declared.kind == TY_DECLARED_SYNTHETIC) return ty_array(me, element, false);
+    // Without a global Array (noLib) an array is the empty object type (tsc's createTypeFromGenericGlobalType of
+    // emptyGenericType). (The auto array stays a reference: it is compared by identity)
+    if ((*target)->declared.kind == TY_DECLARED_SYNTHETIC && element != ty_intrinsic(me, TY_AUTO)) return ty_empty_object_type(me);
     return ty_reference(me, *target, (TyList){ .data = &element, .len = 1 });
 }
 
