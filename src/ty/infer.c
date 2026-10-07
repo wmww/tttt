@@ -517,7 +517,9 @@ Ty const* ty_reverse_mapped_prop_type(Checker* me, Ty const* source, MappedInfo 
     infer_types(me, &inf, source, template, INFER_PRIORITY_NORMAL);
     Ty const* ret = inference_conditional_result(me, &inf, 0);
     inference_drop(&inf);
-    return ret ? ret : ty_intrinsic(me, TY_UNKNOWN_);
+    // (Widened: a nested object literal's type isn't fresh, its excess properties aren't checked against what the
+    // reverse mapped type is related to, tsc 6's inferReverseMappedTypeWorker getWidenedType)
+    return ret ? ty_widened_for_declaration(me, ret, false) : ty_intrinsic(me, TY_UNKNOWN_);
 }
 
 // The T for which `{ [K in keyof T]: Template }` would be `source` (tsc's createReverseMappedType), eagerly. Null if

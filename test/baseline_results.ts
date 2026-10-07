@@ -22346,7 +22346,7 @@ const baselines = {
         types: true,
     },
     'lateBoundAssignmentCandidateJS1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30251,9 +30251,9 @@ const baselines = {
         types: true,
     },
     'reverseMappedTypeInferenceWidening1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeInferenceWidening2': {
         errors: true,
@@ -30391,9 +30391,9 @@ const baselines = {
         types: true,
     },
     'selfReferentialDefaultNoStackOverflow': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'selfReferentialFunctionType': {
         errors: true,
@@ -40401,7 +40401,7 @@ const baselines = {
         types: true,
     },
     'mixinAccessors3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
