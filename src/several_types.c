@@ -275,6 +275,15 @@ static Symbol const* jsdoc_prototype_type_param(Scope const* names, Span name) {
 _Thread_local TypeParamDefaultScope identifier_type_default_scope;
 
 
+// The scope of the function whose JSDoc types are being looked up (identifier_type_set_jsdoc_host())
+static _Thread_local Scope const* jsdoc_host_scope;
+
+Scope const* identifier_type_set_jsdoc_host(Scope const* scope) {
+    Scope const* previous = jsdoc_host_scope;
+    jsdoc_host_scope = scope;
+    return previous;
+}
+
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     check(!my target);
 
@@ -396,6 +405,14 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             my target = my symbol = names->file->scope->container;
         }
         unused_mark_referenced(names, (Symbol*)my symbol, my target && my target->flags & SYMBOL_TYPE ? SYMBOL_TYPE : SYMBOL_VALUE);
+        // In a function's JSDoc a name is looked up from the function too, which makes what it finds there referenced
+        // (tsc's resolveEntityNameFromAssignmentDeclaration through getAssignmentDeclarationLocation: the signature's
+        // own location): a `@template T` shadowed by a signature's `<T>` in a `@returns` type counts as read
+        if (my jsdoc && jsdoc_host_scope && my symbol && !identifier_type_namespace_count(me) && unused_enabled()) {
+            Symbol const* host_found = nullptr;
+            scope_get_type(jsdoc_host_scope, my name.sv, &host_found);
+            if (host_found && host_found != my symbol) unused_mark_referenced(jsdoc_host_scope, (Symbol*)host_found, SYMBOL_TYPE);
+        }
         // (In JSDoc a value is looked up too, and suggested: tsc resolves again with meaning Type | Value. But not the
         // function's parameters and variables from its own `@param` types: resolveNameHelper's lastLocation is the
         // JSDoc, not the body)

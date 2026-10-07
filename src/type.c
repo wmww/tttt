@@ -150,6 +150,9 @@ static InterfaceMember const* mapped_member_of(TypeNode const* node) {
     return member->key.tag == INTERFACE_KEY_MAPPED ? member : nullptr;
 }
 
+// Inside an import type's type arguments (see type_add_inferred_names_at())
+static _Thread_local u32 infer_unchecked_depth;
+
 // Declares the `infer` type parameters of an extends type. `position` is where `me` is written (its immediate parent)
 static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPosition position, IdentifierType const* reference, u32 arg_index) {
     switch (my tag) {
@@ -166,11 +169,17 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
         case TYPE_VALUE:
             break;
 
-        case TYPE_IDENTIFIER:
+        case TYPE_IDENTIFIER: {
+            // (tsc's checkImportType doesn't check an import type's type arguments: an `infer` in them is never
+            // registered for the unused check)
+            bool import_type = identifier_type_import_ref(my identifier);
+            infer_unchecked_depth += import_type;
             for_each (i, vec_spanned_type, &my identifier->generic_params) {
                 type_add_inferred_names_at(&i->type, scope, INFER_POSITION_TYPE_ARG, my identifier, (u32)i_index);
             }
+            infer_unchecked_depth -= import_type;
             break;
+        }
 
         case TYPE_INFERRED:
             scope_init_declaration(scope, &my inferred->owned_symbol, (DeclProps){
@@ -180,7 +189,7 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
                 .node = my inferred,
             });
             my inferred->symbol_ref = my inferred->owned_symbol;
-            unused_register(scope, UNUSED_INFER, my inferred, span_null);
+            if (!infer_unchecked_depth) unused_register(scope, UNUSED_INFER, my inferred, span_null);
             my inferred->position = position;
             my inferred->reference = reference;
             my inferred->arg_index = arg_index;

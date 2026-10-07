@@ -341,6 +341,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     parameter_scope->parameters = true;
     parameter_scope->parameters_see_body = my has_body && parameters_see_body(me);
     TypeFlow const* saved_flow = type_flow_enter_parameter();
+    // (The function's own JSDoc types: tsc resolves their names from the function too, see identifier_type_lookup_names())
+    bool js = names->file && names->file->is_js && !my is_type;
+    Scope const* saved_host = js ? identifier_type_set_jsdoc_host(function_scope) : nullptr;
     for_each (i, vec_function_arg, &my args) {
         initialized_binding_lookup_names_parameter(&i->initializer, parameter_scope, !my has_body, errs);
     }
@@ -348,6 +351,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) {
         type_lookup_names(&function_impl_rare(me)->jsdoc_unmatched[i].type, parameter_scope, errs);
     }
+    if (js) identifier_type_set_jsdoc_host(saved_host);
     scope_release(parameter_scope, pending_mark);
     type_flow_restore(saved_flow);
     function_scope->no_super = NO_SUPER_NONE;
@@ -359,7 +363,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         type_lookup_names(&my ret, return_scope, errs);
         scope_release(return_scope, return_mark);
     } else {
+        Scope const* saved_ret_host = js ? identifier_type_set_jsdoc_host(function_scope) : nullptr;
         type_lookup_names(&my ret, function_scope, errs);
+        if (js) identifier_type_set_jsdoc_host(saved_ret_host);
     }
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_overload_count; i++) {
         for_each (item, vec_generic_item, &function_impl_rare(me)->jsdoc_overloads[i].callable->function->generic.items) {

@@ -107,6 +107,9 @@ typedef enum JsDocIntrinsic {
 } JsDocIntrinsic;
 
 void identifier_type_drop(IdentifierType* me);
+// While a JavaScript function's own JSDoc types (`@param`, `@returns`) are looked up: the function's scope, from which
+// tsc resolves their names a second time (only marks references: unused.c). Returns the previous one to restore
+Scope const* identifier_type_set_jsdoc_host(struct Scope const* scope);
 void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs);
 // While a type parameter's default is looked up: the type parameters it may not reference, from `from` on (TS2744,
 // tsc's checkTypeParametersNotReferenced). Set by generic_lookup_names()
