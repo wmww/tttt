@@ -3786,8 +3786,10 @@ static void merge_augmentations(Binder* me) {
     for (u32 i = 0; i < my augmentation_count; i++) {
         NamespaceDecl* decl = my augmentations[i];
         if (unmerged[i]) {
+            // (A value module of its own if instantiated: `typeof import("m")`, tsc's type of the unmerged symbol)
             symbol_add_decl(decl->symbol, (SymbolDecl){
                 .kind = SYMBOL_DECL_NAMESPACE, .node = decl, .name = decl->name, .full = decl->full_span,
+                .flags = namespace_decl_is_instantiated(decl) ? SYMBOL_VALUE_MODULE : SYMBOL_NAMESPACE_MODULE,
             });
             continue;
         }
@@ -3800,8 +3802,15 @@ static void merge_augmentations(Binder* me) {
         }
         decl->symbol->exports = module->exports;
         decl->symbol = module;
+        // (Into what `export =` assigns, an instantiated one makes it a value module: tsc's mergeSymbol adds the
+        // augmentation's ValueModule flag to the clone, whose type is then `typeof x`)
+        u32 flags = 0;
+        if (!module->is_module) {
+            flags = namespace_decl_is_instantiated(decl) ? SYMBOL_VALUE_MODULE : SYMBOL_NAMESPACE_MODULE;
+            module->flags |= flags;
+        }
         symbol_add_decl(module, (SymbolDecl){
-            .kind = SYMBOL_DECL_NAMESPACE, .node = decl, .name = decl->name, .full = decl->full_span,
+            .kind = SYMBOL_DECL_NAMESPACE, .node = decl, .name = decl->name, .full = decl->full_span, .flags = flags,
         });
         // (The name's first augmentation is what tsc clones, the pattern merges into it, then the others)
         if (module->decl_count == 1) add_pattern_declarations(module, augmented_pattern(me, module));
