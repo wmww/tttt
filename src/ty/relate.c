@@ -5063,7 +5063,7 @@ static Ternary structured_related_members(
         // passes the intersectionState on, so `{}` of `{ a: number } & {}` has no inferable index signature there either)
         bool saved_source = st->intersection_source;
         st->intersection_source = st->member_of_intersection_source;
-        Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report && !source_is_generic);
+        Ternary related = related_to_some(me, st, ty_regular_object_literal(me, source), target, report);
         st->intersection_source = saved_source;
         if (!related && ((source->flags & TYF_OBJECT) || source->kind == TY_INTERSECTION)) {
             related = related_to_discriminated(me, st, source, target);
@@ -6459,6 +6459,17 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             }
         }
         free(props);
+    } else if (source->kind == TY_TYPE_PARAM || source->kind == TY_INDEXED || source->kind == TY_CONDITIONAL ||
+        source->kind == TY_SUBSTITUTION
+    ) {
+        // A generic source's `keyof` is deferred: `keyof T & keyof t` is a union of intersections (no unit type) when
+        // t has several keys, which matches with no overlap, the last such member winning (tsc's findMostOverlappyType
+        // only skips primitive sources)
+        for (u32 i = 0; i < types.len; i++) {
+            Ty const* t = types.data[i];
+            if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+            if (ty_keyof(me, t)->kind == TY_UNION) best = t;
+        }
     }
     return best;
 }
