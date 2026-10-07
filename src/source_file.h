@@ -255,6 +255,8 @@ void module_ref_report_require_of_esm(ModuleRef const* me, Span at, struct Error
 // The diagnostic for a module name that led to no module (neither a file nor an ambient module): TS2307 and its
 // flavours, by what module resolution found instead
 void module_ref_report_unresolved(ModuleRef const* me, struct ErrorCtx* errs);
+// The same for a side effect import (`import "x"`): TS2882 instead of TS2307
+void module_ref_report_unresolved_side_effect(ModuleRef const* me, struct ErrorCtx* errs);
 // TS7016 at `at` for a module that resolved to JavaScript (MODULE_REF_IS_JS), under noImplicitAny (tsc's
 // errorOnImplicitAnyModule)
 void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, struct ErrorCtx* errs);

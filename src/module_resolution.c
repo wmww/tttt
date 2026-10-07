@@ -1663,12 +1663,38 @@ ResolvedModule module_resolver_resolve_type_reference(
     return ret;
 }
 
+static StrList module_resolver_wildcard_types(ModuleResolver* me);
+
 StrList module_resolver_automatic_types(ModuleResolver* me) {
     StrList ret = {0};
-    if (my options->types_set) {
+    // TypeScript 6.0: `types` defaults to [], "*" stands for every package of the type roots (in its position)
+    bool wildcard = false;
+    for (isize i = 0; i < my options->types.count; i++) wildcard |= cstr_equals(&my options->types.items[i], "*");
+    if (!wildcard) {
         for (isize i = 0; i < my options->types.count; i++) str_list_push(&ret, cstr_sv(&my options->types.items[i]));
         return ret;
     }
+    StrList wild = {0};
+    for (isize i = 0; i < my options->types.count; i++) {
+        if (!cstr_equals(&my options->types.items[i], "*")) {
+            bool seen = false;
+            for (isize j = 0; j < ret.count && !seen; j++) seen = cstr_equals(&ret.items[j], cstr_str(&my options->types.items[i]));
+            if (!seen) str_list_push(&ret, cstr_sv(&my options->types.items[i]));
+            continue;
+        }
+        wild = module_resolver_wildcard_types(me);
+        for (isize k = 0; k < wild.count; k++) {
+            bool seen = false;
+            for (isize j = 0; j < ret.count && !seen; j++) seen = cstr_equals(&ret.items[j], cstr_str(&wild.items[k]));
+            if (!seen) str_list_push(&ret, cstr_sv(&wild.items[k]));
+        }
+        str_list_drop(&wild);
+    }
+    return ret;
+}
+
+static StrList module_resolver_wildcard_types(ModuleResolver* me) {
+    StrList ret = {0};
     State state = state_make(me, RESOLUTION_MODE_COMMONJS);
     StrList roots = effective_type_roots(me);
     for (isize i = 0; i < roots.count; i++) {

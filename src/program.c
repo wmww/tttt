@@ -1506,11 +1506,11 @@ static void program_validate_options(Program* me) {
     CompilerOptions const* o = &my options;
     // tsc's verifyDeprecatedCompilerOptions: deprecated in 5.0, removed in 5.5. Before that (the harness's
     // `@typeScriptVersion`) they're only deprecated, which `"ignoreDeprecations": "5.0"` silences
-    unsigned version = parse_major_minor(cstr_size(&o->typescript_version) ? cstr_sv(&o->typescript_version) : c_sv("5.8"));
+    unsigned version = parse_major_minor(cstr_size(&o->typescript_version) ? cstr_sv(&o->typescript_version) : c_sv("6.0"));
     unsigned ignore_version = 0;
     if (cstr_size(&o->ignore_deprecations)) {
-        if (cstr_equals(&o->ignore_deprecations, "5.0")) {
-            ignore_version = parse_major_minor(c_sv("5.0"));
+        if (cstr_equals(&o->ignore_deprecations, "5.0") || cstr_equals(&o->ignore_deprecations, "6.0")) {
+            ignore_version = parse_major_minor(cstr_sv(&o->ignore_deprecations));
         } else {
             option_error_d(me, "ignoreDeprecations", nullptr, false, 5103, "Invalid value for '--ignoreDeprecations'.");
         }
@@ -1560,10 +1560,10 @@ static void program_validate_options(Program* me) {
     program_validate_paths(me);
     bool removed = version >= parse_major_minor(c_sv("5.5"));
     bool deprecated = !removed && ignore_version < parse_major_minor(c_sv("5.0"));
-    if (o->target == SCRIPT_TARGET_ES3 && removed) {
+    if (o->target_es3 && removed) {
         option_error_d(me, "target", nullptr, false, 5108,
             "Option 'target=ES3' has been removed. Please remove it from your configuration.");
-    } else if (o->target == SCRIPT_TARGET_ES3 && deprecated) {
+    } else if (o->target_es3 && deprecated) {
         option_error_d(me, "target", nullptr, false, 5107, "Option 'target=ES3' is deprecated and will stop functioning ",
             "in TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
     }
@@ -1581,6 +1581,53 @@ static void program_validate_options(Program* me) {
                 option_error_d_one(me, sites[j], 5101, "Option '", *name, "' is deprecated and will stop functioning in ",
                     "TypeScript 5.5. Specify compilerOption '\"ignoreDeprecations\": \"5.0\"' to silence this error.");
             if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
+        }
+    }
+    // The 6.0 deprecations (removed in 7.0), "ignoreDeprecations": "6.0" silences them
+    bool removed7 = version >= parse_major_minor(c_sv("7.0"));
+    bool deprecated6 = !removed7 && ignore_version < parse_major_minor(c_sv("6.0"));
+    if (removed7 || deprecated6) {
+        struct { char const* name; char const* value; bool given; bool visit; } const deps[] = {
+            { "alwaysStrict", "false", o->is_set[COMPILER_OPTION_always_strict] && !o->always_strict, false },
+            { "target", "ES5", o->target_set && o->target == SCRIPT_TARGET_ES5, false },
+            { "moduleResolution", "node10", o->module_resolution_set && o->module_resolution == MODULE_RESOLUTION_NODE10, true },
+            { "moduleResolution", "classic", o->module_resolution_set && o->module_resolution == MODULE_RESOLUTION_CLASSIC, false },
+            { "baseUrl", nullptr, o->base_url_set, true },
+            { "esModuleInterop", "false", o->is_set[COMPILER_OPTION_es_module_interop] && !o->es_module_interop, false },
+            { "allowSyntheticDefaultImports", "false",
+                o->is_set[COMPILER_OPTION_allow_synthetic_default_imports] && !o->allow_synthetic_default_imports, false },
+            { "outFile", nullptr, cstr_size(&o->out_file) > 0, false },
+            { "module", o->module == MODULE_KIND_NONE ? "None" : o->module == MODULE_KIND_AMD ? "AMD" :
+                o->module == MODULE_KIND_UMD ? "UMD" : "System",
+                o->module_set && (o->module == MODULE_KIND_NONE || o->module == MODULE_KIND_AMD ||
+                    o->module == MODULE_KIND_UMD || o->module == MODULE_KIND_SYSTEM), false },
+            { "downlevelIteration", nullptr, o->is_set[COMPILER_OPTION_downlevel_iteration], false },
+        };
+        for (u32 i = 0; i < c_arraylen(deps); i++) {
+            if (!deps[i].given) continue;
+            Span sites[4];
+            u32 site_count = option_sites(me, deps[i].name, nullptr, !deps[i].value, sites);
+            for (u32 j = 0; j < site_count; j++) {
+                Error* error;
+                if (deps[i].value) {
+                    error = removed7 ?
+                        option_error_d_one(me, sites[j], 5108, "Option '", deps[i].name, "=", deps[i].value,
+                            "' has been removed. Please remove it from your configuration.") :
+                        option_error_d_one(me, sites[j], 5107, "Option '", deps[i].name, "=", deps[i].value,
+                            "' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption ",
+                            "'\"ignoreDeprecations\": \"6.0\"' to silence this error.");
+                } else {
+                    error = removed7 ?
+                        option_error_d_one(me, sites[j], 5102, "Option '", deps[i].name,
+                            "' has been removed. Please remove it from your configuration.") :
+                        option_error_d_one(me, sites[j], 5101, "Option '", deps[i].name,
+                            "' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption ",
+                            "'\"ignoreDeprecations\": \"6.0\"' to silence this error.");
+                }
+                if (deps[i].visit) {
+                    error_sub_error_d(error, span_null, TS_CODE_NONE, "Visit https://aka.ms/ts6 for migration information.");
+                }
+            }
         }
     }
     if (!o->source_map && !o->inline_source_map) {
@@ -1647,15 +1694,17 @@ static void program_validate_options(Program* me) {
     bool node_resolution = o->module_resolution == MODULE_RESOLUTION_NODE16 ||
         o->module_resolution == MODULE_RESOLUTION_NODENEXT;
     bool es_module = o->module >= MODULE_KIND_ES2015 && o->module <= MODULE_KIND_ESNEXT;
-    if (o->module_resolution == MODULE_RESOLUTION_BUNDLER && !es_module && o->module != MODULE_KIND_PRESERVE) {
+    if (o->module_resolution == MODULE_RESOLUTION_BUNDLER && !es_module && o->module != MODULE_KIND_PRESERVE &&
+        o->module != MODULE_KIND_COMMONJS
+    ) {
         option_error_d(
             me, "moduleResolution", nullptr, false, 5095,
-            "Option 'bundler' can only be used when 'module' is set to 'preserve' or to 'es2015' or later."
+            "Option 'bundler' can only be used when 'module' is set to 'preserve', 'commonjs', or 'es2015' or later."
         );
     }
     if (node_module && !node_resolution) {
         const char* module_name = o->module == MODULE_KIND_NODE16 ? "Node16" :
-            o->module == MODULE_KIND_NODE18 ? "Node18" : "NodeNext";
+            o->module == MODULE_KIND_NODE18 ? "Node18" : o->module == MODULE_KIND_NODE20 ? "Node20" : "NodeNext";
         option_error_d(
             me, "moduleResolution", nullptr, false, 5109, "Option 'moduleResolution' must be set to '",
             o->module == MODULE_KIND_NODENEXT ? "NodeNext" : "Node16",
@@ -2175,21 +2224,112 @@ static void program_check_builtin_global_names(Program* me) {
 // declarations, its overloads)
 static isize stdlib_priority(SourceFile const* source) {
     static char const* const libs[] = {
-    "es5", "es6", "es2015", "es7", "es2016", "es2017", "es2018", "es2019", "es2020", "es2021", "es2022", "es2023",
-    "es2024", "esnext", "dom", "dom.iterable", "dom.asynciterable", "webworker", "webworker.importscripts",
-    "webworker.iterable", "webworker.asynciterable", "scripthost", "es2015.core", "es2015.collection",
-    "es2015.generator", "es2015.iterable", "es2015.promise", "es2015.proxy", "es2015.reflect", "es2015.symbol",
-    "es2015.symbol.wellknown", "es2016.array.include", "es2016.intl", "es2017.arraybuffer", "es2017.date",
-    "es2017.object", "es2017.sharedmemory", "es2017.string", "es2017.intl", "es2017.typedarrays",
-    "es2018.asyncgenerator", "es2018.asynciterable", "es2018.intl", "es2018.promise", "es2018.regexp",
-    "es2019.array", "es2019.object", "es2019.string", "es2019.symbol", "es2019.intl", "es2020.bigint", "es2020.date",
-    "es2020.promise", "es2020.sharedmemory", "es2020.string", "es2020.symbol.wellknown", "es2020.intl",
-    "es2020.number", "es2021.promise", "es2021.string", "es2021.weakref", "es2021.intl", "es2022.array",
-    "es2022.error", "es2022.intl", "es2022.object", "es2022.string", "es2022.regexp", "es2023.array",
-    "es2023.collection", "es2023.intl", "es2024.arraybuffer", "es2024.collection", "es2024.object", "es2024.promise",
-    "es2024.regexp", "es2024.sharedmemory", "es2024.string", "esnext.array", "esnext.collection", "esnext.symbol",
-    "esnext.asynciterable", "esnext.intl", "esnext.disposable", "esnext.bigint", "esnext.string", "esnext.promise",
-    "esnext.weakref", "esnext.decorators", "esnext.object", "esnext.iterator", "esnext.float16", "decorators",
+    "es5",
+    "es6",
+    "es2015",
+    "es7",
+    "es2016",
+    "es2017",
+    "es2018",
+    "es2019",
+    "es2020",
+    "es2021",
+    "es2022",
+    "es2023",
+    "es2024",
+    "es2025",
+    "esnext",
+    "dom",
+    "dom.iterable",
+    "dom.asynciterable",
+    "webworker",
+    "webworker.importscripts",
+    "webworker.iterable",
+    "webworker.asynciterable",
+    "scripthost",
+    "es2015.core",
+    "es2015.collection",
+    "es2015.generator",
+    "es2015.iterable",
+    "es2015.promise",
+    "es2015.proxy",
+    "es2015.reflect",
+    "es2015.symbol",
+    "es2015.symbol.wellknown",
+    "es2016.array.include",
+    "es2016.intl",
+    "es2017.arraybuffer",
+    "es2017.date",
+    "es2017.object",
+    "es2017.sharedmemory",
+    "es2017.string",
+    "es2017.intl",
+    "es2017.typedarrays",
+    "es2018.asyncgenerator",
+    "es2018.asynciterable",
+    "es2018.intl",
+    "es2018.promise",
+    "es2018.regexp",
+    "es2019.array",
+    "es2019.object",
+    "es2019.string",
+    "es2019.symbol",
+    "es2019.intl",
+    "es2020.bigint",
+    "es2020.date",
+    "es2020.promise",
+    "es2020.sharedmemory",
+    "es2020.string",
+    "es2020.symbol.wellknown",
+    "es2020.intl",
+    "es2020.number",
+    "es2021.promise",
+    "es2021.string",
+    "es2021.weakref",
+    "es2021.intl",
+    "es2022.array",
+    "es2022.error",
+    "es2022.intl",
+    "es2022.object",
+    "es2022.string",
+    "es2022.regexp",
+    "es2023.array",
+    "es2023.collection",
+    "es2023.intl",
+    "es2024.arraybuffer",
+    "es2024.collection",
+    "es2024.object",
+    "es2024.promise",
+    "es2024.regexp",
+    "es2024.sharedmemory",
+    "es2024.string",
+    "es2025.collection",
+    "es2025.float16",
+    "es2025.intl",
+    "es2025.iterator",
+    "es2025.promise",
+    "es2025.regexp",
+    "esnext.asynciterable",
+    "esnext.symbol",
+    "esnext.bigint",
+    "esnext.weakref",
+    "esnext.object",
+    "esnext.regexp",
+    "esnext.string",
+    "esnext.float16",
+    "esnext.iterator",
+    "esnext.promise",
+    "esnext.array",
+    "esnext.collection",
+    "esnext.date",
+    "esnext.decorators",
+    "esnext.disposable",
+    "esnext.error",
+    "esnext.intl",
+    "esnext.sharedmemory",
+    "esnext.temporal",
+    "esnext.typedarrays",
+    "decorators",
     "decorators.legacy",
     };
     if (!source->is_stdlib) return INTPTR_MAX;

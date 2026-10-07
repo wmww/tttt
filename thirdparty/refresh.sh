@@ -90,7 +90,7 @@ function copy_libs_from_tsc {
   done
   mv 'lib/d.ts' 'lib/default.d.ts'
   printf '/// <reference lib="es2016" />\n' >lib/es7.d.ts # Why???
-  eval "$(cat ensure-tsc.sh | grep TSC_VERSION=)"
+  eval "$(cat ensure-tsc.sh | grep -E '^TSC_(COMMIT|VERSION)=')"
   echo "These libraries come from upstream TypeScript $TSC_VERSION" >lib/README.txt
 }
 

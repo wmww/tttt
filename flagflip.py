@@ -92,7 +92,7 @@ def cache_path(corpus, flag):
 def run_tsc(corpus, flag):
     cwd, project = corpus_cwd(corpus)
     start = time.time()
-    proc = subprocess.run(['node', '--max-old-space-size=12288', os.path.join(ROOT, 'thirdparty/tsc/lib/tsc.js'), '-p',
+    proc = subprocess.run(['node', '--max-old-space-size=12288', os.path.join(ROOT, 'thirdparty/tsc/built/local/tsc.js'), '-p',
                            project, '--noEmit', '--pretty', 'false', *FLAGS[flag]], cwd=cwd, capture_output=True,
                           text=True)
     diags = []

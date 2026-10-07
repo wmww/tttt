@@ -58,7 +58,7 @@ def main():
     # tsc in one go, then drop whatever files it complains about
     for i, (name, src) in enumerate(kept):
         open(f'{OUT}/t{i}.ts', 'w').write(wrap(src, f'T{i}_0'))
-    out = subprocess.run(['node', f'{ROOT}/thirdparty/tsc/lib/tsc.js', '--noEmit', '--strict', '--target', 'esnext'] +
+    out = subprocess.run(['node', f'{ROOT}/thirdparty/tsc/built/local/tsc.js', '--noEmit', '--strict', '--target', 'esnext'] +
                          [f'{OUT}/t{i}.ts' for i in range(len(kept))], cwd=ROOT, capture_output=True, text=True).stdout
     bad = {int(m) for m in re.findall(r'corpus/t(\d+)\.ts\(', out)}
     lines = 0

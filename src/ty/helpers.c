@@ -119,6 +119,7 @@ bool ty_emits_commonjs_like(SourceFile const* file) {
     switch (options->module) {
         case MODULE_KIND_NODE16:
         case MODULE_KIND_NODE18:
+        case MODULE_KIND_NODE20:
         case MODULE_KIND_NODENEXT:
             return !file->is_esm;
         case MODULE_KIND_PRESERVE: {

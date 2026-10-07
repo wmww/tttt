@@ -1,4 +1,4 @@
-const ts = require('/home/ai/tttt/thirdparty/tsc/lib/typescript.js');
+const ts = require('/home/ai/tttt/thirdparty/tsc/built/local/typescript.js');
 const cfg = ts.getParsedCommandLineOfConfigFile('tsconfig.json', {}, {...ts.sys, onUnRecoverableConfigFileDiagnostic(){}});
 const p = ts.createProgram(cfg.fileNames, cfg.options);
 const c = p.getTypeChecker();

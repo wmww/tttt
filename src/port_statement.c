@@ -162,7 +162,9 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
         // (an implicitly `any` module is no problem for an import that imports nothing)
-        if (!(my side_effect_only && my module_ref->failure == MODULE_REF_IS_JS)) {
+        if (my side_effect_only) {
+            if (my module_ref->failure != MODULE_REF_IS_JS) module_ref_report_unresolved_side_effect(my module_ref, errs);
+        } else {
             module_ref_report_unresolved(my module_ref, errs);
         }
     } else if (my module_ref && my module_ref->file && !unchecked) {
@@ -270,7 +272,7 @@ static bool imports_json_as_esm(PortStatement const* me) {
 }
 
 static char const* node_module_kind_name(ModuleKind kind) {
-    return kind == MODULE_KIND_NODE16 ? "Node16" : kind == MODULE_KIND_NODE18 ? "Node18" : "NodeNext";
+    return kind == MODULE_KIND_NODE16 ? "Node16" : kind == MODULE_KIND_NODE18 ? "Node18" : kind == MODULE_KIND_NODE20 ? "Node20" : "NodeNext";
 }
 
 // tsc's checkImportDeclaration (TS1543) and getExternalModuleMember (TS1544) for imports of JSON into an ES module
@@ -475,7 +477,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     if (type_only && override) return;
     CompilerOptions const* options = compiler_options();
     ModuleKind module = options->module;
-    bool supported = module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODENEXT || module == MODULE_KIND_PRESERVE ||
+    bool supported = module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT || module == MODULE_KIND_PRESERVE ||
         module == MODULE_KIND_ESNEXT;
     if (!supported) {
         if (node->is_assert) {
@@ -492,7 +494,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
             "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
         return;
     }
-    bool emits_require = (module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODENEXT) &&
+    bool emits_require = (module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT) &&
         !node->span.source->is_esm;
     if (emits_require) {
         if (node->is_assert) {

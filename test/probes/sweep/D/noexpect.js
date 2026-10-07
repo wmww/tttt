@@ -1,5 +1,5 @@
 // Usage: node noexpect.js types/NAME file:line...  -- tsc diagnostics on the lines following the given @ts-expect-error lines, with directives disabled
-const ts = require('/home/ai/tttt/thirdparty/tsc/lib/typescript.js');
+const ts = require('/home/ai/tttt/thirdparty/tsc/built/local/typescript.js');
 const path = require('path');
 const [proj, ...locs] = process.argv.slice(2);
 const cfgPath = path.resolve(proj, 'tsconfig.json');

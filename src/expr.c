@@ -1192,7 +1192,7 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
             what[kind], " are only allowed at the top level of a file when that file is a module, but this file has "
             "no imports or exports. Consider adding an empty 'export {}' to make this file a module.");
     }
-    bool node = options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18 ||
+    bool node = options->module == MODULE_KIND_NODE16 || options->module == MODULE_KIND_NODE18 || options->module == MODULE_KIND_NODE20 ||
         options->module == MODULE_KIND_NODENEXT;
     bool es = options->module == MODULE_KIND_ES2022 || options->module == MODULE_KIND_ESNEXT ||
         options->module == MODULE_KIND_PRESERVE || options->module == MODULE_KIND_SYSTEM;

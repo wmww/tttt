@@ -7,7 +7,7 @@
 // {"project", "ms", "asserts": [[file, line, col, endLine, endCol, kind, actual, expected], ...]}, each the node
 // DefinitelyTyped's `expect` lint rule checks (its start and end, 1-based, columns in UTF-16 units like tsc's), its
 // SyntaxKind's name, and what that rule compares: typeToString(getTypeAtLocation(node), undefined, NoTruncation).
-const ts = require(require('path').resolve(__dirname, '../thirdparty/tsc/lib/typescript.js'));
+const ts = require(require('path').resolve(__dirname, '../thirdparty/tsc/built/local/typescript.js'));
 const path = require('path');
 const readline = require('readline');
 

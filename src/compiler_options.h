@@ -16,6 +16,7 @@ typedef enum ScriptTarget {
     SCRIPT_TARGET_ES2022,
     SCRIPT_TARGET_ES2023,
     SCRIPT_TARGET_ES2024,
+    SCRIPT_TARGET_ES2025,
     SCRIPT_TARGET_ESNEXT,
 } ScriptTarget;
 
@@ -31,6 +32,7 @@ typedef enum ModuleKind {
     MODULE_KIND_ESNEXT,
     MODULE_KIND_NODE16,
     MODULE_KIND_NODE18,
+    MODULE_KIND_NODE20,
     MODULE_KIND_NODENEXT,
     MODULE_KIND_PRESERVE,
 } ModuleKind;
@@ -62,7 +64,7 @@ typedef enum ModuleDetectionKind {
 // of `strict`, the rest default to false unless compiler_options_resolve() says otherwise
 #define COMPILER_BOOL_OPTIONS(X) \
     X(strict, "strict", false) \
-    X(always_strict, "alwaysstrict", true) \
+    X(always_strict, "alwaysstrict", false) \
     X(no_implicit_any, "noimplicitany", true) \
     X(no_implicit_this, "noimplicitthis", true) \
     X(strict_bind_call_apply, "strictbindcallapply", true) \
@@ -158,6 +160,7 @@ typedef struct CompilerOptions {
     COMPILER_BOOL_OPTIONS(X)
 #undef X
     ScriptTarget target;
+    bool target_es3; // `target: es3` was given (6.0 computes the target as if it weren't, the option is reported)
     ModuleKind module;
     ModuleResolutionKind module_resolution;
     bool capture_suggestions; // The test harness's `@captureSuggestions`: suggestion diagnostics are reported too

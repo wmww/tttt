@@ -6,7 +6,7 @@
 //                                       instantiations and new types it took, and the variance (tsc's flags:
 //                                       8 Unmeasurable, 16 Unreliable)
 // The file is relative to the tsconfig's directory. Prints the N (default 20) nodes with the highest count, and the
-// program's totals. It patches a copy of thirdparty/tsc/lib/typescript.js in memory (the counters are closure
+// program's totals. It patches a copy of thirdparty/tsc/built/local/typescript.js in memory (the counters are closure
 // variables of createTypeChecker), so it breaks if tsc's emitted code changes shape: it checks every patch applied.
 const fs = require('fs');
 const path = require('path');
@@ -16,7 +16,7 @@ if (!file) {
     console.error('usage: tscinstcount.js TSCONFIG FILE [N]');
     process.exit(2);
 }
-const tsPath = path.join(__dirname, 'thirdparty/tsc/lib/typescript.js');
+const tsPath = path.join(__dirname, 'thirdparty/tsc/built/local/typescript.js');
 let src = fs.readFileSync(tsPath, 'utf8');
 function patch(re, replacement) {
     const next = src.replace(re, replacement);

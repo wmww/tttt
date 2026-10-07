@@ -1,4 +1,4 @@
-const ts = require(process.env.TSJS||'/home/ai/tttt/thirdparty/tsc/lib/typescript.js');
+const ts = require(process.env.TSJS||'/home/ai/tttt/thirdparty/tsc/built/local/typescript.js');
 const prog = ts.createProgram([process.argv[2]], { strict: true, noEmit: true });
 const c = prog.getTypeChecker();
 const sf = prog.getSourceFile(process.argv[2]);

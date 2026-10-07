@@ -1,1 +1,1 @@
-These libraries come from upstream TypeScript v5.8.2
+These libraries come from upstream TypeScript 6.0.3+stableTypeOrdering (4d4f005c)

@@ -4175,7 +4175,11 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
         "Atomics", "AsyncIterable", "AsyncIterableIterator", "AsyncGenerator", "AsyncGeneratorFunction", "BigInt",
         "Reflect", "BigInt64Array", "BigUint64Array",
     };
-    bool types = compiler_options()->types_set;
+    // (tsc 6.0's usesWildcardTypes: the long message unless `types` has "*")
+    bool types = true;
+    for (isize i = 0; i < compiler_options()->types.count; i++) {
+        if (cstr_equals(&compiler_options()->types.items[i], "*")) types = false;
+    }
     csview n = name.sv;
     if (name_is_one_of(n, dom, 2)) {
         error_ctx_error_d(errs, name, 2584, "Cannot find name '", name, "'. Do you need to change your target library? "

@@ -49,7 +49,7 @@ FILES=(build/bench/corpus/*.ts)
 echo
 echo "corpus: ${#FILES[@]} files, $(cat "${FILES[@]}" | wc -l) lines, $(cat "${FILES[@]}" | wc -c) bytes; $RUNS runs each"
 measure "tttt" ./release/tttt -q "${FILES[@]}"
-measure "tsc $(node thirdparty/tsc/lib/tsc.js --version | cut -d' ' -f2) (node)" node thirdparty/tsc/lib/tsc.js $TSC_ARGS "${FILES[@]}"
+measure "tsc $(node thirdparty/tsc/built/local/tsc.js --version | cut -d' ' -f2) (node)" node thirdparty/tsc/built/local/tsc.js $TSC_ARGS "${FILES[@]}"
 if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
     measure "tsgo $(tsc --version | cut -d' ' -f2)" tsc $TSC_ARGS "${FILES[@]}"
     measure "tsgo single-threaded" tsc $TSC_ARGS --singleThreaded "${FILES[@]}"
@@ -71,7 +71,7 @@ REAL_ARGS="--noEmit --composite false --incremental false --emitDeclarationOnly 
 echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
 measure "tttt" ./release/tttt -q --keep-going -p $REAL
-measure "tsc (node)" node thirdparty/tsc/lib/tsc.js $REAL_ARGS -p $REAL
+measure "tsc (node)" node thirdparty/tsc/built/local/tsc.js $REAL_ARGS -p $REAL
 if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
     measure "tsgo" tsc $REAL_ARGS -p $REAL
     measure "tsgo single-threaded" tsc $REAL_ARGS --singleThreaded -p $REAL
@@ -107,9 +107,9 @@ for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/ts
     case $CORPUS in drizzle/*|vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
     if test $CORPUS = $NEST; then TSC_EXTRA="--incremental false"; TSGO_ARGS="$TSGO_ARGS --incremental false --strict false"; fi
     echo
-    echo "corpus $CORPUS: $(node thirdparty/tsc/lib/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"
+    echo "corpus $CORPUS: $(node thirdparty/tsc/built/local/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR
-    measure "tsc (node)" node thirdparty/tsc/lib/tsc.js --noEmit $TSC_EXTRA -p $DIR
+    measure "tsc (node)" node thirdparty/tsc/built/local/tsc.js --noEmit $TSC_EXTRA -p $DIR
     if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
         measure "tsgo" tsc --noEmit $TSGO_ARGS
         measure "tsgo single-threaded" tsc --noEmit --singleThreaded $TSGO_ARGS
@@ -130,7 +130,7 @@ ln -s "$PWD/thirdparty/tsc/node_modules" $BUILD/node_modules
 echo
 echo "-b thirdparty/tsc/src: $(find thirdparty/tsc/src -name '*.ts' | wc -l) files, $(find thirdparty/tsc/src -name tsconfig.json | wc -l) configs"
 measure "tttt" ./release/tttt -q --keep-going -b thirdparty/tsc/src
-measure "tsc -b (node)" sh -c "rm -rf $BUILD/built && node thirdparty/tsc/lib/tsc.js -b $BUILD/src"
+measure "tsc -b (node)" sh -c "rm -rf $BUILD/built && node thirdparty/tsc/built/local/tsc.js -b $BUILD/src"
 if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
     measure "tsgo -b" sh -c "rm -rf $BUILD/built && tsc -b $BUILD/src"
     measure "tsgo -b single-threaded" sh -c "rm -rf $BUILD/built && tsc -b --singleThreaded $BUILD/src"

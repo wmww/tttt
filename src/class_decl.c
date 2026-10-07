@@ -1912,7 +1912,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             [MODULE_KIND_NONE] = "None", [MODULE_KIND_COMMONJS] = "CommonJS", [MODULE_KIND_AMD] = "AMD",
             [MODULE_KIND_UMD] = "UMD", [MODULE_KIND_SYSTEM] = "System", [MODULE_KIND_ES2015] = "ES2015",
             [MODULE_KIND_ES2020] = "ES2020", [MODULE_KIND_ES2022] = "ES2022", [MODULE_KIND_ESNEXT] = "ESNext",
-            [MODULE_KIND_NODE16] = "Node16", [MODULE_KIND_NODE18] = "Node18", [MODULE_KIND_NODENEXT] = "NodeNext",
+            [MODULE_KIND_NODE16] = "Node16", [MODULE_KIND_NODE18] = "Node18", [MODULE_KIND_NODE20] = "Node20", [MODULE_KIND_NODENEXT] = "NodeNext",
             [MODULE_KIND_PRESERVE] = "Preserve",
         };
         ModuleKind module = compiler_options()->module;

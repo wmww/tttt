@@ -692,7 +692,9 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
         return ty_intrinsic(me, TY_ANY);
     }
     ScriptTarget target = compiler_options()->target;
-    bool uplevel = target >= SCRIPT_TARGET_ES2015;
+    // (tsc 6.0: uplevel iteration needs the global Iterable too, without it arrays iterate the ES5 way)
+    bool uplevel = target >= SCRIPT_TARGET_ES2015 &&
+        program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) != nullptr;
     bool downlevel = !uplevel && compiler_options()->downlevel_iteration;
     if (uplevel || downlevel || async) {
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);

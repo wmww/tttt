@@ -4,7 +4,7 @@
 //   ./tsctypeat.js thirdparty/corpora/webpack/tsconfig.json lib/MultiCompiler.js '*' watching   (every line)
 // The file is relative to the tsconfig's directory. Prints `line name : type` for each occurrence.
 const path = require('path');
-const ts = require(path.join(__dirname, 'thirdparty/tsc/lib/typescript.js'));
+const ts = require(path.join(__dirname, 'thirdparty/tsc/built/local/typescript.js'));
 const [,, project, file, line, name] = process.argv;
 if (!name) {
     console.error('usage: tsctypeat.js TSCONFIG FILE LINE|* IDENTIFIER');

@@ -12,14 +12,14 @@ static const EnumValue target_values[] = {
     {"es2015", SCRIPT_TARGET_ES2015}, {"es2016", SCRIPT_TARGET_ES2016}, {"es2017", SCRIPT_TARGET_ES2017},
     {"es2018", SCRIPT_TARGET_ES2018}, {"es2019", SCRIPT_TARGET_ES2019}, {"es2020", SCRIPT_TARGET_ES2020},
     {"es2021", SCRIPT_TARGET_ES2021}, {"es2022", SCRIPT_TARGET_ES2022}, {"es2023", SCRIPT_TARGET_ES2023},
-    {"es2024", SCRIPT_TARGET_ES2024}, {"esnext", SCRIPT_TARGET_ESNEXT}, {},
+    {"es2024", SCRIPT_TARGET_ES2024}, {"es2025", SCRIPT_TARGET_ES2025}, {"esnext", SCRIPT_TARGET_ESNEXT}, {},
 };
 
 static const EnumValue module_values[] = {
     {"none", MODULE_KIND_NONE}, {"commonjs", MODULE_KIND_COMMONJS}, {"amd", MODULE_KIND_AMD},
     {"system", MODULE_KIND_SYSTEM}, {"umd", MODULE_KIND_UMD}, {"es6", MODULE_KIND_ES2015},
     {"es2015", MODULE_KIND_ES2015}, {"es2020", MODULE_KIND_ES2020}, {"es2022", MODULE_KIND_ES2022},
-    {"esnext", MODULE_KIND_ESNEXT}, {"node16", MODULE_KIND_NODE16}, {"node18", MODULE_KIND_NODE18},
+    {"esnext", MODULE_KIND_ESNEXT}, {"node16", MODULE_KIND_NODE16}, {"node18", MODULE_KIND_NODE18}, {"node20", MODULE_KIND_NODE20},
     {"nodenext", MODULE_KIND_NODENEXT}, {"preserve", MODULE_KIND_PRESERVE}, {},
 };
 
@@ -271,28 +271,38 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
 }
 
 void compiler_options_resolve(CompilerOptions* me) {
+    // TypeScript 6.0: `strict` defaults to true (tsc's getStrictOptionValue: `strict !== false`)
+    if (!my is_set[COMPILER_OPTION_strict]) my strict = true;
 #define X(field, lowercase, strict_family) \
-    if (!my is_set[COMPILER_OPTION_##field]) my field = strict_family && my strict;
+    if (!my is_set[COMPILER_OPTION_##field] && &my field != &my strict) my field = strict_family && my strict;
     COMPILER_BOOL_OPTIONS(X)
 #undef X
 #define DEFAULT(field, value) if (!my is_set[COMPILER_OPTION_##field]) my field = (value)
+    DEFAULT(always_strict, true);
 
-    // (tsc's computed target: the node module kinds imply a newer one)
-    if (!my target_set) {
-        my target = !my module_set ? SCRIPT_TARGET_ES5 :
-            my module == MODULE_KIND_NODE16 || my module == MODULE_KIND_NODE18 ? SCRIPT_TARGET_ES2022 :
-            my module == MODULE_KIND_NODENEXT ? SCRIPT_TARGET_ESNEXT : SCRIPT_TARGET_ES5;
+    // (tsc 6.0's computed target: ES3 counts as unset, the default is the latest standard)
+    if (my target_set && my target == SCRIPT_TARGET_ES3) my target_es3 = true;
+    if (!my target_set || my target == SCRIPT_TARGET_ES3) {
+        my target = SCRIPT_TARGET_ES2025;
     }
-    if (!my module_set) my module = my target >= SCRIPT_TARGET_ES2015 ? MODULE_KIND_ES2015 : MODULE_KIND_COMMONJS;
+    if (!my module_set) {
+        my module = my target == SCRIPT_TARGET_ESNEXT ? MODULE_KIND_ESNEXT :
+            my target >= SCRIPT_TARGET_ES2022 ? MODULE_KIND_ES2022 :
+            my target >= SCRIPT_TARGET_ES2020 ? MODULE_KIND_ES2020 :
+            my target >= SCRIPT_TARGET_ES2015 ? MODULE_KIND_ES2015 : MODULE_KIND_COMMONJS;
+    }
     bool node_module = my module >= MODULE_KIND_NODE16 && my module <= MODULE_KIND_NODENEXT;
     if (!my module_resolution_set) {
         switch (my module) {
-            case MODULE_KIND_COMMONJS: my module_resolution = MODULE_RESOLUTION_NODE10; break;
+            case MODULE_KIND_NONE:
+            case MODULE_KIND_AMD:
+            case MODULE_KIND_UMD:
+            case MODULE_KIND_SYSTEM: my module_resolution = MODULE_RESOLUTION_CLASSIC; break;
             case MODULE_KIND_NODE16:
-            case MODULE_KIND_NODE18: my module_resolution = MODULE_RESOLUTION_NODE16; break;
+            case MODULE_KIND_NODE18:
+            case MODULE_KIND_NODE20: my module_resolution = MODULE_RESOLUTION_NODE16; break;
             case MODULE_KIND_NODENEXT: my module_resolution = MODULE_RESOLUTION_NODENEXT; break;
-            case MODULE_KIND_PRESERVE: my module_resolution = MODULE_RESOLUTION_BUNDLER; break;
-            default: my module_resolution = MODULE_RESOLUTION_CLASSIC; break;
+            default: my module_resolution = MODULE_RESOLUTION_BUNDLER; break;
         }
     }
     if (!my module_detection_set) {
@@ -302,11 +312,12 @@ void compiler_options_resolve(CompilerOptions* me) {
 
     DEFAULT(allow_js, my check_js);
     DEFAULT(isolated_modules, my verbatim_module_syntax);
-    DEFAULT(es_module_interop, node_module || my module == MODULE_KIND_PRESERVE);
-    DEFAULT(allow_synthetic_default_imports,
-        my es_module_interop || my module == MODULE_KIND_SYSTEM || my module_resolution == MODULE_RESOLUTION_BUNDLER);
+    DEFAULT(no_unchecked_side_effect_imports, true);
+    DEFAULT(es_module_interop, true);
+    DEFAULT(allow_synthetic_default_imports, true);
     DEFAULT(use_define_for_class_fields, my target >= SCRIPT_TARGET_ES2022);
-    DEFAULT(resolve_json_module, my module_resolution == MODULE_RESOLUTION_BUNDLER);
+    DEFAULT(resolve_json_module, my module == MODULE_KIND_NODE20 || my module == MODULE_KIND_NODENEXT ||
+        my module_resolution == MODULE_RESOLUTION_BUNDLER);
     DEFAULT(resolve_package_json_exports, modern_resolution);
     DEFAULT(resolve_package_json_imports, modern_resolution);
     DEFAULT(preserve_const_enums, my isolated_modules);
@@ -334,6 +345,7 @@ static char const* const lib_names[] = {
     "es2022",
     "es2023",
     "es2024",
+    "es2025",
     "esnext",
     "dom",
     "dom.iterable",
@@ -399,21 +411,32 @@ static char const* const lib_names[] = {
     "es2024.regexp",
     "es2024.sharedmemory",
     "es2024.string",
-    "esnext.array",
-    "esnext.collection",
-    "esnext.symbol",
+    "es2025.collection",
+    "es2025.float16",
+    "es2025.intl",
+    "es2025.iterator",
+    "es2025.promise",
+    "es2025.regexp",
     "esnext.asynciterable",
-    "esnext.intl",
-    "esnext.disposable",
+    "esnext.symbol",
     "esnext.bigint",
-    "esnext.string",
-    "esnext.promise",
     "esnext.weakref",
-    "esnext.decorators",
     "esnext.object",
     "esnext.regexp",
-    "esnext.iterator",
+    "esnext.string",
     "esnext.float16",
+    "esnext.iterator",
+    "esnext.promise",
+    "esnext.array",
+    "esnext.collection",
+    "esnext.date",
+    "esnext.decorators",
+    "esnext.disposable",
+    "esnext.error",
+    "esnext.intl",
+    "esnext.sharedmemory",
+    "esnext.temporal",
+    "esnext.typedarrays",
     "decorators",
     "decorators.legacy",
 };
@@ -441,10 +464,18 @@ cstr compiler_options_lib_names_message(void) {
 // into a year. For `lib` and `/// <reference lib>` alike
 csview compiler_options_lib_file_name(csview name) {
     static char const* const aliases[][2] = {
-        { "es6", "es2015" }, { "es7", "es2016" }, { "esnext.symbol", "es2019.symbol" },
-        { "esnext.asynciterable", "es2018.asynciterable" }, { "esnext.bigint", "es2020.bigint" },
-        { "esnext.string", "es2024.string" }, { "esnext.weakref", "es2021.weakref" },
-        { "esnext.object", "es2024.object" }, { "esnext.regexp", "es2024.regexp" },
+        { "es6", "es2015" },
+        { "es7", "es2016" },
+        { "esnext.asynciterable", "es2018.asynciterable" },
+        { "esnext.symbol", "es2019.symbol" },
+        { "esnext.bigint", "es2020.bigint" },
+        { "esnext.weakref", "es2021.weakref" },
+        { "esnext.object", "es2024.object" },
+        { "esnext.regexp", "es2024.regexp" },
+        { "esnext.string", "es2024.string" },
+        { "esnext.float16", "es2025.float16" },
+        { "esnext.iterator", "es2025.iterator" },
+        { "esnext.promise", "es2025.promise" },
     };
     for (u32 i = 0; i < c_arraylen(aliases); i++) {
         if (csview_iequals(name, aliases[i][0])) return csview_from(aliases[i][1]);

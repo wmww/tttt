@@ -104,7 +104,7 @@ def shape(message):
 def lib_key(f, l):
     """A default lib's diagnostic: tsc's lib.X.d.ts and tttt's own copy (thirdparty/lib/X.d.ts) number lines
     differently, so only the lib's name counts"""
-    m = re.search(r'(?:/tsc/lib/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
+    m = re.search(r'(?:/tsc/lib/lib\.|/tsc/built/local/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
     # (Relative to DefinitelyTyped in the main tree, where thirdparty/corpora isn't a symlink: ../../lib/dom.d.ts)
     if not m and f.startswith('../') and os.path.realpath(os.path.join(DT, f)).startswith(os.path.join(ROOT, 'thirdparty/lib/')):
         m = re.search(r'([^/]+)\.d\.ts$', f)

@@ -459,32 +459,25 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     bool seen_filename = false;
     csview current_filename = basename_of(my source_path);
     my current_unit = current_filename;
-    // tsc's Utils.splitContentByNewlines: a file with a `\r\n` is split at those only, so a "line" may hold `\n`s. One that
-    // starts as an option is an option line whole (its other options still apply: tsc's extractCompilerSettings scans
-    // the whole file), a `@filename` after its first line included
-    bool crlf_only = csview_find_sv(contents_sv, c_sv("\r\n")) != c_NPOS;
-    // (Without any `\n`, split at `\r`: a file whose line breaks are all CR)
-    bool cr_only = !crlf_only && csview_find_sv(contents_sv, c_sv("\n")) == c_NPOS && csview_find_sv(contents_sv, c_sv("\r")) != c_NPOS;
+    // tsc 6.0's Utils.splitContentByNewlines: split at /\r?\n/ (never at a lone `\r`)
     csview* chunks = nullptr;
     isize chunk_count = 0, chunk_cap = 0;
 #define PUSH_CHUNK(sv) do { \
         if (chunk_count == chunk_cap) { chunk_cap = chunk_cap ? chunk_cap * 2 : 64; chunks = realloc(chunks, sizeof(csview) * (size_t)chunk_cap); } \
         chunks[chunk_count++] = (sv); \
     } while (0)
-    if (crlf_only || cr_only) {
+    {
         csview rest = contents_sv;
-        csview separator = crlf_only ? c_sv("\r\n") : c_sv("\r");
         for (;;) {
-            isize at = csview_find_sv(rest, separator);
+            isize at = csview_find_sv(rest, c_sv("\n"));
             if (at == c_NPOS) {
                 if (rest.size) PUSH_CHUNK(rest); // (like lines_sv: no empty line after the last line break)
                 break;
             }
-            PUSH_CHUNK(csview_slice(rest, 0, at));
-            rest = csview_slice(rest, at + separator.size, rest.size);
+            isize end = at > 0 && rest.buf[at - 1] == '\r' ? at - 1 : at;
+            PUSH_CHUNK(csview_slice(rest, 0, end));
+            rest = csview_slice(rest, at + 1, rest.size);
         }
-    } else {
-        for_each (i, lines_sv, contents_sv) PUSH_CHUNK(i);
     }
 #undef PUSH_CHUNK
     for (isize chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
@@ -527,8 +520,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     free(chunks);
     // (the empty line after the test file's last line break is a line of the last unit too; a lone `\r` at the end,
     // which tsc's harness keeps, breaks a line when rendered)
-    bool ends_with_break = crlf_only ? csview_ends_with(contents_sv, "\r\n") :
-        csview_ends_with(contents_sv, "\n") || csview_ends_with(contents_sv, "\r");
+    bool ends_with_break = csview_ends_with(contents_sv, "\n");
     if (cstr_size(&source_contents) && ends_with_break) {
         cstr_append(&source_contents, "\r\n");
     }

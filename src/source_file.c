@@ -266,7 +266,11 @@ void module_ref_report_implicit_any_at(ModuleRef const* me, Span at, ErrorCtx* e
     if (error && cstr_size(&my package_name)) module_ref_add_not_found_chain(me, error, cstr_sv(&my package_name));
 }
 
-void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
+static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_effect);
+void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) { report_unresolved(me, errs, false); }
+void module_ref_report_unresolved_side_effect(ModuleRef const* me, ErrorCtx* errs) { report_unresolved(me, errs, true); }
+
+static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_effect) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
     switch (my failure) {
@@ -307,6 +311,10 @@ void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) {
         error_ctx_error_d(errs, my span, 2792,
             "Cannot find module '", my path, "'. Did you mean to set the 'moduleResolution' option to 'nodenext', "
             "or to add aliases to the 'paths' option?");
+    } else if (side_effect) {
+        Error* error = error_ctx_error_d(errs, my span, 2882,
+            "Cannot find module or type declarations for side-effect import of '", my path, "'.");
+        if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
     } else {
         Error* error = error_ctx_error_d(errs, my span, 2307,
             "Cannot find module '", my path, "' or its corresponding type declarations.");
