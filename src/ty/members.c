@@ -2559,6 +2559,8 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 // (`typeof ns.A` still names it: ty_namespace_type_only_prop())
                 if (namespace_export_is_type_only(ty->declared.namespace_symbol, &exports[i])) continue;
                 Prop* prop = namespace_export_prop(me, &exports[i]);
+                // (tsc's globalThisSymbol is readonly: `x.globalThis = ...` is TS2540 through any type that has it)
+                if (prop && exports[i].symbol->is_global_this) prop->flags |= PROP_READONLY;
                 if (prop) builder_push(&builder, props, prop);
             }
             free(exports);
@@ -3517,6 +3519,9 @@ static Members const* resolve_reverse_mapped_members(Checker* me, Ty const* ty) 
         builder_push(&builder, props, prop);
     }
     free(props);
+    // (A reverse mapped type has no symbol: tsc 6's getNamedMembers sorts all of its properties by their declarations,
+    // which are the source's, an interface's inherited members by where they are declared too)
+    builder_sort_stable(&builder);
     Members const* source_members = ty_members(me, reverse->source);
     for (u32 i = 0; i < source_members->index_count; i++) {
         IndexInfo info = source_members->index[i];
