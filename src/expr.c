@@ -567,6 +567,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             function_impl_rare_mut(names->function)->first_this_or_super = identifier_expr_name(me);
         }
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
+            scope_note_this_reference(names);
             ThisRef this_ref = scope_get_this(names, false);
             my this_kind = this_ref.kind;
             my target = this_ref.symbol;

@@ -3738,7 +3738,7 @@ const baselines = {
     'circularlySimplifyingConditionalTypesNoCrash': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'class2': {
         errors: true,
@@ -29491,9 +29491,9 @@ const baselines = {
         types: true,
     },
     'redefineArray': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reducibleIndexedAccessTypes': {
         errors: true,
@@ -33227,18 +33227,18 @@ const baselines = {
     },
     'thislessFunctionsNotContextSensitive1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'thislessFunctionsNotContextSensitive2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thislessFunctionsNotContextSensitive3': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'throwWithoutNewLine1': {
         errors: true,
@@ -36238,12 +36238,12 @@ const baselines = {
     'vueLikeDataAndPropsInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'vueLikeDataAndPropsInference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'weakType': {
         errors: true,
@@ -58096,7 +58096,7 @@ const baselines = {
         types: true,
     },
     'jsdocTemplateTag': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -72753,7 +72753,7 @@ const baselines = {
     'thisTypeInFunctions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thisTypeInFunctions2': {
         errors: true,

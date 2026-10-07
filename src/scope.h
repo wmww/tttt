@@ -846,5 +846,8 @@ Symbol const* scope_get_type(Scope const* me, csview name, Symbol const** found)
 Symbol const* scope_get_namespace(Scope const* me, csview name, Symbol const** found);
 // What `this` is here. In a type position only a class will do
 ThisRef scope_get_this(Scope const* me, bool type_else_value);
+// A `this` expression or type at `me`: sets FunctionImpl.contains_this of the function it is in (through arrow functions
+// and function types)
+void scope_note_this_reference(Scope const* me);
 // The innermost class body this scope is in (through functions), null if none
 struct ClassDecl const* scope_enclosing_class(Scope const* me);

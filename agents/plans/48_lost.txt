@@ -56,7 +56,6 @@ checkJsxChildrenProperty7	ET	src-changed	bl-changed
 checkJsxChildrenProperty8	T	src-changed	bl-changed
 checkJsxUnionSFXContextualTypeInferredCorrectly	T	src-changed	bl-changed
 checkSuperCallBeforeThisAccess	T	src-same	bl-changed
-circularlySimplifyingConditionalTypesNoCrash	T	src-changed	bl-changed
 classDoesNotDependOnBaseTypes	T	src-changed	bl-changed
 classImplementsMethodWIthTupleArgs	T	src-changed	bl-changed
 classStaticBlockUseBeforeDef3	T	src-changed	bl-changed
@@ -260,7 +259,6 @@ jsFileMethodOverloads5	T	src-changed	bl-changed
 jsdocBracelessTypeTag1	E	src-changed	bl-changed
 jsdocLiteral	T	src-changed	bl-changed
 jsdocOverrideTag1	T	src-changed	bl-changed
-jsdocTemplateTag	E	src-changed	bl-changed
 jsdocTemplateTag3	T	src-changed	bl-changed
 jsdocTypeFromChainedAssignment3	E	src-changed	bl-changed
 jsxChildrenIndividualErrorElaborations	ET	src-changed	bl-changed
@@ -417,7 +415,6 @@ reactImportDropped	T	src-changed	bl-changed
 reactSFCAndFunctionResolvable	T	src-changed	bl-changed
 recursiveTupleTypeInference	T	src-changed	bl-changed
 recursiveTypeRelations	T	src-changed	bl-changed
-redefineArray	ET	src-changed	bl-changed
 requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
 resolveInterfaceNameWithSameLetDeclarationName2	T	src-changed	bl-changed
 returnTagTypeGuard	T	src-changed	bl-changed
@@ -485,7 +482,6 @@ templateStringWithEmbeddedConditionalES6	T	src-same	bl-changed
 templateStringWithEmbeddedTypeOfOperator	T	src-changed	bl-changed
 templateStringWithEmbeddedTypeOfOperatorES6	T	src-same	bl-changed
 thisInPropertyBoundDeclarations	T	src-changed	bl-changed
-thisTypeInFunctions	T	src-changed	bl-changed
 thisTypeInFunctions4	T	src-changed	bl-changed
 thisTypeInTypePredicate	T	src-changed	bl-changed
 this_inside-enum-should-not-be-allowed	E	src-changed	bl-changed
@@ -604,7 +600,5 @@ unusedLocalsAndParametersTypeAliases	T	src-changed	bl-changed
 useBeforeDeclaration_propertyAssignment	T	src-same	bl-changed
 useUnknownInCatchVariables01	T	src-changed	bl-changed
 voidIsInitialized	T	src-changed	bl-changed
-vueLikeDataAndPropsInference	T	src-changed	bl-changed
-vueLikeDataAndPropsInference2	T	src-changed	bl-changed
 weakTypeAndPrimitiveNarrowing	T	src-changed	bl-changed
 weakTypesAndLiterals01	T	src-changed	bl-changed

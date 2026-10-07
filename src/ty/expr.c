@@ -1511,13 +1511,14 @@ static bool has_context_sensitive_params(FunctionImpl const* function) {
     for_each (i, vec_function_arg, &function->args) {
         if (!i->initializer.binding.has_explicit_type) return true;
     }
-    // A function expression's `this` is contextually typed too, unless it declares one
+    // A function expression's `this` is contextually typed too, unless it declares one or doesn't mention `this` (tsc 6's
+    // hasContextSensitiveParameters: NodeFlags.ContainsThis)
     if (!function_impl_is_arrow(function)) {
         FunctionArg const* first = vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
         if (!(first && first->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(first->initializer.binding.content_span, "this"))
         ) {
-            return true;
+            return function->contains_this;
         }
     }
     return false;
@@ -1527,8 +1528,20 @@ bool ty_function_is_context_sensitive(FunctionImpl const* function) {
     if (vec_generic_item_size(&function->generic.items)) return false;
     if (has_context_sensitive_params(function)) return true;
     // So is one whose returned expression is (tsc's hasContextSensitiveReturnExpression): `() => x => x.length`
-    return !function->ret_explicit && function->has_body &&
-        statements_any_return(&function->body.statements, ty_expr_is_context_sensitive);
+    if (!function->ret_explicit && function->has_body &&
+        statements_any_return(&function->body.statements, ty_expr_is_context_sensitive)
+    ) {
+        return true;
+    }
+    // Or a generator one of whose yielded expressions is (tsc 6's hasContextSensitiveYieldExpression, whatever the
+    // return type annotation): `function* () { yield x => x.length }`
+    if (function->is_generator && function->has_body) {
+        FunctionImplRare const* rare = function_impl_rare(function);
+        for (u32 i = 0; i < rare->yield_count; i++) {
+            if (ty_expr_is_context_sensitive(&rare->yields[i]->unary_op->expr)) return true;
+        }
+    }
+    return false;
 }
 
 bool ty_expr_is_context_sensitive(Expr const* expr) {

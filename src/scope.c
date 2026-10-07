@@ -4669,6 +4669,19 @@ Symbol const* scope_get_namespace(Scope const* me, csview name, Symbol const** f
     return scope_get(me, name, SYMBOL_NAMESPACE, found);
 }
 
+void scope_note_this_reference(Scope const* me) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        // (A class field's initializer or static block is a container of its own that doesn't pass it on)
+        if (scope->in_field || scope->kind == SCOPE_STATIC_BLOCK) return;
+        // (Nor does an interface declaration, tsc's ContainerFlags.IsInterface)
+        if (scope_rare(scope)->this_ref.kind == THIS_INTERFACE) return;
+        if (scope->kind != SCOPE_FUNCTION || !scope->function) continue;
+        if (function_impl_is_arrow(scope->function) || scope->function->is_type) continue;
+        scope->function->contains_this = true;
+        return;
+    }
+}
+
 ThisRef scope_get_this(Scope const* me, bool type_else_value) {
     bool skip_class = false;
     for (Scope const* scope = me; scope; scope = scope->parent) {

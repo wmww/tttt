@@ -234,6 +234,9 @@ typedef struct FunctionImpl {
     bool jsdoc_class : 1;
     // JavaScript: its body refers to `arguments` (set by the resolve walk): its signature has a rest parameter
     bool uses_arguments : 1;
+    // Its body or signature mentions `this` (an expression or a type), arrow functions and function types in it included
+    // (tsc's NodeFlags.ContainsThis, set by the resolve walk): without it, it isn't context sensitive for its `this`
+    bool contains_this : 1;
     // needed because TS1200 needs to be inserted in the typecheck phase for some reason
     bool newline_before_arrow : 1;
     bool has_body : 1;

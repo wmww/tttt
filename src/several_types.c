@@ -356,6 +356,7 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     } else if (my jsdoc && jsdoc_lookup_intended(me, names)) {
     } else if (my keyword) {
         if (my keyword == KEYWORD_IDENTIFIER_THIS) {
+            scope_note_this_reference(names);
             ThisRef this_ref = scope_get_this(names, true);
             my this_kind = this_ref.kind;
             // Not in a constructor's parameters or return type, only its body (tsc's getThisType:
