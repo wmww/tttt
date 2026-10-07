@@ -39738,7 +39738,7 @@ const baselines = {
     'privateNameDuplicateField': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameES5Ban(target=es2015)': {
         errors: true,

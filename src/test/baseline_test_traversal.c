@@ -1968,6 +1968,8 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             }
             ClassItem const* first = symbol_count ? symbol_items[0] : me;
             Span written_name = first->tag == CLASS_ITEM_METHOD ? first->method.name_span : first->field.name_span;
+            // (add_member_symbol() takes the declarations)
+            bool declared_first_elsewhere = vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], my span);
             add_member_symbol(ctx, (BaselineSym){
                 .declarations = declarations,
                 .span = my field.name_span,
@@ -1978,6 +1980,10 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             // the class's own prototype symbol, which the binder makes first: the instance type)
             // (A computed `[k]` whose literal type is "prototype" too)
             Atom const* name = checker_atom(current_checker, cstr_sv(&my field.name_string));
+            // (A `#foo` is the class's own private name)
+            if (span_valid(class_item_private_name(me)) && ctx->class_symbol) {
+                name = ty_private_name(current_checker, ctx->class_symbol, class_item_private_name(me).sv);
+            }
             if (my field.is_static && my field.computed_key) {
                 bool is_number = false;
                 name = ty_property_name_of_key(current_checker, ty_expr_type(current_checker, my field.computed_key), &is_number);
@@ -1989,7 +1995,7 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
                     ty_declared_type_of(checker, ctx->class_symbol);
                 Prop const* prop = ty_get_prop(checker, owner, name);
                 if (prop) type = prop_type(checker, prop);
-            } else if (vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], my span) && ctx->class_symbol && name) {
+            } else if (declared_first_elsewhere && ctx->class_symbol && name) {
                 // (Joined into a symbol an interface merged with the class declared first: that symbol's type)
                 Checker* checker = current_checker;
                 Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
