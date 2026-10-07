@@ -1307,11 +1307,13 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
 }
 
 // A computed name that isn't a literal or unique symbol isn't a member (tsc's shouldRemoveDeclaration), except an
-// unresolved entity name (`[Symbol.match]` without the lib that has it: the baseline allows unresolved names)
-static bool member_printed(Checker* me, InterfaceMember const* member) {
+// unresolved entity name (`[Symbol.match]` without the lib that has it: the types baseline allows unresolved names,
+// a message's typeToString doesn't)
+static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* member) {
     if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref) return true;
     Ty const* key = ty_expr_type(me, member->key.expr.ref);
-    return key->kind == TY_LITERAL || ((key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr.ref));
+    return key->kind == TY_LITERAL ||
+        ((d.underline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr.ref));
 }
 
 // A JSDoc type literal the way tsc's printer reprints it, one member per line, which the types baseline flattens:
@@ -1323,7 +1325,7 @@ static void display_node_jsdoc_literal(Checker* me, TyDisplay d, Interface const
     inner.jsdoc_literal_depth = depth;
     out_lit(d, "{");
     for_each (i, vec_interface_member, &interface->members) {
-        if (!member_printed(me, i)) continue;
+        if (!member_printed(me, d, i)) continue;
         for (uint8_t k = 0; k < depth; k++) out_lit(d, "    ");
         out(d, i->key.span.sv);
         out(reused_if(d, false), i->optional ? c_sv("?: ") : c_sv(": "));
@@ -1344,7 +1346,7 @@ static void display_node_jsdoc_literal(Checker* me, TyDisplay d, Interface const
 
 static void display_node_interface(Checker* me, TyDisplay d, Interface const* interface) {
     bool empty = true;
-    for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, i);
+    for_each (i, vec_interface_member, &interface->members) empty &= !member_printed(me, d, i);
     if (empty) {
         out_lit(d, "{}");
         return;
@@ -1357,7 +1359,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
     }
     out_lit(d, "{ ");
     for_each (i, vec_interface_member, &interface->members) {
-        if (!member_printed(me, i)) continue;
+        if (!member_printed(me, d, i)) continue;
         switch (i->key.tag) {
             case INTERFACE_KEY_MAPPED: {
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
