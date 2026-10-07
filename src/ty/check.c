@@ -2252,7 +2252,11 @@ void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index
     if (object->flags & TYF_ERROR) return;
     // (An error index of a generic object is deferred like any other, and any fits every key: nothing to say)
     if ((index->flags & TYF_ERROR) && ty_is_generic_object(me, object)) return;
-    if (!(index->flags & TYF_ERROR) && (ty_is_generic_index(index) || ty_is_generic_object(me, object))) {
+    // (A union or intersection an instantiation may reduce is generic too: tsc's isGenericObjectType has
+    // isGenericReducibleType, `(P & { dataType: K })[42]` with P a union discriminated by dataType)
+    if (!(index->flags & TYF_ERROR) && (ty_is_generic_index(index) || ty_is_generic_object(me, object) ||
+        ((object->kind == TY_UNION || object->kind == TY_INTERSECTION) && ty_is_generic_reducible(me, object)))
+    ) {
         // tsc's checkIndexedAccessIndexType on the deferred type, reported on the whole `O[K]`
         Ty const* indexed = ty_indexed(me, object, index);
         if (indexed->kind != TY_INDEXED || ty_indexed_access_index_ok(me, indexed)) return;
@@ -2401,8 +2405,11 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         if (object->flags & (TYF_ANY | TYF_NEVER | TYF_UNKNOWN | TYF_DEFERRED | TYF_TYPE_PARAM)) return;
         if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION))) return;
         if (object->kind == TY_UNION) {
+            // (A primitive member by its apparent type: `number | C`, tsc's getPropertyOfType of the union)
+            u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
+                TYF_BOOLEAN_LITERAL | TYF_ENUM | TYF_ENUM_LITERAL | TYF_ES_SYMBOL_LIKE;
             for (u32 i = 0; i < object->composite.types.len; i++) {
-                if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
+                if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION | primitive))) return;
             }
         }
         if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
@@ -3249,17 +3256,27 @@ static void check_class_interface_members(Checker* me, Symbol const* symbol, Mem
     }
 }
 
+// The name of a class member written as a name or a literal computed name (`["a"]`, `[1]`: tsc's hasDynamicName is
+// false), else null
+static Atom const* class_item_static_name(Checker* me, ClassItem const* item) {
+    bool is_field = item->tag == CLASS_ITEM_FIELD;
+    Expr const* key = is_field ? item->field.computed_key : item->method.computed_key;
+    if (key && (key->tag != EXPR_LITERAL || (key->literal.tag != VALUE_STRING && key->literal.tag != VALUE_NUMBER))) return nullptr;
+    return ty_member_name(me, is_field ? &item->field.name_string : &item->method.name_string, key);
+}
+
 void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorCtx* errs) {
     // A field after another member of its name and staticness: the symbols merge (a property excludes nothing), and
     // the field is a secondary declaration
     for_each (i, vec_class_item, &class_decl->items) {
-        if (i->tag != CLASS_ITEM_FIELD || i->field.computed_key) continue;
+        if (i->tag != CLASS_ITEM_FIELD) continue;
+        Atom const* name = class_item_static_name(me, i);
+        if (!name) continue;
         for_each (first, vec_class_item, &class_decl->items) {
             if (first == i) break;
             bool is_field = first->tag == CLASS_ITEM_FIELD;
             if ((!is_field && first->tag != CLASS_ITEM_METHOD) || class_item_is_static(first) != i->field.is_static) continue;
-            if (is_field ? first->field.computed_key != nullptr : first->method.computed_key != nullptr) continue;
-            if (!cstr_eq(is_field ? &first->field.name_string : &first->method.name_string, &i->field.name_string)) continue;
+            if (class_item_static_name(me, first) != name) continue;
             check_subsequent_property(me, i->field.name_span, class_item_get_type(first), class_item_get_type(i),
                 is_field ? first->field.name_span : first->method.name_span, errs);
             break;

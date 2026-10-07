@@ -2662,6 +2662,10 @@ static bool is_generic_reducible(Checker* me, Ty const* ty) {
     return false;
 }
 
+bool ty_is_generic_reducible(Checker* me, Ty const* ty) {
+    return is_generic_reducible(me, ty);
+}
+
 // Returns null if the new core can't tell yet
 // Generic as far as deferring an indexed access goes: a type variable at the top level (tsc's isGenericObjectType /
 // isGenericIndexType). `{ a: T }["a"]` isn't, it's `T`
