@@ -2310,6 +2310,23 @@ static Members const* complete_members(Checker* me, Members const* raw) {
     return builder_finish(me, &builder);
 }
 
+// See LowerCtx.merged_owner: for a generic class or interface declared more than once, its index + 1 (0 otherwise)
+uint16_t ty_merged_owner_index(Checker* me, Ty const* declared) {
+    if (declared->kind != TY_DECLARED || (!declared->declared.type_params.len && !declared->declared.this_param)) return 0;
+    Symbol const* decl = declared->declared.symbol;
+    u32 count = 0;
+    for (u32 i = 0; decl && i < decl->decl_count; i++) {
+        count += decl->decls[i].kind == SYMBOL_DECL_INTERFACE || decl->decls[i].kind == SYMBOL_DECL_CLASS;
+    }
+    if (count < 2) return 0;
+    for (u32 i = 0; i < my merged_owners.len; i++) {
+        if (my merged_owners.data[i] == declared) return (uint16_t)(i + 1);
+    }
+    if (my merged_owners.len >= UINT16_MAX) return 0;
+    ty_buf_push(&my merged_owners, declared);
+    return (uint16_t)my merged_owners.len;
+}
+
 // The members as declared: own members, then what the bases add. For a type with a `this` type these mention it, and
 // the bases are taken with the this-argument being it (tsc's resolveDeclaredMembers + the base part of
 // resolveObjectTypeMembers)
@@ -2317,6 +2334,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
     Ty const* this_param = ty->declared.this_param;
     LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 || this_param };
+    if (ctx.generic) ctx.merged_owner = ty_merged_owner_index(me, ty);
     MembersBuilder builder = {0};
     if (ty->declared.merged_value) {
         builder_add_merged_value(me, &builder, ty, ty->declared.merged_value);

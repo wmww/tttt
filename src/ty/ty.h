@@ -213,6 +213,11 @@ typedef struct LowerCtx {
     bool generic; // some type parameter is in scope, so anonymous object types could mention one
     bool method; // the node being lowered is the type of a method (its signatures compare parameters bivariantly)
     bool in_alias; // directly inside a type alias that is being resolved: array/tuple nodes may need to be deferred
+    // Inside a member of a class or interface declared more than once (`interface Array<T>` in every lib): 1 + the index
+    // of that declared type in Checker.merged_owners, 0 if not. Its type parameters (and `this`) have several
+    // declarations, so tsc's isTypeParameterPossiblyReferenced says every node in it may reference them: they are free
+    // in every anonymous type made there (instantiated whatever the node mentions)
+    uint16_t merged_owner;
 } LowerCtx;
 
 // The mutable, lazily resolved part of an object type. Everything else about a Ty is immutable once published.
@@ -933,6 +938,8 @@ struct Checker {
     // The errors of calls' resolutions (call.c), kept until the checker is dropped
     struct ErrorCtx** call_errors;
     u32 call_errors_len, call_errors_cap;
+    TyBuf merged_owners; // See LowerCtx.merged_owner
+    uint16_t walk_merged_owner; // The LowerCtx.merged_owner of the class or interface declaration being walked (ty_of_node())
     Ty const* array_target;
     Ty const* auto_array; // ty_auto_array(), made with array_target
     Ty const* readonly_array_target;
@@ -1282,6 +1289,7 @@ static inline Ty const* ty_conditional_branch(Checker* me, Ty const* conditional
 
 // members.c
 Members const* ty_members(Checker* me, Ty const* ty); // Never null. Empty for non-object types
+uint16_t ty_merged_owner_index(Checker* me, Ty const* declared); // See LowerCtx.merged_owner
 Prop const* ty_get_prop(Checker* me, Ty const* ty, Atom const* name);
 // The members' properties an intersection's synthetic property (of a class whose base is an intersection: a mixin)
 // is made of, through instantiations. 0 if it isn't one

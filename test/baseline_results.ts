@@ -1308,7 +1308,7 @@ const baselines = {
     'arrayDestructuringInSwitch1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayDestructuringInSwitch2': {
         errors: true,
@@ -1343,12 +1343,12 @@ const baselines = {
     'arrayFlatNoCrashInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayFlatNoCrashInferenceDeclarations': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayFrom': {
         errors: true,
@@ -12613,7 +12613,7 @@ const baselines = {
     'es2018ObjectAssign': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es5-amd(target=es2015)': {
         errors: true,
@@ -22983,12 +22983,12 @@ const baselines = {
     'mappedTypeWithAsClauseAndLateBoundProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeWithAsClauseAndLateBoundProperty2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeWithCombinedTypeMappers': {
         errors: true,
@@ -30023,12 +30023,12 @@ const baselines = {
     'restElementWithNumberPropertyName(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restElementWithNumberPropertyName(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restIntersection': {
         errors: true,
@@ -30038,7 +30038,7 @@ const baselines = {
     'restInvalidArgumentType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParamAsOptional': {
         errors: true,
@@ -30093,7 +30093,7 @@ const baselines = {
     'restParameterWithBindingPattern3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restParameters': {
         errors: true,
@@ -31533,7 +31533,7 @@ const baselines = {
     'spreadInvalidArgumentType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadObjectNoCircular1': {
         errors: true,
@@ -43008,12 +43008,12 @@ const baselines = {
     'usePromiseFinally(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'usePromiseFinally(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'useRegexpGroups': {
         errors: true,
@@ -46948,12 +46948,12 @@ const baselines = {
     'restPropertyWithBindingPattern(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'restPropertyWithBindingPattern(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'for-of-excess-declarations': {
         errors: true,
@@ -74357,8 +74357,8 @@ const baselines = {
     },
     'bivariantInferences': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'contextualSignatureInstantiation': {
         errors: true,

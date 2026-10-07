@@ -200,7 +200,6 @@ erasableSyntaxOnly	ET	src-changed	bl-changed
 errorForConflictingExportEqualsValue	T	src-changed	bl-changed
 errorsForCallAndAssignmentAreSimilar	E	src-changed	bl-changed
 errorsOnUnionsOfOverlappingObjects01	T	src-changed	bl-changed
-es2018ObjectAssign	T	src-same	bl-changed
 es2022IntlAPIs	T	src-same	bl-changed
 es2024SharedMemory	T	src-same	bl-changed
 es6ImportEqualsExportModuleCommonJsError	T	src-changed	bl-same
@@ -456,15 +455,12 @@ requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
 reservedWords2	ET	src-changed	bl-changed
 reservedWords3	E	src-changed	bl-changed
 resolveInterfaceNameWithSameLetDeclarationName2	T	src-changed	bl-changed
-restInvalidArgumentType	T	src-changed	bl-changed
-restParameterWithBindingPattern3	T	src-changed	bl-changed
 returnTagTypeGuard	T	src-changed	bl-changed
 sharedMemory	T	src-same	bl-changed
 spreadBooleanRespectsFreshness	T	src-changed	bl-changed
 spreadExpressionContextualTypeWithNamespace	T	src-changed	bl-changed
 spreadIdenticalTypesRemoved	T	src-changed	bl-changed
 spreadIntersection	T	src-changed	bl-changed
-spreadInvalidArgumentType	T	src-changed	bl-changed
 spreadNonPrimitive	T	src-changed	bl-changed
 spreadObjectNoCircular1	T	src-changed	bl-changed
 spreadOfObjectLiteralAssignableToIndexSignature	T	src-changed	bl-changed

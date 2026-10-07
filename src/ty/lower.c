@@ -935,8 +935,26 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     if (function->predicate && function->predicate->has_type) collect_free_params(me, &function->predicate->type, out);
 }
 
-// Only when some type parameter is in scope (ctx.generic), otherwise there's nothing to find
-static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found) {
+// Whether `at` is in one of the declarations of a merged owner (LowerCtx.merged_owner): the walk of a declaration
+// (ty_of_node()) can lower nodes elsewhere, an annotation it needs the type of
+static bool span_in_merged_owner(Checker* me, uint16_t owner, Span at) {
+    Symbol const* symbol = my merged_owners.data[owner - 1]->declared.symbol;
+    char const* start = span_start_ptr(at);
+    for (u32 i = 0; at.source && i < symbol->decl_count; i++) {
+        Span full = symbol->decls[i].full;
+        if (full.source == at.source && start >= full.sv.buf && start < full.sv.buf + full.sv.size) return true;
+    }
+    return false;
+}
+
+// Only when some type parameter is in scope (ctx.generic), otherwise there's nothing to find. `at`: where the node is
+static void anonymous_set_free_params(Checker* me, Ty* ty, FreeParams found, Span at) {
+    // (The type parameters of a class or interface declared more than once count wherever they're in scope)
+    if (ty->anonymous.ctx.merged_owner && !found.unknown && span_in_merged_owner(me, ty->anonymous.ctx.merged_owner, at)) {
+        Ty const* owner = my merged_owners.data[ty->anonymous.ctx.merged_owner - 1];
+        for (u32 i = 0; i < owner->declared.type_params.len; i++) free_params_add(&found, owner->declared.type_params.data[i]);
+        if (owner->declared.this_param) free_params_add(&found, owner->declared.this_param);
+    }
     u32 kept = 0;
     for (u32 i = 0; i < found.len; i++) {
         bool bound = false;
@@ -1040,9 +1058,9 @@ Ty const* ty_anonymous_from_node(Checker* me, TypeNode const* node, LowerCtx ctx
             if (found.len == MAX_FREE_PARAMS) found.unknown = true;
             else found.params[found.len++] = arg;
         }
-        anonymous_set_free_params(me, ret, found);
-        // (In JS, a type node is JSDoc, see Ty.anonymous.jsdoc_references_all)
         Span span = node->tag == TYPE_CALLABLE ? function_impl_args_span(node->callable->function) : node->interface.span;
+        anonymous_set_free_params(me, ret, found, span);
+        // (In JS, a type node is JSDoc, see Ty.anonymous.jsdoc_references_all)
         ret->anonymous.jsdoc_references_all = span.source && span.source->is_js;
     }
     // Collecting can intern type parameters, so the slot is looked up again
@@ -1064,7 +1082,7 @@ Ty const* ty_anonymous_from_overloads(Checker* me, FunctionImpl const* const* ov
     if (ctx.generic) {
         FreeParams found = {0};
         for (u32 i = 0; i < count; i++) collect_free_params_of_function(me, overloads[i], &found);
-        anonymous_set_free_params(me, ret, found);
+        anonymous_set_free_params(me, ret, found, count ? function_impl_args_span(overloads[0]) : span_null);
     }
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;
