@@ -162,3 +162,80 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   instantiated anonymous types (discriminateWithDivergentAccessors1's Decl order), plan 21. - `export { globalThis as
   global }` inside `declare global` gives globalThis a declaration (globalThisGlobalExportAsGlobal,
   globalThisDeclarationEmit3).
+
+## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
+- **Named error types** (DT `$ExpectType` babel__traverse, babel__helper-plugin-utils, redux-saga-test-engine): tsc 6's
+  resolveTypeReferenceName gives an unresolved name a synthetic symbol (getUnresolvedSymbolForEntityName: TypeAlias,
+  CheckFlags.Unresolved, one per dotted path, declaredType unresolvedType), and getTypeFromTypeAliasReference makes of
+  it an `any`-flagged intrinsic error type per (symbol, type arguments) (the `errorTypes` map) with aliasSymbol and
+  aliasTypeArguments = the argument *types*. typeToTypeNodeHelper prints any type with an alias as that reference. It
+  isn't instantiated (instantiateTypeWorker has no case for it), and an indexed access of it is itself (any object), so
+  `NodePath<t.Aliases[K]>["type"]` stays `t.Aliases`. tttt reuses the written reference node instead, so arguments
+  print as written: probe `import { type Effect } from "@nonexistent/types"; declare const k: "K"; type KK = typeof k;
+  declare function throwError<M>(m?: M): Effect<KK, M>; const e = throwError("x");` is `Effect<"K", M>` in tsc,
+  `Effect<KK, M>` in tttt; computed types (indexed access, instantiation) collapse to plain any. Doing it: an error
+  Ty with `alias`/`alias_args` interned per (unresolved path symbol, args) from lower_identifier(), every
+  `== intrinsics[TY_ERROR]` identity check audited (TYF_ERROR flag checks are fine). Plan-sized.
+- variadicTuples1, last line: `function c2<T extends unknown[]>() { return (...args: [...T]) => 1; }` prints the
+  returned arrow's rest parameter `T` (tsc `[...T]`); through a local variable it's right. The signature's rest
+  parameter type is T, not the tuple, so when the annotation can't be reused (it mentions c2's fresh T) the type
+  prints bare. Wherever the rest param's `[...T]` is normalized to T (call.c's rest_variadic?), the display needs the
+  tuple.
+- uniqueSymbolsPropertyNames (`[Op.equal]`, tsc names an interface's `unique symbol` member through a variable of
+  that interface type in scope, getSymbolChain's firstVariableMatch: every value in the enclosing scope tables, inner
+  first, whose getTypeOfSymbol is the interface's declared type). out_unique_symbol_name()'s `XConstructor` HACK is
+  the global special case. Cheap faithful-enough version: walk d.enclosing's scope chain (Scope.locals, then the
+  globals) for variables whose written annotation is a TYPE_IDENTIFIER resolving to the owner interface; that also
+  covers `declare var Symbol: SymbolConstructor`, so the HACK could go. Not done (one test).
+- declarationEmitHigherOrderRetainedGenerics: in tsc's printed overload set the second overload's type parameters are
+  renamed `<R1, O1_1, E1_1, A_1, R2, O2_1, E2_1, B_1, C_1>`: everything but R1 and R2. Those two appear in the first
+  overload only inside a reused `Kind<F, R1 & R2, ...>` node, the renamed ones in printed unions (`O2 | O1`, reordered)
+  or parameter lists, so tsc's typeParameterNamesByText seems to collect only names that went through
+  typeParameterToName. Unverified; instrument typeParameterToName on this test before touching the renamer.
+- legacyNodeModulesExportsSpecifierGenerationConditions: underline only (`() => ` of `export const x: () => Thing`
+  partly reused by tttt's "module's variable" annotation path in display_structure(); tsc reprints it all because
+  Thing isn't accessible from the importer). tsc's tryReuseExistingTypeNode gives up on the whole annotation when a
+  name inside isn't accessible; tttt's reuse is per node.
+- jsdocFunctionTypeFalsePositive: `@param {<} x` recovers to `() => any`; tsc prints the missing return node (not
+  reusable), tttt's display_signature() reuses the FunctionImpl's missing `ret` as `any` (annotation_is() accepts it;
+  for TS's `(a: ) => {}` reuse as any is right). Needs a mark on missing nodes parsed inside JSDoc.
+- jsdocTemplateClass, jsdocPropertyTagInvalid: as described in the 2026-10-07 triage (typedef scope of a comment on
+  a constructor; a typedef of another file printed bare in the types baseline), not looked at again.
+- thisInPropertyBoundDeclarations / genericCallOnMemberReturningClosedOverObject: tsc's typeWriter shares
+  NodeLinks.serializedTypes across baseline lines (visitAndTransformType caches an object type's printed node per
+  (enclosing declaration node, type id, flags)), so a later line under the same declaration reuses a node printed
+  while a cycle cut it short (`<T2>(t2: T2) => any`). Modelling it needs the harness to pass each line's parent
+  declaration and the printer to keep a cache keyed by it across ty_display() calls; ty_display.c only models the
+  within-one-print case. Two tests; not worth it unless more show up (displaydiff's `other` bucket would tell).
+- complexRecursiveCollections (TS2430 elaboration `map(...).filter(...).filter` vs tsc's `map(...).size`): after
+  Seq<K,M> vs Collection<K,M> tsc's relation of `filter` (two overloads with `this`-typed predicates) succeeds, or is
+  cut by isDeeplyNestedType as Maybe, so `size` (declared after `filter` in Collection) is the first failing
+  property; tttt goes one level deeper and fails `filter`. Recursion-identity depth, not property order (member order
+  matches since the getNamedMembers work).
+- Elaboration chain shapes (conditionalTypes1/2, recursiveConditionalTypes, styledComponentsInstantiaionLimitNotReached):
+  tsc's chains interleave lines from a failed constraint attempt with the later ones (`T` to `NonNullable<T>`: the
+  source constraint `string | undefined` against `T & {}`, then "'undefined' is assignable to the constraint of type
+  'T', but...", then T against `{}` *nested under it*), i.e. its errorInfo save/restore around
+  structuredTypeRelatedTo's generic-source fallback; and it reports deeper through cached failures (recursiveTypeRelatedTo
+  re-explores a cached Failed entry when reporting, unless Reported). Each test is a different path; plan 34 territory.
+- intersectionSatisfiesConstraint mutation (`T extends Object | S`): `g(m)` with `m = assign(p, lit)` (A & B
+  instantiated with A = T) prints the argument as `Object & { o: number; }`, tsc `(Object | S) & { o: number; }`; the
+  same with `q: T & { o: number }` written is right. narrowable_type() substitutes base_constraint_or_type() of the
+  intersection: for the instantiated one the result has lost S (subtype-reduced union, or a memo made during the
+  call's inference). Probe: `interface S { c: number } declare function g<U extends { c: number; o: number }>(x: U):
+  U; declare function assign<A, B>(a: A, b: B): A & B; declare const lit: { o: number }; function f<T extends Object |
+  S>(p: T) { const m = assign(p, lit); g(m); }`.
+- Seen on the way: a reverse mapping of `typeof globalThis` (`Deep<T> = { [K in keyof T]: Deep<T[K]> }` inferred from
+  `{ a: number } & typeof globalThis`) expands `Intl`'s members one level less than tsc (`Intl: { Collator: any; ...}`
+  vs tsc's `Intl: { Collator: { supportedLocalesOf: any; }; ...}`): shouldUsePlaceholderForProperty depth for a
+  namespace's members.
+- accessorBodyInTypeContext (types): `type A = { get foo() { return 0 } }` (TS1183) is `foo: number` in tsc, its body
+  walked (`>0 : 0`); tttt's parser turns a type literal's accessor into an InterfaceMember and drops the FunctionImpl
+  (body, parameter scope), so the getter is any and nothing in it is bound or walked. Same root as
+  declarationEmitBindingPatternsUnused (a setter's parameter scope). Needs InterfaceMember to keep the accessor's
+  FunctionImpl (boxed in InterfaceAccessor), the binder to walk it, and the getter's type inferred from the body when
+  unannotated. Parser + binder + checker; a session.
+- vscode/eopt elaboration choice (TS2412 at `viewModel` in tsc vs TS2375 at a nested `styles: { a: st.a }` literal in
+  tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
+  triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
+  property fails with an expression it can descend into, and stops at the first reported one per literal).

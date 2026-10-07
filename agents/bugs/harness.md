@@ -2,7 +2,8 @@
 - `@pretty: true` is done except manyCompilerErrorsInTheTwoFiles (errors).
 - tsc's harness adds `error TS-1: Pre-emit (N) and post-emit (M) diagnostic counts do not match!` with the excess
   diagnostics as related info when the emit resolver adds a semantic error (parseErrorIncorrectReturnToken,
-  templateInsideCallback). tttt's harness has no emit and can't produce it; those tests can only pass their errors if
+  templateInsideCallback, constructorWithIncompleteTypeAnnotation (its TS7017 only post-emit),
+  unicodeEscapesInNames02(target=es5) (TS2532 at `new Foo().\u{102A7}`)). tttt's harness has no emit and can't produce it; those tests can only pass their errors if
   the harness learns which diagnostics tsc's emit resolver would add. 5 tests. Mechanism (triage 2026-09-29): the TS
   transformer asks `resolver.getConstantValue()` of every property/element access (const enum inlining), which does
   `checkExpressionCached()` on accesses the checker never visited: the operand of a top-level `return` after TS1108
@@ -44,3 +45,13 @@
   Reproduce with `--checkers 1` and the suspect file first in `files`; `./checkerdiff.py` flags it.
 - tsconfig.c reads package.json leniently for `extends`; `json_parse_strict()` matches parseJsonText's syntax errors
   by hand (escapes, odd numbers unchecked). Not investigated.
+- The suite's programs share a cached library program (program_copy_globals_from); since 2026-10-07 a Program's
+  `order_base` puts the test's files after the libraries in program_order, like tsc's fileIndexMap. Anything else
+  that numbers files per program (file_shares, checker lanes) still counts from 0: fine as long as it's only an index.
+- tsc's harness always sets noErrorTruncation (harnessIO compileFiles), whatever the test says; the suite sets
+  CompilerOptions.no_error_truncation the same way. The CLI default (false) keeps ty_display.c's depth stand-ins for
+  the 160-character truncation (HACK: by depth, not length; and no `... N more ...` lists, no TS2719 when both sides
+  truncate to the same text: flagflip vscode/eopt's TS2719->TS2322 x3). A real approximateLength model would fix both.
+- largeControlFlowGraph (types): tsc's first deep flow query comes from the end of the file (its checker reaches the
+  last statement's reference first through some deferred check), so every `data` is errorType there; tttt's from the
+  2000th statement. Check order, not a flow bug; one test.
