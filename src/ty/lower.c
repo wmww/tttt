@@ -3168,8 +3168,11 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         Ty const* default_type = ty_pad_initializer_type(me, ty_binding_default_type(me, binding), binding);
         // tsc unions first and then widens what's left fresh: a default that fits (`name = "a"` for a `"a" | "b"`
         // property) is absorbed, literal and all
+        // (Of mutual subtypes, two function types alike, the reduction below keeps the first in union order)
         if (!(ret->flags & TYF_ANY) && !(types[0]->flags & TYF_NEVER) &&
-            ty_is_related(me, ty_regular(me, default_type), types[0], TY_RELATION_STRICT_SUBTYPE)) {
+            ty_is_related(me, ty_regular(me, default_type), types[0], TY_RELATION_STRICT_SUBTYPE) &&
+            !((default_type->flags & TYF_OBJECT) && ty_is_related(me, types[0], ty_regular(me, default_type), TY_RELATION_STRICT_SUBTYPE))
+        ) {
             return types[0];
         }
         // (tsc's widenTypeInferredFromInitializer: a `const` keeps the literals)

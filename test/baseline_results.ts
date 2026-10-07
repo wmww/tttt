@@ -20463,7 +20463,7 @@ const baselines = {
     'intraBindingPatternReferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'intrinsics': {
         errors: true,
@@ -73148,7 +73148,7 @@ const baselines = {
     'instantiationExpressionErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instantiationExpressions': {
         errors: true,

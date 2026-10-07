@@ -241,7 +241,6 @@ inferredFunctionReturnTypeIsEmptyType	T	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed
 instanceOfAssignability	T	src-changed	bl-changed
 instanceofOperatorWithRHSHasSymbolHasInstance	T	src-same	bl-changed
-instantiationExpressionErrors	T	src-changed	bl-changed
 interfaceDoesNotDependOnBaseTypes	T	src-changed	bl-changed
 intersectionNarrowing	T	src-changed	bl-changed
 intersectionTypeInference3	T	src-same	bl-changed
