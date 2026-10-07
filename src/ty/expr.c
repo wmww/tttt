@@ -2896,10 +2896,25 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
 }
 
 // tsc's getSpreadType of two object types, `left` (tsc's emptyObjectType if `left_empty`) becoming the result
-static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const* right) {
+// The literal's own accessor as a spread takes it (tsc's getSpreadSymbol): a property of the accessor's type unless it's
+// already as readonly as the spread makes it, a set-only one undefined
+static ObjectLiteralProp spread_accessor(Checker* me, ObjectLiteralProp prop, bool readonly) {
+    if (!prop.accessor || prop.type) return prop;
+    bool setonly = (prop.flags & PROP_SETTER) && !(prop.flags & PROP_GETTER);
+    if (!setonly && readonly == !!(prop.flags & PROP_READONLY)) return prop;
+    prop.type = setonly ? ty_intrinsic(me, TY_UNDEFINED) : ty_object_literal_accessor_type(me, prop.accessor, true);
+    prop.accessor = prop.setter = nullptr;
+    prop.flags = (prop.flags & ~(u32)(PROP_GETTER | PROP_SETTER | PROP_READONLY)) | PROP_NO_VALUE_DECLARATION |
+        (readonly ? PROP_READONLY : 0);
+    prop.parent = nullptr;
+    return prop;
+}
+
+static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const* right, bool readonly) {
     LiteralBuilder result = {0};
     for (u32 i = 0; i < right->count; i++) {
-        ObjectLiteralProp const* r = &right->props[i];
+        ObjectLiteralProp spread = spread_accessor(me, right->props[i], readonly);
+        ObjectLiteralProp const* r = &spread;
         ObjectLiteralProp* l = literal_builder_find(left, r->name);
         if (!l || !(r->flags & PROP_OPTIONAL)) {
             literal_builder_add(&result, *r);
@@ -2908,6 +2923,11 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         // Optional: what was there stays possible, and so does its being required
         ObjectLiteralProp merged = *l;
         merged.parent = nullptr;
+        if (!merged.type && merged.accessor) { // (A getter (and setter) pair: getTypeOfSymbol)
+            merged.type = ty_object_literal_accessor_type(me, merged.accessor, (merged.flags & PROP_GETTER) != 0);
+            merged.accessor = merged.setter = nullptr;
+        }
+        l = &merged;
         merged.flags = (l->flags & (PROP_OPTIONAL | PROP_METHOD)) | PROP_NO_VALUE_DECLARATION; // (tsc: a fresh symbol)
         merged.own = false;
         // (Under exactOptionalPropertyTypes only the missing goes, which the declared type doesn't have: tsc's
@@ -3008,11 +3028,11 @@ static void spread_acc_add_alt(SpreadAcc* acc, SpreadAlt alt) {
 }
 
 // An object spread into an alternative: into its last part if that's objects, else a new part
-static void spread_alt_object(Checker* me, SpreadAlt* alt, LiteralBuilder const* right) {
+static void spread_alt_object(Checker* me, SpreadAlt* alt, LiteralBuilder const* right, bool readonly) {
     if (!alt->part_count || alt->parts[alt->part_count - 1].generic) {
         spread_alt_push(alt, (SpreadPart){ .object = { .empty_object = true } });
     }
-    spread_into(me, &alt->parts[alt->part_count - 1].object, right);
+    spread_into(me, &alt->parts[alt->part_count - 1].object, right, readonly);
 }
 
 // A generic object spread into an alternative: the intersection with it, or itself after nothing (tsc's getSpreadType
@@ -3032,7 +3052,7 @@ static void spread_alt_generic(SpreadAlt* alt, Ty const* generic) {
 // Properties spread into what was spread so far (the ones written since the last spread, an object spread)
 static void spread_acc_props(Checker* me, SpreadAcc* acc, LiteralBuilder const* right) {
     if (!acc->alt_count) spread_acc_add_alt(acc, (SpreadAlt){0});
-    for (u32 i = 0; i < acc->alt_count; i++) spread_alt_object(me, &acc->alts[i], right);
+    for (u32 i = 0; i < acc->alt_count; i++) spread_alt_object(me, &acc->alts[i], right, acc->readonly);
 }
 
 // Empty for tsc's spread purposes (isEmptyObjectTypeOrSpreadsIntoEmptyObject): no properties, or a primitive
@@ -3067,7 +3087,7 @@ static bool spread_alt_type(Checker* me, SpreadAlt* alt, Ty const* member, bool 
     if (!(apparent->flags & TYF_OBJECT) && apparent->kind != TY_INTERSECTION) return true;
     LiteralBuilder right = { .empty_object = false };
     spread_props_of(me, apparent, partial, readonly, &right);
-    spread_alt_object(me, alt, &right);
+    spread_alt_object(me, alt, &right, readonly);
     literal_builder_drop(&right);
     return true;
 }
