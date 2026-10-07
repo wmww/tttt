@@ -483,6 +483,9 @@ static bool display_module_clone(Checker* me, TyDisplay d, Ty const* ty) {
     if (d.enclosing && scope_resolve(d.enclosing, alias->name, SYMBOL_VALUE) == alias) {
         if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_VALUE);
         out(d, alias->name);
+    } else if (symbol_is_augmented_export_equals(assigned)) {
+        // (The clone's declarations include the augmentation, a module: `typeof import("m")`)
+        out_symbol_name(me, d, assigned, SYMBOL_VALUE);
     } else {
         out(d, ty_symbol_display_name(assigned).sv);
     }
