@@ -33228,7 +33228,7 @@ const baselines = {
     'thislessFunctionsNotContextSensitive1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'thislessFunctionsNotContextSensitive2': {
         errors: true,
