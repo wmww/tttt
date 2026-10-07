@@ -4,7 +4,7 @@
 #include <pthread.h>
 
 // tsc's version, for `typesVersions` and versioned `types@>=5.0` conditions
-enum { TS_VERSION_MAJOR = 5, TS_VERSION_MINOR = 8 };
+enum { TS_VERSION_MAJOR = 6, TS_VERSION_MINOR = 0 };
 
 enum {
     EXT_TS = 1 << 0,
@@ -516,7 +516,7 @@ static bool version_in_comparators(csview set) {
         csview op = csview_slice(comparator, 0, op_len);
         csview version = csview_slice(comparator, op_len, comparator.size);
         if (!version.size && !op.size) continue;
-        // Only major.minor matter: tsc compares against "5.8.x" for typesVersions
+        // Only major.minor matter: tsc compares against "6.0.x" for typesVersions
         long parts[2] = { -1, -1 };
         isize at = 0;
         for (int i = 0; i < 2 && at < version.size; i++) {

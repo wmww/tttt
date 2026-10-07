@@ -1848,8 +1848,10 @@ static Ty const* common_subtype(Checker* me, Ty const* const* types, u32 len) {
 }
 
 // tsc's isObjectOrArrayLiteralType
+// (Not a widened object literal: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral, so a `new
+// Map([["a", { a: 1 }]])`'s value type is a candidate like any other)
 static bool is_literal_candidate(Inference const* inf, Ty const* candidate) {
-    if (candidate->kind == TY_ANONYMOUS && candidate->anonymous.object_literal) return true;
+    if (ty_is_unwidened_object_literal(candidate)) return true;
     for (u32 i = 0; i < inf->array_literal_count; i++) {
         if (inf->array_literals[i] == candidate) return true;
     }

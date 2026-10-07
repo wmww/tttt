@@ -248,8 +248,9 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             ret = ty_intrinsic(me, TY_NEVER);
         } else if (!returned.len) {
             // `undefined` if the context allows it (tsc's getReturnTypeFromBody: some member of the unwrapped contextual
-            // return type is undefined, TS 6.0; an async function's is what it awaits to)
-            Ty const* contextual = ty_instantiate_contextual_type(me, ty_contextual_return_type(me, function));
+            // return type is undefined, TS 6.0; an async function's is what it awaits to). Not instantiated by what a
+            // call has inferred so far: `xs.map(x => {})` returns `void` whatever the map's context
+            Ty const* contextual = ty_contextual_return_type(me, function);
             if (contextual && function->is_async) contextual = ty_awaited_no_alias(me, contextual);
             bool undefined = false;
             if (contextual && contextual->kind == TY_UNION) {
