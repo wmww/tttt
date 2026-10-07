@@ -176,6 +176,20 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   the default libs resolve `@typescript/lib-dom` from node_modules) isn't implemented at all; the harness's shared lib
   program would also have to be replaced per test. The option defaults off in 6.0; low value.
 
+## Mutation seed 17 leftovers (2026-10-07, `./mutate.py --seed 17 -n 4000`: 13 -> 7)
+- Known families: typeGuardsAsAssertions null-arg and arrayFrom null-arg (tsc's errors from loop-flow / early
+  binding-element evaluation, see seed 2 above), noCircularitySelfReferentialGetter4 (circularity only an elaboration
+  finds, TS7022/TS7023), derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position),
+  intersectionSatisfiesConstraint (union origin lost after Object.assign: display, agent C's area).
+- deferredLookupTypeResolution2 delete-stmt (StringContains deleted, so `ObjectHasKey<O, L>` is a named error type):
+  tsc reports TS2538 for `(X & { [k: string]: 'true' })[ObjectHasKey<T, '1'>]` (an object with a string index) but not
+  for `{ true: 'true' }[ObjectHasKey<T, '1'>]`; tttt reports both. A non-generic probe (`{ a: 1 }[G<1>]`,
+  `{ a: 1 }[Nope]`) gives TS2538 on both sides, so it's how a generic instantiation of an alias over the error type
+  is treated as an index (getPropertyTypeForIndexType's string-index branch vs the generic deferral).
+- mappedTypeAsClauseRelationships drop-as (line 17's ` as P` deleted): tsc reports TS2313 "Type parameter 'P' has a
+  circular constraint" at (16,33) plus two TS2322 that follow from it; tttt reports none. Not investigated (likely
+  circular constraint detection for a mapped type's key parameter, plan 39 area).
+
 ## Circularity tsc finds and tttt doesn't (plan 39 stage 3)
 - TS2310/TS2313 for cycles found while resolving: circularBaseTypes (TS2313 for a mapped type's `K in keyof T` with T
   the interface whose base is being resolved), circularConstraintYieldsAppropriateError (TS2310).
