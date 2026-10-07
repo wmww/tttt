@@ -81,6 +81,7 @@ enum {
     KEY_ACCESS_USES_CONTEXT, // Property access Expr -> itself, if its type has a type variable with a union constraint (narrowable_type())
     KEY_LITERAL_CONTEXT, // Object literal Expr -> the contextual type it is being checked with (for `this` in methods)
     KEY_PATTERN_COMPUTED, // Implied type of an object binding pattern with a computed name -> non-null
+    KEY_LITERAL_INFERENCE, // Object literal Expr -> the serial (cast, never 0) of the OuterInference its KEY_LITERAL_CONTEXT came from
     KEY_LITERAL_PARENT, // Object literal Expr -> the object literal it is the value of a property of
     KEY_DECL_GROUP,     // FunctionImpl of an interface member or merged function -> TyDeclGroup
     KEY_DECL_GROUP_OF,  // Symbol, declaration (block) -> TyDeclGroup

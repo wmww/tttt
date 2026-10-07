@@ -524,6 +524,8 @@ typedef struct OuterInference {
     // (Likewise of outer_inference_mapper())
     TyMapper const* cached_no_default;
     u64 cached_no_default_count;
+    u64 serial; // See Checker.active_inferences
+    struct OuterInference* enclosing;
 } OuterInference;
 
 static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper const* mapper);
@@ -799,8 +801,20 @@ static TyMapper const* fixing_mapper(Checker* me, OuterInference* outer) {
     return inference_mapper(me, outer->sig, outer->inf, true);
 }
 
-Ty const* ty_instantiate_fixing(Checker* me, Ty const* type) {
+u64 ty_current_inference_serial(Checker* me) {
+    return my outer_inference ? my outer_inference->serial : 0;
+}
+
+Ty const* ty_instantiate_fixing(Checker* me, Ty const* type, u64 serial) {
     OuterInference* outer = my outer_inference;
+    // (The inference the literal's contextual type came from, when that's still going on: `this` in a call nested in
+    // the method, `clone(this.x)`, is fixed by the outer call, tsc's getInferenceContext of the literal)
+    for (OuterInference* active = serial ? my active_inferences : nullptr; active; active = active->enclosing) {
+        if (active->serial == serial) {
+            outer = active;
+            break;
+        }
+    }
     if (!type || !outer || !outer->fixing || !(type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return type;
     Inference* inf = outer->inf;
     TyMapper const* so_far = nullptr;
@@ -1199,7 +1213,8 @@ static TyMapper const* infer_type_arguments(
     if (contextual && outer && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         contextual = ty_instantiate(me, contextual, outer_inference_mapper(me, outer));
     }
-    OuterInference self = { .sig = sig, .inf = &inf };
+    OuterInference self = { .sig = sig, .inf = &inf, .serial = ++my inference_serial, .enclosing = my active_inferences };
+    my active_inferences = &self;
     my inferential_depth++;
     // (This call's own arguments aren't in the return of a function argument: see ExprCtx in expr.c)
     u32 saved_argument_return_depth = my argument_return_depth;
@@ -1476,6 +1491,7 @@ static TyMapper const* infer_type_arguments(
     *inferred_out = ty_list_copy(me, inf.inferred_type_params, inf.inferred_type_param_count);
     inference_drop(&inf);
     my outer_inference = outer;
+    my active_inferences = self.enclosing;
     my inferential_depth--;
     my argument_return_depth = saved_argument_return_depth;
     return mapper;

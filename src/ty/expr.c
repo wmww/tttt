@@ -1318,7 +1318,10 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
             if (!outer_context) break;
             Ty const* marker = this_type_marker(me, ty_apparent_type(me, outer_context));
             // (A ThisType<T> marker, and only that, fixes what it mentions: tsc's getContextualThisParameterType)
-            if (marker) return ty_instantiate_fixing(me, marker);
+            if (marker) {
+                u64 inference_key[2] = { KEY_LITERAL_INFERENCE, (u64)(uintptr_t)outer };
+                return ty_instantiate_fixing(me, marker, (u64)(uintptr_t)intern_get(&my links, inference_key, 2));
+            }
             u64 parent_key[2] = { KEY_LITERAL_PARENT, (u64)(uintptr_t)outer };
             outer = intern_get(&my links, parent_key, 2);
         }
@@ -3478,6 +3481,12 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // functions: none that would ask is checked
         u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)expr };
         *intern_slot(me, &my links, context_key, 2) = ctx.contextual;
+        // (And the generic call inferring with it, if any, whose type parameters a ThisType<T> marker in it fixes)
+        u64 serial = ty_current_inference_serial(me);
+        u64 inference_key[2] = { KEY_LITERAL_INFERENCE, (u64)(uintptr_t)expr };
+        if (serial || intern_get(&my links, inference_key, 2)) {
+            *intern_slot(me, &my links, inference_key, 2) = (void const*)(uintptr_t)serial;
+        }
     }
     for_each (i, vec_object_expr_item, object) {
         if (i->tag == OBJECT_ITEM_PROPERTY && i->value.tag == EXPR_OBJECT) {

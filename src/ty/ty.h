@@ -1014,6 +1014,10 @@ struct Checker {
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference* outer_inference;
+    // Every generic call inferring now, innermost first (OuterInference.enclosing), and the serial the last one got:
+    // an object literal remembers which one its contextual type came from (KEY_LITERAL_INFERENCE)
+    struct OuterInference* active_inferences;
+    u64 inference_serial;
     u32 inferential_depth; // Arguments are being checked to infer type arguments from (tsc's CheckMode.Inferential)
     // The return type of a function argument is being computed while its call infers: a generic function among its
     // return expressions is instantiated in context (tsc's instantiateTypeWithSingleGenericCallSignature, see expr.c)
@@ -1629,7 +1633,10 @@ bool ty_is_literal_of_contextual_type(Checker* me, Ty const* ty, Ty const* conte
 Ty const* ty_instantiate_contextual_type(Checker* me, Ty const* contextual);
 Ty const* ty_instantiate_contextual_type_for(Checker* me, Ty const* contextual, bool signature);
 // tsc's getContextualThisParameterType: instantiated with the fixing mapper of the call inferring now
-Ty const* ty_instantiate_fixing(Checker* me, Ty const* type);
+// What a ThisType<T> marker says while the generic call `serial` (ty_current_inference_serial(), 0: the one inferring
+// now) infers: the type parameters it mentions are fixed
+Ty const* ty_instantiate_fixing(Checker* me, Ty const* type, u64 serial);
+u64 ty_current_inference_serial(Checker* me); // 0 if no generic call's arguments are being checked
 Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, struct FunctionImpl const* function);
 // A context-sensitive member of an object or array literal was checked while the call inferring now fixes: what it
 // is inferred from before the next type parameter is fixed (tsc's addIntraExpressionInferenceSite)
