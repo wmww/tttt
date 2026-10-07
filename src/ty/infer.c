@@ -797,8 +797,24 @@ static bool inferable_index(Checker* me, Ty const* ty, u32 depth) {
     return !members->call_count && !members->construct_count;
 }
 
-// Elements `from` to `arity - end_skip` of a tuple as a mutable tuple (tsc's sliceTupleType)
+static Ty const* slice_element_type(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
+static Ty const* tuple_elements(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip);
+
+// Elements `from` to `arity - end_skip` of a tuple as a mutable tuple (tsc's sliceTupleType); past the leading fixed
+// elements an array of what the elements from there on can be (getRestArrayTypeOfTupleType), the empty tuple if none
 Ty const* ty_slice_tuple(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip) {
+    u32 fixed = 0;
+    while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    if (from > fixed) {
+        Ty const* rest = slice_element_type(me, shape, args, fixed, 0);
+        return rest ? ty_array(me, rest, false) : ty_tuple_target(me, &(TupleShape){0});
+    }
+    return tuple_elements(me, shape, args, from, end_skip);
+}
+
+// Elements `from` to `arity - end_skip` of a tuple as a mutable tuple, whatever they are (tsc's createTupleType of a
+// slice of the element types and flags)
+static Ty const* tuple_elements(Checker* me, TupleShape const* shape, TyList args, u32 from, u32 end_skip) {
     u32 arity = shape->arity - from - end_skip;
     TupleShape slice = {
         .arity = arity,
@@ -922,12 +938,15 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
         InferParam const* first = inference_param(inf, target_args.data[start]);
         u32 implied = first && first->implied_arity_plus_one ? first->implied_arity_plus_one - 1 : UINT32_MAX;
         // (The first slice skips `end + source_arity - implied` at the end, as tsc's does. Like its slice(), the bounds
-        // are clamped: more arguments than the source has elements is all of them for T and none for U)
+        // are clamped: more arguments than the source has elements is all of them for T, and for U whatever the
+        // source's rest element has left, sliceTupleType past the fixed elements)
         if (implied != UINT32_MAX) {
             i64 first_skip = (i64)end + (i64)source_arity - (i64)implied;
             if (first_skip < 0) first_skip = 0;
             if ((i64)start + first_skip > (i64)source_arity) first_skip = (i64)source_arity - start;
             u32 second_start = start + implied < source_arity - end ? start + implied : source_arity - end;
+            u32 source_fixed = tuple_fixed_length(source_shape);
+            if (start + implied > source_fixed && start + implied > second_start) second_start = start + implied;
             infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start, (u32)first_skip), target_args.data[start]);
             infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, second_start, end), target_args.data[start + 1]);
         }
@@ -957,7 +976,7 @@ static void infer_to_tuple(Checker* me, Inference* inf, Ty const* source, Ty con
                 u32 start_index = end_index - implied;
                 Ty const* rest = slice_element_type(me, source_shape, source_args, start, end + implied);
                 if (rest) infer_from(me, inf, ty_array(me, rest, false), target_args.data[start]);
-                infer_from(me, inf, ty_slice_tuple(me, source_shape, source_args, start_index, source_arity - end_index),
+                infer_from(me, inf, tuple_elements(me, source_shape, source_args, start_index, source_arity - end_index),
                     target_args.data[start + 1]);
             }
         }

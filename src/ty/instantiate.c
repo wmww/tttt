@@ -296,6 +296,10 @@ static Ty const* mapped_over_array_or_tuple(
                 mapped->type_param, ty_intrinsic(me, TY_NUMBER));
             Ty const* mapped_element = mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), false);
             mapped_elements[i] = rest ? ty_array(me, mapped_element, false) : mapped_element;
+            // (The modifiers apply to a fixed element after the rest one too: `Partial<[...T, number]>` ends in
+            // `(number | undefined)?`, tsc's newElementFlags)
+            if (!rest && mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
+            if (!rest && mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;
             continue;
         }
         cstr index = cstr_d(i);

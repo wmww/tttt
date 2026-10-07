@@ -2690,9 +2690,11 @@ static bool is_generic_operand(Checker* me, Ty const* ty, u32 depth) {
 // Every number the index can be names one of the leading fixed elements of a tuple
 static bool index_less_than_fixed(Checker* me, Ty const* tuple, Ty const* index) {
     if (tuple->reference.deferred && tuple->reference.deferred->state != LAZY_STATE_DONE) return false;
+    // (The leading and trailing fixed elements: tsc's getTotalFixedElementCount)
     TupleShape const* shape = ty_tuple_shape(tuple);
     u32 fixed = 0;
     while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    for (u32 i = shape->arity; i > fixed && !(shape->flags[i - 1] & TUPLE_ELEMENT_REST); i--) fixed++;
     Ty const* const* parts = &index;
     u32 count = 1;
     if (index->kind == TY_UNION) {

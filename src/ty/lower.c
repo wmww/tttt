@@ -2442,10 +2442,13 @@ static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start)
     if (!ty_is_tuple(object)) return object; // An array (TODO: a readonly array gives a mutable one), or the empty tuple
     TupleShape const* shape = object->reference.target->declared.tuple;
     TyList elements = ty_reference_args(me, object);
-    if (start >= shape->arity) {
-        bool ends_in_rest = shape->arity && (shape->flags[shape->arity - 1] & TUPLE_ELEMENT_REST);
-        if (ends_in_rest) start = shape->arity - 1;
-        else return ty_tuple_target(me, &(TupleShape){0});
+    // Past the leading fixed elements: an array of what the elements from there on can be, the empty tuple without
+    // any (tsc's sliceTupleType, getRestArrayTypeOfTupleType)
+    u32 fixed = 0;
+    while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
+    if (start > fixed) {
+        Ty const* rest = ty_tuple_slice_element_type(me, object, fixed, 0, false);
+        return rest ? ty_array(me, rest, false) : ty_tuple_target(me, &(TupleShape){0});
     }
     TupleShape rest_shape = {
         .arity = shape->arity - start,
@@ -3209,7 +3212,11 @@ static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty cons
     } else if (in_array) {
         Value index = value_number(binding->parent_index);
         // (Read like an expression: noUncheckedIndexedAccess's undefined, tsc's AccessFlags.ExpressionPosition)
-        ret = ty_access_reading(me, object, ty_literal(me, &index));
+        // (Of a generic tuple past its fixed elements, deferred like an element access: `[string, ...T][1]`, tsc's
+        // getIndexedAccessTypeOrUndefined with the binding name as access node)
+        ret = ty_is_tuple(object) && ty_is_generic_tuple(me, object) ?
+            ty_indexed_include_undefined(me, object, ty_literal(me, &index), compiler_options()->no_unchecked_indexed_access) :
+            ty_access_reading(me, object, ty_literal(me, &index));
         // Past the end of a tuple (TS2493, binding_typecheck()) is undefined (tsc's getIndexedAccessTypeOrUndefined)
         // (Of every member of a union of tuples too)
         TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
