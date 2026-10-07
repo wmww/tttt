@@ -373,3 +373,10 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     `inject<T>(key)` infer T = any (so the inferred return is any and noImplicitReturns is quiet). tttt's
     set_contextual_return ignores an `any` contextual return type; dropping that (only `void` ignored) fixes the probe
     but gives tanstack-router 9 TS2344 (expect-type tests): something else relies on it.
+- Mutation testing multi-file/JS (`MUTATE_DIR=/tmp/d-mutate ./mutate.py --tests multi,js -n 3000 --seed 12`): 31 of
+  3000 differ, 20 after agent D's fixes; all singletons except `text TS2339` x3 (augmentExportEquals3/4: `import * as
+  x` of an `export =` class+namespace that a `declare module` augments prints as `typeof import("file1")` in tsc,
+  `typeof foo` in tttt: tsc's getCommonJsExportEquals clone, cjsExportMerged). Others seen: `module.exports = items`
+  before `const items = []` under `@type {typeof import(...)}` loses the annotation (jsDeclarationsTypeReassignment
+  FromDeclaration), and typeFromParamTagForFunction's `declare function require(id: number)` gets TS2345 at the
+  require calls in tsc only when other files of the program are ES modules (not reduced).
