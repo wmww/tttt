@@ -4656,6 +4656,7 @@ static TypeNode jsdoc_type_literal(JsDocTag* props, isize count, csview prefix, 
         }
         // (A bracketed property is optional like `foo?: T`, which adds optionality to its type)
         bool optional = tag->bracketed || type.jsdoc_optional;
+        if (tag->bracketed && !type.jsdoc_optional) type.jsdoc_bracketed = true;
         Span name_span = span_make(tag->name.source, name.buf, name.buf + name.size);
         list_push(vec_interface_member, &members, interface_member_make(
             jsdoc_tag_decl_span(tag), nullptr, false, optional, cstr_from_sv(name), name_span, false, type

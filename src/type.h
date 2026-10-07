@@ -121,6 +121,10 @@ typedef struct TypeNode {
     bool placeholder : 1; // The empty operand before a leading `|` or `&` (`| A | B`), not written
     // JSDoc `T=`: the union `T | undefined` it means, which an `@param` takes for an optional parameter of type `T`
     bool jsdoc_optional : 1;
+    // The type of a bracketed JSDoc `@param`/`@property` (`@param {T} [o.x]`): the member is optional without a `?`
+    // token that would say the undefined its type has, so the printer doesn't reuse T for it (tsc's
+    // serializeTypeForDeclaration adds undefined)
+    bool jsdoc_bracketed : 1;
     bool from_jsdoc : 1;
     // JSDoc `@param {...T} x` of a parameter that isn't a rest parameter: the union `T | undefined` it means, which
     // tsc's printer shows as the array type it makes of the JSDocVariadicType (`T[]`)
