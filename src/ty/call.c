@@ -97,6 +97,9 @@ typedef struct CallInfo {
     Ty const* contextual; // contextual type of the call expression, may be null
     VecSpannedType const* type_arg_nodes; // explicit type arguments, null if none
     TyList type_args;
+    // `super(...)` of a class whose base clause has no type arguments: the constructors are instantiated as tsc's
+    // getInstantiatedConstructorsForTypeArguments does (super_filled_type_arguments()), not inferred
+    bool super_fill;
     Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
     bool failure_out; // chosen_out gets the overload failure candidate if nothing fit
     // The signatures before reorder_candidates(): tsc's getArgumentArityError reads the original list (whose first
@@ -2182,6 +2185,32 @@ static TyMapper const* failure_type_arguments(Checker* me, Signature const* sig,
 
 static bool is_super_call(CallExpr const* call);
 
+// The mapper of a `super(...)` signature whose base clause has no type arguments (CallInfo.super_fill): tsc's
+// fillMissingTypeArguments, each type parameter its default, else any in JavaScript (where a default of unknown or
+// `{}` is any too) and unknown in TypeScript. Null: inferred after all (TypeScript, where a type parameter without a
+// default makes the clause TS2314 and getConstructorsForTypeArguments drop the constructor)
+static TyMapper const* super_filled_type_arguments(Checker* me, Signature const* sig, CallInfo const* info) {
+    TyList params = sig->type_params;
+    if (!info->super_fill || !params.len) return nullptr;
+    SourceFile const* file = info->call_span.source;
+    bool js = file && file->is_js;
+    if (!js && min_type_arguments(me, sig)) return nullptr;
+    Ty const** results = arena_new_n(&my arena, Ty const*, params.len);
+    for (u32 i = 0; i < params.len; i++) results[i] = ty_intrinsic(me, TY_ERROR);
+    TyMapper const* mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    for (u32 i = 0; i < params.len; i++) {
+        Ty const* fallback = ty_param_default(me, params.data[i]);
+        if (js && fallback && (ty_is_related(me, fallback, ty_intrinsic(me, TY_UNKNOWN_), TY_RELATION_IDENTITY) ||
+            ty_is_related(me, fallback, ty_empty_object_type(me), TY_RELATION_IDENTITY))
+        ) {
+            fallback = ty_intrinsic(me, TY_ANY);
+        }
+        results[i] = fallback ? ty_instantiate(me, fallback, mapper) : ty_intrinsic(me, js ? TY_ANY : TY_UNKNOWN_);
+        mapper = ty_mapper_new(me, params, (TyList){ .data = results, .len = params.len });
+    }
+    return mapper;
+}
+
 // tsc's getTypeArgumentArityError: one signature states its range; overloads state the closest counts around the
 // given one (TS2743 when there are some on both sides)
 static void report_type_argument_arity(
@@ -2255,6 +2284,8 @@ static Candidate make_candidate_skipping(
 ) {
     Candidate ret = { .sig = sig };
     if (!sig->type_params.len) return ret;
+    ret.mapper = super_filled_type_arguments(me, sig, info);
+    if (ret.mapper) return ret;
     ret.mapper = info->type_arg_nodes ? explicit_type_arguments(me, sig, info) :
         infer_type_arguments(me, sig, args, info, skip_sensitive, skip_generic, skip_generic_functions, &ret.inferred_type_params);
     return ret;
@@ -2345,7 +2376,8 @@ static Resolution resolve_with_signatures_inner(
             signature_resolve(me, sig);
             if (!has_correct_type_argument_arity(me, sig, info)) continue;
             type_argument_arity_ok = true;
-            ParamShape uninstantiated = call_param_shape(me, info, sig, nullptr);
+            // (A `super(...)` of a base without type arguments checks the instantiated constructor)
+            ParamShape uninstantiated = call_param_shape(me, info, sig, super_filled_type_arguments(me, sig, info));
             bool arity_ok = has_correct_arity(&uninstantiated, args);
             bool generic_rest = uninstantiated.rest_variadic != nullptr;
             free(uninstantiated.types);
@@ -3177,13 +3209,16 @@ static Ty const* resolve_into(
     Ty const* type_args[32];
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
     // getInstantiatedConstructorsForTypeArguments)
-    // TODO: without written type arguments tsc instantiates with the defaults instead of inferring
     Expr const* super_callee = &call->callable;
     if (super_callee->tag == EXPR_GENERIC_PARAMS) super_callee = &super_callee->generic_params->expr;
     ClassDecl const* super_class = is_super_call(call) && super_callee->identifier.target ?
         symbol_find_node(super_callee->identifier.target, SYMBOL_DECL_CLASS) : nullptr;
     if (super_class && super_class->extends.tag == EXPR_GENERIC_PARAMS) {
         info.type_arg_nodes = &super_class->extends.generic_params->params;
+    } else if (super_class && super_class->extends.tag != EXPR_IMPLICIT_ANY && !span_valid(super_class->jsdoc_extends) &&
+        !super_class->jsdoc_base
+    ) {
+        info.super_fill = true;
     } else if (call->callable.tag == EXPR_GENERIC_PARAMS && !is_super_call(call)) {
         // `f<A, B>(x)`: the callee type is that of `f`
         info.type_arg_nodes = &call->callable.generic_params->params;
