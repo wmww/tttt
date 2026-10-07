@@ -4515,10 +4515,17 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 Ty const* contextual = memo && memo->done ? memo->context : nullptr;
                 ty_tagged_template_typecheck(checker, ty_expr_type(checker, tag), me, contextual, errs);
             }
+            // (An untyped tag call checks the template as an untagged one: tsc's resolveUntypedCall)
+            bool untagged = !my template_->tag;
+            if (!untagged) {
+                Expr const* tag = my template_->tag;
+                if (tag->tag == EXPR_GENERIC_PARAMS && !expr_is_perenthisized(tag)) tag = &tag->generic_params->expr;
+                untagged = (ty_expr_type(current_checker, tag)->flags & (TYF_ANY | TYF_ERROR)) != 0;
+            }
             for_each (i, vec_expr, &my template_->substitutions) {
                 expr_typecheck(i, errs);
                 // tsc's checkTemplateExpression
-                if (!my template_->tag && maybe_kind(ty_expr_type(current_checker, i), TYF_ES_SYMBOL_LIKE, true)) {
+                if (untagged && maybe_kind(ty_expr_type(current_checker, i), TYF_ES_SYMBOL_LIKE, true)) {
                     error_ctx_error_d(errs, expr_error_span(i), 2731, "Implicit conversion of a 'symbol' to a 'string' will "
                         "fail at runtime. Consider wrapping this expression in 'String(...)'.");
                 }
