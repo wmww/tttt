@@ -10,6 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Oracles on tsc 4d4f005c (2026-10-07, eleventh window's todo entry 6, plan 48 stage 4)
+New caches: `./sweep.py` (DefinitelyTyped 2026-10-02 pin) 8585 on the fresh oracle -> **8594 / 8595** match, 0 crash
+(5.8's last: 8589); `./expecttypes.py` 68574 -> **68620 / 68640** (5.8's last: 68619); `./scenarios.py` 200 / 16 / 90
+skipped -> **240 / 0 / 66**; `./mutate.py` seed 1 (2000) **4** of 1030 that change tsc's codes, seed 2 (8000) **34** of
+4051 (5.8: drained to 6). Flagflip not regenerated (waits for the re-pin, plan 48 stage 5). Suite **14804 / 14969**
+unchanged, corpora unchanged (`./realworld.py`: tsc, tsc-src, zod 0; type-fest, react, drizzle, vue, excalidraw,
+typescript-eslint 1; nest 4; effect 5; tanstack-router 28; xstate 30; valibot 31; vscode 543; webpack 5297; vscode and
+typescript-eslint identical to the session start's build). Instructions (callgrind, fa904e94 -> end) flat: tsc 4.816
+-> 4.815, type-fest 3.139, valibot 4.522 -> 4.523, react 1.546 -> 1.545, nest 1.157, webpack 5.136 -> 5.135, zod
+5.035, xstate 3.033 -> 3.035, drizzle 8.350 -> 8.353, vue 6.794 -> 6.796, effect 9.629 -> 9.626, vscode 33.168 ->
+33.171, excalidraw 5.249 -> 5.248, tanstack-router 4.467 -> 4.468.
+
 ## Plan 48 stage 2 session B (2026-10-07, eleventh window's todo entry 5)
 Creation-order deletion, then a 4-agent fan-out: suite 14712 -> **14804 / 14969** (errors 14890, symbols 14917,
 types 14855; lost only `stableTypeOrdering(stabletypeordering=false)`, accepted). Corpora unchanged (`./realworld.py`:

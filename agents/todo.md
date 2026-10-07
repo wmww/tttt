@@ -8,8 +8,8 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 commit.
 
 **This window retargets tttt from TypeScript 5.8 to TypeScript commit 4d4f005c (6.0.3 + stable type ordering, what
-tsgo 7.0.2 implements; plan 48).** Pass counts aren't comparable across the switch (13540 -> 14969 tests). Until entry 6 regenerates
-them, the sweep / `$ExpectType` / flagflip / mutation caches are tsc 5.8's: skip those tools in entries 2-5, and corpus
+tsgo 7.0.2 implements; plan 48).** Pass counts aren't comparable across the switch (13540 -> 14969 tests). Entry 6 regenerated the
+sweep / `$ExpectType` / mutation caches on the new tsc; flagflip's waits for entry 7's re-pin, and corpus
 numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built/local/tsc.js -p ...`).
 
 1. Done (planning, 2026-10-07): plan 48 rewritten from four prototypes (now applied: 75cb7ee6, a8ac7023).
@@ -25,8 +25,11 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
 5. Done (execution, 2026-10-07): plan 48 stage 2 session B. Creation-order machinery deleted (suite and corpora
    unchanged, instructions -0.1..-0.7%), then a 4-agent fan-out: suite **14804 / 14969** (98.9%), `48_lost.txt` 22 ->
    13 (all with triage notes), corpora unchanged, instructions +0.2-0.6% vs the session start.
-6. **Execution: plan 48 stage 4**, the other oracles' caches on the new tsc (sweep ~40 min: commit first), drain cheap.
-7. **Corpora: plan 48 stage 5**, re-pin every corpus at current upstream (clean under the commit's tsc and tsgo 7.0.2).
+6. Done (execution, 2026-10-07): plan 48 stage 4. Sweep **8594 / 8595**, `$ExpectType` **68620 / 68640** (both above
+   the last 5.8 numbers), scenarios **240 / 0**, mutation seed 2 34 / 4051; suite 14804, corpora and instructions flat.
+   Flagflip moved to entry 7 (its cache is per corpus pin).
+7. **Corpora: plan 48 stage 5**, re-pin every corpus at current upstream (clean under the commit's tsc and tsgo 7.0.2),
+   then regenerate flagflip on the new pins (plan 48 stage 4 has the deprecated-flag caveat).
 8. **Corpora: stage 5 drain** with sub-agents.
 9. **Perf session** (plan 48 stage 6): instruction baselines on the re-pinned corpora, `./bench.sh` against tsgo 7.0.2.
 10. **Triage.**

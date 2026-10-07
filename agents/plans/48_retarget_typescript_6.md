@@ -204,20 +204,19 @@ mixin accessor flags, `shouldDeferIndexType`; each 1-5 new tests) are one agent'
 TS18058-18061) and `--module node20` semantics (79 tests, mostly in module lists) are one agent's bucket if they're
 not done by then. Target: >= 98% of 14969 (~14670) by the end of stage 2's session B, or note what's left in the plan.
 
-### Stage 4: the other oracles on the new tsc (1 session, todo entry 6)
-Commit before each long job. All caches from the commit's built tsc (decision 1), with stable ordering on (default):
-- `test/sweep_tsc.js`: `thirdparty/tsc/built/local/typescript.js`; `./sweep.py --tsc` (~40 min on 4 cores, run in
-  the foreground with a timeout, commit first); `$ExpectType` cache (`./expecttypes.py`, same script `--expect`).
-  DefinitelyTyped keeps its 2026-10-02 pin. Expect the defaults (strict, `types: []` is already explicit in DT)
-  to matter little there.
-- `./flagflip.py --tsc` (every cell), `./mutate.py` (its /tmp cache regenerates itself from the suite), `./scenarios.py`
-  (the tsbuild baselines changed; re-check the skip reasons), `tscbaseline.sh`/`filetest.sh` (`tsc_custom_baseline.js`
-  against the new harness: test it on two probes).
-- Drain what's cheap; record match rates in `agents/measurements.md` next to the last 5.8 ones (sweep 99.8%,
-  `$ExpectType`, flagflip, mutation numbers) so the next insights can compare.
+### Stage 4: the other oracles on the new tsc (done 2026-10-07, todo entry 6)
+Sweep oracle regenerated (31 min), `$ExpectType` oracle regenerated (6 min), mutation cache rebuilt by `mutate.py`
+itself, `tscbaseline.sh`/`filetest.sh` work against the new harness. Sweep 8585 -> **8594 / 8595**, `$ExpectType`
+68574 -> **68620 / 68640**, scenarios 200 / 16 / 90 skipped -> **240 / 0 / 66** (TS6 deprecates outFile/AMD, so those
+skips went), mutation seed 1 (2000) 4 and seed 2 (8000) 34 mismatches (0.8% of the mutants that change tsc's codes;
+that seed was drained to 6 under 5.8: a drain for later). Numbers in measurements.md, leftovers in triage.md.
+**Flagflip moved to stage 5**: its cache is keyed by corpus pin and every corpus re-pins there; the current pins aren't
+clean under tsc 6 either. When regenerating: the `es5` cell's `--target es5` is deprecated in 6.0 (TS5107 gates the
+semantic diagnostics) and `sloppy`'s `--alwaysStrict false` too: give those cells `--ignoreDeprecations 6.0` (or drop
+`es5`), and check every cell's tsc output for TS5xxx before trusting it.
 
 ### Stage 5: corpora re-pinned (2 sessions, todo entries 7 and 8)
-Every corpus at a current upstream commit, checked by the commit's tsc and by tsgo 7.0.2 (both must be clean: effect
+After re-pinning, regenerate flagflip (`./flagflip.py --tsc --force`, see stage 4 for the deprecated flags). Every corpus at a current upstream commit, checked by the commit's tsc and by tsgo 7.0.2 (both must be clean: effect
 uses 7.0, most others 6.0 now). Upstreams still on 5.x (zod, drizzle, type-fest, valibot, excalidraw) re-pin at
 their current commit with an overlay adding `"ignoreDeprecations": "6.0"` where tsc 6 reports only deprecations
 (their CI hasn't moved; record that in ensure-corpora.sh). Drop the 5.9 lib shims (grep corpora-locks and the

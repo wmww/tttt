@@ -8,6 +8,22 @@ sub-agents (type core + corpus cells, missing checks, display/text, JS/modules) 
 gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and hacks.md. Fresh mutation runs: seed 4
 (`/tmp/tc-mutate4`, 26 -> 21) and seed 5 (`/tmp/tb-mutate`, 29 -> 25), leftovers in missing_checks.md.
 
+- Plan 48 stage 4 leftovers (2026-10-07):
+  - Mutation seed 2 (`./mutate.py -n 8000 --seed 2`, cache /tmp/mutate/c9c005c80317): 34 mismatches on tsc 6 (6 under
+    5.8 after its drain): elaboration TS2322 x4, missing TS2339 x4 (overrideBaseIntersectionMethod: never-const),
+    spurious TS9023 x3 (isolatedDeclarationLazySymbols), TS2304 in moduleElementsInWrongContext3, ... A drain session.
+  - Named error types: tsc 6 prints an unresolved type reference as written (`t.Aliases` when `@babel/types` isn't
+    installed) and keeps that error type through instantiation and indexed access (`NodePath<t.Aliases[K]>["type"]`
+    is `t.Aliases`); tttt prints the reference by name but collapses what's computed from it to `any`
+    (`$ExpectType` babel__traverse, babel__helper-plugin-utils: 19 assertions, broken packages only).
+  - tttt never type-checks the default lib files; tsc does without skipDefaultLibCheck/skipLibCheck, so a lib
+    combination that leaves a name undefined (react-intl-redux: `esnext.intl` without es2021.intl, TS2552
+    DateTimeRangeFormatPart in lib.esnext.intl.d.ts) is a tsc error tttt misses (the sweep's last mismatch).
+  - `$ExpectType` knockout.mapping-tests.ts:109: tsc orders `KnockoutObservableArray<KnockoutObservableType<any>> |
+    KnockoutObservableArray<any>`, tttt the other way round (same target: type argument lists, or deferred references
+    by node position?).
+  - typescript-eslint (`-b`): 1 TS2345 'parameter of type never' at eslint-plugin/src/rules/naming-convention.ts:719,
+    predates this session (session start's build reports it too); check it against tsc 6 when stage 5 re-pins.
 - valibot under the commit's tsc with `--ignoreDeprecations 6.0` (without it tsc skips semantic diagnostics after the
   TS5107): 26 TS2554 "Expected 1 arguments, but got 0" on `expectTypeOf<...>().toEqualTypeOf<...>()` in
   `src/methods/partial/partial.test-d.ts` and others, i.e. tsc 6 finds types unequal that tttt finds equal (before and
