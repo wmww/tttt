@@ -416,3 +416,22 @@ From the four sub-agents' reports; test names are the ones to probe.
     jsDeclarationsImportAliasExposedWithinNamespace, TS5088 arrayFakeFlatNoCrashInferenceDeclarations) all come from
     JS declaration emit (symbolTableToDeclarationStatements), which tttt doesn't do (plan 40 excludes it; emit is out
     of scope). TS5088 is plan 40's leftover for TS too. Leave them unless declaration emit comes into scope.
+- Multi/js mutation run seed 16 leftovers (the fixed ones are commits of 2026-10-07; TS ones in bugs/binder_modules.md):
+  - mut1602 (checkJsdocTypeTag2, `const x1: never = (a) => a + 1` under `/** @type {function (number)} */`): with a
+    TS annotation in JS (TS8010) tsc still types the arrow by the `@type` signature (getSignatureOfTypeTag reads the
+    host's tag), so it is `(a: number) => any` and the JSDoc function type gets TS7014; tttt drops the tag when the
+    binding has a written type.
+  - mut2021 (typeFromPropertyAssignment39, `const bar = {}; bar["baz"]["blah"] = 3`): tsc gives `bar` a namespace
+    declaration (TS7053 says 'typeof bar', the symbols baseline a second declaration at the statement's full start);
+    the dotted form works, the literal element-access chain doesn't reach add_expando_namespace_decls().
+  - mut2107 (typeTagCircularReferenceOnConstructorFunction without `MyClass.prototype = {}`): `/** @type {MyClass} */
+    function MyClass() {}` is TS7023 (the function's type is its own value type, circular) in tsc; tttt is silent.
+  - mut2183 (jsDeclarationsExportDefinePropertyEmit, `Object.defineProperty(module.exportsX, "d", ...)`): the typo
+    makes tsc's bindPotentiallyMissingNamespaces declare `module` as a namespace, so TS2551 prints 'typeof module';
+    tttt's commonjs_module_namespace() covers assignments, not defineProperty targets.
+  - mut2973 (fillInMissingTypeArgsOnJSConstructCalls, `super(SubA, 1)`): missing TS2554 against a base written with
+    Flow syntax (`class B<T: BaseA>`, TS1005 recovery); plain JS classes give it. Parser recovery of the type
+    parameter list.
+  - mut0091 (enumTag, `@enum {function(number): string}`): tsc reports one TS2322 at a member name
+    ('(n: any) => number' not assignable to 'Fs'), tttt elaborates to the arrow's return of each member.
+  - mut0417 (enumTagOnExports): the orphaned `@enum` leftover above.

@@ -75,3 +75,16 @@ mergeSymbol, which resolves an alias target first.
 - importDeclWithExportModifierAndExportAssignment(InAmbientContext): pass.
 - `module.exports = items` before `const items` under `/** @type {typeof import(...)} */`
   (jsDeclarationsTypeReassignmentFromDeclaration mutation): a hand-made probe of that order matches tsc.
+
+## Multi-file/JS mutation run, seed 16 (`MUTATE_DIR=/tmp/wt-b-mutate ./mutate.py --tests multi,js -n 3000 --seed 16`)
+22 of 3000 differed; 12 fixed (commits of 2026-10-07), the JS leftovers are in plan 26's Leftovers. TypeScript ones:
+- mut0806 (typeGuardNarrowsIndexedAccessOfKnownProperty8, `export const key: never = "a"`): spurious TS2564 for
+  `[a.key]: string` that the constructor assigns as `this[a.key]`. tsc's tryGetNameFromEntityNameExpression falls back
+  to the initializer's type when the annotation gives no name, so the access is named "a" and matches; tttt goes by
+  the declared type. Flow reference matching (isMatchingReference / getAccessedPropertyName).
+- mut2320 (expandoFunctionSymbolPropertyJs, `const symb: never = Symbol()`): `readonly [symb]: boolean` in an interface
+  with a `never` key makes index signatures in tsc (TS2322 "Index signature for type 'number' is missing" on
+  returning a plain function); tttt adds nothing for it. Members from computed names (relations area).
+- mut1254 (moduleResolutionWithSymlinks_notInNodeModules): tsc writes no errors baseline at all; tttt writes one with
+  only the tsconfig.json section and no diagnostics. Harness, symlinked files.
+- mut0360: tsc's baseline has the harness's TS-1 pre/post-emit count line: not matchable.
