@@ -729,7 +729,12 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         Span left = rare->namespaces.data[0];
         Span right = vec_span_size(&rare->namespaces) > 1 ? rare->namespaces.data[1] : my name;
         Ty const* declared = ty_apparent_type(checker, ty_declared_type_of(checker, rare->type_as_namespace));
-        if (ty_property_of_type(checker, declared, checker_atom(checker, right.sv))) {
+        Symbol const* as_namespace = rare->type_as_namespace;
+        if (as_namespace->decl_count && as_namespace->decls[0].kind == SYMBOL_DECL_BUILTIN && is_primitive_type_name(left.sv)) {
+            // (A primitive type keyword isn't a symbol to tsc: checkAndReportErrorForUsingTypeAsValue, its namespace
+            // meaning includes ValueModule)
+            error_ctx_error_d(errs, left, 2693, "'", left, "' only refers to a type, but is being used as a value here.");
+        } else if (ty_property_of_type(checker, declared, checker_atom(checker, right.sv))) {
             error_ctx_error_d(errs, span_between(left, right), 2713, "Cannot access '", left, ".", right, "' because '", left,
                 "' is a type, but not a namespace. Did you mean to retrieve the type of the property '", right,
                 "' in '", left, "' with '", left, "[\"", right, "\"]'?");

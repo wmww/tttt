@@ -2449,7 +2449,12 @@ static void assignment_target_typecheck_of(
         return;
     }
     // (Any fits everything but never: tsc's isSimpleTypeRelatedTo. `x1[k] = v as any` with a never write type is TS2322)
-    if (source && (source->flags & TYF_ANY) && !(source->flags & TYF_ERROR) && target->tag != EXPR_PROPERTY && target->tag != EXPR_IDENTIFIER) source = nullptr;
+    // (Not an object pattern: its rest element is `{}` of any, tsc's getRestType, which can miss properties)
+    if (source && (source->flags & TYF_ANY) && !(source->flags & TYF_ERROR) && target->tag != EXPR_PROPERTY && target->tag != EXPR_IDENTIFIER &&
+        target->tag != EXPR_OBJECT
+    ) {
+        source = nullptr;
+    }
     // (A missing operand is tsc's missing identifier: a reference to nothing, not reported)
     if (target->tag == EXPR_IMPLICIT_ANY && target->missing) return;
     switch (target->tag) {
@@ -2661,7 +2666,10 @@ static void assignment_target_typecheck_of(
                                 keys[len++] = other->computed_key ? ty_regular(checker, ty_expr_type(checker, other->computed_key)) :
                                     ty_string_literal(checker, cstr_sv(&other->name_string));
                             }
-                            rest = ty_object_rest_type(checker, source, (TyList){ .data = keys, .len = len });
+                            // (Of any or the error type: tsc's getRestType makes an object of its properties, none: `{}`.
+                            // A variable declaration's rest stays any, getBindingElementTypeFromParentType returns first)
+                            rest = (source->flags & TYF_ANY) ? ty_object_literal(checker, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC) :
+                                ty_object_rest_type(checker, source, (TyList){ .data = keys, .len = len });
                             free(keys);
                         }
                         assignment_target_typecheck_of(&i->value, rest, nullptr, site, true, span_null, errs);
