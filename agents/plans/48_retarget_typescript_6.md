@@ -77,7 +77,8 @@ DefinitelyTyped is pinned at 2026-10-02 (already TS6-era configs: `module: node1
 exposures in `48_lost.txt` (stage 3); an outFile bundle's import types still use the file path (tsc: non-relative
 specifiers from the common source directory, see `program_module_display_name()`); corpora (below) not chased. The ordering
 prototype patch still applies cleanly on top. tsc's own `src/compiler` and tsc-src are 0 under the commit (the
-prototype's 87 were v6.0.3's sources).
+prototype's 87 were v6.0.3's sources). The v5.8.2 clone (for classifying losses) is at `/home/ai/tsc58`, outside the
+repo (may be gone: `git clone --depth 1 --branch v5.8.2`).
 1. `thirdparty/ensure-tsc.sh` pins the commit, not a tag: `git init`, `git fetch --depth 1 origin <sha>`, checkout;
    the version check is `git rev-parse HEAD`. Keep building tsc with hereby (needed by `tscbaseline.sh`, `filetest.sh`
    and every cached oracle: they must use `built/local/typescript.js` / `tsc.js` of *this* commit, not the repo's
