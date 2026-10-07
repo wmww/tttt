@@ -2189,6 +2189,12 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     // (With the wrong number of type arguments the reference is errorType, which the harness replaces with the
     // expression's type)
     if (instance && !class_decl_base_arity_fits(me)) instance = nullptr;
+    // (A reference is the base with the class's `this` as its this-argument to tsc's type writer, a new reference
+    // without the alias it was written through: getTypeWithThisArgument. `extends Constructor<T3>()` with `type T3 =
+    // number[]` shows number[])
+    if (instance && instance->kind == TY_REFERENCE && instance->alias) {
+        instance = ty_reference(current_checker, instance->reference.target, ty_reference_args(current_checker, instance));
+    }
     if (my extends.tag != EXPR_IMPLICIT_ANY) class_extends_compile_test_info(&my extends, instance, saved_generic, class_params, ctx);
     for_each (i, vec_spanned_type, &my implements) heritage_type_compile_test_info(&i->type, ctx);
     for_each (i, vec_expr, &my unchecked_extends) class_extends_compile_test_info(i, instance, saved_generic, class_params, ctx);

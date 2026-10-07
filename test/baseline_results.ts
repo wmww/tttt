@@ -10813,7 +10813,7 @@ const baselines = {
     'discriminateWithDivergentAccessors1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'discriminateWithMissingProperty': {
         errors: true,
@@ -56008,7 +56008,7 @@ const baselines = {
     'interfaceExtendsObjectIntersectionErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'interfaceThatHidesBaseProperty': {
         errors: true,

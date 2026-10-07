@@ -2883,7 +2883,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 // (The annotations as written where they still say it: tsc's signatureToSignatureDeclarationHelper)
                 FunctionImpl const* getter = prop_decl_rare(declared->decl)->setter ? declared->decl->function : nullptr;
                 TypeNode const* read_node = getter ? (getter->ret_explicit ? &getter->ret : nullptr) : declared->decl->node;
-                display_annotated(me, d, prop == declared ? read_node : nullptr, type, false);
+                // (Instantiated, an annotation that still says it: `get done(): true`)
+                bool fresh = prop != declared && (mentions(me, type, d.fresh_params) || mentions(me, write, d.fresh_params));
+                display_annotated(me, d, fresh ? nullptr : read_node, type, false);
                 out_lit(d, "; set ");
                 display_member_name(me, d, prop);
                 out_lit(d, "(");
@@ -2899,7 +2901,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
                 out_lit(d, ": ");
                 TypeNode const* write_node = prop_decl_rare(declared->decl)->setter ?
                     &vec_function_arg_at(&prop_decl_rare(declared->decl)->setter->args, 0)->initializer.binding.explicit_type : prop_decl_rare(declared->decl)->write_node;
-                display_annotated(me, d, prop == declared ? write_node : nullptr, write, false);
+                display_annotated(me, d, fresh ? nullptr : write_node, write, false);
                 out_lit(d, "); ");
                 continue;
             }
