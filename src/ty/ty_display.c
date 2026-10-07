@@ -2728,6 +2728,11 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         bool mapped_from = prop_decl_rare(origin->decl)->template_of && prop_decl_rare(prop->decl)->mapped_from;
         if (mapped_from) {
             origin = prop_decl_rare(prop->decl)->mapped_from;
+            // (Through a modifiers type that is mapped itself, `keyof (Partial<A> & B)`: the declarations tsc's mapped
+            // property copies are its modifiers property's, all the way down)
+            for (int depth = 0; depth < 16 && origin->mapped && prop_decl_rare(origin->decl)->mapped_from; depth++) {
+                origin = prop_decl_rare(origin->decl)->mapped_from;
+            }
             while (origin->target) origin = origin->target;
         }
         TypeNode const* annotation = placeholder ? nullptr : prop->decl->asserted;
@@ -2801,7 +2806,9 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         // (A mapped property whose template added `| undefined` to what the annotation says: the annotation in a new
         // union, like a parameter's, see annotation_plus_undefined())
         bool reverse = prop_decl_rare(prop->decl)->reverse_of != nullptr;
-        if ((mapped_from || reverse) && annotation && !d.reused && reuses_nodes(d) && annotation_plus_undefined(me, annotation, shown)) {
+        if ((mapped_from || reverse) && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
+            annotation_plus_undefined(me, annotation, shown)
+        ) {
             display_node(me, d, annotation);
             out(reused_if(d, false), c_sv(" | undefined"));
         }

@@ -22893,7 +22893,7 @@ const baselines = {
     'mappedTypeIndexedAccessConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeInferenceAliasSubstitution': {
         errors: true,
