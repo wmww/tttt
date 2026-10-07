@@ -1998,13 +1998,14 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
     }
     // Where nothing says otherwise, a variable is `undefined` until something is assigned to it
-    bool assume_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
+    bool tsc_assumes_initialized = symbol->is_parameter || symbol->is_ambient || !compiler_options()->strict_null_checks ||
         (type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_VOID)) || !binding || binding->definitely_assigned ||
         identifier->assume_initialized ||
-        includes_undefined(type) ||
         // A variable of another function than the one the reference is in (tsc's isOuterVariable): its initial type is
         // the declared type, which is also what the loop caches go by
         (identifier->outer_reference && !ty_symbol_never_initialized(symbol));
+    // (A type with undefined in it is its own optional type, tsc's getOptionalType: the same as assumed initialized)
+    bool assume_initialized = tsc_assumes_initialized || includes_undefined(type);
     if (issue_only && assume_initialized) return nullptr;
     // What the pattern's other elements say about the value destructured (tsc's getNarrowedTypeOfSymbol)
     if (binding && binding->parent) {
@@ -2015,6 +2016,13 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         if (narrowed) type = narrowed;
     }
     Ty const* initial = symbol->is_parameter ? parameter_initial_type(me, binding, type) : type;
+    // (tsc's getOptionalType of a declared type whose undefined is noUncheckedIndexedAccess's missing type, `const x =
+    // a[i]`, is another union, with undefined: not the declared type, so a branch label's antecedent that has the
+    // declared type doesn't end the walk early, getTypeAtFlowBranchLabel)
+    if (!tsc_assumes_initialized && type->kind == TY_UNION && ty_contains_missing(me, type)) {
+        Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
+        initial = ty_union(me, types, 2, nullptr, (TyList){0});
+    }
     if (!assume_initialized) {
         Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         initial = ty_union(me, types, 2, nullptr, (TyList){0});
