@@ -235,9 +235,18 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             // Function expressions that can't return don't (declarations are `void`, accessors too: tsc's mayReturnNever)
             ret = ty_intrinsic(me, TY_NEVER);
         } else if (!returned.len) {
-            // `undefined` if that's what the context wants (tsc's getReturnTypeFromBody, TS 5.1)
-            Ty const* contextual = function->is_async ? nullptr : ty_instantiate_contextual_type(me, ty_contextual_return_type(me, function));
-            bool undefined = contextual && contextual->kind != TY_UNION && (contextual->flags & TYF_UNDEFINED);
+            // `undefined` if the context allows it (tsc's getReturnTypeFromBody: some member of the unwrapped contextual
+            // return type is undefined, TS 6.0; an async function's is what it awaits to)
+            Ty const* contextual = ty_instantiate_contextual_type(me, ty_contextual_return_type(me, function));
+            if (contextual && function->is_async) contextual = ty_awaited_no_alias(me, contextual);
+            bool undefined = false;
+            if (contextual && contextual->kind == TY_UNION) {
+                for (u32 i = 0; i < contextual->composite.types.len && !undefined; i++) {
+                    undefined = contextual->composite.types.data[i]->flags & TYF_UNDEFINED;
+                }
+            } else if (contextual) {
+                undefined = contextual->flags & TYF_UNDEFINED;
+            }
             ret = ty_intrinsic(me, undefined ? TY_UNDEFINED : TY_VOID);
         } else {
             // An async function returns what its return expressions await to, and the context is about that too
