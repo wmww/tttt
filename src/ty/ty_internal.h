@@ -136,6 +136,8 @@ enum {
     KEY_ITERATOR_REPORTED, // iterable Ty (+ async) -> non-null once its iterator's method problems were reported
     KEY_UNION_NODE,     // (union or generic reference TypeNode, ctx.generic) -> its lowered type, see lower()
     KEY_EMIT_HELPERS,   // helpers module Symbol -> EmitHelper mask already checked; SourceFile -> TS2354 said (helpers.c)
+    KEY_NAMESPACE_IMPORT, // namespace import alias Symbol -> its module type (or the alias itself: none), see namespace_import_type()
+    KEY_MODULE_CLONE,   // that module type -> the alias Symbol it was made for (TyAnonymous.module_clone)
 };
 
 // The type parameters declared outside a root conditional type that it mentions (tsc's root.outerTypeParameters, less

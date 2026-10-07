@@ -1582,10 +1582,27 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
 // `import * as ns` of a module with `export =` (tsc's resolveESModuleSymbol): what it assigns, with a synthetic
 // `default` under esModuleInterop when that is something to import by default; an ES module's import of a JSON
 // module has nothing but the default (isOnlyImportableAsDefault). Null if it is the assigned value as it is
+static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbol);
 static Ty const* namespace_import_type(Checker* me, Symbol const* symbol) {
     if (!symbol || !(symbol->flags & SYMBOL_ALIAS) || !symbol->alias || !symbol->alias->item) return nullptr;
     PortItem const* item = symbol->alias->item;
     if (item->tag != PORT_IMPORT_GATHER || item->is_require || !item->module_ref) return nullptr;
+    // (Made once per alias: tsc's resolveAlias caches the clone in the alias's links)
+    u64 key[2] = { KEY_NAMESPACE_IMPORT, (u64)(uintptr_t)symbol };
+    void const* cached = intern_get(&my links, key, 2);
+    if (cached) return cached == (void const*)symbol ? nullptr : cached;
+    Ty const* type = namespace_import_type_uncached(me, symbol);
+    if (type) {
+        ((Ty*)type)->anonymous.module_clone = true;
+        u64 clone_key[2] = { KEY_MODULE_CLONE, (u64)(uintptr_t)type };
+        *intern_slot(me, &my links, clone_key, 2) = symbol;
+    }
+    *intern_slot(me, &my links, key, 2) = type ? (void const*)type : (void const*)symbol;
+    return type;
+}
+
+static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbol) {
+    PortItem const* item = symbol->alias->item;
     Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
     Symbol* assigned = module ? module_export_equals(module) : nullptr;
     if (!assigned || assigned == module || assigned->is_placeholder) return nullptr;

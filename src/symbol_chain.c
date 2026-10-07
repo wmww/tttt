@@ -158,6 +158,20 @@ static bool namespace_import_is_clone(Symbol const* symbol) {
     return assigned && (assigned->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS));
 }
 
+// `import * as ns` of a module with `export =` that tsc resolves to a clone (resolveESModuleSymbol under esModuleInterop
+// when what it assigns has signatures or a `default`): ns is a symbol of its own then, which names neither the module nor
+// what it assigns (its type prints by ty_display.c's display_module_clone())
+static bool has_port_tag(Symbol const* symbol, u32 tag);
+static bool export_equals_namespace_import_is_clone(Symbol const* alias) {
+    if (!has_port_tag(alias, PORT_IMPORT_GATHER) || alias->alias->item->is_require || !alias->alias->item->module_ref) return false;
+    if (!compiler_options()->es_module_interop) return false;
+    Symbol* module = binder_module_of_ref(alias->binder, alias->alias->item->module_ref);
+    Symbol const* assigned = module ? module_export_equals(module) : nullptr;
+    if (!assigned || assigned == module || assigned->is_placeholder) return false;
+    if (assigned->flags & SYMBOL_ALIAS) assigned = resolve_alias(assigned);
+    return assigned && ((assigned->flags & (SYMBOL_FUNCTION | SYMBOL_CLASS)) || symbol_get_export((Symbol*)assigned, c_sv("default")));
+}
+
 // The identity of what a symbol stands for: a namespace import (`import * as ns`) is its module
 static Symbol const* identity(ChainCtx const* me, Symbol const* symbol) {
     return merged(me, symbol_members(merged(me, symbol)));
@@ -229,6 +243,9 @@ static bool is_accessible(
     if (resolved && resolved != symbol && symbol_rare(resolved)->merged_export_equals_of) named = symbol_rare(resolved)->merged_export_equals_of;
     if (named != symbol && identity(me, named) != identity(me, symbol)) return false;
     if (my container_lookup && symbol->is_module && named != symbol && namespace_import_is_clone(merged(me, named))) return false;
+    // (Nor does it name what the module assigns: the clone is a symbol of its own, printed by ty_display.c's
+    // display_module_clone())
+    if (from_table != symbol && export_equals_namespace_import_is_clone(from_table)) return false;
     // (A table holds the symbol as it was declared: an `export =` target augmented later is tsc's merged clone, so
     // only modules themselves are skipped here)
     if (from_table->is_module) return false;

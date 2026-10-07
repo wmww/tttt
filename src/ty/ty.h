@@ -365,6 +365,9 @@ struct Ty {
             bool is_reverse : 1; // `reverse` is set, not `merged_value`
             bool no_inferable_index : 1; // OBJECT_NO_INFERABLE_INDEX
             bool commonjs_module : 1; // The `module` of a CommonJS file that is a namespace too: prints as `typeof module`
+            // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
+            // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias
+            bool module_clone : 1;
             bool mapped : 1; // A mapped type node (`{ [K in C]: X }`) or an instantiation of one (tsc's ObjectFlags.Mapped)
         } anonymous;
         struct {

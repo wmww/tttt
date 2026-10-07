@@ -695,8 +695,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `namespace_import_is_clone()` (`symbol_chain.c`, HACK): under esModuleInterop tsc resolves `import * as ns` of a
   module with a `default` (or signatures) to a clone, so `ns` doesn't name the module as a container
   (esModuleInteropDefaultImports). tttt types `ns` as the module itself, so the rule only applies to container lookups
-  (`ChainCtx.container_lookup`); a module printed as `typeof ns` still goes through `ns`. A real clone symbol for such
-  imports would remove the special case.
+  (`ChainCtx.container_lookup`); a module printed as `typeof ns` still goes through `ns`. For an `export =` module the
+  clone is now modelled: `namespace_import_type()` (lower.c) makes the type once per alias, flagged
+  `TyAnonymous.module_clone` and printed by `display_module_clone()`, and `export_equals_namespace_import_is_clone()`
+  keeps such an `ns` from naming what the module assigns. Its predicate (signatures or `default`) is syntactic and
+  only approximates namespace_import_type()'s typed one. A real clone symbol would remove both special cases.
 - `module_specifiers.c` leaves out: getModuleSpecifierOverride (an `import("...")` type node reused from another file
   gets its specifier regenerated in tsc), redirectTargetsMap (a duplicate package's other paths), the output files a
   package.json `imports` entry may name, `moduleName` of AMD files, auto-import preferences. Alternative containers

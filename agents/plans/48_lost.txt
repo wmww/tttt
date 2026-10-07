@@ -36,13 +36,6 @@ assertionTypePredicates1	T	src-changed	bl-changed
 assertionsAndNonReturningFunctions	T	src-changed	bl-changed
 assignmentToAnyArrayRestParameters	T	src-changed	bl-changed
 asyncFunctionContextuallyTypedReturns	T	src-same	bl-changed
-augmentExportEquals3	T	src-changed	bl-changed
-augmentExportEquals3_1	T	src-changed	bl-changed
-augmentExportEquals4	T	src-changed	bl-changed
-augmentExportEquals4_1	T	src-changed	bl-changed
-augmentExportEquals5	T	src-changed	bl-changed
-augmentExportEquals6	T	src-changed	bl-changed
-augmentExportEquals6_1	T	src-changed	bl-changed
 awaitUnionPromise	T	src-same	bl-changed
 awaitUnion_es6	T	src-same	bl-changed
 bestChoiceType	T	src-changed	bl-changed
@@ -198,8 +191,6 @@ errorsForCallAndAssignmentAreSimilar	E	src-changed	bl-changed
 errorsOnUnionsOfOverlappingObjects01	T	src-changed	bl-changed
 es2022IntlAPIs	T	src-same	bl-changed
 es2024SharedMemory	T	src-same	bl-changed
-es6ImportEqualsExportModuleCommonJsError	T	src-changed	bl-same
-es6ImportEqualsExportModuleEs2015Error	T	src-changed	bl-same
 esModuleIntersectionCrash	T	src-changed	bl-changed
 excessPropertyCheckWithMultipleDiscriminants	E	src-changed	bl-changed
 exhaustiveSwitchStatements1	ST	src-changed	bl-changed
@@ -237,7 +228,6 @@ implicitConstParameters	T	src-changed	bl-changed
 importAliasFromNamespace	ET	src-changed	bl-changed
 importAttributes9	T	src-same	bl-changed
 importCallExpressionSpecifierNotStringTypeError	ET	src-same	bl-changed
-importedAliasedConditionalTypeInstantiation	T	src-changed	bl-changed
 inDoesNotOperateOnPrimitiveTypes	ET	src-changed	bl-changed
 inKeywordTypeguard(strict=false)	T	src-same	bl-changed
 inKeywordTypeguard(strict=true)	T	src-same	bl-changed
@@ -322,7 +312,6 @@ moduleExportAlias5	T	src-changed	bl-changed
 moduleExportsElementAccessAssignment2	T	src-changed	bl-changed
 moduleNoneDynamicImport(target=es2015)	ST	src-same	bl-changed
 moduleNoneDynamicImport(target=es2020)	ST	src-same	bl-changed
-module_augmentUninstantiatedModule2	T	src-changed	bl-changed
 narrowByBooleanComparison	T	src-changed	bl-changed
 narrowByClauseExpressionInSwitchTrue1	T	src-changed	bl-changed
 narrowByInstanceof	ST	src-changed	bl-changed
@@ -601,9 +590,6 @@ typeofOperatorWithNumberType	T	src-changed	bl-changed
 typeofOperatorWithStringType	T	src-changed	bl-changed
 typeofUnknownSymbol	T	src-changed	bl-changed
 typesVersionsDeclarationEmit.multiFileBackReferenceToUnmapped	T	src-same	bl-changed
-umd-augmentation-3	T	src-changed	bl-changed
-umd-augmentation-4	T	src-changed	bl-changed
-umd8	ST	src-changed	bl-changed
 uncalledFunctionChecksInConditional2	T	src-changed	bl-changed
 unicodeEscapesInNames01(target=es5)	E	src-same	bl-changed
 unicodeEscapesInNames02(target=es2015)	E	src-changed	bl-changed

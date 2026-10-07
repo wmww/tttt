@@ -2168,37 +2168,37 @@ const baselines = {
     'augmentExportEquals3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals3_1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals4_1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals6_1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentExportEquals7': {
         errors: true,
@@ -13613,12 +13613,12 @@ const baselines = {
     'es6ImportEqualsExportModuleCommonJsError': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportEqualsExportModuleEs2015Error': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'es6ImportNameSpaceImport': {
         errors: true,
@@ -18543,7 +18543,7 @@ const baselines = {
     'importedAliasedConditionalTypeInstantiation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importedAliasesInTypePositions': {
         errors: true,
@@ -22158,7 +22158,7 @@ const baselines = {
     'jsxNamespacedNameNotComparedToNonMatchingIndexSignature': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNestedWithinTernaryParsesCorrectly': {
         errors: true,
@@ -24628,7 +24628,7 @@ const baselines = {
     'module_augmentUninstantiatedModule2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduledecl(target=es2015)': {
         errors: true,
@@ -55203,12 +55203,12 @@ const baselines = {
     'umd-augmentation-3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd-augmentation-4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'umd-errors': {
         errors: true,
@@ -55252,8 +55252,8 @@ const baselines = {
     },
     'umd8': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'umd9': {
         errors: true,

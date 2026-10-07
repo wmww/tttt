@@ -12,6 +12,7 @@
 #include "unicode_identifiers.h"
 #include "port_statement.h"
 #include "class_decl.h"
+#include "module_resolution.h"
 
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
@@ -330,13 +331,32 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         chain.len = 1;
     }
     if (chain.len && d.enclosing && symbol_is_augmented_export_equals(chain.items[0])) {
-        // What an augmented `export =` assigns is a module to tsc's printer, named by the file of its first
-        // declaration as that is called (getSpecifierForModuleSymbol without a resolver host: the extension stays)
-        SourceFile const* file = chain.items[0]->decls[0].full.source;
+        // What an augmented `export =` assigns is a module to tsc's printer (getSpecifierForModuleSymbol, which has a
+        // resolver host since tsc 6 even for baselines): named by the first of its declarations that is an ambient
+        // module not augmenting a relative name (tryGetModuleNameFromAmbientModule), else by a specifier from here
+        // to the file of its first declaration
+        Symbol const* module = chain.items[0];
+        SourceFile const* file = module->decls[0].full.source;
         if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file, symbol);
+        csview ambient = {0};
+        for (u32 i = 0; i < module->decl_count && !ambient.size; i++) {
+            if (module->decls[i].kind != SYMBOL_DECL_NAMESPACE) continue;
+            NamespaceDecl const* ns = module->decls[i].node;
+            if (!ns->is_ambient_module || ns->name.sv.size < 2) continue;
+            csview name = csview_slice(ns->name.sv, 1, ns->name.sv.size - 1);
+            if (!ns->is_augmentation || !module_name_is_relative(name)) ambient = name;
+        }
+        SourceFile const* context = span_valid(d.at) ? d.at.source : nullptr;
         out_lit(d, "import(\"");
-        csview path = file ? source_file_display_path(file) : c_sv("");
-        out(d, path);
+        if (ambient.size) {
+            out(d, ambient);
+        } else if (file && context && !cstr_size(&compiler_options()->out_file)) {
+            cstr specifier = program_module_specifier(my program, context, file, SPECIFIER_MODE_NONE);
+            out(d, cstr_sv(&specifier));
+            cstr_drop(&specifier);
+        } else {
+            out(d, file ? source_file_display_path(file) : c_sv(""));
+        }
         out_lit(d, "\")");
         start = 1;
     } else if (chain.len && chain.items[0]->is_module) {
@@ -432,6 +452,27 @@ static u32 out_outer_type_args(Checker* me, TyDisplay d, OuterGenerics const* ou
         out_lit(d, ">.");
     }
     return start + len;
+}
+
+// The type of a namespace import of an `export =` module (TyAnonymous.module_clone): tsc's cloneTypeAsModuleType
+// makes an anonymous type whose symbol is a clone of the assigned one, `typeof x` where that is a class, enum or value
+// module: named by the import that resolves to the clone where that is in scope, else by the assigned symbol's own name
+static bool display_module_clone(Checker* me, TyDisplay d, Ty const* ty) {
+    u64 key[2] = { KEY_MODULE_CLONE, (u64)(uintptr_t)ty };
+    Symbol const* alias = intern_get(&my links, key, 2);
+    if (!alias || !alias->alias || !alias->alias->item || !alias->alias->item->module_ref) return false;
+    Symbol* module = binder_module_of_ref(alias->binder, alias->alias->item->module_ref);
+    Symbol const* assigned = module ? module_export_equals(module) : nullptr;
+    // (tsc's createAnonymousTypeNode: `typeof` for a class, enum or instantiated namespace, else the structure)
+    if (!assigned || !(assigned->flags & (SYMBOL_CLASS | SYMBOL_ENUM | SYMBOL_VALUE_MODULE))) return false;
+    out_lit(d, "typeof ");
+    if (d.enclosing && scope_resolve(d.enclosing, alias->name, SYMBOL_VALUE) == alias) {
+        if (d.tracker) d.tracker->track_symbol(d.tracker, alias, SYMBOL_VALUE);
+        out(d, alias->name);
+    } else {
+        out(d, ty_symbol_display_name(assigned).sv);
+    }
+    return true;
 }
 
 static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 meaning) {
@@ -3220,6 +3261,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         }   break;
 
         case TY_ANONYMOUS: {
+            if (ty->anonymous.module_clone && display_module_clone(me, d, ty)) break;
             if (ty->anonymous.commonjs_module) {
                 out_lit(d, "typeof module");
                 break;
