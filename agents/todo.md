@@ -40,5 +40,8 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
 9. Done (execution, 2026-10-07): plan 48 stage 6. Instructions identical to entry 8's end (vscode 92.151 G);
    `./bench.sh` on every re-pinned corpus: tttt 3.0x (vscode, 6.2 s / 5.8 GB vs 18.3 s / 8.7 GB) to 13.9x (type-fest)
    faster than multi-threaded tsgo 7.0.2, less memory everywhere; work volume within ~15% of tsc's. No code changes.
-10. **Triage.**
+10. Done (triage, 2026-10-07): triage.md drained by 4 sub-agents (+ second tasks: mutation seeds 16 and 17, the last
+   vscode error, flagflip, named error types): ~70 fixes, suite **14829 / 14969** (0 lost), **vscode 1 -> 0** (every
+   corpus 0 but effect 3), flagflip 42/12/5 -> 18/10/4, `$ExpectType` 68628, sweep 8594; instructions -0.7..+1.1%.
+   New: plan 50 (tsc's export= / CommonJS symbol clones), bugs/binder_modules.md, bugs/tsgo_divergences.md.
 11. **Insights.**

@@ -9,6 +9,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Triage drain (2026-10-07, eleventh window's todo entry 10, 4 sub-agents)
+Suite **14805 -> 14829 / 14969** (errors 14903, symbols 14920, types 14872), 0 lost. Corpora: every one 0 but effect 3
+(plan 19) and zod-root = tsc's 53; **vscode 1 -> 0**. Sweep 8594 / 8595 (the lib-check one), `$ExpectType` 68621 ->
+**68628 / 68640**, flagflip missing / spurious / other 42 / 12 / 5 -> **18 / 10 / 4**, scenarios 240 / 0, threadcheck and
+checkerdiff identical. Mutation: seed 2 32 -> 13, seed 17 13 -> 7, multi/js seed 16 22 -> 11. Instructions (callgrind,
+4d664405; vs entry 9): tsc 4.771 (-0.3%), type-fest 19.767 (+1.1%: tsc 6's tuple member order and label-keyed tuple
+targets), valibot 4.234 (+0.4%), react 1.542, nest 1.150, webpack 10.607 (-0.7%), zod 5.091 (+0.4%), xstate 3.184,
+drizzle 8.064, vue 7.032, effect 10.045 (+0.5%), vscode 92.442 (+0.3%), excalidraw 7.966, tanstack-router 5.879 G.
+
 ## Perf session on the re-pinned corpora (2026-10-07, eleventh window's todo entry 9, plan 48 stage 6)
 No code changes; bench.sh now runs every corpus (effect added) on the same config for tsgo, tsc with a 16 GB heap,
 and its obsolete synthetic corpus is gone. Instructions (callgrind, `--checkers 1`, 6650c15e) **identical to entry 8's
