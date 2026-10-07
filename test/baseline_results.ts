@@ -9473,17 +9473,17 @@ const baselines = {
     'declarationEmitReexportedSymlinkReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitReexportedSymlinkReference2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitReexportedSymlinkReference3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitRelativeModuleError': {
         errors: true,
@@ -9878,7 +9878,7 @@ const baselines = {
     'declarationsIndirectGeneratedAliasReference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
         errors: true,
@@ -22113,17 +22113,17 @@ const baselines = {
     'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=preserve)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=react-jsx)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceImplicitImportJSXNamespaceFromPragmaPickedOverGlobalOne': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsxNamespaceNoElementChildrenAttributeReactJsx(jsx=react-jsx)': {
         errors: true,
@@ -41573,7 +41573,7 @@ const baselines = {
     'typesVersionsDeclarationEmit.multiFileBackReferenceToUnmapped': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorOnClassAccessor1(target=es2015)': {
         errors: true,

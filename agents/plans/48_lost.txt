@@ -9,10 +9,6 @@ arityAndOrderCompatibility01	E	src-changed	bl-changed
 bundledDtsLateExportRenaming	T	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed
 constructorWithIncompleteTypeAnnotation	E	src-changed	bl-changed
-declarationEmitReexportedSymlinkReference	T	src-changed	bl-changed
-declarationEmitReexportedSymlinkReference2	T	src-changed	bl-changed
-declarationEmitReexportedSymlinkReference3	ET	src-changed	bl-changed
-declarationsIndirectGeneratedAliasReference	T	src-changed	bl-changed
 erasableSyntaxOnly	ET	src-changed	bl-changed
 errorForConflictingExportEqualsValue	T	src-changed	bl-changed
 importAliasFromNamespace	ET	src-changed	bl-changed
@@ -20,9 +16,6 @@ inferTypePredicates	T	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed
 jsFileMethodOverloads5	T	src-changed	bl-changed
 jsdocTypeFromChainedAssignment3	E	src-changed	bl-changed
-jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=preserve)	T	src-changed	bl-changed
-jsxNamespaceImplicitImportJSXNamespaceFromConfigPickedOverGlobalOne(jsx=react-jsx)	T	src-changed	bl-changed
-jsxNamespaceImplicitImportJSXNamespaceFromPragmaPickedOverGlobalOne	T	src-changed	bl-changed
 jsxNamespacePrefixInName	T	src-changed	bl-changed
 jsxNamespacePrefixInNameReact	T	src-changed	bl-changed
 legacyNodeModulesExportsSpecifierGenerationConditions	ET	src-changed	bl-changed
@@ -38,4 +31,3 @@ styledComponentsInstantiaionLimitNotReached	E	src-changed	bl-changed
 thisInPropertyBoundDeclarations	T	src-changed	bl-changed
 tsxStatelessFunctionComponentOverload1	E	src-changed	bl-changed
 typePredicateStructuralMatch	S	src-changed	bl-changed
-typesVersionsDeclarationEmit.multiFileBackReferenceToUnmapped	T	src-same	bl-changed

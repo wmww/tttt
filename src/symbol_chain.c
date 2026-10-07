@@ -645,7 +645,7 @@ void symbol_chain_set_module_specifier(ModuleSpecifierFn fn, void* ctx) {
 }
 
 // getSpecifierForModuleSymbol of a container, empty if it isn't a module
-static cstr parent_specifier(Symbol const* parent) {
+static cstr parent_specifier(Symbol const* parent, SourceFile const* from) {
     if (!parent->is_module || !parent->module) return cstr_null;
     SourceFile const* file = parent->module->file;
     if (!file) {
@@ -655,7 +655,11 @@ static cstr parent_specifier(Symbol const* parent) {
         return cstr_from_sv(name);
     }
     if (module_specifier_fn) return module_specifier_fn(module_specifier_ctx, file);
-    // (without a host: the file's name, absolute; the files of a program are all below its directory, or have `..`s
+    // (tsc 6 always has a host where there is an enclosing file: the specifier from there)
+    if (from && current_checker && !cstr_size(&compiler_options()->out_file)) {
+        return program_module_specifier(current_checker->program, from, file, SPECIFIER_MODE_NONE);
+    }
+    // (without one: the file's name, absolute; the files of a program are all below its directory, or have `..`s
     // that count as components alike)
     return cstr_d("/", file->canonical_path);
 }
@@ -675,12 +679,12 @@ static bool specifier_is_relative(csview path) {
 // getSymbolChain's sortByBestName: modules with fewer path components first, non-relative before relative; the rest
 // stay where they are. V8 sorts arrays this short with a binary insertion sort, which this is (the comparison isn't a
 // total order, so the algorithm shows)
-static void sort_by_best_name(Symbol const** parents, u32 count) {
+static void sort_by_best_name(Symbol const** parents, u32 count, SourceFile const* from) {
     if (count < 2) return;
     cstr specifiers[CONTAINERS_MAX];
     u32 order[CONTAINERS_MAX];
     for (u32 i = 0; i < count; i++) {
-        specifiers[i] = parent_specifier(parents[i]);
+        specifiers[i] = parent_specifier(parents[i], from);
         order[i] = i;
     }
     for (u32 i = 1; i < count; i++) {
@@ -713,7 +717,7 @@ static bool symbol_chain(ChainCtx* me, Symbol const* symbol, u32 meaning, bool e
     if (depth < 8 && (!have || needs_qualification(me, chain.items[0], chain.len == 1 ? meaning : left_meaning(meaning)))) {
         Symbol const* parents[CONTAINERS_MAX];
         u32 parent_count = containers_of(me, have ? chain.items[0] : symbol, meaning, parents);
-        sort_by_best_name(parents, parent_count);
+        sort_by_best_name(parents, parent_count, my enclosing ? my enclosing->file : nullptr);
         for (u32 i = 0; i < parent_count; i++) {
             SymbolChain parent_chain = {0};
             bool was_container_lookup = my container_lookup;
