@@ -166,6 +166,9 @@ enum {
     // getPropertyTypeForIndexType does (reporting TS2538 where there's an access node). Not for lookups by name (tsc's
     // getPropertyOfType and getApplicableIndexInfoForName: a late-bound name only looks for symbol index signatures)
     ACCESS_SYMBOL_STRING = 1 << 1,
+    // An element access expression: an any key reads an intersection's index signatures (HACK: only there, see
+    // the any key case of access())
+    ACCESS_ELEMENT = 1 << 3,
 };
 
 // ACCESS_INCLUDE_UNDEFINED: what an index signature or the rest of a tuple gives includes undefined (noUncheckedIndexedAccess, tsc's
@@ -286,6 +289,10 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     if (index->flags & TYF_ANY) {
         // What the index signatures say (any is assignable to every key type: the specific ones, else a string one,
         // tsc's getPropertyTypeForIndexType with getApplicableIndexInfo)
+        // (HACK: an intersection's only for an element access expression. tsc reads them for `X[any]` types too, but
+        // jquery's `NamespacedTypeToTriggeredEventMap<...>[any]` then is the intersection of every event, and relating
+        // such intersections fails where it shouldn't, which made JQuery<T> invariant: 13 DefinitelyTyped packages)
+        u32 any_key_kinds = TYF_OBJECT | (flags & ACCESS_ELEMENT ? TYF_INTERSECTION : 0);
         Ty const* apparent = ty_apparent_type(me, object);
         if (apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
             // A union's index signatures are those every member has, of the union of their types (tsc's
@@ -299,7 +306,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             for (u32 i = 0; i < members.len && all; i++) {
                 if (members.data[i]->flags & TYF_NULLABLE) continue;
                 Ty const* member = ty_apparent_type(me, members.data[i]);
-                IndexInfo const* info = (member->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, member, index) : nullptr;
+                IndexInfo const* info = (member->flags & any_key_kinds) ? ty_applicable_index_info(me, member, index) : nullptr;
                 if (info) parts[len++] = info->value;
                 else all = false;
             }
@@ -308,7 +315,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             free(parts);
             return include_undefined && all ? with_missing(me, ret) : ret;
         }
-        IndexInfo const* info = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, apparent, index) : nullptr;
+        IndexInfo const* info = (apparent->flags & any_key_kinds) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return ty_intrinsic(me, TY_ANY);
         return include_undefined ? with_missing(me, info->value) : info->value;
     }
@@ -531,7 +538,7 @@ Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index)
 
 // `object[index]` as an element access expression reads it: a symbol key reads a string index signature too (TS2538)
 Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool reading) {
-    u32 flags = ACCESS_SYMBOL_STRING | (reading && compiler_options()->no_unchecked_indexed_access ? ACCESS_INCLUDE_UNDEFINED : 0);
+    u32 flags = ACCESS_SYMBOL_STRING | ACCESS_ELEMENT | (reading && compiler_options()->no_unchecked_indexed_access ? ACCESS_INCLUDE_UNDEFINED : 0);
     return access(me, object, ty_regular(me, index), 0, flags);
 }
 
