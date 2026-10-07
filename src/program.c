@@ -2951,6 +2951,19 @@ cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFi
     return ret;
 }
 
+cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override) {
+    SourceFile const* target = module->module ? module->module->file : nullptr;
+    // (A JSON file's module symbol has no SourceFile declaration in tsc: named like an ambient module, by its quoted
+    // escapedName)
+    if (!target || target->is_json || !from || cstr_size(&compiler_options()->out_file)) {
+        return module_name_for_error(module, nullptr, false);
+    }
+    cstr specifier = program_module_specifier(me, from, target, override);
+    cstr ret = cstr_d("\"", specifier, "\"");
+    cstr_drop(&specifier);
+    return ret;
+}
+
 u32 program_serial(Program const* me) {
     return my serial;
 }

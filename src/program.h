@@ -8,6 +8,7 @@ typedef struct Program Program;
 typedef struct ErrorCtx ErrorCtx;
 typedef struct SourceFile SourceFile;
 typedef struct Fs Fs;
+typedef struct Symbol Symbol;
 typedef union arc_js_object ArcObject;
 
 Program* program_new(ErrorCtx* errs, Fs const* fs);
@@ -95,6 +96,11 @@ void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
 // getSpecifierForModuleSymbol): an import of the file that resolves to it, else module_specifier_generate(). override:
 // the resolution mode an import type asks for. Thread safe
 cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override);
+// How tsc 6 names a module symbol from a place in `from` (symbolToString and symbolToTypeNode with an enclosing
+// declaration: getSpecifierForModuleSymbol, which always has a resolver host now), in double quotes: a file by the
+// module specifier an import in `from` would write (`"./b"`). An ambient module, a JSON file, no place, or an outFile
+// bundle (tsc: non-relative from the common source directory, not ported) as module_name_for_error()
+cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override);
 // Different for every program this process makes (what memos that outlive a program key on, rather than its address)
 u32 program_serial(Program const* me);
 // tsc's getDefaultResolutionModeForFile

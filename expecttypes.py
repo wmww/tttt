@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """`$ExpectType` at breadth (plan 44 stage 3 item 2): a *types* oracle over DefinitelyTyped. Every package with
 `// $ExpectType` assertions in its tests is checked by tttt, which prints the type of each asserted node; that is
-compared with what tsc 5.8 prints for the same node (not with the comment: DT's CI runs a newer TypeScript). tsc's
+compared with what tsc prints for the same node (not with the comment: DT's CI runs a newer TypeScript). tsc's
 side is cached in test/sweep/DefinitelyTyped.expect.jsonl.gz (`--tsc` regenerates it, ~2-10 minutes on 4 cores): the node
 DefinitelyTyped's `expect` lint rule picks for each assertion (test/sweep_tsc.js --expect), its span and kind, and
 `typeToString(getTypeAtLocation(node), undefined, NoTruncation)` read after checking every file but the default libs
@@ -136,7 +136,7 @@ def main():
         with gzip.open(ORACLE, 'wt') as f:
             for p in sorted(oracle):
                 f.write(json.dumps(oracle[p], separators=(',', ':')) + '\n')
-        print(f'tsc 5.8 on {len(packages)} packages in {time.time() - start:.0f}s, written to {ORACLE}')
+        print(f'tsc on {len(packages)} packages in {time.time() - start:.0f}s, written to {ORACLE}')
         return
 
     oracle = {r['project']: r for r in map(json.loads, gzip.open(ORACLE, 'rt'))}

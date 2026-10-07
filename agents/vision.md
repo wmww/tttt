@@ -6,6 +6,10 @@ by building on a foundation that can't be fast or can't be complete. The tsc bas
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
 ## State (2026-10-07, insights after the tenth window)
+- **Switched (plan 48 stage 1, todo entry 2 of the eleventh window): suite 13683 / 14969** against TypeScript commit
+  4d4f005c (errors 14588, symbols 14858, types 13883); the remaining gap is mostly member order (stage 2) and
+  strict-by-default exposure (stage 3). The sweep / `$ExpectType` / flagflip caches are still tsc 5.8's until stage 4.
+  The 5.8 numbers below are history.
 - **Suite 13303 / 13540** fully pass (errors 13455, symbols 13490, types 13355) against **TypeScript 5.8.2**. +204 in
   the window, 0 lost. 237 tests fail somewhere. Checker log_error output: none.
 - **Corpora** (all clean under tsc 5.8, pinned at their last commits before TypeScript 6): tsc `src/compiler`,

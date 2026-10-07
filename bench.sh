@@ -79,7 +79,7 @@ fi
 echo "tttt phases (one run):"
 ./release/tttt -q --time --keep-going -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
-# The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy, clean under tsc 5.8. tttt still reports
+# The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy, clean under tsc 5.8 as pinned (plan 48 stage 5 re-pins them for 6.0). tttt still reports
 # plenty there (./realworld.py --corpus NAME), so these times are of an incomplete check. tsgo 7 dropped
 # moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change), and
 # removed baseUrl, so the React app (plan 25) gets a generated tsconfig.tsgo.json that unsets it (its paths are

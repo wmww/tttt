@@ -742,6 +742,11 @@ src` finds the code-side markers; every significant one has an entry here.
   `--keep-going` unvalidated.
 
 ## Display and baselines (`ty_display.c`, `symbol_chain.c`, `baseline_test_case.c`)
+- `program_module_display_name()`: import types and module symbols named from a place use
+  `program_module_specifier()` (tsc 6's getSpecifierForModuleSymbol always has a resolver host), uncached (tsc caches
+  per symbol, file and mode); under `outFile` it falls back to the file path without extension instead of tsc's
+  non-relative specifier from the common source directory, and JSON files are special-cased by observation. The baseline traversal skips omitted array elements by shape (an undefined literal with an empty
+  span in `EXPR_ARRAY`), not by a node kind of their own.
 - `TyDisplay.decl_literal` / `annotates_name_at()`: tsc reuses a `unique symbol` annotation only inside the enclosing
   declaration (the printed node's parent); the types baseline has no parent node, so "the literal is the annotation of
   the name at `at`" is decided from the source text between them (only `?`/`:`).

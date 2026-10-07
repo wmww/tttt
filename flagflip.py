@@ -2,7 +2,7 @@
 """Flag flips (plan 46 stage 1): the pinned corpora are clean under tsc with their own flags, so they can only show
 spurious diagnostics. Rechecked with a stricter (or looser) flag on the command line they turn into thousands of real
 tsc diagnostics on real code, which tttt must report too. This runs every corpus x flag cell through tttt and compares
-(file, line, code) multisets with tsc 5.8's, which is cached under test/flagflip/CORPUS/FLAG.json.gz keyed by the corpus
+(file, line, code) multisets with tsc's, which is cached under test/flagflip/CORPUS/FLAG.json.gz keyed by the corpus
 pin (generate with --tsc: minutes per cell on the big corpora). Whatever tttt reports on the corpus at its default
 flags is subtracted (effect's known spurious ones). Mismatches are ranked by root cause across cells: code and message
 shape, and a missing code that tttt reports as another code on the same line as "TSa->TSb".

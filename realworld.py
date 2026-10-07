@@ -12,7 +12,7 @@ import argparse, collections, os, re, resource, subprocess, sys, time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# The corpora besides tsc's compiler (plan 17): modern, type-heavy code, clean under tsc 5.8, fetched by
+# The corpora besides tsc's compiler (plan 17): modern, type-heavy code, clean under tsc 5.8 as pinned (plan 48 stage 5 re-pins them for 6.0), fetched by
 # thirdparty/ensure-corpora.sh
 CORPORA = {
     'tsc': 'thirdparty/tsc/src/compiler',

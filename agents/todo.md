@@ -14,8 +14,10 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
 
 1. Done (planning, 2026-10-07): plan 48 rewritten from four prototypes. Switch prototype 92.3% against 6.0.3,
    stable-ordering prototype 13220 -> 13790 against the commit; both saved in `agents/plans/48_prototypes/`.
-2. **Execution: plan 48 stage 1**, the switch: pin `thirdparty/tsc` at the commit (built with hereby), libs, apply
-   `48_prototypes/switch`, cheap buckets (messages, `import("./x")`), `48_lost.txt`, saved results regenerated.
+2. Done (execution, 2026-10-07): plan 48 stage 1. `thirdparty/tsc` at 4d4f005c (no `lib/` LKG: scripts use
+   `built/local/`), suite **13683 / 14969** (13220 after the prototype patches, +463 from messages, import types
+   and module symbols named by module specifier, omitted elements). `48_lost.txt`: 9 true (strict-by-default
+   exposure) + 796 re-baselined (612 types only).
 3. **Execution: plan 48 stage 2 session A**, stable type ordering productionized (`48_prototypes/ordering`, a per-type
    sort key to get the +4-11% instructions back, member ordering).
 4. **Execution: fan-out** (plan 48 stage 3: four sub-agents on `48_lost.txt` and failstats buckets, disjoint lists).

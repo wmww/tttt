@@ -258,10 +258,8 @@ static bool is_nested_expando_function(Ty const* ty) {
     return expando && !is_non_local_function(symbol);
 }
 
-// `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode). Named from a place,
-// a file is named by the module specifier an import there would write (tsc 6's typeToString always has a module
-// resolver host, getSpecifierForModuleSymbol: `./b`); without one, or in an outFile bundle (baseUrl at the common
-// source directory, non-relative preference: not ported), by its path without the extension
+// `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode), named from a place
+// as program_module_display_name() says
 static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     // An ES module named from a file of the other format under node16/nodenext resolution says how to resolve it
     // (tsc's symbolToTypeNode: the resolution-mode import attribute)
@@ -270,20 +268,17 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     SourceFile const* context = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
     bool resolution_mode = (resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) &&
         target && context && target->has_format && target->is_esm && !(context->has_format && context->is_esm);
-    cstr module_name = target && context && !cstr_size(&compiler_options()->out_file) ?
-        program_module_specifier(my program, context, target, resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE) :
-        module_name_for_error(module, nullptr, false);
+    cstr module_name = program_module_display_name(my program, module, context,
+        resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE);
     csview name = cstr_sv(&module_name);
     out_lit(d, "import(");
-    if (name.size >= 2 && (name.buf[0] == '\'' || name.buf[0] == '"')) {
+    if (name.size >= 2 && name.buf[0] == '\'') {
         // (a string literal the printer makes: double quotes)
         out_lit(d, "\"");
         out(d, csview_slice(name, 1, name.size - 1));
         out_lit(d, "\"");
     } else {
-        out_lit(d, "\"");
         out(d, name);
-        out_lit(d, "\"");
     }
     if (resolution_mode) out_lit(d, ", { with: { \"resolution-mode\": \"import\" } }");
     out_lit(d, ")");

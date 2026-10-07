@@ -79,7 +79,13 @@ static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
     return ret;
 }
 
-// The name of a file's module from here: its path in quotes, unless an alias in scope names it (`var m =
+// A module symbol's name from here (tsc's symbolToString with the node's parent as the enclosing declaration)
+static cstr module_text(BaselineTestCase* ctx, Symbol const* module) {
+    return program_module_display_name(ctx->program, module, ctx->enclosing ? ctx->enclosing->file : nullptr,
+        SPECIFIER_MODE_NONE);
+}
+
+// The name of a file's module from here: its module specifier in quotes, unless an alias in scope names it (`var m =
 // require("./m")`, `import * as m`: tsc's getAccessibleSymbolChain)
 static cstr file_module_text(BaselineTestCase* ctx, Symbol const* module) {
     SymbolChain chain = symbol_chain_at(ctx->enclosing, module, 0, false);
@@ -97,7 +103,7 @@ static cstr file_module_text(BaselineTestCase* ctx, Symbol const* module) {
         symbol_chain_append(&ret, ctx->enclosing, &chain);
         return ret;
     }
-    return module_name_for_error(module, nullptr, false);
+    return module_text(ctx, module);
 }
 
 static bool has_symbol_override(BaselineTestCase const* ctx, Span span) {
@@ -2590,7 +2596,7 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = declarations,
             .span = identifier_expr_name(me),
-            .text = module_name_for_error(my target, nullptr, false),
+            .text = module_text(ctx, my target),
         });
         return;
     }
@@ -2837,7 +2843,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
                 .span = my inner_span,
-                .text = default_of ? module_name_for_error(default_of, nullptr, false) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
+                .text = default_of ? module_text(ctx, default_of) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
             });
         }
         expr_compile_test_info(&my property->expr, ctx);
@@ -2848,7 +2854,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
                 .declarations = vec_span_clone(info.declarations),
                 .allow_declaration_empty = true,
                 .span = expr_outer_span(&my property->prop),
-                .text = default_of ? module_name_for_error(default_of, nullptr, false) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
+                .text = default_of ? module_text(ctx, default_of) : prop_text(&info, ctx, expr_outer_span(&my property->prop)),
             });
         }
     }

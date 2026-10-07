@@ -1,4 +1,4 @@
-// tsc 5.8's diagnostics for many projects in one process (./sweep.py's oracle, plan 44): reads project directories
+// tsc's diagnostics for many projects in one process (./sweep.py's oracle, plan 44): reads project directories
 // (each with a tsconfig.json) from stdin, one per line, and prints one JSON line per project:
 // {"project", "ms", "diags": [[file, line, col, code], ...]} with paths relative to the working directory, line and
 // col 1-based. The lib files' source files are shared between projects (parsing lib.dom.d.ts for every project

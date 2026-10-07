@@ -73,6 +73,11 @@ DefinitelyTyped is pinned at 2026-10-02 (already TS6-era configs: `module: node1
 
 ## Stages
 ### Stage 1: the switch (1 session, todo entry 2)
+**Done 2026-10-07: 13683 / 14969.** Left from it: TS2738 related info, `(Missing)` in TS7010 and the other strict
+exposures in `48_lost.txt` (stage 3); an outFile bundle's import types still use the file path (tsc: non-relative
+specifiers from the common source directory, see `program_module_display_name()`); corpora (below) not chased. The ordering
+prototype patch still applies cleanly on top. tsc's own `src/compiler` and tsc-src are 0 under the commit (the
+prototype's 87 were v6.0.3's sources).
 1. `thirdparty/ensure-tsc.sh` pins the commit, not a tag: `git init`, `git fetch --depth 1 origin <sha>`, checkout;
    the version check is `git rev-parse HEAD`. Keep building tsc with hereby (needed by `tscbaseline.sh`, `filetest.sh`
    and every cached oracle: they must use `built/local/typescript.js` / `tsc.js` of *this* commit, not the repo's

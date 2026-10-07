@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The breadth sweep (plan 44): tttt on every DefinitelyTyped package (thirdparty/ensure-corpora.sh pins the checkout),
-each `-p types/NAME` with its own tsconfig, compared with what tsc 5.8 reports for it. tsc's verdicts are cached in
+each `-p types/NAME` with its own tsconfig, compared with what tsc reports for it. tsc's verdicts are cached in
 test/sweep/DefinitelyTyped.tsc.jsonl (regenerate with --tsc, ~40 minutes on 4 cores, after changing the pin); they're
 compared by (file, line, code), like scenarios.py. A crash, hang or memory runaway is listed first, then the
 diagnostics tttt gets wrong ranked by root cause *across packages*: code and message shape (quoted parts elided), and
@@ -53,7 +53,7 @@ def list_packages(filter=None):
 
 
 def run_tsc(packages, jobs, extra=()):
-    """tsc 5.8 on the packages, `jobs` node processes each checking a share in one process (test/sweep_tsc.js)"""
+    """tsc on the packages, `jobs` node processes each checking a share in one process (test/sweep_tsc.js)"""
     procs = []
     for i in range(jobs):
         share = packages[i::jobs]
@@ -187,7 +187,7 @@ def main():
         with opener(ORACLE, 'wt') as f:
             for p in sorted(oracle):
                 f.write(json.dumps(oracle[p], separators=(',', ':')) + '\n')
-        print(f'tsc 5.8 on {len(packages)} packages in {time.time() - start:.0f}s, written to {ORACLE}')
+        print(f'tsc on {len(packages)} packages in {time.time() - start:.0f}s, written to {ORACLE}')
         return
 
     oracle = {r['project']: r for r in map(json.loads, opener(ORACLE, 'rt'))}
@@ -241,12 +241,12 @@ def main():
 
     total = len(results)
     tsc_clean = sum(1 for r in results if not oracle[r['package']]['diags'])
-    print(f'{total} packages ({tsc_clean} clean under tsc 5.8): ' +
+    print(f'{total} packages ({tsc_clean} clean under tsc): ' +
           ', '.join(f'{k} {len(verdicts[k])}' for k in ('match', 'spurious', 'missing', 'both', 'crash', 'timeout')))
     tttt_wall = sum(r['wall'] for r in results)
     tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
     print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
-          f', tsc 5.8 {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)')
+          f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)')
     for v in ('crash', 'timeout'):
         for p in verdicts[v][:args.n]:
             r = next(r for r in results if r['package'] == p)

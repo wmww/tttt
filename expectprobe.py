@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """`$ExpectType` on one project, tsc against tttt, and a reducer for the mismatches ./expecttypes.py finds.
 
-  ./expectprobe.py DIR                         # every assertion of DIR's tsconfig.json: tsc 5.8 (full check, then
+  ./expectprobe.py DIR                         # every assertion of DIR's tsconfig.json: tsc (full check, then
                                                # the types, like expecttypes.py's oracle) and tttt, the mismatches
   ./expectprobe.py DIR --reduce FILE TEXT      # delete chunks of FILE (blank-line separated, then single lines) while
                                                # the mismatch output still contains TEXT; FILE is rewritten in place

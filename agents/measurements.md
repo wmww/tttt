@@ -3,12 +3,25 @@ The latest of each kind of measurement. **Replace a section when re-measuring** 
 append history, git has it (this file before the 2026-09-27 triage holds every entry since plan 05).
 
 ## Machine and caveats
-AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22, tsc 5.8.2 (`thirdparty/tsc`), tsgo =
+AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22, tsc = TypeScript 4d4f005c (6.0.3 + stable ordering, `thirdparty/tsc`, since 2026-10-07; 5.8.2 before), tsgo =
 `typescript@7.0.2`. Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo exits 1 on valibot (TS5108,
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
+
+## Retarget to TypeScript 4d4f005c (2026-10-07, eleventh window's todo entry 2, plan 48 stage 1)
+**Not comparable with the sections below** (new suite, libs, defaults). Suite **13683 / 14969** (errors 14588, symbols
+14858, types 13883). Corpora with their current (5.x-era) pins, tttt only (tsc's numbers under 6.0.3 are in plan 48):
+tsc, tsc-src, typescript-eslint, zod, xstate 0; type-fest, valibot, react, drizzle, vue, excalidraw 1 (the TS5101/5107
+deprecation); nest 4 (TS6500 x2 and real strict ones); effect 5 (TS2578 x3 + deprecations); tanstack-router 28 (TS2591
+x25: `types: []`); webpack 5297 (TS6203 / TS2300 / TS2451: @types/node twice) and vscode 533 (TS2882 x290, TS6203).
+Sweep, `$ExpectType`, flagflip, mutation: caches still tsc 5.8's, not run. Instructions (callgrind, 546bbb87 -> end, new
+libs and defaults so not a regression measure): tsc 4.662 -> 4.703 (now the commit's own src/compiler), type-fest 3.085
+-> 3.095, valibot 4.375 -> 4.385, react 1.487 -> 1.502, nest 1.260 -> 1.144, webpack 3.896 -> 5.135 (the diagnostics
+above), zod 4.719 -> 4.737, xstate 2.928 -> 2.943, drizzle 8.287 -> 8.091, vue 6.984 -> 7.007, effect 9.848 -> 9.510,
+vscode 32.634 -> 32.728, excalidraw 5.090 -> 5.113, tanstack-router 4.518 -> 4.372. These are the baseline for stage 2's
+"within ~1% of the switch" requirement.
 
 ## Triage (2026-10-07, tenth window's todo entry 10, four sub-agents)
 Suite 13299 -> **13303** (errors 13455, symbols 13490, types 13355; 0 lost), corpora 0 but effect 3, sweep 8588 / 6 /
