@@ -372,3 +372,28 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   before `const items = []` under `@type {typeof import(...)}` loses the annotation (jsDeclarationsTypeReassignment
   FromDeclaration), and typeFromParamTagForFunction's `declare function require(id: number)` gets TS2345 at the
   require calls in tsc only when other files of the program are ES modules (not reduced).
+  - Unreduced: TS7006 x3 + TS2365 `'{}' + number` in inlineEdits longDistanceHint (`derived(this, r => { ... return obs.map(heights => ...) })
+    .flatten()` with overloaded `derived`/`map`; a single-file imitation is clean), and TS2322 at
+    stateToProgressAdapter.test.ts:1956: `{ ...image, data: '' }` spreads the declared union `ToolResultContent`
+    instead of `image`'s initializer-narrowed member (`const image: ToolResultContent = { type: EmbeddedResource, ... }`;
+    also clean in a single-file imitation; the const enum is re-exported through sessionState.ts).
+
+## Mutation testing, single-file seeds 11, 13, 14 (4000 mutants each)
+Drained to these leftovers (`MUTATE_DIR=/tmp/a-mutateN ./mutate.py --seed N -n 4000` regenerates them):
+- Order of two diagnostics at one position (TS2741 before TS2454 at `[d1, d2]` against `Base[]`,
+  derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order, not code order.
+- Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
+  self: any }` is TS7022+TS7023 under tsc (elaborateError types the getter while `a` is resolving), clean in tttt.
+  Same family: a duplicate late-bound getter (`get [Symbol.hasInstance]()` twice) gets TS2355 from the merged
+  symbol's type (symbolProperty44), and recursiveClassBaseType's TS2310/TS2506 once `root()` returns void.
+- Display: a union printed from a generic call's argument loses its origin (`(Object | SecondInterface) & {...}`
+  shown as `Object & {...}` after Object.assign; intersectionSatisfiesConstraint); `MyMap<M>[keyof M] | undefined`
+  as a TS2322 target is shown unsimplified where tsc shows the best member normalized (indexedAccessNormalization);
+  structurally equal spread object types are one type in tttt, two members in tsc's union (spreadUnion, TS2403 text);
+  the 11th `{ y2: ... }` level is `...` in tttt where tsc has a real `any` (cyclicGenericTypeInstantiationInference).
+- `interface C1 extends Object?.Bar {}`: tsc resolves an optional-chain heritage expression as an entity name too
+  (TS2702/TS2503/TS2694 besides TS2499); tttt only reports TS2499.
+- Variadic inference with a spread of any in the middle: `pipe(1, ...anyArr, (...x) => {})` against
+  `pipe<T extends unknown[]>(...args: [...T, (...values: T) => void])` infers T but gives x no contextual type
+  (spurious TS7019); with `string[]` it works (variadicTuples2).
+- allowUnescapedParagraphAndLineSeparatorsInStringLiteral with a closing backquote deleted: parser recovery (plan 27).
