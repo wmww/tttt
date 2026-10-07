@@ -2341,7 +2341,16 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         // An ambient module's name is its string in double quotes
         // (an augmentation of an `export =` module declares into the exported symbol: named like any symbol)
         if (!file && my is_ambient_module && my module_ref) {
+            // (An alias of it in scope names it, tsc's getAccessibleSymbolChain: `import * as Foo` in the same block)
             if (my symbol->is_module) {
+                Scope const* inner = ctx->enclosing;
+                ctx->enclosing = outer;
+                file_name = symbol_text(ctx, my symbol);
+                ctx->enclosing = inner;
+                if (cstr_size(&file_name) && strchr("\"'", cstr_str(&file_name)[0])) cstr_clear(&file_name);
+            }
+            if (cstr_size(&file_name)) {
+            } else if (my symbol->is_module) {
                 // (its value, escaped like a string literal: `".\\m"`)
                 file_name = cstr_lit("\"");
                 csview path = cstr_sv(&my module_ref->path);

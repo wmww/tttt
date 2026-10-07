@@ -428,6 +428,7 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
     return false;
 }
 
+static bool scope_in_script_block(Scope const* scope);
 void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProps props) {
     // tsc's checkGrammarModuleElementContext: directly in a file or a namespace body, else only this is said about it
     bool misplaced = !my jsdoc && (my labeled || !(scope->kind == SCOPE_SCRIPT || scope->kind == SCOPE_MODULE ||
@@ -508,7 +509,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 module->exports = arena_new(binder_arena(scope->binder), SymbolTable);
                 module->is_augmentation = true;
                 binder_add_augmentation(scope->binder, me);
-            } else if (nested_ambient_module) {
+            } else if (nested_ambient_module && !scope_in_script_block(scope)) {
                 // In a namespace it is a member of the namespace to tsc's binder (declareSymbolAndAddToSymbolTable),
                 // which no module name finds: a module of its own
                 module = binder_new_symbol(scope->binder, my name.sv, SYMBOL_VALUE_MODULE);
@@ -927,6 +928,12 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
     }
 }
 
+// A block (or blocks) directly in a script, no function or namespace between
+static bool scope_in_script_block(Scope const* scope) {
+    while (scope && scope->kind == SCOPE_BLOCK) scope = scope->parent;
+    return scope && scope->kind == SCOPE_SCRIPT;
+}
+
 static void block_hoist_names(Block* me, Scope* scope) {
     for_each (i, vec_statement, &my statements) {
         statement_hoist_names(i, scope);
@@ -937,6 +944,16 @@ static void block_hoist_names(Block* me, Scope* scope) {
 // into functions. The blocks they're in skip them when their turn comes (scope_init_declaration())
 void statement_hoist_names(Statement* me, Scope* scope) {
     switch (my tag) {
+        case STATEMENT_DECL_NAMESPACE: {
+            // `declare module "m"` in a block of a script (TS2435) is a global ambient module all the same: a block is
+            // no container to tsc's binder, the file is. Known before linking, so that imports find it; the block
+            // declares into the same module symbol when its turn comes
+            NamespaceDecl const* ns = my decl.namespace;
+            if (scope->kind == SCOPE_SCRIPT && ns->is_ambient_module && !ns->is_global && ns->module_ref) {
+                binder_ambient_module(scope->binder, cstr_sv(&ns->module_ref->path), ns->name);
+            }
+        }   break;
+
         case STATEMENT_DECL_FUNCTION:
             // (`export function` in a block of a namespace is exported: tsc's declareSymbolAndAddToSymbolTable goes by the
             // container, declareModuleMember)
