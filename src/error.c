@@ -392,6 +392,14 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
                 // last_error_starts_at() in parser.c) is a diagnostic of its own next to another there: by code
                 Error const* other = vec_error_at(&my errors, i - 1);
                 return other->ts_code < error->ts_code ? i : i - 1;
+            } else if (error->phase == ERROR_PHASE_PARSE && cstr_cmp(&vec_error_at(&my errors, i - 1)->message, &error->message) != 0) {
+                // Two parse errors the parser kept at one span with other messages (`':' expected.` and `'</'
+                // expected.` at the end of the file): tsc's sortAndDeduplicateDiagnostics only drops identical ones,
+                // by code, then message
+                Error const* other = vec_error_at(&my errors, i - 1);
+                bool after = other->ts_code != error->ts_code ? other->ts_code < error->ts_code :
+                    cstr_cmp(&other->message, &error->message) < 0;
+                return after ? i : i - 1;
             } else {
                 // Do not allow multiple errors for the same span of other types
                 return -1;

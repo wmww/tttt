@@ -58701,7 +58701,7 @@ const baselines = {
         types: true,
     },
     'jsxAndTypeAssertion': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

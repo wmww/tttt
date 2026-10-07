@@ -606,6 +606,9 @@ static inline Error* add_error_to_parser(Parser* me, Error error) {
 static bool last_error_starts_at(Parser* me, Span span);
 static int invalid_char_size(const char* c);
 static bool is_grammar_code(unsigned code);
+// A checker's code (TS2xxx) the parser reports in tttt: not one of tsc's parse diagnostics, which parseErrorAtPosition
+// compares with
+static bool is_semantic_code(unsigned code) { return code >= 2000 && code < 3000; }
 
 // tsc's parseErrorAtPosition: an error that starts where the previous one does is dropped (the first error at a
 // position is the one that explains it; whatever recovery reports there next is noise). An error at a character no
@@ -629,8 +632,9 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
         return parse_error_inner(me, span_make(my shared->source, at, at + 2), 18026,
             cstr_lit("'#!' can only be used at the start of a file."), false);
     }
-    // (A grammar error is the checker's to tsc: no position is taken by another)
-    if (!is_grammar_code(ts_code) && last_error_starts_at(me, span)) {
+    // (A grammar error is the checker's to tsc: no position is taken by another; nor is a semantic one the parser
+    // reports, TS2523/TS2524)
+    if (!is_grammar_code(ts_code) && !is_semantic_code(ts_code) && last_error_starts_at(me, span)) {
         cstr_drop(&message);
         return nullptr;
     } else if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
@@ -9937,13 +9941,14 @@ static bool parse_identifier_expr(Parser* parent, Expr* ret) {
 static bool last_error_starts_at(Parser* me, Span span) {
     for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
         Error const* last = vec_error_at(&my shared->errors, i);
-        if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code) || last->grammar) continue;
+        if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code) || last->grammar || is_semantic_code(last->ts_code)) continue;
         // A scanner error came before the errors tttt reported at or after its token (tsc's scanner reports it when
         // the token is scanned): the latest of those is tsc's last error
         if (i == my shared->scanner_error_index && my shared->scanner_error_token && my shared->scanner_error_first <= i) {
             for (intptr_t j = my shared->scanner_error_first; j-- > 0;) {
                 Error const* before = vec_error_at(&my shared->errors, j);
-                if (is_js_syntax_code(before->ts_code) || is_grammar_code(before->ts_code) || before->grammar) continue;
+                if (is_js_syntax_code(before->ts_code) || is_grammar_code(before->ts_code) || before->grammar ||
+                    is_semantic_code(before->ts_code)) continue;
                 if (before->span.source == last->span.source && span_start_ptr(before->span) >= my shared->scanner_error_token) {
                     last = before;
                 }
