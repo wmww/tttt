@@ -1999,8 +1999,19 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
         return;
     }
     check(span.source);
+    VecSpan declarations = baseline_symbol_declaration_spans(declaration);
+    // (A script's declaration merged into a UMD global, a file's module: declared by that file first, like tsc's
+    // clone of the module symbol)
+    if (declaration->is_module && declaration->module && declaration->module->file) {
+        SourceFile const* file = declaration->module->file;
+        VecSpan with_file = vec_span_init();
+        vec_span_push(&with_file, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
+        for_each (i, vec_span, &declarations) vec_span_push(&with_file, *i);
+        vec_span_drop(&declarations);
+        declarations = with_file;
+    }
     baseline_test_case_add_symbol(me, (BaselineSym){
-        .declarations = baseline_symbol_declaration_spans(declaration),
+        .declarations = declarations,
         .span = span,
         .name = declaration->name_span,
         .text = baseline_test_case_module_alias_text(me, declaration),
