@@ -242,3 +242,7 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - Singles: TS2440 `/** @import { SharedModuleFilter } from "./SharePlugin" */` vs a local declaration
     (sharing/*SharedPlugin.js), TS2344 `InstanceType<ExportInfo>` (graph/ExportsInfo.js:462), TS7008 `labels` in
     javascript/syntax-parser.js:15742.
+
+## Corpora re-pin (plan 48 stage 5): xstate, tanstack-router, vue
+- xstate @ 38dcaffb (Oct 2026, TS6 upstream): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0 (648 files, 0.74 s). The old
+  pin's 30 strict-by-default errors are fixed upstream; the overlay is now just upstream's root tsconfig limited to core.

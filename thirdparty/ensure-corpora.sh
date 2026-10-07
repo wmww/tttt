@@ -54,14 +54,14 @@ CORPORA=(
     # root's devDependencies (without `zod: workspace:*`, plus the @types/node vitest hoists), from
     # corpora-locks/zod.package.json
     "zod https://github.com/colinhacks/zod.git 59bbc03e10c636b9eb3c393dfeb552819774ec21 . ../packages/zod"
-    # xstate v5.28 (Mar 2026, todo entry 1 of the sixth window): the last commit before its move to TypeScript 6. The
-    # core package (state machines, setup()/createMachine()/assign() configs typed through generic call inference
-    # with callbacks) and its vitest tests (types.test.ts, setup.types.test.ts: @ts-expect-error on inference
-    # results), checked through packages/core/tsconfig.corpus.json from the overlay (upstream checks every package
-    # through the root tsconfig, lib es2019 + ESNext.Promise, which lacks Promise.withResolvers under tsc 5.8: ours
-    # has lib es2024 and src + test only). A pnpm workspace: the dependencies are core's devDependencies (without
-    # @scion-scxml/test-framework) + vitest and @types/node, from corpora-locks/xstate.package.json
-    "xstate https://github.com/statelyai/xstate.git f210b35ceed100615ed3acafa120e29db303cef2 ."
+    # xstate (Oct 2026, plan 48 stage 5): main's head, on TypeScript 6 (`@typescript/typescript6` ^6.0.2, CI also runs
+    # tsgo 7). The core package (state machines, setup()/createMachine()/assign() configs typed through generic call
+    # inference with callbacks) and its vitest tests (types.test.ts, setup.types.test.ts: @ts-expect-error on inference
+    # results), checked through packages/core/tsconfig.corpus.json from the overlay: upstream's root tsconfig (lib
+    # es2024, strict, nodenext, vitest/globals) restricted to core's src + test (the root checks every framework
+    # package). A pnpm workspace: the dependencies are core's devDependencies (without @scion-scxml/test-framework) +
+    # vitest and @types/node, from corpora-locks/xstate.package.json
+    "xstate https://github.com/statelyai/xstate.git 38dcaffb20ec7f3cbb10e6161d8f0ebacca33701 ."
     # drizzle-orm (Sep 2026, todo entry 1 of the seventh window): the SQL query builder package (pg, mysql, sqlite,
     # singlestore, gel dialects: column builders, select/join result types through deep conditional and mapped chains)
     # and its type-tests (Expect<Equal<...>>), checked through drizzle-orm/tsconfig.corpus.json from the overlay
