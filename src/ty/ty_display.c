@@ -2160,7 +2160,20 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     TyDisplayParams printed = { .params = params, .count = param_count, .function = function, .outer = d.printed_params };
     if (d.underline || d.reuse_nodes) d.printed_params = &printed;
     if (sig->this_type) {
-        out(reused_if(d, d.reused || (function && !jsdoc_this)), c_sv("this"));
+        // (A `this` from a contextual signature whose own is a JSDoc `@this` has no declaration: tsc's
+        // getSignatureFromDeclaration makes the symbol, assignContextualParameterTypes copies it)
+        bool contextual_jsdoc_this = false;
+        if (function && reusable && !jsdoc_this && !(vec_function_arg_size(&function->args) &&
+            function->args.data[0].initializer.binding.tag == BINDING_IDENTIFIER &&
+            span_equals(function->args.data[0].initializer.binding.content_span, "this"))
+        ) {
+            Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
+            while (contextual && !contextual->function && (contextual->target || contextual->declared_by)) contextual = contextual->target ? contextual->target : contextual->declared_by;
+            FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
+            contextual_jsdoc_this = context_function && vec_function_arg_size(&context_function->args) &&
+                context_function->args.data[0].jsdoc_this;
+        }
+        out(reused_if(d, d.reused || (function && !jsdoc_this && !contextual_jsdoc_this)), c_sv("this"));
         out_lit(d, ": ");
         FunctionArg const* this_decl = function && vec_function_arg_size(&function->args) ? vec_function_arg_at(&function->args, 0) : nullptr;
         Binding const* binding = this_decl ? &this_decl->initializer.binding : nullptr;
@@ -2174,7 +2187,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         FunctionImpl const* context_function = contextual ? contextual->function : nullptr;
         FunctionArg const* context_this = context_function && vec_function_arg_size(&context_function->args) ?
             vec_function_arg_at(&context_function->args, 0) : nullptr;
-        if (context_this && context_this->initializer.binding.tag == BINDING_IDENTIFIER &&
+        if (context_this && !context_this->jsdoc_this && context_this->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(context_this->initializer.binding.content_span, "this") &&
             context_this->initializer.binding.has_explicit_type && contextual->this_type == sig->this_type
         ) {

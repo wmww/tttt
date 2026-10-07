@@ -56583,7 +56583,7 @@ const baselines = {
     'callbackTag4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'callbackTagNamespace': {
         errors: true,
