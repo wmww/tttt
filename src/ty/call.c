@@ -1353,7 +1353,10 @@ static TyMapper const* infer_type_arguments(
             }
             continue;
         }
+        // (A context-sensitive function nested in it, `u && ((c, { w }) => ...)`, fixes what its contextual signature
+        // mentions too: tsc assigns contextual parameter types with the fixing mapper under any inferential check)
         my outer_inference = &self;
+        self.fixing = true;
         if (is_literal_arg(arg)) {
             GenericFunctionMode mode = {0};
             Ty const* param_type = shape_type_at(&shape, i);
@@ -1398,6 +1401,7 @@ static TyMapper const* infer_type_arguments(
         ) {
             ty_argument_return_type(me, arg->expr->function);
         }
+        self.fixing = false;
         my outer_inference = nullptr;
         Signature const* contextual = nullptr;
         arg->generic_function = !arg->spread && !arg->part_of_spread &&
