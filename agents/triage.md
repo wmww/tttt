@@ -229,9 +229,20 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 - **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 0 (from 113: the `if (c);else` parser fix, `module.exports=`
   inside comma expressions, JSDoc `import("./m").C<A>` of an expando class applying its type arguments, no TS2440 for
   `@import`, no TS2344 in `@returns`, no TS7008 for a method's `this.x = []` that the base class's x overrides).
+  Flagflip webpack left (all other webpack cells 0/0):
+  - unused: 10 missing TS6133/TS6196, all imports used only inside a JSDoc `{T=}` of a `@typedef`'s `@property`
+    (lib/Compilation.js:117, module/ModuleFactory.js:8). tsc's checkSourceElement never visits a JSDocOptionalType,
+    so such a name is referenced only if something resolves that property's type before the file's unused check
+    (order-dependent laziness); tttt marks every name when binding. Emulating it needs reference marking at lowering
+    time plus a checker-count-independent cutoff: plan-sized, not worth it for these alone.
+  - nuia: TS2488 'string[] | undefined' reported once per union (tsc caches noIterationTypes); tsc's first report is
+    inside an expression-bodied reduce callback (syntax-printer.js:16066, checked during inference), tttt's at a later
+    spread (16069) because it reports the callback body when it checks it, later. The once-per-type emulation in
+    iterate.c follows tttt's check order, which differs from tsc's for inference-time return expressions.
   Seen on the way (tsc differs, not in a corpus): `const old = this.labels; this.labels = []; this.labels = old;` in
   two methods of a class extending any: tsc TS7022 on `old` (first method) and on `labels` (first assignment), tttt
-  TS7022 on both `old`s.
+  TS7022 on both `old`s. And tsc ignores a JSDoc comment written after `{` on the same line
+  (`constructor() { /** @type {string[]} */ this.x = []; }` is TS7008 under tsc), tttt attaches it.
 
 ## Corpora re-pin (plan 48 stage 5): xstate, tanstack-router, vue
 - xstate @ 38dcaffb (Oct 2026, TS6 upstream): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0 (648 files, 0.74 s). The old
