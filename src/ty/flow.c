@@ -2580,11 +2580,16 @@ static Ty const* narrow_by_assertion(FlowQuery* q, Ty const* type, Expr const* e
 static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32 depth) {
     if (depth > 8) return nullptr;
     reference = skip_reference_wrappers(reference);
+    // (The whole reference's own type isn't needed, only its object's: asking for it would make `if (c)` in a
+    // constructor circular for `this.x`, whose declared type is the constructor's flow type of it)
+    Ty const* constant = ty_intrinsic(me, TY_UNKNOWN_);
     if (reference->tag == EXPR_IDENTIFIER) {
-        if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) return ty_identifier_reference_type(me, &reference->identifier);
+        if (reference->identifier.keyword == KEYWORD_IDENTIFIER_THIS) {
+            return depth ? ty_identifier_reference_type(me, &reference->identifier) : constant;
+        }
         Symbol const* symbol = reference->identifier.target;
         if (reference->identifier.keyword || !symbol || !(symbol->is_const || !symbol->is_assigned)) return nullptr;
-        return ty_identifier_reference_type(me, &reference->identifier);
+        return depth ? ty_identifier_reference_type(me, &reference->identifier) : constant;
     }
     if (reference->tag != EXPR_PROPERTY) return nullptr;
     if (ty_is_import_meta(reference)) return ty_import_meta_expr_type(me, reference);
@@ -2596,10 +2601,19 @@ static Ty const* constant_reference_type(Checker* me, Expr const* reference, u32
     TyList parts = object->kind == TY_UNION ? object->composite.types : (TyList){ .data = &object, .len = 1 };
     bool readonly = false;
     for (u32 i = 0; i < parts.len && !readonly; i++) {
-        FoundProp prop = ty_find_prop(me, ty_apparent_type(me, parts.data[i]), name);
+        Ty const* part = ty_apparent_type(me, parts.data[i]);
+        if (part->flags & TYF_OBJECT) {
+            Prop const* prop = ty_get_prop(me, part, name);
+            if (prop) {
+                readonly = (prop->flags & PROP_READONLY) != 0;
+                continue;
+            }
+        }
+        FoundProp prop = ty_find_prop(me, part, name);
         readonly = prop.found && (prop.flags & PROP_READONLY);
     }
     if (!readonly) return nullptr;
+    if (!depth) return constant;
     Ty const* type = ty_access(me, object, ty_prop_name_literal(me, name));
     return type ? type : ty_intrinsic(me, TY_UNKNOWN_);
 }
