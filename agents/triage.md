@@ -246,37 +246,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   because react-router's (and router-core's) own tsconfigs now say `types: ["node"]`, which the overlay extends.
 
 ## Corpora re-pin (plan 48 stage 5): vscode, typescript-eslint, excalidraw
-- excalidraw (53973c3a, Oct 2026, upstream on 5.9.3; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 1 (TS2846 on a side-effect import of a .d.ts fixed; TS5101 for `"baseUrl": null`, was fixed with nest/react's re-pin).
-  - TS2322 at excalidraw-app/App.tsx:836: an async generator arrow inside `useCallback` returned to
-    `Required<ExcalidrawProps>["onExport"]` (returns `AsyncGenerator<OnExportProgress> | MaybePromise<void>`): tttt
-    widens the yielded object literals' `type: "progress"` to string, i.e. the yield expressions aren't contextually
-    typed by the generator's contextual return type through the union/generic call.
+- excalidraw (53973c3a, Oct 2026, upstream on 5.9.3; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 0.
 
 ## Corpora re-pin (plan 48 stage 5): type-fest, valibot
-- type-fest @ e9f614f1 (v5.10.0, upstream on ^5.9.2; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 6. The SIGSEGV the
-  re-pin found (IntRange/Replace: tsc's 1000-step conditional tail loop is real recursion in tttt,
-  ty_instantiate_tail -> ty_conditional, ~16 MB of stack) is fixed by running `main` on a 64 MB thread. Left:
-  - Homomorphic mapped types over tuples print/relate as object types `{ 0: number; 1?: string; }` (TS2345 x2 in
-    rename-keys.ts:272, set-required-deep.ts:55; TS2379 in schema.ts:273): the common factor is an optional *numeric*
-    key (`1?`): `SetRequiredDeep<{0?: 1; 1?: {2?: string}}, 0 | 1>` leaves `1` optional, `RenameKeys<{0: number; 1?:
-    string}, {0: 'a'; 1: 'a'}>` returns its input. Repro: a tsconfig with strict + exactOptionalPropertyTypes and a
-    file importing them from the corpus' index.d.ts (tsc 0, tttt 2); reduce through OptionalKeysOf/SetRequired.
-    **Order-dependent**: with `--checkers 1` on the whole corpus these three are gone (type-fest gives 3 instead of
-    6), so it's something like which of `1` / `"1"` a cache or interned name saw first, and checkerdiff's
-    "inside quotes" allowance doesn't cover it.
-  - TS2345 unwrap-partial.ts:67, only with exactOptionalPropertyTypes: `type U<P> = P extends Partial<infer O> ?
-    (Partial<O> extends P ? O : P) : P; type A = U<Partial<string[]>>` is `string[]` in tsc, `(string |
-    undefined)[]` in tttt (reverse inference of O from a homomorphic mapped type over an array keeps the undefined
-    the `?` added; strict and noUncheckedIndexedAccess don't matter).
-  - TS2578 x2 in internal/apply-default-options.ts:76,86: the `@ts-expect-error`ed line has no error in tttt.
-  - Peak RSS 2.3 GB (IntRange<0, 999> tests): check in the perf session.
-- valibot @ d4da61a0: tttt 4, TS2339 x3 on `this.cache` in cache/cacheAsync, TS2322 on pipeAsync's variadic tuple.
-  The TS2339 is the *second* `this.cache` of the `'~run'` method (`let outputDataset = this.cache.get(key); if
-  (!outputDataset) { this.cache.set(key, (outputDataset = ...)) }`), not the first: the `let`'s initializer seems to
-  get typed while `this` (ThisType<TSchema>, TSchema inferred from the return type SchemaWithCache<...>) is still
-  the constraint `BaseSchema | BaseSchemaAsync`. Reproduces with cache.ts's implementation copied into a file
-  importing valibot's types, `_LruCache` and `_cloneDataset` from the corpus; a hand-written cut-down of the types
-  doesn't (yet).
+- type-fest @ e9f614f1 (v5.10.0, upstream on ^5.9.2; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 0. Peak RSS 2.3 GB
+  (IntRange<0, 999> tests): check in the perf session.
+- valibot @ d4da61a0: tttt 0.
 
 ## Corpora re-pin (plan 48 stage 5): effect
 - effect stays at e730f59d (v3 branch head, v3.22.2, upstream on TypeScript 5.8.3): main is Effect 4 on TypeScript
