@@ -17,11 +17,10 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   import("inner")`, tsc doesn't reuse the `() => ` of `export const x: () => Thing` (Thing inaccessible from index.ts)
   where ty_display.c's "module's variable" annotation path reuses it partially; tsc's tryReuseExistingTypeNode seems to
   give up whole there. Find the rule before touching display_annotated().
-- T_1 renames (agent C; pre-5.8 failures): computedTypesKeyofNoIndexSignatureType wants `K_1`..`K_9` because tsc's
-  instantiateMappedType clones the key type parameter (ty_mapped_info_instantiate() doesn't);
-  inferredReturnTypeIncorrectReuse1 (`fn_1`) and jsFileFunctionOverloads (`T_1`) rename where tttt sees no shadowing,
-  coAndContraVariantInferences3 `P_1`. One mechanism worth a look: what tsc's typeParameterShadowsOtherTypeParameterInScope
-  finds for an instantiated signature's clone.
+- computedTypesKeyofNoIndexSignatureType (agent C): wants `K_1`..`K_9` because tsc's instantiateMappedType clones the
+  key type parameter per instantiation (ty_mapped_info_instantiate() doesn't); declarationEmitHigherOrderRetainedGenerics
+  renames the type parameters of a second overload (`O1_1`, not R1) of a printed overload set: tsc's name scope rules
+  across sibling signatures, unexplored. (The value-parameter and mapped-key renames are done, plan 48 fan-out 2.)
 - Plan 48 stage 3 agent D leftovers (types component), 2026-10-07:
   - thislessFunctionsNotContextSensitive1: a *failed* generic call's non-context-sensitive function argument
     (`F({ b: function () { return 123; } }, wrongArg)`) gets `() => number`; tsc keeps `() => 123` (its own signature is
@@ -73,7 +72,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - Two non-tsc facts found: inference_count() (the non-fixing mapper cache key) ignored priority replacements (fixed);
     stableTypeOrdering(stabletypeordering=false) depends on type-id creation order and can flip with unrelated changes.
 - enumWithBigint: tsc names a bigint enum member `__missing` (types show `E.__missing`) but the symbols baseline prints its declaration name (`E[0n]`); our symbol name drives both. Needs a name/printed-name split for enum members (stage 3, agent A).
-- iterableWithNeverAsUnionMember(target=esnext): `let [y] = x` with `x: T extends {a:"foo"}&{a:"bar"}` (TS2488) types y as never in tsc, any here (stage 3, agent A).
 - Plan 48 stage 3 agent D, second pass leftovers (types component), 2026-10-07:
   - moduleAugmentationDuringSyntheticDefaultCheck: tsc merges `declare module "moment-timezone"` into the clone that
     module's `export = moment` (a namespace import) resolves to, not into moment's own symbol; tttt merges into moment.
@@ -175,3 +173,16 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     literal return where tttt widens to number (contextual return through U in inference).
   - TS4110 for an array node in an alias (`type A = A[number][]`-like) still reports at the current node with the tuple
     text; tsc says TS4109 'Array' at the array node. No test.
+- Plan 48 fan-out 2, agent C leftovers (types component), 2026-10-07:
+  - allowJscheckJsTypeParameterNoCrash: in JS, `this.data2 = 1` inside an object literal method `data1` merges into the
+    literal's `data2` method symbol (both declarations in the symbols baseline), and tsc then drops data2 from the
+    literal's type (`{ data1(val: any): void; }`, `this.data2 : any`); tttt keeps them apart. Binder-level quirk.
+  - callSignaturesWithParameterInitializers2: `{ foo(x = 1), foo(x = 1) { } }` (a bodiless method then the same name)
+    are one symbol of two signatures in tsc (`{ foo(x?: number): any; foo(x?: number): void; }`), tttt keeps the last.
+  - bundledDtsLateExportRenaming: with outFile tsc names modules non-relative from the common source directory with
+    minimal endings (getSpecifierForModuleSymbol's isBundle: baseUrl = common source dir, `non-relative`):
+    `import("nested").B`; module_specifiers.c has no bundle mode (needs the common source directory in Generator).
+  - augmentExportEquals7: same mechanism as D's exportAssignmentMembersVisibleInAugmentation (mergeSymbol of an
+    augmentation into an `export =` target clones it; the clone is what the augmentation name means).
+  - accessorBodyInTypeContext (above) stays: needs the getter body of a type literal checked and its return inferred.
+
