@@ -6772,6 +6772,15 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
         if (report) report_relation_error(me, st, source, target, top, false);
         return TERNARY_FALSE;
     }
+    // A deferred reference is a plain one with its arguments resolved (getNormalizedType: getTypeArguments, where a
+    // reference whose arguments need it is TS4109)
+    if (source->kind == TY_REFERENCE && source->reference.deferred) {
+        source = ty_reference(me, source->reference.target, ty_reference_args(me, source));
+    }
+    if (target->kind == TY_REFERENCE && target->reference.deferred) {
+        target = ty_reference(me, target->reference.target, ty_reference_args(me, target));
+    }
+    if (source == target) return TERNARY_TRUE;
     // (And reduced: getNormalizedType's getReducedType)
     Ty const* unreduced_target = target;
     if (source->kind == TY_UNION || source->kind == TY_INTERSECTION) source = ty_reduced(me, source);

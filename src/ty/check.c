@@ -2493,7 +2493,9 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
         params = ty_alias_type_params(me, symbol);
     } else {
         Ty const* declared = ty_declared_type_of(me, symbol);
-        if (declared->kind == TY_DECLARED) params = declared->declared.type_params;
+        // (The written arguments are for its own: a class or interface local to a generic function has the
+        // function's first)
+        if (declared->kind == TY_DECLARED) params = ty_local_type_params(declared);
     }
     u32 given = (u32)vec_spanned_type_size(args);
     if (!params.len || given > params.len) return;

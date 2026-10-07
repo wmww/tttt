@@ -3716,9 +3716,9 @@ const baselines = {
         types: true,
     },
     'circularTypeArgumentsLocalAndOuterNoCrash1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'circularTypeofWithFunctionModule': {
         errors: true,
