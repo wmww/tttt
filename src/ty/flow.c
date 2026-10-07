@@ -3406,7 +3406,8 @@ static Ty const* refined_parameter_type(Checker* me, Expr const* expr, FlowNode*
     if (true_type == init) return nullptr;
     FlowNode* when_false = arena_new(&my arena, FlowNode);
     *when_false = (FlowNode){ .flags = FLOW_FALSE_CONDITION, .antecedent = antecedent, .node = expr };
-    Ty const* false_type = ty_flow_type(me, reference, init, true_type, when_false);
+    // (Reduced: `{ k: false } & { k: true }` is never, tsc's getReducedType)
+    Ty const* false_type = ty_reduced(me, ty_flow_type(me, reference, init, true_type, when_false));
     return false_type->flags & TYF_NEVER ? true_type : nullptr;
 }
 
