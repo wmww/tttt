@@ -40,11 +40,14 @@ CORPORA=(
     # `"strict": false` as 5.x defaulted (6.0's strict default finds 2 TS2322 under strictFunctionTypes and 2 TS18046
     # under useUnknownInCatchVariables) and incremental off (tsc would write a tsbuildinfo)
     "nestjs-boilerplate https://github.com/brocoders/nestjs-boilerplate.git 9620f159eefe38f47747d02ab162852367c5472c ."
-    # webpack (May 2026, plan 33): the last commit before its move to TypeScript 6. JavaScript checked with checkJs and
-    # JSDoc types (lib/, tooling/, examples' configs), CommonJS, @types/node. Its examples require("webpack"). The lock
-    # is npm's resolution of its package.json with watchpack held at yarn.lock's 2.5.1 (2.5.2 fails tsc; --relock
-    # loses that, redo it by hand)
-    "webpack https://github.com/webpack/webpack.git 45a1bab632b09773938e5bde99b2614ee78f2284 . .."
+    # webpack v5.111.1+ (upstream's main on 2026-10-07, plan 48 stage 5; on TypeScript ^6.0.3, checked by its CI with
+    # tsc 6): JavaScript checked with checkJs, strict and JSDoc types (lib/ incl. its hand-written CSS/HTML/JS
+    # syntax parsers built on lib/util/SourceProcessor.js's generic JSDoc classes, tooling/, setup/, examples'
+    # configs, the minified generated schemas/**/*.check.js validators, required without a .d.ts), CommonJS,
+    # @types/node. Its examples require("webpack"). Upstream's tsconfig.json as is: 0 under tsc 6; tsgo 7 is not clean
+    # (~600: TS 7's reduced JS support, e.g. TS2749 for JSDoc type references to values) and can't be made so short of
+    # dropping the JS. The lock is npm's resolution of its package.json (upstream ships a yarn.lock)
+    "webpack https://github.com/webpack/webpack.git 86d31e06c4e3ed3c63596ee313549d16d9e76600 . .."
     # zod v4.6.5 (Sep 2026): the schema library's package (classic, mini, core, v3) and its vitest tests (expectTypeOf,
     # heavy inference), checked through packages/zod/tsconfig.test.json (tsconfig.json has noUnusedLocals, which only
     # biome satisfies); exactOptionalPropertyTypes, nodenext, customConditions. A pnpm workspace: the dependencies are the

@@ -84,8 +84,8 @@ echo "tttt phases (one run):"
 # moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change). The React
 # app (plan 25) and the NestJS app (plan 31) are checked through our tsconfig.corpus.json (React: baseUrl unset, the
 # NestJS app: not strict as under 5.x, not incremental).
-# webpack (plan 33) is checkJs JavaScript; tsgo 7 rejects 3 of its JSDoc comments (TS1003), so its time may not be of
-# a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json.
+# webpack (plan 33) is checkJs JavaScript; tsgo 7 reports ~600 diagnostics there of its own (TS 7's reduced JS
+# support), so its time may not be of a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json.
 # VS Code's src (todo entry 5 of the ninth window, 1.39M lines) is the scale benchmark; tsgo 7 reports ~10 TS2300 of
 # its own there (its lib.dom declares the WebGPU types @webgpu/types also declares), which costs it nothing measurable
 thirdparty/ensure-corpora.sh
