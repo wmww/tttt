@@ -55338,7 +55338,7 @@ const baselines = {
     'fixSignatureCaching': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionImplementationErrors(target=es2015)': {
         errors: true,

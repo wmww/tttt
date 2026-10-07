@@ -1870,8 +1870,9 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
         types[count++] = csview_equals(symbol->name, "export=") ? value_entry_type(me, symbol, decl) :
             assignment_declaration_type(me, symbol, decl);
     }
-    // (Object literals are widened together: the union has their properties as optional in each other)
-    Ty const* ret = ty_widened_objects(me, ty_union(me, types, count, nullptr, (TyList){0}));
+    // (Object literals are widened together: the union has their properties as optional in each other. Reduced to
+    // subtypes: tsc's getUnionType(types, UnionReduction.Subtype))
+    Ty const* ret = ty_widened_objects(me, count > 1 ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0}));
     if (types != stack) free(types);
     // Only methods assign it: what a base class declares it as, else possibly undefined
     Ty const* base_type = in_method && !in_constructor ? base_class_property_type(me, symbol) : nullptr;
