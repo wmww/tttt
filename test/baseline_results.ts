@@ -20036,7 +20036,7 @@ const baselines = {
         types: true,
     },
     'interfaceMergeWithNonGenericTypeArguments': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22956,9 +22956,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeRecursiveInference': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeRecursiveInference2': {
         errors: true,
