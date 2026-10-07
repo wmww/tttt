@@ -3274,7 +3274,7 @@ static bool union_has_member(Ty const* u, Ty const* t) {
     while (lo < hi) {
         u32 mid = lo + (hi - lo) / 2;
         if (members.data[mid] == t) return true;
-        if (members.data[mid]->id < t->id) lo = mid + 1; else hi = mid;
+        if (ty_compare(members.data[mid], t) < 0) lo = mid + 1; else hi = mid;
     }
     return false;
 }

@@ -249,6 +249,9 @@ typedef struct Inference {
 void inference_init(Inference* inf, TyList params);
 // How many elements a tuple has before its first rest element (tsc's fixedLength)
 u32 ty_tuple_fixed_length(TupleShape const* shape);
+// tsc 6's compareTypes (stableTypeOrdering): the order of union members (order.c)
+int ty_compare(Ty const* a, Ty const* b);
+u32 ty_order_rank(Ty const* t);
 // The union of elements `from` to `arity - end_skip` of a tuple reference, rest elements by their element type, null
 // if that's none (tsc's getElementTypeOfSliceOfTupleType)
 // `no_reductions`: the union of the elements as a contextual type (tsc's noReductions), literals next to their primitive

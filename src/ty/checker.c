@@ -627,8 +627,9 @@ static bool sorted_contains(TyBuf const* buf, u32 len, Ty const* t) {
     u32 lo = 0, hi = len;
     while (lo < hi) {
         u32 mid = lo + (hi - lo) / 2;
-        if (buf->data[mid]->id == t->id) return buf->data[mid] == t;
-        if (buf->data[mid]->id < t->id) lo = mid + 1; else hi = mid;
+        int c = ty_compare(buf->data[mid], t);
+        if (c == 0) return true;
+        if (c < 0) lo = mid + 1; else hi = mid;
     }
     return false;
 }
@@ -649,7 +650,7 @@ static void sort_by_id(Ty const** data, u32 len) {
         for (u32 i = 1; i < len; i++) {
             Ty const* t = data[i];
             u32 j = i;
-            for (; j && data[j - 1]->id > t->id; j--) data[j] = data[j - 1];
+            for (; j && ty_compare(data[j - 1], t) > 0; j--) data[j] = data[j - 1];
             data[j] = t;
         }
         return;
@@ -660,7 +661,7 @@ static void sort_by_id(Ty const** data, u32 len) {
     panic_if(!bounds || !tmp, "out of memory");
     u32 runs = 0;
     bounds[runs++] = 0;
-    for (u32 i = 1; i < len; i++) if (data[i - 1]->id > data[i]->id) bounds[runs++] = i;
+    for (u32 i = 1; i < len; i++) if (ty_compare(data[i - 1], data[i]) > 0) bounds[runs++] = i;
     bounds[runs] = len;
     Ty const** src = data;
     Ty const** dst = tmp;
@@ -669,7 +670,7 @@ static void sort_by_id(Ty const** data, u32 len) {
         for (u32 k = 0; k < runs; k += 2) {
             u32 lo = bounds[k], mid = bounds[k + 1], hi = k + 2 <= runs ? bounds[k + 2] : mid;
             u32 a = lo, b = mid, o = lo;
-            while (a < mid && b < hi) dst[o++] = src[b]->id < src[a]->id ? src[b++] : src[a++];
+            while (a < mid && b < hi) dst[o++] = ty_compare(src[b], src[a]) < 0 ? src[b++] : src[a++];
             while (a < mid) dst[o++] = src[a++];
             while (b < hi) dst[o++] = src[b++];
             bounds[merged++] = lo;
@@ -825,7 +826,7 @@ static bool sorted_list_contains(TyList list, Ty const* t) {
     while (lo < hi) {
         u32 mid = lo + (hi - lo) / 2;
         if (list.data[mid] == t) return true;
-        if (list.data[mid]->id < t->id) lo = mid + 1; else hi = mid;
+        if (ty_compare(list.data[mid], t) < 0) lo = mid + 1; else hi = mid;
     }
     return false;
 }
@@ -847,7 +848,7 @@ Ty const* ty_named_union_of_reduced(Checker* me, Ty const* const* inputs, u32 le
 static void insert_by_id(TyBuf* buf, Ty const* t) {
     ty_buf_push(buf, t);
     u32 j = buf->len - 1;
-    for (; j && buf->data[j - 1]->id > t->id; j--) buf->data[j] = buf->data[j - 1];
+    for (; j && ty_compare(buf->data[j - 1], t) > 0; j--) buf->data[j] = buf->data[j - 1];
     buf->data[j] = t;
 }
 
@@ -918,7 +919,7 @@ static Ty const* union_with_origin(
     } else {
         // The members of a union are sorted: a filtered union (narrowing) comes in sorted already
         bool sorted = true;
-        for (u32 i = 1; i < buf.len && sorted; i++) sorted = buf.data[i - 1]->id <= buf.data[i]->id;
+        for (u32 i = 1; i < buf.len && sorted; i++) sorted = ty_compare(buf.data[i - 1], buf.data[i]) <= 0;
         if (!sorted) sort_by_id(buf.data, buf.len);
         bool strict_null_checks = compiler_options()->strict_null_checks;
         if (includes & TYF_FRESH_LITERAL) {
@@ -1552,7 +1553,7 @@ static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32 
             }
             // (Sorted insertion)
             u32 at = out;
-            while (at > 0 && types[at - 1]->id > variable->id) {
+            while (at > 0 && ty_compare(types[at - 1], variable) > 0) {
                 types[at] = types[at - 1];
                 at--;
             }
@@ -2967,7 +2968,7 @@ Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty) {
     if (ty->kind != TY_UNION) return ty;
     TyList members = ty->composite.types;
     // (Members sort by id, and the marker's is among the lowest)
-    for (u32 i = 0; i < members.len && members.data[i]->id <= marker->id; i++) {
+    for (u32 i = 0; i < members.len && ty_order_rank(members.data[i]) <= ty_order_rank(marker); i++) {
         if (members.data[i] != marker) continue;
         Ty const** kept = malloc(sizeof(Ty const*) * members.len);
         panic_if(!kept, "out of memory");

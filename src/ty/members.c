@@ -151,6 +151,46 @@ static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
     free(moved);
 }
 
+// tsc 6's getNamedMembers with stableTypeOrdering: properties in declaration order (file order, then position), those
+// without a declaration last (PROTOTYPE: by name; tsc then by symbol id)
+static bool prop_order_pos(Prop const* prop, u32* file, char const** at) {
+    while (prop && !span_valid(prop->decl->name_span)) prop = prop->target;
+    if (!prop) return false;
+    Span s = prop->decl->decl_span_count ? prop->decl->decl_spans[0] : prop->decl->name_span;
+    if (!s.source) s = prop->decl->name_span;
+    *file = s.source->program_order;
+    *at = s.sv.buf;
+    return true;
+}
+
+static int prop_cmp_stable(Prop const* a, Prop const* b) {
+    u32 fa = 0, fb = 0;
+    char const* pa = nullptr;
+    char const* pb = nullptr;
+    bool ha = prop_order_pos(a, &fa, &pa), hb = prop_order_pos(b, &fb, &pb);
+    if (ha && hb) {
+        if (fa != fb) return fa < fb ? -1 : 1;
+        if (pa != pb) return pa < pb ? -1 : 1;
+        return 0;
+    }
+    if (ha != hb) return ha ? -1 : 1;
+    csview na = atom_sv(a->name), nb = atom_sv(b->name);
+    isize n = na.size < nb.size ? na.size : nb.size;
+    int c = n ? memcmp(na.buf, nb.buf, (size_t)n) : 0;
+    if (c) return c;
+    return na.size < nb.size ? -1 : na.size > nb.size;
+}
+
+static void builder_sort_stable(MembersBuilder* builder) {
+    // (Insertion sort: stable, and the props are mostly in order already)
+    for (u32 i = 1; i < builder->props_count; i++) {
+        Prop* p = builder->props[i];
+        u32 j = i;
+        for (; j && prop_cmp_stable(builder->props[j - 1], p) > 0; j--) builder->props[j] = builder->props[j - 1];
+        builder->props[j] = p;
+    }
+}
+
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     Members* ret = arena_new(&my arena, Members);
     if (builder->props_count > 8) {
@@ -1474,6 +1514,8 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         prototype->type = instance;
     }
     prototype->type_state = LAZY_STATE_DONE;
+    // PROTOTYPE (stable ordering): tsc 6 lists `prototype` after the members declared in the class (getNamedMembers's
+    // contained/non-contained split); moving it here breaks a declared `static prototype` (first wins), not done
     builder_push(builder, props, prototype);
 
     builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
@@ -4234,6 +4276,7 @@ Ty const* ty_object_literal_of(
         fresh->anonymous.js_literal = js;
         if (kind != OBJECT_SYNTHETIC) fresh->anonymous.literal_expr = expr;
         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
+        builder_sort_stable(&builder);
         fresh->anonymous.state->members = builder_finish(me, &builder);
         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
         *intern_slot(me, &my links, words.data, words.len) = fresh;
