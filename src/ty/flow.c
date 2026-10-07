@@ -1616,8 +1616,7 @@ static bool map_by_key_property(Checker* me, Ty const* ty, Atom const* name) {
         Ty const* member = members.data[i];
         if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED))) continue;
         Ty const* discriminant = ty_prop_type_of(me, member, name);
-        if (!discriminant) continue;
-        if (!is_literal_type(discriminant)) {
+        if (!discriminant || !is_literal_type(discriminant)) {
             mapped = false;
             break;
         }
@@ -1636,11 +1635,15 @@ static bool map_by_key_property(Checker* me, Ty const* ty, Atom const* name) {
         return false;
     }
     qsort(entries, len, sizeof(KeyEntry), key_entry_cmp);
-    // A member whose value an earlier member has too doesn't count, and that value maps to no member
+    // A value two members have maps to no member, and the second of them doesn't count. The third and later still do:
+    // tsc only marks a duplicate while the value still maps to a member (`existing !== unknownType`), so four members
+    // with one value count three times
     bool* duplicate = calloc(members.len, sizeof(bool));
     panic_if(!duplicate, "out of memory");
     for (u32 i = 1; i < len; i++) {
-        if (entries[i].literal == entries[i - 1].literal) duplicate[entries[i].member] = true;
+        if (entries[i].literal == entries[i - 1].literal && (i == 1 || entries[i - 2].literal != entries[i].literal)) {
+            duplicate[entries[i].member] = true;
+        }
     }
     u32 count = 0;
     bool* has_value = calloc(members.len, sizeof(bool));
@@ -2521,8 +2524,9 @@ static bool has_matching_argument(FlowQuery* q, CallExpr const* call) {
     }
     Expr const* callee = &call->callable;
     if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
-    callee = skip_reference_wrappers(callee);
-    if (callee->tag != EXPR_PROPERTY) return false;
+    // (A method called on it: `o.m(x)` only, not `o[k](x)` nor `(o.m)(x)`, tsc's
+    // `expression.expression.kind === SyntaxKind.PropertyAccessExpression`)
+    if (callee->tag != EXPR_PROPERTY || callee->property->form != PROPERTY_EXPR_DOT) return false;
     Expr const* object = &callee->property->expr;
     return is_matching_reference(me, q->reference, object) || contains_matching_reference(me, q->reference, object);
 }
