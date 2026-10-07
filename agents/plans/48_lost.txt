@@ -17,7 +17,6 @@ jsxNamespacePrefixInNameReact	T	src-changed	bl-changed
 legacyNodeModulesExportsSpecifierGenerationConditions	ET	src-changed	bl-changed
 moduleExportAlias5	T	src-changed	bl-changed
 parenthesizedContexualTyping2	ET	src-changed	bl-changed
-partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
 requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
 styledComponentsInstantiaionLimitNotReached	E	src-changed	bl-changed
 thisInPropertyBoundDeclarations	T	src-changed	bl-changed
