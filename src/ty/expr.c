@@ -1737,7 +1737,8 @@ void ty_function_note_widening_context(Checker* me, FunctionImpl const* function
 
 bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
     // (Only when its first check had no contextual signature: one it had then decided its return type, no circularity)
-    return intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) &&
+    return (intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) ||
+            intern_get(&my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)function }, 2)) &&
         intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2);
 }
 
@@ -4941,6 +4942,16 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             ) {
                 Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)expr->function }, 2);
                 if (!*slot) *slot = (Ty const*)expr->function;
+            }
+            // (A first check without any contextual type leaves its return type undecided too: `id({ d: () => null })`,
+            // whose `d` the object literal's contextual type U has nothing for until U is inferred as the literal itself,
+            // see ty_function_context_is_self())
+            if (!ctx.contextual && !ctx.sig_contextual && my resolving_call && !expr->function->ret_explicit &&
+                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
+                !intern_get(&my links, none_key, 2) && !ty_function_is_context_sensitive(expr->function)
+            ) {
+                Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)expr->function }, 2);
+                if (!*slot) *slot = (Ty const*)my resolving_call;
             }
             CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
             if (none_call) {
