@@ -1394,9 +1394,18 @@ static bool is_keyword(Expr const* expr, KeywordIdentifier keyword) {
     return expr->tag == EXPR_IDENTIFIER && expr->identifier.keyword == keyword;
 }
 
-// tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`)
+static ClassDecl const* class_decl_of(Symbol const* symbol);
+static bool is_within_class(ClassDecl const* enclosing, ClassDecl const* class_decl);
+
+// tsc's isValidPropertyAccessForCompletions: whether `access` may read prop (of `containing`). A #private member only
+// inside its class, outside an optional chain (tsc's isPropertyAccessible)
 static bool suggestion_accessible(Checker* me, PropertyExpr const* access, Prop const* prop, Ty const* containing) {
     PropertyContext const* site = property_context(access);
+    csview name = atom_sv(prop->name);
+    if (name.size && name.buf[0] == '#') {
+        ClassDecl const* declaring = class_decl_of(prop->parent);
+        return declaring && !access->optional_chain && is_within_class(site->enclosing_class, declaring);
+    }
     AccessSite access_site = {
         .enclosing_class = site->enclosing_class, .containing_function = site->containing_function,
         .this_parameter = site->this_parameter, .this_function = site->this_function,
@@ -1443,7 +1452,7 @@ Prop const* ty_suggested_property(Checker* me, Ty const* object, csview name) {
     for (u32 i = 0; i < count; i++) {
         Prop const* prop = props[i];
         csview candidate = atom_sv(prop->name);
-        bool everywhere = candidate.size && candidate.buf[0] != '#';
+        bool everywhere = candidate.size;
         for (u32 j = 0; j < parts.len && everywhere; j++) {
             if (parts.data[j]->flags & TYF_NULLABLE) continue;
             everywhere = ty_prop_type_of(me, ty_apparent_type(me, parts.data[j]), prop->name) != nullptr;
