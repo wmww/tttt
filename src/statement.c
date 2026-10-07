@@ -2576,6 +2576,14 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                     for_each (i, vec_initialized_binding, &my for_each_loop->variable.statement.initializers) {
                         variable_statement_check_let_names(&my for_each_loop->variable.statement, i, errs);
                         binding_typecheck(&i->binding, nullptr, errs);
+                        if (my for_each_loop->keyword == FOR_EACH_LOOP_OF && compiler_options()->no_implicit_any &&
+                            !compiler_options()->strict_null_checks
+                        ) {
+                            Ty const* element = ty_iterated_type(checker, my for_each_loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF,
+                                for_of_iterable(checker, &my for_each_loop->iterable, iterable_type, nullptr),
+                                expr_outer_span(&my for_each_loop->iterable), nullptr);
+                            binding_report_iterated_widening(&i->binding, element, errs);
+                        }
                     }
                     break;
 

@@ -937,6 +937,8 @@ bool binding_report_widening_errors_in_type(Ty const* ty, ErrorCtx* errs) {
     return report_widening_errors_in_type(current_checker, ty, errs, 0);
 }
 
+static void report_widened_type(Binding const* binding, Ty const* ty, Span parameter, ErrorCtx* errs);
+
 // `parameter`: the whole parameter when `me` is one (tsc reports at the declaration, a variable's at its name)
 static void report_errors_from_widening(InitializedBinding* me, Span parameter, ErrorCtx* errs) {
     Checker* checker = current_checker;
@@ -955,12 +957,27 @@ static void report_errors_from_widening(InitializedBinding* me, Span parameter, 
             symbol->is_parameter ? "Parameter '" : "Variable '", span_name_text(my binding.content_span), "' implicitly has an 'any[]' type.");
         return;
     }
+    report_widened_type(&my binding, ty, parameter, errs);
+}
+
+// TS7018 inside the type, else TS7005/TS7006 at the declaration (tsc's reportErrorsFromWidening)
+static void report_widened_type(Binding const* binding, Ty const* ty, Span parameter, ErrorCtx* errs) {
+    Checker* checker = current_checker;
     if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
     if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
+    bool is_parameter = binding->symbol->is_parameter;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));
-    error_ctx_error_d(errs, span_valid(parameter) ? parameter : my binding.content_span, symbol->is_parameter ? 7006 : 7005, symbol->is_parameter ? "Parameter '" : "Variable '",
-        span_name_text(my binding.content_span), "' implicitly has an '", type, "' type.");
+    error_ctx_error_d(errs, span_valid(parameter) ? parameter : binding->content_span, is_parameter ? 7006 : 7005,
+        is_parameter ? "Parameter '" : "Variable '", span_name_text(binding->content_span), "' implicitly has an '", type, "' type.");
     cstr_drop(&type);
+}
+
+// A for-of variable takes the iterated type, which widens like an initializer's (tsc's
+// widenTypeForVariableLikeDeclaration): `for (const x of [null])` is TS7005, `of [{ a: [] }]` TS7018
+void binding_report_iterated_widening(Binding const* me, Ty const* element, ErrorCtx* errs) {
+    if (!compiler_options()->no_implicit_any || compiler_options()->strict_null_checks) return;
+    if (my has_explicit_type || my tag != BINDING_IDENTIFIER || !my symbol || !element) return;
+    report_widened_type(me, element, span_null, errs);
 }
 
 // The declaration's type takes a call's return type from its callee checked not to be nullish
