@@ -1332,7 +1332,15 @@ static CallEffects call_effects(Checker* me, Expr const* call_expr, bool is_stat
     if (is_statement) {
         callee = type_of_dotted_name(me, callee_expr);
     } else if (callee_expr->tag != EXPR_IDENTIFIER || callee_expr->identifier.keyword != KEYWORD_IDENTIFIER_SUPER) {
-        callee = ty_non_nullable_if_needed(me, ty_flow_expr_type(me, callee_expr));
+        callee = ty_flow_expr_type(me, callee_expr);
+        // (tsc's checkNonNullExpression, which reports too: `if (f(x))` with `f` possibly undefined is TS18048 at `f`
+        // besides the call's TS2722. Not in an optional chain, whose callee may be nullish)
+        if (!expr_is_optional_chain(call_expr) && my errs && my errs->phase == ERROR_PHASE_TYPECHECK) {
+            Ty const* checked = ty_check_non_null_type(me, callee, callee_expr, my errs);
+            callee = checked ? checked : ty_non_nullable(me, callee);
+        } else {
+            callee = ty_non_nullable_if_needed(me, callee);
+        }
     }
     my flow_uncached++;
     CallEffects effects = ty_call_effects(me, callee, call);
