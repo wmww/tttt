@@ -183,7 +183,11 @@ static Span type_decl_span(Checker* me, Ty const* ty) {
     }
     if (ty->anonymous.node && ty->anonymous.node->tag == TYPE_INTERFACE) return ty->anonymous.node->interface.span;
     FunctionImpl const* function = ty->anonymous.function;
-    if (function) return span_valid(function->name) ? function->name : function->full_span;
+    if (function) {
+        // (A method's is its name too: tsc's getErrorSpanForNode)
+        if (span_valid(function->name)) return function->name;
+        return span_valid(function_impl_member_name(function)) ? function_impl_member_name(function) : function->full_span;
+    }
     (void)me;
     return (Span){0};
 }
