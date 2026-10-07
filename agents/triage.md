@@ -320,14 +320,8 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   tsgo 7.0.2 0. The program more than doubled since the Mar 2025 pin: ~10.1k source files / 3.41M lines (+870
   node_modules files; the agent host, chat and sessions code), so walls/RSS/instruction counts aren't comparable with the old pin's. tsc 6 needs more than
   8 GB of heap (OOM at `--max-old-space-size=8000`); tttt's typecheck peaks at 5.5 GB resident with 4 checkers.
-- tttt 414 diagnostics in 37 files (by code: TS2322 309, TS2345 59, TS2367 21, TS18033 8, TS2678 7, TS7006 3, TS2352 2,
-  singles TS2365 TS2536 TS2339 TS2416 TS2559). Root causes:
-  - ~395 of them: an enum member initialized from a `const` inside a namespace isn't a constant string member.
-    `namespace NS { export const A = 'a'; } enum E { A = NS.A } const s: string = E.A;` gives TS18033 at `NS.A` and
-    TS2322 (tsc: clean; a plain `const X = 'x'; enum E { A = X }` works). vscode's `AgentSessionProviders` enum
-    (chat/browser/agentSessions/agentSessions.ts:18) is `Local = SessionType.Local, ...` over
-    `export namespace SessionType { export const Local = 'local'; ... }` (chat/common/chatSessionsService.ts:389), so
-    every use of it as a string fails (TS2322/2345/2367/2678/2352/2416 and the `AgentSessionTarget` ones).
+- tttt 12 (414 before the enum evaluator followed `N.C` to a namespace's const variable: ~400 of them came from
+  vscode's `AgentSessionProviders` enum over `namespace SessionType { export const Local = 'local' }`). Left:
   - Inference: a context-sensitive arrow inside `x && (...)` sees the type parameter's constraint instead of the
     inference so far, and T then fails against the earlier argument (TS2345 + TS2339; mcpResourceScannerService.ts:174):
     `declare function parse(c: string): { readonly wrapped: boolean; readonly servers: Record<string, number> };`

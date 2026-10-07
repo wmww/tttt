@@ -192,10 +192,13 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
         }
 
         case EXPR_PROPERTY: {
-            // `E.A`, `E["A"]` and `N.E.A`
+            // `E.A`, `E["A"]` and `N.E.A`, or a namespace's const variable `N.C`
             PropertyExpr const* property = expr->property;
             Symbol const* enum_decl = entity_symbol(&property->expr);
-            if (!enum_decl || !(enum_decl->flags & SYMBOL_ENUM)) return enum_value_unknown;
+            if (enum_decl && !(enum_decl->flags & SYMBOL_ENUM)) {
+                return const_variable_value(me, entity_symbol(expr), expr_outer_span(expr), depth);
+            }
+            if (!enum_decl) return enum_value_unknown;
             if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) return enum_value_unknown;
             return member_value(me, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)));
         }
