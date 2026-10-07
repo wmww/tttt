@@ -62,10 +62,44 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     interface prints `typeof x` in tsc (also under 5.8); tttt's harness prints any/error for an uninstantiated one.
   - nodeModulesJson (symbols): `config3.version` through `import * as config3` of a JSON module in a .cts prints
     `Symbol(version, ...)` unquoted in tsc, tttt quotes it like the JSON declaration's `"version"`.
-  - keyofAndIndexedAccess's Result2: `type Result2 = Example2<...>` (a mapped type over `keyof Helper2<T>`) keeps the
-    alias Example2<...> in tsc; tttt's instantiation loses it and Result2 names it.
   - variadicTuples1: several generic-tuple indexing/spread printing differences (`[string, ...T, number][1]` is
     `number | T[number]` in tsc...), old failures, worth a session of their own.
+- Plan 48 stage 3 agent D, third pass leftovers (types/symbols, 2026-10-07):
+  - noImplicitAnyUnionNormalizedObjectLiteral1: union order of two widened object literals with the same symbol (the
+    spread literal) goes by type id; tsc's getWidenedTypeWithContext makes both members anew in member order, tttt's
+    separate widen_nullable() pass keeps the unchanged `{ c: string; ... }` (older id) and remakes the other.
+  - sliceResultCast: `x.slice` of `[number, string] | [number, string, string]` is a union of two equal signatures in
+    tsc (each tuple's Array members are instantiated with the tuple as `this`, Array being merged makes `this` possibly
+    referenced everywhere); retarget_this_props() only retargets props that mention `this` (a deliberate perf
+    shortcut), so tttt's members are shared and the union collapses.
+  - stringLiteralTypesInImplementationSignatures2: `{ foo(x: 'hi') {}, foo(x: 'a') {} }`: two methods are one binder
+    symbol (MethodExcludes), its type has both signatures (`{ (x: "hi"): void; (x: "a"): void; }`, both names print it);
+    tttt's literal keeps the last method's type. Needs ty_anonymous_from_overloads() of the methods plus the harness.
+  - jsdocPropertyTagInvalid: a JSDoc typedef of another file prints bare (`(p: MyType) => void`) in tsc's types
+    baseline, from JS and TS importers alike, while declaration emit says `import("./a.js").MyType`; tttt qualifies.
+    serializeTypeName/trackExistingEntityName didn't explain it; instrument symbolToTypeNode under the typeWriter's
+    flags (typeToTypeNode with IgnoreErrors, AllowUnresolvedNames) to find the rule.
+  - jsdocTemplateClass: `/** @typedef {(t: T) => T} Id2 */` on a constructor is local to the class to tsc (not
+    accessible where `foo`'s type is printed: expanded), tttt's file-level claim of the comment names it Id2.
+  - thisInPropertyBoundDeclarations (48_lost): the literal `{ a: function() { return this; } }` of an unannotated
+    property prints `{ a: () => any; }` in tsc 6 (the widened type, `this`'s, in a cycle) where tttt shows the fresh
+    literal around it, `{ a: () => { a: any; }; }`; which type tsc's typeWriter gets for the expression is unclear.
+  - moduleElementsInWrongContext: `declare module "ambient"` inside a block of a script is a global ambient module to
+    tsc (a block is no container); tttt declares block contents during the resolve walk, after link, so it stays a
+    module of its own and the block's imports of it are any. Imports in blocks now go to the container's table.
+  - overloadModifiersMustAgree: `declare function bar(); export function bar(s: string); function bar(s?) {}`: tsc's
+    local symbol holds the exported declaration too, so the implementation is skipped as adjacent to an overload and
+    the local's type is `{ (): any; (s: string): any; }`; tttt's local has only its own two.
+  - sourceFileMergeWithFunction: a global `declare function foo()` merges into the UMD alias of `export as namespace
+    foo` (tsc's mergeSymbolTable of globalExports; the merged symbol's type is the alias's, `typeof import("./types")`).
+  - mergedClassWithNamespacePrototype: a class's `prototype` export shadows a merged `namespace prototype` in tsc's
+    exports table (bindClassLikeDeclaration overwrites it), so the namespace prints `typeof Foo.prototype`.
+  - jsExportMemberMergedWithModuleAugmentation3 (symbols): tsc merges x.js's expando `module.exports.x` with y.d.ts's
+    type alias x into one symbol (the export= clone's exports merge); tttt keeps two.
+  - typeFromPropertyAssignment30: the expando `c.p = {}` of `const c: Combo = () => 1` is `p: {}` in tsc's type of the
+    arrow; tttt takes Combo.p's declared type for it.
+  - moduleExportsAliasLoop1/2 (symbols): `exports.fn2 = Foo.min` names `Foo.min`'s symbol `fn2` (with min's
+    declarations) in tsc: the alias-like CommonJS export; old failures.
 - interfaceMergeWithNonGenericTypeArguments: `class M extends B<any>` (B not generic, TS2315) merged with `interface M extends I`: tsc also reports TS2346 on `super()` (no base constructor for that many type arguments), but not without the interface merge; the mechanism (how the merge changes getBaseConstructorTypeOfClass) is unexplored (stage 3, agent A).
 - exportAssignmentImportMergeNoCrash: `import Obj from "./a"; export const Obj = void Obj;` misses TS2448: the reference resolves to the import alias's local symbol, not the merged one with the block-scoped variable (stage 3, agent A).
 - constructorWithIncompleteTypeAnnotation: tsc's baseline has the harness's TS-1 pre-/post-emit count mismatch (its TS7017 only post-emit); not matchable by a checker.
