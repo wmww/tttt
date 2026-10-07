@@ -1490,8 +1490,9 @@ static Ty const* narrowed_type_uncached(Checker* me, Ty const* type, Ty const* c
     if (!assume_true) {
         if (type == candidate) return ty_intrinsic(me, TY_NEVER);
         if (check_derived) return filter_type(me, type, is_not_derived_from, candidate);
+        // (unknown as `{} | null | undefined`, tsc's unknownUnionType: just unknown without strictNullChecks)
         bool was_unknown = (type->flags & TYF_UNKNOWN) != 0;
-        if (was_unknown) {
+        if (was_unknown && compiler_options()->strict_null_checks) {
             Ty const* parts[3] = { ty_unknown_empty_object_type(me), ty_intrinsic(me, TY_NULL), ty_intrinsic(me, TY_UNDEFINED) };
             type = ty_union(me, parts, 3, nullptr, (TyList){0});
         }
