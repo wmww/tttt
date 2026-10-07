@@ -2623,7 +2623,7 @@ static bool computed_key_names(Checker* me, Ty const* key, Atom const* name, boo
 // Whether a property's literal key type is a number (tsc's getLiteralTypeFromProperty): declared with a numeric
 // literal name, or a computed one of a number literal type
 static bool prop_has_numeric_name(Prop const* prop) {
-    while (prop->target) prop = prop->target;
+    while (prop->target && !prop->decl->name_type) prop = prop->target;
     PropDecl const* decl = prop->decl;
     if (decl->name_type) return (decl->name_type->flags & TYF_NUMBER_LITERAL) != 0;
     if (!decl->name_is_value || !span_valid(decl->name_span) || !decl->name_span.sv.size) return false;

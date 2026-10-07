@@ -3244,6 +3244,12 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                         }
                     }
                 }
+                // A number key is a number to keyof (tsc's mapped symbol's nameType, getLiteralTypeFromProperty), which
+                // the name, a string, doesn't say
+                if (prop_name->flags & TYF_NUMBER_LITERAL) {
+                    if (prop->decl == prop_decl_none()) prop->decl = arena_new(&my arena, PropDecl);
+                    prop->decl->name_type = ty_regular(me, prop_name);
+                }
                 builder_push(&builder, props, prop);
             } else {
                 // Primitives and patterns (`data-${string}`) are index signatures, what else a name can be (generic,
