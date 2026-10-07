@@ -2612,6 +2612,8 @@ bool ty_is_generic_tuple(Checker* me, Ty const* ty) {
         if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) continue;
         Ty const* arg = args.data[i];
         if (arg->kind == TY_TYPE_PARAM || (arg->flags & TYF_DEFERRED)) return true;
+        // (A generic mapped type is variadic too, tsc's createNormalizedTupleType with isGenericMappedType)
+        if (arg->kind == TY_ANONYMOUS && (arg->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, arg)->mapped) return true;
     }
     return false;
 }

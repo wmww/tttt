@@ -3489,6 +3489,16 @@ static Ty const* compute_simplified(Checker* me, Ty const* ty, bool writing) {
             return simplified_parts(me, object, index, object->composite.types, false, true, writing);
         }
     }
+    // A generic tuple's elements past the fixed ones (all of them for `number`) where the index is a number: `[S,
+    // ...T][number]` is S | T[number] (tsc's getSimplifiedIndexedAccessType, getElementTypeOfSliceOfTupleType)
+    if ((index->flags & (TYF_NUMBER | TYF_NUMBER_LITERAL)) && !(index->flags & TYF_ENUM) && ty_is_tuple(object) &&
+        ty_is_generic_tuple(me, object)
+    ) {
+        u32 from = index->kind == TY_INTRINSIC ? 0 : ty_tuple_fixed_length(ty_tuple_shape(object));
+        // (Not for writing, where tsc intersects the elements: left deferred)
+        Ty const* elements = writing ? nullptr : ty_tuple_slice_element_type(me, object, from, 0, false);
+        if (elements) return elements;
+    }
     // `{ [P in K]: E }[X]` with K generic is E with X for P (not through a remapping `as` clause)
     bool generic = false;
     MappedInfo const* mapped = (object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) ? mapped_info_of(me, object, &generic) : nullptr;
