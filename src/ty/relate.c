@@ -4591,9 +4591,7 @@ static bool prop_modifiers_identical(Prop const* source, Prop const* target) {
 // `{ a?: string | undefined }` and to `Partial<{ a: string }>` mapped again (whose template read added undefined)
 static Ty const* identity_prop_type(Checker* me, Prop const* prop) {
     Ty const* type = prop_type(me, prop);
-    // (Under exactOptionalPropertyTypes the type without missing: tsc 6.0's getNonMissingTypeOfSymbol, so
-    // `{ a?: string }` isn't identical to `{ a?: string | undefined }` there)
-    if (compiler_options()->exact_optional_property_types) return ty_remove_missing(me, type, (prop->flags & PROP_OPTIONAL) != 0);
+    // (Also under exactOptionalPropertyTypes: identity takes missing for undefined, both are the one Undefined singleton)
     if (!(prop->flags & PROP_OPTIONAL) || !compiler_options()->strict_null_checks) return type;
     Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
     return ty_union(me, parts, 2, nullptr, (TyList){0});

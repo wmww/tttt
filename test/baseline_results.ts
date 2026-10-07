@@ -14006,7 +14006,7 @@ const baselines = {
         types: true,
     },
     'exactOptionalPropertyTypesIdentical': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
@@ -24701,7 +24701,7 @@ const baselines = {
         types: true,
     },
     'multipleBaseInterfaesWithIncompatibleProperties2(exactoptionalpropertytypes=true)': {
-        errors: true,
+        errors: false,
         symbols: true,
         types: true,
     },
