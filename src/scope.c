@@ -3830,7 +3830,7 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
         error_ctx_error_d(errs, at, 1286, "ESM syntax is not allowed in a CommonJS module when 'verbatimModuleSyntax' is "
             "enabled.");
     } else if (options->module == MODULE_KIND_PRESERVE && format == MODULE_KIND_COMMONJS) {
-        error_ctx_error_d(errs, at, 1293, "ESM syntax is not allowed in a CommonJS module when 'module' is set to "
+        error_ctx_error_d(errs, at, 1293, "ECMAScript module syntax is not allowed in a CommonJS module when 'module' is set to "
             "'preserve'.");
     }
 }

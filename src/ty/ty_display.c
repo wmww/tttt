@@ -258,29 +258,34 @@ static bool is_nested_expando_function(Ty const* ty) {
     return expando && !is_non_local_function(symbol);
 }
 
-// `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode)
-static void out_module_import(TyDisplay d, Symbol const* module) {
-    cstr module_name = module_name_for_error(module, nullptr, false);
-    csview name = cstr_sv(&module_name);
-    out_lit(d, "import(");
-    if (name.size >= 2 && name.buf[0] == '\'') {
-        // (a string literal the printer makes: double quotes)
-        out_lit(d, "\"");
-        out(d, csview_slice(name, 1, name.size - 1));
-        out_lit(d, "\"");
-    } else {
-        out(d, name);
-    }
+// `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode). Named from a place,
+// a file is named by the module specifier an import there would write (tsc 6's typeToString always has a module
+// resolver host, getSpecifierForModuleSymbol: `./b`); without one, or in an outFile bundle (baseUrl at the common
+// source directory, non-relative preference: not ported), by its path without the extension
+static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     // An ES module named from a file of the other format under node16/nodenext resolution says how to resolve it
     // (tsc's symbolToTypeNode: the resolution-mode import attribute)
     ModuleResolutionKind resolution = compiler_options()->module_resolution;
     SourceFile const* target = module->module ? module->module->file : nullptr;
     SourceFile const* context = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
-    if ((resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) && target && context &&
-        target->has_format && target->is_esm && !(context->has_format && context->is_esm)
-    ) {
-        out_lit(d, ", { with: { \"resolution-mode\": \"import\" } }");
+    bool resolution_mode = (resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) &&
+        target && context && target->has_format && target->is_esm && !(context->has_format && context->is_esm);
+    cstr module_name = target && context && !cstr_size(&compiler_options()->out_file) ?
+        program_module_specifier(my program, context, target, resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE) :
+        module_name_for_error(module, nullptr, false);
+    csview name = cstr_sv(&module_name);
+    out_lit(d, "import(");
+    if (name.size >= 2 && (name.buf[0] == '\'' || name.buf[0] == '"')) {
+        // (a string literal the printer makes: double quotes)
+        out_lit(d, "\"");
+        out(d, csview_slice(name, 1, name.size - 1));
+        out_lit(d, "\"");
+    } else {
+        out_lit(d, "\"");
+        out(d, name);
+        out_lit(d, "\"");
     }
+    if (resolution_mode) out_lit(d, ", { with: { \"resolution-mode\": \"import\" } }");
     out_lit(d, ")");
     cstr_drop(&module_name);
 }
@@ -310,7 +315,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         // A module or ambient module (`declare module "m"`) at the root is `import("m")` (tsc's getSymbolChain walks
         // up to it, symbolToTypeNode makes the import type)
         if (parent->is_module || quoted_parent) {
-            out_module_import(d, parent);
+            out_module_import(me, d, parent);
         } else {
             out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
         }
@@ -344,7 +349,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         }
         start = 1;
     } else if (chain.len && chain.items[0]->is_module) {
-        out_module_import(d, chain.items[0]);
+        out_module_import(me, d, chain.items[0]);
         // (tsc's name of a file an import found is its absolute path, `/.src/` included where the harness writes the
         // underline: see SourceFile.loaded_by_import)
         SourceFile const* file = chain.items[0]->module ? chain.items[0]->module->file : nullptr;
@@ -366,7 +371,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         // A module's export whose name a type parameter in scope takes (`type T<T> = ...` printed in itself) is named
         // from the module, like any inaccessible one (tsc's getSymbolChain finds the type parameter first). Only a
         // bare name: the first part of `E.Whatever` is looked up as a namespace, which no type parameter is
-        out_module_import(d, chain.items[0]->parent);
+        out_module_import(me, d, chain.items[0]->parent);
         out_lit(d, ".");
     }
     cstr text = cstr_init();

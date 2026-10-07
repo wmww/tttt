@@ -1461,7 +1461,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             if (names->strict && compiler_options()->target >= SCRIPT_TARGET_ES2015 &&
                 (statement_declares_name(body->tag) || body->tag == STATEMENT_IMPORT_EXPORT)
             ) {
-                error_ctx_error_d(errs, my labeled.name, 1344, "'A label is not allowed here.");
+                error_ctx_error_d(errs, my labeled.name, 1344, "A label is not allowed here.");
             }
             // (A type alias under a label isn't visible: tsc's isDeclarationVisible, the container is the label)
             if (body->tag == STATEMENT_DECL_TYPE) body->decl.type->local = true;
@@ -2814,7 +2814,7 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
         source_file_emit_module_kind(file) == MODULE_KIND_COMMONJS;
     if (illegal_in_cjs) {
         error_ctx_error_d(errs, span_with_semicolon(my span), 1286,
-            "ESM syntax is not allowed in a CommonJS module when 'verbatimModuleSyntax' is enabled.");
+            "ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'.");
         return;
     }
     if (my expr.tag != EXPR_IDENTIFIER || my expr.identifier.keyword || expr_is_perenthisized(&my expr)) return;

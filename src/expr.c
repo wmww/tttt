@@ -702,7 +702,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
             // (tsc's checkIdentifier: the error type)
-            error_ctx_error_d(errs, identifier_expr_name(me), 2815, "'arguments' cannot be referenced in property initializers.");
+            error_ctx_error_d(errs, identifier_expr_name(me), 2815, "'arguments' cannot be referenced in property initializers or class static initialization blocks.");
             my invalid_initializer_reference = true;
         }
         // No symbol: ty_identifier_reference_type() makes it IArguments
@@ -1201,7 +1201,7 @@ void await_check_grammar(AwaitPlace place, AwaitKind kind, Span at, FunctionImpl
     } else if (!(node || es) || options->target < SCRIPT_TARGET_ES2017) {
         error_ctx_grammar_error_d(errs, at, kind == AWAIT_KIND_EXPR ? 1378 : kind == AWAIT_KIND_FOR ? 1432 : 2854,
             "Top-level ", what[kind], " are only allowed when the 'module' option is set to 'es2022', 'esnext', 'system', "
-            "'node16', 'node18', 'nodenext', or 'preserve', and the 'target' option is set to 'es2017' or higher.");
+            "'node16', 'node18', 'node20', 'nodenext', or 'preserve', and the 'target' option is set to 'es2017' or higher.");
     }
 }
 static bool is_written_undefined(Expr const* me);
@@ -3024,13 +3024,13 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     ModuleKind module = options->module;
     if (options->verbatim_module_syntax && module == MODULE_KIND_COMMONJS) {
         error_ctx_grammar_error_d(errs, my inner_span, 1286,
-            "ESM syntax is not allowed in a CommonJS module when 'verbatimModuleSyntax' is enabled.");
+            "ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'.");
         return;
     }
     if (module == MODULE_KIND_ES2015) {
         error_ctx_grammar_error_d(errs, my inner_span, 1323,
             "Dynamic imports are only supported when the '--module' flag is set to 'es2020', 'es2022', 'esnext', "
-            "'commonjs', 'amd', 'system', 'umd', 'node16', 'node18', or 'nodenext'.");
+            "'commonjs', 'amd', 'system', 'umd', 'node16', 'node18', 'node20', or 'nodenext'.");
         return;
     }
     if (my call->callable.tag == EXPR_GENERIC_PARAMS) {
@@ -3049,7 +3049,7 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     if (!node && module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE && count > 1) {
         error_ctx_grammar_error_d(errs, expr_outer_span(vec_expr_at(args, 1)), 1324,
             "Dynamic imports only support a second argument when the '--module' option is set to 'esnext', 'node16', "
-            "'node18', 'nodenext', or 'preserve'.");
+            "'node18', 'node20', 'nodenext', or 'preserve'.");
         return;
     }
     if (count == 0 || count > 2) {
@@ -4051,7 +4051,7 @@ static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
         }
     } else if (module < MODULE_KIND_ES2020 && module != MODULE_KIND_SYSTEM) {
         error_ctx_error_d(errs, my inner_span, 1343, "The 'import.meta' meta-property is only allowed when the "
-            "'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', or 'nodenext'.");
+            "'--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', 'node20', or 'nodenext'.");
     }
 }
 
@@ -4303,7 +4303,7 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_AS_TYPE:
             if (as_type_is_const_assertion(my as_type) && !is_valid_const_assertion_argument(&my as_type->expr)) {
-                error_ctx_error_d(errs, expr_outer_span(&my as_type->expr), 1355, "A 'const' assertions can only be applied to "
+                error_ctx_error_d(errs, expr_outer_span(&my as_type->expr), 1355, "A 'const' assertion can only be applied to "
                     "references to enum members, or string, number, boolean, array, or object literals.");
             }
             if (!my as_type->is_satisfies && !as_type_is_const_assertion(my as_type)) {

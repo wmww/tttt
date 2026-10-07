@@ -482,10 +482,10 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     if (!supported) {
         if (node->is_assert) {
             error_ctx_grammar_error_d(errs, node->span, 2821,
-                "Import assertions are only supported when the '--module' option is set to 'esnext', 'node18', 'nodenext', or 'preserve'.");
+                "Import assertions are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.");
         } else {
             error_ctx_grammar_error_d(errs, node->span, 2823,
-                "Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'nodenext', or 'preserve'.");
+                "Import attributes are only supported when the '--module' option is set to 'esnext', 'node18', 'node20', 'nodenext', or 'preserve'.");
         }
         return;
     }

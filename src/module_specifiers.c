@@ -917,16 +917,24 @@ static bool matches_any_key(JsonValue const* paths, csview candidate) {
     return false;
 }
 
+// JavaScript's String.prototype.substring: indices clamped to the string, swapped when reversed (tsc's paths of a
+// file directly in a node_modules have a package root index of -1, which substring reads as 0)
+static csview js_substring(csview s, isize start, isize end) {
+    start = start < 0 ? 0 : start > s.size ? s.size : start;
+    end = end < 0 ? 0 : end > s.size ? s.size : end;
+    return start <= end ? csview_slice(s, start, end) : csview_slice(s, end, start);
+}
+
 // tryGetModuleNameAsNodeModule's tryDirectoryWithPackageJson
 static DirectoryResult directory_with_package_json(
     Generator* me, csview path, NodeModulePathParts const* parts, isize root_index, Endings const* endings, SpecifierMode mode
 ) {
-    csview root = csview_slice(path, 0, root_index);
+    csview root = js_substring(path, 0, root_index);
     DirectoryResult ret = { .module_file = cstr_from_sv(path) };
     JsonValue const* package = module_resolver_package_json(my resolver, root);
     if (!package) {
         // No package.json: an index file is still found by the package's name
-        csview file = csview_slice(path, parts->package_root + 1, path.size);
+        csview file = js_substring(path, parts->package_root + 1, path.size);
         if (csview_equals(file, "index.d.ts") || csview_equals(file, "index.js") || csview_equals(file, "index.ts") ||
             csview_equals(file, "index.tsx")) {
             ret.package_root = true;
@@ -936,7 +944,7 @@ static DirectoryResult directory_with_package_json(
     SpecifierMode import_mode = mode ? mode : my request->importing_default_mode;
     JsonValue const* exports = json_get(package, "exports");
     if (resolves_package_json_exports(my options)) {
-        cstr name = package_name_from_types(csview_slice(root, parts->top_level_package_name + 1, root.size));
+        cstr name = package_name_from_types(js_substring(root, parts->top_level_package_name + 1, root.size));
         Conditions conditions = conditions_for(my options, import_mode);
         cstr found = exports && exports->tag != JSON_NULL ? from_exports(me, path, root, cstr_sv(&name), exports, &conditions) :
             cstr_null;
@@ -1019,7 +1027,7 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
             return r.module_file;
         }
         if (r.package_root) {
-            cstr_take(&specifier, cstr_from_sv(csview_slice(path, 0, root_index)));
+            cstr_take(&specifier, cstr_from_sv(js_substring(path, 0, root_index)));
             cstr_drop(&r.module_file);
             break;
         }
@@ -1035,12 +1043,12 @@ static cstr as_node_module(Generator* me, csview path, SpecifierMode mode) {
     cstr_drop(&module_file);
     csview s = cstr_sv(&specifier);
     // Only through a node_modules the importing file sees
-    csview top = csview_slice(s, 0, parts.top_level_node_modules);
+    csview top = js_substring(s, 0, parts.top_level_node_modules);
     if (!starts_with(my source_dir, top)) {
         cstr_drop(&specifier);
         return cstr_null;
     }
-    csview directory_name = csview_slice(s, parts.top_level_package_name + 1, s.size);
+    csview directory_name = js_substring(s, parts.top_level_package_name + 1, s.size);
     cstr ret = package_name_from_types(directory_name);
     if (classic && csview_equals_sv(cstr_sv(&ret), directory_name)) cstr_drop(&ret);
     cstr_drop(&specifier);
