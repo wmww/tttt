@@ -57,7 +57,7 @@ static bool for_of_checks_iterable(ForEachLoopStatement const* loop) {
         !vec_initialized_binding_is_empty(&loop->variable.statement.initializers);
 }
 
-static void variable_statement_check_using(VariableStatement* me, bool for_in, ErrorCtx* errs) {
+static void variable_statement_check_using(VariableStatement* me, bool for_in, bool case_clause, bool ambient, ErrorCtx* errs) {
     bool is_await = my keyword == VAR_INIT_AWAIT_USING;
     if (!is_await && my keyword != VAR_INIT_USING) return;
     if (vec_initialized_binding_is_empty(&my initializers)) return; // The parser reported it
@@ -69,6 +69,16 @@ static void variable_statement_check_using(VariableStatement* me, bool for_in, E
             error_ctx_grammar_error_d(errs, my span, 1493,
                 "The left-hand side of a 'for...in' statement cannot be a 'using' declaration.");
         }
+        return;
+    }
+    if (case_clause) {
+        error_ctx_grammar_error_d(errs, my span, is_await ? 1548 : 1547, "'", variable_statement_keyword_str(me),
+            "' declarations are not allowed in 'case' or 'default' clauses unless contained within a block.");
+        return;
+    }
+    if (ambient) {
+        error_ctx_grammar_error_d(errs, my span, is_await ? 1546 : 1545, "'", variable_statement_keyword_str(me),
+            "' declarations are not allowed in ambient contexts.");
         return;
     }
     if (is_await && my in_static_block) {
@@ -159,8 +169,8 @@ static void binding_check_es_module_marker(Binding const* me, ErrorCtx* errs) {
     }
 }
 
-void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, ErrorCtx* errs) {
-    variable_statement_check_using(me, false, errs);
+void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, bool case_clause, bool ambient_using, ErrorCtx* errs) {
+    variable_statement_check_using(me, false, case_clause, ambient_using, errs);
     // An export of a module emitted as CommonJS (or AMD, UMD) can't be named like the marker the emit adds
     bool check_marker = exported && !declared && !compiler_options()->no_emit && !vec_initialized_binding_is_empty(&my initializers) &&
         source_file_emit_module_kind(my initializers.data[0].binding.content_span.source) < MODULE_KIND_SYSTEM;
@@ -2445,6 +2455,8 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     bool body = ctx.body;
     ctx.body = false;
+    bool case_clause = ctx.case_clause;
+    ctx.case_clause = false;
     switch (my tag) {
         case STATEMENT_LABELED: {
             Statement const* labeled = my labeled.body;
@@ -2521,7 +2533,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             }
             if (my for_each_loop->variable.tag == FOR_EACH_LOOP_STATEMENT) {
                 variable_statement_check_using(&my for_each_loop->variable.statement,
-                    my for_each_loop->keyword == FOR_EACH_LOOP_IN, errs);
+                    my for_each_loop->keyword == FOR_EACH_LOOP_IN, false, ctx.ambient, errs);
             }
             switch (my for_each_loop->keyword) {
                 case FOR_EACH_LOOP_IN:
@@ -2662,7 +2674,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         );
                     }
                 }
-                statements_typecheck(&i->statements, ctx, errs);
+                BlockTypecheckCtx clause_ctx = ctx;
+                clause_ctx.case_clause = true;
+                statements_typecheck(&i->statements, clause_ctx, errs);
                 if (i->fallthrough && ty_flow_reachability(current_checker, i->fallthrough) == FLOW_REACH_YES) {
                     error_ctx_error_d(errs, i->head, 7029, "Fallthrough case in switch.");
                 }
@@ -2793,7 +2807,9 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                 error_ctx_grammar_error_d(errs, span_with_semicolon(my span), 1156,
                     "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");
             }
-            variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, my decl.props.exported, errs);
+            // (A `declare` or `export` modifier on a `using` is an error of its own, which stops tsc's grammar checks)
+            variable_statement_typecheck(&my decl.variable, my decl.props.declared || ctx.ambient, my decl.props.exported,
+                case_clause, (my decl.props.declared || ctx.ambient) && !span_valid(my decl.props.declare_keyword) && !my decl.props.exported, errs);
             break;
 
         case STATEMENT_DECL_FUNCTION:

@@ -1886,10 +1886,12 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             Expr* operand = &my unary_op->expr;
             if (my unary_op->op == UNARY_OP_VOID) expr_mark_result_unused(operand);
             // tsc's checkStrictModeDeleteExpression
-            if (my unary_op->op == UNARY_OP_DELETE && names->strict && operand->tag == EXPR_IDENTIFIER &&
-                !operand->identifier.keyword && !expr_is_perenthisized(operand)
+            // (A missing operand is a missing identifier to tsc)
+            if (my unary_op->op == UNARY_OP_DELETE && names->strict && !expr_is_perenthisized(operand) &&
+                ((operand->tag == EXPR_IDENTIFIER && !operand->identifier.keyword) ||
+                    (operand->tag == EXPR_IMPLICIT_ANY && !operand->inner_span.sv.size) || is_written_undefined(operand))
             ) {
-                error_ctx_error_d(errs, operand->inner_span, 1102, "'delete' cannot be called on an identifier in strict mode.");
+                error_ctx_error_d(errs, expr_error_span_skip_parens(operand), 1102, "'delete' cannot be called on an identifier in strict mode.");
             }
             switch (my unary_op->op) {
                 case UNARY_OP_LEFT_BANG:
@@ -3002,10 +3004,10 @@ static PredicateSemantics nullish_semantics(Expr const* me) {
             }
         case EXPR_BINARY_OP:
             switch (my binary_op->op) {
-                case BINARY_OP_EQUAL: case BINARY_OP_EH_EH: case BINARY_OP_EH_EH_EQUAL: case BINARY_OP_OR_OR:
-                case BINARY_OP_OR_OR_EQUAL: case BINARY_OP_AND_AND: case BINARY_OP_AND_AND_EQUAL:
+                case BINARY_OP_OR_OR: case BINARY_OP_OR_OR_EQUAL: case BINARY_OP_AND_AND: case BINARY_OP_AND_AND_EQUAL:
                     return PREDICATE_SOMETIMES;
-                case BINARY_OP_COMMA:
+                // (The right operand decides, 6.0)
+                case BINARY_OP_COMMA: case BINARY_OP_EQUAL: case BINARY_OP_EH_EH: case BINARY_OP_EH_EH_EQUAL:
                     return nullish_semantics(&my binary_op->right);
                 default:
                     return PREDICATE_NEVER;
@@ -3069,22 +3071,42 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     }
 }
 
+static bool is_unparenthesized_binary(Expr const* me) {
+    return my tag == EXPR_BINARY_OP && !expr_is_perenthisized(me);
+}
+
+static void mixed_without_parentheses(Expr const* operand, char const* first, char const* second, ErrorCtx* errs) {
+    Span at = expr_outer_span(operand);
+    if (!at.source || at.source->has_parse_errors) return; // (A grammar error)
+    error_ctx_error_d(errs, at, 5076, "'", first, "' and '", second, "' operations cannot be mixed without parentheses.");
+}
+
+// tsc's checkNullishCoalesceOperands for a `??` operand of `||` (whose left operand is a binary expression), from the
+// `||`: `a || b ?? c` and `a ?? b || c` (where the `??` is the left operand) say so about the left operand
+static void or_or_check_nullish_operand(Expr const* me, ErrorCtx* errs) {
+    Expr const* left = &my binary_op->left;
+    if (!is_unparenthesized_binary(left)) return;
+    if (left->binary_op->op == BINARY_OP_EH_EH || (is_unparenthesized_binary(&my binary_op->right) && my binary_op->right.binary_op->op == BINARY_OP_EH_EH)) {
+        mixed_without_parentheses(left, "?" "?", "||", errs);
+    }
+}
+
 static void nullish_coalesce_typecheck(Expr const* me, ErrorCtx* errs) {
-    Expr const* operands[] = { &my binary_op->left, &my binary_op->right };
-    for (u32 i = 0; i < 2; i++) {
-        Expr const* operand = operands[i];
-        if (operand->tag != EXPR_BINARY_OP || expr_is_perenthisized(operand)) continue;
-        BinaryOp op = operand->binary_op->op;
-        if ((op != BINARY_OP_OR_OR && op != BINARY_OP_AND_AND) || !expr_outer_span(operand).source || expr_outer_span(operand).source->has_parse_errors) continue;
-        error_ctx_error_d(errs, expr_outer_span(operand), 5076, "'", binary_op_get_zv(op).str,
-            "' and '?" "?' operations cannot be mixed without parentheses.");
+    // (Only when the `??` isn't itself an operand: then its parent's check above is the one)
+    if (!my binary_op->is_operand) {
+        Expr const* left = &my binary_op->left;
+        Expr const* right = &my binary_op->right;
+        if (is_unparenthesized_binary(left)) {
+            BinaryOp op = left->binary_op->op;
+            if (op == BINARY_OP_OR_OR || op == BINARY_OP_AND_AND) mixed_without_parentheses(left, binary_op_get_zv(op).str, "?" "?", errs);
+        } else if (is_unparenthesized_binary(right) && right->binary_op->op == BINARY_OP_AND_AND) {
+            mixed_without_parentheses(right, "?" "?", "&&", errs);
+        }
     }
     Expr const* left = skip_outer_expressions(&my binary_op->left);
     PredicateSemantics semantics = nullish_semantics(left);
     if (semantics == PREDICATE_SOMETIMES) return;
-    if (my binary_op->is_operand) {
-        error_ctx_error_d(errs, node_error_span(left), 2870, "This binary expression is never nullish. Are you missing parentheses?");
-    } else if (semantics == PREDICATE_ALWAYS) {
+    if (semantics == PREDICATE_ALWAYS) {
         error_ctx_error_d(errs, node_error_span(left), 2871, "This expression is always nullish.");
     } else {
         error_ctx_error_d(errs, node_error_span(left), 2869,
@@ -3945,6 +3967,7 @@ __attribute__((noinline)) static void jsx_typecheck(Expr const* me, ErrorCtx* er
 static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs) {
     if (my binary_op->op == BINARY_OP_AND_AND || my binary_op->op == BINARY_OP_OR_OR) {
         expr_check_truthiness(&my binary_op->left, errs);
+        if (my binary_op->op == BINARY_OP_OR_OR) or_or_check_nullish_operand(me, errs);
     } else if (my binary_op->op == BINARY_OP_EH_EH) {
         nullish_coalesce_typecheck(me, errs);
     } else if (my binary_op->op == BINARY_OP_COMMA && !compiler_options()->allow_unreachable_code &&

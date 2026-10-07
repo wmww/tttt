@@ -25376,7 +25376,7 @@ const baselines = {
         types: true,
     },
     'neverNullishThroughParentheses': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28006,7 +28006,7 @@ const baselines = {
         types: true,
     },
     'predicateSemantics': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53586,7 +53586,7 @@ const baselines = {
         types: true,
     },
     'deleteOperatorInvalidOperations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -53596,7 +53596,7 @@ const baselines = {
         types: true,
     },
     'deleteOperatorWithAnyOtherType(alwaysstrict=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67986,12 +67986,12 @@ const baselines = {
         types: true,
     },
     'awaitUsingDeclarations.16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'awaitUsingDeclarations.17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -68286,12 +68286,12 @@ const baselines = {
         types: true,
     },
     'usingDeclarations.16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'usingDeclarations.17': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -68476,7 +68476,7 @@ const baselines = {
         types: true,
     },
     'usingDeclarationsInForOf.4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

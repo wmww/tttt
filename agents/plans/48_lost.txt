@@ -148,7 +148,6 @@ deeplyNestedConditionalTypes	T	src-changed	bl-changed
 deeplyNestedMappedTypes	T	src-changed	bl-changed
 deferredLookupTypeResolution	T	src-changed	bl-changed
 definiteAssignmentAssertions	T	src-changed	bl-changed
-deleteOperatorInvalidOperations	E	src-changed	bl-changed
 derivedUninitializedPropertyDeclaration	T	src-changed	bl-changed
 destructuringArrayBindingPatternAndAssignment5SiblingInitializer	T	src-changed	bl-changed
 destructuringAssignmentWithDefault	T	src-changed	bl-changed
@@ -422,7 +421,6 @@ partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
 partiallyDiscriminantedUnions	ST	src-changed	bl-changed
 partiallyNamedTuples2	T	src-changed	bl-changed
 plainJSGrammarErrors	ET	src-same	bl-changed
-predicateSemantics	ET	src-changed	bl-changed
 privateNameInInExpression(target=es2022)	T	src-same	bl-changed
 privateNameInInExpression(target=esnext)	T	src-same	bl-changed
 privateNameMethodAsync	T	src-same	bl-changed

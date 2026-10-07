@@ -62,7 +62,7 @@ static inline char const* variable_statement_keyword_str(VariableStatement const
 }
 void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared);
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
-void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, ErrorCtx* errs);
+void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, bool case_clause, bool ambient_using, ErrorCtx* errs);
 
 // Type declaration
 

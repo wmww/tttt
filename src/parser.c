@@ -11918,7 +11918,13 @@ static bool using_declaration_follows(Parser const* parent, bool disallow_of) {
     } else if (*p.pos == '{') {
         ret = true;
     } else if (parse_identifier_or_keyword(&p, &word)) {
-        ret = !is_reserved_word(word.sv) && !(disallow_of && span_equals(word, "of"));
+        if (disallow_of && span_equals(word, "of")) {
+            // (`for (using of = x;;)`: a declaration of `of` when `=`, `;` or `:` follows, 6.0)
+            hop_whitespace(&p);
+            ret = *p.pos == ';' || *p.pos == ':' || (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>');
+        } else {
+            ret = !is_reserved_word(word.sv);
+        }
     }
     parse_fail(&p);
     return ret;
