@@ -55616,14 +55616,14 @@ const baselines = {
         types: true,
     },
     'importAttributes10': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importAttributes11': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importAttributes2(module=commonjs)': {
         errors: true,

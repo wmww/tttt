@@ -1101,6 +1101,15 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             break;
 
         case TYPE_IDENTIFIER:
+            // `import("./a", { with: { type: "json" } })`: the keys written as identifiers are any (unlike an import
+            // declaration's, errorType)
+            if (my identifier->rare && my identifier->rare->import_attributes) {
+                for_each (i, vec_import_attribute, &my identifier->rare->import_attributes->elements) {
+                    if (span_valid(i->name) && i->name.sv.buf[0] != '"' && i->name.sv.buf[0] != '\'') {
+                        baseline_test_case_add_type(ctx, i->name, ty_intrinsic(current_checker, TY_ANY));
+                    }
+                }
+            }
             if (identifier_type_import_argument(my identifier)) { // (Nothing after an invalid argument is resolved)
                 type_compile_test_info(identifier_type_import_argument(my identifier), ctx);
                 for_each (i, vec_spanned_type, &my identifier->generic_params) type_compile_test_info(&i->type, ctx);

@@ -2054,6 +2054,16 @@ static void list_leave(Parser* p, u32 saved) {
 // The current token can't start an element of the ctx list: reports it, then returns true if the list should end (the
 // token belongs to some list being parsed), else skips the token and returns false (tsc's
 // abortParsingListOrMoveToNextToken). Whitespace is hopped either way
+// tsc's isInSomeParsingContext: a list being parsed (those in `mask`) takes the token as an element or ends there
+static bool list_token_wanted(Parser* p, u32 mask, Tok t) {
+    for (u32 i = 0; i < PARSING_CONTEXT_COUNT; i++) {
+        if ((mask & (1u << i)) && (list_is_element(p, (ParsingContext)i, t) || list_is_terminator((ParsingContext)i, t))) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool list_abort_or_skip(Parser* p, ParsingContext ctx) {
     hop_whitespace(p);
     Tok t = tok_peek(p);
@@ -2061,16 +2071,7 @@ static bool list_abort_or_skip(Parser* p, ParsingContext ctx) {
     // Something that starts an element of this very list is skipped: the element parser just said no to it, where
     // tsc's would have committed and consumed it with errors
     if (list_is_terminator(ctx, t)) return true;
-    if (!list_is_element(p, ctx, t)) {
-        u32 mask = p->shared->parsing_context & ~(1u << ctx);
-        for (u32 i = 0; i < PARSING_CONTEXT_COUNT; i++) {
-            if ((mask & (1u << i)) &&
-                (list_is_element(p, (ParsingContext)i, t) || list_is_terminator((ParsingContext)i, t))
-            ) {
-                return true;
-            }
-        }
-    }
+    if (!list_is_element(p, ctx, t) && list_token_wanted(p, p->shared->parsing_context & ~(1u << ctx), t)) return true;
     p->pos = t.end;
     hop_whitespace(p);
     return false;
@@ -3161,6 +3162,8 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         attributes->span = span_from(body);
         rare.import_attributes = attributes;
         hop_whitespace(&p);
+        // (A trailing comma: tsc's parseOptional(SyntaxKind.CommaToken))
+        if (hop_char(&p, ',')) hop_whitespace(&p);
         if (!hop_char(&p, '}')) {
             expect_char(&p, '}');
             relate_last_expected_to_open(&p, open_brace, '{', '}');
@@ -11341,7 +11344,12 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
         } else if (!parse_identifier_or_keyword(p, nullptr)) {
             // (tsc's parsingContextErrors for ImportAttributes)
             parse_error(p, span_from_token(p), 1478, "Identifier or string literal expected.");
-            break;
+            // A token no list being parsed wants is skipped (tsc's abortParsingListOrMoveToNextToken): `{ a: 1,, }`
+            Tok t = tok_peek(p);
+            if (!*p->pos || list_token_wanted(p, p->shared->parsing_context, t)) break;
+            p->pos = t.end;
+            hop_whitespace(p);
+            continue;
         }
         attribute.name = span_from(name_anchor);
         hop_whitespace(p);
@@ -11359,13 +11367,15 @@ static void parse_import_attributes_body(Parser* parent, ImportAttributes* ret) 
     }
 }
 
-// `with { type: "json" }` / `assert { ... }` after a module specifier, on the same line
-static ImportAttributes* parse_import_attributes(Parser* parent) {
+// `with { type: "json" }` / `assert { ... }` after a module specifier, on the same line (an import's `with` may follow
+// a line break: tsc's tryParseImportAttributes; an export's may not)
+static ImportAttributes* parse_import_attributes(Parser* parent, bool is_import) {
     Parser p = parser(parent);
     hop_whitespace(&p);
     Anchor a = anchor(&p);
     bool is_assert = false;
-    if (p.whitespace == WHITESPACE_NEWLINE) {
+    bool newline = p.whitespace == WHITESPACE_NEWLINE;
+    if (newline && !(is_import && tok_is(tok_peek(&p), "with"))) {
         parse_fail(&p);
         return nullptr;
     } else if (hop_start_if_ends_on_word_break(&p, "assert")) {
@@ -11450,7 +11460,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
                 statement.requires_target = true;
                 statement.target_path = cstr_move(&path.string);
                 statement.target_path_span = span_from(path_anchor);
-                statement.attributes = parse_import_attributes(&p);
+                statement.attributes = parse_import_attributes(&p, true);
                 statement.main.full_span = span_from(a);
                 value_drop(&path);
                 goto done;
@@ -11610,7 +11620,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
             }
         }
         expr_drop(&path_expr);
-        if (complete) statement.attributes = parse_import_attributes(&p);
+        if (complete) statement.attributes = parse_import_attributes(&p, !is_export);
     }
 
     auto item_tag = is_export ? (
