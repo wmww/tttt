@@ -5159,6 +5159,10 @@ static bool has_numeric_property_names(Checker* me, Ty const* type) {
         return members->index_count == 1 && (members->index[0].key->flags & TYF_NUMBER);
     }
     TyList types = type->composite.types;
+    // (null and undefined have no index signatures, so neither does a union with them)
+    for (u32 t = 0; t < types.len; t++) {
+        if (!(ty_apparent_type(me, types.data[t])->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    }
     Members const* first = ty_members(me, ty_apparent_type(me, types.data[0]));
     u32 count = 0;
     bool numeric = false;
@@ -5179,7 +5183,8 @@ static bool has_numeric_property_names(Checker* me, Ty const* type) {
 // signature (an array) indexes as a number, in the loop's body
 static bool is_for_in_numeric_variable(Checker* me, PropertyExpr const* access) {
     ForEachLoopStatement const* loop = property_for_in_loop(access);
-    return loop && has_numeric_property_names(me, ty_non_nullable(me, ty_expr_type(me, &loop->iterable)));
+    // (Of the iterable's type as it is, null and undefined included: tsc's getTypeOfExpression)
+    return loop && has_numeric_property_names(me, ty_expr_type(me, &loop->iterable));
 }
 
 Ty const* ty_access_key_type(Checker* me, PropertyExpr const* access) {
