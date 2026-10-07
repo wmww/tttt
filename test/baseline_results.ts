@@ -9718,7 +9718,7 @@ const baselines = {
     'declarationEmitUsingTypeAlias2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitVarInElidedBlock': {
         errors: true,

@@ -1131,7 +1131,18 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         if (ref && here && written && written != here && ref->module_state == ALIAS_DONE && ref->module &&
             ref->module->is_module && ref->module->module && ref->module->module->file
         ) {
-            cstr name = program_module_display_name(my program, ref->module, here, SPECIFIER_MODE_NONE, d.usage_ref);
+            // (Named after the module the chain of what it refers to starts at, when there is one: a re-exporting
+            // package entry rather than the declaring file)
+            Symbol const* module = ref->module;
+            Symbol const* target = identifier->target;
+            if (target && span_valid(identifier->name)) {
+                u32 meaning = identifier_type_import_typeof(identifier) ? SYMBOL_VALUE : SYMBOL_TYPE;
+                SymbolChain chain = symbol_chain_at(d.enclosing, target, meaning, true);
+                if (chain.len && chain.items[0]->is_module && chain.items[0]->module && chain.items[0]->module->file) {
+                    module = chain.items[0];
+                }
+            }
+            cstr name = program_module_display_name(my program, module, here, SPECIFIER_MODE_NONE, d.usage_ref);
             out(d, cstr_sv(&name));
             cstr_drop(&name);
         } else if (ref) {
@@ -1696,6 +1707,20 @@ static bool annotation_plus_undefined(Checker* me, TypeNode const* node, Ty cons
     Ty const* annotated = node_type(me, (TyDisplay){0}, node);
     if (annotated == ty || ty_without_undefined(me, annotated) != annotated) return false;
     return ty_without_undefined(me, ty) == annotated;
+}
+
+// An annotation in a new union with `undefined` (tsc's addUndefined): a union annotation's members are reused in a new
+// union node, whose ` | ` aren't
+static void display_node_plus_undefined(Checker* me, TyDisplay d, TypeNode const* node) {
+    if (node->tag == TYPE_UNION && !node->parenthesized && !node->jsdoc_variadic && vec_type_size(&node->composite)) {
+        for_each (i, vec_type, &node->composite) {
+            if (i_index) out(reused_if(d, false), c_sv(" | "));
+            display_node(me, d, i);
+        }
+    } else {
+        display_node(me, d, node);
+    }
+    out(reused_if(d, false), c_sv(" | undefined"));
 }
 
 // Whether the printer reprints annotations (tsc's node reuse, which needs an enclosing declaration): the types
@@ -2270,8 +2295,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ) {
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses
             // the annotation in a new union with `undefined` (serializeTypeForDeclaration's addUndefined)
-            display_node(me, param_d, &binding->explicit_type);
-            out(reused_if(param_d, false), c_sv(" | undefined"));
+            display_node_plus_undefined(me, param_d, &binding->explicit_type);
         } else {
             display_annotated(me, param_d, reused ? &binding->explicit_type : nullptr, shown, param->optional);
         }
@@ -2847,8 +2871,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         if ((mapped_from || reverse) && annotation && !d.reused && reuses_nodes(d) && (origin->flags & PROP_OPTIONAL) &&
             annotation_plus_undefined(me, annotation, shown)
         ) {
-            display_node(me, d, annotation);
-            out(reused_if(d, false), c_sv(" | undefined"));
+            display_node_plus_undefined(me, d, annotation);
         }
         else if (literal_initializer && !d.reused) out(reused_if(d, true), literal_initializer->inner_span.sv);
         else if (mapped_from && annotation && !annotation_is(me, annotation, shown, false)) ty_display(me, d, shown);
