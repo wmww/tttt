@@ -293,6 +293,11 @@ static void verify_references(Program* program, ProjectSet const* projects, u32 
     for (u32 i = 0; i < p->reference_count; i++) {
         TsconfigReference const* reference = &p->references[i];
         Project const* referenced = project_set_at(projects, p->referenced[i]);
+        // (tsc's verifyDeprecatedProjectReference)
+        if (reference->prepend) {
+            program_config_error(program, reference->start, reference->end, 5102,
+                cstr_from("Option 'prepend' has been removed. Please remove it from your configuration."));
+        }
         if (!referenced->readable) {
             program_config_error(program, reference->start, reference->end, 6053,
                 cstr_d("File '", reference->written, "' not found."));

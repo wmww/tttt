@@ -11,7 +11,7 @@ the (file, line, code) of the diagnostics are compared with tsc's.
     ./scenarios.py --keep DIR    write the trees under DIR (and keep them) to poke at them
 
 Known divergences are listed in SKIP with why (plan 41: tttt reads referenced projects' sources, never outputs: no
-TS6305; no emit, incremental state or outFile/AMD bundles). tsc's tiny fake lib is replaced by tttt's real libraries.
+TS6305; no emit nor incremental state. TypeScript 6 deprecates outFile/AMD: those configs are checked like any other). tsc's tiny fake lib is replaced by tttt's real libraries.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile
 from collections import Counter
@@ -24,14 +24,12 @@ ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 # Name regex -> why it's skipped
 SKIP = {
-    r"^tsbuild/(amdModulesWithOut|outFile)/": "outFile/AMD bundles",
     r"^tsbuild/clean/": "--clean (tttt doesn't emit)",
     r"tsbuild/.*-discrepancies$": "incremental discrepancy reports, not a build",
     r"getNextInvalidatedProject|invalidates-projects-correctly|building-using-buildReferencedProject":
         "builder API, not a command",
     r"synthesized-module-specifiers-resolve-correctly|loads-js-based-projects-and-emits-them-correctly$":
         "tsc's fake lib declares Symbol.species, tttt's default libs don't",
-    r"^tsbuild/(commandLine|fileDelete)/outFile/": "a reference to an outFile/AMD project (its bundle declares the modules)",
     r"^tsc/projectReferencesConfig/issues-a-nice-error-when-the-input-file-is-missing":
         "TS6305 (-p reads referenced sources, never outputs)",
     r"^tsc/projectReferencesConfig/redirects-to-the-output-dts-file|importing-const-enum-from-referenced-project-with-preserveConstEnums-and-verbatimModuleSyntax":
