@@ -2193,6 +2193,8 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
             error_ctx_grammar_error_d(errs, private_name, 18028,
                 "Private identifiers are only available when targeting ECMAScript 2015 and higher.");
         } else if (i->tag == CLASS_ITEM_FIELD && i->field.is_auto_accessor && compiler_options()->target < SCRIPT_TARGET_ES2015 &&
+            // (Not in an ambient context: tsc 6.0's checkGrammarProperty)
+            !my is_ambient && !i->field.is_declare &&
             // (after checkGrammarForInvalidDynamicName's TS1166)
             !(i->field.computed_key && expr_is_non_bindable_dynamic_name(i->field.computed_key) &&
                 !expr_is_entity_name(i->field.computed_key))

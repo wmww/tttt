@@ -326,7 +326,7 @@ const baselines = {
         types: true,
     },
     'accessorInAmbientContextES5(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -2536,12 +2536,12 @@ const baselines = {
         types: true,
     },
     'bigintAmbientMinimal(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'bigintAmbientMinimal(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12296,7 +12296,7 @@ const baselines = {
         types: true,
     },
     'enumWithBigint': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -20961,8 +20961,8 @@ const baselines = {
         types: false,
     },
     'iterableWithNeverAsUnionMember(target=esnext)': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: false,
     },
     'iteratorExtraParameters': {
@@ -59906,14 +59906,14 @@ const baselines = {
         types: true,
     },
     'extensionLoadingPriority(moduleresolution=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'extensionLoadingPriority(moduleresolution=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importFromDot': {
         errors: true,

@@ -1817,6 +1817,14 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             break;
         case EXPR_LITERAL:
             my undefined_assigned = assignment_target != FLOW_TARGET_NONE && is_written_undefined(me);
+            if (my literal.tag == VALUE_BIGINT) {
+                bool ambient = false;
+                for (Scope const* i = names; i && !ambient; i = i->parent) ambient = i->ambient;
+                // (`declare const n = 1n`)
+                Binding const* initializing = names->flow && names->flow->initializing ? &names->flow->initializing->binding : nullptr;
+                if (initializing && initializing->tag == BINDING_IDENTIFIER && initializing->symbol) ambient |= initializing->symbol->is_ambient;
+                my literal_ambient = ambient;
+            }
             break;
 
         case EXPR_IDENTIFIER:
@@ -4222,8 +4230,8 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
     switch (my tag) {
         case EXPR_IMPLICIT_ANY: break;
         case EXPR_LITERAL:
-            // (tsc's checkGrammarBigIntLiteral: expressions only, not literal types)
-            if (my literal.tag == VALUE_BIGINT && compiler_options()->target < SCRIPT_TARGET_ES2020) {
+            // (tsc's checkGrammarBigIntLiteral: expressions only, not literal types, and not in an ambient context)
+            if (my literal.tag == VALUE_BIGINT && compiler_options()->target < SCRIPT_TARGET_ES2020 && !my literal_ambient) {
                 error_ctx_grammar_error_d(errs, my inner_span, 2737,
                     "BigInt literals are not available when targeting lower than ES2020.");
             }

@@ -542,6 +542,19 @@ static ResolutionMode program_module_ref_mode(Program const* me, SourceFile cons
         ref->syntax == MODULE_REF_DYNAMIC || source->is_esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
     csview name = cstr_sv(&source->canonical_path);
     CompilerOptions const* options = program_options_of(me, source);
+    bool node_resolution = options->module_resolution == MODULE_RESOLUTION_NODE16 ||
+        options->module_resolution == MODULE_RESOLUTION_NODENEXT;
+    bool node_module = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
+    if (node_resolution && !node_module && ref->syntax == MODULE_REF_IMPORT) {
+        // Node resolution with a module kind that isn't node's: an import goes by the file's emit format, which is the
+        // module kind unless an extension or package.json `type` decides (tsc's getEmitSyntaxForUsageLocation)
+        bool esm = (options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT) ||
+            options->module == MODULE_KIND_PRESERVE;
+        if (csview_ends_with(name, ".cts") || csview_ends_with(name, ".cjs")) esm = false;
+        else if (csview_ends_with(name, ".mts") || csview_ends_with(name, ".mjs")) esm = true;
+        else if (source->has_format && source->package_has_type) esm = source->is_esm;
+        mode = esm ? RESOLUTION_MODE_ESM : RESOLUTION_MODE_COMMONJS;
+    }
     if (options->module_resolution == MODULE_RESOLUTION_BUNDLER &&
         (options->resolve_package_json_exports || options->resolve_package_json_imports) &&
         mode == RESOLUTION_MODE_COMMONJS && ref->syntax == MODULE_REF_IMPORT

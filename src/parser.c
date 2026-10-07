@@ -6016,7 +6016,8 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             // A numeric name (tsc's parsePropertyName): TS2452 from the checker
             Value value;
             if (parse_numeric_value(&p, &value)) {
-                enum_case.numeric_name = value.tag == VALUE_NUMBER && isfinite(value.number) ? 1 : 2;
+                // (A bigint name too: tsc 6.0's computeEnumMemberValue)
+                enum_case.numeric_name = (value.tag == VALUE_NUMBER && isfinite(value.number)) || value.tag == VALUE_BIGINT ? 1 : 2;
                 value_drop(&value);
             }
             enum_case.name = enum_case.full_name = span_from(name_anchor);

@@ -173,6 +173,7 @@ typedef struct Expr {
     // `undefined = x`, `undefined++`: an assignment to tsc's undefinedSymbol, which isn't a variable (errorType). Set by
     // expr_lookup_names()
     bool undefined_assigned : 1;
+    bool literal_ambient : 1; // A bigint literal in an ambient context (no TS2737). Set by expr_lookup_names()
     // The parentheses around it: how many bytes the outer span (expr_outer_span()) starts before inner_span and ends
     // after it. Set with expr_set_outer_span()
     u32 paren_before;

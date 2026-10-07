@@ -446,6 +446,8 @@ static TyIterationTypes const* iterable_types_of(Checker* me, Ty const* ty, u32 
 }
 
 TyIterationTypes const* ty_iteration_types_of_iterable(Checker* me, Ty const* ty, u32 use) {
+    // (A union member that reduces to never iterates nothing: tsc 6.0's getReducedType first)
+    if (ty->kind == TY_UNION || ty->kind == TY_INTERSECTION) ty = ty_reduced(me, ty);
     if (ty->flags & TYF_ANY) return any_types(me);
     if (ty->kind != TY_UNION) {
         TyIterationTypes const* types = iterable_types_of(me, ty, use);
