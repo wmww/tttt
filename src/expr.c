@@ -4826,12 +4826,21 @@ bool expr_is_define_property_call(Expr const* me, Span* name_ret) {
         return false;
     }
     Expr const* key = vec_expr_at(&my call->args, 1);
-    if (key->tag != EXPR_LITERAL || key->literal.tag != VALUE_STRING || expr_is_perenthisized(key)) return false;
+    if (key->tag != EXPR_LITERAL || expr_is_perenthisized(key)) return false;
     Span text = key->inner_span;
-    if (text.sv.size < 2 || (isize)cstr_size(&key->literal.string) != text.sv.size - 2) return false;
+    Span name;
+    if (key->literal.tag == VALUE_STRING) {
+        if (text.sv.size < 2 || (isize)cstr_size(&key->literal.string) != text.sv.size - 2) return false;
+        name = span_make(text.source, text.sv.buf + 1, text.sv.buf + text.sv.size - 1);
+    } else if (key->literal.tag == VALUE_NUMBER && value_is_numeric_literal_name(text.sv)) {
+        // (A numeric key too, tsc's isStringOrNumericLiteralLike: named by its text when that is the number's own, `42`)
+        name = text;
+    } else {
+        return false;
+    }
     Expr const* target = vec_expr_at(&my call->args, 0);
     if (!expr_is_entity_name(target)) return false;
-    if (name_ret) *name_ret = span_make(text.source, text.sv.buf + 1, text.sv.buf + text.sv.size - 1);
+    if (name_ret) *name_ret = name;
     return true;
 }
 
