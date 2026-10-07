@@ -20,6 +20,7 @@ typedef struct Error {
     cstr message;
     Span span;
     unsigned ts_code;
+    unsigned canonical_code; // If not 0, what it sorts as (tsc's canonicalHead: a suggestion sorts as the plain error)
     ErrorPhase phase;
     bool detached; // Related information without a location (tsc's createDetachedDiagnostic)
     // A grammar error the parser reports (tsc's checker's): not one parse error per position, see parse_file()

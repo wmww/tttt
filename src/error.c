@@ -346,7 +346,9 @@ static int error_cmp(Error const* a, Error const* b) {
     // (The parser's own order: the first of several at one position is the one that stays, see the dedupe)
     if (a->phase == ERROR_PHASE_PARSE && b->phase == ERROR_PHASE_PARSE) return 0;
     // tsc's compareDiagnostics (what the harness sorts by): code, then message
-    if (a->ts_code != b->ts_code) return a->ts_code > b->ts_code ? 1 : -1;
+    unsigned a_code = a->canonical_code ? a->canonical_code : a->ts_code;
+    unsigned b_code = b->canonical_code ? b->canonical_code : b->ts_code;
+    if (a_code != b_code) return a_code > b_code ? 1 : -1;
     ret = cstr_cmp(&a->message, &b->message);
     return ret > 0 ? 1 : ret < 0 ? -1 : 0;
 }
@@ -470,7 +472,9 @@ static int error_full_cmp(Error const* a, Error const* b) {
     if (span_valid(a->span) != span_valid(b->span)) return span_valid(a->span) ? 1 : -1;
     int ret = span_cmp(a->span, b->span);
     if (ret) return ret;
-    if (a->ts_code != b->ts_code) return a->ts_code > b->ts_code ? 1 : -1;
+    unsigned a_code = a->canonical_code ? a->canonical_code : a->ts_code;
+    unsigned b_code = b->canonical_code ? b->canonical_code : b->ts_code;
+    if (a_code != b_code) return a_code > b_code ? 1 : -1;
     ret = cstr_cmp(&a->message, &b->message);
     if (ret) return ret > 0 ? 1 : -1;
     ret = chain_size_cmp(a, b);
