@@ -3482,7 +3482,15 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
             } else {
                 check(ty->anonymous.node->tag == TYPE_INTERFACE);
                 builder_add_interface(me, &builder, &ty->anonymous.node->interface, ty->anonymous.ctx, nullptr);
-                builder_late_bound_last(&builder, 0);
+                // (tsc 6's getNamedMembers puts the late-bound ones back in declaration order: the members are in it
+                // already unless there are some)
+                if (!compiler_options()->stable_type_ordering) {
+                    builder_late_bound_last(&builder, 0);
+                } else {
+                    bool late = false;
+                    for (u32 i = 0; i < builder.props_count && !late; i++) late = name_span_is_late_bound(builder.props[i]->decl->name_span);
+                    if (late) builder_sort_stable(&builder);
+                }
             }
             return builder_finish(me, &builder);
         }

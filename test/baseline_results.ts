@@ -9363,7 +9363,7 @@ const baselines = {
     'declarationEmitPartialReuseComputedProperty': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPathMappingMonorepo': {
         errors: true,

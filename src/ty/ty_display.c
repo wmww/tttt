@@ -1414,11 +1414,13 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
             return;
         }
         if (key->kind == TY_LITERAL && key->literal.value.tag == VALUE_NUMBER && !(key->flags & TYF_BIGINT_LITERAL)) {
+            // (A negative one is a new literal in the computed name node, whose brackets keep its range: tsc's
+            // updateComputedPropertyName; a positive one replaces the node, range and all)
             bool negative = key->literal.value.number < 0;
             if (negative) out_lit(d, "[");
             isize_t start = cstr_size(d.target);
             cstr_append_value_js(d.target, &key->literal.value);
-            underline_since(d, start);
+            underline_since(negative ? reused_if(d, false) : d, start);
             if (negative) out_lit(d, "]");
             return;
         }
