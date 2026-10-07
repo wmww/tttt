@@ -1161,8 +1161,9 @@ static Ty const* signature_type_at(Checker* me, Signature const* sig, u32 index,
             return tuple_slice(me, param->type, index - i);
         }
         // A type variable: `T[0]` where it's by position, `T[number][]` for a rest past it (tsc's tryGetTypeAtPosition /
-        // getRestTypeAtPosition)
-        if (param->type->kind == TY_TYPE_PARAM) {
+        // getRestTypeAtPosition). A conditional or indexed access type too: getIndexedAccessType defers on a generic
+        // object (`...[options]: ConditionalRequired<[options?: X], C>` is `ConditionalRequired<...>[0]`)
+        if (param->type->kind == TY_TYPE_PARAM || (param->type->kind != TY_KEYOF && (param->type->flags & TYF_DEFERRED))) {
             if (as_rest) return ty_array(me, ty_indexed(me, param->type, ty_intrinsic(me, TY_NUMBER)), false);
             Value value = value_number(index - i);
             return ty_indexed(me, param->type, ty_literal(me, &value));

@@ -310,7 +310,15 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
         // (Elements after a variadic one count from the end: the arguments are its elements. After a spread argument
         // the position is just the index, tsc's argIndex - restIndex)
         u32 length = args->spread_index < 0 ? args->len - shape->count : UINT32_MAX;
-        contextual = ty_contextual_element_type_of(me, shape->rest_variadic, i - shape->count, length);
+        Ty const* rest = shape->rest_variadic;
+        if (rest->kind != TY_KEYOF && (rest->flags & TYF_DEFERRED)) {
+            // (A generic conditional or indexed access rest type: its element there stays deferred, `R[0]`, tsc's
+            // getIndexedAccessType of a generic object type)
+            Value index = value_number((double)(i - shape->count));
+            contextual = ty_indexed(me, rest, ty_literal(me, &index));
+        } else {
+            contextual = ty_contextual_element_type_of(me, rest, i - shape->count, length);
+        }
     }
     arg->type = ty_check_expr(me, arg->expr, contextual);
     // A literal its contextual type has room for is regular, so it isn't widened as a candidate (tsc's
