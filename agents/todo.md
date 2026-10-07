@@ -1,5 +1,5 @@
 # Todo
-Written by the insights of 2026-10-05 (after the ninth window); `vision.md` "Course correction" says why. **Ten
+Written by the insights of 2026-10-07 (after the tenth window); `vision.md` "Course correction" says why. **Ten
 sessions, then insights.** Delete entries as they complete (leave a one-line "done" note with the numbers). A plan
 that overruns its entry takes its extra sessions out of this budget: when 10 sessions have run (count the commits
 since this file was written), the next session is insights, whatever is left here. New work goes into plans or
@@ -7,49 +7,23 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 (`./realworld.py --corpus X` for every pinned corpus), `./sweep.py` and `./flagflip.py` after checker changes, `./instrcount.sh` and a
 commit.
 
-1. ~~Planning: plan 46 stage 1~~ done 2026-10-06: `./flagflip.py` built (156 cells, 47k tsc diagnostics) and drained
-   in the same session by four sub-agents' prototypes: 603 / 1460 / 1029 (missing / spurious / other code) -> 103 / 68
-   / 17; suite 13099 flat, sweep 8580, instructions +0.3%. Stage 2 (mutations) prototyped and judged worth a tool.
-2. ~~Execution: plan 46 stage 2~~ done 2026-10-06: `./mutate.py` built, seeds 2-5 (32k mutants) drained by five
-   sub-agents: seed 2 94 -> 6 mismatches, the fresh seeds' yield now ~1%; flagflip 103 / 68 / 17 -> 81 / 63 / 12 (open
-   causes 2, 3, 5 done, 1 judged not worth porting, 4/6/8 partly); suite 13099 -> 13103, sweep 8580 flat, two parser
-   crashes fixed. Instructions: plan 46 / measurements.md.
-3. ~~Execution: plan 44 stage 3 item 2, `$ExpectType`~~ done 2026-10-06: `./expecttypes.py` built (69k assertions,
-   ~30 s); 99.5% -> 99.7% match after six fixes (suite 13103 -> 13104, sweep/corpora/flagflip flat). The ranking for
-   entry 4 is in plan 44 "`$ExpectType` ranking": union order (135, chrome 42), then singles.
-4. ~~Execution: fan-out on the `$ExpectType` ranking + plan 35 queue~~ done 2026-10-06: five sub-agents (A union
-   order, B singles/sweep then plan 35 item 10, C types semantics then the errors tail, D display then symbols, E
-   symbols), ~150 picks, 0 lost: suite 13104 -> 13227, `$ExpectType` 68416 -> 68610 (the oracle now checks before
-   reading types), sweep 8580 -> 8584, flagflip 81 / 63 -> 79 / 63. New `./expectprobe.py` (one cut-down DT project,
-   reducer). Instructions: measurements.md.
-5. ~~Planning: plan 47 (speculative checks)~~ done 2026-10-06: **no mechanism needed**, executed in the same session.
-   Lifting `first_unfit_skipped_literal`'s restrictions (generic overloads, parameters with type variables, single
-   candidates) left nothing harmful behind once it did tsc's two other skip-round rules (object literals regularised:
-   no excess properties; nested generic calls skipped, else they're resolved once under the trial type: effect +6).
-   Suite 13227 -> 13228 (1 types component lost to a latent alias-argument bug, bugs/display.md "Aliases"), sweep
-   8584 -> 8588, flagflip missing 78 -> 65, corpora / `$ExpectType` flat; instructions vue +1.8%, xstate +1.2%.
-6. ~~Execution: flagflip's queue and the mutation leftovers~~ done 2026-10-06: `./sweep.py --flags nuia|eopt` built,
-   nuia 8585 -> 8588, eopt 8588 at once (both now equal the default sweep but react-relay); `./mutate.py --tests
-   multi,js` built (~7% yield, 3x single-file's), drained by three sub-agents: seeds 1/2 92 / 177 -> 12 / 40, fresh seed 3
-   2.0%; one hang fixed. Suite 13228 -> 13229 (+1 errors component), flagflip 65 / 63 / 12 flat. Instructions:
-   measurements.md.
-7. ~~Corpora: pin two new ones~~ done 2026-10-06: **excalidraw** (JSX app, 149k lines, TS 5.9 lib shim) 9 -> 0 and
-   **tanstack-router** (react-router + type tests against router-core's built .d.ts, new postinstall hook) 4 -> 0, by
-   two sub-agents; their flag-flip cells added (26, 5757 tsc diagnostics). Suite 13229 -> 13232, sweep/`$ExpectType`
-   flat, instructions flat (a +25% drizzle mid-session caught and reverted: triage "Distributed conditionals").
-8. ~~Perf session~~ done 2026-10-06: no commit of the window above +0.6%; the biggest steps (conditional instances
-   named by their root's alias) led to tsc's way of computing their alias arguments, and relation cache sizes
-   compared with tsc's to three missing tsc shortcuts (`tttt --time` prints them now): drizzle 13.09 -> 10.80 G
-   (-17.5%), vue 8.07 -> 6.98 (-13.5%), react -3.6%, xstate -2.8%, zod +2.5% (variances now in tsc's order). The
-   distributed members' root alias is back (+1% drizzle instead of +25%). Plan 45 stage 2 by a sub-agent: webpack
-   resolve 63 -> 37 ms. bugs/display.md's alias-argument bug fixed at no cost now (tsc's rule, +1 types
-   component). Suite/corpora/sweep/`$ExpectType`/flagflip flat. Instructions: measurements.md.
-9. ~~Execution: suite-tail fan-out~~ done 2026-10-06: five sub-agents (A/B errors-failing halves, C types, D symbols +
-   JS types, E effect + flagflip; second tasks `$ExpectType`/sweep, mutation seeds, plan 34), ~110 picks, 0 lost:
-   suite 13232 -> 13299 (errors failing 127 -> 85), effect 7 -> 3 (the TaggedClass cycle left is plan-sized, plan 19),
-   flagflip 67 / 57 / 11 -> 51 / 47 / 11, `$ExpectType` 68610 -> 68619, sweep 8588 / 6 / 1 flat. Instructions +0.4-1%
-   on most corpora (two mid-session regressions, +15% valibot and +2.4% xstate, sent back and fixed). measurements.md.
-10. ~~Triage~~ done 2026-10-07: four sub-agents took every triage.md item: 44 fixes, the rest written up (bugs/*.md,
-   plan 26 Leftovers, hacks.md). Suite 13299 -> 13303 (0 lost), sweep 8589, flagflip 51 / 45 / 10, `$ExpectType` flat;
-   drizzle -23.5% (deferred references with non-generic arguments aren't generic), valibot +2.8%. measurements.md.
+**This window retargets tttt from TypeScript 5.8 to 6.0/7.0 (plan 48).** Entry 1 rewrites plan 48 and **may
+rewrite entries 2-9** to fit what it measures, keeping the count. Until the switch, keep 5.8 work to what's needed.
+
+1. **Planning: plan 48** (retarget). Answer its questions with prototypes: the oracle (tsc 6.0.3 vs tsgo 7.0.2
+   baselines, type ordering in particular), the checker-visible changes with test counts, the staging (prototype the
+   switch in a worktree and measure the suite under 6.0), the other oracles' order. Rewrite plan 48 and entries 2-9.
+2. **Execution: plan 48 stage 1**, the switch: `thirdparty/tsc` to the new version, option defaults and deprecation
+   diagnostics, libs, harness; saved results regenerated; per-test "lost" defined against the old run.
+3. **Execution: fan-out on the switch's regressions** (four sub-agents, failstats buckets, disjoint test lists).
+4. **Execution: second fan-out**, or plan 48's next stage if the suite is back.
+5. **Execution: plan 48 stage 2**, the tools: sweep / `$ExpectType` / flagflip / mutation / scenarios caches and
+   `tscbaseline.sh` on the new tsc, DefinitelyTyped at a current commit; drain what's cheap.
+6. **Corpora: re-pin** every corpus at a current upstream commit (TypeScript-6-era), drop the 5.9 lib shims, record
+   tsc's counts; drain with sub-agents.
+7. **Corpora / sweep drain** continued.
+8. **Perf session**: new instruction-count baselines on the re-pinned corpora, `./bench.sh` against tsgo 7.0.2 (which
+   now accepts every config), look at anything that moved.
+9. **Execution**: 5.9/6.0 language features plan 48 listed that the switch didn't need (or plan 48's leftovers).
+10. **Triage.**
 11. **Insights.**

@@ -148,3 +148,21 @@ and the rest were genuine bugs (one flag's two specific error codes are never re
 builds that into a tool, and considers "mutation testing" (breaking clean code on purpose and comparing). It also
 builds a similar check for inferred types across DefinitelyTyped. It plans one compiler mechanism that the codebase
 currently works around with hacks, pins two new kinds of real projects, and includes a perf session.
+
+## 2026-10-07 — insights (after the tenth window)
+Another clean window: ten sessions, all committed, nothing lost. The suite went 13099 -> 13303 of 13540 (98.2%).
+Last time I worried that our tests could only catch tttt reporting errors that don't exist, not errors it misses.
+This window built two tools for that. One rechecks the real projects under stricter compiler settings, which gives
+53k real errors to compare against. The other breaks passing tests on purpose and compares. Together they found
+about 3000 mismatches, now down to about 100. Two new projects (a large React app and a router library) went to zero
+false errors the same day they were added. Speed is unchanged or better: two projects got 13-37% faster.
+
+The concern is bigger this time. Everything we compare against is TypeScript 5.8, from February 2025. TypeScript 6.0
+(March 2026) and 7.0 (July 2026, the Go rewrite we benchmark against) have both shipped since. 6.0 changed defaults,
+such as strict mode on, and deprecated old options. Our test projects are frozen at the last commits before their
+authors moved to 6.0. At 98% on 5.8, more polish on that version is worth less than supporting the language people
+use today. So the next window switches the target. A planning session will measure the new test suite (about 12k
+test files changed, mostly mechanically). It will also decide whether to match 6.0 exactly or 7.0's new rule for
+ordering the types it prints, which could remove a source of fragility. Then come the switch itself, re-pinning the
+real projects at current versions, and a fair speed comparison against TypeScript 7. Expect the pass count to dip
+before it recovers.
