@@ -932,7 +932,8 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
     };
     u32 primitive = TYF_VOID | TYF_NULLABLE | TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_BOOLEAN | TYF_ES_SYMBOL_LIKE | TYF_LITERAL |
         TYF_ENUM | TYF_ENUM_LITERAL | TYF_TEMPLATE_LITERAL;
-    bool wrapper_case = (source->flags & TYF_OBJECT) && (target->flags & primitive);
+    // (An enum's union type is TypeFlags.EnumLiteral too, tsc's getDeclaredTypeOfEnum)
+    bool wrapper_case = (source->flags & TYF_OBJECT) && ((target->flags & primitive) || ty_is_enum_union(target));
     for (u32 i = 0; i < c_arraylen(wrappers) && wrapper_case; i++) {
         if (source != global_type(me, wrappers[i].wrapper) || target != ty_intrinsic(me, wrappers[i].primitive)) continue;
         cstr source_str = display_for_report(me, source, false);
@@ -5419,11 +5420,11 @@ static Ternary structured_related_members(
                     if (!related) related = is_related_to(me, st, target->conditional.check, source->conditional.check, false);
                     if (related) {
                         Ty const* source_true = ty_instantiate(me, ty_conditional_branch(me, source, true), mapper);
-                        related &= is_related_to(me, st, source_true, ty_conditional_branch(me, target, true), false);
+                        related &= is_related_to(me, st, source_true, ty_conditional_branch(me, target, true), report); // (tsc reports these)
                     }
                     if (related) {
                         Ty const* source_false = ty_conditional_branch(me, source, false);
-                        related &= is_related_to(me, st, source_false, ty_conditional_branch(me, target, false), false);
+                        related &= is_related_to(me, st, source_false, ty_conditional_branch(me, target, false), report);
                     }
                     if (related) return related;
                 }
@@ -5538,6 +5539,9 @@ static Ternary structured_related_members(
             // an `unknown` one, the constraint's failure doesn't explain anything
             bool report_constraint = report && target->kind != TY_TYPE_PARAM && constraint != ty_intrinsic(me, TY_UNKNOWN_);
             Ty const* with_this = ty_with_this_arg(me, constraint, source);
+            // (Against the target as tsc's isRelatedTo normalized it: a deferred reference without its alias, so the
+            // lines below print `[unknown, ...unknown[]]` where the head said `AnyTuple`)
+            if (report_constraint) target = normalized_reference(me, target);
             if (with_this == constraint) return is_related_to_side(me, st, constraint, target, report_constraint, 2);
             Ternary related = is_related_to_side(me, st, constraint, target, false, 2);
             if (related) return related;

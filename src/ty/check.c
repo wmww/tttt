@@ -1593,7 +1593,7 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
     char const* lib = atom && ts_code == 2339 && !destructured && container ? lib_feature_of_member(container->name, atom_sv(atom)) : nullptr;
     // A property of what a promise resolves to (tsc's reportNonexistentProperty with getPromisedTypeOfPromise)
     Ty const* promised = atom && ts_code == 2339 && !destructured && !static_member ? ty_promised_type(me, object) : nullptr;
-    if (promised && !ty_prop_type_of(me, ty_apparent_type(me, promised), atom)) promised = nullptr;
+    if (promised && !ty_has_prop(me, ty_apparent_type(me, promised), atom)) promised = nullptr; // (A union's too)
     if (static_member) {
         error = error_ctx_error_d(errs, span, 2576, "Property '", name, "' does not exist on type '", object_str,
             "'. Did you mean to access the static member '", object_str, ".", name, "' instead?");
