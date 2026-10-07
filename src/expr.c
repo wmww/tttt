@@ -695,7 +695,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         // thread)
         // (A signature without a body is a flow container of its own too, tsc's binder: its references have no flow
         // node here, see identifier_flow_type())
-        my outer_reference = names->flow && (symbol_first_declared_elsewhere(my target, names->file) ||
+        my outer_reference = names->flow && (names->flow->member_name || symbol_first_declared_elsewhere(my target, names->file) ||
             (my target->flow_start && names->flow->container_start != my target->flow_start) ||
             (names->flow->function && !names->flow->function->has_body && names->flow->container == names->flow->function &&
                 !my target->is_parameter));
@@ -1797,7 +1797,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             my identifier.flow = flow_builder_reference(flow, my inner_span);
             my identifier.assignment_target = assignment_target;
             my identifier.compound_like_target = compound_like_target;
-            my identifier.assume_initialized = flow->in_type_query;
+            my identifier.assume_initialized = flow->in_type_query && !flow->export_equals_name;
             // (tsc's isInAmbientOrTypeNode: `declare class C { [k]: T }`)
             for (Scope const* i = names; i && !my identifier.assume_initialized; i = i->parent) {
                 my identifier.assume_initialized = i->ambient;
@@ -2193,12 +2193,18 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // The name of a method or accessor is deferred like it, as far as a class initializer is concerned
                     // (TS2729), unless it reads the field it is in
                     uint8_t initializer_context = flow->initializer_context;
+                    bool member_name = flow->member_name;
                     if (i->tag != OBJECT_ITEM_PROPERTY) {
                         bool in_field = initializer_context == INITIALIZER_INSTANCE_FIELD || initializer_context == INITIALIZER_STATIC_FIELD;
                         flow->initializer_context = in_field ? INITIALIZER_MEMBER_NAME : INITIALIZER_NONE;
+                        flow->member_name = true;
                     }
+                    FlowNode* flow_before = flow->current;
                     expr_lookup_names(i->computed_key, key_scope, errs);
+                    // (A method's or accessor's name is bound in its own flow container, see lookup_names_without_super())
+                    if (i->tag != OBJECT_ITEM_PROPERTY) flow->current = flow_before;
                     flow->initializer_context = initializer_context;
+                    flow->member_name = member_name;
                 }
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;

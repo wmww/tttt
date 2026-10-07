@@ -1233,7 +1233,10 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     if (props.kind == SYMBOL_DECL_VARIABLE || props.kind == SYMBOL_DECL_CLASS || props.kind == SYMBOL_DECL_ENUM ||
         props.kind == SYMBOL_DECL_FUNCTION
     ) {
-        symbol->is_ambient |= scope->ambient || props.is_ambient;
+        // (A variable is as ambient as its first declaration, tsc's valueDeclaration: `var x; declare var x;` isn't)
+        if (props.kind != SYMBOL_DECL_VARIABLE || !(flags_before & SYMBOL_VARIABLE)) {
+            symbol->is_ambient |= scope->ambient || props.is_ambient;
+        }
     }
     if (!merged && props.default_export) {
         // Named like its (first) declaration (tsc's getNameOfSymbolAsWritten), and exported like the declarations

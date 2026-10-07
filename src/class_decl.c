@@ -203,8 +203,10 @@ void class_decl_drop(ClassDecl* me) {
     vec_expr_cptr_drop(&my computed_this_assignments);
 }
 
-// A computed member name or a decorator
-static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, ErrorCtx* errs) {
+// A computed member name or a decorator. `own_container`: the name of a method, an accessor or a field with an
+// initializer, which tsc's binder binds inside the member's own flow container (bindContainer saves and restores
+// currentFlow): what it assigns isn't seen after the member
+static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, bool own_container, ErrorCtx* errs) {
     ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     scope->no_super = why;
@@ -213,9 +215,14 @@ static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, Er
         if (class_decl) scope_rare_mut(scope)->computed_name_of = &class_decl->generic;
     }
     uint8_t initializer_context = names->flow->initializer_context;
+    bool member_name = names->flow->member_name;
     names->flow->initializer_context = INITIALIZER_NONE;
+    if (why == NO_SUPER_COMPUTED_NAME) names->flow->member_name = true;
+    FlowNode* flow_before = names->flow->current;
     expr_lookup_names(expr, scope, errs);
+    if (own_container) names->flow->current = flow_before;
     names->flow->initializer_context = initializer_context;
+    names->flow->member_name = member_name;
     scope_release(scope, pending_mark);
 }
 
@@ -242,7 +249,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
     for_each (i, vec_expr, &my decorators) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope->member_decorator = true;
-        lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, decorator_errs);
+        lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, false, decorator_errs);
     }
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
@@ -252,7 +259,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         case CLASS_ITEM_METHOD:
             if (my method.computed_key) {
                 names->flow->type_only_alias_ok = my method.is_abstract;
-                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
+                lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, errs);
                 names->flow->type_only_alias_ok = false;
             }
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
@@ -271,7 +278,7 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         case CLASS_ITEM_FIELD:
             if (my field.computed_key) {
                 names->flow->type_only_alias_ok = my field.is_abstract || my field.is_declare;
-                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, errs);
+                lookup_names_without_super(my field.computed_key, names, NO_SUPER_COMPUTED_NAME, my field.value.tag != EXPR_IMPLICIT_ANY, errs);
                 names->flow->type_only_alias_ok = false;
             }
             lazy_type_bind(&my field.lazy_type, LAZY_TYPE_CLASS_ITEM_FIELD);

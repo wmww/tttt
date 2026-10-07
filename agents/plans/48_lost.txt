@@ -5,9 +5,6 @@
 ## true
 YieldExpression5_es6	T	src-same	bl-same
 YieldStarExpression3_es6	T	src-same	bl-same
-computedPropertyNames10_ES6	E	src-same	bl-same
-computedPropertyNames13_ES6	E	src-same	bl-same
-computedPropertyNames15_ES6	E	src-same	bl-same
 generatorTypeCheck42	E	src-same	bl-same
 generatorTypeCheck44	E	src-same	bl-same
 unicodeEscapesInNames01(target=es2015)	E	src-same	bl-same
@@ -103,8 +100,6 @@ commonJSReexport	T	src-changed	bl-changed
 commonSourceDirectory_dts	E	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed
 complicatedIndexesOfIntersectionsAreInferencable	T	src-changed	bl-changed
-computedPropertyNames12_ES6	E	src-same	bl-changed
-computedPropertyNames14_ES6	E	src-same	bl-changed
 computedPropertyNamesContextualType6_ES6	T	src-same	bl-changed
 computedPropertyNamesContextualType7_ES6	T	src-same	bl-changed
 concatTuples	T	src-changed	bl-changed
@@ -265,7 +260,6 @@ expandoFunctionContextualTypes	T	src-changed	bl-changed
 exponentiationOperatorWithInvalidSimpleUnaryExpressionOperands	T	src-changed	bl-changed
 exportArrayBindingPattern	T	src-changed	bl-changed
 exportAssignNonIdentifier	T	src-changed	bl-changed
-exportEqualCallable	E	src-changed	bl-changed
 exportTypeMergedWithExportStarAsNamespace	T	src-changed	bl-changed
 exportsAndImports4-es6	T	src-same	bl-changed
 expr	T	src-changed	bl-changed
@@ -288,9 +282,7 @@ generatorTypeCheck53	T	src-same	bl-changed
 generatorTypeCheck54	T	src-same	bl-changed
 generatorTypeCheck63	E	src-same	bl-changed
 generatorYieldContextualType	T	src-same	bl-changed
-genericCallWithTupleType	E	src-changed	bl-changed
 genericConstraint2	T	src-changed	bl-changed
-genericConstraintSatisfaction1	E	src-changed	bl-changed
 genericDefaults	T	src-changed	bl-changed
 genericRestParameters1	T	src-changed	bl-changed
 genericRestParameters3	T	src-changed	bl-changed
@@ -383,7 +375,6 @@ literalTypes3	T	src-changed	bl-changed
 literalTypesAndDestructuring	T	src-changed	bl-changed
 literalTypesAndTypeAssertions	T	src-changed	bl-changed
 literalWideningWithCompoundLikeAssignments	T	src-changed	bl-changed
-localAliasExportAssignment	E	src-changed	bl-changed
 logicalOrOperatorWithEveryType	T	src-changed	bl-changed
 mapGroupBy	T	src-same	bl-changed
 mappedTypeAsClauses	T	src-changed	bl-changed
@@ -555,13 +546,9 @@ pathMappingBasedModuleResolution_rootImport_noAliasWithRoot_realRootFile	E	src-c
 plainJSGrammarErrors	ET	src-same	bl-changed
 predicateSemantics	ET	src-changed	bl-changed
 privacyCannotNameVarTypeDeclFile	T	src-changed	bl-changed
-privacyCheckExportAssignmentOnExportedGenericInterface1	E	src-changed	bl-changed
 privacyFunctionCannotNameParameterTypeDeclFile	T	src-changed	bl-changed
 privacyFunctionCannotNameReturnTypeDeclFile	T	src-changed	bl-changed
 privacyGloImportParseErrors	E	src-changed	bl-changed
-privateNameComputedPropertyName2(target=es2015)	E	src-same	bl-changed
-privateNameComputedPropertyName2(target=es2022)	E	src-same	bl-changed
-privateNameComputedPropertyName2(target=esnext)	E	src-same	bl-changed
 privateNameInInExpression(target=es2022)	T	src-same	bl-changed
 privateNameInInExpression(target=esnext)	T	src-same	bl-changed
 privateNameMethodAsync	T	src-same	bl-changed
@@ -639,7 +626,6 @@ switchComparableCompatForBrands	T	src-changed	bl-changed
 switchStatements	T	src-changed	bl-changed
 symbolLinkDeclarationEmitModuleNames	T	src-changed	bl-changed
 symbolLinkDeclarationEmitModuleNamesImportRef	T	src-changed	bl-changed
-symbolProperty1	E	src-same	bl-changed
 symbolType17	T	src-changed	bl-changed
 symbolType18	T	src-changed	bl-changed
 symbolType19	T	src-same	bl-changed

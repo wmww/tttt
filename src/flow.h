@@ -187,6 +187,12 @@ typedef struct FlowBuilder {
     u32 object_literal_depth;
     struct ClassItem const* initializer_field; // The field whose initializer it is
     bool in_type_query; // Inside `typeof x` written as a type: never "used before assigned"
+    // Inside the computed name of a method, accessor or class property: tsc's getControlFlowContainer is that member,
+    // so every variable read there is an outer one (assumed initialized unless never assigned)
+    bool member_name;
+    // The identifier of `export = x`: in_type_query is set for it (it isn't used before its declaration, the emit moves
+    // it), but tsc's checkExportAssignment still checks it as an expression: "used before being assigned" applies
+    bool export_equals_name;
     // Where a name imported with `import type` may be used (tsc's isValidTypeOnlyAliasUseSite, besides type queries): the
     // identifier of `export default x`/`export = x`, computed names of abstract and `declare` members
     bool type_only_alias_ok;
