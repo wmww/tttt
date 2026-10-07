@@ -1567,7 +1567,13 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .span = *i,
                     .text = decl->is_placeholder ? cstr_from_sv(decl->name_span.sv) : symbol_text(ctx, shown_declaration(symbol, decl)),
                 });
-                if ((decl->flags & SYMBOL_ENUM_MEMBER) && !decl->is_placeholder) {
+                // (An alias merged with a namespace, `export import A = a.A; export namespace A {}`: its declared type
+                // is the alias's, getDeclaredTypeOfSymbol's getDeclaredTypeOfAlias)
+                Symbol const* alias_type = (decl->flags & SYMBOL_ALIAS) && !(decl->flags & SYMBOL_TYPE) && !decl->is_placeholder ?
+                    symbol_for_meaning(decl, SYMBOL_TYPE) : nullptr;
+                if (alias_type && alias_type != decl && (alias_type->flags & SYMBOL_TYPE) && !alias_type->is_placeholder) {
+                    baseline_test_case_add_type(ctx, *i, ty_declared_type_of(current_checker, alias_type));
+                } else if ((decl->flags & SYMBOL_ENUM_MEMBER) && !decl->is_placeholder) {
                     // (An enum member's literal type, `E.B`, not a name to reuse)
                     baseline_test_case_add_type(ctx, *i, ty_declared_type_of(current_checker, decl));
                 } else if (decl->flags & SYMBOL_TYPE && !decl->is_placeholder) {

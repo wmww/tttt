@@ -56468,7 +56468,7 @@ const baselines = {
     'shadowedInternalModule': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'invalidModuleWithStatementsOfEveryKind': {
         errors: true,
