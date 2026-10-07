@@ -819,7 +819,24 @@ Ty const* ty_instantiate_fixing(Checker* me, Ty const* type) {
 static void infer_from_annotated_params_of(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual);
 Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, FunctionImpl const* function) {
     OuterInference* outer = my outer_inference;
-    if (!outer || !outer->fixing || !ty_function_is_context_sensitive(function)) return sig;
+    if (!outer) return sig;
+    if (!ty_function_is_context_sensitive(function)) {
+        // A function that isn't context sensitive but has fewer parameters than its contextual signature says what its
+        // annotations know too, on its first (inferential) context check only (tsc's
+        // contextuallyCheckFunctionExpressionOrObjectLiteralMethod under ContextChecked; this runs once per function,
+        // see assign_contextual_signature_as()): `testRest((t1: D) => {})` against `(t: T, t1: T, ...ts: T[]) =>
+        // void` infers D covariantly; a function nested in a literal argument too, `{ fn: (a: string) => {} }`
+        // against `{ fn: (a: A, b: B) => void }` infers A
+        signature_resolve(me, sig);
+        if (generic_empty(&function->generic) && sig->param_count > (u32)vec_function_arg_size(&function->args)) {
+            // (Nothing to infer unless a parameter or the return type could mention a type parameter)
+            bool could = signature_return_type(me, sig)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            for (u32 i = 0; i < sig->param_count && !could; i++) could = sig->params[i].type->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES;
+            if (could) infer_from_annotated_params_of(me, outer->inf, function, sig);
+        }
+        return sig;
+    }
+    if (!outer->fixing) return sig;
     signature_resolve(me, sig);
     Inference* inf = outer->inf;
     // (A rest parameter of type parameter type fixes nothing: the signature is instantiated with the non-fixing mapper,
@@ -1322,9 +1339,6 @@ static TyMapper const* infer_type_arguments(
             continue;
         }
         my outer_inference = &self;
-        // (Whether a check before this call's (another overload's) context-checked the function already: tsc's
-        // ContextChecked, after which its annotations aren't inferred from again)
-        bool context_checked = arg->expr->tag == EXPR_FUNCTION && ty_function_assigned_contextual_signature(me, arg->expr->function);
         if (is_literal_arg(arg)) {
             GenericFunctionMode mode = {0};
             Ty const* param_type = shape_type_at(&shape, i);
@@ -1368,20 +1382,6 @@ static TyMapper const* infer_type_arguments(
             !ty_function_return_in_flight(me, arg->expr->function)
         ) {
             ty_argument_return_type(me, arg->expr->function);
-        }
-        // A function that isn't context sensitive but has fewer parameters than its contextual signature says what its
-        // annotations know too (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod):
-        // `testRest((t1: D) => {})` against `(t: T, t1: T, ...ts: T[]) => void` infers D covariantly, not just the
-        // contravariant D and the never of the empty rest
-        Ty const* annotated_param = shape_type_at(&shape, i);
-        if (arg->expr->tag == EXPR_FUNCTION && !context_checked && !arg->spread && !arg->part_of_spread && annotated_param &&
-            generic_empty(&arg->expr->function->generic) && (annotated_param->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)
-        ) {
-            Signature const* contextual_sig = ty_function_contextual_signature(me, arg->expr->function, annotated_param);
-            if (contextual_sig) signature_resolve(me, contextual_sig);
-            if (contextual_sig && contextual_sig->param_count > (u32)vec_function_arg_size(&arg->expr->function->args)) {
-                infer_from_annotated_params_of(me, &inf, arg->expr->function, contextual_sig);
-            }
         }
         my outer_inference = nullptr;
         Signature const* contextual = nullptr;
