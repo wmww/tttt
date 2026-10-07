@@ -20,6 +20,8 @@ typedef struct InterfaceIndexKey {
     bool valid; // Exactly one parameter, with a type annotation: the signature makes an index info
     bool grammar_reported; // The parser reported a parameter grammar error: tsc's check stops there
     bool has_value_type;
+    // Which parameters (bit k: the k-th) are written `x?` (TS1019), whose types tsc's baseline shows with undefined
+    u32 optional_params;
 } InterfaceIndexKey;
 
 typedef struct InterfaceMappedKey {

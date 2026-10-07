@@ -7580,6 +7580,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
             hop_whitespace(&p);
         }
 
+        if (span_valid(question) && count < 32) ret->key.index->optional_params |= 1u << count;
         if (count == 0) {
             ret->key.index->name = name;
             ret->key.index->decl = span_make(p.shared->source, param_start.start, span_end_ptr(name));

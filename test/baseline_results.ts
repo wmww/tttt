@@ -18763,12 +18763,12 @@ const baselines = {
     'indexSignatureTypeCheck': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureTypeCheck2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexSignatureWithAccessibilityModifier': {
         errors: true,
@@ -18928,7 +18928,7 @@ const baselines = {
     'indexerAsOptional': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'indexerAssignability': {
         errors: true,
@@ -71888,12 +71888,12 @@ const baselines = {
     'methodSignaturesWithOverloads': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'methodSignaturesWithOverloads2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'objectTypesWithOptionalProperties': {
         errors: true,

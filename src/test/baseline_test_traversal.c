@@ -906,7 +906,9 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             // (The declared member, `this` not instantiated: tsc's type of the merged symbol)
             Prop const* declared_member = merged;
             while (declared_member && declared_member->target) declared_member = declared_member->target;
-            Ty const* type = merged ? prop_type(current_checker, declared_member) : optional_member_type(ty_of_node(&my type), my optional);
+            // (Optional if any declaration is: the symbol's flags)
+            Ty const* type = merged ? optional_member_type(prop_type(current_checker, declared_member), declared_member->flags & PROP_OPTIONAL) :
+                optional_member_type(ty_of_node(&my type), my optional);
             if (redeclared) type = prop_type(current_checker, redeclared);
             // A property declared after a method of its name is that method's symbol (PropertyExcludes is nothing)
             if (!merged && !redeclared && !my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
@@ -959,7 +961,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .span = my key.index->name, .declarations = vec_span_single(my key.index->decl),
                 });
-                baseline_test_case_add_type_node(ctx, my key.index->name, &my key.index->type);
+                baseline_test_case_add_type(ctx, my key.index->name,
+                    optional_member_type(ty_of_node(&my key.index->type), my key.index->optional_params & 1));
             }
             type_compile_test_info(&my key.index->type, ctx);
             index_initializers_compile_test_info(my key.index, span_valid(my key.index->decl) ? span_start_ptr(my key.index->decl) : nullptr,
@@ -970,7 +973,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .span = name, .declarations = vec_span_single(*vec_span_at(&my key.index->more_decls, k)),
                 });
-                baseline_test_case_add_type_node(ctx, name, type);
+                baseline_test_case_add_type(ctx, name, optional_member_type(ty_of_node(type), k + 1 < 32 && (my key.index->optional_params >> (k + 1) & 1)));
                 type_compile_test_info(type, ctx);
                 index_initializers_compile_test_info(my key.index, span_start_ptr(*vec_span_at(&my key.index->more_decls, k)),
                     k + 1 < vec_span_size(&my key.index->more_decls) ? span_start_ptr(*vec_span_at(&my key.index->more_decls, k + 1)) : nullptr, ctx);
@@ -1003,7 +1006,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .span = my key.span,
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
             }, my key.expr.ref);
-            baseline_test_case_add_type(ctx, my key.span, overloads ? prop_type(current_checker, overloads) :
+            // (Overloads: optional if any of them is, the symbol's flags)
+            baseline_test_case_add_type(ctx, my key.span, overloads ? optional_member_type(prop_type(current_checker, overloads), overloads->flags & PROP_OPTIONAL) :
                 accessor_pair ? prop_type(current_checker, accessor_pair) : optional_member_type(ty_of_node(&my type), my optional));
             computed_member_name_compile_test_info(my key.expr.ref, ctx);
             // (A lone setter `set [k](v: T)` declares its parameter)

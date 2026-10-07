@@ -221,11 +221,8 @@ inDoesNotOperateOnPrimitiveTypes	ET	src-changed	bl-changed
 inKeywordTypeguard(strict=false)	T	src-same	bl-changed
 inKeywordTypeguard(strict=true)	T	src-same	bl-changed
 incompatibleTypes	T	src-changed	bl-changed
-indexSignatureTypeCheck	T	src-changed	bl-changed
-indexSignatureTypeCheck2	T	src-changed	bl-changed
 indexSignatures1	T	src-same	bl-changed
 indexedAccessConstraints	T	src-changed	bl-changed
-indexerAsOptional	T	src-changed	bl-changed
 indexerConstraints2	T	src-changed	bl-changed
 indirectDiscriminantAndExcessProperty	E	src-changed	bl-changed
 inferTypeParameterConstraints	T	src-changed	bl-changed
@@ -288,8 +285,6 @@ mappedTypes2	T	src-changed	bl-changed
 mappedTypes4	T	src-changed	bl-changed
 metadataOfStringLiteral	T	src-changed	bl-changed
 metadataOfUnion	T	src-changed	bl-changed
-methodSignaturesWithOverloads	T	src-changed	bl-changed
-methodSignaturesWithOverloads2	T	src-changed	bl-changed
 mixinAbstractClassesReturnTypeInference	T	src-same	bl-changed
 mixinClassesAnnotated	T	src-changed	bl-changed
 mixinClassesAnonymous	T	src-changed	bl-changed
