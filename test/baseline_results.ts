@@ -46296,9 +46296,9 @@ const baselines = {
         types: true,
     },
     'destructuringParameterDeclaration8': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration9(strict=false)': {
         errors: true,
@@ -71231,9 +71231,9 @@ const baselines = {
         types: true,
     },
     'mappedTypeConstraints2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeErrors': {
         errors: true,

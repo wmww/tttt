@@ -177,7 +177,6 @@ destructuringParameterDeclaration1ES6	T	src-same	bl-changed
 destructuringParameterDeclaration2	ET	src-changed	bl-changed
 destructuringParameterDeclaration4	T	src-changed	bl-changed
 destructuringParameterDeclaration6	E	src-changed	bl-changed
-destructuringParameterDeclaration8	ET	src-changed	bl-changed
 destructuringSpread	ET	src-changed	bl-changed
 destructuringUnspreadableIntoRest	ET	src-same	bl-changed
 didYouMeanStringLiteral	ET	src-changed	bl-changed
@@ -328,7 +327,6 @@ literalWideningWithCompoundLikeAssignments	T	src-changed	bl-changed
 logicalOrOperatorWithEveryType	T	src-changed	bl-changed
 mapGroupBy	T	src-same	bl-changed
 mappedTypeAsClauses	T	src-changed	bl-changed
-mappedTypeConstraints2	ET	src-changed	bl-changed
 mappedTypeErrors	E	src-changed	bl-changed
 mappedTypeGenericWithKnownKeys	ET	src-changed	bl-changed
 mappedTypeIndexedAccess	ET	src-changed	bl-changed

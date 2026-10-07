@@ -3364,8 +3364,6 @@ static bool is_remapping(Checker* me, MappedInfo const* mapped) {
     return mapped->name_type && !ty_is_related(me, mapped->name_type, mapped->type_param, TY_RELATION_ASSIGNABLE);
 }
 
-bool ty_mapped_is_remapping(Checker* me, MappedInfo const* mapped) { return is_remapping(me, mapped); }
-
 // tsc's getCombinedMappedTypeOptionality: whether the mapped types a homomorphic mapped type takes its modifiers from
 // add `?` (1) or remove it (-1)
 static int combined_mapped_optionality(Checker* me, Ty const* ty, u32 depth) {
@@ -3539,7 +3537,40 @@ static Ty const* compute_simplified_conditional(Checker* me, Ty const* ty, bool 
 
 // A simpler form of an indexed access or conditional type, or the type itself (tsc's getSimplifiedType). `writing`:
 // the target of an assignment, where a union of keys is the intersection of their properties
+// keyof a generic mapped type with an `as` clause (not over `keyof X`) is the clause over the constraint's members
+// (tsc 6.0's getSimplifiedIndexType, and computeBaseConstraint of an index type: getIndexTypeForMappedType). Null for
+// any other keyof
+static Ty const* mapped_keyof_names(Checker* me, Ty const* keyof) {
+    bool generic = false;
+    MappedInfo const* mapped = mapped_info_of(me, keyof->keyof.operand, &generic);
+    if (!mapped || !generic || !mapped->name_type || mapped->keyof_constraint) return nullptr;
+    Ty const* constraint = mapped->constraint;
+    TyList keys = constraint->kind == TY_UNION ? constraint->composite.types : (TyList){ .data = &constraint, .len = 1 };
+    TyBuf names = {0};
+    for (u32 i = 0; i < keys.len; i++) {
+        TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = &mapped->type_param, .len = 1 },
+            (TyList){ .data = &keys.data[i], .len = 1 });
+        Ty const* name = ty_instantiate(me, mapped->name_type, mapper);
+        ty_buf_push(&names, name);
+        if (name == ty_intrinsic(me, TY_STRING)) ty_buf_push(&names, ty_intrinsic(me, TY_NUMBER));
+    }
+    Ty const* ret = ty_union(me, names.data, names.len, nullptr, (TyList){0});
+    ty_buf_drop(&names);
+    // (The constraint itself if the names are its members: tsc compares the type lists)
+    if (ret->kind == TY_UNION && constraint->kind == TY_UNION && ret->composite.types.len == constraint->composite.types.len) {
+        bool same = true;
+        for (u32 i = 0; i < ret->composite.types.len && same; i++) same = ret->composite.types.data[i] == constraint->composite.types.data[i];
+        if (same) return constraint;
+    }
+    return ret;
+}
+
 Ty const* ty_simplified(Checker* me, Ty const* ty, bool writing) {
+    if (ty->kind == TY_KEYOF) {
+        if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) || ty->keyof.operand->kind != TY_ANONYMOUS) return ty;
+        Ty const* names = mapped_keyof_names(me, ty);
+        return names ? names : ty;
+    }
     if (ty->kind != TY_INDEXED && ty->kind != TY_CONDITIONAL) return ty;
     u64 key[3] = { KEY_SIMPLIFIED, ty->id, writing };
     Ty const* cached = intern_get(&my links, key, 3);
@@ -4015,6 +4046,12 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             return constraint;
         }
         case TY_KEYOF: {
+            // (Of a generic mapped type with an `as` clause, its names': tsc 6.0's computeBaseConstraint)
+            Ty const* names = ty->keyof.operand->kind == TY_ANONYMOUS ? mapped_keyof_names(me, ty) : nullptr;
+            if (names) {
+                Ty const* base = base_constraint(me, names, depth + 1);
+                if (base) return base;
+            }
             Ty const* all[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
             return ty_union(me, all, 3, nullptr, (TyList){0});
         }

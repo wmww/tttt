@@ -2556,17 +2556,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         // `keyof { [P in string]: X }` is string, `keyof Pick<T, unknown>` unknown
         if (members->expanded_from && !members->expanded_from->name_type) return members->expanded_from->constraint;
         if (members->mapped && !members->mapped->name_type) return members->mapped->constraint;
-        // A filtering `as` clause distributive over the key (`P extends X ? P : never`) over generic keys: the clause
-        // with the keys for P (tsc's getIndexTypeForMappedType; shouldDeferIndexType only defers the others)
-        MappedInfo const* filtered = members->mapped;
-        if (filtered && !filtered->keyof_constraint && ty_is_generic_index(filtered->constraint) &&
-            filtered->name_type->kind == TY_CONDITIONAL && filtered->name_type->conditional.distributive &&
-            filtered->name_type->conditional.check == filtered->type_param && !ty_mapped_is_remapping(me, filtered)
-        ) {
-            TyMapper const* key_mapper = ty_mapper_new(me, (TyList){ .data = &filtered->type_param, .len = 1 },
-                (TyList){ .data = &filtered->constraint, .len = 1 });
-            return ty_instantiate(me, filtered->name_type, key_mapper);
-        }
+        // (A generic mapped type with an `as` clause stays `keyof` it: tsc 6.0's shouldDeferIndexType, see ty_simplified())
         if (!members->mapped) {
             TyBuf parts = {0};
             for (u32 i = 0; i < members->prop_count; i++) {
