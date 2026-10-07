@@ -316,7 +316,8 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
             out_symbol_name(me, d, parent, SYMBOL_NAMESPACE);
         }
         out_lit(d, ".");
-        out(d, ty_symbol_display_name(symbol).sv);
+        // (An `export default` declaration is `default` through its module: tsc's getNameOfSymbolAsWritten)
+        out(d, symbol->is_default_export && (parent->is_module || quoted_parent) ? c_sv("default") : ty_symbol_display_name(symbol).sv);
         return;
     }
     // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module. Not in a
