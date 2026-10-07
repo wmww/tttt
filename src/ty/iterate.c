@@ -702,11 +702,15 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
         // A union is reported once: tsc caches its noIterationTypes (getIterationTypesOfIterable) and
         // later lookups say nothing
+        // (By the first place it is asked at, reported or not: tsc reports wherever it first computes it, which may
+        // be a check during an inference that tttt does without reporting, `[...xs.reduce((a, k) => [...a, ...t[k]],
+        // []), ...t.b]` reports in the callback; the walk reports it when it gets there)
         bool reported = false;
-        if (!types && uplevel && errs && input->kind == TY_UNION && !(input->flags & TYF_BOOLEAN)) {
+        if (!types && uplevel && input->kind == TY_UNION && !(input->flags & TYF_BOOLEAN) && span_valid(span)) {
             u64 key[3] = { KEY_UNION_NOT_ITERABLE_REPORTED, input->id, async };
-            reported = intern_get(&my links, key, 3) != nullptr;
-            *intern_slot(me, &my links, key, 3) = input;
+            void const** slot = (void const**)intern_slot(me, &my links, key, 3);
+            if (!*slot) *slot = span_start_ptr(span);
+            reported = *slot != (void const*)span_start_ptr(span);
         }
         if (!types && uplevel && errs && !reported) {
             Error* e = report_not_iterable(me, use, input, span, errs);

@@ -3948,7 +3948,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
                 bool empty_tuple = operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_TUPLE_TARGET;
                 elements[count++] = ty_is_array(me, operand) || ty_is_tuple(operand) || empty_tuple ||
                     is_generic_array_like(me, operand) ?
-                    operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
+                    operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
             } else {
                 // (never is array-like, its element never: tsc's checkArrayLiteral, getIndexedAccessTypeOrUndefined.
                 // The spread expression itself is what iterating gives, any)
@@ -4182,7 +4182,7 @@ Ty const* ty_array_literal_as_tuple(Checker* me, Expr const* expr, Ty const* con
                 ty_expr_type(me, i->spread);
             flags[i_index] = TUPLE_ELEMENT_REST;
             elements[i_index] = ty_is_array(me, operand) || ty_is_tuple(operand) || is_generic_array_like(me, operand) ?
-                operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr), false);
+                operand : ty_array(me, ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(i->spread), nullptr), false);
             continue;
         }
         elements[i_index] = ty_mutable_location_type(me, i, contextual_array_element_type(me, contextual, expr, (u32)i_index));
@@ -5113,7 +5113,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // The type of each spread element: of an array its elements, of anything else what iterating it gives
             Ty const* operand = ty_expr_type(me, expr->spread);
             if (ty_is_array(me, operand) || ty_is_tuple(operand)) return ty_rest_element_type(me, operand);
-            return ty_iterated_type(me, ITERATION_SPREAD, operand, span_null, nullptr);
+            return ty_iterated_type(me, ITERATION_SPREAD, operand, expr_outer_span(expr->spread), nullptr);
         }
     }
     impossible;
