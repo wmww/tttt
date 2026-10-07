@@ -10277,8 +10277,8 @@ const baselines = {
     },
     'defaultDeclarationEmitShadowedNamedCorrectly': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'defaultIndexProps1': {
         errors: true,
@@ -34282,7 +34282,7 @@ const baselines = {
     },
     'typePredicateStructuralMatch': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typePredicateTopLevelTypeParameter': {
@@ -46307,7 +46307,7 @@ const baselines = {
     },
     'destructuringParameterDeclaration9(strict=true)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'destructuringParameterProperties1': {
@@ -47773,12 +47773,12 @@ const baselines = {
     'multipleDefaultExports03(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multipleDefaultExports03(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multipleDefaultExports04(target=es2015)': {
         errors: true,
@@ -47793,12 +47793,12 @@ const baselines = {
     'multipleDefaultExports05(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multipleDefaultExports05(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reExportDefaultExport(target=es2015)': {
         errors: true,
@@ -54473,7 +54473,7 @@ const baselines = {
     'multipleExportDefault3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'multipleExportDefault4': {
         errors: true,
@@ -72367,12 +72367,12 @@ const baselines = {
     },
     'objectSpread(target=es2015)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectSpread(target=es5)': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'objectSpreadComputedProperty': {

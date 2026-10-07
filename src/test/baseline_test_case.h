@@ -81,6 +81,10 @@ typedef struct BaselineTestCase {
     // getNameOfSymbolAsWritten), not `__object`
     struct Expr const* variable_literal;
     Span variable_literal_name;
+    // The type literal a variable is annotated with, while walking its initializer: its `__type` symbol is named by the
+    // variable too (getNameOfSymbolAsWritten of a declaration whose parent is a VariableDeclaration)
+    struct TypeNode const* variable_type_literal;
+    Span variable_type_literal_name;
     // The type parameters of the declarations around the traversal (TyParamNames.in_scope), innermost last
     struct Ty const** scope_params;
     u32 scope_params_len;

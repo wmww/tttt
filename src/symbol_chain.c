@@ -342,8 +342,8 @@ static bool try_locals_with_exports(
         return true;
     }
     // A duplicate declaration (TS2300) has a symbol of its own that isn't in the exports, but the block's local of
-    // that name has it as its exportSymbol
-    if (merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
+    // that name has it as its exportSymbol (not an `export default` one: tsc looks it up as `default`, which no local is)
+    if (!symbol->is_default_export && merged(me, symbol->parent) == merged(me, scope_table->container) && declared_at(symbol, scope_table->file) &&
         merged(me, symbol_table_get(exports, symbol->name)) != merged(me, symbol) &&
         can_qualify(me, symbol, meaning)
     ) {
@@ -868,7 +868,7 @@ void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member) {
 }
 
 void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* chain) {
-    symbol_chain_append_entity(out, enclosing, chain, false);
+    symbol_chain_append_entity(out, enclosing, chain, false, false);
 }
 
 // A member only `this.x = v` declares, of a JavaScript constructor function assigned to a variable or property (`ns.F =
@@ -886,7 +886,7 @@ static bool is_js_this_member_of_assigned_class(Symbol const* container, Symbol 
     return true;
 }
 
-void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity) {
+void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity, bool after_module) {
     isize start = cstr_size(out);
     bool restart = false; // The next name starts the text
     for (u32 i = 0; i < chain->len; i++) {
@@ -903,7 +903,7 @@ void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain c
             cstr_append_sv(out, class_name);
             continue;
         }
-        csview name = written_name(enclosing, symbol, i == 0);
+        csview name = written_name(enclosing, symbol, i == 0 && !after_module);
         // (An entity name has no element accesses: a quoted name that is an identifier is written as one, tsc's
         // symbolToTypeNode of an `o["x"] = v` expando is `typeof o.x`)
         // (Not a module's export, `exports["d"] = v`: the binder declares it by the literal, which getNameOfSymbolAsWritten

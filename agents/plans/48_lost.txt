@@ -23,4 +23,3 @@ requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
 styledComponentsInstantiaionLimitNotReached	E	src-changed	bl-changed
 thisInPropertyBoundDeclarations	T	src-changed	bl-changed
 tsxStatelessFunctionComponentOverload1	E	src-changed	bl-changed
-typePredicateStructuralMatch	S	src-changed	bl-changed

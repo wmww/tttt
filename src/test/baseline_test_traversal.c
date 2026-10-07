@@ -479,7 +479,8 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
     if (!(object->flags & TYF_OBJECT)) {
         // (`undefined` in a union has no properties either: the union's property is partial. Only said for binding
         // patterns: the object of a property access is sometimes not narrowed as far as tsc's, hacks.md)
-        if (info->strict_union && !(object->flags & (TYF_NEVER | TYF_ANY))) info->missing_in_member = true;
+        // A type parameter without a constraint is apparently unknown under strictNullChecks, which has none either
+        if ((info->strict_union || (object->flags & TYF_UNKNOWN)) && !(object->flags & (TYF_NEVER | TYF_ANY))) info->missing_in_member = true;
         return;
     }
     Prop const* prop = info->skip_augment ? ty_get_prop(checker, object, name) : ty_get_object_prop(checker, object, name);
@@ -724,6 +725,9 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                     // of a binding element's propertyName). A string or numeric name isn't an expression to tsc's walker
                     Checker* checker = current_checker;
                     Ty const* object = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
+                    // (An optional parameter's pattern is of the optional type: tsc's getTypeOfNode of a pattern is
+                    // getTypeForVariableLikeDeclaration with includeOptionality, `@param {T} [x]`)
+                    if (!my parent && my optional_parameter) object = ty_optional_param_type(checker, object);
                     Atom const* name = ty_literal_name(checker, ty_literal(checker, &i->source));
                     PropSymbolInfo info = { .strict_union = true };
                     if (name && !ty_contextual_parameter_is_pattern(checker, me)) collect_prop_symbol(checker, object, name, &info, 0);
@@ -1655,7 +1659,16 @@ void variable_statement_compile_test_info(VariableStatement const* me, BaselineT
             ctx->jsdoc_paren_span = expr_outer_span(value);
             ctx->jsdoc_paren_type = ty_of_node(&i->binding.explicit_type);
         }
+        TypeNode const* type_literal = ctx->variable_type_literal;
+        Span type_literal_name = ctx->variable_type_literal_name;
+        if (i->binding.tag == BINDING_IDENTIFIER && i->binding.has_explicit_type && !i->binding.explicit_type.from_jsdoc &&
+            i->binding.explicit_type.tag == TYPE_INTERFACE && !i->binding.explicit_type.parenthesized) {
+            ctx->variable_type_literal = &i->binding.explicit_type;
+            ctx->variable_type_literal_name = i->binding.content_span;
+        }
         initialized_binding_compile_test_info(i, ctx);
+        ctx->variable_type_literal = type_literal;
+        ctx->variable_type_literal_name = type_literal_name;
         ctx->jsdoc_paren_span = span_null;
     }
 }
@@ -2412,7 +2425,8 @@ static void this_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 .declarations = vec_span_single(literal_type->anonymous.node->interface.span),
                 .span = identifier_expr_name(me),
-                .text = cstr_lit("__type"),
+                .text = literal_type->anonymous.node == ctx->variable_type_literal ?
+                    cstr_from_sv(ctx->variable_type_literal_name.sv) : cstr_lit("__type"),
             });
             return;
         }

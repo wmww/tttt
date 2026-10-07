@@ -30,8 +30,10 @@ bool namespace_import_is_clone(Symbol const* symbol);
 SymbolChain symbol_member_container_chain_at(Scope const* enclosing, Symbol const* container);
 // Appends a chain the way symbolToExpression prints it: `a.b`, `a["b c"]`, `a[1]`
 void symbol_chain_append(cstr* out, Scope const* enclosing, SymbolChain const* chain);
-// The same for an entity name (types printer): a quoted member name that is an identifier is written without quotes
-void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity);
+// The same for an entity name (types printer): a quoted member name that is an identifier is written without quotes;
+// `after_module`: the chain continues an `import("m")`, its first name isn't the initial one of the entity name (an
+// `export default` declaration is `default` there, tsc's InInitialEntityName)
+void symbol_chain_append_entity(cstr* out, Scope const* enclosing, SymbolChain const* chain, bool entity, bool after_module);
 // Appends `name` as the next part of an expression printed by symbol_chain_append (`.name`, `["name"]`...)
 void symbol_chain_append_member(cstr* out, csview name, bool is_enum_member);
 
