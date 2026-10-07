@@ -6346,7 +6346,8 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
             u32 count = 0;
             for (u32 p = 0; p < prop_count; p++) {
                 Atom const* name = props[p].prop->name;
-                count += find_prop(me, apparent_type(me, t), name, 0).found ||
+                // (Its own: `keyof` has no Object members)
+                count += find_prop_in(me, apparent_type(me, t), name, 0, true).found ||
                     ty_applicable_index_info(me, t, ty_prop_name_literal(me, name));
             }
             if (count && count >= best_count) {
