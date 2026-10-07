@@ -1642,8 +1642,7 @@ static Signature const* callback_signature(Checker* me, Signature const* sig, u3
 }
 
 // tsc's getMinArgumentCount: trailing parameters that accept void can be left out
-static u32 min_argument_count(Checker* me, Signature const* sig) {
-    u32 min = sig->min_args;
+static u32 min_argument_count_from(Checker* me, Signature const* sig, u32 min) {
     while (min > 0) {
         Ty const* type = param_type_at(me, sig, min - 1);
         bool accepts_void = type && (type->flags & TYF_VOID);
@@ -1654,6 +1653,10 @@ static u32 min_argument_count(Checker* me, Signature const* sig) {
         min--;
     }
     return min;
+}
+
+static u32 min_argument_count(Checker* me, Signature const* sig) {
+    return min_argument_count_from(me, sig, sig->min_args);
 }
 
 // tsc's getMinArgumentCount with the required elements of a rest tuple (`(...args: [a: A]) => R` takes one)
@@ -1820,7 +1823,10 @@ static Ternary compare_signatures(
     if (non_array_rest) report_variance(me, non_array_rest, VARIANCE_UNRELIABLE);
 
     u32 target_count = ty_signature_param_count(target);
-    u32 source_min = source->min_args > target_count ? min_argument_count(me, source) : source->min_args;
+    // (The required elements of a rest tuple count: `(...args: [string]) => R` isn't a `() => R`, tsc's
+    // getMinArgumentCount)
+    u32 source_min = signature_min_args(source);
+    if (source_min > target_count) source_min = min_argument_count_from(me, source, source_min);
     // The strict subtype relation counts optional parameters too (tsc's SignatureCheckMode.StrictArity): of `() => void`
     // and `(b?: string) => void`, only the first is a strict subtype of the other
     bool strict_arity = st->relation == TY_RELATION_STRICT_SUBTYPE && !ty_signature_has_rest(target) &&
