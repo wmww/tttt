@@ -645,6 +645,7 @@ Ty const* ty_string_literal(Checker* me, csview sv) {
 
 // Sorts by id. The input is usually a few sorted runs back to back (the members of the unions being combined, plus a
 // few more), so this is a natural merge sort: it merges the runs that are there instead of sorting from scratch
+// Sorts types in union order (ty_compare(); stable)
 static void sort_by_id(Ty const** data, u32 len) {
     if (len <= 8) {
         for (u32 i = 1; i < len; i++) {
@@ -822,6 +823,12 @@ static void add_named_unions(TyBuf* named, Ty const* const* types, u32 len) {
 }
 
 static bool sorted_list_contains(TyList list, Ty const* t) {
+    if (list.len <= 8) {
+        for (u32 i = 0; i < list.len; i++) {
+            if (list.data[i] == t) return true;
+        }
+        return false;
+    }
     u32 lo = 0, hi = list.len;
     while (lo < hi) {
         u32 mid = lo + (hi - lo) / 2;
@@ -978,13 +985,27 @@ static Ty const* union_with_origin(
                 add_named_unions(&named, types, len);
                 if (named.len) {
                     TyBuf reduced = {0};
-                    for (u32 i = 0; i < out; i++) {
-                        bool in_named = false;
-                        for (u32 j = 0; j < named.len && !in_named; j++) {
-                            in_named = sorted_list_contains(named.data[j]->composite.types, buf.data[i]);
+                    // (Which members a named union has: both lists are sorted, a merge walk)
+                    bool* in_named = calloc(out, sizeof(bool));
+                    panic_if(!in_named, "out of memory");
+                    for (u32 j = 0; j < named.len; j++) {
+                        TyList members = named.data[j]->composite.types;
+                        u32 i = 0, k = 0;
+                        while (i < out && k < members.len) {
+                            if (buf.data[i] == members.data[k]) {
+                                in_named[i++] = true;
+                                k++;
+                            } else if (ty_compare(buf.data[i], members.data[k]) < 0) {
+                                i++;
+                            } else {
+                                k++;
+                            }
                         }
-                        if (!in_named) ty_buf_push(&reduced, buf.data[i]);
                     }
+                    for (u32 i = 0; i < out; i++) {
+                        if (!in_named[i]) ty_buf_push(&reduced, buf.data[i]);
+                    }
+                    free(in_named);
                     if (!alias && named.len == 1 && reduced.len == 0) {
                         ret = named.data[0];
                     } else {
@@ -2967,8 +2988,9 @@ Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty) {
     if (ty == marker) return my intrinsics[TY_NEVER];
     if (ty->kind != TY_UNION) return ty;
     TyList members = ty->composite.types;
-    // (Members sort by id, and the marker's is among the lowest)
-    for (u32 i = 0; i < members.len && ty_order_rank(members.data[i]) <= ty_order_rank(marker); i++) {
+    // (The marker is an undefined: it sorts among the first members)
+    u64 marker_key = ty_order_key(marker);
+    for (u32 i = 0; i < members.len && ty_order_key(members.data[i]) <= marker_key; i++) {
         if (members.data[i] != marker) continue;
         Ty const** kept = malloc(sizeof(Ty const*) * members.len);
         panic_if(!kept, "out of memory");

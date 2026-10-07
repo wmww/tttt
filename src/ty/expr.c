@@ -1967,6 +1967,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
                 return type;
             }
         }
+        if (issue_only && *issue == IDENTIFIER_FLOW_OK) {
+            Ty const* seen = intern_get(&my links, (u64[]){ KEY_AUTO_FLOW_ISSUE, (u64)(uintptr_t)expr }, 2);
+            if (seen) *issue = seen == auto_any ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
+        }
         return identifier->assignment_target ? base_type_of_literal(me, flow_type) : flow_type;
     }
     // Where nothing says otherwise, a variable is `undefined` until something is assigned to it
@@ -2001,12 +2005,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
 
 IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier) {
     IdentifierFlowIssue ret = IDENTIFIER_FLOW_OK;
-    Expr const* expr = c_container_of(identifier, Expr, identifier);
-    identifier_flow_type(me, expr, nullptr, &ret, true);
-    if (ret == IDENTIFIER_FLOW_OK) {
-        Ty const* seen = intern_get(&my links, (u64[]){ KEY_AUTO_FLOW_ISSUE, (u64)(uintptr_t)expr }, 2);
-        if (seen) ret = seen == ty_intrinsic(me, TY_AUTO) ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
-    }
+    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), nullptr, &ret, true);
     return ret;
 }
 

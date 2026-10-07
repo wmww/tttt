@@ -486,6 +486,19 @@ src` finds the code-side markers; every significant one has an entry here.
   signatures.
 
 ## Type core (`src/ty/`)
+- Stable type ordering (`ty/order.c`, tsc 6's compareTypes): ties tsc breaks by something tttt doesn't keep fall back
+  to type ids, i.e. tttt's creation order: conditional types by their root's id (tsc: the root's node position),
+  deferred references by their mapper only (tsc: the reference node first), unique symbols without a declaration
+  position, and every final tie (fresh vs regular literals, intrinsic variants, same-symbol anonymous types: tsc's
+  ids). Known misses: noImplicitAnyUnionNormalizedObjectLiteral1 (tsc's widening makes a new type per spread object
+  literal even when nothing widens, so creation order differs), instantiationExpressions.
+  `Ty.order_key` caches the comparison prefix (8 bytes per type).
+- Member order (`builder_sort_stable()`, members.c, tsc's getNamedMembers): applied to object literals, mapped types,
+  namespaces and merged values only; class/interface members keep tttt's own-then-inherited order (matches the
+  contained/non-contained split in every case seen), `builder_prototype_last()` moves a static side's synthetic
+  `prototype` after the rest. Props without a declaration sort by name bytes (tsc: escapedName, then symbol id).
+- `KEY_AUTO_FLOW_ISSUE` (`identifier_flow_type()`): TS7005/TS7034 for a reference whose flow type was still auto when
+  first evaluated inside a loop's incomplete pass (tsc reports from checkExpression there), remembered per expression.
 - `conditional_branch_lacks_constraint()` (expr.c, is_literal_of_contextual_type): tsc's base constraint of a union
   needs every member's, ty_base_constraint() leaves unconstrained members out (relations depend on that: making it strict
   broke doNotElaborateAssignabilityToTypeParameters). The literal-room check special-cases a conditional's union

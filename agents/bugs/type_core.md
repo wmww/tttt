@@ -49,6 +49,18 @@ fails types in both configurations.
   [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
   "abc"; }` where tttt prints `{ bar: string; }`. circularInlineMappedGenericTupleTypeNoCrash itself needs tsc's TS2589.
 ## Relations, instantiation, reduction
+- **Variance measurement order (vue, `--checkers 1` only, since stable type ordering 2026-10-07)**: a spurious TS2345
+  at `runtime-dom/src/directives/vModel.ts:383` (`DirectiveBinding<any, string, any>` to `DirectiveBinding<any,
+  "number", any>`). Cause: circular variance measurements finish differently depending on which one starts first.
+  tsc starts with `DirectiveHook` (triggered at `runtime-core/src/directives.ts:185`, `hook =
+  mapCompatDirectiveHook(...)`) and measures DirectiveHook 2/2/2/16/2, DirectiveBinding 1/16/1, ObjectDirective
+  4/4/1/4. tttt starts from the `Directive` alias (in a subtype reduction of `CompatVue | ObjectDirective |
+  FunctionDirective | undefined`), nests DirectiveBinding -> ObjectDirective -> DirectiveHook, and gets DirectiveHook
+  #2-#4 independent (4: DirectiveBinding is in flight, so both directions hold). The new union order made
+  DirectiveBinding/ObjectDirective/SSRDirectiveHook match tsc where the old one didn't; only DirectiveHook is left.
+  Reproduce: `TTTT_DUMP_VARIANCES=1 ./release/tttt --checkers 1 -p thirdparty/corpora/vue/tsconfig.corpus.json`
+  against `/tmp/tscvar.js`-style instrumentation of `tscinstcount.js` (`VARIANCES=1`, plus a START log in
+  getVariancesWorker printing `currentNode`). Find why tsc doesn't measure `Directive` (or measures it later) there.
 - **Two copies of one declaration file (webpack through a symlink): one diagnostic left.** From a worktree (where
   `thirdparty/corpora` is a symlink) webpack's `types.d.ts` is in the program twice, as in tsc (root files keep the
   symlinked path, only node_modules results are realpathed and `node_modules/webpack -> ..`), and the examples'

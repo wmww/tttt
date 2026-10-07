@@ -1,6 +1,6 @@
 # Plan 48: retarget from TypeScript 5.8 to TypeScript 6.0 with stable type ordering (what tsgo 7.0 implements)
 Written by the planning session of 2026-10-07 (todo entry 1 of the eleventh window), from four prototypes/measurements
-(sub-agents; scratch in /tmp may be gone, the code is saved in `48_prototypes/`).
+(sub-agents; both prototypes are applied now: the switch as 75cb7ee6, the ordering as a8ac7023).
 
 ## Decisions
 1. **The oracle is TypeScript commit `4d4f005c8541e0255a9d8791205fdce326e462bc`** (2026-06-29, branch `tsgo-port`,
@@ -35,7 +35,7 @@ Written by the planning session of 2026-10-07 (todo entry 1 of the eleventh wind
 5. **Pass counts are not comparable across the switch.** The suite grows 13540 -> 14969 tests (option variations:
    1132 names gone, 2561 new). Report both and define losses as below.
 
-## Measurements (prototype of the switch against v6.0.3's baselines, `48_prototypes/switch/`)
+## Measurements (prototype of the switch against v6.0.3's baselines)
 | step | full | errors | symbols | types |
 |---|---|---|---|---|
 | tttt as is, 5.8 libs and defaults | 9598 | 10636 | 14357 | 13032 |
@@ -84,7 +84,7 @@ repo (may be gone: `git clone --depth 1 --branch v5.8.2`).
    and every cached oracle: they must use `built/local/typescript.js` / `tsc.js` of *this* commit, not the repo's
    `lib/` LKG, which is a 6.0 release build without stable ordering by default). Then `thirdparty/refresh.sh`.
    `thirdparty/lib` = the commit's `src/lib` (refresh.sh's copy function, as the prototype did).
-2. Apply `48_prototypes/switch/*.patch` (`git am`; written against 3ec44902, conflicts should be small) except the
+2. Apply the switch prototype patches (`git am`; written against 3ec44902, conflicts should be small) except the
    prototype's `TTTT_BUILD_TSC` opt-in in ensure-tsc.sh (it only existed to keep the prototype from building inside a
    shared clone). Regenerate `src/lib_features.c`. Review the `src/ty/iterate.c` change (uplevel iteration needs a
    global `Iterable`): check it against tsc's `getIterationTypesOfIterable` rather than trusting it.
@@ -105,7 +105,7 @@ is member order, stage 2), plus whatever item 4 recovers.
 Corpora numbers are recorded but not chased here (their oracle moves in stage 5).
 
 ### Stage 2: stable type ordering (2 sessions, todo entries 3 and 5)
-**Prototype** (`48_prototypes/ordering/`, on top of the switch prototype): `src/ty/order.c` `ty_compare()`, a port of
+**Prototype** (a8ac7023, on top of the switch prototype): `src/ty/order.c` `ty_compare()`, a port of
 `compareTypes`/`compareSymbols`, replacing id order in `sort_by_id`, `insert_by_id`, `sorted_contains`,
 `sorted_list_contains`, `union_has_member`, the constrained-type-variable re-insert and the optional-marker scan;
 object literal and spread properties sorted by declaration (`builder_sort_stable` in `members.c`); `[]` (a bare tuple
@@ -120,7 +120,25 @@ by value, false < true; type parameters by declaration; composite types by their
 then mapper), type id last. Intersections stay unsorted; `typeof` keys, `getNamedMembers` (own members before
 inherited for classes/interfaces) and spelling-suggestion candidates are sorted too.
 
-**Session A (entry 3), productionize**: apply the patch; **a sort key computed once per type** (rank, then a value /
+**Session A done 2026-10-07: 13683 -> 14269 / 14969** (0 lost, `stableTypeOrdering(stabletypeordering=false)` passes
+too: the key is the type id there and the member sorts are off). What it did: `Ty.order_key`, a cached u64 prefix of
+compareTypes (rank, named bit, 57 bits of name / literal value / declaration position) with an inline fast path
+(`ty_compare()` in ty_internal.h) and `ty_compare_tie()` for equal keys; `union_with_origin`'s named-union membership
+is a merge walk; `builder_sort_stable()` (merge sort on precomputed positions) on object literals, mapped types,
+namespaces and merged values; the static side's `prototype` last; the evolving-array losses fixed for real
+(`KEY_AUTO_FLOW_ISSUE`: tsc reports TS7005 from the in-loop incomplete pass). Instructions vs the stage 1 end
+(callgrind): tsc +0.9%, react +2.1%, valibot +1.9%, drizzle +1.6%, excalidraw +1.6%, tanstack-router +1.3%, zod
++1.2%, others <= 0.7%, vue -2.0%; the left cost is `sort_by_id`/`ty_compare_tie` (big string literal unions with
+long common prefixes) and mapped types over big interfaces (keys come in value order, tsc's sort makes them
+declaration order: iterating the modifiers type's properties instead would make the sort a check). Checker arena
++1% (8 bytes per type). Corpora: valibot +4 TS2344 that the commit's tsc reports too (with `--ignoreDeprecations 6.0`;
+without it tsc skips semantic diagnostics); vue +1 TS2345 with `--checkers 1` only (variance measurement order,
+bugs/type_core.md); multi-checker output still differs inside quotes on webpack (tsc's per-program
+undefinedProperties cache, see checkerdiff.py: the allowance stays). Left for session B: the id tie-breaks hacks.md
+lists under "Stable type ordering" (noImplicitAnyUnionNormalizedObjectLiteral1, instantiationExpressions), and
+`getNamedMembers` for class/interface members (tttt's own-then-inherited order matched tsc on every probe).
+
+**Session A (entry 3), productionize** (the original brief): apply the patch; **a sort key computed once per type** (rank, then a value /
 name prefix / declaration position: most comparisons one integer compare). The prototype costs +11.5% instructions on
 the tsc corpus (`ty_compare` 9.5% inclusive), +6.1% drizzle, +4.5% type-fest, +1-3.5% elsewhere: the session must
 end within ~1% of the switch's instruction counts. `stableTypeOrdering: false` (one test configuration; keep the

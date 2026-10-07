@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Compares tttt's diagnostics with --checkers 1 and --checkers K (plan 36) on the pinned corpora.
 
-With K checkers (files dealt round robin) the diagnostics may only differ from one checker's in the order of union
-members inside messages (type ids are per checker). This runs each corpus both ways (--all-errors) and reports:
+With K checkers (files dealt round robin) the diagnostics may only differ from one checker's inside quoted types: ties
+that the stable type order breaks by type id (per checker), and widened object literals' `x?: undefined` properties,
+which take their position from the first property of that name the checker saw (tsc's undefinedProperties cache, one
+per program in tsc; seen in webpack's JSON schemas). This runs each corpus both ways (--all-errors) and reports:
   exact     diagnostics (header, source excerpt, message chain) that differ at all
   modulo    what still differs once every quoted '...' part of a message is blanked: codes, positions and the
             unquoted text. Anything here is a determinism bug (a memoised report, an evaluation-order dependence)

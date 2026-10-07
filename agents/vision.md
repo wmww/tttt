@@ -52,8 +52,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   7.0.2 pins: 6.0.3 plus `stableTypeOrdering` on by default (tests/cases identical to 6.0.3's; 650 `.types` differ by
   member order only). tsc 6's `compareTypes` and tsgo's `CompareTypes` are the same rule, so tttt **adopts the stable
   ordering** and deletes its creation-order mimicry. Prototypes: the switch reaches 92.3% of the new 14969-test suite
-  with defaults, libs and deprecations alone; the ordering port 13220 -> 13790 against the commit (+4-11%
-  instructions until it gets a per-type sort key). tsgo's own baselines are not an oracle (they skip 1861 configs,
+  with defaults, libs and deprecations alone. Stable ordering landed 2026-10-07 (suite 14269 / 14969, a cached
+  per-type sort key, +0.9-2.1% instructions); session B deletes the creation-order machinery. tsgo's own baselines are not an oracle (they skip 1861 configs,
   rework JS, keep source quotes). Deprecated options (es5, amd, outFile...) stay supported: 6.0 still tests them.
 - **The missing-diagnostic oracles are drained to their noise floor**; rerun them after the switch rather than
   mining them further on 5.8.
@@ -109,8 +109,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
   resolver's locked caches). Name resolution shards per file (plan 45 stages 1-2); declare/link are serial.
 
 ## Risks / concerns
-- Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order by
-  type id, origins, truncation). The interned design can mimic creation order; keep it that way when adding types.
+- Exact-match oracle: `types`/`symbols` baselines require tsc's type printing (alias preservation, union order,
+  origins, truncation). Union order is tsc 6's compareTypes now (`ty/order.c`); type ids still break its last ties
+  (fresh/regular literals, same-symbol anonymous types, conditional roots), so creation order still matters a little.
 - Perf: deep generic code is where tsc's caches and shortcuts matter (the 2026-09-27 check-up's wins were all tsc
   caches tttt lacked: key-property maps, reverse mapped types, containsType). Checks accumulate cost silently between
   perf sessions (+7% over 09-25..09-27). Wall times drift with the machine: compare callgrind counts across sessions.

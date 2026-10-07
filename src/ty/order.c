@@ -276,9 +276,9 @@ static u32 origin_rank(Ty const* o) {
     return o->kind == TY_KEYOF ? RANK_INDEX : o->kind == TY_UNION ? RANK_UNION : RANK_INTERSECTION;
 }
 
-// A type's sort key: a prefix of what compare_slow() orders by, so that most comparisons are one integer compare.
+// A type's sort key: a prefix of what ty_compare_tie() orders by, so that most comparisons are one integer compare.
 // Bits 63-59 the rank, bit 58 set if unnamed, 57-1 a 57 bit prefix of the next criterion (0 when there's none cheap:
-// then equal keys go to compare_slow()), bit 0 set (computed). Different keys must order like compare_slow()
+// then equal keys go to ty_compare_tie()), bit 0 set (computed). Different keys must order like ty_compare_tie()
 enum { KEY_RANK_SHIFT = 59, KEY_UNNAMED = 1ull << 58, KEY_MASK = (1ull << 57) - 1 };
 
 // The first 7 bytes, big-endian (memcmp order, a shorter string first as its padding is 0)
@@ -296,6 +296,8 @@ static u64 object_prefix(ObjectSym s) {
 }
 
 static u64 compute_key(Ty const* t) {
+    // (stableTypeOrdering false: creation order, tsc 5's type ids)
+    if (!compiler_options()->stable_type_ordering) return (u64)t->id << 1 | 1;
     u64 rank = ty_order_rank(t);
     u64 key = rank << KEY_RANK_SHIFT | 1;
     TypeName n = type_name(t);
@@ -339,7 +341,7 @@ static u64 compute_key(Ty const* t) {
     return key | (prefix & KEY_MASK) << 1;
 }
 
-static u64 order_key(Ty const* t) {
+u64 ty_order_key(Ty const* t) {
     u64 k = t->order_key;
     if (k) return k;
     k = compute_key(t);
@@ -347,30 +349,26 @@ static u64 order_key(Ty const* t) {
     return k;
 }
 
-static int compare_slow(Ty const* a, Ty const* b, u32 ra);
-
-int ty_compare(Ty const* a, Ty const* b) {
-    if (a == b) return 0;
-    u64 ka = order_key(a), kb = order_key(b);
-    if (ka != kb) return ka < kb ? -1 : 1;
-    return compare_slow(a, b, (u32)(ka >> KEY_RANK_SHIFT));
-}
-
 // The whole of compareTypes, for types whose keys are equal (same rank)
-static int compare_slow(Ty const* a, Ty const* b, u32 ra) {
-
-    // tsc's compareTypeNames
-    TypeName na = type_name(a), nb = type_name(b);
-    if (na.named && nb.named && na.identity == nb.identity) {
-        if (a->alias && a->alias == b->alias) {
-            int c = cmp_tylist(a->alias_args, b->alias_args);
+int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
+    u32 ra = (u32)(key >> KEY_RANK_SHIFT);
+    // tsc's compareTypeNames (equal keys: both named or both not)
+    if (!(key & KEY_UNNAMED)) {
+        TypeName na = type_name(a), nb = type_name(b);
+        if (na.identity == nb.identity) {
+            if (a->alias && a->alias == b->alias) {
+                int c = cmp_tylist(a->alias_args, b->alias_args);
+                if (c) return c;
+            }
+        } else {
+            int c = cmp_sv(na.name, nb.name);
             if (c) return c;
         }
-    } else if (na.named != nb.named) {
-        return na.named ? -1 : 1;
-    } else if (na.named) {
-        int c = cmp_sv(na.name, nb.name);
+    } else if (ra == RANK_STRING_LITERAL) {
+        // (The common tie: a long common prefix)
+        int c = a->literal.string == b->literal.string ? 0 : cmp_sv(atom_sv(a->literal.string), atom_sv(b->literal.string));
         if (c) return c;
+        return a->id < b->id ? -1 : 1;
     }
 
     switch ((TyKind)a->kind) {

@@ -151,49 +151,77 @@ static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
     free(moved);
 }
 
-// tsc 6's getNamedMembers with stableTypeOrdering: properties in declaration order (file order, then position), those
-// without a declaration last (PROTOTYPE: by name; tsc then by symbol id)
-static bool prop_order_pos(Prop const* prop, u32* file, char const** at) {
-    while (prop && !span_valid(prop->decl->name_span)) prop = prop->target;
+// tsc 6's getNamedMembers (stableTypeOrdering): properties in the order of their first declarations (file order, then
+// position), those without one last by name (compareSymbols)
+static bool prop_order_pos(Prop const* prop, u32* file, u32* offset) {
+    while (prop && !prop->decl->decl_span_count && !span_valid(prop->decl->name_span)) prop = prop->target;
     if (!prop) return false;
-    Span s = prop->decl->decl_span_count ? prop->decl->decl_spans[0] : prop->decl->name_span;
-    if (!s.source) s = prop->decl->name_span;
+    Span s = prop->decl->decl_span_count && prop->decl->decl_spans[0].source ? prop->decl->decl_spans[0] : prop->decl->name_span;
+    if (!s.source) return false;
     *file = s.source->program_order;
-    *at = s.sv.buf;
+    *offset = (u32)(s.sv.buf - cstr_str(&s.source->contents));
     return true;
 }
 
-static int prop_cmp_stable(Prop const* a, Prop const* b) {
-    u32 fa = 0, fb = 0;
-    char const* pa = nullptr;
-    char const* pb = nullptr;
-    bool ha = prop_order_pos(a, &fa, &pa), hb = prop_order_pos(b, &fb, &pb);
-    if (ha && hb) {
-        if (fa != fb) return fa < fb ? -1 : 1;
-        if (pa != pb) return pa < pb ? -1 : 1;
-        return 0;
+typedef struct PropOrder {
+    u64 pos; // file << 32 | offset, UINT64_MAX without a declaration
+    Prop* prop;
+    u32 index; // (Stable)
+} PropOrder;
+
+static int prop_order_cmp(PropOrder const* a, PropOrder const* b) {
+    if (a->pos != b->pos) return a->pos < b->pos ? -1 : 1;
+    if (a->pos == UINT64_MAX) {
+        csview na = atom_sv(a->prop->name), nb = atom_sv(b->prop->name);
+        isize n = na.size < nb.size ? na.size : nb.size;
+        int c = n > 0 ? memcmp(na.buf, nb.buf, (size_t)n) : 0;
+        if (c) return c;
+        if (na.size != nb.size) return na.size < nb.size ? -1 : 1;
     }
-    if (ha != hb) return ha ? -1 : 1;
-    csview na = atom_sv(a->name), nb = atom_sv(b->name);
-    isize n = na.size < nb.size ? na.size : nb.size;
-    int c = n ? memcmp(na.buf, nb.buf, (size_t)n) : 0;
-    if (c) return c;
-    return na.size < nb.size ? -1 : na.size > nb.size;
+    return a->index < b->index ? -1 : a->index > b->index;
 }
 
 static void builder_sort_stable(MembersBuilder* builder) {
-    // (Insertion sort: stable, and the props are mostly in order already)
-    for (u32 i = 1; i < builder->props_count; i++) {
-        Prop* p = builder->props[i];
-        u32 j = i;
-        for (; j && prop_cmp_stable(builder->props[j - 1], p) > 0; j--) builder->props[j] = builder->props[j - 1];
-        builder->props[j] = p;
+    u32 n = builder->props_count;
+    if (n < 2 || !compiler_options()->stable_type_ordering) return;
+    PropOrder stack[32];
+    PropOrder* order = n <= c_arraylen(stack) ? stack : malloc(sizeof(PropOrder) * n);
+    panic_if(!order, "out of memory");
+    bool sorted = true;
+    for (u32 i = 0; i < n; i++) {
+        u32 file = 0, offset = 0;
+        bool has = prop_order_pos(builder->props[i], &file, &offset);
+        order[i] = (PropOrder){ has ? (u64)file << 32 | offset : UINT64_MAX, builder->props[i], i };
+        if (i && sorted) sorted = prop_order_cmp(&order[i - 1], &order[i]) < 0;
     }
+    if (!sorted) {
+        // (Bottom-up merge sort)
+        PropOrder* tmp = malloc(sizeof(PropOrder) * n);
+        panic_if(!tmp, "out of memory");
+        PropOrder* src = order;
+        PropOrder* dst = tmp;
+        for (u32 width = 1; width < n; width *= 2) {
+            for (u32 lo = 0; lo < n; lo += 2 * width) {
+                u32 mid = lo + width < n ? lo + width : n, hi = lo + 2 * width < n ? lo + 2 * width : n;
+                u32 a = lo, b = mid, o = lo;
+                while (a < mid && b < hi) dst[o++] = prop_order_cmp(&src[b], &src[a]) < 0 ? src[b++] : src[a++];
+                while (a < mid) dst[o++] = src[a++];
+                while (b < hi) dst[o++] = src[b++];
+            }
+            PropOrder* swap = src;
+            src = dst;
+            dst = swap;
+        }
+        for (u32 i = 0; i < n; i++) builder->props[i] = src[i].prop;
+        free(tmp);
+    }
+    if (order != stack) free(order);
 }
 
 // tsc's getNamedMembers lists a class's static members declared in the class first, then the others by declaration
 // (inherited ones, expandos), the synthetic `prototype`, which has no declaration, after them
 static void builder_prototype_last(MembersBuilder* builder) {
+    if (!compiler_options()->stable_type_ordering) return;
     for (u32 i = 0; i < builder->props_count; i++) {
         Prop* prop = builder->props[i];
         if (!(prop->flags & PROP_PROTOTYPE)) continue;
@@ -2292,6 +2320,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     MembersBuilder builder = {0};
     if (ty->declared.merged_value) {
         builder_add_merged_value(me, &builder, ty, ty->declared.merged_value);
+        builder_sort_stable(&builder);
         return builder_finish(me, &builder);
     }
     switch (ty->declared.kind) {
@@ -2450,6 +2479,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (prop) prop->decl->symbol = synthetic_default;
                 if (prop) builder_push(&builder, props, prop);
             }
+            builder_sort_stable(&builder);
             break;
 
         case TY_DECLARED_TUPLE_TARGET:
@@ -3114,6 +3144,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
             }
         }
     }
+    builder_sort_stable(&builder);
     Members* ret = (Members*)builder_finish(me, &builder);
     if (!generic) ret->expanded_from = mapped;
     ret->generic_keys_known = generic;

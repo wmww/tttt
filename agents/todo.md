@@ -12,14 +12,14 @@ tsgo 7.0.2 implements; plan 48).** Pass counts aren't comparable across the swit
 them, the sweep / `$ExpectType` / flagflip / mutation caches are tsc 5.8's: skip those tools in entries 2-5, and corpus
 numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built/local/tsc.js -p ...`).
 
-1. Done (planning, 2026-10-07): plan 48 rewritten from four prototypes. Switch prototype 92.3% against 6.0.3,
-   stable-ordering prototype 13220 -> 13790 against the commit; both saved in `agents/plans/48_prototypes/`.
+1. Done (planning, 2026-10-07): plan 48 rewritten from four prototypes (now applied: 75cb7ee6, a8ac7023).
 2. Done (execution, 2026-10-07): plan 48 stage 1. `thirdparty/tsc` at 4d4f005c (no `lib/` LKG: scripts use
    `built/local/`), suite **13683 / 14969** (13220 after the prototype patches, +463 from messages, import types
    and module symbols named by module specifier, omitted elements). `48_lost.txt`: 9 true (strict-by-default
    exposure) + 796 re-baselined (612 types only).
-3. **Execution: plan 48 stage 2 session A**, stable type ordering productionized (`48_prototypes/ordering`, a per-type
-   sort key to get the +4-11% instructions back, member ordering).
+3. Done (execution, 2026-10-07): plan 48 stage 2 session A, stable type ordering with a cached sort key per type:
+   suite **14269 / 14969** (0 lost), instructions +0.9% tsc, +1.2-2.1% react/valibot/drizzle/excalidraw/
+   tanstack-router/zod, vue -2% (plan 48 has the details and what's left for session B).
 4. **Execution: fan-out** (plan 48 stage 3: four sub-agents on `48_lost.txt` and failstats buckets, disjoint lists).
 5. **Execution: plan 48 stage 2 session B**, delete the creation-order machinery piece by piece, then `48_lost.txt`.
 6. **Execution: plan 48 stage 4**, the other oracles' caches on the new tsc (sweep ~40 min: commit first), drain cheap.

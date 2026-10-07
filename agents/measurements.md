@@ -10,6 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Stable type ordering (2026-10-07, eleventh window's todo entry 3, plan 48 stage 2 session A)
+Suite 13683 -> **14269 / 14969** (errors 14649, symbols 14876, types 14467; 0 lost). Corpora (`--all-errors`, 4
+checkers): tsc, tsc-src, zod, xstate, typescript-eslint 0; type-fest, react, drizzle, vue 1 (vue 2 with `--checkers
+1`: bugs/type_core.md "Variance measurement order"); excalidraw 3, nest 4, valibot 1 -> **5** (4 TS2344 in
+keyof.test-d.ts the commit's tsc reports too), effect 5, tanstack-router 28, vscode 533, webpack 5297. threadcheck
+identical (tsc, webpack, vue, effect); checkerdiff modulo quotes 0 everywhere but vue's case above. Instructions
+(callgrind, 54214e94 -> end): tsc 4.703 -> 4.743 (+0.9%), type-fest 3.095 -> 3.098, valibot 4.385 -> 4.467 (+1.9%),
+react 1.502 -> 1.534 (+2.1%), nest 1.144 -> 1.151, webpack 5.135 -> 5.133, zod 4.737 -> 4.796 (+1.2%), xstate 2.943
+-> 2.965, drizzle 8.091 -> 8.222 (+1.6%), vue 7.007 -> 6.867 (-2.0%), effect 9.510 -> 9.561, vscode 32.728 -> 32.912,
+excalidraw 5.113 -> 5.193 (+1.6%), tanstack-router 4.372 -> 4.430 (+1.3%). The prototype's cost (tsc +11.5%) was the
+uncached comparator and an O(n^2) member sort. Checker arena +1% (`Ty.order_key`).
+
 ## Retarget to TypeScript 4d4f005c (2026-10-07, eleventh window's todo entry 2, plan 48 stage 1)
 **Not comparable with the sections below** (new suite, libs, defaults). Suite **13683 / 14969** (errors 14588, symbols
 14858, types 13883). Corpora with their current (5.x-era) pins, tttt only (tsc's numbers under 6.0.3 are in plan 48):
