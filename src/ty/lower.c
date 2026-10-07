@@ -1888,8 +1888,10 @@ Ty const* ty_type_of_symbol(Checker* me, Symbol const* symbol) {
             }
             step = next;
             // (A default import that is what `export =` assigns: the `export =` alias, which may name a namespace import)
-            if (item && !item->source_symbol && item->tag == PORT_IMPORT_DEFAULT && item->module_ref && target) {
-                Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
+            // (So is `export as namespace N` of a module with `export =`: N is the module, what it assigns)
+            bool as_namespace = item && item->tag == PORT_EXPORT_AS_NAMESPACE && item->decl_name.source && item->decl_name.source->scope;
+            if (item && !item->source_symbol && ((item->tag == PORT_IMPORT_DEFAULT && item->module_ref) || as_namespace) && target) {
+                Symbol* module = as_namespace ? item->decl_name.source->scope->container : binder_module_of_ref(symbol->binder, item->module_ref);
                 Symbol* export_equals = module ? symbol_get_export(module, c_sv("export=")) : nullptr;
                 if (export_equals && (export_equals->flags & SYMBOL_ALIAS) && symbol_resolve_alias(export_equals) == target) {
                     step = export_equals;

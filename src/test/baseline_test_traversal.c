@@ -3391,7 +3391,9 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
         bool type_twin = local && local != my identifier.target && my identifier.target->exported &&
             !(local->flags & SYMBOL_VALUE) && (local->flags & SYMBOL_TYPE);
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, type_twin ?
-            ty_declared_type_of(current_checker, local) : ty_type_of_symbol(current_checker, my identifier.target));
+            ty_declared_type_of(current_checker, local) : ty_type_of_symbol(current_checker,
+                // (Through the alias: `import * as ns` of an `export =` module can be a clone, getTypeOfAlias)
+                my identifier.symbol && (my identifier.symbol->flags & SYMBOL_ALIAS) ? my identifier.symbol : my identifier.target));
     } else {
         // tsc prints an expression's regular type (getRegularTypeOfExpression)
         baseline_test_case_add_type_recursive(ctx, expr_outer_span(me), my inner_span, ty_regular(current_checker, expr_get_type(me)));

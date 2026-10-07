@@ -7723,7 +7723,7 @@ const baselines = {
     'crashDeclareGlobalTypeofExport': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'crashInEmitTokenWithComment': {
         errors: true,
