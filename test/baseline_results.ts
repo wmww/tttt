@@ -14231,7 +14231,7 @@ const baselines = {
         types: true,
     },
     'exportAssignmentExpressionIsExpressionNode': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

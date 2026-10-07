@@ -1634,6 +1634,17 @@ static Ty const* with_synthetic_default(Checker* me, Ty const* type, bool spread
         OBJECT_SYNTHETIC);
 }
 
+// tsc's cloneTypeAsModuleType of a type that gets no synthetic default: its members as they are, in a type of its
+// own (printed structurally, not by the symbol it was)
+static Ty const* module_type_clone(Checker* me, Ty const* type) {
+    if (type->kind != TY_ANONYMOUS && type->kind != TY_DECLARED && type->kind != TY_REFERENCE) return nullptr;
+    Members const* members = ty_members(me, type);
+    if (members->call_count || members->construct_count) return nullptr;
+    ObjectLiteralProp* props = arena_new_n(&my arena, ObjectLiteralProp, members->prop_count + 1);
+    for (u32 i = 0; i < members->prop_count; i++) props[i] = (ObjectLiteralProp){ .reuse = members->props[i] };
+    return ty_object_literal(me, props, members->prop_count, members->index, members->index_count, OBJECT_SYNTHETIC);
+}
+
 // `import * as ns` of a module with `export =` (tsc's resolveESModuleSymbol): what it assigns, with a synthetic
 // `default` under esModuleInterop when that is something to import by default; an ES module's import of a JSON
 // module has nothing but the default (isOnlyImportableAsDefault). Null if it is the assigned value as it is
@@ -1689,8 +1700,28 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     bool callable = members && (members->call_count || members->construct_count);
     bool has_default = members && ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
     if (!callable && !has_default && !esm_cjs) return nullptr;
-    // A module that says it's an ES module has no synthetic default (tsc's canHaveSyntheticDefault)
+    // A module that says it's an ES module has no synthetic default (tsc's canHaveSyntheticDefault), nor does a
+    // declaration file whose `export =` value has a `default` that a module declares (`export default`: resolveExportByName
+    // finds the property, isSyntacticDefault)
     bool synthetic = !symbol_get_export(module, c_sv("__esModule"));
+    if (synthetic && has_default && (!target || source_file_reads_as_declaration(target))) {
+        Prop const* found = ty_get_prop(me, apparent, checker_atom(me, c_sv("default")));
+        while (found && found->target) found = found->target;
+        Symbol const* declared = found && found->decl ? found->decl->symbol : nullptr;
+        // (A module's type has its exports resolved: the `default` export of the module that declares it says)
+        SourceFile const* declaring = declared && declared->decl_count ? declared->decls[0].full.source : nullptr;
+        Symbol* declaring_module = declaring && declaring->scope ? declaring->scope->container : nullptr;
+        Symbol const* exported = declaring_module && declaring_module->is_module ? symbol_get_export(declaring_module, c_sv("default")) : nullptr;
+        bool syntactic = declared && (declared->is_default_export || (declared->flags & SYMBOL_ALIAS));
+        if (!syntactic && exported && (exported->is_default_export || (exported->flags & SYMBOL_ALIAS))) {
+            syntactic = symbol_resolve_alias((Symbol*)exported) == declared || exported == declared;
+        }
+        if (syntactic) {
+            Ty const* clone = module_type_clone(me, type);
+            if (clone) return clone;
+            synthetic = false;
+        }
+    }
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
     if (!structured) return with_synthetic_default(me, type, false);
     return synthetic ? with_synthetic_default(me, type, true) : nullptr;
