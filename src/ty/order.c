@@ -226,6 +226,11 @@ static ObjectSym object_symbol(Ty const* t) {
             if (t->anonymous.is_reverse) return (ObjectSym){0};
             if (t->anonymous.merged_value) return sym_of_symbol(t->anonymous.merged_value);
             if (t->anonymous.function) return sym_of_span(t->anonymous.function->full_span, t->anonymous.function);
+            // (An overloaded method's type: its symbol, the overloads', by the first declaration, so `find` of
+            // Array<never> sorts before ReadonlyArray<W>'s like in tsc)
+            if (t->anonymous.overloads && t->anonymous.overload_count) {
+                return sym_of_span(t->anonymous.overloads[0]->full_span, t->anonymous.overloads);
+            }
             if (t->anonymous.node) {
                 TypeNode const* n = t->anonymous.node;
                 if (n->tag == TYPE_INTERFACE) return sym_of_span(n->interface.span, n);
