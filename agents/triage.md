@@ -281,6 +281,34 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     `TSchema extends ... ? IssueDotPath<TSchema> : string` against keyof any (Record's K, flatten.ts:41), ~13 ms;
     legitimate work tsc does too, but tttt's relation through IssueDotPath's constraint may be slower than needed.
 
+## Oracle leftovers: expecttypes 68621 / 68640, sweep 8594 / 8595 (agent B, after d2988399)
+- sweep: react-intl-redux's `lib: [..., "esnext.intl"]` without es2021.intl makes lib.esnext.intl.d.ts:26 reference
+  DateTimeRangeFormatPart, TS2552 in tsc. tttt never checks default lib files (tsc does unless skipDefaultLibCheck);
+  only visible with an incoherent lib list, checking every lib file would cost every project.
+- map-to-obj (2): `id(new Map([["a", 1]]))` with `id<K extends string>(m: Map<K, V>)`: tsc's return mapper for the
+  inner call comes from the contextual type with the outer K as createOuterReturnMapper has it (nothing inferred:
+  its constraint string), so "a" widens; tttt's inner return inference maps the inner K to the outer K, whose
+  primitive constraint keeps "a" (Map<"a", ...>). Instantiating the return source with the outer's defaults/constraints
+  (infer_type_arguments' `return_source`) fixes it but cost xstate +1.8%, valibot +1.8% even gated to primitive
+  constraints: dropped, needs a cheaper formulation.
+- ember__service (2, also v3): an object literal method's literal return ("") widens when the call has two overloads
+  and the first round (subtype) fails on `this`: the return type gets computed (and memoized) during that round
+  without the "own contextual signature" that keeps the literal. Repro: `declare class Core { constructor(p?: object);
+  static extend<S, I>(): ECC<I>; static extend<S, I, T1 extends {[k: string]: any}>(this: S & ECC<I>, a: T1):
+  ECC<T1 & I> }` with `ECC<T> = (new (p?: object) => T) & (new (...a: any[]) => T)`, `new (Core.extend({ m() { return
+  ""; } }))().m()` is "" in tsc.
+- babel__traverse (4) and babel__helper-plugin-utils (2): with @babel/types unresolved, a contextual type made of
+  `{ [k: string]: H<t.Node> } & { [k: string]: H<t.Aliases> }` (H a function | object union) gives a method parameter
+  NodePath<t.Aliases> in tsc, NodePath<t.Node> in tttt: which unresolved (any-flagged, tsc's alias error types) member
+  survives the intersection/union of contextual signatures.
+- node (4, all versions): `[value: number] | [value: number]`: tsc's tuple targets are keyed by their labels'
+  declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the label names, so two tuples from different
+  declarations collapse into one.
+- Display only: core-object `MethodNames<{...}>` (tsc keeps the alias of an indexed mapped type, tttt resolves it),
+  webpack-config-utils `DefinedObjKeys<...>` likewise, redux-saga-test-engine `Effect<ThrowErrorKey, ...>` (tttt prints
+  the alias of `typeof throwErrorKey`, a literal, where tsc prints the literal; not reproduced in a single file),
+  knockout.mapping union order (1).
+
 ## Corpora re-pin (plan 48 stage 5): effect
 - effect stays at e730f59d (v3 branch head, v3.22.2, upstream on TypeScript 5.8.3): main is Effect 4 on TypeScript
   ^7.0.2 (tsgo, `@effect/tsgo` patch) and isn't clean under tsc 6: its packages/effect/src alone gives 2 TS2345
