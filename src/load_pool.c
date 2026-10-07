@@ -50,9 +50,10 @@ typedef struct LoadPool {
     double wait_ms, busy_ms, started_at, helped_ms;
 } LoadPool;
 
+// (Address space only: pages are committed as the stack grows)
 size_t worker_stack_size(void) {
     struct rlimit limit;
-    size_t stack = 8u << 20;
+    size_t stack = 64u << 20;
     if (!getrlimit(RLIMIT_STACK, &limit) && limit.rlim_cur != RLIM_INFINITY && limit.rlim_cur > stack) stack = limit.rlim_cur;
     if (stack > (256u << 20)) stack = 256u << 20;
     return stack;

@@ -738,8 +738,7 @@ static void reexec_with_huge_pages(char const* const* argv) {
 #endif
 }
 
-int main(int argc, const char** argv) {
-    reexec_with_huge_pages(argv);
+static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
     Options opts = { .paths = argv, .checkers = 4, .threads = cores < 1 ? 1 : cores > 4 ? 4 : (u32)cores };
     for (int i = 1; i < argc; i++) {
@@ -842,4 +841,28 @@ int main(int argc, const char** argv) {
     }
 
     return ret;
+}
+
+typedef struct { int argc; const char** argv; int ret; } MainArgs;
+
+static void* run_thread(void* args) {
+    MainArgs* a = args;
+    a->ret = run(a->argc, a->argv);
+    return nullptr;
+}
+
+// The checker recurses per nesting level, and tsc's tail-recursive conditional types (1000 steps of `A<...> extends X ?
+// ... : A<...>`, type-fest's IntRange) recurse here too: the main thread's 8 MB isn't enough, so everything runs on a
+// thread with the workers' stack size
+int main(int argc, const char** argv) {
+    reexec_with_huge_pages(argv);
+    MainArgs args = { argc, argv, 1 };
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setstacksize(&attr, worker_stack_size());
+    pthread_t thread;
+    panic_if(pthread_create(&thread, &attr, run_thread, &args), "couldn't start the main thread");
+    pthread_join(thread, nullptr);
+    pthread_attr_destroy(&attr);
+    return args.ret;
 }

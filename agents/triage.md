@@ -263,3 +263,16 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     `Required<ExcalidrawProps>["onExport"]` (returns `AsyncGenerator<OnExportProgress> | MaybePromise<void>`): tttt
     widens the yielded object literals' `type: "progress"` to string, i.e. the yield expressions aren't contextually
     typed by the generator's contextual return type through the union/generic call.
+
+## Corpora re-pin (plan 48 stage 5): type-fest, valibot
+- type-fest @ e9f614f1 (v5.10.0, upstream on ^5.9.2; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 6. The SIGSEGV the
+  re-pin found (IntRange/Replace: tsc's 1000-step conditional tail loop is real recursion in tttt,
+  ty_instantiate_tail -> ty_conditional, ~16 MB of stack) is fixed by running `main` on a 64 MB thread. Left:
+  - Homomorphic mapped types over tuples print/relate as object types `{ 0: number; 1?: string; }` (TS2345 x2 in
+    rename-keys.ts:272, set-required-deep.ts:55; TS2379 in schema.ts:273): looks like a mapped type over a tuple (or
+    an intersection/union containing one) not producing a tuple. Repro from SetRequiredDeep / RenameKeys.
+  - TS2345 unwrap-partial.ts:67: `(string | undefined)[]` vs `string[]`, UnwrapPartial<Partial<string[]>> (the
+    homomorphic `?` modifier on an array removed again by `-?`: tsc strips the undefined it added).
+  - TS2578 x2 in internal/apply-default-options.ts:76,86: the `@ts-expect-error`ed line has no error in tttt.
+  - Peak RSS 2.3 GB (IntRange<0, 999> tests): check in the perf session.
+- valibot @ d4da61a0: tttt 4, TS2339 x3 on `this.cache` in cache/cacheAsync, TS2322 on pipeAsync's variadic tuple.
