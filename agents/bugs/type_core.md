@@ -260,15 +260,35 @@ fails types in both configurations.
   `type: ToolResultContentType.EmbeddedResource` widened to the enum, no member of the declared union took it, and
   the cached assignment reduction was the declared union. It looked like an electron trigger because electron's
   typings bring @types/node, which is what makes `import assert from 'assert'` resolve.)
-- valibot/nosnc -TS2578 x2 (forward.ts:51, forwardAsync.ts:55): iterating `path: ValidPath<TInput, TPath>` (a
-  deferred conditional) gives tsc a generic key (`KeyOf<TInput> | KeyOf<TInput[...]> | ...`), so `unknown[key]` is no
-  error; tttt iterates the conditional's constraint and gets `string | number` (TS7053). Iteration types of a
-  deferred conditional vs tsc's apparent type / base constraint.
+- valibot/nosnc -TS2578 x2 (forward.ts:51, forwardAsync.ts:55): `for (const key of path)` with `path: ValidPath<TInput,
+  TPath>` (= `TPath extends LazyPath<TInput, TPath> ? TPath : LazyPath<TInput, TPath>`, deferred). tsc's key is
+  generic, `KeyOf<TInput> | KeyOf<TInput[KeyOf<TInput> & keyof TInput]> | (KeyOf<TInput> & keyof TInput)` (tsctypeat;
+  it prints `string | number` only where an annotation substitutes the constraint), so `pathInput[key]` on unknown
+  isn't TS7053 and the `@ts-expect-error` is unused; tttt's key is `string | number`. tsc iterates the conditional's
+  apparent type, its constraint: the true branch narrowed by the extends type and the false branch LazyPath's tuples,
+  whose elements stay generic (object types are their own base constraint). tttt's iteration resolves all the way to
+  primitives. Same root as the "conditional base-constraint fallback" item above. Repro: a project with one file
+  importing `RequiredPath, ValidPath` from valibot's `methods/forward/types.ts`, strictNullChecks false, iterating
+  `path` and indexing an `unknown`.
 - xstate/eopt +TS2322 input.test.ts:272: generic Spawner signatures compared, `options` intersections that print the
   same are unrelated in tttt (`input?: number` & `input: unknown` reads number | undefined against number).
 - xstate/sloppy +TS2589 graph/utils.ts:91 (`snapshot.getMeta()[id]`, Record<StateId<any> & string, ..>): a
   self-contained probe gives TS2589 on both sides, so it depends on which instantiations tsc has cached by then. Low
   value; drop unless it spreads.
+- webpack/unused -TS6133 x5, -TS6196 x5 (Compilation.js:117/151/159/160, css/CssModule.js:11, json/JsonModule.js:16,
+  module/ModuleFactory.js:8/10, template/DependencyTemplate.js:11/15): JSDoc `@import`ed names used only in
+  `@property` tags of a `@typedef {object}` or in a `@callback`'s `@param`/`@returns`. tsc marks a JSDoc type
+  reference's alias as used only when the reference is resolved, and those are resolved lazily: a typedef's members
+  only when something needs them (a structural comparison, a property access), a callback's signature only when it's
+  called or compared. Probe: `/** @import { RO as A1, RO as A3 } from "./a" */`, `@typedef {object} Data` with
+  `@property {A1=} ro`, `@callback Cb` with `@param {A3} x`, a function taking `@param {Data} d @param {Cb} c` and
+  returning them: tsc says A3 unused, and A1 too unless something resolves Data's members (an array literal of the
+  parameters does). tttt marks references at name resolution (several_types.c `unused_mark_referenced`), eagerly. A
+  laziness artifact of tsc's: matching it means marking JSDoc typedef/callback-body references when their types are
+  resolved. Low value unless more corpora show it.
+- (Fixed 2026-10-07: webpack/nuia TS2488 -1/+1, by where a union is first asked; vscode/nosft copilotAgent.ts:5860
+  TS2339, overloaded method types in the stable order.) excalidraw/nuia's TS2488 -2/+1 is still the array-literal
+  identity mechanism (above in triage, tsc's `[0, 0]` its own type object).
 - (Fixed 2026-10-07: vscode/eopt TS7006 x18, vscode/nonia resultCodeEditorView TS2339 x4, vue/nir TS7030.)
 - Perf lead, not looked at: 9751c955 (TS2344 on deferred conditional arguments) costs valibot ~0.75%, mostly one
   relation (`TSchema extends ... ? IssueDotPath<TSchema> : string` against keyof any, flatten.ts:41, ~13 ms): tttt's
