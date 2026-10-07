@@ -14,7 +14,7 @@ shape, and a missing code that tttt reports as another code on the same line as 
   ./flagflip.py --cells            # per cell: tsc's count, missing, spurious
   ./flagflip.py --last ...         # reuse the last run's tttt output
 """
-import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, time
+import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, tempfile, time
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, ROOT)
@@ -94,9 +94,15 @@ def cache_path(corpus, flag):
 def run_tsc(corpus, flag):
     cwd, project = corpus_cwd(corpus)
     start = time.time()
-    proc = subprocess.run(['node', '--max-old-space-size=12288', os.path.join(ROOT, 'thirdparty/tsc/built/local/tsc.js'), '-p',
-                           project, '--noEmit', '--pretty', 'false', *FLAGS[flag]], cwd=cwd, capture_output=True,
-                          text=True)
+    tsc = ['node', '--max-old-space-size=12288', os.path.join(ROOT, 'thirdparty/tsc/built/local/tsc.js'), '-p', project]
+    # An incremental (or composite) project writes its .tsbuildinfo even with --noEmit, and the next cell would reuse
+    # its diagnostics (tsc's es2015 cell got es5's TS2802s): each run gets a build info file of its own
+    config = json.loads(subprocess.run([*tsc, '--showConfig'], cwd=cwd, capture_output=True, text=True).stdout or '{}')
+    options = config.get('compilerOptions', {})
+    with tempfile.TemporaryDirectory() as tmp:
+        extra = ['--tsBuildInfoFile', os.path.join(tmp, 'tsbuildinfo')] if options.get('incremental') or options.get('composite') else []
+        proc = subprocess.run([*tsc, '--noEmit', '--pretty', 'false', *extra, *FLAGS[flag]], cwd=cwd,
+                              capture_output=True, text=True)
     diags = []
     for line in proc.stdout.split('\n'):
         m = TSC_DIAG.match(line)
