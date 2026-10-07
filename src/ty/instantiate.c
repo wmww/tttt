@@ -206,6 +206,13 @@ static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo cons
     return variable;
 }
 
+// tsc's getHomomorphicTypeVariable: the type parameter a mapped type maps over (`keyof Helper<T>` of a mapped Helper
+// lowers to `keyof T`), null if it isn't homomorphic
+Ty const* ty_mapped_homomorphic_variable(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS) return nullptr;
+    return homomorphic_variable(me, ty, nullptr);
+}
+
 // Whether `ty` instantiated with `mapper` may be something a homomorphic mapped type over it maps other than as an
 // object: a union, an array or tuple, a primitive. Doesn't instantiate object types to find out: an instance of a
 // homomorphic mapped type is one of those only if its own type variable becomes one

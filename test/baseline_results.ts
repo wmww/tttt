@@ -70938,7 +70938,7 @@ const baselines = {
     'keyofAndIndexedAccess': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'keyofAndIndexedAccess2': {
         errors: true,

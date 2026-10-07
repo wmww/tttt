@@ -3634,7 +3634,11 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
                 // alias to getUnionType, `type T05 = T02<A>` with `T02<T> = keyof (T & B)`, the union `keyof T | "b"`)
                 bool union_body = links->declared_state == LAZY_STATE_DONE && links->declared_type->kind == TY_UNION &&
                     ret->kind == TY_UNION;
-                renames = object ? !is_homomorphic_mapped_node(object_node) || ret->kind == TY_UNION :
+                // (Homomorphic as tsc's getHomomorphicTypeVariable sees the lowered constraint when it's known:
+                // `[K in keyof Helper<T>]` with a mapped Helper is `keyof T`)
+                bool homomorphic = declared_object && declared_object->anonymous.node == object_node ?
+                    ty_mapped_homomorphic_variable(me, declared_object) != nullptr : is_homomorphic_mapped_node(object_node);
+                renames = object ? !homomorphic || ret->kind == TY_UNION :
                     ret->alias == canonical(me, decl) || union_body;
                 // An indexed access distributed over a union index is that union by the new name (getIndexedAccessType),
                 // and so is a conditional type distributed over a union (getConditionalTypeInstantiation's mapTypeWithAlias)
