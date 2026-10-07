@@ -1920,7 +1920,8 @@ bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth) {
     }
 }
 
-// tsc's someType(ty, isMutableArrayLikeType): whether some member is assignable to `any[]` (null: false)
+// tsc's someType(ty, isMutableArrayLikeType): whether some member is assignable to `any[]` (null, undefined and any:
+// false, tsc 6: `[...] as const` returned into an `any` context stays readonly)
 static bool ty_some_mutable_array_like_at(Checker* me, Ty const* ty, u32 depth) {
     if (!ty) return false;
     if (ty->kind == TY_UNION) {
@@ -1929,7 +1930,7 @@ static bool ty_some_mutable_array_like_at(Checker* me, Ty const* ty, u32 depth) 
         }
         return false;
     }
-    if (ty->flags & (TYF_NULL | TYF_UNDEFINED | TYF_ANY)) return (ty->flags & TYF_ANY) != 0;
+    if (ty->flags & (TYF_NULL | TYF_UNDEFINED | TYF_ANY)) return false;
     // (Of the apparent type: a type parameter's constraint)
     if (ty->kind == TY_TYPE_PARAM) return depth < 8 && ty_some_mutable_array_like_at(me, ty_param_constraint(me, ty), depth + 1);
     return ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), false), TY_RELATION_ASSIGNABLE);

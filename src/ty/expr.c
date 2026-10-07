@@ -1391,7 +1391,7 @@ static void set_contextual_return(Checker* me, FunctionImpl const* function, Sig
     // (A `void` context says nothing about what a function returns, except an async one's: its return expressions are
     // contextually typed `void | PromiseLike<void>`, so `return new Promise(r => r())` infers `void`: tsc's
     // getContextualTypeForReturnExpression)
-    u32 ignored = function->is_async && !function->is_generator ? TYF_ANY : TYF_ANY | TYF_VOID;
+    u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
     if (ret && !(ret->flags & ignored)) *intern_slot(me, &my links, key, 2) = ret;
 }
 
