@@ -3094,15 +3094,14 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         }
         if (!(ret->flags & TYF_ANY)) {
             // What the reduction keeps is decided with the default still fresh (tsc unions first and widens after): a
-            // fresh `{}` is no strict supertype of `{ flag: X }`, so `[{ flag } = {}]` keeps both
+            // fresh `{}` is no strict supertype of `{ flag: X }`, so `[{ flag } = {}]` keeps both (an object literal
+            // inside an array literal default too: `[b, { x }] = ["s", { y: false }]` keeps the parent's `x`)
             Ty const* fresh[2] = { types[0], default_type };
             Ty const* reduced = ty_union_subtype_reduced(me, fresh, 2);
             TyList members = reduced->kind == TY_UNION ? reduced->composite.types : (TyList){ .data = &reduced, .len = 1 };
             bool kept_default = false;
             for (u32 i = 0; i < members.len && !kept_default; i++) kept_default = members.data[i] == default_type;
-            if (kept_default && types[1] != default_type && default_type->kind == TY_ANONYMOUS &&
-                ty_is_fresh_object(default_type)
-            ) {
+            if (kept_default && types[1] != default_type) {
                 // (The kept members, the default widened)
                 TyBuf parts = {0};
                 for (u32 i = 0; i < members.len; i++) {
