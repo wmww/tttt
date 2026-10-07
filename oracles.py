@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
+the suite (saves test/baseline_results.ts like ./fasttest.sh -s, then the components lost/gained against git HEAD's),
+every pinned corpus, the DefinitelyTyped sweep, `$ExpectType` and flagflip.
+
+  ./oracles.py                  # everything (~6 min)
+  ./oracles.py --quick          # suite and corpora only (~1 min)
+  ./oracles.py --only sweep,expect
+The per-oracle scripts keep their --last caches per tree name in /tmp, so worktrees can run this side by side.
+"""
+import argparse, os, re, subprocess, sys, time
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, ROOT)
+CORPORA = ['tsc', 'tsc-src', 'type-fest', 'valibot', 'react', 'nest', 'webpack', 'zod', 'zod-root', 'xstate', 'drizzle',
+           'vue', 'effect', 'vscode', 'excalidraw', 'tanstack-router', 'typescript-eslint']
+# What tsc itself reports there (the rest are clean)
+EXPECTED = {'zod-root': 53, 'effect': 3}  # effect: plan 19's known TS2578
+
+def run(cmd, timeout=1800):
+    p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+    return p.stdout + p.stderr
+
+def suite():
+    out = run(['./fasttest.sh', '-s'])
+    m = re.search(r'(\d+)\D*passed', re.sub(r'\x1b\[[0-9;]*m', '', out))
+    diff = run(['./resultdiff.py'])
+    lost = re.search(r'lost: (\d+) tests, (\d+) components', diff)
+    gained = re.search(r'gained: (\d+) tests, (\d+) components', diff)
+    print(f'suite: {m.group(1) if m else "?"} passed, lost {lost.group(2) if lost else "?"} components '
+          f'({lost.group(1) if lost else "?"} tests), gained {gained.group(2) if gained else "?"}', flush=True)
+    names = [l.strip() for l in diff.split('gained:')[0].splitlines()[1:] if l.startswith('  ')]
+    for n in names[:40]: print('   ', n)
+    if len(names) > 40: print(f'    ... ({len(names) - 40} more: ./resultdiff.py --lost)')
+
+def corpora():
+    rows = []
+    for c in CORPORA:
+        out = run(['./realworld.py', '--corpus', c, '--no-build'])
+        m = re.search(r'(\d+) diagnostics', out)
+        n = int(m.group(1)) if m else None
+        crash = '' if re.search(r'exit [01],', out) else ' (' + (out.splitlines() or ['?'])[0][:40] + ')'
+        rows.append(f'{c} {n if n is not None else "?"}{crash}' + ('' if n == EXPECTED.get(c, 0) else ' !'))
+    print('corpora: ' + ', '.join(rows), flush=True)
+
+def sweep():
+    out = run(['./sweep.py', '--no-build', '-n', '5'])
+    m = re.search(r'match \d+, spurious \d+, missing \d+, both \d+, crash \d+, timeout \d+', out)
+    print('sweep: ' + (m.group(0) if m else '?'), flush=True)
+
+def expect():
+    out = run(['./expecttypes.py', '--no-build', '-n', '5'])
+    m = re.search(r'(\d+) match \(', out)
+    c = re.search(r'(\d+) crash/timeout', out)
+    print(f'expecttypes: {m.group(1) if m else "?"} match, {c.group(1) if c else "?"} crash/timeout', flush=True)
+
+def flagflip():
+    out = run(['./flagflip.py', '--no-build', '-n', '5'])
+    m = re.search(r'missing \d+, spurious \d+, other code \d+', out)
+    print('flagflip: ' + (m.group(0) if m else '?'), flush=True)
+
+ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip}
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--quick', action='store_true', help='suite and corpora only')
+    ap.add_argument('--only', help='comma-separated: ' + ','.join(ORACLES))
+    args = ap.parse_args()
+    which = args.only.split(',') if args.only else ['suite', 'corpora'] if args.quick else list(ORACLES)
+    # (The suite builds; the others are run with --no-build after it)
+    if 'suite' not in which: run(['ninja', '-C', 'release'])
+    for w in which:
+        start = time.time()
+        ORACLES[w]()
+        print(f'    ({time.time() - start:.0f}s)', flush=True) if os.environ.get('ORACLES_TIME') else None
+
+if __name__ == '__main__':
+    main()
