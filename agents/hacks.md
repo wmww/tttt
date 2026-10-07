@@ -870,3 +870,10 @@ src` finds the code-side markers; every significant one has an entry here.
   1000 steps need ~16 MB, so `main()` raises the soft RLIMIT_STACK to 64 MB (`raise_stack_limit`, workers get
   `worker_stack_size`). A hard limit below that still overflows. Bounded by tsc's limits, but a loop would be cheaper
   and wouldn't depend on the stack size.
+- `binding_check_bodiless` (binding.c): a thread-local flag set around the parameter checks of bodiless signatures so
+  binding_typecheck_at() skips an element's default (TS2371 only); a parameter threaded through binding_typecheck
+  would be cleaner.
+- `initialized_in_static_blocks` (check.c) now also treats any static block before the use as initializing an
+  any/unknown property (tsc's flow type there never has undefined): still syntactic, not flow analysis.
+- `may_have_readonly_member` (check.c): perf gate for union-key writes; conservative (true) for unions,
+  intersections, tuples and callables, so those still pay the per-key member_refs loop.
