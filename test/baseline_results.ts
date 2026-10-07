@@ -31603,7 +31603,7 @@ const baselines = {
     'stableTypeOrdering(stabletypeordering=false)': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'stableTypeOrdering(stabletypeordering=true)': {
         errors: true,
@@ -47386,7 +47386,7 @@ const baselines = {
         types: true,
     },
     'MemberFunctionDeclaration5_es6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

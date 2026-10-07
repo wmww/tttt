@@ -7887,7 +7887,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
         if (function_flags.committed || ((is_getter || is_setter) && !is_type)) {
             // `*` then no name: tsc's parsePropertyName has a missing identifier (TS1003) and it's a method
             parse_error(&p, span_from_token(&p), 1003, "Identifier expected.");
-            name_span = span_from_pos(&p);
+            // (tsc's missing node sits at the token's full start, before the trivia)
+            name_span = span_make(p.shared->source, token_full_start(&p), token_full_start(&p));
             name_string = cstr_init();
         } else if (!is_type && !is_getter && !is_setter && !vec_spanned_modifier_is_empty(&modifiers.spanned) &&
             *p.pos != '[' && *p.pos != '(' && *p.pos != '<'

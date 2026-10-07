@@ -1621,6 +1621,25 @@ static void append_decl(cstr* target, Span span) {
     );
 }
 
+// The line tsc's typeWriter files a node under: skipTrivia(node.pos). Our spans start after the trivia, except a
+// missing node's (zero width, at the full start like tsc's)
+static unsigned placement_line(Span span) {
+    if (span.sv.size || !span.source) return span_line_index(span);
+    const char* c = span.sv.buf;
+    const char* end = cstr_str(&span.source->contents) + cstr_size(&span.source->contents);
+    while (c < end) {
+        if (*c == ' ' || *c == '\t' || *c == '\r' || *c == '\n') c++;
+        else if (c + 1 < end && c[0] == '/' && c[1] == '/') { while (c < end && *c != '\n') c++; }
+        else if (c + 1 < end && c[0] == '/' && c[1] == '*') {
+            c += 2;
+            while (c + 1 < end && !(c[0] == '*' && c[1] == '/')) c++;
+            c = c + 2 < end ? c + 2 : end;
+        } else break;
+    }
+    span.sv.buf = c;
+    return span_line_index(span);
+}
+
 static void append_span_contents_without_newlines(cstr* target, Span span) {
     const char* start = span_start_ptr(span);
     const char* end = span_end_ptr(span);
@@ -1638,7 +1657,7 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
         vec_span_drop(&data.namespaces);
         return;
     }
-    unsigned line_for_placement = span_line_index(data.span);
+    unsigned line_for_placement = placement_line(data.span);
     for (u32 i = 0; i < my symbol_override_count; i++) {
         if (my symbol_overrides[i].span.sv.buf != data.span.sv.buf || my symbol_overrides[i].span.sv.size != data.span.sv.size) continue;
         cstr_drop(&data.text);
@@ -1778,7 +1797,7 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     }
     outer_span = span_make(inner_span.source, outer_start, outer_last + 1);
 
-    intptr_t line = span_line_index(outer_span);
+    intptr_t line = placement_line(outer_span);
     cstr target = cstr_lit(">");
     append_span_contents_without_newlines(&target, outer_span);
     // As wide as the text in UTF-16 code units, which is what the harness counts

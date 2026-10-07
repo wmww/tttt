@@ -4,7 +4,6 @@
 # 1123 names that passed under 5.8 no longer exist (option matrices changed) and aren't listed. Delete lines as they pass.
 ## true
 ## rebaselined
-MemberFunctionDeclaration5_es6	E	src-same	bl-changed
 arityAndOrderCompatibility01	E	src-changed	bl-changed
 bundledDtsLateExportRenaming	T	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed
