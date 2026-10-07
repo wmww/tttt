@@ -4371,6 +4371,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
         }   break;
 
         case EXPR_AS_TYPE:
+            // (tsc's checkAssertion: from the `<` to where the expression's trivia starts)
+            if (my as_type->angle_bracket_syntax && compiler_options()->erasable_syntax_only) {
+                error_ctx_error_d(errs, my as_type->keyword_span, 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
+            }
             if (as_type_is_const_assertion(my as_type) && !is_valid_const_assertion_argument(&my as_type->expr)) {
                 error_ctx_error_d(errs, expr_outer_span(&my as_type->expr), 1355, "A 'const' assertion can only be applied to "
                     "references to enum members, or string, number, boolean, array, or object literals.");

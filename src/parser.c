@@ -10710,16 +10710,19 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
         bool must_be_unary = ctx.min_precedence >= unary_op_get_precedence(UNARY_OP_LEFT_BANG);
         parse_jsx_element(&p, true, nullptr, must_be_unary, nullptr, ret);
         inner_span_set = true;
-    } else if (!p.shared->source->is_jsx && p.pos[1] != '<' && hop_char(&p, '<')) {
+    } else if (!p.shared->source->is_jsx && *p.pos == '<' && p.pos[1] != '<' && hop_char(&p, '<')) {
         // (`<<` is a shift operator token to tsc's scanner, never the start of a type assertion)
         hop_whitespace(&p);
 
         TypeNode t;
         expect_type(&p, TYPE_PRECEDENCE_NULL, &t);
+        const char* after_type = p.pos;
         hop_whitespace(&p);
 
-        expect_char(&p, '>');
+        // (Without its `>` the operand's trivia starts right after the type)
+        bool has_gt = expect_char(&p, '>');
         const char* after_gt = p.pos;
+        const char* operand_trivia = has_gt ? after_gt : after_type;
         hop_whitespace(&p);
 
         // The operand is a unary expression: `<T>a || b` is `(<T>a) || b`
@@ -10733,6 +10736,7 @@ static bool parse_expr(Parser* parent, ExprCtx ctx, Expr* ret) {
             .expr = e,
             .type = t,
             .angle_bracket_syntax = true,
+            .keyword_span = span_make(p.shared->source, a.start, operand_trivia),
         }));
         {
             // tsc's parseUnaryExpressionOrHigher: `<T>x ** 2` is ambiguous (still read as `(<T>x) ** 2`)
