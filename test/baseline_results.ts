@@ -33231,7 +33231,7 @@ const baselines = {
         types: false,
     },
     'thislessFunctionsNotContextSensitive2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -59571,12 +59571,12 @@ const baselines = {
         types: true,
     },
     'tsxStatelessFunctionComponentOverload5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxStatelessFunctionComponentOverload6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -70671,7 +70671,7 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedStringLiteralsInJsxAttributes02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

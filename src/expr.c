@@ -574,9 +574,25 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             if (this_ref.kind == THIS_ANY) {
                 Scope const* container = names;
                 while (container && !scope_rare(container)->this_ref.kind) container = container->parent;
-                ThisKind outer = container && container->parent ? scope_get_this(container->parent, false).kind : THIS_NONE;
+                ThisRef outer_ref = container && container->parent ? scope_get_this(container->parent, false) : (ThisRef){0};
+                ThisKind outer = outer_ref.kind;
                 my this_shadows_outer = outer == THIS_CLASS_INSTANCE || outer == THIS_CLASS_STATIC || outer == THIS_PARAMETER ||
                     outer == THIS_COMMONJS;
+                if (!outer && container && container->parent) {
+                    // At the top level: a module's `this` (undefined, or what a CommonJS module exports) isn't globalThis
+                    // (tsc's tryGetThisTypeAt of the container)
+                    Scope const* file = container->parent;
+                    while (file->parent && file->kind != SCOPE_MODULE && file->kind != SCOPE_SCRIPT && file->kind != SCOPE_NAMESPACE &&
+                        file->kind != SCOPE_ENUM
+                    ) {
+                        file = file->parent;
+                    }
+                    my this_shadows_outer = file->kind == SCOPE_MODULE;
+                }
+                // (A function's `this` shadows another's when that one has a type, which the checker knows)
+                if (outer == THIS_ANY && outer_ref.function && this_ref.function && this_ref.function != outer_ref.function) {
+                    function_impl_rare_mut((FunctionImpl*)this_ref.function)->outer_this_function = outer_ref.function;
+                }
             }
             check_before_super(me, names, 17009, "'this'", errs);
             // tsc's checkThisInStaticClassFieldInitializerInDecoratedClass: up to the this container (through arrows)
@@ -861,7 +877,10 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
         !(identifier_this_function(me) && (ty_js_this_class(identifier_this_function(me)) || ty_contextual_this_type(current_checker, identifier_this_function(me))))
     ) {
         Error* e = error_ctx_error_d(errs, identifier_expr_name(me), 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
-        if (my this_shadows_outer && identifier_this_function(me)) {
+        FunctionImpl const* outer = identifier_this_function(me) ? function_impl_rare(identifier_this_function(me))->outer_this_function : nullptr;
+        if (identifier_this_function(me) && (my this_shadows_outer ||
+            (outer && (ty_js_this_class(outer) || ty_contextual_this_type(current_checker, outer))))
+        ) {
             error_add_related_d(e, function_error_span(identifier_this_function(me)), 2738, "An outer value of 'this' is shadowed by this container.");
         }
     }

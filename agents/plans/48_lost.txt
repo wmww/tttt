@@ -93,7 +93,6 @@ contextualTypeWithUnionTypeCallSignatures	T	src-changed	bl-changed
 contextualTypingReturnStatementWithReturnTypeAnnotation	T	src-changed	bl-changed
 contextuallyTypedBindingInitializer	T	src-changed	bl-changed
 contextuallyTypedBindingInitializerNegative	ET	src-changed	bl-changed
-contextuallyTypedStringLiteralsInJsxAttributes02	ET	src-changed	bl-changed
 controlFlowAliasedDiscriminants	T	src-changed	bl-changed
 controlFlowAliasing	T	src-changed	bl-changed
 controlFlowAliasingCatchVariables(useunknownincatchvariables=false)	T	src-changed	bl-changed
@@ -512,8 +511,6 @@ tsxSpreadAttributesResolution14	E	src-changed	bl-changed
 tsxSpreadAttributesResolution2	E	src-changed	bl-changed
 tsxStatelessFunctionComponentOverload1	E	src-changed	bl-changed
 tsxStatelessFunctionComponentOverload4	E	src-changed	bl-changed
-tsxStatelessFunctionComponentOverload5	ET	src-changed	bl-changed
-tsxStatelessFunctionComponentOverload6	ET	src-changed	bl-changed
 tsxUnionTypeComponent1	T	src-changed	bl-changed
 typeArgInference2	T	src-changed	bl-changed
 typeArgumentInference	ET	src-changed	bl-changed

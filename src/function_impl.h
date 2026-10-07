@@ -93,6 +93,9 @@ typedef struct FunctionImplRare {
     // the annotation itself is dropped)
     Span constructor_missing_type;
     Symbol const* promise_decl; // The global Promise type (if any), looked up for async functions
+    // A function whose own `this` is used and is any: the function whose `this` is the one it shadows, when that's
+    // also a function's (contextually typed, maybe: TS2738's related info on TS2683)
+    struct FunctionImpl const* outer_this_function;
     struct Expr const* first_super_call; // A constructor: the first `super(...)` in its body, not in a nested function
     // A function expression or arrow written as an argument of `new X(...)`: the X when it's an identifier (TS2794:
     // tsc's isPromiseResolveArityError)
