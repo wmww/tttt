@@ -5032,7 +5032,12 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 if (!*slot) *slot = (Ty const*)my resolving_call;
             }
             CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
-            if (none_call) {
+            // (Not from an overload failure's fallback inference, which checks the arguments against the constraints:
+            // tsc's contextual signature goes through the resolved failure signature, and the checks against that
+            // one are memoized with the contextual type they had before, `T2({ b: function () { return 123 } },
+            // false)` with `const TConfig extends { b?: any }` keeps `() => 123`)
+            if (none_call && my overload_failure_inference) {
+            } else if (none_call) {
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_SIG_CONTEXT, (u64)(uintptr_t)expr->function }, 2) =
                     ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
