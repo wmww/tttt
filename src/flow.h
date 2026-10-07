@@ -193,6 +193,9 @@ typedef struct FlowBuilder {
     // Inside the computed name of a method, accessor or class property: tsc's getControlFlowContainer is that member,
     // so every variable read there is an outer one (assumed initialized unless never assigned)
     bool member_name;
+    // ...of a method or accessor (not a property): tsc's getContainingFunction is that member, so a `yield` there
+    // belongs to no generator as far as its type goes (any, no TS7057), though the generator still yields it
+    bool method_name;
     // The identifier of `export = x`: in_type_query is set for it (it isn't used before its declaration, the emit moves
     // it), but tsc's checkExportAssignment still checks it as an expression: "used before being assigned" applies
     bool export_equals_name;

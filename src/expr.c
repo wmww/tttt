@@ -872,6 +872,10 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ENUM) {
         error_ctx_error_d(errs, identifier_expr_name(me), 2332, "'this' cannot be referenced in current location.");
+        // (Nor does it have a type: tsc's tryGetThisTypeAt of an enum is undefined)
+        if (compiler_options()->no_implicit_this) {
+            error_ctx_error_d(errs, identifier_expr_name(me), 2683, "'this' implicitly has type 'any' because it does not have a type annotation.");
+        }
     }
     // `this` in a function nothing says the `this` of (tsc's checkThisExpression)
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind == THIS_ANY && compiler_options()->no_implicit_this &&
@@ -1974,7 +1978,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     } else {
                         expr_lookup_names(operand, names, errs);
                     }
-                    if (flow->function && flow->function->is_generator && !my unary_op->outside_generator) {
+                    if (flow->function && flow->function->is_generator && !my unary_op->outside_generator && !flow->method_name) {
                         my unary_op->generator = flow->function;
                         my unary_op->no_type_params_in_scope = !names->generics;
                     }
@@ -2215,11 +2219,11 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     // The name of a method or accessor is deferred like it, as far as a class initializer is concerned
                     // (TS2729), unless it reads the field it is in
                     uint8_t initializer_context = flow->initializer_context;
-                    bool member_name = flow->member_name;
+                    bool member_name = flow->member_name, method_name = flow->method_name;
                     if (i->tag != OBJECT_ITEM_PROPERTY) {
                         bool in_field = initializer_context == INITIALIZER_INSTANCE_FIELD || initializer_context == INITIALIZER_STATIC_FIELD;
                         flow->initializer_context = in_field ? INITIALIZER_MEMBER_NAME : INITIALIZER_NONE;
-                        flow->member_name = true;
+                        flow->member_name = flow->method_name = true;
                     }
                     FlowNode* flow_before = flow->current;
                     expr_lookup_names(i->computed_key, key_scope, errs);
@@ -2227,6 +2231,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                     if (i->tag != OBJECT_ITEM_PROPERTY) flow->current = flow_before;
                     flow->initializer_context = initializer_context;
                     flow->member_name = member_name;
+                    flow->method_name = method_name;
                 }
                 if (i->value.tag == EXPR_FUNCTION) {
                     i->value.function->accessor = i->tag == OBJECT_ITEM_GETTER ? 1 : i->tag == OBJECT_ITEM_SETTER ? 2 : 0;

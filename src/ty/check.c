@@ -2394,7 +2394,7 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
                 if (!(object->composite.types.data[i]->flags & (TYF_OBJECT | TYF_INTERSECTION))) return;
             }
         }
-        if ((ty_is_tuple(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
+        if ((ty_tuple_shape(object) || is_union_of_fixed_tuples(object)) && (index->flags & TYF_NUMBER_LITERAL)) return; // TS2493, TS2339
         if (object->flags & TYF_OBJECT) {
             // HACK: as in check_access(): mapped types over something generic, unresolved bases
             Members const* members = ty_members(me, object);

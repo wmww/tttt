@@ -259,7 +259,10 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         case CLASS_ITEM_METHOD:
             if (my method.computed_key) {
                 names->flow->type_only_alias_ok = my method.is_abstract;
+                bool method_name = names->flow->method_name;
+                names->flow->method_name = true;
                 lookup_names_without_super(my method.computed_key, names, NO_SUPER_COMPUTED_NAME, true, errs);
+                names->flow->method_name = method_name;
                 names->flow->type_only_alias_ok = false;
             }
             lazy_type_bind(&my method.accessor_type, LAZY_TYPE_CLASS_ITEM_ACCESSOR);
@@ -1713,6 +1716,9 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
     }
     // (Without an initializer, what the constructor assigns is its type: see field_type_from_assignments())
     if (item->field.ts_assigned) return;
+    // (`static prototype;` merges into the class's prototype property, whose type is the instance type: tsc's
+    // getTypeOfPrototypeProperty. TS2699 says the rest)
+    if (item->field.is_static && !item->field.computed_key && cstr_equals(&item->field.name_string, "prototype")) return;
     error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any' type.");
 }
 

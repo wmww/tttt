@@ -31776,7 +31776,7 @@ const baselines = {
         types: true,
     },
     'staticPrototypeProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -33216,7 +33216,7 @@ const baselines = {
         types: true,
     },
     'this_inside-enum-should-not-be-allowed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50091,7 +50091,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck42': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -50101,7 +50101,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck44': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -72851,12 +72851,12 @@ const baselines = {
         types: true,
     },
     'emptyTuplesTypeAssertion01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emptyTuplesTypeAssertion02': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -73001,9 +73001,9 @@ const baselines = {
         types: true,
     },
     'asiPreventsParsingAsTypeAlias01': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'asiPreventsParsingAsTypeAlias02': {
         errors: true,

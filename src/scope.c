@@ -652,7 +652,9 @@ static Generic const* decl_generic(SymbolDecl const* decl) {
 }
 
 bool symbol_first_declared_elsewhere(Symbol const* symbol, SourceFile const* file) {
-    return symbol->decl_count && symbol->decls[0].full.source != file;
+    // (Not counting a builtin type the name merges with: a global `var string;`)
+    u32 first = symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN ? 1 : 0;
+    return symbol->decl_count > first && symbol->decls[first].full.source != file;
 }
 
 // A file with a declaration of a merged class or interface whose type parameters may be an earlier declaration's of
