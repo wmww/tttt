@@ -908,7 +908,7 @@ static bool extension_is_ok(int extensions, const char* extension) {
 // tsc's tryLoadInputFileForPath(): a package's exports/imports that point into the outDir/declarationDir of the
 // project itself (package self-names) mean the input files the outputs are made from. The root the output structure
 // mirrors (the common source directory) isn't known while files are still being found, so without a rootDir (or a
-// composite project) every directory from the file system root down to the common directory of the importing file
+// config) every directory from the file system root down to the common directory of the importing file
 // and the package.json is tried, and TS2209/TS2210 says the root is ambiguous
 static bool try_load_input_file_for_path(
     State* me, csview final_path, csview entry, csview package_dir, bool is_imports, int extensions, Found* out
@@ -924,7 +924,8 @@ static bool try_load_input_file_for_path(
         if (!inside) return false;
     }
     StrList guesses = {0};
-    if (cstr_size(&options->root_dir) || (options->composite && has_config)) {
+    // (A project's common source directory is its config's directory, 6.0: getCommonSourceDirectory)
+    if (cstr_size(&options->root_dir) || has_config) {
         cstr dir = cstr_size(&options->root_dir) ? option_path(my resolver, cstr_sv(&options->root_dir)) :
             option_path(my resolver, c_sv("."));
         str_list_push(&guesses, cstr_sv(&dir));

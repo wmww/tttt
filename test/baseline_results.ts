@@ -26151,7 +26151,7 @@ const baselines = {
         types: true,
     },
     'nodeNextPackageSelfNameWithOutDirDeclDirNestedDirs': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
