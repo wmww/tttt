@@ -16088,7 +16088,7 @@ const baselines = {
     'functionVariableInReturnTypeAnnotation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionWithAnyReturnTypeAndNoReturnExpression': {
         errors: true,
@@ -17893,7 +17893,7 @@ const baselines = {
     'importExportInternalComments': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importHelpers(target=es2015)': {
         errors: true,
@@ -57718,7 +57718,7 @@ const baselines = {
     'importTag24': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importTag25': {
         errors: true,

@@ -927,6 +927,21 @@ static bool name_accessible(Checker* me, TyDisplay d, Symbol const* symbol, csvi
             return false;
         }
     }
+    // (Unresolved where it's written, a name printed inside the function being printed (the enclosing declaration
+    // is the function, say at its name) resolves there to the function's local, which isn't accessible: tsc's
+    // symAtLocation, `function f(): typeof b { var b }` is `() => any` at f)
+    if (!symbol && meaning == SYMBOL_VALUE && span_valid(d.at)) {
+        for (TyDisplayParams const* i = d.printed_params; i; i = i->outer) {
+            FunctionImpl const* function = i->function;
+            if (!function || !function->has_body || !function->body.scope || !span_valid(function->full_span) ||
+                function->full_span.source != d.at.source || !span_contains_span(function->full_span, d.at)
+            ) {
+                continue;
+            }
+            Symbol const* local = scope_resolve(function->body.scope, first, meaning);
+            if (local && local->decl_count && local->decls[0].block && local->decls[0].block->function == function) return false;
+        }
+    }
     if (!symbol || (symbol->flags & SYMBOL_TYPE_PARAMETER) || symbol->is_parameter) return true;
     // (A name that doesn't resolve with this meaning, a value used as a type (TS2749): tsc's resolveEntityName finds
     // nothing, here or there, and the node is reused, AllowUnresolvedNames)
@@ -1137,6 +1152,18 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         return;
     }
     if (identifier->jsdoc && !jsdoc_reference_reusable(me, d, node)) {
+        // (A name an `@import` declares isn't accessible to tsc's trackExistingEntityName, so it names what the alias
+        // resolves to anew, serializeTypeName, when that is accessible)
+        Symbol const* first = identifier_type_namespace_count(identifier) ? nullptr : identifier->symbol;
+        Symbol const* target = identifier->target;
+        if (first && (first->flags & SYMBOL_ALIAS) && first->decl_count && first->decls[0].kind == SYMBOL_DECL_ALIAS &&
+            ((PortItem const*)first->decls[0].node)->jsdoc && target && (target->flags & SYMBOL_TYPE) &&
+            !(target->flags & SYMBOL_TYPE_PARAMETER) && d.enclosing && symbol_type_accessible_at(d.enclosing, target)
+        ) {
+            out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
+            display_node_args(me, d, &identifier->generic_params);
+            return;
+        }
         display_node_fallback(me, d, node);
         return;
     }
@@ -3362,6 +3389,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 default:
                     if (class_as_literal(d, ty)) {
                         display_class_literal(me, d, ty);
+                        break;
+                    }
+                    // (The declared Array is a reference to itself with its own type parameters to tsc: `T[]`)
+                    if ((ty == my array_target || ty == my readonly_array_target) && ty_local_type_params(ty).len == 1) {
+                        if (ty == my readonly_array_target) out_lit(d, "readonly ");
+                        ty_display(me, d, ty_local_type_params(ty).data[0]);
+                        out_lit(d, "[]");
                         break;
                     }
                     out_declared_name(me, d, ty, SYMBOL_TYPE);
