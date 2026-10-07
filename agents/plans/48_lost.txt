@@ -142,11 +142,6 @@ destructuringArrayBindingPatternAndAssignment5SiblingInitializer	T	src-changed	b
 destructuringAssignmentWithDefault	T	src-changed	bl-changed
 destructuringControlFlow	T	src-changed	bl-changed
 destructuringParameterDeclaration10(strict=true)	T	src-changed	bl-changed
-destructuringParameterDeclaration1ES5	T	src-changed	bl-changed
-destructuringParameterDeclaration1ES5iterable	T	src-changed	bl-changed
-destructuringParameterDeclaration1ES6	T	src-same	bl-changed
-destructuringParameterDeclaration2	ET	src-changed	bl-changed
-destructuringParameterDeclaration4	T	src-changed	bl-changed
 destructuringSpread	ET	src-changed	bl-changed
 destructuringUnspreadableIntoRest	ET	src-same	bl-changed
 didYouMeanStringLiteral	ET	src-changed	bl-changed

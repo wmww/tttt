@@ -46213,7 +46213,7 @@ const baselines = {
     'destructuringParameterDeclaration10(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration10(strict=true)': {
         errors: true,
@@ -46223,22 +46223,22 @@ const baselines = {
     'destructuringParameterDeclaration1ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration1ES5iterable': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration1ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration3ES5': {
         errors: true,
@@ -46263,7 +46263,7 @@ const baselines = {
     'destructuringParameterDeclaration4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration5': {
         errors: true,
@@ -46303,7 +46303,7 @@ const baselines = {
     'destructuringParameterDeclaration9(strict=false)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'destructuringParameterDeclaration9(strict=true)': {
         errors: true,

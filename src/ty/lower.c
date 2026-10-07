@@ -2712,7 +2712,9 @@ static bool binding_in_const_declaration(Binding const* element) {
 
 // tsc's getTypeFromBindingElement: a default's type widened (and optional; but not its literals in a `const`: tsc's
 // widenTypeInferredFromInitializer), a nested pattern's own type, else any
-static Ty const* binding_element_implied_type(Checker* me, Binding const* element, bool include_pattern) {
+// `literals_only`: only its literals widen (tsc's widenTypeInferredFromInitializer); the declared type of what the
+// pattern declares is widened whole (getWidenedTypeForVariableLikeDeclaration), which is what it is for otherwise
+static Ty const* binding_element_implied_type(Checker* me, Binding const* element, bool include_pattern, bool literals_only) {
     if (element->default_value) {
         // (Not remembered while the pattern is a contextual type: its sibling references are `any` then)
         if (include_pattern) my flow_uncached++;
@@ -2728,7 +2730,12 @@ static Ty const* binding_element_implied_type(Checker* me, Binding const* elemen
         } else {
             type = ty_expr_type(me, element->default_value);
         }
-        type = ty_widened_for_declaration(me, type, !binding_in_const_declaration(element));
+        // (`[]` is undefined[] in a contextual type without strictNullChecks, any[] in the declared type)
+        if (include_pattern || literals_only) {
+            if (!binding_in_const_declaration(element)) type = ty_widened_literal(me, type);
+        } else {
+            type = ty_widened_for_declaration(me, type, !binding_in_const_declaration(element));
+        }
         if (include_pattern) my flow_uncached--;
         if (!compiler_options()->strict_null_checks) return type;
         Ty const* parts[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
@@ -2795,7 +2802,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
             ObjectLiteralProp prop = {
                 .name = name,
                 .flags = item->target.default_value ? PROP_OPTIONAL : 0,
-                .type = binding_element_implied_type(me, &item->target, include_pattern), // (tsc's symbol has no declaration)
+                .type = binding_element_implied_type(me, &item->target, include_pattern, false), // (tsc's symbol has no declaration)
             };
             // (A name the pattern takes twice is one property, the last one's: tsc's members.set)
             u32 at = 0;
@@ -2850,7 +2857,7 @@ static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool 
     panic_if(!flags, "out of memory");
     for (u32 i = 0; i < len; i++) {
         Binding const* element = vec_binding_at(&pattern->array, i);
-        elements[i] = element->tag == BINDING_NOOP ? ty_intrinsic(me, TY_ANY) : binding_element_implied_type(me, element, include_pattern);
+        elements[i] = element->tag == BINDING_NOOP ? ty_intrinsic(me, TY_ANY) : binding_element_implied_type(me, element, include_pattern, false);
         if (element->rest) {
             flags[i] = TUPLE_ELEMENT_REST;
             elements[i] = ty_array(me, elements[i], false);
@@ -2884,7 +2891,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
             props[count++] = (ObjectLiteralProp){
                 .name = name,
                 .flags = PROP_OPTIONAL,
-                .type = binding_element_implied_type(me, &item->target, false),
+                .type = binding_element_implied_type(me, &item->target, false, true),
             };
         }
         if (!props) return type;
@@ -2915,7 +2922,7 @@ Ty const* ty_pad_initializer_type(Checker* me, Ty const* type, Binding const* pa
         Binding const* element = vec_binding_at(&pattern->array, i);
         if (i == len - 1 && element->rest) break;
         elements[arity] = element->tag != BINDING_NOOP && element->default_value ?
-            binding_element_implied_type(me, element, false) : ty_intrinsic(me, TY_ANY);
+            binding_element_implied_type(me, element, false, true) : ty_intrinsic(me, TY_ANY);
         flags[arity++] = TUPLE_ELEMENT_OPTIONAL;
     }
     TupleShape padded = { .arity = arity, .flags = flags, .readonly = shape->readonly };
