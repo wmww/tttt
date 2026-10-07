@@ -207,6 +207,9 @@ bool ty_is_recursive_return(Checker* me, Expr const* returned) {
 }
 
 static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
+    // (Before the return expressions, like tsc's checkAndAggregateReturnExpressionTypes asks functionHasImplicitReturn
+    // first: an exhaustiveness check makes its case expressions' literal types, which then come first in unions)
+    FlowReachability end = function->is_generator ? FLOW_REACH_NO : ty_function_end_reachability(me, function);
     Ty const* outer_context = function_impl_enter_return_context(function);
     TyBuf returned = {0};
     FunctionImpl const* outer_inference_of = my return_inference_of;
@@ -225,7 +228,6 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
     } else {
         // tsc: checkAndAggregateReturnExpressionTypes(). Only what is certain about the end of the body counts until
         // reachability knows about `never` calls and exhaustive switches
-        FlowReachability end = ty_function_end_reachability(me, function);
         bool returns_nothing_somewhere = function->has_bare_return || end == FLOW_REACH_YES;
         if (!returned.len && !function->has_bare_return && end == FLOW_REACH_NO && (function->is_expression || skipped) &&
             !function->accessor
