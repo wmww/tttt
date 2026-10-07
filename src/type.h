@@ -148,6 +148,7 @@ typedef struct TypeNode {
         struct {
             VecTupleElement elements;
             bool readonly;
+            Span span; // `[` to `]` (tsc's TupleTypeNode, where TS4110 goes)
         } tuple;
         IndexedType* indexed;
         KeyofType* keyof;

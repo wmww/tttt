@@ -3497,6 +3497,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (c == '[' && parse_tuple(&p, &parsed.tuple_elements)) {
         *ret = type_tuple(parsed.tuple_elements, false);
+        ret->tuple.span = span_from(value_anchor);
     } else if (hop_char(&p, '(')) {
         hop_whitespace(&p);
         if (value_anchor.start == p.shared->unique_allowed_at) p.shared->unique_allowed_at = p.pos;

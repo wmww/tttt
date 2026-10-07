@@ -3613,6 +3613,13 @@ Members const* ty_members(Checker* me, Ty const* ty) {
             return &empty_members;
 
         case LAZY_STATE_NOT_STARTED:
+            // A deferred reference's arguments come first, before its members are in flight (tsc's
+            // resolveTypeReferenceMembers starts with getTypeArguments): arguments that need these members find
+            // their own resolution in flight (TS4109), not the members'
+            if (ty->kind == TY_REFERENCE && ty->reference.deferred && ty->reference.deferred->state != LAZY_STATE_DONE) {
+                ty_reference_args(me, ty);
+                if (state->members_state != LAZY_STATE_NOT_STARTED) return ty_members(me, ty);
+            }
             state->members_state = LAZY_STATE_IN_FLIGHT;
             state->members = resolve_members(me, ty);
             state->members_state = LAZY_STATE_DONE;
