@@ -384,7 +384,6 @@ Ty const* ty_strip_nullable_target(Checker* me, Ty const* source, Ty const* targ
 Ty const* ty_report_source(Checker* me, Ty const* source);
 // tsc's getNormalizedTupleType: a tuple with a generic spread's simplifiable elements simplified
 Ty const* ty_normalized_generic_tuple(Checker* me, Ty const* ty, bool writing);
-Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target);
 Ty const* ty_access_write_type(Checker* me, Ty const* object, Ty const* index); // access.c
 // Where an interface's method or call signature was declared: tsc's signature.declaration symbol and parent, which
 // overload resolution orders by (reorder_candidates)

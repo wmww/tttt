@@ -1576,6 +1576,7 @@ Ty const* ty_best_matching_type(Checker* me, Ty const* source, Ty const* target)
 Ty const* ty_widened_literal(Checker* me, Ty const* ty);
 // How the source of a failed relation shows in the error: widened unless the target has room for literal types
 void ty_report_pair_cstr(Checker* me, Ty const* source, Ty const* target, cstr* source_out, cstr* target_out); // Both, as a message shows them
+Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target); // The target as a relation error's head names it (null and undefined stripped for a non-nullable source: tsc's isRelatedTo)
 // Two types as printed, fully qualified if they'd look the same (tsc's getTypeNamesForErrorDisplay)
 // tsc's getSingleBaseForNonAugmentingSubtype: the one base of a class or interface that declares no members of its own
 // (which relates as that base), instantiated for the reference; null otherwise

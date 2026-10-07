@@ -2350,7 +2350,7 @@ static bool check_type_argument_constraints(
         if (ty_is_related(me, arg, constraint, TY_RELATION_ASSIGNABLE)) continue;
         if (errs) {
             cstr arg_str, constraint_str;
-            ty_report_pair_cstr(me, arg, constraint, &arg_str, &constraint_str);
+            ty_report_pair_cstr(me, arg, ty_report_target(me, arg, constraint), &arg_str, &constraint_str);
             ty_report_unassignable_with_head(me, arg, constraint, 2344, cstr_d(
                 "Type '", arg_str, "' does not satisfy the constraint '", constraint_str, "'."
             ), vec_spanned_type_at(info->type_arg_nodes, i)->span, errs);

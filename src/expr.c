@@ -998,8 +998,9 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
             SpannedType const* arg = vec_spanned_type_at(&my params, i);
             // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo)
             Ty const* arg_type = ty_of_node(&arg->type);
+            // (The head names the target as isRelatedTo left it: `T | undefined` is T for a non-nullable argument)
             cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
-                constraint, "'.");
+                ty_report_target(checker, arg_type, constraint), "'.");
             ty_report_unassignable_with_head(checker, arg_type, constraint, 2344, head, arg->span, errs);
             break;
         }

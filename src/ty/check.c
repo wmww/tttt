@@ -2581,7 +2581,7 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
         if (filled[i]->flags & TYF_ERROR) continue;
         if (ty_is_related(me, filled[i], constraint, TY_RELATION_ASSIGNABLE)) continue;
         cstr source_str, target_str;
-        ty_report_pair_cstr(me, ty_report_source(me, filled[i]), constraint, &source_str, &target_str);
+        ty_report_pair_cstr(me, ty_report_source(me, filled[i]), ty_report_target(me, filled[i], constraint), &source_str, &target_str);
         report_unassignable_with_head(me, filled[i], constraint, 2344, cstr_d(
             "Type '", source_str, "' does not satisfy the constraint '", target_str, "'."
         ), false, vec_spanned_type_at(args, i)->span, errs);
@@ -3664,7 +3664,9 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
                     if (cstr_eq(&other->key.name_string, &i->key.name_string)) any_optional = true;
                 }
             }
-            if (any_optional && !first->optional && compiler_options()->strict_null_checks && !(first_type->flags & TYF_ANY)) {
+            // (Only a method's: a property's type is its own declaration's, `x: string` then `x?: string` is TS2717)
+            bool first_method = first->is_method || first->key.name_is_member_function;
+            if (any_optional && first_method && !first->optional && compiler_options()->strict_null_checks && !(first_type->flags & TYF_ANY)) {
                 Ty const* types[2] = { first_type, ty_intrinsic(me, TY_UNDEFINED) };
                 first_type = ty_union(me, types, 2, nullptr, (TyList){0});
             }
