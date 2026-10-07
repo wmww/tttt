@@ -164,18 +164,16 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   globalThisDeclarationEmit3).
 
 ## Triage 2026-10-07 (agent C): display/printer leftovers, each reproduced, root cause where found
-- **Named error types** (DT `$ExpectType` babel__traverse, babel__helper-plugin-utils, redux-saga-test-engine): tsc 6's
-  resolveTypeReferenceName gives an unresolved name a synthetic symbol (getUnresolvedSymbolForEntityName: TypeAlias,
-  CheckFlags.Unresolved, one per dotted path, declaredType unresolvedType), and getTypeFromTypeAliasReference makes of
-  it an `any`-flagged intrinsic error type per (symbol, type arguments) (the `errorTypes` map) with aliasSymbol and
-  aliasTypeArguments = the argument *types*. typeToTypeNodeHelper prints any type with an alias as that reference. It
-  isn't instantiated (instantiateTypeWorker has no case for it), and an indexed access of it is itself (any object), so
-  `NodePath<t.Aliases[K]>["type"]` stays `t.Aliases`. tttt reuses the written reference node instead, so arguments
-  print as written: probe `import { type Effect } from "@nonexistent/types"; declare const k: "K"; type KK = typeof k;
-  declare function throwError<M>(m?: M): Effect<KK, M>; const e = throwError("x");` is `Effect<"K", M>` in tsc,
-  `Effect<KK, M>` in tttt; computed types (indexed access, instantiation) collapse to plain any. Doing it: an error
-  Ty with `alias`/`alias_args` interned per (unresolved path symbol, args) from lower_identifier(), every
-  `== intrinsics[TY_ERROR]` identity check audited (TYF_ERROR flag checks are fine). Plan-sized.
+- **Named error types**: tttt already models tsc 6's unresolved-name error types (ty_unresolved(): one any/error type
+  per name and argument types, printed as the reference; tsc's getUnresolvedSymbolForEntityName + errorTypes, never
+  instantiated, an indexed access of it is itself). Since 2026-10-07 the arguments are types, not reprinted nodes
+  (redux-saga-test-engine). Left: babel__traverse x4 and babel__helper-plugin-utils x2, where a visitor method's
+  `path` is `NodePath<t.Aliases>` in tsc and `NodePath<any>` in tttt. Visitor<S> intersects mapped types over two
+  unresolved key sources (`[N in Node as N["type"]]` with `export import Node = t.Node`, and `[K in keyof t.Aliases]`),
+  both string index signatures, and the method's contextual signature comes from the intersection of their value
+  types (`VisitNode<S, A> & VisitNode<S, B>`, each a function | object union). A self-made imitation matches tsc;
+  reduce with `./expectprobe.py` (a cut-down project: tsconfig with idx.d.ts = babel__traverse's index.d.ts and the
+  test's first 18 lines; the reducer drifts, keep the `"./idx"` import and `t.Aliases` text).
 - variadicTuples1, last line: `function c2<T extends unknown[]>() { return (...args: [...T]) => 1; }` prints the
   returned arrow's rest parameter `T` (tsc `[...T]`); through a local variable it's right. The signature's rest
   parameter type is T, not the tuple, so when the annotation can't be reused (it mentions c2's fresh T) the type
