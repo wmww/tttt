@@ -1996,6 +1996,25 @@ static void program_verify_inferred_root_dir(Program* me) {
     c_drop(cstr, &dir59, &config_dir, &relative);
 }
 
+// tsc's getCommonSourceDirectory (absolute): the rootDir, a project's directory (6.0), else the longest directory every
+// emitted file is in
+static cstr program_common_source_dir(Program* me) {
+    CompilerOptions const* o = &my options;
+    cstr cwd = cstr_null;
+    try (fs_get_cwd(my fs, &cwd)) or_panic;
+    cstr common_dir = cstr_null;
+    if (cstr_size(&o->root_dir)) {
+        common_dir = absolute_path_of(cstr_sv(&cwd), cstr_sv(&o->root_dir));
+    } else if (cstr_size(&o->config_dir)) {
+        // (A project never infers its root from its files, 6.0: TS5011 says where 5.x put it)
+        common_dir = cstr_clone(o->config_dir);
+    } else {
+        common_dir = computed_common_dir(me, cstr_sv(&cwd));
+    }
+    cstr_drop(&cwd);
+    return common_dir;
+}
+
 static void program_verify_emit_paths(Program* me) {
     CompilerOptions const* o = &my options;
     // tsc's verifyCompilerOptions: with an outDir and no rootDir, files on different drives have no common source
@@ -2034,20 +2053,7 @@ static void program_verify_emit_paths(Program* me) {
         return;
     }
     // tsc's getCommonSourceDirectory, only needed with an outDir or declarationDir
-    cstr common_dir = cstr_null;
-    if (cstr_size(&o->out_dir) || cstr_size(&o->declaration_dir)) {
-        cstr cwd = cstr_null;
-        try (fs_get_cwd(my fs, &cwd)) or_panic;
-        if (cstr_size(&o->root_dir)) {
-            common_dir = absolute_path_of(cstr_sv(&cwd), cstr_sv(&o->root_dir));
-        } else if (cstr_size(&o->config_dir)) {
-            // (A project never infers its root from its files, 6.0: TS5011 says where 5.x put it)
-            common_dir = cstr_clone(o->config_dir);
-        } else {
-            common_dir = computed_common_dir(me, cstr_sv(&cwd));
-        }
-        cstr_drop(&cwd);
-    }
+    cstr common_dir = cstr_size(&o->out_dir) || cstr_size(&o->declaration_dir) ? program_common_source_dir(me) : cstr_null;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile const* source = *i;
         if (!emit_source_may_be_emitted(me, source)) continue;
@@ -3012,11 +3018,42 @@ cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFi
     return ret;
 }
 
+static cstr program_common_source_dir(Program* me);
 cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override) {
     SourceFile const* target = module->module ? module->module->file : nullptr;
     // (A JSON file's module symbol has no SourceFile declaration in tsc: named like an ambient module, by its quoted
     // escapedName)
-    if (!target || target->is_json || !from || cstr_size(&compiler_options()->out_file)) {
+    if (!target || target->is_json || !from) {
+        return module_name_for_error(module, nullptr, false);
+    }
+    if (cstr_size(&compiler_options()->out_file)) {
+        // A bundle names a file non-relatively from the common source directory, without its extension or `/index`
+        // (getSpecifierForModuleSymbol: baseUrl the common source directory, "non-relative", ending "minimal")
+        cstr common = program_common_source_dir(me);
+        cstr cwd = cstr_null;
+        try (fs_get_cwd(my fs, &cwd)) or_panic;
+        cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&target->canonical_path));
+        csview path = cstr_sv(&absolute);
+        csview dir = cstr_sv(&common);
+        while (dir.size > 1 && dir.buf[dir.size - 1] == '/') dir.size--;
+        cstr ret = cstr_null;
+        bool under = dir.size && path.size > dir.size && !memcmp(path.buf, dir.buf, (size_t)dir.size) &&
+            (path.buf[dir.size] == '/' || dir.size == 1);
+        if (under) {
+            csview rest = csview_slice(path, dir.size == 1 ? 1 : dir.size + 1, path.size);
+            static const char* const extensions[] = { ".d.ts", ".d.mts", ".d.cts", ".ts", ".tsx", ".js", ".jsx", ".mts", ".cts", ".mjs", ".cjs" };
+            for (size_t i = 0; i < sizeof(extensions) / sizeof(*extensions); i++) {
+                if (csview_ends_with(rest, extensions[i])) {
+                    rest.size -= (isize)strlen(extensions[i]);
+                    break;
+                }
+            }
+            if (csview_equals(rest, "index")) rest = c_sv(".");
+            else if (csview_ends_with(rest, "/index")) rest.size -= 6;
+            ret = cstr_d("\"", rest, "\"");
+        }
+        c_drop(cstr, &common, &cwd, &absolute);
+        if (under) return ret;
         return module_name_for_error(module, nullptr, false);
     }
     cstr specifier = program_module_specifier(me, from, target, override);

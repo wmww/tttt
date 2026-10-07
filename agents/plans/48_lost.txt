@@ -120,7 +120,6 @@ controlFlowWhileStatement	T	src-changed	bl-changed
 controlFlowWithIncompleteTypes	T	src-changed	bl-changed
 controlFlowWithTemplateLiterals	T	src-changed	bl-changed
 crashInGetTextOfComputedPropertyName	T	src-changed	bl-changed
-declarationEmitBundleWithAmbientReferences	T	src-changed	bl-changed
 declarationEmitComputedNameWithQuestionToken	T	src-changed	bl-changed
 declarationEmitIdentifierPredicates01	T	src-changed	bl-changed
 declarationEmitIdentifierPredicatesWithPrivateName01	T	src-changed	bl-changed
@@ -289,8 +288,6 @@ mixinClassesAnonymous	T	src-changed	bl-changed
 mixinIntersectionIsValidbaseType	T	src-changed	bl-changed
 moduleExportAlias5	T	src-changed	bl-changed
 moduleExportsElementAccessAssignment2	T	src-changed	bl-changed
-moduleNoneDynamicImport(target=es2015)	ST	src-same	bl-changed
-moduleNoneDynamicImport(target=es2020)	ST	src-same	bl-changed
 narrowByBooleanComparison	T	src-changed	bl-changed
 narrowByClauseExpressionInSwitchTrue1	T	src-changed	bl-changed
 narrowByInstanceof	ST	src-changed	bl-changed
@@ -367,8 +364,6 @@ observableInferenceCanBeMade	T	src-changed	bl-changed
 optionalChainWithInstantiationExpression1(target=es2019)	ET	src-same	bl-changed
 optionalChainWithInstantiationExpression1(target=es2020)	ET	src-same	bl-changed
 optionalTupleElements1	T	src-changed	bl-changed
-outFilerootDirModuleNamesAmd	ST	src-same	bl-changed
-outFilerootDirModuleNamesSystem	ST	src-same	bl-changed
 overloadAssignmentCompat	T	src-changed	bl-changed
 overloadResolutionOverNonCTLambdas	T	src-changed	bl-changed
 overloadReturnTypes	T	src-changed	bl-changed
@@ -544,7 +539,6 @@ typePredicateStructuralMatch	S	src-changed	bl-changed
 typePredicateWithThisParameter	T	src-changed	bl-changed
 typePredicatesInUnion3	T	src-changed	bl-changed
 typePredicatesOptionalChaining2	T	src-changed	bl-changed
-typeReferenceDirectives12	ST	src-changed	bl-changed
 typeSatisfaction_errorLocations1	T	src-changed	bl-changed
 typeSatisfaction_vacuousIntersectionOfContextualTypes	T	src-changed	bl-changed
 typeVariableTypeGuards	T	src-changed	bl-changed

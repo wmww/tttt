@@ -8448,7 +8448,7 @@ const baselines = {
     'declarationEmitBundleWithAmbientReferences': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitBundlerConditions': {
         errors: true,
@@ -9388,12 +9388,12 @@ const baselines = {
     'declarationEmitPrefersPathKindBasedOnBundling2(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPrefersPathKindBasedOnBundling2(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitPreserveReferencedImports': {
         errors: true,
@@ -24092,13 +24092,13 @@ const baselines = {
     },
     'moduleNoneDynamicImport(target=es2015)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleNoneDynamicImport(target=es2020)': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleNoneErrors(target=es2015)': {
         errors: true,
@@ -34367,8 +34367,8 @@ const baselines = {
     },
     'typeReferenceDirectives12': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'typeReferenceDirectives13': {
         errors: true,
@@ -47422,8 +47422,8 @@ const baselines = {
     },
     'outFilerootDirModuleNamesAmd': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'anonymousDefaultExportsCommonjs': {
         errors: true,
@@ -47457,8 +47457,8 @@ const baselines = {
     },
     'outFilerootDirModuleNamesSystem': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'topLevelVarHoistingCommonJS': {
         errors: true,
