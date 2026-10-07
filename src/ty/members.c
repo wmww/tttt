@@ -2187,9 +2187,15 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
         extends = &extends->generic_params->expr;
     }
     if (extends->tag == EXPR_IMPLICIT_ANY) return false;
-    Ty const* constructor = ty_apparent_type(me, ty_expr_type(me, extends));
+    Ty const* type = ty_expr_type(me, extends);
+    Ty const* constructor = ty_apparent_type(me, type);
     // (No construct signatures either; `extends null` has no base type, tsc's resolveBaseTypesOfClass)
     if (constructor->flags & (TYF_NEVER | TYF_NULL)) return true;
+    // (A type variable is a constructor type only through a constraint with construct signatures: one that is any or
+    // the error type isn't, tsc's isConstructorType -> isMixinConstructorType)
+    if (((type->flags & TYF_TYPE_PARAM) || type->kind == TY_INDEXED) && !(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
+        return true;
+    }
     if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     SourceFile const* file = extends->inner_span.source;
     return !ty_members(me, constructor)->construct_count || !ty_base_constructors_fit(me, constructor, count, file && file->is_js);
