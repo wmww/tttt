@@ -3333,7 +3333,7 @@ const baselines = {
     'cf': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'chainedAssignment1': {
         errors: true,
@@ -19003,7 +19003,7 @@ const baselines = {
     'inferFromAnnotatedReturn1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferFromGenericFunctionReturnTypes1': {
         errors: true,

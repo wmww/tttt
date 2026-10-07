@@ -45,7 +45,6 @@ callWithSpread4	T	src-same	bl-changed
 callsOnComplexSignatures	T	src-changed	bl-changed
 castExpressionParentheses	T	src-changed	bl-changed
 castOfAwait	T	src-same	bl-changed
-cf	T	src-changed	bl-changed
 checkJsdocTypeTag5	T	src-changed	bl-changed
 checkJsxChildrenProperty14	T	src-changed	bl-changed
 checkJsxChildrenProperty15	E	src-changed	bl-changed

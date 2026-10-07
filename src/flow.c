@@ -128,6 +128,7 @@ FlowNode* flow_new_switch_clause(FlowBuilder* me, FlowNode* antecedent, SwitchSt
 }
 
 FlowNode* flow_new_call(FlowBuilder* me, FlowNode* antecedent, Expr const* call) {
+    if (flow_is_unreachable(antecedent)) return antecedent;
     set_referenced(antecedent);
     my has_flow_effects = true;
     return new_node(me, FLOW_CALL, antecedent, call);
@@ -140,7 +141,9 @@ FlowNode* flow_new_reduce_label(FlowBuilder* me, FlowNode* target, FlowList* ant
 }
 
 void flow_assign(FlowBuilder* me, FlowAssign assign) {
-    if (my dead) return;
+    // (Unreachable code makes no flow nodes: tsc's bindChildren skips the flow binding while currentFlow is
+    // unreachableFlow, so a loop's incrementor after a `break` adds nothing to the loop label)
+    if (my dead || flow_is_unreachable(my current)) return;
     FlowAssign* node = arena_new(my arena, FlowAssign);
     *node = assign;
     set_referenced(my current);
@@ -356,7 +359,7 @@ void flow_array_mutation(FlowBuilder* me, Expr* expr) {
         object = &left->property->expr;
         mark_evolving_array_target(object, EVOLVING_OP_ELEMENT_ASSIGNMENT, &left->property->prop);
     }
-    if (my dead || !is_narrowable_operand(object) || !may_evolve(object)) return;
+    if (my dead || flow_is_unreachable(my current) || !is_narrowable_operand(object) || !may_evolve(object)) return;
     set_referenced(my current);
     my has_flow_effects = true;
     my current = new_node(me, FLOW_ARRAY_MUTATION, my current, expr);
