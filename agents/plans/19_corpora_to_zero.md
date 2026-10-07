@@ -1,7 +1,7 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
 **Status 2026-10-07 (plan 48 stage 5 re-pin, tsc 4d4f005c)**: every corpus 0 but effect 3 (the dtslint TS2578s
-below) and vscode 1 (stateToProgressAdapter.test.ts:1956, see bugs/type_core.md); zod-root = tsc 6's 53. The
+below; vscode's last one, stateToProgressAdapter.test.ts:1956, fixed by the 2026-10-07 triage); zod-root = tsc 6's 53. The
 sections below predate the re-pin (counts "at pinning" are the 5.8 pins). tsgo 7.0.2's disagreements with tsc 6 on
 these corpora are in bugs/tsgo_divergences.md.
 
