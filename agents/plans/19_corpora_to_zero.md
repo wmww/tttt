@@ -1,5 +1,22 @@
 # Plan 19: the corpora to zero (loop, like plan 08)
 
+**Status 2026-10-07 (plan 48 stage 5 re-pin, tsc 4d4f005c)**: every corpus 0 but effect 3 (the dtslint TS2578s
+below) and vscode 1 (stateToProgressAdapter.test.ts:1956, see bugs/type_core.md); zod-root = tsc 6's 53. The
+sections below predate the re-pin (counts "at pinning" are the 5.8 pins). tsgo 7.0.2's disagreements with tsc 6 on
+these corpora are in bugs/tsgo_divergences.md.
+
+## Re-pin configs (2026-10-07; `thirdparty/ensure-corpora.sh` and the overlays have the details)
+- Pin unchanged: **nest** (`tsconfig.corpus.json` with `strict: false`), **react** (`baseUrl: null`: a JSON `null` in
+  compilerOptions unsets baseUrl and the booleans; other string/list options still ignore `null`), **valibot**
+  (d4da61a0; tsc 6 skips semantic diagnostics after TS5107 without `--ignoreDeprecations 6.0`), **effect** (v3 head
+  e730f59d, TS 5.8.3 upstream; main is Effect 4 on tsgo; the overlay unsets `downlevelIteration` and
+  `esModuleInterop: false` with `null`).
+- Re-pinned to TS-6-era heads: **webpack** 86d31e06, **xstate** 38dcaffb (overlay = upstream's root tsconfig limited
+  to core), **vue** 4ab865a8, **tanstack-router** 30fc108a (react-router's tsconfig now says `types: ["node"]`),
+  **excalidraw** 53973c3a, **type-fest** e9f614f1 (peak RSS 2.3 GB on the IntRange tests), **zod** 0b216ef6
+  (tsconfig.test.json, no overlay), **typescript-eslint** 70629871 (`-b`), **vscode** 2afa73ea (src/tsconfig.corpus.json
+  = upstream's minus 3 test files tsc 6 reports circularity in; ~10.1k files / 3.41M lines, tsc 6 needs >8 GB heap).
+
 **Status 2026-10-06**: excalidraw and tanstack-router pinned and drained to 0 the same session (see their sections).
 **Status 2026-10-05**: effect pinned (6300 -> 63, see its section); vscode pinned (129 -> 0); the rest as below. **Status 2026-09-29 (seventh
 window's corpus session, todo entry 1)**: tsc 0, valibot 0, react 0, nest 0, type-fest 0,
