@@ -4128,7 +4128,11 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
         if (scope->container && scope->container->exports && scope->kind != SCOPE_GLOBAL && exports_meaning &&
             suggest_in_table(scope->container->exports, false, true, name, exports_meaning, out)
         ) {
-            out->export_local = (meaning & SYMBOL_VARIABLE) != 0; // (A value meaning: the type meaning has no variables)
+            // (A value meaning: the type meaning has no variables. Only the declaration block's own locals have the
+            // local: another block of a merged namespace finds the export itself)
+            bool here = false;
+            for (u32 d = 0; out->symbol && d < out->symbol->decl_count && !here; d++) here = out->symbol->decls[d].block == scope;
+            out->export_local = (meaning & SYMBOL_VARIABLE) != 0 && (here || !out->symbol);
             return true;
         }
     }
