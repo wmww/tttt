@@ -2016,6 +2016,29 @@ static void constraint_pass_resolve(Checker* me, ConstraintPass* pass, u32 i) {
         bool fits = pass->inferred[i] && (pass->inf->within_relation ?
             ty_is_related_within(me, result, ty_with_this_arg(me, instantiated, result)) :
             ty_is_related(me, result, ty_with_this_arg(me, instantiated, result), TY_RELATION_ASSIGNABLE));
+        InferParam const* param = &pass->inf->params[i];
+        if (!fits && pass->inferred[i] && result->kind == TY_UNION && param->has_priority &&
+            param->priority == INFER_PRIORITY_RETURN_TYPE
+        ) {
+            // A pure return type inference may fit by dropping the members that don't (tsc 6.0's getInferredType:
+            // filteredByConstraint)
+            TyBuf kept = {0};
+            for (u32 m = 0; m < result->composite.types.len; m++) {
+                Ty const* member = result->composite.types.data[m];
+                Ty const* bound = ty_with_this_arg(me, instantiated, member);
+                if (pass->inf->within_relation ? ty_is_related_within(me, member, bound) :
+                    ty_is_related(me, member, bound, TY_RELATION_ASSIGNABLE)
+                ) {
+                    ty_buf_push(&kept, member);
+                }
+            }
+            if (kept.len) {
+                pass->results[i] = ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+                pass->mapper = inference_mapper_of(me, pass->inf, params, pass->results);
+                fits = true;
+            }
+            ty_buf_drop(&kept);
+        }
         if (!fits) {
             // (The inference of the other variance if that fits: co `[Ref<string>]` when contra `[string]` doesn't)
             Ty const* fallback = pass->fallbacks[i];

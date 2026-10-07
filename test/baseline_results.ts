@@ -19106,9 +19106,9 @@ const baselines = {
         types: true,
     },
     'inferenceContextualReturnTypeUnion1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceContextualReturnTypeUnion2': {
         errors: true,
@@ -19116,12 +19116,12 @@ const baselines = {
         types: true,
     },
     'inferenceContextualReturnTypeUnion3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceContextualReturnTypeUnion4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30151,9 +30151,9 @@ const baselines = {
         types: true,
     },
     'returnTypeInferenceContextualTypeIgnoreAnyUnknown1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnTypeInferenceNotTooBroad': {
         errors: true,

@@ -573,13 +573,19 @@ static TyMapper const* non_fixing_mapper(Checker* me, OuterInference* outer) {
 Ty const* ty_instantiate_contextual_type_for(Checker* me, Ty const* contextual, bool signature) {
     OuterInference* outer = my outer_inference;
     if (!contextual || !outer || !(contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return contextual;
-    if (!signature) return outer->return_mapper ? instantiate_with_return_mapper(me, contextual, outer->return_mapper) : contextual;
+    // (An instantiation that is any or unknown says nothing: the contextual type stays, tsc 6.0)
     bool any = false;
-    for (u32 j = 0; j < outer->inf->len && !any; j++) {
+    for (u32 j = 0; signature && j < outer->inf->len && !any; j++) {
         any = has_candidates_or_fixed(&outer->inf->params[j]) || ty_param_default(me, outer->sig->type_params.data[j]);
     }
-    if (any) return instantiate_instantiable(me, contextual, non_fixing_mapper(me, outer));
-    if (outer->return_mapper) return instantiate_with_return_mapper(me, contextual, outer->return_mapper);
+    if (any) {
+        Ty const* ret = instantiate_instantiable(me, contextual, non_fixing_mapper(me, outer));
+        if (!(ret->flags & (TYF_ANY | TYF_UNKNOWN))) return ret;
+    }
+    if (outer->return_mapper) {
+        Ty const* ret = instantiate_with_return_mapper(me, contextual, outer->return_mapper);
+        if (!(ret->flags & (TYF_ANY | TYF_UNKNOWN))) return ret;
+    }
     return contextual;
 }
 
