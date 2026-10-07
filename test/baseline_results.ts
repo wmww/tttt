@@ -10751,7 +10751,7 @@ const baselines = {
         types: true,
     },
     'disallowedBlockScopedInPresenceOfParseErrors1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

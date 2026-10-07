@@ -2803,8 +2803,8 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             }
             // (Not after an illegal modifier, `if (a) export const x = 1;`: tsc's checkVariableStatement stops at TS1184)
             if (body && my decl.variable.keyword != VAR_INIT_VAR && !my decl.props.exported && !span_valid(my decl.props.declare_keyword)) {
-                // tsc's checkGrammarForDisallowedBlockScopedVariableStatement()
-                error_ctx_grammar_error_d(errs, span_with_semicolon(my span), 1156,
+                // tsc's checkGrammarForDisallowedBlockScopedVariableStatement() (an error, said with parse errors too)
+                error_ctx_error_d(errs, span_with_semicolon(my span), 1156,
                     "'", variable_statement_keyword_str(&my decl.variable), "' declarations can only be declared inside a block.");
             }
             // (A `declare` or `export` modifier on a `using` is an error of its own, which stops tsc's grammar checks)
