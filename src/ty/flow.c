@@ -633,6 +633,11 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
     } else if (key->tag == EXPR_IDENTIFIER) {
         Symbol const* symbol = key->identifier.target;
         if (!symbol || !symbol->is_const || key->identifier.keyword) return nullptr;
+        // (A for-in/of variable has no initializer to name it: tsc's tryGetNameFromEntityNameExpression)
+        Binding const* binding = (symbol->flags & SYMBOL_VARIABLE) ? symbol_find_node(symbol, SYMBOL_DECL_VARIABLE) : nullptr;
+        Binding const* root = binding;
+        while (root && root->parent) root = root->parent;
+        if (root && root->source && root->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR) return nullptr;
         // (tsc's tryGetNameFromEntityNameExpression only reads the initializer of a declaration before the use: the
         // type of one after it may depend on this very reference, `bar[id]++; const id = foo.bar`)
         Span declared = symbol->name_span;

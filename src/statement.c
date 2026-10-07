@@ -921,6 +921,8 @@ static void for_each_loop_add_names(ForEachLoopStatement* me, Scope* scope) {
         i->binding.has_explicit_type = false;
         binding_add_names(&i->binding, &my var_type, scope, (BindingAddNamesProps){
             .function_scoped = my variable.statement.keyword == VAR_INIT_VAR,
+            // (`for (const x of xs)` declares constant variables like any `const`: tsc's isConstantVariable)
+            .is_const = variable_statement_is_const(&my variable.statement),
         });
     }
 }
