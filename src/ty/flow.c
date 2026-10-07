@@ -2671,7 +2671,14 @@ static bool is_not_case_unit(Checker* me, Ty const* member, void const* arg) {
             if (is_unit_type(member->composite.types.data[i])) unit = member->composite.types.data[i];
         }
     }
-    return !(is_unit_type(unit) && buf_contains(switch_types, unit));
+    if (!is_unit_type(unit)) return true;
+    if (buf_contains(switch_types, unit)) return false;
+    // (A case whose unit type is comparable to it covers it too, `case E.cat` for "cat": tsc 6.0)
+    for (u32 i = 0; i < switch_types->len; i++) {
+        Ty const* t = switch_types->data[i];
+        if (is_unit_type(t) && ty_is_comparable_either_way(me, t, unit)) return false;
+    }
+    return true;
 }
 
 static Ty const* narrow_by_switch_on_discriminant(FlowQuery* q, Ty const* type, FlowSwitchClause const* clause) {
