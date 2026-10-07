@@ -913,7 +913,7 @@ const baselines = {
     'amdLikeInputDeclarationEmit': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'amdModuleBundleNoDuplicateDeclarationEmitComments': {
         errors: true,
@@ -2458,7 +2458,7 @@ const baselines = {
     'baseExpressionTypeParameters': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'baseIndexSignatureResolution': {
         errors: true,
@@ -11668,7 +11668,7 @@ const baselines = {
     'dynamicNamesErrors': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'dynamicRequire': {
         errors: true,
@@ -12378,7 +12378,7 @@ const baselines = {
     'erasableSyntaxOnly': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'erasableSyntaxOnly2': {
         errors: true,
@@ -17443,7 +17443,7 @@ const baselines = {
     'identityAndDivergentNormalizedTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'identityForSignaturesWithTypeParametersAndAny': {
         errors: true,
@@ -59888,7 +59888,7 @@ const baselines = {
     'customConditions(resolvepackagejsonexports=true)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationNotFoundPackageBundlesTypes': {
         errors: true,

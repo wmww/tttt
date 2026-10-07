@@ -2587,8 +2587,28 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
             FoundProp found = ty_find_prop(me, source, name);
             if (!found.found || (found.flags & (PROP_PRIVATE | PROP_PROTECTED))) continue;
             if (found.prop && !ty_is_spreadable_prop(me, found.prop)) continue;
+            // (One member's property, not the intersection's own: the same property unless that makes it writable,
+            // tsc's getSpreadSymbol)
+            Prop const* single = members->props[j];
+            for (u32 k = i + 1; k < parts.len && single; k++) {
+                if (ty_get_prop(me, ty_apparent_type(me, parts.data[k]), name)) single = nullptr;
+            }
+            if (single && !(single->flags & PROP_READONLY) && found.type == prop_type(me, single)) {
+                props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
+                panic_if(!props, "out of memory");
+                props[count++] = (ObjectLiteralProp){ .reuse = single };
+                continue;
+            }
+            // (Declared where the first declared property it comes from is; a mapped type's property reuses the
+            // annotation of the property it maps, like object_rest_type())
             Prop const* origin = found.prop;
-            while (origin && origin->target) origin = origin->target;
+            while (origin && origin->target && !origin->decl->decl_span_count) origin = origin->target;
+            TypeNode const* annotation = origin ? ty_prop_annotation(origin) : nullptr;
+            Prop const* mapped_from = found.prop ? prop_decl_rare(found.prop->decl)->mapped_from : nullptr;
+            if (!annotation && mapped_from) {
+                while (mapped_from->target) mapped_from = mapped_from->target;
+                annotation = ty_prop_annotation(mapped_from);
+            }
             props = realloc(props, sizeof(ObjectLiteralProp) * (count + 1));
             panic_if(!props, "out of memory");
             props[count++] = (ObjectLiteralProp){
@@ -2600,7 +2620,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
                 .decl_span_count = origin ? origin->decl->decl_span_count : 0,
                 .name_is_value = origin && origin->decl->name_is_value,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
-                .asserted = origin ? ty_prop_annotation(origin) : nullptr,
+                .asserted = annotation,
                 .spread_variable = origin ? origin->decl->symbol : nullptr,
             };
         }
