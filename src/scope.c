@@ -2831,11 +2831,11 @@ bool scope_report_misspelled_export(Symbol const* container, Span name, csview c
         csview suggestion = symbol_entry_name(&entries[best]);
         Error* error = error_ctx_error_d(errs, name, 2724, "'", container_name, "' has no exported member named '",
             name, "'. Did you mean '", suggestion, "'?");
-        // (Its valueDeclaration: an alias has one, an interface or a type alias not. Only an import's: tsc's
-        // resolveEntityName has no related information)
+        // (Its valueDeclaration, which an interface, a type alias or an alias (`export { X }`) lacks. Only an import's:
+        // tsc's resolveEntityName has no related information)
         Symbol const* symbol = entries[best].symbol;
         for (u32 i = 0; error && declared_here && i < symbol->decl_count; i++) {
-            if (!(symbol->decls[i].flags & (SYMBOL_VALUE | SYMBOL_ALIAS)) || !span_valid(symbol->decls[i].name)) continue;
+            if (!(symbol->decls[i].flags & SYMBOL_VALUE) || !span_valid(symbol->decls[i].name)) continue;
             error_add_related_d(error, symbol->decls[i].name, 2728, "'", suggestion, "' is declared here.");
             break;
         }
@@ -4237,11 +4237,28 @@ static bool suggest_in_table(SymbolTable const* table, bool globals, bool export
 }
 
 // tsc's resolveNameForSymbolSuggestion: the innermost table with a close enough name decides
+// Or'ed into the meaning of a name looked up from a JSDoc `@param` or `@return` type, whose function's parameters
+// (and `var`s) aren't candidates (scope_resolve()): the flag on the scope is gone by the time a deferred report asks
+#define MEANING_FROM_JSDOC_PARAMETER (1u << 30)
+
+static u32 jsdoc_parameter_meaning(Scope const* me) {
+    for (Scope const* scope = me; scope; scope = scope->parent) {
+        if (scope->jsdoc_parameter_type) return MEANING_FROM_JSDOC_PARAMETER;
+        if (scope->kind == SCOPE_FUNCTION) break;
+    }
+    return 0;
+}
+
 static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion* out) {
+    bool jsdoc_parameter_type = (meaning & MEANING_FROM_JSDOC_PARAMETER) != 0;
+    meaning &= ~MEANING_FROM_JSDOC_PARAMETER;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         bool globals = scope->kind == SCOPE_GLOBAL;
         SymbolTable const* table = globals ? &scope->binder->globals : &scope->locals;
-        if ((table->count || table->parent || globals) && suggest_in_table(table, globals, false, name, meaning, out)) return true;
+        // (A JSDoc `@param` or `@return` type doesn't see the function's parameters: see scope_resolve())
+        u32 local_meaning = jsdoc_parameter_type && scope->kind == SCOPE_FUNCTION ? meaning & ~(u32)SYMBOL_FUNCTION_SCOPED_VARIABLE : meaning;
+        if (scope->kind == SCOPE_FUNCTION) jsdoc_parameter_type = false;
+        if ((table->count || table->parent || globals) && local_meaning && suggest_in_table(table, globals, false, name, local_meaning, out)) return true;
         // (A module's or namespace's exports by tsc's `meaning & SymbolFlags.ModuleMember`: not `export default <expr>`,
         // a property; an enum's by `meaning & SymbolFlags.EnumMember`)
         u32 const module_member = SYMBOL_VARIABLE | SYMBOL_FUNCTION | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM |
@@ -4255,7 +4272,9 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
             // local: another block of a merged namespace finds the export itself)
             bool here = false;
             for (u32 d = 0; out->symbol && d < out->symbol->decl_count && !here; d++) here = out->symbol->decls[d].block == scope;
-            out->export_local = (meaning & SYMBOL_VARIABLE) != 0 && (here || !out->symbol);
+            // (An enum's members have no locals: the member itself, with its declaration)
+            bool enum_member = out->symbol && (out->symbol->flags & SYMBOL_ENUM_MEMBER);
+            out->export_local = (meaning & SYMBOL_VARIABLE) != 0 && (here || !out->symbol) && !enum_member;
             return true;
         }
     }
@@ -4410,6 +4429,7 @@ static bool walk_unvisited(Expr const* left) {
 }
 
 void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
+    meaning |= jsdoc_parameter_meaning(me);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_NOT_FOUND, me, errs);
@@ -4443,6 +4463,7 @@ static void report_misspelled_fallback(Span at, csview name, MisspelledFallback 
 static void report_misspelled_or(
     Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
 ) {
+    meaning |= jsdoc_parameter_meaning(me);
     ResolveShard* shard = binder_shard(my binder);
     if (shard) {
         DeferredEvent* event = defer_event(shard, DEFERRED_MISSPELLED, me, errs);

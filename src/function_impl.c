@@ -364,7 +364,12 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         scope_release(return_scope, return_mark);
     } else {
         Scope const* saved_ret_host = js ? identifier_type_set_jsdoc_host(function_scope) : nullptr;
+        // (A JSDoc `@return` type doesn't see the function's parameters and `var`s as values either: tsc's
+        // resolveNameHelper with a JSDocReturnTag lastLocation, like `@param`'s, see binding_lookup_names())
+        bool jsdoc_return = my ret.from_jsdoc && function_scope->kind == SCOPE_FUNCTION && !function_scope->jsdoc_parameter_type;
+        if (jsdoc_return) function_scope->jsdoc_parameter_type = true;
         type_lookup_names(&my ret, function_scope, errs);
+        if (jsdoc_return) function_scope->jsdoc_parameter_type = false;
         if (js) identifier_type_set_jsdoc_host(saved_ret_host);
     }
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_overload_count; i++) {

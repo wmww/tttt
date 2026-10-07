@@ -397,6 +397,19 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             return;
         }
         if (!my target) my target = scope_get_value(names, my name.sv, &my symbol); // TS2749 below
+        if (!my target && my jsdoc) {
+            // A value only the function its `@param` or `@return` is on declares (a parameter, a `var`) is still found:
+            // tsc's resolveEntityNameFromAssignmentDeclaration looks again from the function itself
+            Scope* flagged = nullptr;
+            for (Scope* s = names; s && !flagged; s = s->kind == SCOPE_FUNCTION ? nullptr : s->parent) {
+                if (s->jsdoc_parameter_type) flagged = s;
+            }
+            if (flagged) {
+                flagged->jsdoc_parameter_type = false;
+                my target = scope_get_value(names, my name.sv, &my symbol);
+                flagged->jsdoc_parameter_type = true;
+            }
+        }
         if (!my target && my jsdoc) my target = my symbol = jsdoc_prototype_type_param(names, my name);
         // `exports` of a CommonJS file is the file's symbol, a value (tsc's resolveNameHelper)
         if (!my target && my jsdoc && names->file && names->file->is_commonjs && names->file->scope &&
