@@ -1731,7 +1731,10 @@ static void class_field_check_implicit_any(ClassDecl const* me, ClassItem const*
         error_ctx_error_d(errs, name, 7008, "Member '", name, "' implicitly has an 'any[]' type.");
         return;
     }
-    if ((name.source && name.source->is_js) || class_item_private_in_ambient(me, item)) return;
+    // (In JavaScript a field without an initializer nothing assigns is any too; one `this.x = v` assigns has the
+    // assignments' type)
+    bool js = name.source && name.source->is_js;
+    if ((js && (item->field.value.tag != EXPR_IMPLICIT_ANY || item->field.js_assigned)) || class_item_private_in_ambient(me, item)) return;
     if (item->field.value.tag != EXPR_IMPLICIT_ANY) {
         // tsc's reportErrorsFromWidening: inside the type if it can (object literal properties), else at the member
         // with the widened type (`x = null`: any, `x = []`: any[])
