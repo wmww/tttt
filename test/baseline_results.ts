@@ -19823,7 +19823,7 @@ const baselines = {
     'instantiateContextualTypes': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'instantiateContextuallyTypedGenericThis': {
         errors: true,
@@ -58681,7 +58681,7 @@ const baselines = {
         types: true,
     },
     'inlineJsxFactoryDeclarationsLocalTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
