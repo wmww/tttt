@@ -11663,7 +11663,7 @@ const baselines = {
     'dynamicNames': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dynamicNamesErrors': {
         errors: true,

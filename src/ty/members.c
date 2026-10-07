@@ -404,6 +404,8 @@ static void builder_add_interface_member(
                 if (i->key.tag == INTERFACE_KEY_NAME) {
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
+                    // (Late bound: not among the early members, see early_declared_members())
+                    if (builder->skip_computed && i->key.expr.ref && expr_is_entity_name(i->key.expr.ref)) break;
                     key = ty_expr_type(me, i->key.expr.ref);
                     name = ty_literal_name(me, key);
                     if (!name) break;
@@ -581,13 +583,13 @@ static void builder_add_interface(
         bool is_index = i->key.tag == INTERFACE_KEY_INDEX;
         if (builder->index_pass == 1 && is_index) continue;
         if (builder->index_pass != 2 || is_index) builder_add_interface_member(me, builder, i, ctx, parent);
-        if (builder->index_pass == 1) continue;
+        if (builder->index_pass == 1 || builder->skip_computed) continue;
         u32 kind = interface_computed_index_kind(me, i);
         if (!kind) continue;
         computed[kind >> 4] = true;
         readonly[kind >> 4] &= i->readonly;
     }
-    if (builder->index_pass == 1) return; // (The computed names' index signatures with the others)
+    if (builder->index_pass == 1 || builder->skip_computed) return; // (The computed names' index signatures with the others)
     // A member named by an expression of type string, number or symbol makes an index signature for that key of every
     // member (tsc's getIndexInfosOfIndexSymbol with hasLateBindableIndexSignature, see builder_add_computed_index_infos())
     static TyIntrinsic const keys[3] = { TY_STRING, TY_NUMBER, TY_ES_SYMBOL };
@@ -2341,6 +2343,52 @@ uint16_t ty_merged_owner_index(Checker* me, Ty const* declared) {
 // The members as declared: own members, then what the bases add. For a type with a `this` type these mention it, and
 // the bases are taken with the this-argument being it (tsc's resolveDeclaredMembers + the base part of
 // resolveObjectTypeMembers)
+// A class or interface whose members have late-bound names (`[rI.x]: T`): while their keys are evaluated, the type
+// already has the members it names syntactically (tsc's getResolvedMembersOrExportsOfSymbol publishes the early-bound
+// symbols before late binding), so `[rI.x]` with `rI: RI<"a">` finds `x`. Published on the declared type's states in
+// flight, replaced by the full members when they are done. Made only when something asks for the members meanwhile
+// (ty_members() and declared_raw_members())
+static void early_declared_members(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_DECLARED || (ty->declared.kind != TY_DECLARED_INTERFACE && ty->declared.kind != TY_DECLARED_CLASS_INSTANCE) ||
+        ty->declared.merged_value || !ty->declared.symbol) {
+        return;
+    }
+    Symbol const* decl = ty->declared.symbol;
+    LowerCtx ctx = { .generic = ty->declared.type_params.len > 0 || ty->declared.this_param };
+    if (ctx.generic) ctx.merged_owner = ty_merged_owner_index(me, ty);
+    bool late = false;
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count && !late; node++) {
+        if (node->kind == SYMBOL_DECL_INTERFACE) {
+            for_each (i, vec_interface_member, &((InterfaceDecl const*)node->node)->type.interface.members) {
+                late |= i->key.tag == INTERFACE_KEY_EXPR && i->key.expr.ref && expr_is_entity_name(i->key.expr.ref);
+            }
+        } else if (node->kind == SYMBOL_DECL_CLASS) {
+            for_each (i, vec_class_item, &((ClassDecl const*)node->node)->items) {
+                Expr const* key = i->tag == CLASS_ITEM_FIELD && !i->field.is_static ? i->field.computed_key :
+                    i->tag == CLASS_ITEM_METHOD && !i->method.is_static ? i->method.computed_key : nullptr;
+                late |= key && expr_is_entity_name(key);
+            }
+        }
+    }
+    if (!late) return;
+    TyObjectState* states[2] = { ty->declared.raw, object_state(ty) };
+    bool wanted = false;
+    for (u32 k = 0; k < 2; k++) wanted |= states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members;
+    if (!wanted) return;
+    MembersBuilder early = { .skip_computed = true };
+    for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
+        if (node->kind == SYMBOL_DECL_INTERFACE) {
+            builder_add_interface(me, &early, &((InterfaceDecl const*)node->node)->type.interface, ctx, decl);
+        } else if (node->kind == SYMBOL_DECL_CLASS) {
+            builder_add_class_items(me, &early, node->node, false, ctx, decl);
+        }
+    }
+    Members const* members = builder_finish(me, &early);
+    for (u32 k = 0; k < 2; k++) {
+        if (states[k] && states[k]->members_state == LAZY_STATE_IN_FLIGHT && !states[k]->members) states[k]->members = members;
+    }
+}
+
 static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
     Symbol const* decl = ty->declared.symbol;
     Ty const* this_param = ty->declared.this_param;
@@ -2620,6 +2668,8 @@ static Members const* declared_raw_members(Checker* me, Ty const* declared) {
     switch (state->members_state) {
         case LAZY_STATE_DONE: return state->members;
         case LAZY_STATE_IN_FLIGHT: // `interface A extends A`
+            if (!state->members) early_declared_members(me, declared);
+            if (state->members) return state->members; // (The early members, see early_declared_members())
             members_reentered(me, declared);
             return &empty_members;
         case LAZY_STATE_NOT_STARTED: break;
@@ -3636,7 +3686,21 @@ Members const* ty_members(Checker* me, Ty const* ty) {
 
         case LAZY_STATE_IN_FLIGHT:
             // An interface's properties while its index signatures are lowered (see resolve_declared_members())
+            if (ty->kind == TY_DECLARED) early_declared_members(me, ty);
+            if (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED && ty->reference.target->declared.raw &&
+                ty->reference.target->declared.raw->members_state == LAZY_STATE_IN_FLIGHT && !ty->reference.target->declared.raw->members
+            ) {
+                early_declared_members(me, ty->reference.target);
+            }
             if (state->members) return state->members;
+            // A reference to a declared type whose early members are published: those, instantiated (see
+            // early_declared_members())
+            if (ty->kind == TY_REFERENCE && ty->reference.target->kind == TY_DECLARED && ty->reference.target->declared.raw &&
+                ty->reference.target->declared.raw->members_state == LAZY_STATE_IN_FLIGHT && ty->reference.target->declared.raw->members
+            ) {
+                state->members = resolve_members(me, ty);
+                return state->members;
+            }
             // Only a type whose own members depend on its own members gets here (`interface A extends A`)
             members_reentered(me, ty);
             return &empty_members;
