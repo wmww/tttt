@@ -12456,7 +12456,7 @@ const baselines = {
         types: true,
     },
     'errorInUnnamedClassExpression': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

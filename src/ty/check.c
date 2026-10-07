@@ -2763,7 +2763,8 @@ static ClassDecl const* abstract_member_class(Prop const* prop, bool methods) {
     if (!methods && (prop->flags & PROP_METHOD)) return nullptr;
     if (!prop->parent || !span_valid(prop->decl->name_span)) return nullptr;
     ClassDecl const* class_decl = class_decl_of(prop->parent);
-    if (!class_decl || !class_decl->is_abstract) return nullptr; // (only an abstract class has abstract members)
+    // (An abstract member of a class that isn't abstract counts too, TS1253 aside: tsc reads the member's modifiers)
+    if (!class_decl) return nullptr;
     char const* name_at = span_start_ptr(prop->decl->name_span);
     for_each (i, vec_class_item, &class_decl->items) {
         if (!span_contains(i->span, name_at)) continue;
@@ -2819,9 +2820,10 @@ static bool check_accessibility(
         site->initializer_context == INITIALIZER_STATIC_FIELD)
     ) {
         ClassDecl const* abstract_class = abstract_member_class(prop, false);
-        if (abstract_class && span_valid(abstract_class->name)) {
+        if (abstract_class) {
+            // (symbolToString of the class: a class expression by the variable it initializes)
             error_ctx_error_d(errs, span, 2715, "Abstract property '", atom_sv(prop->name), "' in class '",
-                abstract_class->name, "' cannot be accessed in the constructor.");
+                class_decl_display_name(abstract_class), "' cannot be accessed in the constructor.");
             return false;
         }
     }
