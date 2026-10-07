@@ -242,7 +242,6 @@ functionWithMultipleReturnStatements	T	src-changed	bl-changed
 functionWithMultipleReturnStatements2	T	src-changed	bl-changed
 functionWithNoBestCommonType1	T	src-changed	bl-changed
 functionWithNoBestCommonType2	T	src-changed	bl-changed
-functionsMissingReturnStatementsAndExpressionsStrictNullChecks	ET	src-changed	bl-changed
 generatorTypeCheck23	T	src-same	bl-changed
 generatorTypeCheck24	T	src-same	bl-changed
 generatorTypeCheck52	T	src-same	bl-changed
@@ -278,7 +277,6 @@ indexerConstraints2	T	src-changed	bl-changed
 indirectDiscriminantAndExcessProperty	E	src-changed	bl-changed
 inferTypeParameterConstraints	T	src-changed	bl-changed
 inferTypePredicates	T	src-changed	bl-changed
-inferenceDoesNotAddUndefinedOrNull	T	src-changed	bl-changed
 inferenceOptionalPropertiesToIndexSignatures	T	src-same	bl-changed
 inferredFunctionReturnTypeIsEmptyType	T	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed

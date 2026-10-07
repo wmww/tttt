@@ -3186,16 +3186,20 @@ static Ternary type_args_related(
             // Even so identical arguments make identical instantiations
             related = st->relation == TY_RELATION_IDENTITY ? is_related_to(me, st, s, t, false) :
                 ty_is_related(me, s, t, TY_RELATION_IDENTITY) ? TERNARY_TRUE : TERNARY_FALSE;
-        } else if (kind == VARIANCE_COVARIANT) {
-            related = is_related_to(me, st, s, t, report);
-        } else if (kind == VARIANCE_CONTRAVARIANT) {
-            related = is_related_to(me, st, t, s, report);
-        } else if (kind == VARIANCE_BIVARIANT) {
-            related = is_related_to(me, st, t, s, false);
-            if (!related) related = is_related_to(me, st, s, t, report);
         } else {
-            related = is_related_to(me, st, s, t, report);
-            if (related) related &= is_related_to(me, st, t, s, report);
+            // A measurement going through an unreliable variance is unreliable too (tsc 6.0's typeArgumentsRelatedTo)
+            if (variance & VARIANCE_UNRELIABLE) report_variance(me, s, VARIANCE_UNRELIABLE);
+            if (kind == VARIANCE_COVARIANT) {
+                related = is_related_to(me, st, s, t, report);
+            } else if (kind == VARIANCE_CONTRAVARIANT) {
+                related = is_related_to(me, st, t, s, report);
+            } else if (kind == VARIANCE_BIVARIANT) {
+                related = is_related_to(me, st, t, s, false);
+                if (!related) related = is_related_to(me, st, s, t, report);
+            } else {
+                related = is_related_to(me, st, s, t, report);
+                if (related) related &= is_related_to(me, st, t, s, report);
+            }
         }
         if (!related) return TERNARY_FALSE;
         result &= related;

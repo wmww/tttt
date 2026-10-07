@@ -16201,19 +16201,19 @@ const baselines = {
         types: true,
     },
     'functionsMissingReturnStatementsAndExpressions(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionsMissingReturnStatementsAndExpressions(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionsMissingReturnStatementsAndExpressionsStrictNullChecks': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionsWithImplicitReturnTypeAssignableToUndefined(strictnullchecks=false)': {
         errors: true,
@@ -19128,7 +19128,7 @@ const baselines = {
     'inferenceDoesNotAddUndefinedOrNull': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferenceDoesntCompareAgainstUninstantiatedTypeParameter': {
         errors: true,
@@ -36131,7 +36131,7 @@ const baselines = {
         types: true,
     },
     'variancePropagation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
