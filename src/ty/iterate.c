@@ -811,8 +811,13 @@ void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, E
         error_ctx_error_d(errs, function_impl_ret_span(generator), 2505, "A generator cannot have a 'void' type annotation.");
         return;
     }
-    if (ret->flags & (TYF_ANY | TYF_ERROR)) return;
     bool async = generator->is_async;
+    if (ret->flags & (TYF_ANY | TYF_ERROR)) {
+        // (Nothing to relate, but tsc still makes the generator type: TS2318 for a lib without one)
+        Ty const* any = ty_intrinsic(me, TY_ANY);
+        ty_generator_type(me, async, any, any, ty_intrinsic(me, TY_UNKNOWN_));
+        return;
+    }
     TyIterationTypes const* types = ty_generator_return_iteration_types(me, ret, async);
     Ty const* yield_type = types ? types->yield_type : ty_intrinsic(me, TY_ANY);
     Ty const* return_type = types ? types->return_type : yield_type;
