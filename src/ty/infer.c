@@ -1360,8 +1360,10 @@ static void infer_to_union(Checker* me, Inference* inf, Ty const* source, Ty con
             // (A walk above was cut short, so which sources were used up isn't known: the whole source, less directly.
             // Less what matched a member above: tsc's inferFromTypes reduces the source before inferToMultipleTypes,
             // `Promise<A> | A` to `T | U | Promise<T | U>` infers A to T and U)
+            // (Remade even when nothing matched: tsc's inferFromTypes sets source = getUnionType(sources) for a union
+            // target, which drops an alias, `Promise<DooDad>` to `Promise<TResult1 | TResult2>` infers the union)
             Ty const* rest = source;
-            if (sources_left < sources.len) {
+            if (sources_left < sources.len || (source->kind == TY_UNION && source->alias)) {
                 u32 len = 0;
                 for (u32 s = 0; s < sources.len; s++) {
                     if (!source_done[s]) unmatched[len++] = sources.data[s];
