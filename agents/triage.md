@@ -161,7 +161,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   templateLiteralTypes1 (TS2590 goes at the innermost type node being checked: tsc's checkSourceElement sets currentNode per type node, tttt's type walk has no spans per TypeNode; template literal and tuple-spread cross products don't report TS2590 at all, ty/template.c TODO);
   relationComplexityError (TS2859 twice: at the assignment's left operand (checkTypeRelatedTo's errorNode) and at the binary expression (currentNode); tttt reports once at the statement);
   largeControlFlowGraph (TS2563 at flow depth 2000: ty/flow.c TODO, needs the containing body's first token and tsc's flowAnalysisDisabled);
-  jsDeclarationsFunctionsCjs (errors pass now; types: tsc doesn't reuse a JSDoc `typeof module.exports.b` / `typeof exports.x`, trackExistingEntityName's introducesError for a leftmost `exports`/`module.exports` in JS fails the whole annotation's reuse; ty_display.c has no whole-tree reuse failure to hang it on);
   unicodeEscapesInNames02(target=es5) (tsc's baseline has the harness's TS-1 pre/post-emit count mismatch: not matchable);
   parenthesizedContexualTyping2 (TS2345 at the outer parentheses of the argument, and the third argument isn't contextually typed by the arity-matching overload);
   mergedDeclarations7 (namespace import of an export= clone: `this` return types compare the clone with the interface);
@@ -174,10 +173,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     type arguments (the default `C['someProp']`) instantiated while Foo's base types resolve. Plan-sized (plan 39 area).
   - awaitedTypeNoLib: without lib tsc narrows `result instanceof Thenable` keeping NotPromise<TResult> (TS2345) and
     reports TS2318 'Awaited'; where the Awaited lookup comes from was not found.
-  - contravariantOnlyInferenceFromAnnotatedFunction: tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod
-    runs inferFromAnnotatedParametersAndReturn for a *non*-context-sensitive function whose contextual signature has more
-    parameters (`fn: (a: string) => {}` against `(a: A, b: B) => void` infers A = string); ty_fix_contextual_signature()
-    only does it for context-sensitive ones, and non-sensitive literal arguments aren't checked with an outer inference.
   - declarationEmitBindingPatternsUnused: interface accessors keep only the setter's parameter type node
     (parse_interface), so `set x({ name: alias }: Named & { o: typeof alias })` has no parameter scope (spurious TS2304)
     and no TS2842 for an unused renaming. Needs the accessor's FunctionImpl kept in InterfaceMember.
@@ -187,8 +182,8 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     `declare module "./test"` augments (TS2300 with the literal's `a`); tttt says TS2671.
   - JS declaration emit diagnostics not implemented: TS9005/TS9006 (jsDeclarationsExportAssignedConstructorFunctionWithSub,
     jsDeclarationsTypeReassignmentFromDeclaration2), TS6232 (jsDeclarationsCrossfileMerge), TS18042 for a JSDoc
-    `@typedef ns.x` namespace imported by name (jsDeclarationsImportAliasExposedWithinNamespace), TS7056/TS5088
-    (declarationEmitPrivatePromiseLikeInterface, arrayFakeFlatNoCrashInferenceDeclarations: serialized length / cyclic).
+    `@typedef ns.x` namespace imported by name (jsDeclarationsImportAliasExposedWithinNamespace), TS5088
+    (arrayFakeFlatNoCrashInferenceDeclarations: cyclic).
   - ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge: `B.NS = require(...)` + `Object.defineProperty(B, "NS")`
     are TS2323 in tsc (both declare NS of a module.exports'd container).
   - genericCallWithGenericSignatureArguments3 (strict false): tsc infers U = `(n: Object) => 1` for a nested arrow's
