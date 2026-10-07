@@ -793,6 +793,14 @@ static bool class_base(Checker* me, ClassDecl const* class_decl, LowerCtx ctx, T
     if (!class_decl_base_arity_fits(class_decl)) return false;
     Ty const* base = ty_declared_type_of(me, decl);
     if (base->kind != TY_DECLARED) return false;
+    // (A base class without construct signatures, its default ones filtered by its own base's type arguments, isn't a
+    // constructor type, TS2507: the base constructor is errorType, no base. Only a derived base class can lack them)
+    SymbolDecl const* base_node = symbol_find_decl(decl, SYMBOL_DECL_CLASS);
+    if (base_node && ((ClassDecl const*)base_node->node)->extends.tag != EXPR_IMPLICIT_ANY && !class_decl->jsdoc_base &&
+        !ty_members(me, ty_static_type_of(me, decl))->construct_count
+    ) {
+        return false;
+    }
     *base_decl = decl;
     TyList params = base->declared.type_params;
     if (!params.len) {
