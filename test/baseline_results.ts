@@ -25581,9 +25581,9 @@ const baselines = {
         types: true,
     },
     'noCrashOnMixin2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCrashOnNoLib': {
         errors: true,

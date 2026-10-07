@@ -1150,6 +1150,7 @@ static bool is_mixin_constructor_type(Checker* checker, Ty const* type) {
     if (sig->type_params.len || sig->param_count != 1 || !sig->params[0].rest) return false;
     Ty const* param = sig->params[0].type;
     if (param->flags & TYF_ANY) return true;
+    if (ty_sig_param_adds_undefined(&sig->params[0])) return false;
     return ty_is_array(checker, param) && (ty_reference_args(checker, param).data[0]->flags & TYF_ANY) &&
         !(ty_reference_args(checker, param).data[0]->flags & TYF_ERROR);
 }

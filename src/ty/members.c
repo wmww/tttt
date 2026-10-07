@@ -3508,13 +3508,22 @@ static Members const* part_members(Checker* me, Ty const* part) {
 
 // tsc's isMixinConstructorType: a single construct signature `new (...args: any[]) => X` (or `...args: any`) without
 // type parameters
+// An optional parameter whose type takes undefined under strictNullChecks (tsc's addOptionality), which SigParam.type
+// leaves out: `...args?: any[]`
+bool ty_sig_param_adds_undefined(SigParam const* param) {
+    return param->decl && param->decl->initializer.binding.optional_parameter && compiler_options()->strict_null_checks;
+}
+
 static bool is_mixin_constructor(Checker* me, Members const* members) {
     if (members->construct_count != 1) return false;
     Signature const* sig = members->construct[0];
     signature_resolve(me, sig);
     if (sig->type_params.len || sig->param_count != 1 || !sig->params[0].rest) return false;
     Ty const* type = sig->params[0].type;
-    return (type->flags & TYF_ANY) || (ty_is_array(me, type) && (ty_reference_args(me, type).data[0]->flags & TYF_ANY));
+    if (type->flags & TYF_ANY) return true;
+    // (`...args?: any[]` is `any[] | undefined`, no array type: tsc's getElementTypeOfArrayType)
+    if (ty_sig_param_adds_undefined(&sig->params[0])) return false;
+    return ty_is_array(me, type) && (ty_reference_args(me, type).data[0]->flags & TYF_ANY);
 }
 
 // Adds a signature unless an identical one is there (tsc's appendSignatures)

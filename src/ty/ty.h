@@ -1479,6 +1479,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file);
 Ty const* ty_any_function_type(Checker* me);
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
+bool ty_sig_param_adds_undefined(SigParam const* param);
 void ty_report_pattern_iterable(Checker* me, Binding const* pattern);
 Ty const* ty_pattern_clone(Checker* me, Ty const* ty); // A clone marked TYF_BINDING_PATTERN
 Ty const* ty_pattern_unclone(Checker* me, Ty const* ty); // A clone of such a clone that is no pattern's
