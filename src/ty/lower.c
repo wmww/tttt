@@ -1501,7 +1501,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 if (file && file->is_js && !undefined_alias && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY &&
                     ty_only_nullable(type)
                 ) {
-                    *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = symbol;
+                    *intern_slot(me, &my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)symbol }, 2) = (void const*)(uintptr_t)2;
                     return ty_intrinsic(me, TY_ANY);
                 }
                 // (tsc's getWidenedType: without strictNullChecks `Foo.x = []` is any[]; `= undefined` is an alias)

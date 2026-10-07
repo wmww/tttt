@@ -58171,7 +58171,7 @@ const baselines = {
         types: true,
     },
     'jsdocTypeFromChainedAssignment3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

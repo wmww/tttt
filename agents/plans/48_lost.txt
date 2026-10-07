@@ -9,7 +9,6 @@ bundledDtsLateExportRenaming	T	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed
 constructorWithIncompleteTypeAnnotation	E	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed
-jsdocTypeFromChainedAssignment3	E	src-changed	bl-changed
 jsxNamespacePrefixInName	T	src-changed	bl-changed
 jsxNamespacePrefixInNameReact	T	src-changed	bl-changed
 legacyNodeModulesExportsSpecifierGenerationConditions	ET	src-changed	bl-changed

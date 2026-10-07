@@ -4059,14 +4059,20 @@ static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
         SymbolDecl const* decl = &member->decls[i];
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
         if (!first) first = decl;
-        if (span_eq(decl->full, expr_outer_span(&op->left))) own = decl;
+        if (decl->node == (void const*)&op->right) own = decl;
     }
     if (!own || !own->node) return;
     int kind = ty_js_assignment_implicit_any(current_checker, member, own->node);
     if (kind == 1) {
         error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an 'any[]' type.");
     } else if ((kind == 2 || kind == 3) && own == first) {
-        error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
+        // (At the value declaration: a `this.x = v` one is the assignment, tsc's bindThisPropertyAssignment; any other
+        // the property access, a Variable to reportImplicitAny)
+        if (own->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || own->assignment == ASSIGNMENT_DECL_THIS_IN_METHOD) {
+            error_ctx_error_d(errs, my inner_span, 7008, "Member '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
+        } else {
+            error_ctx_error_d(errs, expr_outer_span(&op->left), 7005, "Variable '", member->name, "' implicitly has an '", kind == 2 ? "any" : "any[]", "' type.");
+        }
     }
 }
 
