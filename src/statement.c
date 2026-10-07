@@ -1096,6 +1096,11 @@ void function_collect_local_value_names(FunctionImpl const* function, VecSpan* o
     }
 }
 
+// An `if` branch whose names statement_add_names() of the `if` declares (in the scope around)
+static bool branch_hoisted(Statement const* branch) {
+    return branch->tag == STATEMENT_DECL_TYPE || branch->tag == STATEMENT_DECL_INTERFACE || branch->tag == STATEMENT_IF_ELSE;
+}
+
 void statement_add_names(Statement* me, Scope* scope) {
     switch (my tag) {
         case STATEMENT_EXPR:
@@ -1147,10 +1152,17 @@ void statement_add_names(Statement* me, Scope* scope) {
             statement_add_names(my labeled.body, scope);
             break;
 
+        case STATEMENT_IF_ELSE:
+            // A type alias or interface as a branch (TS1156) belongs to the scope around, declared up front like the
+            // others there (tsc's binder): `"" as s; if (a) type s = string;` finds it
+            for_each (i, vec_statement, &my if_else.statements) {
+                if (branch_hoisted(i)) statement_add_names(i, scope);
+            }
+            break;
+
         case STATEMENT_NOOP:
         case STATEMENT_SOURCE_DIRECTIVE:
         case STATEMENT_BLOCK:
-        case STATEMENT_IF_ELSE:
         case STATEMENT_FOR_LOOP:
         case STATEMENT_FOR_EACH_LOOP:
         case STATEMENT_SWITCH:
@@ -1315,7 +1327,7 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
     {
         Statement* branch = vec_statement_at_mut(&my statements, index);
         Scope* branch_scope = branch_names_scope(branch, names);
-        statement_add_names(branch, branch_scope);
+        if (!branch_hoisted(branch)) statement_add_names(branch, branch_scope);
         statement_resolve_names(branch, branch_scope, errs);
     }
     flow_add_antecedent(flow, post, flow->current);
@@ -1327,7 +1339,7 @@ static void if_else_resolve_names(IfStatement* me, isize_t index, Scope* names, 
     } else if (index + 1 < vec_statement_size(&my statements)) {
         Statement* branch = vec_statement_at_mut(&my statements, index + 1);
         Scope* branch_scope = branch_names_scope(branch, names);
-        statement_add_names(branch, branch_scope);
+        if (!branch_hoisted(branch)) statement_add_names(branch, branch_scope);
         statement_resolve_names(branch, branch_scope, errs);
     }
     flow_add_antecedent(flow, post, flow->current);
