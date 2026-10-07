@@ -844,6 +844,14 @@ static void report_conflicts(
     for (u32 i = 0; i < existing->decl_count; i++) {
         Span at = existing->decls[i].name;
         if (!same_file && at.source && at.source->plain_js) continue;
+        // (tsc binds a file's JSDoc typedefs after everything else in it, delayedBindJSDocTypedefTag: a conflict
+        // between other declarations doesn't count the typedef among them yet)
+        SymbolDecl const* other = &existing->decls[i];
+        if (same_file && !(includes & SYMBOL_TYPE_ALIAS) && other->kind == SYMBOL_DECL_TYPE_ALIAS && other->node &&
+            ((TypeDecl const*)other->node)->jsdoc
+        ) {
+            continue;
+        }
         // (tsc reports both sides of a conflict, a lib file's too when lib files are checked: the harness lists those
         // without a position)
         bool lib_too = name.source && !name.source->is_stdlib && lib_files_checked();
