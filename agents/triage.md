@@ -32,3 +32,19 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   inferredReturnTypeIncorrectReuse1 (`fn_1`) and jsFileFunctionOverloads (`T_1`) rename where tttt sees no shadowing,
   coAndContraVariantInferences3 `P_1`. One mechanism worth a look: what tsc's typeParameterShadowsOtherTypeParameterInScope
   finds for an instantiated signature's clone.
+- Plan 48 stage 3 agent D leftovers (types component), 2026-10-07:
+  - thislessFunctionsNotContextSensitive1: a *failed* generic call's non-context-sensitive function argument
+    (`F({ b: function () { return 123; } }, wrongArg)`) gets `() => number`; tsc keeps `() => 123` (its own signature is
+    the contextual return type, as for a successful call: set_contextual_return / ty_late_contextual_return only see
+    resolved calls). Also TS2820's target prints the alias `ExtractFields<...> | undefined`.
+  - instantiateContextualTypes: `Promise.resolve().then(() => cond ? 'A' : 'B')` under a contextual `Promise<DooDad>`
+    infers TResult as the alias DooDad; tsc infers the alias-less union `"ELSE" | "SOMETHING"` (failed under 5.8 too).
+  - nestedGenericSpreadInference: tsc 6 removed SingleSignatureType's outerTypeParameters (getOrCreateTypeFromSignature)
+    and isTupleOfSelf; `wrap(<T>(x: T) => x)` is `{ x: (x: unknown) => unknown }` in tsc 6, tttt keeps it generic.
+  - destructuringParameterDeclaration-like strictness corners are done; jsxNamespacePrefixInName(React): `<a attr:=...>`
+    recovery types `a` undefined in tsc, any in tttt (parser recovery).
+  - Merged generic interfaces (9e63c0cb) instantiate every anonymous type of their members with the owner's type
+    parameters like tsc (isTypeParameterPossiblyReferenced is true for multi-declaration type parameters): +3.8% zod
+    instructions (ZodType<...> is merged, 53 member types now instantiated per schema type), +1% tsc. An identity-only
+    cost (the instances are structurally equal); a relation fast path for two instances of one root whose syntactic
+    free parameters map alike would win some of it back.
