@@ -6203,8 +6203,12 @@ static bool parse_function_args_inner(
         // A `<` in a type or a type member is a signature's (tsc's isStartOfFunctionTypeOrConstructorType,
         // isTypeMemberStart): `<-` is missing its type parameters, the list's recovery leaves the token
         ret->generic = (Generic){0};
+        char const* open = p.pos;
         p.pos++;
         hop_whitespace(&p);
+        // (The list is there, empty: tsc's checkGrammarTypeParameterList, over the `<` to the token after it, which
+        // only a JSDoc type's parse errors don't drop)
+        grammar_error(&p, span_make(p.shared->source, open, p.pos + 1), 1098, "Type parameter list cannot be empty.");
         parse_error(&p, span_from_token(&p), 1139, "Type parameter declaration expected.");
         expected_token_error(&p, ">");
         is_definitely_function = true;
