@@ -3212,6 +3212,7 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
     }
     rare.import_span = span_from(a);
     identifier.jsdoc = p.shared->in_jsdoc;
+    identifier.jsdoc_unchecked = p.shared->in_jsdoc && p.shared->jsdoc_unchecked;
     identifier.rare = c_new(IdentifierTypeRare, rare);
     *ret = type_identifier(c_new(IdentifierType, identifier));
     return parse_success(&p);
@@ -3529,6 +3530,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
         *ret = type_any;
     } else if (word && parse_identifier_type(&p, &parsed.identifier)) {
         parsed.identifier.jsdoc = p.shared->in_jsdoc;
+        parsed.identifier.jsdoc_unchecked = p.shared->in_jsdoc && p.shared->jsdoc_unchecked;
         *ret = type_identifier(c_new(IdentifierType, parsed.identifier));
     } else if (c == '[' && parse_tuple(&p, &parsed.tuple_elements)) {
         *ret = type_tuple(parsed.tuple_elements, false);

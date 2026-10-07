@@ -50,6 +50,9 @@ typedef struct IdentifierType {
     ThisKind this_kind : 8;
     // Written in a JSDoc comment: tsc's JSDoc names (`String` is string, `Object` any...), see jsdoc_intrinsic
     bool jsdoc;
+    // In a JSDoc tag tsc's checkSourceElement never visits (`@returns`, `@throws`): only resolving it reports, no
+    // type argument constraints (checkTypeReferenceNode)
+    bool jsdoc_unchecked;
     // What a JSDoc name means instead of what it would find (tsc's getIntendedTypeFromJSDocTypeReference), set when
     // resolving: nothing is looked up then
     uint8_t jsdoc_intrinsic;
