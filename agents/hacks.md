@@ -710,6 +710,11 @@ src` finds the code-side markers; every significant one has an entry here.
   `TyAnonymous.module_clone` and printed by `display_module_clone()`, and `export_equals_namespace_import_is_clone()`
   keeps such an `ns` from naming what the module assigns. Its predicate (signatures or `default`) is syntactic and
   only approximates namespace_import_type()'s typed one. A real clone symbol would remove both special cases.
+  Tried (2026-10-07): replacing the export= half of both predicates with `ty_namespace_import_original() != null`
+  (the typed answer) is not a pure refactor: transformNestedGeneratorsWithTry's `const Bluebird: typeof Promise;
+  export = Bluebird` with a local `type Bluebird<T>` is a clone by type (a variable with signatures), and the chain
+  then prints `import("bluebird")<void>` where tsc prints `Bluebird<void>` (tsc's clone keeps the module's members
+  reachable for naming). Unifying needs the real clone symbol, not one predicate.
 - `module_specifiers.c` leaves out: getModuleSpecifierOverride (an `import("...")` type node reused from another file
   gets its specifier regenerated in tsc), redirectTargetsMap (a duplicate package's other paths), the output files a
   package.json `imports` entry may name, `moduleName` of AMD files, auto-import preferences. Alternative containers
