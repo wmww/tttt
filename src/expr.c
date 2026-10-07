@@ -4586,7 +4586,12 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 if (i->jsdoc_type) {
                     type_typecheck(i->jsdoc_type, errs);
                     // (At the property assignment, tsc's getErrorSpanForNode of it: a method's is its name)
-                    ty_check_assignable_expr(current_checker, expr_get_type(&i->value), ty_of_node(i->jsdoc_type),
+                    // (What the property holds: tsc's checkPropertyAssignment, checkExpressionForMutableLocation, with the
+                    // tag's type as the contextual type: `a: "a"` is a string against `@type {42}`)
+                    Ty const* jsdoc = ty_of_node(i->jsdoc_type);
+                    Ty const* held = i->tag == OBJECT_ITEM_METHOD ? expr_get_type(&i->value) :
+                        ty_mutable_location_type(current_checker, &i->value, jsdoc);
+                    ty_check_assignable_expr(current_checker, held, jsdoc,
                         i->tag == OBJECT_ITEM_METHOD ? i->name_span : i->span, &i->value, errs);
                 }
                 if (i->tag == OBJECT_ITEM_SPREAD) {
