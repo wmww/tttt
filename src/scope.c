@@ -4097,9 +4097,14 @@ bool scope_hides_base_expression_type_parameter(Scope const* me, Symbol const* s
     if (!symbol || !(symbol->flags & SYMBOL_TYPE_PARAMETER)) return false;
     for (Scope const* scope = me; scope; scope = scope->parent) {
         if (scope_declares_symbol(scope, symbol)) return false;
-        Generic const* generic = scope_rare(scope)->base_expression_of;
-        for (u32 i = 0; generic && i < generic->items.size; i++) {
-            if (generic->items.data[i].owned_symbol == symbol || generic->items.data[i].symbol_ref == symbol) return true;
+        // (And a class's computed member name doesn't see the class's type parameters as types either: tsc's
+        // resolveNameHelper at a ComputedPropertyName returns nothing for them, so `[O]` is TS2304, not TS2693)
+        Generic const* generics[2] = { scope_rare(scope)->base_expression_of, scope_rare(scope)->computed_name_of };
+        for (u32 g = 0; g < 2; g++) {
+            Generic const* generic = generics[g];
+            for (u32 i = 0; generic && i < generic->items.size; i++) {
+                if (generic->items.data[i].owned_symbol == symbol || generic->items.data[i].symbol_ref == symbol) return true;
+            }
         }
     }
     return false;
