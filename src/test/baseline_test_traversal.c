@@ -1000,7 +1000,8 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 for (u32 i = 0; prop && i < prop->decl->decl_span_count; i++) mine |= span_eq(prop->decl->decl_spans[i], own);
                 if (mine && prop->decl->decl_span_count > 1) {
                     for (u32 i = 0; i < prop->decl->decl_span_count; i++) vec_span_push(&declarations, prop->decl->decl_spans[i]);
-                    if ((prop->flags & PROP_METHOD) && prop->decl->overload_count > 1) overloads = prop;
+                    // (Overloads or a duplicate property: one symbol, its first declaration's type)
+                    overloads = prop;
                     if (my computed_accessor) accessor_pair = prop;
                 }
             }
@@ -2075,7 +2076,10 @@ static void heritage_entity_overrides(Expr* base, BaselineTestCase* ctx) {
 }
 
 // An element of a class's `extends` clause: the base type (instance) if there is one, else the expression's
-static void class_extends_compile_test_info(Expr* extends, Ty const* instance, BaselineTestCase* ctx) {
+// `outside`: the type parameters in scope outside the class, `class_params` its own: they aren't in scope in the base
+// class expression (tsc's resolveNameHelper at an ExpressionWithTypeArguments' expression), only in its type arguments
+static void class_extends_compile_test_info(Expr* extends, Ty const* instance, u32 outside, TyList class_params,
+    BaselineTestCase* ctx) {
     bool generic = extends->tag == EXPR_GENERIC_PARAMS;
     Expr* base = generic ? &extends->generic_params->expr : extends;
     u32 overrides = ctx->symbol_override_count;
@@ -2094,10 +2098,13 @@ static void class_extends_compile_test_info(Expr* extends, Ty const* instance, B
                 baseline_test_case_add_type_recursive(ctx, inside, base->inner_span, ty_regular(current_checker, expr_get_type(base)));
             }
         }
+        baseline_test_case_leave_generic(ctx, outside);
         expr_compile_test_info_inner(base, ctx);
     } else {
+        baseline_test_case_leave_generic(ctx, outside);
         expr_compile_test_info(base, ctx);
     }
+    baseline_test_case_enter_type_params(ctx, class_params);
     while (ctx->symbol_override_count > overrides) {
         ctx->symbol_override_count--;
         cstr_drop(&ctx->symbol_overrides[ctx->symbol_override_count].text);
@@ -2167,9 +2174,9 @@ void class_decl_compile_test_info(ClassDecl* me, bool is_expr, BaselineTestCase*
     // (With the wrong number of type arguments the reference is errorType, which the harness replaces with the
     // expression's type)
     if (instance && !class_decl_base_arity_fits(me)) instance = nullptr;
-    if (my extends.tag != EXPR_IMPLICIT_ANY) class_extends_compile_test_info(&my extends, instance, ctx);
+    if (my extends.tag != EXPR_IMPLICIT_ANY) class_extends_compile_test_info(&my extends, instance, saved_generic, class_params, ctx);
     for_each (i, vec_spanned_type, &my implements) heritage_type_compile_test_info(&i->type, ctx);
-    for_each (i, vec_expr, &my unchecked_extends) class_extends_compile_test_info(i, instance, ctx);
+    for_each (i, vec_expr, &my unchecked_extends) class_extends_compile_test_info(i, instance, saved_generic, class_params, ctx);
     for_each (i, vec_type, &my unchecked_implements) heritage_type_compile_test_info(i, ctx);
     for_each (i, vec_expr, &my invalid_implements) heritage_invalid_compile_test_info(i, ctx);
     Symbol const* outer_class = ctx->class_symbol;
