@@ -4,6 +4,8 @@ Leftovers of the 2026-10-07 triage (binder/modules share). Each entry: the test,
 and what a fix needs. JS/JSDoc-specific items are in plans/26_js_jsdoc.md's Leftovers.
 
 ## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
+**Planned: plans/50_export_equals_clones.md** (a link-time original -> clone redirect replacing tttt's
+reverse-direction special cases). The entries below are its tests.
 tttt merges augmentations straight into what `export =` assigns (merge_augmentations()); tsc clones it and records
 the clone as the merged symbol, which everything that resolves names sees. That is equivalent except where tsc's
 clone is a *different* symbol than the one a later lookup finds:
@@ -32,7 +34,7 @@ clone is a *different* symbol than the one a later lookup finds:
   cross-file TS2300 in the export= type, and the module/augmentation display (`Symbol("./test", ...)`).
 
 ## Merges tsc decides after aliases resolve
-tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
+(Plan 50 stage 5.) tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
 mergeSymbol, which resolves an alias target first.
 - importEqualsError45874: a global `import Foo = globals.toString.Blah` (resolves to unknownSymbol) and another
   file's `const Foo`: mergeSymbol returns the source, so the const replaces the alias in globals and they stay two
