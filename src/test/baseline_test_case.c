@@ -540,17 +540,25 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     }
 
     // tsc's harness has its built compiler at /.ts (vfs.ts builtFolder), which the API samples import through a
-    // package.json. That build's API is tests/baselines/reference/api/typescript.d.ts
-    if (csview_find_sv(contents_sv, c_sv("/.ts/typescript.d.ts")) != c_NPOS) {
-        isize cases = csview_find_sv(my source_path, c_sv("/tests/cases/"));
-        if (cases != c_NPOS) {
-            cstr api = cstr_d(csview_slice(my source_path, 0, cases), "/tests/baselines/reference/api/typescript.d.ts");
+    // package.json. That build's API is tests/baselines/reference/api/typescript.d.ts, the other declaration files are
+    // in built/local
+    static char const* const built_files[] = {
+        "typescript.d.ts", "typescript.internal.d.ts", "tsserverlibrary.d.ts", "tsserverlibrary.internal.d.ts",
+    };
+    isize cases_at = csview_find_sv(my source_path, c_sv("/tests/cases/"));
+    for (u32 i = 0; i < c_arraylen(built_files) && cases_at != c_NPOS; i++) {
+        cstr mounted = cstr_d("/.ts/", built_files[i]);
+        if (csview_find_sv(contents_sv, cstr_sv(&mounted)) != c_NPOS) {
+            csview root = csview_slice(my source_path, 0, cases_at);
+            cstr from = i == 0 ? cstr_d(root, "/tests/baselines/reference/api/typescript.d.ts") :
+                cstr_d(root, "/built/local/", built_files[i]);
             cstr contents = cstr_null;
             try (fs_mkdir(mock_fs_get_fs(my fs), c_sv("/.ts"))) or_log(info);
-            try (fs_read_file(fs, cstr_sv(&api), &contents)) or_log(info);
-            try (mock_fs_create_file(my fs, c_sv("/.ts/typescript.d.ts"), contents)) or_log(info);
-            cstr_drop(&api);
+            try (fs_read_file(fs, cstr_sv(&from), &contents)) or_log(info);
+            try (mock_fs_create_file(my fs, cstr_sv(&mounted), contents)) or_log(info);
+            cstr_drop(&from);
         }
+        cstr_drop(&mounted);
     }
 
     // A file that says `/// <reference no-default-lib="true"/>` is the default library (tsc's hasNoDefaultLib)
