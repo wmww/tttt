@@ -28881,12 +28881,12 @@ const baselines = {
         types: true,
     },
     'reachabilityChecks1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'reachabilityChecks10': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28931,7 +28931,7 @@ const baselines = {
         types: true,
     },
     'reachabilityChecks9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -41436,7 +41436,7 @@ const baselines = {
         types: true,
     },
     'neverReturningFunctions1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

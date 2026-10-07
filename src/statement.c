@@ -1179,8 +1179,10 @@ static bool statement_is_executable(Statement const* me) {
 
 // Whether the statement is unreachable. The first statement of unreachable code is where TS7027 goes, which is an
 // error only when allowUnreachableCode is explicitly false (unset: a suggestion, which baselines don't have)
-static bool statement_check_unreachable(Statement const* me, FlowBuilder* flow, VecStatement const* list) {
+static bool statement_check_unreachable(Statement const* me, FlowBuilder* flow, VecStatement const* list, bool* in_range) {
     if (!flow_is_unreachable(flow->current)) return false;
+    // (After a reported statement everything executable is in a reported range)
+    *in_range = statement_is_executable(me) && (flow->current == &flow_reported_unreachable || flow->within_unreachable);
     if (flow->current != &flow_unreachable) return true;
     bool report;
     switch (my tag) {
@@ -1204,16 +1206,18 @@ static bool statement_check_unreachable(Statement const* me, FlowBuilder* flow, 
     }
     if (!report) return true;
     flow->current = &flow_reported_unreachable;
+    *in_range = statement_is_executable(me);
 
     CompilerOptions const* options = compiler_options();
     bool is_error = options->is_set[COMPILER_OPTION_allow_unreachable_code] && !options->allow_unreachable_code &&
-        !flow->ambient && statement_is_executable(me);
+        !flow->ambient && statement_is_executable(me) && !flow->within_unreachable;
     if (!is_error) return true;
     if (!list || !statement_is_executable(me)) {
         error_ctx_error_d(flow->errs, my span, 7027, "Unreachable code detected.");
         return true;
     }
-    // In a block: every run of executable statements from here on
+    // In a list of statements: every run of executable statements from here on (tsc's checkSourceElementUnreachable
+    // reports a run, and each later statement it then visits starts the next)
     isize_t count = vec_statement_size(list);
     for (isize_t i = me - vec_statement_at(list, 0); i < count; i++) {
         if (!statement_is_executable(vec_statement_at(list, i))) continue;
@@ -1360,6 +1364,7 @@ static void switch_resolve_names(SwitchStatement* me, Scope* names, ErrorCtx* er
             has_default = true;
         }
         for_each (j, vec_statement, &clause->statements) {
+            flow->statement_list = &clause->statements;
             statement_resolve_names(j, switch_scope, errs);
         }
         fallthrough = flow->current;
@@ -1847,12 +1852,17 @@ static void statement_resolve_names_labeled(Statement* me, u32 label_count, Scop
     FlowBuilder* flow = names->flow;
     VecStatement const* list = flow->statement_list;
     flow->statement_list = nullptr;
-    if (statement_check_unreachable(me, flow, list)) {
+    bool in_range = false;
+    if (statement_check_unreachable(me, flow, list, &in_range)) {
         // Like tsc: nothing in unreachable code is part of the flow graph
         bool was_dead = flow->dead;
         flow->dead = true;
+        // (In a range of unreachable code: nothing in it is reported again)
+        bool was_within = flow->within_unreachable;
+        if (in_range) my unreachable = flow->within_unreachable = true;
         statement_resolve_names_reachable(me, label_count, names, errs);
         flow->dead = was_dead;
+        flow->within_unreachable = was_within;
         return;
     }
     switch (my tag) {
@@ -2384,6 +2394,48 @@ static void catch_check_redeclared(Binding const* catch_var, Block const* block,
     }
 }
 
+// What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
+// isSourceElementUnreachable by the flow graph)
+static bool statement_unreachable_by_flow(Statement const* me) {
+    return my flow && statement_is_executable(me) && ty_flow_reachability(current_checker, my flow) == FLOW_REACH_NO;
+}
+
+// The statements of a block, a file, a namespace or a case clause. tsc's checkSourceElementUnreachable: a statement the
+// flow graph can't reach starts a run of TS7027 over the unreachable statements that follow it (an error only when
+// allowUnreachableCode is explicitly false), and nothing within the run (or the binder's, Statement.unreachable) is
+// reported again
+void statements_typecheck(VecStatement* list, BlockTypecheckCtx ctx, ErrorCtx* errs) {
+    CompilerOptions const* options = compiler_options();
+    if (!options->is_set[COMPILER_OPTION_allow_unreachable_code] || options->allow_unreachable_code) {
+        for_each (i, vec_statement, list) statement_typecheck(i, ctx, errs);
+        return;
+    }
+    Checker* checker = current_checker;
+    isize_t count = vec_statement_size(list);
+    for (isize_t i = 0; i < count; i++) {
+        Statement* statement = vec_statement_at_mut(list, i);
+        bool was_within = checker->within_unreachable;
+        isize_t last = i;
+        bool reported = !was_within && statement_unreachable_by_flow(statement);
+        if (reported) {
+            while (last + 1 < count) {
+                Statement const* next = vec_statement_at(list, last + 1);
+                if (!statement_is_executable(next) || !(next->unreachable || statement_unreachable_by_flow(next))) break;
+                last++;
+            }
+            error_ctx_error_d(errs, span_between(statement->span, vec_statement_at(list, last)->span), 7027,
+                "Unreachable code detected.");
+        }
+        for (isize_t j = i; j <= last; j++) {
+            Statement* run = vec_statement_at_mut(list, j);
+            checker->within_unreachable = was_within || reported || run->unreachable;
+            statement_typecheck(run, ctx, errs);
+            checker->within_unreachable = was_within;
+        }
+        i = last;
+    }
+}
+
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
     CurrentNode saved = ty_enter_node(current_checker, my span); // tsc's checkSourceElement
     statement_typecheck_inner(me, ctx, errs);
@@ -2391,13 +2443,6 @@ void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
 }
 
 static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
-    // What the builder couldn't know: code after a call that never returns or an exhaustive switch (tsc's
-    // checkSourceElement(); an error only when allowUnreachableCode is explicitly false)
-    if (my flow && compiler_options()->is_set[COMPILER_OPTION_allow_unreachable_code] &&
-        !compiler_options()->allow_unreachable_code && ty_flow_reachability(current_checker, my flow) == FLOW_REACH_NO
-    ) {
-        error_ctx_error_d(errs, my span, 7027, "Unreachable code detected.");
-    }
     bool body = ctx.body;
     ctx.body = false;
     switch (my tag) {
@@ -2617,9 +2662,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
                         );
                     }
                 }
-                for_each (j, vec_statement, &i->statements) {
-                    statement_typecheck(j, ctx, errs);
-                }
+                statements_typecheck(&i->statements, ctx, errs);
                 if (i->fallthrough && ty_flow_reachability(current_checker, i->fallthrough) == FLOW_REACH_YES) {
                     error_ctx_error_d(errs, i->head, 7029, "Fallthrough case in switch.");
                 }

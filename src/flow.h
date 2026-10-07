@@ -156,6 +156,9 @@ typedef struct FlowBuilder {
     // Inside a statement that is unreachable: like tsc, nothing in there gets flow nodes, reports or counts as a
     // `return`. `current` doesn't change while it is set
     bool dead;
+    // Inside a range of unreachable code (TS7027), however deep, except in function expressions: no other TS7027 (tsc's
+    // withinUnreachableCode, the checker's walk)
+    bool within_unreachable;
     FlowNode* break_target;
     FlowNode* continue_target;
     FlowNode* return_target;

@@ -238,7 +238,6 @@ implicitConstParameters	T	src-changed	bl-changed
 importAliasFromNamespace	ET	src-changed	bl-changed
 importAttributes9	T	src-same	bl-changed
 importCallExpressionSpecifierNotStringTypeError	ET	src-same	bl-changed
-importDeclarationInModuleDeclaration1	E	src-changed	bl-changed
 importedAliasedConditionalTypeInstantiation	T	src-changed	bl-changed
 inDoesNotOperateOnPrimitiveTypes	ET	src-changed	bl-changed
 inKeywordTypeguard(strict=false)	T	src-same	bl-changed
@@ -320,8 +319,6 @@ mixinAbstractClassesReturnTypeInference	T	src-same	bl-changed
 mixinClassesAnnotated	T	src-changed	bl-changed
 mixinClassesAnonymous	T	src-changed	bl-changed
 mixinIntersectionIsValidbaseType	T	src-changed	bl-changed
-moduleElementsInWrongContext2	E	src-changed	bl-changed
-moduleElementsInWrongContext3	E	src-changed	bl-changed
 moduleExportAlias5	T	src-changed	bl-changed
 moduleExportsElementAccessAssignment2	T	src-changed	bl-changed
 moduleNoneDynamicImport(target=es2015)	ST	src-same	bl-changed
@@ -354,7 +351,6 @@ nestedLoopTypeGuards	T	src-changed	bl-changed
 nestedTypeVariableInfersLiteral	T	src-changed	bl-changed
 neverAsDiscriminantType(strict=false)	T	src-changed	bl-changed
 neverAsDiscriminantType(strict=true)	T	src-changed	bl-changed
-neverReturningFunctions1	ET	src-changed	bl-changed
 neverType	T	src-changed	bl-changed
 noImplicitAnyForIn	T	src-changed	bl-changed
 noInferUnionExcessPropertyCheck1	ET	src-changed	bl-changed
@@ -427,7 +423,6 @@ partiallyDiscriminantedUnions	ST	src-changed	bl-changed
 partiallyNamedTuples2	T	src-changed	bl-changed
 plainJSGrammarErrors	ET	src-same	bl-changed
 predicateSemantics	ET	src-changed	bl-changed
-privacyGloImportParseErrors	E	src-changed	bl-changed
 privateNameInInExpression(target=es2022)	T	src-same	bl-changed
 privateNameInInExpression(target=esnext)	T	src-same	bl-changed
 privateNameMethodAsync	T	src-same	bl-changed
@@ -440,7 +435,6 @@ promiseWithResolvers	T	src-same	bl-changed
 propTypeValidatorInference	T	src-changed	bl-changed
 propertyAccessWidening	T	src-changed	bl-changed
 quickinfoTypeAtReturnPositionsInaccurate	T	src-changed	bl-changed
-reachabilityChecks1	E	src-changed	bl-changed
 reactImportDropped	T	src-changed	bl-changed
 reactSFCAndFunctionResolvable	T	src-changed	bl-changed
 recursiveTupleTypeInference	T	src-changed	bl-changed

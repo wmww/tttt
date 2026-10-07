@@ -253,6 +253,8 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
     FlowBuilder flow;
     flow_builder_init(&flow, outer, names, me, errs);
     flow.constructor_of = is_iife ? outer->constructor_of : function_impl_rare(me)->constructed_class;
+    // (tsc checks a function expression's body later, outside any unreachable code around it)
+    if (my is_expression) flow.within_unreachable = false;
     if (!is_iife) flow.container = me;
     if (is_iife) {
         // Part of the flow around it, a `return` is a jump to the end of the body
@@ -1258,7 +1260,11 @@ void function_impl_typecheck_body(FunctionImpl* me, ErrorCtx* errs) {
     };
     if (my ret_explicit && my is_generator && my has_body) ty_check_generator_annotation(current_checker, me, errs);
     Ty const* outer_context = function_impl_enter_return_context(me);
+    // (tsc checks a function expression's body later, outside any unreachable code around it)
+    bool was_within_unreachable = current_checker->within_unreachable;
+    if (my is_expression) current_checker->within_unreachable = false;
     block_typecheck(&my body, ctx, errs);
+    current_checker->within_unreachable = was_within_unreachable;
     current_checker->return_context = outer_context;
     function_impl_check_end(me, errs);
     // A generator declaration or class method without a return annotation: its return type, which is where a missing

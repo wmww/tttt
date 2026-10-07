@@ -1007,6 +1007,9 @@ struct Checker {
     // pushTypeResolution for a constraint): one met again is circular
     Ty const* apparent_stack[32];
     u32 apparent_depth;
+    // Typechecking a range of unreachable code (TS7027): nothing in it says so again, except in function expressions,
+    // which tsc checks later (tsc's withinUnreachableCode)
+    bool within_unreachable;
     Ty const* return_context; // The contextual type of `return` expressions in the function being looked at, or null
     // The generic call whose arguments are being checked for inference (call.c: OuterInference), or null
     struct OuterInference* outer_inference;

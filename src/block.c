@@ -54,7 +54,7 @@ bool block_has_export_declarations(Block const* me) {
 void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     for_each (i, vec_statement, &my statements) {
-        flow->statement_list = is_block ? &my statements : nullptr;
+        flow->statement_list = &my statements;
         flow->lookup_statements = &my statements;
         statement_resolve_names(i, names, errs);
     }
@@ -213,8 +213,6 @@ void block_typecheck(Block* me, BlockTypecheckCtx ctx, ErrorCtx* errs) {
         }
     }
     ctx.ambient_reported = false;
-    for_each (i, vec_statement, &my statements) {
-        statement_typecheck(i, ctx, errs);
-    }
+    statements_typecheck(&my statements, ctx, errs);
     if (!ctx.ambient) statements_check_overloads(&my statements, errs);
 }

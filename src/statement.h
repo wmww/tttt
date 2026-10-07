@@ -170,6 +170,9 @@ typedef struct Statement {
         STATEMENT_DECL_NAMESPACE,
     } tag;
     bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
+    // In a range of unreachable code the binder found (TS7027 if reported at all): nothing in it is reported again
+    // (tsc's withinUnreachableCode)
+    bool unreachable;
     union {
         SourceDirectiveStatement* source_directive;
         Block block;
@@ -268,6 +271,7 @@ bool statement_any_return(Statement const* me, bool (*pred)(Expr const*));
 // declarations with the same parent
 void statements_check_overloads(VecStatement const* statements, ErrorCtx* errs);
 void statement_typecheck(Statement* me, BlockTypecheckCtx ctx, ErrorCtx* errs);
+void statements_typecheck(VecStatement* list, BlockTypecheckCtx ctx, ErrorCtx* errs);
 
 #define g_class_key Statement, statement
 #define g_declared

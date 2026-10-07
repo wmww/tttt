@@ -37,6 +37,7 @@ void flow_builder_init(FlowBuilder* me, FlowBuilder const* outer, Scope* scope, 
         // A class field initializer is still inside the statements of the function around it
         .statements = outer && !function ? outer->statements : nullptr,
         .container_start = outer ? outer->container_start : nullptr,
+        .within_unreachable = outer && outer->within_unreachable,
     };
     my next_id = outer ? outer->next_id : &my id_counter;
     my current = &flow_unreachable; // Until the container gets its start node
