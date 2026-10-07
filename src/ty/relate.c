@@ -5051,10 +5051,17 @@ static Ternary structured_related_members(
     // rather than to whichever of two mutual subtypes comes first (tsc's structuredTypeRelatedToWorker)
     // (Both subtype relations: inference's common supertype asks the plain one, `assign({}, options)`. The source as it
     // apparently is: `object`, and `unknown` without strictNullChecks, are `{}` there)
+    // (After an intersection's members are tried alone: `BarProps & object` is a subtype of a fresh `{}` through
+    // `object`, tsc's someTypeRelatedToType before the rule)
     if ((st->relation == TY_RELATION_STRICT_SUBTYPE || st->relation == TY_RELATION_SUBTYPE) && !source_is_generic &&
         ty_is_fresh_object(target) && is_empty_object_type(me, target) && !is_empty_object_type(me, apparent_type(me, source))
     ) {
-        return TERNARY_FALSE;
+        bool empty_member = false;
+        for (u32 i = 0; source->kind == TY_INTERSECTION && i < source->composite.types.len && !empty_member; i++) {
+            Ty const* member = source->composite.types.data[i];
+            empty_member = !(member->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && is_empty_object_type(me, apparent_type(me, member));
+        }
+        if (!empty_member) return TERNARY_FALSE;
     }
     if (target->kind == TY_UNION) {
         // A generic source can still be related through its constraint, further down. The members of the union don't

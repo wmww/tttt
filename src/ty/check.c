@@ -204,7 +204,15 @@ static Prop const* target_prop_of(Checker* me, Ty const* target, Atom const* nam
     Prop const* first_declared = nullptr;
     for (u32 i = 0; i < target->composite.types.len; i++) {
         Prop const* prop = target_prop_of(me, target->composite.types.data[i], name);
-        if (!prop && target->kind == TY_UNION) return nullptr;
+        // (A member with an index signature for the name still has it, partially: tsc's createUnionOrIntersectionProperty)
+        if (!prop && target->kind == TY_UNION) {
+            Ty const* member = ty_apparent_type(me, target->composite.types.data[i]);
+            if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION)) ||
+                !ty_applicable_index_info(me, member, ty_prop_name_literal(me, name))
+            ) {
+                return nullptr;
+            }
+        }
         if (!first) first = prop;
         if (prop && !first_declared && span_valid(ty_prop_decl_span(prop))) first_declared = prop;
     }
