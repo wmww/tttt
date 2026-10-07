@@ -3372,7 +3372,14 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
     } else if (my tag == EXPR_AS_TYPE && my as_type->is_jsdoc && span_eq(expr_outer_span(me), expr_outer_span(&my as_type->expr))) {
         // `/** @satisfies {T} */ const x = v`: v isn't parenthesized, the satisfies expression isn't tsc's
     } else if (my tag == EXPR_IDENTIFIER && my identifier.keyword == KEYWORD_IDENTIFIER_IMPORT) {
-        // The `import` of `import("m")` and `import.meta` isn't an expression of its own
+        // The `import` of `import("m")` and `import.meta` isn't an expression of its own. The `defer` of
+        // `import.defer("m")` is a name, of type any (tsc's MetaProperty callee isn't checked as an expression)
+        if (my identifier.import_defer && my inner_span.sv.size >= 5) {
+            Span name = my inner_span;
+            name.sv = csview_from_range(span_end_ptr(name) - 5, span_end_ptr(name));
+            ctx->any_keeps_underline = true;
+            baseline_test_case_add_type(ctx, name, ty_intrinsic(current_checker, TY_ANY));
+        }
     } else if (me == ctx->export_name && my identifier.target && (my identifier.target->flags & SYMBOL_VARIABLE)) {
         // (Of a local type and an exported value of the name: tsc's local symbol, whose declared type it is, see
         // getTypeOfNode's isInRightSideOfImportOrExportAssignment)

@@ -3208,9 +3208,31 @@ static bool parse_import_keyword_expr(Parser* parent, Expr* ret) {
     Parser ahead = parser(&p);
     hop_whitespace(&ahead);
     if (*ahead.pos == '.') {
-        parse_fail(&ahead);
-        p.shared->saw_import_meta = true;
-        return parse_success(&p);
+        // `import.defer(...)`, `import.defer<T>(...)`: a deferred import call (tsc's MetaProperty callee), one
+        // identifier like the `import` of `import(...)`
+        Parser defer = parser(&ahead);
+        defer.pos++;
+        hop_whitespace(&defer);
+        bool is_defer = hop_start_if_ends_on_word_break(&defer, "defer");
+        if (is_defer) {
+            Anchor end = anchor(&defer);
+            hop_whitespace(&defer);
+            is_defer = *defer.pos == '(' || *defer.pos == '<';
+            if (is_defer) {
+                defer.pos = end.start;
+                parse_success(&defer);
+                parse_success(&ahead);
+                *ret = expr_identifier(span_from(a), (IdentifierExpr){ .keyword = KEYWORD_IDENTIFIER_IMPORT, .import_defer = true });
+                ahead = parser(&p);
+                hop_whitespace(&ahead);
+            }
+        }
+        if (!is_defer) {
+            parse_fail(&defer);
+            parse_fail(&ahead);
+            p.shared->saw_import_meta = true;
+            return parse_success(&p);
+        }
     }
     if (*ahead.pos == '<') {
         // `import<T>(...)`, `import<T>`: type arguments, which the checker rejects (TS1326, tsc's parseCallExpressionRest)
@@ -11144,6 +11166,9 @@ static bool parse_import_equals(Parser* parent, Anchor statement_start, PortStat
             return parse_fail(&p);
         }
         hop_whitespace(&p);
+    } else if (span_equals(name, "defer") && *p.pos != '=' && *p.pos != ',' && !tok_is(tok_peek(&p), "from")) {
+        // (`import defer * as ns from "m"`: the phase modifier, never an import-equals)
+        return parse_fail(&p);
     }
     if (*p.pos == '=' && p.pos[1] != '=' && p.pos[1] != '>') {
         p.pos++;
@@ -11391,6 +11416,24 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         }
     } else {
         parse_fail(&type_p);
+        // `import defer * as ns from "m"` (tsc's parseImportDeclarationOrImportEqualsDeclaration: not `import defer
+        // from "m"`, a default import named defer, nor `import defer, ...` / `import defer = ...`)
+        Parser defer_p = parser(&p);
+        Anchor defer_start = anchor(&defer_p);
+        if (!is_export && hop_start_if_ends_on_word_break(&defer_p, "defer")) {
+            Tok t = tok_peek(&defer_p);
+            bool is_defer = tok_is(t, "from") ? *tok_next(&defer_p, t).start != '"' && *tok_next(&defer_p, t).start != '\'' :
+                !tok_is(t, ",") && !tok_is(t, "=");
+            if (is_defer) {
+                hop_whitespace(&defer_p);
+                statement.defer_clause = span_from(defer_start);
+                parse_success(&defer_p);
+            } else {
+                parse_fail(&defer_p);
+            }
+        } else {
+            parse_fail(&defer_p);
+        }
     }
 
     Anchor star = anchor(&p);
@@ -11460,6 +11503,9 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         no_clause = true;
     } else {
         return parse_fail(&p);
+    }
+    if (span_valid(statement.defer_clause)) {
+        statement.defer_clause = span_make(statement.defer_clause.source, span_start_ptr(statement.defer_clause), p.pos);
     }
     hop_whitespace(&p);
 

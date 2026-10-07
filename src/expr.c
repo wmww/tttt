@@ -3034,7 +3034,14 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
         source_file_verbatim_cjs_error(my inner_span.source, errs, my inner_span, true);
         return;
     }
-    if (module == MODULE_KIND_ES2015) {
+    Expr const* callee = my call->callable.tag == EXPR_GENERIC_PARAMS ? &my call->callable.generic_params->expr : &my call->callable;
+    if (callee->tag == EXPR_IDENTIFIER && callee->identifier.import_defer) {
+        if (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE) {
+            error_ctx_grammar_error_d(errs, my inner_span, 18060,
+                "Deferred imports are only supported when the '--module' flag is set to 'esnext' or 'preserve'.");
+            return;
+        }
+    } else if (module == MODULE_KIND_ES2015) {
         error_ctx_grammar_error_d(errs, my inner_span, 1323,
             "Dynamic imports are only supported when the '--module' flag is set to 'es2020', 'es2022', 'esnext', "
             "'commonjs', 'amd', 'system', 'umd', 'node16', 'node18', 'node20', or 'nodenext'.");
@@ -4065,11 +4072,25 @@ static void binary_expr_typecheck(Expr const* me, ErrorCtx* errs) {
     if (spine != local) free(spine);
 }
 
+// The callee of the call being checked, while it is (`import.x(...)`: tsc's checkGrammarMetaProperty's isCallee)
+static Expr const* checked_callee;
+
 // `import.meta` needs a module format that has it (tsc's checkImportMetaProperty)
 static void import_meta_typecheck(Expr const* me, ErrorCtx* errs) {
     Span name = my property->prop.inner_span;
+    if (csview_equals(name.sv, "defer")) {
+        // (Not called: `import.defer(...)` is a deferred import call, see parse_import_keyword_expr())
+        Span end = span_make(my inner_span.source, span_end_ptr(my inner_span), span_end_ptr(my inner_span));
+        error_ctx_grammar_error_d(errs, end, 1005, "'(' expected.");
+        return;
+    }
     if (!csview_equals(name.sv, "meta")) { // (tsc's checkGrammarMetaProperty)
-        error_ctx_grammar_error_d(errs, name, 17012, "'", name, "' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?");
+        if (me == checked_callee) {
+            error_ctx_grammar_error_d(errs, name, 18061, "'", name,
+                "' is not a valid meta-property for keyword 'import'. Did you mean 'meta' or 'defer'?");
+        } else {
+            error_ctx_grammar_error_d(errs, name, 17012, "'", name, "' is not a valid meta-property for keyword 'import'. Did you mean 'meta'?");
+        }
     }
     ModuleKind module = compiler_options()->module;
     if (module >= MODULE_KIND_NODE16 && module <= MODULE_KIND_NODENEXT) {
@@ -4372,7 +4393,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
                 }
                 callee = &callee->generic_params->expr;
             }
+            Expr const* outer_callee = checked_callee;
+            checked_callee = !my call->uses_new && !expr_is_perenthisized(callee) ? callee : nullptr;
             expr_typecheck(callee, errs);
+            checked_callee = outer_callee;
             // Resolving the call gives the arguments their contextual types, so it comes before checking them
             Checker* checker = current_checker;
             LazyMemo* memo = lazy_type_state_peek((LazyType*)&my lazy_type);

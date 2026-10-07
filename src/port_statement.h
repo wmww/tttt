@@ -111,6 +111,9 @@ typedef struct PortStatement {
     Span keyword_span; // Span of "import" or "export"
     PortItem main; // The main import item (not in {}s)
     VecPortItem items; // List of curly brace-enclosed imported items
+    // `import defer * as ns from "m"`: the import clause, from `defer` to the bindings' end (tsc's ImportClause with
+    // the defer phase modifier, TS18058-TS18060)
+    Span defer_clause;
     bool side_effect_only; // `import "./abc"`
     bool is_import_require; // `import a = require("m")`
     bool requires_target; // If the form implies there should be a target. target may still be invalid, but this causes

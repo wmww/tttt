@@ -461,6 +461,20 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         error_ctx_grammar_error_d(errs, span_make(my keyword_span.source, start, end), 1363,
             "A type-only import can specify a default import or named bindings, but not both.");
     }
+    // tsc's checkGrammarImportClause: a deferred import is of a namespace, where the module format can defer it
+    if (span_valid(my defer_clause)) {
+        ModuleKind module = compiler_options()->module;
+        bool named = false;
+        for_each (i, vec_port_item, &my items) named |= i->tag != PORT_IMPORT_GATHER;
+        if (my main.tag == PORT_IMPORT_DEFAULT) {
+            error_ctx_grammar_error_d(errs, my defer_clause, 18058, "Default imports are not allowed in a deferred import.");
+        } else if (named || (my main.tag == PORT_NOOP && !vec_port_item_size(&my items))) {
+            error_ctx_grammar_error_d(errs, my defer_clause, 18059, "Named imports are not allowed in a deferred import.");
+        } else if (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE) {
+            error_ctx_grammar_error_d(errs, my defer_clause, 18060,
+                "Deferred imports are only supported when the '--module' flag is set to 'esnext' or 'preserve'.");
+        }
+    }
     port_item_check_export_equals_property(&my main, errs);
     for_each (i, vec_port_item, &my items) port_item_check_export_equals_property(i, errs);
     if (span.source && span.source->is_js && !my jsdoc) {
