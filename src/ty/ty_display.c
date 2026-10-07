@@ -2219,7 +2219,11 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         Binding const* binding = param->decl ? &param->decl->initializer.binding : nullptr;
         bool reused = reusable && binding && binding->has_explicit_type && !contextual_jsdoc &&
             !mentions(me, param->type, d.fresh_params) && (!instantiated || param->type == root->params[i].type) &&
-            !(fresh_anonymous && param->type->kind == TY_ANONYMOUS);
+            !(fresh_anonymous && param->type->kind == TY_ANONYMOUS) &&
+            // (A `@param {T} [x]` tag of a JSDoc signature (`@overload`, `@callback`) declares x without a `?` that
+            // would say the undefined its type has: tsc doesn't reuse `T` there)
+            !(function && function->jsdoc_callback && param->decl->explicit_optional && !binding->explicit_type.jsdoc_optional &&
+                compiler_options()->strict_null_checks);
         TyDisplay param_d = reused_if(d, false);
         // A parameter whose initializer is a function expression gets the function's type syntactically (tsc's
         // typeFromParameter -> typeFromExpression), unless something may type it contextually

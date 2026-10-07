@@ -21523,7 +21523,7 @@ const baselines = {
     'jsFileMethodOverloads5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsFunctionWithPrototypeNoErrorTruncationNoCrash': {
         errors: true,
