@@ -2959,7 +2959,14 @@ static void report_non_default_export(PortItem const* item, Symbol* module, Erro
 static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
     SourceFile const* file = module->is_module ? module->module->file : nullptr;
     Symbol* found = symbol_get_export(module, c_sv("default"));
-    if (can_have_synthetic_default(item, module, file)) {
+    // In Node.js an ES module's import of JSON (a .json file or a .d.json.ts declaration) has only a default, the
+    // module itself (tsc's isOnlyImportableAsDefault in getTargetOfImportClause)
+    ModuleKind module_kind = compiler_options()->module;
+    SourceFile const* importer = item->decl_name.source;
+    bool default_only = file && importer && module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT &&
+        !item->is_require && source_file_emit_module_kind(importer) == MODULE_KIND_ESNEXT &&
+        (file->is_json || csview_ends_with(cstr_sv(&file->canonical_path), ".d.json.ts"));
+    if (default_only || can_have_synthetic_default(item, module, file)) {
         // A synthetic default overrides a real `default` export (as emitted without `__esModule`). (`{ default as d }`
         // names the `export=` symbol itself)
         if (assigned && item->tag != PORT_IMPORT_DEFAULT) item->source_symbol = symbol_get_export(module, c_sv("export="));

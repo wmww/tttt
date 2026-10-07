@@ -61333,22 +61333,22 @@ const baselines = {
     'nodeModulesJson(module=node16)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesJson(module=node18)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesJson(module=node20)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesJson(module=nodenext)': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'nodeModulesNoDirectoryModule': {
         errors: true,
