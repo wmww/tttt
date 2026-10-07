@@ -3208,7 +3208,7 @@ const baselines = {
     'checkJsTypeDefNoUnusedLocalMarked': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'checkJsdocTypeTagOnExportAssignment1': {
         errors: true,
@@ -37032,7 +37032,7 @@ const baselines = {
     },
     'mixinAccessModifiers': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'mixinClassesAnnotated': {
@@ -51608,7 +51608,7 @@ const baselines = {
     'jsDeclarationsImportTypeBundled': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsInterfaces': {
         errors: true,
@@ -65358,7 +65358,7 @@ const baselines = {
     'spreadUnion': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'spreadUnion2': {
         errors: true,
