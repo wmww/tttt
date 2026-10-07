@@ -2354,8 +2354,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         ) {
             // (An augmentation is a namespace to tsc's binder, a value only if instantiated: unmerged, its symbol has no
             // type)
-            ctx->any_keeps_underline = true;
-            baseline_test_case_add_type_node(ctx, my name, &type_any);
+            baseline_test_case_add_type(ctx, my name, ty_intrinsic(current_checker, TY_ERROR));
         } else if ((my symbol->flags & SYMBOL_VALUE) && namespace_decl_declares_value(me)) {
             baseline_test_case_add_symbol_value(ctx, my name, my symbol);
         } else if (my is_augmentation && !(my symbol->flags & SYMBOL_VALUE)) {

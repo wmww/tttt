@@ -23853,7 +23853,7 @@ const baselines = {
     'moduleAugmentationInDependency': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleAugmentationInDependency2': {
         errors: true,
