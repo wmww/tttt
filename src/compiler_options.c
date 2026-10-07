@@ -124,13 +124,16 @@ void str_list_drop(StrList* me) {
     *me = (StrList){0};
 }
 
-// keep_empty: an empty entry means something (the "" of `moduleSuffixes`), so "a," is two entries
+// keep_empty: an empty entry means something (the "" of `moduleSuffixes`), so "a," is two entries. Like tsc's
+// parseListTypeOption only the whole value is trimmed, not the entries (`@customConditions: webpack, browser` is
+// "webpack" and " browser")
 static void str_list_set_from_commas(StrList* me, csview value, bool keep_empty) {
     str_list_clear(me);
+    value = csview_trim_whitespace(value);
     if (!value.size) return;
     while (true) {
         isize end = csview_find_sv(value, c_sv(","));
-        csview single = csview_trim_whitespace(csview_slice(value, 0, end));
+        csview single = csview_slice(value, 0, end);
         if (single.size || keep_empty) str_list_push(me, single);
         if (end == c_NPOS) break;
         value = csview_slice(value, end + 1, INTPTR_MAX);
