@@ -22771,17 +22771,17 @@ const baselines = {
         types: true,
     },
     'longObjectInstantiationChain1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'longObjectInstantiationChain2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'longObjectInstantiationChain3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25253,7 +25253,7 @@ const baselines = {
     'nestedGenericSpreadInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedGenerics': {
         errors: true,
