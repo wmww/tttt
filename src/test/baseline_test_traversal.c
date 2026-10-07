@@ -400,6 +400,39 @@ typedef struct PropSymbolInfo {
     u32 seen_count;
 } PropSymbolInfo;
 
+static void collect_found_prop(Checker* checker, Ty const* object, Prop const* prop, PropSymbolInfo* info);
+
+// The property symbol a union's or intersection's members' properties (collected into `inner`) make, added to `info`
+static void merge_composite_info(PropSymbolInfo* info, PropSymbolInfo const* inner_info) {
+    PropSymbolInfo const inner = *inner_info;
+    if (!info->found) {
+        info->found = true;
+        info->parent = inner.parent;
+        info->namespace = inner.namespace;
+        info->member_symbol = inner.member_count == 1 ? inner.member_symbol : nullptr;
+        info->name_span = inner.name_span;
+        info->name_is_value = inner.name_is_value;
+        info->first_declaration = inner.first_declaration;
+    } else if (!span_eq(info->first_declaration, inner.first_declaration)) {
+        info->non_uniform = true;
+    }
+    info->non_uniform |= inner.non_uniform;
+    info->member_count += inner.member_count;
+    // (A composite member with one property that has the name is that property's symbol, tsc's
+    // createUnionOrIntersectionProperty's singleProp: it may already be there. More are a symbol of their own)
+    bool repeated = false;
+    if (inner.seen_count == 1) {
+        for (u32 k = 0; k < info->seen_count; k++) {
+            repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].type == inner.seen[0].type && info->seen[k].mapper == inner.seen[0].mapper &&
+                info->seen[k].tuple == inner.seen[0].tuple;
+        }
+        if (!repeated && info->seen_count < c_arraylen(info->seen)) info->seen[info->seen_count++] = inner.seen[0];
+    }
+    if (!repeated) {
+        for_each (k, vec_span, &inner.declarations) vec_span_push(&info->declarations, *k);
+    }
+}
+
 static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* name, PropSymbolInfo* info, u32 depth) {
     if (depth > 8) return;
     if (object->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) {
@@ -428,32 +461,7 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         bool inaccessible = !intersection && inner.non_public && inner.seen_count > 1 && inner.non_uniform;
         if (inaccessible) keep = false;
         if (keep) {
-            if (!info->found) {
-                info->found = true;
-                info->parent = inner.parent;
-                info->namespace = inner.namespace;
-                info->member_symbol = inner.member_count == 1 ? inner.member_symbol : nullptr;
-                info->name_span = inner.name_span;
-                info->name_is_value = inner.name_is_value;
-                info->first_declaration = inner.first_declaration;
-            } else if (!span_eq(info->first_declaration, inner.first_declaration)) {
-                info->non_uniform = true;
-            }
-            info->non_uniform |= inner.non_uniform;
-            info->member_count += inner.member_count;
-            // (A composite member with one property that has the name is that property's symbol, tsc's
-            // createUnionOrIntersectionProperty's singleProp: it may already be there. More are a symbol of their own)
-            bool repeated = false;
-            if (inner.seen_count == 1) {
-                for (u32 k = 0; k < info->seen_count; k++) {
-                    repeated |= span_eq(info->seen[k].decl, inner.seen[0].decl) && info->seen[k].type == inner.seen[0].type && info->seen[k].mapper == inner.seen[0].mapper &&
-                        info->seen[k].tuple == inner.seen[0].tuple;
-                }
-                if (!repeated && info->seen_count < c_arraylen(info->seen)) info->seen[info->seen_count++] = inner.seen[0];
-            }
-            if (!repeated) {
-                for_each (k, vec_span, &inner.declarations) vec_span_push(&info->declarations, *k);
-            }
+            merge_composite_info(info, &inner);
         } else if ((object->kind == TY_UNION && !inaccessible) || !inner.found) {
             // (An intersection without the property is a member of an outer union that lacks it)
             info->missing_in_member = true;
@@ -484,6 +492,21 @@ static void collect_prop_symbol(Checker* checker, Ty const* object, Atom const* 
         if (!indexed) info->missing_in_member = true;
         return;
     }
+    // A class's member inherited from an intersection base is the intersection's synthetic property (tsc's
+    // getPropertiesOfType of the base in resolveObjectTypeMembers): declared by every member's
+    Prop const* const* parts = nullptr;
+    u32 part_count = ty_synthetic_prop_parts(checker, prop, &parts);
+    if (part_count > 1) {
+        PropSymbolInfo inner = { .declarations = vec_span_init(), .strict_union = info->strict_union, .skip_augment = true };
+        for (u32 i = 0; i < part_count; i++) collect_found_prop(checker, object, parts[i], &inner);
+        if (inner.found) merge_composite_info(info, &inner);
+        vec_span_drop(&inner.declarations);
+        return;
+    }
+    collect_found_prop(checker, object, prop, info);
+}
+
+static void collect_found_prop(Checker* checker, Ty const* object, Prop const* prop, PropSymbolInfo* info) {
     Prop const* root = prop;
     while (root->target && !root->decl->decl_span_count) root = root->target;
     Span first_declaration = root->decl->decl_span_count ? root->decl->decl_spans[0] : span_null;
