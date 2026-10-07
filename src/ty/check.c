@@ -2285,7 +2285,7 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
         if (object->kind == TY_UNION) {
             for (u32 i = 0; i < object->composite.types.len; i++) {
                 Ty const* member = ty_apparent_type(me, object->composite.types.data[i]);
-                if (!(member->flags & TYF_OBJECT) || !ty_applicable_index_info(me, member, index)) return index;
+                if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION)) || !ty_applicable_index_info(me, member, index)) return index;
             }
             return nullptr;
         }

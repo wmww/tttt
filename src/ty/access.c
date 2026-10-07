@@ -299,7 +299,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             for (u32 i = 0; i < members.len && all; i++) {
                 if (members.data[i]->flags & TYF_NULLABLE) continue;
                 Ty const* member = ty_apparent_type(me, members.data[i]);
-                IndexInfo const* info = (member->flags & TYF_OBJECT) ? ty_applicable_index_info(me, member, index) : nullptr;
+                IndexInfo const* info = (member->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, member, index) : nullptr;
                 if (info) parts[len++] = info->value;
                 else all = false;
             }
@@ -308,7 +308,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
             free(parts);
             return include_undefined && all ? with_missing(me, ret) : ret;
         }
-        IndexInfo const* info = (apparent->flags & TYF_OBJECT) ? ty_applicable_index_info(me, apparent, index) : nullptr;
+        IndexInfo const* info = (apparent->flags & (TYF_OBJECT | TYF_INTERSECTION)) ? ty_applicable_index_info(me, apparent, index) : nullptr;
         if (!info) return ty_intrinsic(me, TY_ANY);
         return include_undefined ? with_missing(me, info->value) : info->value;
     }
