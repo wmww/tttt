@@ -667,8 +667,7 @@ void generic_compile_test_info(Generic const* me, BaselineTestCase* ctx) {
 void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx) {
     switch (my tag) {
         case BINDING_NOOP:
-            baseline_test_case_add_type_node(ctx, my content_span, &type_undefined);
-            break;
+            break; // An omitted element, `[, x]`: tsc 6's typeWriter skips OmittedExpression
 
         case BINDING_IDENTIFIER:
             if (my parent) ctx->any_keeps_underline = true; // A binding element

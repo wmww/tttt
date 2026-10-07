@@ -90,9 +90,8 @@ typedef struct SourceFile {
     Block ast;
     // If true this file is not typechecked and duplicate identifiers are blamed on the other file exclusively.
     bool is_stdlib;
-    // First loaded because an import (not a module augmentation, not a root or `/// <reference path>`) resolved to it:
-    // tsc names such a file by its absolute path, which the harness writes before it strips its `/.src/` (it shows in
-    // the types baseline's underlines of `typeof import("m")`)
+    // First loaded because an import (not a module augmentation, not a root or `/// <reference path>`) resolved to it
+    // (a package's file found so gets no declaration diagnostics: tsc's isSourceFileFromExternalLibrary)
     bool loaded_by_import;
     bool is_root; // program_load() loaded it: a root file of the program (tsc's rootNames)
     // The module name or `/// <reference path>` that first brought the file into the program, where tsc's diagnostics

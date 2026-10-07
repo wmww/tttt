@@ -338,21 +338,11 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         csview path = file ? source_file_display_path(file) : c_sv("");
         out(d, path);
         out_lit(d, "\")");
-        // (Named by its absolute path where an import found it first, see SourceFile.loaded_by_import)
-        if (d.underline && file && file->loaded_by_import && path.size && path.buf[0] != '/') {
-            cstr_append(d.underline, d.reused ? "      " : "^^^^^^");
-        }
         start = 1;
     } else if (chain.len && chain.items[0]->is_module) {
         out_module_import(me, d, chain.items[0]);
-        // (tsc's name of a file an import found is its absolute path, `/.src/` included where the harness writes the
-        // underline: see SourceFile.loaded_by_import)
         SourceFile const* file = chain.items[0]->module ? chain.items[0]->module->file : nullptr;
         if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file, symbol);
-        csview path = file ? source_file_display_path(file) : c_sv("");
-        if (d.underline && file && file->loaded_by_import && path.size && path.buf[0] != '/') {
-            cstr_append(d.underline, d.reused ? "      " : "^^^^^^");
-        }
         start = 1;
     }
     // A global whose name a type parameter in scope takes is reached through globalThis (tsc's getSymbolChain finds
@@ -1122,11 +1112,9 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
         if (!mapped && d.underline && strncmp(text, "import(\"", 8) == 0) {
             char const* close = strstr(text, "\").");
             char* underline = (char*)cstr_str(d.underline) + underline_start;
-            // (the underline of an absolute specifier is longer than its text, see out_symbol_name())
-            isize_t extra = (cstr_size(d.underline) - underline_start) - (cstr_size(d.target) - start);
             if (close) {
                 memset(underline, ' ', strlen("import("));
-                memset(underline + (close + 1 - text) + extra, ' ', 2);
+                memset(underline + (close + 1 - text), ' ', 2);
             }
         }
         return;
@@ -1184,11 +1172,10 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
             out_symbol_name(me, reused_if(d, false), symbol, SYMBOL_VALUE);
             char const* text = cstr_str(d.target) + start;
             char const* close = strncmp(text, "import(\"", 8) == 0 ? strstr(text, "\").") : nullptr;
-            isize_t extra = (cstr_size(d.underline) - underline_start) - (cstr_size(d.target) - start);
             if (close && d.reused) {
                 char* underline = (char*)cstr_str(d.underline) + underline_start;
                 memset(underline, ' ', strlen("import("));
-                memset(underline + (close + 1 - text) + extra, ' ', 2);
+                memset(underline + (close + 1 - text), ' ', 2);
             }
             return;
         }
