@@ -286,6 +286,15 @@ src` finds the code-side markers; every significant one has an entry here.
   being skipped (silent never), as tsc's getResolvedSignature cache makes SkipGenericFunctions do, but only in an
   overload failure's fallback inference: tttt resolves nested calls earlier than tsc, so doing it everywhere
   regresses effect and react.
+  It also stops the fallback inference from recording a function's late contextual type (`KEY_FUNCTION_SIG_CONTEXT`
+  in expr.c's EXPR_FUNCTION case): "the contextual type of the last check" stands in for tsc's lookup through the
+  call's resolved signature, and the checks after the fallback inference are memoized with the earlier contextual
+  type, so the fallback's constraint-typed check would win (thislessFunctionsNotContextSensitive1).
+- `KEY_CONTEXT_BLOCKED` / `Checker.implementation_elaboration` (expr.c EXPR_FUNCTION, call.c
+  add_implementation_success): a context-sensitive function whose first check without a contextual signature happens
+  in the TS2793 implementation check keeps no contextual signature (tsc's ContextChecked, vscode/eopt TS7006 x18).
+  tsc's rule is general (any first Normal-mode check decides), but tttt checks context-sensitive functions in places
+  and orders tsc doesn't, so only this one place applies it (like `KEY_CONTEXT_NONE` being for non-sensitive ones).
 - `infer_from_objects()`, a generic mapped target `{ [P in C]: T[P] }` (the homomorphic `T[K]` shortcut, standing in
   for reverse mapping): the source goes to T as if homomorphic unless C is a conditional (Omit's
   `Exclude<keyof T, X>`, where tsc infers nothing), intersection-limited or a deferred `keyof X` whose X isn't

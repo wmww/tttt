@@ -70,6 +70,31 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    checkingObjectWithThisInNamePositionNoCrash, trivialSubtypeReductionNoStructuralCheck.
 4. thisConditionalOnMethodReturnOfGenericInstance (spurious TS2417) is unchanged by the signature push; not
    investigated further.
+5. **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, triage agent
+   A; three tests, each failing errors only):
+   - circularBaseTypes: tsc reports TS2313 "Type parameter 'K' has a circular constraint" at `{ [K in keyof T]:
+     string }` (line 13) for `type X<T> = { [K in keyof T]: string } & { b: string }; interface Y extends X<Y>`:
+     resolving Y's base types instantiates X<Y>, whose mapped key constraint `keyof Y` needs Y's members while Y's
+     base types are in flight; tsc's getResolvedBaseConstraint pushes `(K, ImmediateBaseConstraint)` and the cycle
+     lands on K, with the TS2313 at the *current node* (the mapped type's type parameter), not at Y. tttt finds the
+     TS2310 on Y (it already does) but never meets K's constraint in flight.
+   - infiniteConstraints: tttt reports a spurious TS2321 "Excessive stack depth comparing '"val"' and 'keyof
+     B[Exclude<keyof B, K>]'" for `T1<B extends { [K in keyof B]: Extract<B[Exclude<keyof B, K>], { val: string
+     }>["val"] }>`: tsc's getImmediateBaseConstraint stops at its recursion identity stack (5 nested constraint
+     computations of the same identity, then circularConstraintType) and hasNonCircularBaseConstraint in
+     getConstraintOfIndexedAccess drops the circular one, so nothing is related deeply. relate.c's base_constraint()
+     has only a depth argument (no identity stack), so the constraint relation recurses until the relation depth
+     limit.
+   - circularConstraintYieldsAppropriateError: `class Foo extends NextType<Foo>` with `NextType<C extends { someProp:
+     any }, T = C['someProp']> extends BaseType<T>`: tsc reports TS2415 (Foo incorrectly extends NextType<Foo, { test:
+     true }>) and TS2339 'bar' on Foo (the base resolves circularly to an error, so Foo has no `bar`); tttt reports
+     TS2310 instead and keeps `bar`. tsc fills in the default `C['someProp']` while Foo's base types resolve, which
+     reads Foo's `someProp` (members of a class whose base is in flight): the cycle is entered from the default's
+     instantiation, not from the heritage clause.
+   Port: a resolution-identity stack for base constraints (tsc's pushTypeResolution with ImmediateBaseConstraint
+   and the 5-deep identity check in getImmediateBaseConstraint), TS2313 at the type node being checked, and default
+   type arguments instantiated during base type resolution. Plan-sized; validate with the three tests plus the usual
+   corpora (none of the corpora show these shapes).
 
 ## Validation (every stage)
 The tests above; `./fasttest.sh --summary` 0 lost; `./realworld.py` on every corpus unchanged (tsc, type-fest,

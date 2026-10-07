@@ -48,6 +48,32 @@ fails types in both configurations.
 - (triage 2026-10-07) The contextual type of an argument for a rest parameter typed as a mapped type over `keyof
   [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
   "abc"; }` where tttt prints `{ bar: string; }`. circularInlineMappedGenericTupleTypeNoCrash itself needs tsc's TS2589.
+- (2026-10-07) genericCallWithGenericSignatureArguments3 (strict false; errors and types): `f1<U>(a: () => U, b: () =>
+  U)` called as `f1(() => (n: Object) => 1, () => 2)` gives U = `(n: Object) => 1` in tsc, `(n: Object) => number` in
+  tttt. The inner arrow's return type is computed lazily in tsc, and by then its contextual signature goes through
+  the outer arrow's contextual return type, i.e. the resolved signature's U, which is the inner function itself: its
+  own signature, so the literal stays (getReturnTypeFromBody). tttt's equivalent (`KEY_CONTEXT_NONE` +
+  `ty_late_contextual_return()`) only covers a function that is itself an argument, not one returned from an
+  argument. Extending it means recording the late context for functions nested in argument return expressions.
+- (2026-10-07) map-to-obj (DefinitelyTyped, 2 `$ExpectType`): `id(new Map([["a", 1]]))` with `id<K extends
+  string>(m: Map<K, V>)`: tsc's return mapper for the inner `new Map` comes from the contextual type with the outer K
+  as createOuterReturnMapper has it (nothing inferred: its constraint string), so "a" widens; tttt's inner return
+  inference maps the inner K to the outer K, whose primitive constraint keeps "a". Instantiating the return source
+  with the outer's constraints (infer_type_arguments' `return_source`) fixes it but cost xstate and valibot +1.8%
+  each even gated to primitive constraints: needs a cheaper formulation.
+- (2026-10-07) ember__service (2, also v3): an object literal method's literal return ("") widens when the call has
+  two overloads and the first round (subtype) fails on `this`: the return type is computed (and memoized) during that
+  round without the "own contextual signature" that keeps the literal. Repro: `declare class Core { constructor(p?:
+  object); static extend<S, I>(): ECC<I>; static extend<S, I, T1 extends {[k: string]: any}>(this: S & ECC<I>, a:
+  T1): ECC<T1 & I> }` with `ECC<T> = (new (p?: object) => T) & (new (...a: any[]) => T)`: `new (Core.extend({ m() {
+  return ""; } }))().m()` is "" in tsc. Same family as the item above (a return type memoized before the context
+  that would keep the literal exists).
+- (2026-10-07) babel__traverse (4) and babel__helper-plugin-utils (2): with @babel/types unresolved, a contextual
+  type `{ [k: string]: H<t.Node> } & { [k: string]: H<t.Aliases> }` (H a function | object union) gives a method
+  parameter NodePath<t.Aliases> in tsc, NodePath<t.Node> in tttt: which unresolved member (tsc keeps named error
+  types, tttt collapses them to any) survives the intersection of contextual signatures. Depends on the named error
+  types item (triage "Plan 48 stage 4 leftovers"); broken packages only.
+
 ## Relations, instantiation, reduction
 - **Variance measurement order (vue, `--checkers 1` only, since stable type ordering 2026-10-07)**: a spurious TS2345
   at `runtime-dom/src/directives/vModel.ts:383` (`DirectiveBinding<any, string, any>` to `DirectiveBinding<any,
@@ -143,9 +169,40 @@ fails types in both configurations.
   distributive constraint) leaves an `any` branch out like tsc's getDefaultConstraintOfConditionalType but uses the
   raw true branch, not tsc's inferred one. `ReturnType<T[M]>` property access (seed-5 mut0710/mut3585) still misses
   TS2339.
+- (2026-10-07) sliceResultCast (types): `x.slice` of `[number, string] | [number, string, string]` is a union of two
+  equal signatures in tsc (each tuple's Array members are instantiated with the tuple as `this`, Array being merged
+  makes `this` possibly referenced everywhere); retarget_this_props() only retargets props that mention `this` (a
+  deliberate perf shortcut), so tttt's members are shared and the union collapses. A fix must keep the shortcut's
+  cost (instrcount valibot/zod) or make the retargeted members cheap.
+- (2026-10-07) genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1 (types): `inner.log(100)`
+  with `inner: XXX` and `log = implement<this>()(<N extends number>(n: N) => succeed(n))` is `F<Effect<100, never,
+  never>, this>` in tsc 6 (deferred: `this` is generic), tttt resolves it to `Effect<100, never, never>` (the test's
+  own comment, pre-6.0). Likely mechanism, unverified: reading a member through a non-generic class's own declared
+  type doesn't instantiate `this` in tsc (resolveObjectTypeMembers' rangeEquals shortcut keeps the declared members),
+  and tsc 6's SingleSignatureType has no outer type parameters to carry a `this` mapping; tttt maps `this` to XXX on
+  the access. Check `class C { p!: F<1, this> }; declare const c: C; c.p` against tsc first.
+- (2026-10-07) computedTypesKeyofNoIndexSignatureType (types): tsc prints `K_1`..`K_9`: instantiateMappedType clones
+  the key type parameter per instantiation (a fresh K each time, renamed by the printer), ty_mapped_info_instantiate()
+  keeps the one K. Display only, but cloning would also make each instantiation's key distinct for caching; weigh
+  the cost before doing it for display alone.
+- (2026-10-07) noImplicitAnyUnionNormalizedObjectLiteral1 (types): union order of two widened object literals with the
+  same symbol (the spread literal) goes by type id; tsc's getWidenedTypeWithContext makes both members anew in member
+  order, tttt's separate widen_nullable() pass keeps the unchanged `{ c: string; ... }` (older id) and remakes only
+  the other, so the order flips.
+- (2026-10-07) knockout.mapping `$ExpectType` (knockout.mapping-tests.ts:109): tsc orders
+  `KnockoutObservableArray<KnockoutObservableType<any>> | KnockoutObservableArray<any>`, tttt the other way round.
+  Not investigated (type id order of two references to one target: which type argument list is made first).
+- (2026-10-07) node (4 `$ExpectType`, all versions): `[value: number] | [value: number]` from two declarations: tsc's
+  tuple targets are keyed by their labels' declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the
+  label names, so the two tuples are one type and the union collapses.
 ## Circularity (plan 29 stage 3 leftovers; the outer-declaration cases are plan 39)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
-  TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax.
+  TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax. (Re-checked
+  2026-10-07: `type N<T, K> = T | { [P in K]: N<T, K> }[K]`: tsc doesn't cache an alias instantiation while it is
+  being made, so it recurses with fresh types to the instantiation depth limit before the mapped symbol finds itself
+  circular; tttt interns the instance and meets it at once. Matching it means not interning in-flight alias
+  instantiations, not tuning a counter: leave it.)
+- circularBaseTypes, infiniteConstraints, circularConstraintYieldsAppropriateError: plan 39 stage 3 item 5.
 - TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1,
   circularlyReferentialInterfaceAccessNoCrash. limitDeepInstantiations: `Foo<"true", {}>` never reaches the limit.
   In circularTypeArgumentsLocalAndOuterNoCrash1 (`type X = NumArray<X extends {} ? number : number>`, NumArray local
@@ -193,3 +250,34 @@ fails types in both configurations.
 - Destructuring assignment targets are checked as a whole, not property by property (tsc's
   checkDestructuringAssignment; hacks.md "Destructuring assignments"). The `{ a = dflt }` default of a shorthand
   assignment pattern is resolved but not checked (`ObjectExprItem.shorthand_default`).
+
+## Corpus cells (flagflip) left after triage 2026-10-07 (each re-checked that day)
+- vscode TS2322 stateToProgressAdapter.test.ts:1956, the last vscode error (also in the nonia cell): `{ ...image, data:
+  '' }` spreads the declared union `ToolResultContent` (the message lists every member with `data` added, and the
+  excess property check fails on `ToolResultFileEditContent`) instead of `image`'s initializer-narrowed member
+  (`const image: ToolResultContent = { type: ToolResultContentType.EmbeddedResource, ... }`): the declaration's
+  assignment narrowing doesn't apply. Deterministic at every `--checkers` count. **Trigger found**: electron's
+  typings loaded before the test file. A tsconfig outside the corpus (`extends` vscode's src/tsconfig.json,
+  `compilerOptions: { rootDir: "/", typeRoots: [<vscode>/node_modules/@types, <vscode>/node_modules] }` so its
+  `types` resolve, `include: []`) whose `files` are `[e.ts, stateToProgressAdapter.test.ts]` with e.ts = `import type
+  * as E from 'electron'; export {};` reproduces; the test file alone doesn't (in the corpus electron comes in through
+  playwright-core's `typeof import('electron')` from browserToolHelpers.ts). A 4-line imitation of the declaration and
+  spread with electron first does not reproduce, so something else in the test file takes part: line-reduce the test
+  file (imports made absolute) with e.ts as the first root (each run ~3 s; a reduction got it to ~900 lines before
+  its time limit; keep a copy of the last reproducing state). Suspects: declaration merging/symbol order of a global
+  that electron declares (it declares many DOM-ish globals), changing which of two declarations the enum literal or
+  the union member types come from, so getAssignmentReducedType's comparison of the initializer with the members
+  fails.
+- valibot/nosnc -TS2578 x2 (forward.ts:51, forwardAsync.ts:55): iterating `path: ValidPath<TInput, TPath>` (a
+  deferred conditional) gives tsc a generic key (`KeyOf<TInput> | KeyOf<TInput[...]> | ...`), so `unknown[key]` is no
+  error; tttt iterates the conditional's constraint and gets `string | number` (TS7053). Iteration types of a
+  deferred conditional vs tsc's apparent type / base constraint.
+- xstate/eopt +TS2322 input.test.ts:272: generic Spawner signatures compared, `options` intersections that print the
+  same are unrelated in tttt (`input?: number` & `input: unknown` reads number | undefined against number).
+- xstate/sloppy +TS2589 graph/utils.ts:91 (`snapshot.getMeta()[id]`, Record<StateId<any> & string, ..>): a
+  self-contained probe gives TS2589 on both sides, so it depends on which instantiations tsc has cached by then. Low
+  value; drop unless it spreads.
+- (Fixed 2026-10-07: vscode/eopt TS7006 x18, vscode/nonia resultCodeEditorView TS2339 x4, vue/nir TS7030.)
+- Perf lead, not looked at: 9751c955 (TS2344 on deferred conditional arguments) costs valibot ~0.75%, mostly one
+  relation (`TSchema extends ... ? IssueDotPath<TSchema> : string` against keyof any, flatten.ts:41, ~13 ms): tttt's
+  relation through IssueDotPath's constraint may be slower than tsc's.
