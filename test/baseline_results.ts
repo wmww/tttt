@@ -21098,7 +21098,7 @@ const baselines = {
     'jsExportMemberMergedWithModuleAugmentation3': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'jsExtendsImplicitAny': {
         errors: true,
@@ -30138,7 +30138,7 @@ const baselines = {
     'returnInfiniteIntersection': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'returnStatement1': {
         errors: true,

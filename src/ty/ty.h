@@ -2231,6 +2231,9 @@ typedef struct TyDisplay {
     // The annotation being reprinted is an array's element type: a part of it that prints its type instead is
     // parenthesized as needed (tsc's factory, parenthesizeElementTypeOfArrayType). Only for the node itself
     bool array_element_node;
+    // The same for a member of a union or intersection annotation (parenthesizeConstituentTypeOfUnionType: unions,
+    // intersections, function and conditional types)
+    bool constituent_node;
     uint8_t jsdoc_literal_depth; // Inside that many JSDoc type literals being reprinted (their indentation)
     DeclTracker* tracker; // Declaration emit: null everywhere else
     bool in_object_literal; // Inside a type literal's members (tsc's InObjectTypeLiteral): `this` can't be written there
