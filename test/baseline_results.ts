@@ -23947,8 +23947,8 @@ const baselines = {
     },
     'moduleElementsInWrongContext': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'moduleElementsInWrongContext2': {
         errors: true,
@@ -27203,7 +27203,7 @@ const baselines = {
     'overloadModifiersMustAgree': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'overloadOnConstAsTypeAnnotation': {
         errors: true,
@@ -55378,7 +55378,7 @@ const baselines = {
     'functionOverloadErrors': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionOverloadErrorsSyntax': {
         errors: true,
@@ -72831,7 +72831,7 @@ const baselines = {
         types: true,
     },
     'arityAndOrderCompatibility01': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
