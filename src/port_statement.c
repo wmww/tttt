@@ -489,10 +489,12 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         }
         return;
     }
-    if (module == MODULE_KIND_NODENEXT && node->is_assert) {
+    // (Deprecated in 6.0; an error regardless of ignoreDeprecations from node20 on)
+    bool node20 = module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT;
+    if (node->is_assert && (node20 || !cstr_equals(&options->ignore_deprecations, "6.0"))) {
         error_ctx_grammar_error_d(errs, node->keyword, 2880,
             "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
-        return;
+        if (node20) return;
     }
     bool emits_require = (module == MODULE_KIND_NODE18 || module == MODULE_KIND_NODE20 || module == MODULE_KIND_NODENEXT) &&
         !node->span.source->is_esm;

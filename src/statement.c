@@ -435,6 +435,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     if (my jsdoc && scope->kind == SCOPE_MODULE && !(my full_span.source && my full_span.source->is_commonjs)) {
         props.exported = DECL_EXPORTED_YES;
     }
+    my misplaced = misplaced;
     ErrorCtx* errs = misplaced ? nullptr : binder_errs(scope->binder);
     bool checked = true;
     for (Scope const* i = scope; i && checked; i = i->parent) checked = !i->with_body;
@@ -605,6 +606,10 @@ void namespace_decl_typecheck(NamespaceDecl* me, bool declared, ErrorCtx* errs) 
     // (tsc's checkModuleDeclarationDiagnostics)
     if (!declared && my is_ambient_module) {
         error_ctx_grammar_error_d(errs, my name, 1035, "Only ambient modules can use quoted names.");
+    }
+    if (my module_keyword && !my is_ambient_module && !my is_global && !my misplaced && !my jsdoc) {
+        error_ctx_error_d(errs, my name, 1540, "A 'namespace' declaration should not be declared using the 'module' "
+            "keyword. Please use the 'namespace' keyword instead.");
     }
     CompilerOptions const* options = compiler_options();
     bool isolated = options->isolated_modules || options->verbatim_module_syntax;

@@ -13956,7 +13956,7 @@ const baselines = {
         types: true,
     },
     'escapedIdentifiers': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17791,7 +17791,7 @@ const baselines = {
         types: true,
     },
     'importAssertionsDeprecated': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18466,7 +18466,7 @@ const baselines = {
         types: true,
     },
     'importTypeAssertionDeprecation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -24001,7 +24001,7 @@ const baselines = {
         types: true,
     },
     'moduleKeywordDeprecated': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61311,22 +61311,22 @@ const baselines = {
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=node20)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'nodeModulesImportTypeModeDeclarationEmitErrors1(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -13172,6 +13172,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
             .name = inner_name,
             .full_span = span_make(p.shared->source, span_start_ptr(inner_name), p.pos),
             .contents = contents,
+            .module_keyword = is_module_keyword,
         };
         contents = (Block){0};
         vec_statement_push(&contents.statements, (Statement){
@@ -13185,6 +13186,7 @@ static bool parse_namespace(Parser* parent, NamespaceDecl* ret) {
     if (vec_span_size(&names)) {
         ret->name = *vec_span_at(&names, 0);
     }
+    ret->module_keyword = is_module_keyword;
     ret->contents = contents;
     vec_span_drop(&names);
 

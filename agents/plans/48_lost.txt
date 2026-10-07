@@ -250,7 +250,6 @@ es2024SharedMemory	T	src-same	bl-changed
 es6ImportEqualsExportModuleCommonJsError	T	src-changed	bl-same
 es6ImportEqualsExportModuleEs2015Error	T	src-changed	bl-same
 esModuleIntersectionCrash	T	src-changed	bl-changed
-escapedIdentifiers	E	src-changed	bl-changed
 excessPropertyCheckWithMultipleDiscriminants	E	src-changed	bl-changed
 exhaustiveSwitchStatements1	ST	src-changed	bl-changed
 expandoFunctionContextualTypes	T	src-changed	bl-changed
@@ -473,9 +472,6 @@ nodeModulesExportsSpecifierGenerationDirectory(module=nodenext)	T	src-changed	bl
 nodeModulesExportsSpecifierGenerationPattern(module=node16)	T	src-changed	bl-changed
 nodeModulesExportsSpecifierGenerationPattern(module=node18)	T	src-changed	bl-changed
 nodeModulesExportsSpecifierGenerationPattern(module=nodenext)	T	src-changed	bl-changed
-nodeModulesImportTypeModeDeclarationEmitErrors1(module=node16)	E	src-changed	bl-changed
-nodeModulesImportTypeModeDeclarationEmitErrors1(module=node18)	E	src-changed	bl-changed
-nodeModulesImportTypeModeDeclarationEmitErrors1(module=nodenext)	E	src-changed	bl-changed
 nodeModulesResolveJsonModule(module=node16)	T	src-changed	bl-changed
 nodeModulesResolveJsonModule(module=node18)	T	src-changed	bl-changed
 nodeModulesResolveJsonModule(module=nodenext)	T	src-changed	bl-changed

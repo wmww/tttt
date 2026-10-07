@@ -1172,9 +1172,24 @@ void ty_check_import_call_specifier(Checker* me, Expr const* specifier, ErrorCtx
 
 void ty_check_import_call_options(Checker* me, Expr const* options, ErrorCtx* errs) {
     Ty const* target = global_import_type(me, "ImportCallOptions");
-    if (!target) return;
-    Ty const* source = ty_check_expr(me, options, target);
-    ty_check_assignable(me, source, with_undefined(me, target), expr_outer_span(options), errs);
+    if (target) {
+        Ty const* source = ty_check_expr(me, options, target);
+        ty_check_assignable(me, source, with_undefined(me, target), expr_outer_span(options), errs);
+    }
+    // `import(m, { assert: ... })`: deprecated in 6.0
+    if (options->tag == EXPR_OBJECT && !expr_is_perenthisized(options) &&
+        !cstr_equals(&compiler_options()->ignore_deprecations, "6.0")
+    ) {
+        for_each (i, vec_object_expr_item, &options->object) {
+            ObjectExprItem const* prop = i;
+            if (prop->tag == OBJECT_ITEM_PROPERTY && !prop->computed_key && prop->name_span.sv.size &&
+                *prop->name_span.sv.buf != '"' && *prop->name_span.sv.buf != '\'' && cstr_equals(&prop->name_string, "assert")
+            ) {
+                error_ctx_grammar_error_d(errs, prop->name_span, 2880,
+                    "Import assertions have been replaced by import attributes. Use 'with' instead of 'assert'.");
+            }
+        }
+    }
 }
 
 // tsc's getGlobalDisposableType(/*reportErrors*/ true) & co: TS2318 once when the lib doesn't have it
