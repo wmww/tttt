@@ -91,17 +91,15 @@ echo "tttt phases (one run):"
 thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite/tsconfig.corpus.json
 NEST=nestjs-boilerplate/tsconfig.corpus.json
-# drizzle and vue import through baseUrl too (`type-tests/utils.ts`, `packages/...`): tsgo gets `"*": ["./*"]` instead.
-# tsgo 7 still reports its own TS2769/TS2578 on both (16 drizzle, 8 vue: TS 7 differences), so its times may not be of
-# a full check
-echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"~/*": ["./src/*"], "*": ["./*"]}}}' > thirdparty/corpora/drizzle/drizzle-orm/tsconfig.tsgo.json
+# vue imports through baseUrl too (`packages/...`): tsgo gets `"*": ["./*"]` instead. tsgo 7 reports its own
+# TS2769/TS2578 on drizzle and vue (16 drizzle, 8 vue: TS 7 differences), so its times may not be of a full check
 echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"@vue/compat": ["./packages/vue-compat/src"], "@vue/*": ["./packages/*/src"], "vue": ["./packages/vue/src"], "*": ["./*"]}}}' > thirdparty/corpora/vue/tsconfig.tsgo.json
 for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json vscode/src excalidraw/tsconfig.corpus.json tanstack-router/tsconfig.corpus.json; do
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
     TSC_EXTRA=""
     if test $CORPUS = webpack || test $CORPUS = vscode/src || test ${CORPUS%.json} != $CORPUS; then TSGO_ARGS="-p $DIR"; fi
-    case $CORPUS in drizzle/*|vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
+    case $CORPUS in vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
     echo
     echo "corpus $CORPUS: $(node thirdparty/tsc/built/local/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR

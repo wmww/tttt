@@ -68,11 +68,15 @@ CORPORA=(
     # package). A pnpm workspace: the dependencies are core's devDependencies (without @scion-scxml/test-framework) +
     # vitest and @types/node, from corpora-locks/xstate.package.json
     "xstate https://github.com/statelyai/xstate.git 38dcaffb20ec7f3cbb10e6161d8f0ebacca33701 ."
-    # drizzle-orm (Sep 2026, todo entry 1 of the seventh window): the SQL query builder package (pg, mysql, sqlite,
-    # singlestore, gel dialects: column builders, select/join result types through deep conditional and mapped chains)
-    # and its type-tests (Expect<Equal<...>>), checked through drizzle-orm/tsconfig.corpus.json from the overlay
-    # (upstream's type-tests/tsconfig.json minus src/prisma, which needs a generated @prisma/client).
-    # noUncheckedIndexedAccess, exactOptional off, noPropertyAccessFromIndexSignature, paths `~/*`. A pnpm workspace:
+    # drizzle-orm (Sep 2026, todo entry 1 of the seventh window; checked again Oct 2026 for plan 48 stage 5: still
+    # main's head, upstream still on TypeScript 5.6.3): the SQL query builder package (pg, mysql, sqlite, singlestore,
+    # gel dialects: column builders, select/join result types through deep conditional and mapped chains) and its
+    # type-tests (Expect<Equal<...>>), checked through drizzle-orm/tsconfig.corpus.json from the overlay (upstream's
+    # type-tests/tsconfig.json minus src/prisma, which needs a generated @prisma/client; `"baseUrl": null` with
+    # ./-relative paths `~/*` and `type-tests/*`, as 6.0 deprecates baseUrl). noUncheckedIndexedAccess, exactOptional
+    # off, noPropertyAccessFromIndexSignature. Clean under tsc 6; tsgo 7.0.2 reports 16 of its own (8 TS2769/TS2578
+    # pairs in type-tests/*/insert.ts and generated-columns.ts: it reports a failed overload on the object literal's
+    # line rather than the call's, so the `@ts-expect-error` above the call goes unused). A pnpm workspace:
     # the dependencies are drizzle-orm's devDependencies at pnpm-lock.yaml's versions, from
     # corpora-locks/drizzle.package.json (npm floats the transitive ones)
     "drizzle https://github.com/drizzle-team/drizzle-orm.git 15454dbe49d827c6081f3d0231e2e7985e517295 drizzle-orm"

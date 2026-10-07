@@ -4,7 +4,12 @@
 		"composite": false,
 		"noEmit": true,
 		"rootDir": ".",
-		"outDir": "./.cache"
+		"outDir": "./.cache",
+		"baseUrl": null,
+		"paths": {
+			"~/*": ["./src/*"],
+			"type-tests/*": ["./type-tests/*"]
+		}
 	},
 	"include": ["src", "type-tests"],
 	"exclude": ["src/prisma", "**/playground"]
