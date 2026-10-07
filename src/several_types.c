@@ -576,6 +576,9 @@ static void identifier_type_check_arity(IdentifierType const* me, ErrorCtx* errs
         !(my jsdoc_intrinsic == JSDOC_INTRINSIC_ANY && vec_spanned_type_size(&my generic_params) == 2);
     if (identifier_type_is_jsdoc_function(me)) jsdoc_named = true;
     if (!jsdoc_named && (!symbol || symbol->is_placeholder)) return;
+    // (A JSDoc `import("./m").C` of a property of the module's value: the target is the module's value, the type
+    // arguments go to the class the property's type is, tsc's getTypeFromJSDocValueReference)
+    if (my rare && my rare->import_prop_start >= 0 && !my rare->import_typeof) return;
     if (my keyword || !span_valid(my name) || !my name.source) return;
     u32 arg_count = (u32)vec_spanned_type_size(&my generic_params);
     Span span = identifier_type_span(me);

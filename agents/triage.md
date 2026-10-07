@@ -229,10 +229,7 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 - **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 64 (113 before the `if (c);else` parser fix and binding
   `module.exports=` inside comma expressions); originally by code TS2349 x43, TS2345 x31, TS2339 x29, TS1128 x6,
   TS2440 x2, TS2344 x1, TS7008 x1. Root causes seen:
-  - JSDoc generics: `@typedef {import("../util/SourceProcessor").PrintContext<CssPath, Node, CssPrintOptions>}` (a JS
-    class with `@template TPath, TNode, [TPrintOptions=object]`) keeps its type parameters uninstantiated: TS2345
-    "'Node' is not assignable to 'TNode'" and TS2339 on `writer.options.X` (`PrintOptions & TPrintOptions`), in
-    lib/{css,html}/syntax-{parser,printer}.js.
+  - (Fixed: a JSDoc `import("./m").C` of a class value, `M.C = C` expando, now applies its type arguments: 64 -> 4.)
   - Singles: TS2440 `/** @import { SharedModuleFilter } from "./SharePlugin" */` vs a local declaration
     (sharing/*SharedPlugin.js), TS2344 `InstanceType<ExportInfo>` (graph/ExportsInfo.js:462), TS7008 `labels` in
     javascript/syntax-parser.js:15742.

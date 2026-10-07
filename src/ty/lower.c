@@ -377,6 +377,17 @@ TyList ty_alias_type_params(Checker* me, Symbol const* decl) {
     return ty_type_params_of(me, symbol_type_generic(decl));
 }
 
+// A JSDoc reference to a value that is a class (tsc's getTypeFromJSDocValueReference): the class's reference with
+// the reference's type arguments (tsc's getTypeReferenceType of the class symbol, getTypeFromClassOrInterfaceReference;
+// in JavaScript the missing ones are any or their defaults)
+static Ty const* jsdoc_value_class_reference(Checker* me, Symbol const* class_symbol, IdentifierType const* identifier, LowerCtx ctx) {
+    Ty const* declared = ty_declared_type_of(me, class_symbol);
+    if (declared->kind != TY_DECLARED || !declared->declared.type_params.len) return declared;
+    Ty const* args_buf[MAX_TYPE_ARGS];
+    TyList args = lower_type_args(me, declared->declared.type_params, declared->declared.outer_count, &identifier->generic_params, ctx, args_buf);
+    return ty_reference(me, declared, args);
+}
+
 static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier, LowerCtx ctx);
 
 // `{ [P in keyof T]: X }` with T a type parameter: instantiating it keeps the name it was written with (tsc's
@@ -546,7 +557,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
             if (!identifier_type_import_typeof(identifier) && ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_CLASS_STATIC &&
                 ret->declared.symbol
             ) {
-                return ty_class_instance_type(me, ret->declared.symbol);
+                return jsdoc_value_class_reference(me, ret->declared.symbol, identifier, ctx);
             }
             return ret;
         }
@@ -603,7 +614,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         if (init) {
             Symbol const* class_symbol = init->tag == EXPR_CLASS_DECL ? init->class_decl->symbol :
                 init->tag == EXPR_FUNCTION ? ty_js_constructor_class(init->function) : nullptr;
-            if (class_symbol) return ty_class_instance_type(me, class_symbol);
+            if (class_symbol) return jsdoc_value_class_reference(me, class_symbol, identifier, ctx);
         }
         Ty const* type = ty_type_of_symbol(me, decl);
         // `import("./m").C` of a value whose type is a class is the class (tsc's getTypeFromJSDocValueReference: the
@@ -611,7 +622,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         if (span_valid(identifier_type_import_span(identifier)) && span_valid(identifier->name) && type->kind == TY_DECLARED &&
             type->declared.kind == TY_DECLARED_CLASS_STATIC && canonical(me, type->declared.symbol) != decl
         ) {
-            return ty_class_instance_type(me, type->declared.symbol);
+            return jsdoc_value_class_reference(me, type->declared.symbol, identifier, ctx);
         }
         return type;
     }
