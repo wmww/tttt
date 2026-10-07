@@ -170,6 +170,9 @@ typedef struct Statement {
         STATEMENT_DECL_NAMESPACE,
     } tag;
     bool export_equals; // STATEMENT_EXPORT_DEFAULT_EXPR: `export = x` rather than `export default x`
+    // STATEMENT_EXPORT_DEFAULT_EXPR not at the top level of a file or namespace (TS1231/TS1258): its expression is
+    // neither resolved nor checked (tsc's checkExportAssignment bails out)
+    bool export_misplaced;
     // In a range of unreachable code the binder found (TS7027 if reported at all): nothing in it is reported again
     // (tsc's withinUnreachableCode)
     bool unreachable;

@@ -1080,7 +1080,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
-            scope_export_default_expr(scope, &my expr, my expr_jsdoc_type, my span, my export_equals);
+            my export_misplaced = !scope_export_default_expr(scope, &my expr, my expr_jsdoc_type, my span, my export_equals);
             break;
 
         case STATEMENT_IMPORT_EXPORT:
@@ -1626,6 +1626,10 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR: {
+            if (my export_misplaced) {
+                expr_lookup_names(&my expr, names, nullptr);
+                break;
+            }
             // tsc's checkExportAssignment: neither belongs in a namespace, and
             // what they name isn't resolved then
             if (names->kind == SCOPE_NAMESPACE && !(names->container && (names->container->is_module || names->container->is_augmentation))) {
@@ -2719,6 +2723,7 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             break;
 
         case STATEMENT_EXPORT_DEFAULT_EXPR:
+            if (my export_misplaced) break; // (tsc's checkExportAssignment bails out)
             if (my expr_jsdoc_type) {
                 // (Checked with it as the contextual type, then related without elaborating: tsc's checkTypeAssignableTo)
                 type_typecheck(my expr_jsdoc_type, errs);

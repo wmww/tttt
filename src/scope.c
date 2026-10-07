@@ -1750,7 +1750,7 @@ static bool is_unparenthesized_entity_name(Expr const* me) {
     return !expr_is_perenthisized(me);
 }
 
-void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
+bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type, Span statement, bool export_equals) {
     // tsc's checkExportAssignment -> checkGrammarModuleElementContext: only in a file or a namespace body (on the
     // first token; nothing is exported)
     bool top = my kind == SCOPE_MODULE || my kind == SCOPE_SCRIPT || my kind == SCOPE_GLOBAL_AUGMENTATION ||
@@ -1763,11 +1763,11 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
         } else {
             error_ctx_grammar_error_d(binder_errs(my binder), first, 1258, "A default export must be at the top level of a file or module declaration.");
         }
-        return;
+        return false;
     }
     // (`export default x` in an augmentation merges into the module's default)
     if (!my container || !(my container->is_module || (my container->is_augmentation && !export_equals))) {
-        return; // TODO: TS1319 and friends
+        return true; // TODO: TS1319 and friends
     }
     symbol_ensure_exports(my container);
     csview export_name = export_equals ? c_sv("export=") : c_sv("default");
@@ -1849,6 +1849,7 @@ void scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
             .name = statement, .full = statement, .js = symbol_decl_js(my binder, jsdoc_type, false),
         });
     }
+    return true;
 }
 
 // CommonJS
