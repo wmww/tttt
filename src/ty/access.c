@@ -53,6 +53,17 @@ static Ty const* with_missing(Checker* me, Ty const* type) {
 Atom const* ty_literal_name(Checker* me, Ty const* index) {
     if (!(index->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return nullptr;
     if (index->literal.string) return index->literal.string;
+    // (A small non-negative integer, the common enum member or tuple index, without the general JS number formatting)
+    Value const* value = &index->literal.value;
+    if (value->tag == VALUE_NUMBER && value->number >= 0 && value->number < 1e15 && value->number == (double)(i64)value->number) {
+        // (-0 is "0" to JS's ToString too)
+        char buf[24];
+        char* end = buf + sizeof buf;
+        char* at = end;
+        u64 n = (u64)value->number;
+        do { *--at = (char)('0' + n % 10); n /= 10; } while (n);
+        return checker_atom(me, (csview){ .buf = at, .size = end - at });
+    }
     cstr rendered = cstr_null;
     cstr_append_value_js(&rendered, &index->literal.value);
     Atom const* name = checker_atom(me, cstr_sv(&rendered));

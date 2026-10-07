@@ -2785,10 +2785,30 @@ static int readonly_key_member(Checker* me, PropertyExpr const* access, Ty const
     return 1;
 }
 
+// Whether writing to some key of `object` can hit a readonly property or index signature: a cheap gate before trying
+// each member of a union key (a union of hundreds of enum members writing into an array is common). Conservative for
+// what it doesn't look into: unions, intersections, tuples, and anything with signatures (Function's readonly members)
+static bool may_have_readonly_member(Checker* me, Ty const* object) {
+    Ty const* apparent = ty_apparent_type(me, object);
+    if (!(apparent->flags & TYF_OBJECT) || ty_is_tuple(apparent)) return true;
+    Members const* members = ty_members(me, apparent);
+    if (members->call_count || members->construct_count) return true;
+    for (u32 i = 0; i < members->prop_count; i++) {
+        if (members->props[i]->flags & PROP_READONLY) return true;
+    }
+    for (u32 i = 0; i < members->index_count; i++) {
+        if (members->index[i].readonly) return true;
+    }
+    return false;
+}
+
 // The key of an element access written to, when it is a (non-generic) union of keys written one by one
 static Ty const* written_union_key(Checker* me, PropertyExpr const* access) {
-    if (!access->assignment_target || access->form != PROPERTY_EXPR_BRACKET || access_name(me, access)) return nullptr;
-    Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+    // (A union key has no single name, so access_name() needn't be asked: this runs for every element write)
+    if (!access->assignment_target || access->form != PROPERTY_EXPR_BRACKET) return nullptr;
+    Ty const* key = ty_access_key_type(me, access);
+    if (key->kind != TY_UNION) return nullptr;
+    key = ty_regular(me, key);
     return key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) && !ty_is_generic_index(key) ? key : nullptr;
 }
 
@@ -2798,6 +2818,7 @@ bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const
     // (Through a union of keys, one readonly property makes the whole access the error type: tsc's
     // getIndexedAccessTypeOrUndefined gives up when a key's getPropertyTypeForIndexType does)
     Ty const* key = written_union_key(me, access);
+    if (key && !may_have_readonly_member(me, object)) return false;
     for (u32 i = 0; key && i < key->composite.types.len; i++) {
         Atom const* name = ty_literal_name(me, key->composite.types.data[i]);
         if (name && readonly_key_member(me, access, object, name) > 0) return true;
@@ -4182,6 +4203,7 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         // Through a union of keys, each one is written (tsc's getIndexedAccessType goes key by key with
         // AccessFlags.Writing): a readonly property is TS2540 at the key, a readonly index signature TS2542 at the access
         Ty const* union_key = written_union_key(me, access);
+        if (union_key && !may_have_readonly_member(me, object)) return;
         if (union_key) {
             Ty const* apparent = ty_apparent_type(me, object);
             bool index_reported = false;
