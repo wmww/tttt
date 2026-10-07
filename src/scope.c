@@ -4171,7 +4171,7 @@ static bool name_is_one_of(csview name, char const* const* names, u32 count) {
 static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, bool shorthand) {
     static char const* const dom[] = { "document", "console" };
     static char const* const test_runner[] = { "describe", "suite", "it", "test" };
-    static char const* const node[] = { "process", "require", "Buffer", "module" };
+    static char const* const node[] = { "process", "require", "Buffer", "module", "NodeJS" };
     static char const* const later_lib[] = {
         "Map", "Set", "Promise", "Symbol", "WeakMap", "WeakSet", "Iterator", "AsyncIterator", "SharedArrayBuffer",
         "Atomics", "AsyncIterable", "AsyncIterableIterator", "AsyncGenerator", "AsyncGeneratorFunction", "BigInt",
@@ -4194,7 +4194,7 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
         error_ctx_error_d(errs, name, types ? 2593 : 2582, "Cannot find name '", name, "'. Do you need to install type "
             "definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`",
             types ? " and then add 'jest' or 'mocha' to the types field in your tsconfig." : ".");
-    } else if (name_is_one_of(n, node, 4)) {
+    } else if (name_is_one_of(n, node, 5)) {
         error_ctx_error_d(errs, name, types ? 2591 : 2580, "Cannot find name '", name, "'. Do you need to install type "
             "definitions for node? Try `npm i --save-dev @types/node`",
             types ? " and then add 'node' to the types field in your tsconfig." : ".");

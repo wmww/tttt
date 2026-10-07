@@ -11701,7 +11701,7 @@ const baselines = {
         types: true,
     },
     'elidedJSImport1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -17746,7 +17746,7 @@ const baselines = {
         types: true,
     },
     'importAliasInModuleAugmentation': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18491,7 +18491,7 @@ const baselines = {
         types: true,
     },
     'importTypeWithUnparenthesizedGenericFunctionParsed': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20781,12 +20781,12 @@ const baselines = {
         types: true,
     },
     'isolatedModulesImportExportElision(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'isolatedModulesImportExportElision(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -34706,7 +34706,7 @@ const baselines = {
         types: true,
     },
     'undeclaredModuleError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -54536,12 +54536,12 @@ const baselines = {
         types: true,
     },
     'emit(jsx=preserve)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'emit(jsx=react)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -287,6 +287,28 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
 void module_ref_report_unresolved(ModuleRef const* me, ErrorCtx* errs) { report_unresolved(me, errs, false); }
 void module_ref_report_unresolved_side_effect(ModuleRef const* me, ErrorCtx* errs) { report_unresolved(me, errs, true); }
 
+// tsc's nodeCoreModules: what Node.js has built in, with or without `node:` (some only with it)
+static bool is_node_core_module(csview path) {
+    static char const* const modules[] = {
+        "assert", "assert/strict", "async_hooks", "buffer", "child_process", "cluster", "console", "constants", "crypto",
+        "dgram", "diagnostics_channel", "dns", "dns/promises", "domain", "events", "fs", "fs/promises", "http", "http2",
+        "https", "inspector", "inspector/promises", "module", "net", "os", "path", "path/posix", "path/win32",
+        "perf_hooks", "process", "punycode", "querystring", "readline", "readline/promises", "repl", "stream",
+        "stream/consumers", "stream/promises", "stream/web", "string_decoder", "sys", "timers", "timers/promises", "tls",
+        "trace_events", "tty", "url", "util", "util/types", "v8", "vm", "wasi", "worker_threads", "zlib",
+    };
+    static char const* const prefixed_only[] = { "quic", "sea", "sqlite", "test", "test/reporters" };
+    bool prefixed = csview_starts_with(path, "node:");
+    if (prefixed) path = csview_subview(path, 5, path.size - 5);
+    for (u32 i = 0; i < c_arraylen(modules); i++) {
+        if (csview_equals(path, modules[i])) return true;
+    }
+    for (u32 i = 0; prefixed && i < c_arraylen(prefixed_only); i++) {
+        if (csview_equals(path, prefixed_only[i])) return true;
+    }
+    return false;
+}
+
 static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_effect) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
@@ -324,7 +346,14 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
         case MODULE_REF_NOT_FOUND:
             break;
     }
-    if (options->module_resolution == MODULE_RESOLUTION_CLASSIC) {
+    if (!side_effect && is_node_core_module(cstr_sv(&my path))) {
+        // (tsc 6.0's getCannotResolveModuleNameErrorForSpecificModule: the "install @types/node" message)
+        bool wildcard = false;
+        for (isize i = 0; i < options->types.count; i++) wildcard |= cstr_equals(&options->types.items[i], "*");
+        error_ctx_error_d(errs, my span, wildcard ? 2580 : 2591, "Cannot find name '", my path, "'. Do you need to install type "
+            "definitions for node? Try `npm i --save-dev @types/node`",
+            wildcard ? "." : " and then add 'node' to the types field in your tsconfig.");
+    } else if (options->module_resolution == MODULE_RESOLUTION_CLASSIC) {
         error_ctx_error_d(errs, my span, 2792,
             "Cannot find module '", my path, "'. Did you mean to set the 'moduleResolution' option to 'nodenext', "
             "or to add aliases to the 'paths' option?");

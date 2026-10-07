@@ -180,9 +180,6 @@ distributiveConditionalTypeConstraints	T	src-changed	bl-changed
 divergentAccessorsTypes8	T	src-changed	bl-changed
 divideAndConquerIntersections	T	src-changed	bl-changed
 duplicateLocalVariable1	T	src-changed	bl-changed
-elidedJSImport1	ET	src-changed	bl-changed
-emit(jsx=preserve)	E	src-same	bl-changed
-emit(jsx=react)	E	src-same	bl-changed
 emitClassExpressionInDeclarationFile	T	src-changed	bl-changed
 emitClassExpressionInDeclarationFile2	T	src-changed	bl-changed
 emitExponentiationOperatorInTempalteString4ES6	T	src-same	bl-changed
@@ -239,11 +236,9 @@ getterSetterSubtypeAssignment	T	src-same	bl-changed
 gettersAndSetters	T	src-same	bl-changed
 implicitConstParameters	T	src-changed	bl-changed
 importAliasFromNamespace	ET	src-changed	bl-changed
-importAliasInModuleAugmentation	E	src-changed	bl-changed
 importAttributes9	T	src-same	bl-changed
 importCallExpressionSpecifierNotStringTypeError	ET	src-same	bl-changed
 importDeclarationInModuleDeclaration1	E	src-changed	bl-changed
-importTypeWithUnparenthesizedGenericFunctionParsed	E	src-changed	bl-changed
 importedAliasedConditionalTypeInstantiation	T	src-changed	bl-changed
 inDoesNotOperateOnPrimitiveTypes	ET	src-changed	bl-changed
 inKeywordTypeguard(strict=false)	T	src-same	bl-changed
@@ -619,7 +614,6 @@ umd-augmentation-3	T	src-changed	bl-changed
 umd-augmentation-4	T	src-changed	bl-changed
 umd8	ST	src-changed	bl-changed
 uncalledFunctionChecksInConditional2	T	src-changed	bl-changed
-undeclaredModuleError	E	src-changed	bl-changed
 unicodeEscapesInNames01(target=es5)	E	src-same	bl-changed
 unicodeEscapesInNames02(target=es2015)	E	src-changed	bl-changed
 unionAndIntersectionInference1	T	src-same	bl-changed
