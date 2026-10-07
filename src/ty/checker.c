@@ -2013,18 +2013,20 @@ typedef struct TupleBuilder {
     Ty const** types;
     unsigned char* flags;
     Atom const** names;
+    void const** labels; // Null until some element has a label
     u32 len, cap;
-    bool any_name;
+    bool any_name, labels_any;
     i32 last_required, first_rest, last_optional_or_rest;
 } TupleBuilder;
 
-static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsigned char flags, Atom const* name) {
+static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsigned char flags, Atom const* name, void const* label) {
     if (b->len == b->cap) {
         b->cap = b->cap ? b->cap * 2 : 8;
         b->types = realloc(b->types, sizeof(Ty const*) * b->cap);
         b->flags = realloc(b->flags, b->cap);
         b->names = realloc(b->names, sizeof(Atom const*) * b->cap);
-        panic_if(!b->types || !b->flags || !b->names, "out of memory");
+        if (b->labels) b->labels = realloc(b->labels, sizeof(void const*) * b->cap);
+        panic_if(!b->types || !b->flags || !b->names || (b->len && b->labels_any && !b->labels), "out of memory");
     }
     bool rest = (flags & TUPLE_ELEMENT_REST) && !is_generic_spread(me, type);
     if (!(flags & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST))) b->last_required = (i32)b->len;
@@ -2032,6 +2034,13 @@ static void tuple_builder_add(Checker* me, TupleBuilder* b, Ty const* type, unsi
     if ((flags & TUPLE_ELEMENT_OPTIONAL) || rest) b->last_optional_or_rest = (i32)b->len;
     b->types[b->len] = type;
     b->flags[b->len] = flags;
+    // (Labels only once one is known: most tuples have none)
+    if (label && !b->labels) {
+        b->labels = calloc(b->cap, sizeof(void const*));
+        panic_if(!b->labels, "out of memory");
+        b->labels_any = true;
+    }
+    if (b->labels) b->labels[b->len] = label;
     b->names[b->len++] = name;
     b->any_name |= name != nullptr;
 }
@@ -2094,8 +2103,9 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
     for (u32 i = 0; i < shape->arity; i++) {
         Ty const* arg = args.data[i];
         Atom const* name = shape->names ? shape->names[i] : nullptr;
+        void const* label = shape->labels ? shape->labels[i] : nullptr;
         if (!(shape->flags[i] & TUPLE_ELEMENT_REST)) {
-            tuple_builder_add(me, &b, arg, shape->flags[i], name);
+            tuple_builder_add(me, &b, arg, shape->flags[i], name, label);
         } else if (ty_is_tuple(arg)) {
             TupleShape const* inner = arg->reference.target->declared.tuple;
             if (b.len + inner->arity >= 10000) {
@@ -2108,18 +2118,20 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
                 free(b.types);
                 free(b.flags);
                 free(b.names);
+                free(b.labels);
                 return ty_intrinsic(me, TY_ERROR);
             }
             TyList elements = ty_reference_args(me, arg);
             for (u32 j = 0; j < inner->arity; j++) {
-                tuple_builder_add(me, &b, elements.data[j], inner->flags[j], inner->names ? inner->names[j] : nullptr);
+                tuple_builder_add(me, &b, elements.data[j], inner->flags[j], inner->names ? inner->names[j] : nullptr,
+                    inner->labels ? inner->labels[j] : nullptr);
             }
         } else if (is_readonly_array(me, arg)) {
-            tuple_builder_add(me, &b, ty_array(me, ty_reference_args(me, arg).data[0], false), TUPLE_ELEMENT_REST, name);
+            tuple_builder_add(me, &b, ty_array(me, ty_reference_args(me, arg).data[0], false), TUPLE_ELEMENT_REST, name, label);
         } else if (arg->flags & (TYF_ANY | TYF_UNKNOWN)) {
-            tuple_builder_add(me, &b, ty_array(me, arg, false), TUPLE_ELEMENT_REST, name);
+            tuple_builder_add(me, &b, ty_array(me, arg, false), TUPLE_ELEMENT_REST, name, label);
         } else if (!(arg->kind == TY_DECLARED && arg->declared.kind == TY_DECLARED_TUPLE_TARGET)) {
-            tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name);
+            tuple_builder_add(me, &b, arg, TUPLE_ELEMENT_REST, name, label);
         }
     }
     for (i32 i = 0; i < b.last_required; i++) b.flags[i] &= ~TUPLE_ELEMENT_OPTIONAL;
@@ -2140,6 +2152,7 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
             b.types[i] = b.types[i + removed];
             b.flags[i] = b.flags[i + removed];
             b.names[i] = b.names[i + removed];
+            if (b.labels) b.labels[i] = b.labels[i + removed];
         }
         b.len -= removed;
     }
@@ -2149,6 +2162,7 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         free(b.types);
         free(b.flags);
         free(b.names);
+        free(b.labels);
         return shape->readonly ? ty_array(me, ty_reference_args(me, array).data[0], true) : array;
     }
     TupleShape normalized = {
@@ -2156,12 +2170,14 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         .readonly = shape->readonly,
         .flags = b.flags,
         .names = b.any_name ? b.names : nullptr,
+        .labels = b.any_name ? b.labels : nullptr,
     };
     Ty const* new_target = ty_tuple_target(me, &normalized);
     Ty const* ret = b.len ? ty_reference(me, new_target, (TyList){ .data = b.types, .len = b.len }) : new_target;
     free(b.types);
     free(b.flags);
     free(b.names);
+    free(b.labels);
     return ret;
 }
 
@@ -2254,14 +2270,18 @@ Ty const* ty_auto_array(Checker* me) {
 
 Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
     u64 stack_key[64];
-    u32 count = 3 + shape->arity * 2;
+    bool labels = false;
+    for (u32 i = 0; shape->labels && shape->names && i < shape->arity && !labels; i++) labels = shape->labels[i] && shape->names[i];
+    u32 per = labels ? 3 : 2;
+    u32 count = 3 + shape->arity * per;
     u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
     key[0] = KEY_TUPLE_TARGET;
-    key[1] = shape->arity;
+    key[1] = shape->arity | (u64)labels << 32;
     key[2] = shape->readonly;
     for (u32 i = 0; i < shape->arity; i++) {
-        key[3 + i * 2] = shape->flags[i];
-        key[4 + i * 2] = (u64)(uintptr_t)(shape->names ? shape->names[i] : nullptr);
+        key[3 + i * per] = shape->flags[i];
+        key[4 + i * per] = (u64)(uintptr_t)(shape->names ? shape->names[i] : nullptr);
+        if (labels) key[5 + i * per] = (u64)(uintptr_t)(shape->names[i] ? shape->labels[i] : nullptr);
     }
     void const** slot = intern_slot(me, &my types, key, count);
     if (key != stack_key) free(key);
@@ -2269,11 +2289,13 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
         Ty const** params = arena_new_n(&my arena, Ty const*, shape->arity);
         unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
         Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
+        void const** target_labels = labels ? arena_new_n(&my arena, void const*, shape->arity) : nullptr;
         bool variable = false;
         for (u32 i = 0; i < shape->arity; i++) {
             params[i] = ty_synthetic_type_param(me, c_sv("T"));
             flags[i] = shape->flags[i];
             if (names) names[i] = shape->names[i];
+            if (target_labels) target_labels[i] = shape->names[i] ? shape->labels[i] : nullptr;
             variable |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
         }
         Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
@@ -2284,6 +2306,7 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
         copy->readonly = shape->readonly;
         copy->flags = flags;
         copy->names = names;
+        copy->labels = target_labels;
         ret->declared.tuple = copy;
         ret->declared.type_params = (TyList){ .data = params, .len = shape->arity };
         *slot = ret;

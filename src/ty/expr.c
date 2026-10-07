@@ -1147,6 +1147,7 @@ static Ty const* tuple_slice(Checker* me, Ty const* tuple, u32 from) {
     u32 len = arity - from;
     TupleShape sliced = {
         .arity = len, .readonly = false, .flags = shape->flags + from, .names = shape->names ? shape->names + from : nullptr,
+        .labels = shape->labels ? shape->labels + from : nullptr,
     };
     Ty const* target = ty_tuple_target(me, &sliced);
     return len ? ty_reference(me, target, (TyList){ .data = args.data + from, .len = len }) : target;

@@ -2165,11 +2165,13 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
     }
     unsigned char* flags = malloc(arity);
     Atom const** names = calloc(arity, sizeof(Atom const*));
+    void const** labels = calloc(arity, sizeof(void const*));
     bool any_named = false;
     for_each (i, vec_tuple_element, &node->tuple.elements) {
         flags[i_index] = (i->optional ? TUPLE_ELEMENT_OPTIONAL : 0) | (i->rest ? TUPLE_ELEMENT_REST : 0);
         if (span_valid(i->maybe_name)) {
             names[i_index] = checker_atom(me, i->maybe_name.sv);
+            labels[i_index] = i;
             any_named = true;
         }
     }
@@ -2178,10 +2180,12 @@ static Ty const* tuple_target_of_node(Checker* me, TypeNode const* node) {
         .readonly = node->tuple.readonly,
         .flags = flags,
         .names = any_named ? names : nullptr,
+        .labels = any_named ? labels : nullptr,
     };
     Ty const* ret = ty_tuple_target(me, &shape);
     free(flags);
     free(names);
+    free(labels);
     return ret;
 }
 
@@ -2459,6 +2463,7 @@ static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start)
         .arity = shape->arity - start,
         .flags = shape->flags + start,
         .names = shape->names ? shape->names + start : nullptr,
+        .labels = shape->labels ? shape->labels + start : nullptr,
     };
     return ty_reference(me, ty_tuple_target(me, &rest_shape), (TyList){ .data = elements.data + start, .len = rest_shape.arity });
 }

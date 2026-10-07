@@ -321,6 +321,7 @@ static Ty const* mapped_over_array_or_tuple(
         .readonly = mapped->readonly ? mapped->readonly > 0 : shape->readonly,
         .flags = flags,
         .names = shape->names,
+        .labels = shape->labels,
     };
     Ty const* target = ty_tuple_target(me, &new_shape);
     ret = !shape->arity ? target : ty_reference(me, target, (TyList){ .data = mapped_elements, .len = shape->arity });

@@ -200,6 +200,10 @@ typedef struct TupleShape {
     bool readonly;
     unsigned char const* flags; // TupleElementFlags per element
     Atom const* const* names; // per element, null if unnamed. Null if no element is named
+    // Per element, the declaration its label comes from (a TupleElement or a FunctionArg), null if none or unknown. Null
+    // if none is known. Part of the target's identity: two tuples labelled by different declarations are different
+    // types (tsc's getTupleTargetType keys on namedMemberDeclarations)
+    void const* const* labels;
 } TupleShape;
 
 typedef enum LazyState {

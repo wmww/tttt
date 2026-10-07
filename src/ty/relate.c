@@ -1726,7 +1726,8 @@ static Ty const* effective_rest_type(Checker* me, Signature const* sig) {
                 for (u32 k = first; k < rest_shape->arity; k++) parts[k - first] = elements.data[k];
                 // (Labels kept: tsc's sliceTupleType)
                 TupleShape shape = { .arity = rest_shape->arity - first, .flags = rest_shape->flags + first,
-                    .names = rest_shape->names ? rest_shape->names + first : nullptr };
+                    .names = rest_shape->names ? rest_shape->names + first : nullptr,
+                    .labels = rest_shape->labels ? rest_shape->labels + first : nullptr };
                 effective = ty_reference(me, ty_tuple_target(me, &shape), (TyList){ .data = parts, .len = shape.arity });
             }
         }
@@ -1759,6 +1760,7 @@ static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
         Ty const** elements = arena_new_n(&my arena, Ty const*, len ? len : 1);
         unsigned char* flags = arena_new_n(&my arena, unsigned char, len ? len : 1);
         Atom const** names = arena_new_n(&my arena, Atom const*, len ? len : 1);
+        void const** labels = arena_new_n(&my arena, void const*, len ? len : 1);
         bool named = false;
         u32 own = sig->param_count - (rest_param ? 1 : 0);
         for (u32 i = pos; i < pos + len; i++) {
@@ -1770,9 +1772,11 @@ static Ty const* non_array_effective_rest(Checker* me, Signature const* sig) {
             SigParam const* param = i < own ? &sig->params[i] : rest_param && !rest_shape ? &sig->params[own] : nullptr;
             names[i - pos] = param ? (param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr) :
                 rest_shape && rest_shape->names && i - own < rest_shape->arity ? rest_shape->names[i - own] : nullptr;
+            labels[i - pos] = !names[i - pos] ? nullptr : param ? (void const*)param->decl :
+                rest_shape->labels ? rest_shape->labels[i - own] : nullptr;
             named |= names[i - pos] != nullptr;
         }
-        TupleShape shape = { .arity = len, .flags = flags, .names = named ? names : nullptr };
+        TupleShape shape = { .arity = len, .flags = flags, .names = named ? names : nullptr, .labels = named ? labels : nullptr };
         Ty const* target = ty_tuple_target(me, &shape);
         ret = len ? ty_reference(me, target, (TyList){ .data = elements, .len = len }) : target;
     }

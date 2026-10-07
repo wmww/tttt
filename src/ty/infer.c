@@ -178,7 +178,11 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
     u32 rest_count = rest_shape && rest_shape->arity > skip ? rest_shape->arity - skip : 0;
     u32 arity = fixed + rest_count;
     unsigned char* flags = calloc(arity ? arity : 1, 1);
-    Atom const** names = calloc(arity ? arity : 1, sizeof(Atom const*));
+    // (Names and labels in one block)
+    void const** name_block = calloc(arity ? arity * 2 : 2, sizeof(void const*));
+    panic_if(!name_block, "out of memory");
+    Atom const** names = (Atom const**)name_block;
+    void const** labels = name_block + (arity ? arity : 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
     for (u32 j = 0; j < fixed; j++) {
         SigParam const* param = &sig->params[from + j];
@@ -188,6 +192,7 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
         bool optional = param->optional || from + j >= sig->min_args;
         flags[j] = param->rest ? TUPLE_ELEMENT_REST : optional ? TUPLE_ELEMENT_OPTIONAL : 0;
         names[j] = param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr;
+        labels[j] = names[j] ? param->decl : nullptr;
         elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
     }
     if (rest_count) {
@@ -196,14 +201,15 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
             u32 j = fixed + k;
             flags[j] = rest_shape->flags[skip + k];
             names[j] = rest_shape->names ? rest_shape->names[skip + k] : nullptr;
+            labels[j] = rest_shape->labels ? rest_shape->labels[skip + k] : nullptr;
             elements[j] = rest_args.data[skip + k];
         }
     }
-    TupleShape shape = { .arity = arity, .flags = flags, .names = names, .readonly = readonly };
+    TupleShape shape = { .arity = arity, .flags = flags, .names = names, .readonly = readonly, .labels = labels };
     Ty const* target = ty_tuple_target(me, &shape);
     Ty const* ret = arity ? ty_reference(me, target, (TyList){ .data = elements, .len = arity }) : target;
     free(flags);
-    free(names);
+    free(name_block);
     free(elements);
     return ret;
 }
@@ -608,7 +614,8 @@ static Ty const* reverse_mapped_array_like(Checker* me, Ty const* source, Mapped
         // (`?` in the mapped type: T's element needn't be optional)
         flags[i] = mapped->optional > 0 ? shape->flags[i] & ~(unsigned)TUPLE_ELEMENT_OPTIONAL : shape->flags[i];
     }
-    TupleShape reversed = { .arity = shape->arity, .readonly = shape->readonly, .flags = flags, .names = shape->names };
+    TupleShape reversed = { .arity = shape->arity, .readonly = shape->readonly, .flags = flags, .names = shape->names,
+        .labels = shape->labels };
     Ty const* ret = ty_reference(me, ty_tuple_target(me, &reversed), (TyList){ .data = elements, .len = shape->arity });
     free(elements);
     free(flags);
@@ -823,6 +830,7 @@ static Ty const* tuple_elements(Checker* me, TupleShape const* shape, TyList arg
         .arity = arity,
         .flags = shape->flags + from,
         .names = shape->names ? shape->names + from : nullptr,
+        .labels = shape->labels ? shape->labels + from : nullptr,
     };
     Ty const* target = ty_tuple_target(me, &slice);
     return arity ? ty_reference(me, target, (TyList){ .data = args.data + from, .len = arity }) : target;
