@@ -20,7 +20,8 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
 3. Done (execution, 2026-10-07): plan 48 stage 2 session A, stable type ordering with a cached sort key per type:
    suite **14269 / 14969** (0 lost), instructions +0.9% tsc, +1.2-2.1% react/valibot/drizzle/excalidraw/
    tanstack-router/zod, vue -2% (plan 48 has the details and what's left for session B).
-4. **Execution: fan-out** (plan 48 stage 3: four sub-agents on `48_lost.txt` and failstats buckets, disjoint lists).
+4. Done (execution, 2026-10-07): plan 48 stage 3 fan-out, suite **14712 / 14969** (98.3%, 0 lost); xstate 30 and
+   valibot 31 now equal the commit's tsc; zod +4% instructions from a tsc-faithful merged-interface instantiation.
 5. **Execution: plan 48 stage 2 session B**, delete the creation-order machinery piece by piece, then `48_lost.txt`.
 6. **Execution: plan 48 stage 4**, the other oracles' caches on the new tsc (sweep ~40 min: commit first), drain cheap.
 7. **Corpora: plan 48 stage 5**, re-pin every corpus at current upstream (clean under the commit's tsc and tsgo 7.0.2).

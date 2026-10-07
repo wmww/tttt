@@ -162,6 +162,18 @@ also be doing laziness/perf work: keep what still earns its place. The rest of t
 `48_lost.txt`.
 
 ### Stage 3: fan-out on what the switch broke (1 session, todo entry 4; leftovers go to session B and after insights)
+**Done 2026-10-07: 14269 -> 14712 / 14969 (98.3%, the target), 0 lost.** Four agents (A semantic errors, B parser /
+new 6.0 checks / text, C types harness and import printing, D other types + symbols), ~95 picks, two duplicates
+(discriminateTypeByDiscriminableItems, const-context returns). The two big mechanisms were harness-side (6.0's
+typeWriter skips omitted elements; no `/.src/` underline widening: 133 tests); the rest were real 6.0 semantics
+(import defer, TS2880/TS2883/TS1540/TS7027-in-checker, `??` precedence, common source directory = config dir, the
+6.0 inference tweaks, discriminant rules, bundler conditions by emit format, namespace-import clones) and
+strict-by-default exposure (TS2454/TS2564/TS7022 corners). **xstate (30) and valibot (31) now match the commit's tsc
+exactly** (file, line, code; valibot's 31st is the TS5107 tsc drops under `--ignoreDeprecations 6.0`): the corpora
+are pinned for 5.x, so a rising count can be a fix: compare with tsc before reverting. `48_lost.txt`'s "true" section
+is empty; ~25 rebaselined tests left, all in triage.md. Leftovers (triage.md, "Plan 48 stage 3 agent ..."): mostly
+pre-5.8 failures, parser recovery (plan 27), elaboration order, TS2589/TS2590/TS2563 limits, enum member canonical
+names, T_1 renames from mapped-type key cloning, libReplacement in the harness.
 Four Opus sub-agents per session in worktrees, disjoint test lists cut from `48_lost.txt` and `./failstats.py`
 buckets, 0 true losses enforced at merge (vision.md's fan-out recipe). Candidate buckets from the prototype: other
 printing differences; strict-by-default exposure (TS2454, TS2564, TS7006, TS2322: these are latent checker bugs the

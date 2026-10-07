@@ -10,6 +10,18 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Plan 48 stage 3 fan-out (2026-10-07, eleventh window's todo entry 4)
+Suite 14269 -> **14712 / 14969** (errors 14846, symbols 14905, types 14782; 0 lost). Corpora (`./realworld.py`, 4
+checkers): tsc, zod 0; type-fest, react, drizzle, vue, excalidraw 1; nest 4; effect 5; tanstack-router 28; webpack
+5297; **xstate 0 -> 30 and valibot 5 -> 31, both now identical to the commit's tsc** (file, line, code; valibot's
+extra one is TS5107, which `--ignoreDeprecations 6.0` hides on tsc's side). Instructions (callgrind, 25024b22 ->
+end): tsc 4.744 -> 4.804 (+1.3%), type-fest 3.099 -> 3.143 (+1.4%), valibot 4.467 -> 4.500, react 1.535 -> 1.544,
+nest 1.151 -> 1.155, webpack 5.133 -> 5.140, **zod 4.809 -> 5.004 (+4.1%)**, xstate 2.965 -> 3.021 (+1.9%, now
+reporting 30 elaborated errors), drizzle 8.223 -> 8.312 (+1.1%), vue 6.867 -> 6.755 (-1.6%), effect 9.595 -> 9.624,
+vscode 32.922 -> 33.117, excalidraw 5.193 -> 5.233, tanstack-router 4.432 -> 4.447. Most of zod/tsc/type-fest/xstate
+is 9e63c0cb (merged generic interfaces instantiate every anonymous member type, as tsc's
+isTypeParameterPossiblyReferenced does; triage.md has the possible relation fast path).
+
 ## Stable type ordering (2026-10-07, eleventh window's todo entry 3, plan 48 stage 2 session A)
 Suite 13683 -> **14269 / 14969** (errors 14649, symbols 14876, types 14467; 0 lost). Corpora (`--all-errors`, 4
 checkers): tsc, tsc-src, zod, xstate, typescript-eslint 0; type-fest, react, drizzle, vue 1 (vue 2 with `--checkers

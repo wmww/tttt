@@ -13,17 +13,14 @@ erasableSyntaxOnly	ET	src-changed	bl-changed
 errorForConflictingExportEqualsValue	T	src-changed	bl-changed
 inferTypePredicates	T	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed
-jsFileMethodOverloads5	T	src-changed	bl-changed
 jsdocTypeFromChainedAssignment3	E	src-changed	bl-changed
 jsxNamespacePrefixInName	T	src-changed	bl-changed
 jsxNamespacePrefixInNameReact	T	src-changed	bl-changed
 legacyNodeModulesExportsSpecifierGenerationConditions	ET	src-changed	bl-changed
 moduleExportAlias5	T	src-changed	bl-changed
-nullishCoalescingOperator5	ET	src-changed	bl-changed
 parenthesizedContexualTyping2	ET	src-changed	bl-changed
 parserParameterList11	ET	src-changed	bl-changed
 partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
-plainJSGrammarErrors	ET	src-same	bl-changed
 requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
 styledComponentsInstantiaionLimitNotReached	E	src-changed	bl-changed
 thisInPropertyBoundDeclarations	T	src-changed	bl-changed
