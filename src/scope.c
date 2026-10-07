@@ -2914,7 +2914,16 @@ static bool can_have_synthetic_default(PortItem const* item, Symbol* module, Sou
     if (!file || source_file_reads_as_declaration(file)) {
         // Declaration files and ambient modules: unless they say they have a default or are ES modules (`__esModule`).
         // (Every default export of a declaration file is tsc's isSyntacticDefault)
-        return !symbol_get_export(module, c_sv("default")) && !symbol_get_export(module, c_sv("__esModule"));
+        if (symbol_get_export(module, c_sv("default")) || symbol_get_export(module, c_sv("__esModule"))) return false;
+        // (With `export =`, tsc's resolveExportByName looks among what it assigns: a namespace's `export { x as
+        // default }` is a syntactic default, a class's static `default` isn't)
+        Symbol* assigned = module->is_module ? module_export_equals(module) : nullptr;
+        if (assigned && assigned != module && !assigned->is_placeholder) {
+            Symbol* found = symbol_get_export(assigned, c_sv("default"));
+            if (found && (found->flags & SYMBOL_ALIAS || found->is_default_export)) return false;
+            if (symbol_get_export(assigned, c_sv("__esModule"))) return false;
+        }
+        return true;
     }
     // TypeScript files are emitted with an `__esModule` marker: only `export =` makes one
     if (!file->is_js) return symbol_get_export(module, c_sv("export=")) != nullptr;
@@ -2958,6 +2967,14 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
     }
     if (!found) {
         Symbol const* export_equals = symbol_get_export(module, c_sv("export="));
+        // (What it assigns exports a syntactic default itself, `namespace a { export { x as default } }`: tsc's
+        // resolveExportByName finds it among the assigned type's properties, see can_have_synthetic_default())
+        Symbol* assigned_default = export_equals && compiler_options()->allow_synthetic_default_imports && assigned &&
+            assigned != module && !assigned->is_placeholder ? symbol_get_export(assigned, c_sv("default")) : nullptr;
+        if (assigned_default) {
+            item->source_symbol = assigned_default;
+            return resolve_if_pure_alias(assigned_default);
+        }
         if (export_equals && !compiler_options()->allow_synthetic_default_imports) {
             // The `default` property of the value it assigns, if it has one (tsc's resolveExportByName:
             // getPropertyOfType): the checker decides, TS1259 when it hasn't (port_item_check_export_equals_property())

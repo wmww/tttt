@@ -54208,7 +54208,7 @@ const baselines = {
     'exportAssignmentOfExportNamespaceWithDefault': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentTopLevelClodule': {
         errors: true,
