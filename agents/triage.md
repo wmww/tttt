@@ -321,3 +321,28 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     stateToProgressAdapter.test.ts:1956: `{ ...image, data: '' }` spreads the declared union `ToolResultContent`
     instead of `image`'s initializer-narrowed member (`const image: ToolResultContent = { type: EmbeddedResource, ... }`;
     also clean in a single-file imitation; the const enum is re-exported through sessionState.ts).
+- Flagflip vscode/eopt and vue cells, left after agent D's pass (each reproduced, root cause known, not fixed):
+  - TS7006 x18 (vscode/eopt chatToolProgressPart.test.ts): tsc's addImplementationSuccessElaboration runs
+    chooseOverload([implementation]) on a failed overloaded call, which is the *first* Normal-mode check of a
+    context-sensitive arrow after the failing argument; the implementation's `...rest: unknown[]` gives it no
+    contextual signature, ContextChecked is set, its parameters are implicitly any. tttt's add_implementation_success
+    then rechecks the arguments against the overload, and tttt has no "context checked without a signature" state for
+    context-sensitive functions (KEY_CONTEXT_NONE is only for non-sensitive ones). Repro: a class (not interface)
+    `createInstance` with 2 overloads + implementation `(c: any, ...rest: unknown[])`, a failing first argument, then
+    `{ render: (md, opts) => ... }`.
+  - TS2719->TS2322 x3: tsc's CLI messages truncate long types (typeToString's defaultMaximumTruncationLength, `...
+    N more ...`), and when source and target truncate to the same text the message is TS2719. tttt never truncates
+    message types (the suite runs with noErrorTruncation). Plan-sized display work, CLI only.
+  - eopt elaboration choice (extHostTypeConverters.ts:673/688, chatWidget.ts:2214, copilotChatSessionsProvider.ts:904,
+    agentSideEffects.test.ts:5768): tsc reports one nested property (TS2412 at e.g. `viewModel`) where tttt reports
+    another (TS2375 at a `styles: { a: o.a }` literal whose read keeps `missing`). Repro e.ts-style: `plain("c", {
+    styles: { a: st.a, b: st.b }, viewModel: vm })` with `vm: CVM | undefined` failing structurally: tsc reports only
+    viewModel, yet `{ s: { a: st.a } }` alone is reported at s. Not understood.
+  - Errors tsc reports from loop flow evaluations: `let v; v = r[u - 1]; while (..) { v = p[v] }` (vue/nuia
+    renderer.ts:2633 TS2538) and `node = node.nextSibling` over an index signature (vue/npafis Teleport.ts:562 TS4111):
+    the reference's final type is circular any, but tsc's checkExpression of the assignment source during the loop's
+    flow analysis (with the incomplete type) reported. tttt only reports from the typecheck pass.
+  - vue/nir TS7030 compat/props.ts:18: a return expression contextually typed `any` (Proxy handler `get`) should make
+    `inject<T>(key)` infer T = any (so the inferred return is any and noImplicitReturns is quiet). tttt's
+    set_contextual_return ignores an `any` contextual return type; dropping that (only `void` ignored) fixes the probe
+    but gives tanstack-router 9 TS2344 (expect-type tests): something else relies on it.
