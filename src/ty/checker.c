@@ -1441,28 +1441,6 @@ static Ty const* intersect_unions(Checker* me, TyBuf* buf, u32 len, Symbol const
     return my intrinsics[TY_ERROR];
 }
 
-static bool same_members(Ty const* a, Ty const* b) {
-    TyList x = a->composite.types, y = b->composite.types;
-    return x.len == y.len && !memcmp(x.data, y.data, sizeof(Ty const*) * x.len);
-}
-
-// The same union twice in an intersection is once (tsc's typeSet is a set): `U & U` must not be a cross product.
-// Unlike tsc, also two unions of the same members that differ in origin or alias, like `keyof A & keyof B` from
-// `keyof (A | B)` when A and B have the same keys: tsc distributes those (`"a" | "b" | ("a" & keyof T) | ...` when
-// they have a generic member, the same set of values), a quadratic cross product for nothing
-static void dedupe_unions(TyBuf* buf) {
-    u32 out = 0;
-    for (u32 i = 0; i < buf->len; i++) {
-        Ty const* t = buf->data[i];
-        bool seen = false;
-        if (t->kind == TY_UNION) {
-            for (u32 j = 0; j < out && !seen; j++) seen = buf->data[j]->kind == TY_UNION && same_members(buf->data[j], t);
-        }
-        if (!seen) buf->data[out++] = t;
-    }
-    buf->len = out;
-}
-
 // HACK: tsc's TypeVariable is indexed accesses too, but tttt's base constraint of one can be premature (valibot's
 // `NonNullable<TSchema['~types']>` would be never: the constraint came out as undefined), see hacks.md
 static bool is_type_variable(Ty const* t) { return t->kind == TY_TYPE_PARAM; }
@@ -1613,7 +1591,7 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     }
     // (The same union twice is one member, before unions of primitives are intersected as sets, which would lose
     // its alias: tsc's addTypeToIntersection dedupes by identity. Unions told apart by their origin or alias only are
-    // two members there)
+    // two members there, distributed: `U1 & U2` with two aliases of `A | B` is `A | B | (A & B)`, printed as its origin)
     u32 distinct = 0;
     for (u32 i = 0; i < buf.len; i++) {
         bool seen = false;
@@ -1622,7 +1600,6 @@ static Ty const* intersection(Checker* me, Ty const* const* types, u32 len, Symb
     }
     buf.len = distinct;
     intersect_unions_of_primitives(me, &buf);
-    dedupe_unions(&buf);
     if (buf.len == 1) {
         Ty const* only = buf.data[0] == my intrinsics[TY_UNDEFINED] && has_missing ? my intrinsics[TY_MISSING] : buf.data[0];
         ty_buf_drop(&buf);
