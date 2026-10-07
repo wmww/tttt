@@ -1047,9 +1047,12 @@ static Search load_target(
             for (isize i = 0; i < target->count; i++) {
                 Search result = load_target(
                     me, &target->items[i], subpath, pattern, is_imports, package_dir, extensions, out);
-                if (result == SEARCH_FOUND) return result;
+                if (result != SEARCH_CONTINUE) return result;
             }
             return SEARCH_CONTINUE;
+        case JSON_NULL:
+            // Explicitly mapped to nothing: no other condition or entry gets to try (tsc 6.0)
+            return SEARCH_STOP;
         default:
             return SEARCH_CONTINUE;
     }
@@ -1138,7 +1141,8 @@ static Search load_from_exports(
 
 // `import "#internal/x"`: the `imports` of the package the importing file is in
 static Search load_from_imports(State* me, csview name, csview from_dir, int extensions, Found* out) {
-    if (csview_equals(name, "#") || csview_starts_with(name, "#/")) return SEARCH_STOP;
+    // (`#/x` only with tsc 6.0's NodeResolutionFeatures.ImportsPatternRoot: nodenext and bundler, not node16)
+    if (csview_equals(name, "#") || (csview_starts_with(name, "#/") && my kind == MODULE_RESOLUTION_NODE16)) return SEARCH_STOP;
     cstr scope_dir = cstr_null;
     PackageJson const* scope = package_scope_of(me, from_dir, &scope_dir);
     Search result = SEARCH_STOP;

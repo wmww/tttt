@@ -6,7 +6,7 @@ const baselines = {
         types: true,
     },
     'APILibCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59741,7 +59741,7 @@ const baselines = {
         types: true,
     },
     'bundlerCommonJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -59866,17 +59866,17 @@ const baselines = {
         types: true,
     },
     'conditionalExportsResolutionFallbackNull(moduleresolution=bundler)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'conditionalExportsResolutionFallbackNull(moduleresolution=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'conditionalExportsResolutionFallbackNull(moduleresolution=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61396,9 +61396,9 @@ const baselines = {
         types: true,
     },
     'nodeModulesPackageImportsRootWildcard': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nodeModulesPackageImportsRootWildcardNode16': {
         errors: true,
