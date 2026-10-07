@@ -2837,6 +2837,19 @@ Ty const* ty_pattern_unclone(Checker* me, Ty const* ty) {
 
 static Ty const* binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
 
+// What tsc's getTypeFromArrayBindingPattern asks for an empty or rest-only array pattern, from ES2015 on: TS2318 once,
+// without a position, when the lib has no Iterable (createIterableType, getGlobalIterableType(/*reportErrors*/ true)).
+// Only where tsc makes that type: tttt makes pattern types in places tsc doesn't (an initializer's contextual type that
+// nothing asks for)
+void ty_report_pattern_iterable(Checker* me, Binding const* pattern) {
+    if (my iterable_reported || pattern->tag != BINDING_ARRAY || compiler_options()->target < SCRIPT_TARGET_ES2015) return;
+    u32 len = (u32)vec_binding_size(&pattern->array);
+    if (len > 1 || (len == 1 && !vec_binding_at(&pattern->array, 0)->rest)) return;
+    if (program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE)) return;
+    my iterable_reported = true;
+    error_ctx_global_error_d(my errs, 2318, "Cannot find global type 'Iterable'.");
+}
+
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern) {
     bool pushed = include_pattern && my contextual_pattern_count < c_arraylen(my contextual_patterns);
     if (pushed) my contextual_patterns[my contextual_pattern_count++] = pattern;

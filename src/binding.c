@@ -794,6 +794,9 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     ) {
         // Else what a pattern implies (tsc's getContextualTypeForInitializerExpression): `[1, "a"]` is a tuple there
         contextual = ty_binding_pattern_type(checker, &my binding, true);
+        // (An array literal asks for it, tsc's checkArrayLiteral; a name doesn't)
+        Expr const* value = initialized_binding_value(me);
+        if (value->tag == EXPR_ARRAY || value->tag == EXPR_OBJECT) ty_report_pattern_iterable(checker, &my binding);
     }
     return ty_check_expr(checker, initialized_binding_value(me), contextual);
 }

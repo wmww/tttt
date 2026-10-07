@@ -269,6 +269,12 @@ src` finds the code-side markers; every significant one has an entry here.
 - Optional parameters: `T` in the signature, `| undefined` added at use (`value_entry_type()`,
   `ty_optional_param_type()`); tsc shows it in the signature too.
 
+- `ty_report_pattern_iterable()` (`ty/lower.c`, called from `initialized_binding_evaluate_assigned_type` in
+  `binding.c`): TS2318 'Iterable' for an empty or rest-only array pattern goes where tsc makes createIterableType, but
+  tttt computes an initializer's pattern contextual type eagerly, so the report is gated on the initializer being an
+  array or object literal (what certainly asks for its contextual type). A lazily computed contextual type would decide
+  it the way tsc does.
+
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
 - `ty_function_note_widening_context` / `KEY_CONTEXT_WIDENING` (`ty/expr.c`, set from `infer_type_arguments`): without
   strictNullChecks, the widening errors of a function argument (TS7011) are decided on the *parameter's* contextual

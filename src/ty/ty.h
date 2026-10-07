@@ -1042,6 +1042,7 @@ struct Checker {
     Ty const* disposable_targets[2];
     bool disposable_looked_up[2];
     bool iterable_iterator_reported[2]; // TS2318 for a missing IterableIterator / AsyncIterableIterator (sync, async)
+    bool iterable_reported; // TS2318 for a missing Iterable (an empty or rest-only array pattern's type)
     u32 constraint_walk_len; // How deep walk_base_constraint() is (members.c)
 };
 
@@ -1475,6 +1476,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file);
 Ty const* ty_any_function_type(Checker* me);
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
+void ty_report_pattern_iterable(Checker* me, Binding const* pattern);
 Ty const* ty_pattern_clone(Checker* me, Ty const* ty); // A clone marked TYF_BINDING_PATTERN
 Ty const* ty_pattern_unclone(Checker* me, Ty const* ty); // A clone of such a clone that is no pattern's
 // tsc's originatingImport: what `import * as ns` of an `export =` module imports when ns's type is a module type made
