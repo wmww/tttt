@@ -28,6 +28,8 @@ bench/make_corpus.py "$COPIES"
 
 # The same libs tttt's main.c loads, so everyone checks the same declarations
 LIBS=es5,dom,webworker.importscripts,scripthost,es2015.collection,es2015.iterable,es2015.generator
+# tsc 6 needs more than node's default heap on vscode (> 8 GB)
+NODE_HEAP=--max-old-space-size=16384
 TSC_ARGS="--noEmit --strict --target esnext --lib $LIBS"
 
 # measure NAME CMD...: runs CMD RUNS times, prints best/median wall seconds and peak RSS
@@ -71,7 +73,7 @@ REAL_ARGS="--noEmit --composite false --incremental false --emitDeclarationOnly 
 echo
 echo "real corpus: $REAL, $(find $REAL -name '*.ts' | wc -l) files, $(find $REAL -name '*.ts' | xargs cat | wc -l) lines, $(find $REAL -name '*.ts' | xargs cat | wc -c) bytes"
 measure "tttt" ./release/tttt -q --keep-going -p $REAL
-measure "tsc (node)" node thirdparty/tsc/built/local/tsc.js $REAL_ARGS -p $REAL
+measure "tsc (node)" node $NODE_HEAP thirdparty/tsc/built/local/tsc.js $REAL_ARGS -p $REAL
 if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
     measure "tsgo" tsc $REAL_ARGS -p $REAL
     measure "tsgo single-threaded" tsc $REAL_ARGS --singleThreaded -p $REAL
@@ -79,30 +81,22 @@ fi
 echo "tttt phases (one run):"
 ./release/tttt -q --time --keep-going -p $REAL 2>&1 > /dev/null | grep -a '^time:' | sed 's/^/  /'
 
-# The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy, clean under tsc 5.8 as pinned (plan 48 stage 5 re-pins them for 6.0). tttt still reports
-# plenty there (./realworld.py --corpus NAME), so these times are of an incomplete check. tsgo 7 dropped
-# moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change). The React
-# app (plan 25) and the NestJS app (plan 31) are checked through our tsconfig.corpus.json (React: baseUrl unset, the
-# NestJS app: not strict as under 5.x, not incremental).
-# webpack (plan 33) is checkJs JavaScript; tsgo 7 reports ~600 diagnostics there of its own (TS 7's reduced JS
-# support), so its time may not be of a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json.
-# VS Code's src (re-pinned Oct 2026: 3.41M lines, tsconfig.corpus.json) is the scale benchmark; tsgo 7 is clean on it
+# The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy, clean under tsc 4d4f005c as pinned
+# (plan 48 stage 5); tttt is clean on them too but for a few (./realworld.py --corpus NAME). tsgo 7 runs on the same
+# configs (since the re-pin none sets baseUrl or node10); it isn't clean on webpack (JS: TS 7's reduced JS support),
+# vue, drizzle and effect (TS 7 differences, plan 48), so its times there may not be of a full check. zod (plan 19) is
+# checked through its tsconfig.test.json, webpack (plan 33, checkJs) and type-fest through their own tsconfig, the rest
+# through our tsconfig.corpus.json. VS Code's src (3.41M lines) is the scale benchmark
 thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite/tsconfig.corpus.json
 NEST=nestjs-boilerplate/tsconfig.corpus.json
-# vue imports through baseUrl too (`packages/...`): tsgo gets `"*": ["./*"]` instead. tsgo 7 reports its own
-# TS2769/TS2578 on drizzle and vue (16 drizzle, 8 vue: TS 7 differences), so its times may not be of a full check
-echo '{"extends": "./tsconfig.corpus.json", "compilerOptions": {"baseUrl": null, "paths": {"@vue/compat": ["./packages/vue-compat/src"], "@vue/*": ["./packages/*/src"], "vue": ["./packages/vue/src"], "*": ["./*"]}}}' > thirdparty/corpora/vue/tsconfig.tsgo.json
-for CORPUS in type-fest valibot/library/tsconfig.corpus.json $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json vscode/src/tsconfig.corpus.json excalidraw/tsconfig.corpus.json tanstack-router/tsconfig.corpus.json; do
+for CORPUS in type-fest valibot/library/tsconfig.corpus.json $REACT $NEST webpack zod/packages/zod/tsconfig.test.json xstate/packages/core/tsconfig.corpus.json drizzle/drizzle-orm/tsconfig.corpus.json vue/tsconfig.corpus.json effect/packages/effect/tsconfig.corpus.json vscode/src/tsconfig.corpus.json excalidraw/tsconfig.corpus.json tanstack-router/tsconfig.corpus.json; do
     DIR=thirdparty/corpora/$CORPUS
-    TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
-    TSC_EXTRA=""
-    if test $CORPUS = webpack || test ${CORPUS%.json} != $CORPUS; then TSGO_ARGS="-p $DIR"; fi
-    case $CORPUS in vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
+    TSGO_ARGS="-p $DIR"
     echo
-    echo "corpus $CORPUS: $(node thirdparty/tsc/built/local/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"
+    echo "corpus $CORPUS: $(node thirdparty/tsc/built/local/tsc.js -p $DIR --noEmit --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR
-    measure "tsc (node)" node thirdparty/tsc/built/local/tsc.js --noEmit $TSC_EXTRA -p $DIR
+    measure "tsc (node)" node $NODE_HEAP thirdparty/tsc/built/local/tsc.js --noEmit -p $DIR
     if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\).*/\1/')" -ge 7; then
         measure "tsgo" tsc --noEmit $TSGO_ARGS
         measure "tsgo single-threaded" tsc --noEmit --singleThreaded $TSGO_ARGS
