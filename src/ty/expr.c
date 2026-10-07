@@ -4508,7 +4508,7 @@ static Ty const* check_yield(Checker* me, UnaryOpExpr const* yield, ExprCtx ctx)
         TyIterationTypes const* delegate = ty_iteration_types_of_iterable(me, delegate_type, use);
         return delegate ? delegate->return_type : any_type(me);
     }
-    if (operand->tag != EXPR_IMPLICIT_ANY) check_with(me, operand, (ExprCtx){ .contextual = context ? context->yield_type : nullptr });
+    if (operand->tag != EXPR_IMPLICIT_ANY) check_with(me, operand, (ExprCtx){ .contextual = ty_generator_yield_context(me, generator) });
     return context ? context->next_type : any_type(me);
 }
 

@@ -866,6 +866,33 @@ TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* ge
     return ty_generator_return_iteration_types(me, ret, async);
 }
 
+// The contextual type of a `yield`'s operand (tsc's getContextualTypeForYieldOperand): of a contextual return type
+// that is a union, only the members that have iteration types count (`AsyncGenerator<P> | Promise<void> | void` is
+// about P); the generator's other iteration types go by the whole union (ty_generator_context()). Null if nothing says
+Ty const* ty_generator_yield_context(Checker* me, FunctionImpl const* generator) {
+    if (generator->ret_explicit) {
+        TyIterationTypes const* declared = ty_generator_context(me, generator);
+        return declared ? declared->yield_type : nullptr;
+    }
+    Ty const* ret = ty_return_expressions_context(me, generator);
+    if (!ret || (ret->flags & TYF_ANY) || ret->kind != TY_UNION) {
+        TyIterationTypes const* context = ty_generator_context(me, generator);
+        return context ? context->yield_type : nullptr;
+    }
+    bool async = generator->is_async;
+    TyBuf kept = {0};
+    for (u32 i = 0; i < ret->composite.types.len; i++) {
+        Ty const* member = ret->composite.types.data[i];
+        TyIterationTypes const* types = (member->flags & TYF_ANY) ? nullptr : ty_generator_return_iteration_types(me, member, async);
+        if ((member->flags & TYF_ANY) || (types && types->return_type)) ty_buf_push(&kept, member);
+    }
+    Ty const* filtered = ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+    ty_buf_drop(&kept);
+    if (filtered->flags & TYF_NEVER) return nullptr;
+    TyIterationTypes const* types = ty_generator_return_iteration_types(me, filtered, async);
+    return types ? types->yield_type : nullptr;
+}
+
 // tsc's createGeneratorType: `Generator<Y, R, N>` (`AsyncGenerator`), else `IterableIterator` of old libs, else `{}`
 Ty const* ty_generator_type(Checker* me, bool async, Ty const* yield_type, Ty const* return_type, Ty const* next_type) {
     IterationState const* state = iteration_state(me);

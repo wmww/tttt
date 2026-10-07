@@ -103,8 +103,8 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
             // In a const context (yielding to a `const` type parameter) it keeps its literals (tsc 6.0's
             // checkAndAggregateYieldOperandTypes)
             if (ty_is_const_context_kind(&yield->expr)) {
-                TyIterationTypes const* context = ty_generator_context(me, function);
-                if (context && context->yield_type && ty_is_const_type_variable(me, context->yield_type, 0)) type = ty_regular(me, type);
+                Ty const* yield_context = ty_generator_yield_context(me, function);
+                if (yield_context && ty_is_const_type_variable(me, yield_context, 0)) type = ty_regular(me, type);
             }
         }
         if (async) type = ty_awaited(me, type);

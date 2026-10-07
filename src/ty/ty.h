@@ -1954,6 +1954,7 @@ Ty const* ty_iterated_type(Checker* me, u32 use, Ty const* ty, Span span, ErrorC
 // The same with what the consumer sends to `next` (null: nothing to check)
 Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* ty, Ty const* sent, Span span, ErrorCtx* errs);
 TyIterationTypes const* ty_generator_return_iteration_types(Checker* me, Ty const* ret, bool async);
+Ty const* ty_generator_yield_context(Checker* me, FunctionImpl const* generator);
 TyIterationTypes const* ty_generator_context(Checker* me, FunctionImpl const* generator);
 void ty_check_generator_annotation(Checker* me, FunctionImpl const* generator, ErrorCtx* errs);
 // tsc's unwrapReturnType of a return type of the function: what an async function's promise resolves to, a generator's
