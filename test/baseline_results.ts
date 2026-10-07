@@ -2561,7 +2561,7 @@ const baselines = {
         types: false,
     },
     'bigintWithLib': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
