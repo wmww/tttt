@@ -10,7 +10,7 @@ if test "${1:-}" = --bin; then BIN="$2"; shift 2; else ninja -C release > /dev/n
 declare -A C=(
     [tsc]=thirdparty/tsc/src/compiler
     [type-fest]=thirdparty/corpora/type-fest
-    [valibot]=thirdparty/corpora/valibot/library
+    [valibot]=thirdparty/corpora/valibot/library/tsconfig.corpus.json
     [react]=thirdparty/corpora/bulletproof-react/apps/react-vite/tsconfig.corpus.json
     [nest]=thirdparty/corpora/nestjs-boilerplate/tsconfig.corpus.json
     [webpack]=thirdparty/corpora/webpack
@@ -19,7 +19,7 @@ declare -A C=(
     [drizzle]=thirdparty/corpora/drizzle/drizzle-orm/tsconfig.corpus.json
     [vue]=thirdparty/corpora/vue/tsconfig.corpus.json
     [effect]=thirdparty/corpora/effect/packages/effect/tsconfig.corpus.json
-    [vscode]=thirdparty/corpora/vscode/src
+    [vscode]=thirdparty/corpora/vscode/src/tsconfig.corpus.json
     [excalidraw]=thirdparty/corpora/excalidraw/tsconfig.corpus.json
     [tanstack-router]=thirdparty/corpora/tanstack-router/tsconfig.corpus.json
 )

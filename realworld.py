@@ -37,7 +37,7 @@ CORPORA = {
     # Effect v3's core package, its tests and tstyche type tests: HKTs, generators, dual/pipe overloads, Schema
     'effect': 'thirdparty/corpora/effect/packages/effect/tsconfig.corpus.json',
     # VS Code's src: the large application (1.39M lines), decorator-based DI, browser/node/electron in one program
-    'vscode': 'thirdparty/corpora/vscode/src',
+    'vscode': 'thirdparty/corpora/vscode/src/tsconfig.corpus.json',
     # excalidraw: the JSX-heavy React 19 application (whiteboard editor, its packages and tests)
     'excalidraw': 'thirdparty/corpora/excalidraw/tsconfig.corpus.json',
     # TanStack Router's react-router and its type tests: route-tree inference, template-literal path unions, Register

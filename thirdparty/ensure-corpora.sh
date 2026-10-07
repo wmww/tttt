@@ -118,12 +118,16 @@ CORPORA=(
     # workspace: the dependencies are the type dependencies of effect, @effect/vitest and the root at pnpm-lock.yaml's
     # versions, from corpora-locks/effect.package.json; the workspace packages are linked into the root's node_modules
     "effect https://github.com/Effect-TS/effect.git e730f59d29db5f1e312be6476a95d07bcad45788 . workspace:packages/*"
-    # VS Code (Mar 2025, todo entry 5 of the ninth window): the last commit before its move to TypeScript 5.9 nightlies,
-    # the large application (4.5k files, 1.39M lines in src/ with monaco.d.ts and vscode.d.ts): the workbench, editor,
-    # platform services with decorator-based dependency injection (experimentalDecorators), browser + node + electron
-    # code in one program, nodenext, noImplicitOverride, useDefineForClassFields off. Checked through upstream's
-    # src/tsconfig.json (the extensions are separate projects, left out). The lock is upstream's
-    "vscode https://github.com/microsoft/vscode.git 156e400b9d45c29eb9975b4ee01e72cf22c3549a ."
+    # VS Code (main's head on 2026-10-07, plan 48 stage 5; upstream builds with @typescript/typescript6 ^6.0.2 and
+    # checks with tsgo 7): the large application (10.1k files, 3.4M lines in src/ with monaco.d.ts and vscode.d.ts,
+    # more than twice the Mar 2025 pin's): the workbench, editor, chat/agent host, platform services with
+    # decorator-based dependency injection (experimentalDecorators), browser + node + electron code in one program,
+    # nodenext, noImplicitOverride, useDefineForClassFields off. Checked through src/tsconfig.corpus.json from the
+    # overlay: upstream's src/tsconfig.json (the extensions are separate projects, left out) minus 3 test files where
+    # tsc 6 reports TS7022/TS7024 circularity tsgo 7 doesn't (`const c = new C(() => f(c.x))`; upstream only checks with
+    # tsgo); clean under tsc 6 (which needs more than 8 GB of heap) and tsgo 7. The lock is upstream's;
+    # corpora-locks/vscode.postinstall.sh fetches the electron.d.ts its `paths` map `electron` to
+    "vscode https://github.com/microsoft/vscode.git 2afa73ea129cad2710fc5c6363bebc4012648070 ."
     # excalidraw (Oct 2026, plan 48 stage 5): the JSX-heavy application (whiteboard editor's React 19 components,
     # hooks, jotai atoms, the element/math/common/fractional-indexing/laser-pointer packages, the collab app,
     # vitest/testing-library tests), upstream's head, still on TypeScript 5.9.3. Checked through tsconfig.corpus.json
@@ -195,6 +199,6 @@ for ENTRY in "${CORPORA[@]}"; do
             mkdir -p "$(dirname "$PROJECT/node_modules/${ALIAS%%=*}")"
             ln -s "${ALIAS#*=}" "$PROJECT/node_modules/${ALIAS%%=*}"
         elif test -n "$LINK"; then ln -s "$LINK" "$PROJECT/node_modules/$NAME"; fi
-        if test -e "corpora-locks/$NAME.postinstall.sh"; then (cd "corpora/$NAME" && "../../corpora-locks/$NAME.postinstall.sh"); fi
+        if test -e "corpora-locks/$NAME.postinstall.sh"; then (cd "corpora/$NAME" && "$OLDPWD/corpora-locks/$NAME.postinstall.sh"); fi
     fi
 done

@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"exclude": [
+		"vs/workbench/contrib/webview/browser/pre/service-worker.js",
+		"vs/platform/agentFinder/test/common/agentFinderRestProvider.test.ts",
+		"vs/platform/agentHost/test/node/codex/codexProviderConfiguration.test.ts",
+		"vs/workbench/api/test/browser/extHostNotebookStatusCommands.test.ts"
+	]
+}

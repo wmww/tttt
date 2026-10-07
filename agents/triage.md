@@ -312,3 +312,45 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   `type Token = { type: 'P'; value: '(' | ')' } | { type: 'I'; value: string };`
   `declare function h<T extends Token['type'], C extends Partial<{ type: T } & Token>>(t: T, c: C): C;`
   `const b = h('I', { value: 'await' });`
+
+## Corpora re-pin (plan 48 stage 5): vscode
+- vscode @ 2afa73ea (main's head, 2026-10-07; upstream builds with `@typescript/typescript6` ^6.0.2 and checks with
+  tsgo 7.0.2): checked through src/tsconfig.corpus.json from the overlay, upstream's src/tsconfig.json minus 3 test
+  files tsc 6 reports TS7022/TS7024 circularity in (9 errors; tsgo 7 is clean on them, see below): tsc 4d4f005c 0,
+  tsgo 7.0.2 0. The program more than doubled since the Mar 2025 pin: ~10.1k source files / 3.41M lines (+870
+  node_modules files; the agent host, chat and sessions code), so walls/RSS/instruction counts aren't comparable with the old pin's. tsc 6 needs more than
+  8 GB of heap (OOM at `--max-old-space-size=8000`); tttt's typecheck peaks at 5.5 GB resident with 4 checkers.
+- tttt 414 diagnostics in 37 files (by code: TS2322 309, TS2345 59, TS2367 21, TS18033 8, TS2678 7, TS7006 3, TS2352 2,
+  singles TS2365 TS2536 TS2339 TS2416 TS2559). Root causes:
+  - ~395 of them: an enum member initialized from a `const` inside a namespace isn't a constant string member.
+    `namespace NS { export const A = 'a'; } enum E { A = NS.A } const s: string = E.A;` gives TS18033 at `NS.A` and
+    TS2322 (tsc: clean; a plain `const X = 'x'; enum E { A = X }` works). vscode's `AgentSessionProviders` enum
+    (chat/browser/agentSessions/agentSessions.ts:18) is `Local = SessionType.Local, ...` over
+    `export namespace SessionType { export const Local = 'local'; ... }` (chat/common/chatSessionsService.ts:389), so
+    every use of it as a string fails (TS2322/2345/2367/2678/2352/2416 and the `AgentSessionTarget` ones).
+  - Inference: a context-sensitive arrow inside `x && (...)` sees the type parameter's constraint instead of the
+    inference so far, and T then fails against the earlier argument (TS2345 + TS2339; mcpResourceScannerService.ts:174):
+    `declare function parse(c: string): { readonly wrapped: boolean; readonly servers: Record<string, number> };`
+    `declare function withFile<T extends { readonly servers: Record<string, number> }>(p: (c: string) => T, u: ((c: string, parsed: T) => string) | undefined): void;`
+    `function f(update?: (c: string, w: boolean) => string) { withFile(parse, update && ((c, { wrapped }) => update(c, wrapped))); }`
+  - Object literal getters followed by a spread: `upcast<R>({ get isComplete() { return c; }, ...props })` (with
+    `declare function upcast<T>(x: Partial<T>): T`, `props: Partial<R>`) gives TS2322 "'() => boolean' is not
+    assignable to 'boolean | undefined'": the accessor becomes a function-typed property when the spread merges the
+    literal (fine without the spread). chat/test/browser/chatUserInteractionTestUtils.ts:105-107 (TS2322 x2, TS2559).
+  - Narrowing after a `never`-returning `this.skip()` on a contextual `this` (mocha): `interface Ctx { skip(): never }
+    declare function setup(fn: (this: Ctx) => void): void; setup(function () { const t = f(); if (!t) { this.skip(); }
+    s = t; })` keeps `t` possibly undefined (TS2322, agentSdkDownloader.test.ts:221).
+  - Indexing a generic mapped type by its unconstrained type parameter: `type OD<T> = { [P in keyof T]: ... };
+    function g<T>(a: string, o: OD<T>) { o[a as T].type }` gives TS2536 (tsc: `o[a as T]` is the mapped template's
+    union). platform/environment/node/argv.ts:279.
+  - tsc 6 vs tsgo 7 (why the overlay excludes agentFinderRestProvider.test.ts, codexProviderConfiguration.test.ts,
+    extHostNotebookStatusCommands.test.ts): `class C { count = 0; constructor(r: () => number) {} } function id(n:
+    number) { return n; } const c = new C(() => id(c.count));` is TS7022+TS7024 under tsc 6 and clean under tsgo 7.0.2.
+    tttt matches tsgo on that file but reported 3 of tsc's 5 pairs in vscode (agentFinderRestProvider.test.ts:613,
+    codexProviderConfiguration.test.ts:148/156; not :138 nor extHostNotebookStatusCommands.test.ts:37), so its
+    circularity detection there is neither oracle's. Decide which behaviour to follow when tsgo 7 becomes the oracle.
+  - Unreduced: TS7006 x3 + TS2365 `'{}' + number` in inlineEdits longDistanceHint (`derived(this, r => { ... return obs.map(heights => ...) })
+    .flatten()` with overloaded `derived`/`map`; a single-file imitation is clean), and TS2322 at
+    stateToProgressAdapter.test.ts:1956: `{ ...image, data: '' }` spreads the declared union `ToolResultContent`
+    instead of `image`'s initializer-narrowed member (`const image: ToolResultContent = { type: EmbeddedResource, ... }`;
+    also clean in a single-file imitation; the const enum is re-exported through sessionState.ts).
