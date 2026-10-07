@@ -84,7 +84,7 @@ def main():
                 break
         args.options = flag + os.path.relpath(real, cwd)
         if args.corpus not in ('tsc', 'tsc-src'):
-            subprocess.run(['thirdparty/ensure-corpora.sh'], check=True)
+            subprocess.run(['thirdparty/ensure-corpora.sh', CORPORA[args.corpus].split('/')[2]], check=True)
     if not args.no_build:
         subprocess.run(['ninja', '-C', 'release', 'tttt'], check=True, stdout=subprocess.DEVNULL)
     limit = args.mem_gb << 30

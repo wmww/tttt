@@ -42,12 +42,14 @@ FLAGS = {
     'sloppy': ['--exactOptionalPropertyTypes', 'false', '--strict', 'false', '--strictNullChecks', 'false', '--noImplicitAny', 'false', '--strictFunctionTypes',
                'false', '--strictBindCallApply', 'false', '--strictPropertyInitialization', 'false', '--noImplicitThis',
                'false', '--useUnknownInCatchVariables', 'false', '--alwaysStrict', 'false',
-               '--strictBuiltinIteratorReturn', 'false'],
+               '--strictBuiltinIteratorReturn', 'false', '--ignoreDeprecations', '6.0'],
     'nosnc': ['--strictNullChecks', 'false', '--exactOptionalPropertyTypes', 'false', '--strictPropertyInitialization',
               'false'],
     'nonia': ['--noImplicitAny', 'false'],
     'nosft': ['--strictFunctionTypes', 'false'],
-    'es5': ['--target', 'es5'],
+    # Deprecated in 6.0 (TS5107 alone, before any semantic diagnostic, without ignoreDeprecations), like sloppy's
+    # --alwaysStrict false
+    'es5': ['--target', 'es5', '--ignoreDeprecations', '6.0'],
     'es2015': ['--target', 'es2015'],
 }
 TSC_DIAG = re.compile(r'(.*)\((\d+),\d+\): error TS(\d+): (.*)')
@@ -193,7 +195,7 @@ def main():
     corpora = [c for c in FLIP_CORPORA if re.fullmatch(args.corpus, c)]
     flags = [f for f in FLAGS if re.fullmatch(args.flag, f)]
     if any(c != 'tsc' for c in corpora):
-        subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-corpora.sh')], check=True)
+        subprocess.run([os.path.join(ROOT, 'thirdparty/ensure-corpora.sh'), *(CORPORA[c].split('/')[2] for c in corpora if c != 'tsc')], check=True)
     cells = [(c, f) for c in corpora for f in flags]
 
     if args.tsc:

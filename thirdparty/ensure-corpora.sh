@@ -6,11 +6,13 @@
 #
 #   thirdparty/ensure-corpora.sh            # fetch whatever is missing
 #   thirdparty/ensure-corpora.sh --relock   # regenerate the lockfiles from package.json (then commit them)
+#   thirdparty/ensure-corpora.sh NAME...    # only these corpora (also with --relock)
 set -euo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 RELOCK=0
-if test "${1:-}" = --relock; then RELOCK=1; fi
+if test "${1:-}" = --relock; then RELOCK=1; shift; fi
+ONLY=" $* "
 
 # NAME URL COMMIT PROJECT_DIR [LINK] (PROJECT_DIR: the directory with the package.json the dependencies are installed
 # for, relative to the checkout; LINK: node_modules/NAME is a symlink to LINK, relative to node_modules, as a project
@@ -125,6 +127,7 @@ CORPORA=(
 mkdir -p corpora
 for ENTRY in "${CORPORA[@]}"; do
     read -r NAME URL COMMIT DIR LINK <<<"$ENTRY"
+    if test "$ONLY" != "  " && test "${ONLY#* $NAME }" = "$ONLY"; then continue; fi
     if test ! -e "corpora/$NAME"; then
         printf "\x1b[34mCloning corpus %s at %s...\x1b[0m\n" "$NAME" "$COMMIT"
         rm -rf "corpora/$NAME-tmp"
