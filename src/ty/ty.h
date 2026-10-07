@@ -327,7 +327,12 @@ struct Ty {
                 // resolved on first use, each property's type inferred when asked for. Read through ty_reverse_of()
                 struct ReverseMapped const* reverse;
             };
-            FunctionImpl const* const* overloads; // If set, the type of an overloaded method: its signatures
+            union {
+                FunctionImpl const* const* overloads; // If overload_count, the type of an overloaded method: its signatures
+                // object_literal: the literal expression it is the type of (or was widened from), if known: where error
+                // messages print it from (tsc's symbol.valueDeclaration, see ty_report_enclosing())
+                struct Expr const* literal_expr;
+            };
             Ty const* target; // Instantiations: the uninstantiated TY_ANONYMOUS
             TyMapper const* mapper;
             // Uninstantiated only: the type parameters declared outside the node that it mentions. Instantiation

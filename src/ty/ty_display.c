@@ -3464,11 +3464,13 @@ Scope const* ty_report_enclosing(Checker* me, Ty const* ty) {
     }
     if (!ty->anonymous.object_literal || ty->anonymous.jsx_attributes) return nullptr;
     Members const* members = ty_members(me, ty);
-    // (Where a property written in the literal is: one spread from elsewhere says nothing)
+    // (Where a property written in the literal is: one spread from elsewhere was written elsewhere)
     Span at = span_null;
     for (u32 i = 0; i < members->prop_count && !span_valid(at); i++) {
         if (members->props[i]->decl->literal_own) at = members->props[i]->decl->name_span;
     }
+    // (Else where the literal is: one of spread properties only)
+    if (!span_valid(at) && ty->anonymous.literal_expr) at = ty->anonymous.literal_expr->inner_span;
     SourceFile const* file = span_valid(at) ? at.source : nullptr;
     if (!file || !file->scope || object_literal_is_context_sensitive(me, ty, 0)) return nullptr;
     // HACK: tsc prints it from the literal (its valueDeclaration), tttt from the innermost statement-level scope around

@@ -2863,8 +2863,8 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
             merged.type = ty_union_subtype_reduced(me, both, 2);
         }
         // (tsc's merged symbol has both declarations: the types baseline reuses the first annotation that still says
-        // the same)
-        if (!merged.asserted) merged.asserted = r->asserted ? r->asserted : r->asserted_required;
+        // the same; a required declaration's annotation only while the merged property is required)
+        if (!merged.asserted) merged.asserted = r->asserted ? r->asserted : !(merged.flags & PROP_OPTIONAL) ? r->asserted_required : nullptr;
         merged.asserted_required = nullptr;
         u32 count = l->decl_span_count + r->decl_span_count;
         Span* spans = arena_new_n(&my arena, Span, count ? count : 1);
@@ -3083,9 +3083,8 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
     if (acc->any) {
         ret = acc->error ? ty_intrinsic(me, TY_ERROR) : any_type(me);
     } else if (!acc->alt_count) {
-        // (`{}`: a type of its own, see ty_object_literal_of())
-        bool empty = !own->count && !own->index_count && expr && expr->tag == EXPR_OBJECT && !vec_object_expr_item_size(&expr->object);
-        ret = ty_object_literal_of(me, own->props, own->count, own->index, own->index_count, kind, empty ? expr : nullptr);
+        // (`{}` too: a type of its own, see ty_object_literal_of())
+        ret = ty_object_literal_of(me, own->props, own->count, own->index, own->index_count, kind, expr);
     } else {
         if (own->count || own->index_count) spread_acc_props(me, acc, own);
         TyBuf alts = {0};
@@ -3096,7 +3095,8 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
             for (u32 j = 0; j < alt->part_count; j++) {
                 SpreadPart const* part = &alt->parts[j];
                 ty_buf_push(&parts, part->generic ? part->generic :
-                    ty_object_literal(me, part->object.props, part->object.count, part->object.index, part->object.index_count, kind));
+                    ty_object_literal_of(me, part->object.props, part->object.count, part->object.index, part->object.index_count,
+                        kind, expr));
             }
             ty_buf_push(&alts, parts.len == 0 ? ty_object_literal(me, nullptr, 0, nullptr, 0, kind) :
                 parts.len == 1 ? parts.data[0] : ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}));
