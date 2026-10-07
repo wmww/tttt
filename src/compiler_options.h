@@ -101,6 +101,7 @@ typedef enum ModuleDetectionKind {
     X(no_check, "nocheck", false) \
     X(no_emit, "noemit", false) \
     X(no_emit_on_error, "noemitonerror", false) \
+    X(no_error_truncation, "noerrortruncation", false) \
     X(no_fallthrough_cases_in_switch, "nofallthroughcasesinswitch", false) \
     X(no_implicit_override, "noimplicitoverride", false) \
     X(no_implicit_returns, "noimplicitreturns", false) \

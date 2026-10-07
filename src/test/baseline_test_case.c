@@ -643,6 +643,8 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         if (end == c_NPOS) break;
         config = csview_slice(config, end + 1, INTPTR_MAX);
     }
+    // (tsc's harness never truncates types in messages: compileFiles sets noErrorTruncation over the test's own value)
+    ignore compiler_options_set(program_options(my program), c_sv("noerrortruncation"), c_sv("true"));
     // (tsc's harness skips checking the default lib unless a test says otherwise)
     if (!program_options(my program)->is_set[COMPILER_OPTION_skip_default_lib_check]) {
         ignore compiler_options_set(program_options(my program), c_sv("skipdefaultlibcheck"), c_sv("true"));

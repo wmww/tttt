@@ -22,6 +22,12 @@
 // first. HACK: by depth, not length
 #define MAX_DISPLAY_DEPTH 11
 
+// A message type is cut short (tsc's typeToString without noErrorTruncation, the CLI's default; the test harness always
+// sets it): the stand-in depth limits apply and the elided information placeholder prints `...`, not `any`
+static bool truncating(TyDisplay d) {
+    return !d.enclosing && !compiler_options()->no_error_truncation;
+}
+
 // One underline character per UTF-16 code unit of what was printed since `start`, like the harness' underlineFor()
 static void underline_since(TyDisplay d, isize_t start) {
     if (!d.underline) return;
@@ -2776,7 +2782,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, "{}");
         return;
     }
-    if (d.depth > MAX_DISPLAY_DEPTH && !d.enclosing) {
+    if (d.depth > MAX_DISPLAY_DEPTH && truncating(d)) {
         out_lit(d, "...");
         return;
     }
@@ -3157,7 +3163,7 @@ static void display_conditional(Checker* me, TyDisplay d, Ty const* ty) {
     // visitAndTransformType counts conditional types by their root's node); `any` without truncation (the
     // types baseline, declaration emit), `...` in messages
     if (conditional_elided(d, ty)) {
-        out(d, d.enclosing ? c_sv("any") : c_sv("..."));
+        out(d, truncating(d) ? c_sv("...") : c_sv("any"));
         return;
     }
     TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
@@ -3313,7 +3319,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
-    if (d.depth > (d.enclosing ? 8 * 16 : MAX_DISPLAY_DEPTH * 4)) { // (Declaration emit: unchanged, see hacks.md TS7056)
+    if (d.depth > (truncating(d) ? MAX_DISPLAY_DEPTH * 4 : 8 * 16)) { // (Declaration emit: unchanged, see hacks.md TS7056)
         out_lit(d, "...");
         return;
     }
@@ -3611,7 +3617,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // the next is the elided information placeholder (tsc's visitAndTransformType's symbolDepth); `any`
             // without truncation (the types baseline, declaration emit), `...` in messages
             if (anonymous_elided(d, ty)) {
-                out(d, d.enclosing ? c_sv("any") : c_sv("..."));
+                out(d, truncating(d) ? c_sv("...") : c_sv("any"));
                 break;
             }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
