@@ -2937,6 +2937,18 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
             return for_each_loop_statement_pattern_source_type(
                 c_container_of(binding->source, ForEachLoopStatement, var_type));
         }
+        // A JavaScript `var { a } = {}` destructures tsc's getJSContainerObjectType of the empty literal: an empty
+        // JS-literal object, not an object literal (a missing property with a default is TS2339 unless open-ended)
+        if (binding->tag != BINDING_IDENTIFIER && !binding->has_explicit_type && !binding_is_parameter(binding) &&
+            binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING && binding->content_span.source &&
+            binding->content_span.source->is_js
+        ) {
+            Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
+            if (value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object)) {
+                (void)lazy_type_get(binding->source); // (The initializer is still checked)
+                return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_JS);
+            }
+        }
         return lazy_type_get(binding->source);
     }
     Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
