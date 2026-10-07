@@ -548,7 +548,14 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 } else if (type == ty_intrinsic(current_checker, TY_CIRCULAR) &&
                     compiler_options()->no_implicit_any && !my has_explicit_type
                 ) {
-                    error_ctx_error_d(errs, my content_span, 7022,
+                    // (At tsc's symbol.valueDeclaration: a parameter's whole declaration, default included)
+                    Span at = my content_span;
+                    if (my symbol->is_parameter && my source && my source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
+                        InitializedBinding const* initialized = c_container_of(my source, InitializedBinding, lazy_type);
+                        Expr const* value = initialized_binding_value(initialized);
+                        if (value->tag != EXPR_IMPLICIT_ANY) at = span_between(my content_span, expr_outer_span(value));
+                    }
+                    error_ctx_error_d(errs, at, 7022,
                         "'", my content_span, "' implicitly has type 'any' because it does not have a type annotation and is referenced directly or indirectly in "
                         "its own initializer.");
                 } else if (my parent && compiler_options()->no_implicit_any) {
