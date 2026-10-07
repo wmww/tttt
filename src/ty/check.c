@@ -1272,8 +1272,10 @@ bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Spa
     ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
     Error* error = error_ctx_error_d(errs, tag_name, 2786, "'", tag_name, "' cannot be used as a JSX component.");
     // (The message is reportRelationError's head: the names told apart from the target's if they'd print the same)
+    // (Against the target as isRelatedTo has it when it reports: `JSX.Element | null` without the null, tsc's
+    // nullStrippedTarget, so a source printing the same as JSX.Element is fully qualified)
     cstr source_str, target_str;
-    ty_report_pair_cstr(me, source, target, &source_str, &target_str);
+    ty_report_pair_cstr(me, source, target->alias ? target : ty_strip_nullable_target(me, source, target), &source_str, &target_str);
     cstr_drop(&target_str);
     switch (kind) {
         case JSX_COMPONENT_RETURN: error_sub_error_d(error, span_null, TS_CODE_NONE, "Its return type '", source_str, "' is not a valid JSX element."); break;
