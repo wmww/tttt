@@ -2644,9 +2644,11 @@ static bool is_reducible_intersection(Checker* me, Ty const* ty) {
 
 // tsc's isGenericReducibleType: a union an instantiation can take members out of stays generic, so that an indexed
 // access of it is deferred and reduced once instantiated: `(({ src: "a"; v: A } | { src: "b"; v: B }) & { src: S })["v"]`
-// with S = "a" is A, not A | B
+// with S = "a" is A, not A | B. An intersection is if it is reducible itself: `({ type: T } & { type: "P"; v: X })["v"]`
 static bool is_generic_reducible(Checker* me, Ty const* ty) {
-    if (ty->kind != TY_UNION || !(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
+    if (ty->kind == TY_INTERSECTION) return is_reducible_intersection(me, ty);
+    if (ty->kind != TY_UNION) return false;
     for (u32 i = 0; i < ty->composite.types.len; i++) {
         Ty const* member = ty->composite.types.data[i];
         if (member->kind == TY_INTERSECTION && (member->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&

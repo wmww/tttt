@@ -300,17 +300,8 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   old pin).
 
 ## Corpora re-pin (plan 48 stage 5): typescript-eslint
-- typescript-eslint @ 70629871 (Oct 2026, TS6 upstream): tsc 4d4f005c -b 0, tsgo 7.0.2 -b 0, tttt 4 (38 projects,
-  8.9 s). The old pin's TS2345 at naming-convention.ts:719 is gone. The 4 are one root cause, TS2345 where
-  `isAwaitKeyword` (utils' `isTokenOfTypeWithConditions(AST_TOKEN_TYPES.Identifier, { value: 'await' })`) narrows
-  to `{ value: string } & IdentifierToken` instead of `{ value: "await" } & ...` (await-thenable.ts:91/210/263,
-  return-await.ts:256): tttt widens the literal when the type parameter's constraint is a homomorphic mapped type
-  over a generic intersection. Repro (tsc: `{ value: "await"; }`, tttt: `{ value: string; }`; without the
-  `Partial<>` or without `T` in it both keep the literal):
-  `type Token = { type: 'P'; value: '(' | ')' } | { type: 'I'; value: string };`
-  `declare function h<T extends Token['type'], C extends Partial<{ type: T } & Token>>(t: T, c: C): C;`
-  `const b = h('I', { value: 'await' });`
-
+- typescript-eslint @ 70629871 (Oct 2026, TS6 upstream): tsc 4d4f005c -b 0, tsgo 7.0.2 -b 0, tttt 0 (its 4 TS2345, a
+  widened `value: 'await'`, were indexed accesses of a reducible intersection resolved eagerly; fixed).
 ## Corpora re-pin (plan 48 stage 5): vscode
 - vscode @ 2afa73ea (main's head, 2026-10-07; upstream builds with `@typescript/typescript6` ^6.0.2 and checks with
   tsgo 7.0.2): checked through src/tsconfig.corpus.json from the overlay, upstream's src/tsconfig.json minus 3 test
