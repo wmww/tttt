@@ -107,6 +107,9 @@ typedef struct CallInfo {
     Signature* const* declared_order;
     Ty const* this_arg; // What `this` is in the call (the receiver of a method call, else void), see this_argument()
     Span this_span; // Where a `this` that doesn't fit is reported
+    // `super.m()`: the receiver is inferred from but not checked against the `this` parameter (tsc's
+    // getSignatureApplicabilityError skips isSuperProperty callees)
+    bool this_unchecked;
     Span call_span; // The whole call expression
     // `new f()` on something with call signatures only, resolved as a call (tsc's resolveNewExpression)
     bool new_as_call;
@@ -1857,7 +1860,11 @@ static void report_arity(
 static bool this_fits(Checker* me, Candidate const* candidate, CallInfo const* info, TyRelation relation) {
     Ty const* this_type = candidate->sig->this_type;
     // (tsc's checkApplicableSignature: a declared `this: void` isn't checked, `ns.f()` calls it)
-    if (!this_type || (this_type->flags & TYF_VOID) || !info->this_arg || (info->this_arg->flags & TYF_ANY)) return true;
+    if (!this_type || (this_type->flags & TYF_VOID) || !info->this_arg || (info->this_arg->flags & TYF_ANY) ||
+        info->this_unchecked
+    ) {
+        return true;
+    }
     return ty_is_related(me, info->this_arg, ty_instantiate(me, this_type, candidate->mapper), relation);
 }
 
@@ -3044,7 +3051,14 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
             signature_resolve(me, signatures[i]);
             any_this = signatures[i]->this_type != nullptr;
         }
-        if (any_this) with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
+        if (any_this) {
+            with_this.this_arg = this_argument(me, call, call_span, &with_this.this_span);
+            Expr const* callee = &call->callable;
+            if (callee->tag == EXPR_GENERIC_PARAMS) callee = &callee->generic_params->expr;
+            with_this.this_unchecked = callee->tag == EXPR_PROPERTY && callee->property->expr.tag == EXPR_IDENTIFIER &&
+                callee->property->expr.identifier.keyword == KEYWORD_IDENTIFIER_SUPER &&
+                !expr_is_perenthisized(&callee->property->expr) && !expr_is_perenthisized(callee);
+        }
     }
     Signature** declared_order = errs && count > 1 ? malloc(sizeof(Signature*) * count) : nullptr;
     if (declared_order) memcpy(declared_order, signatures, sizeof(Signature*) * count);
