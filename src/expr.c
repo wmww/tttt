@@ -2939,7 +2939,8 @@ static void truthy_helper(Expr const* cond, CondPath const* path, TruthyBody bod
     bool dot = location->tag == EXPR_PROPERTY && location->property->form == PROPERTY_EXPR_DOT;
     if ((type->flags & TYF_ENUM_LITERAL) && dot) {
         Expr const* object = &location->property->expr;
-        Symbol const* enum_symbol = object->tag == EXPR_IDENTIFIER ? object->identifier.target : nullptr;
+        // (`E.A`, `ns.E.A`: the resolved symbol of the object)
+        Symbol const* enum_symbol = object->tag == EXPR_IDENTIFIER ? object->identifier.target : expr_entity_name_symbol(object);
         if (enum_symbol && (enum_symbol->flags & SYMBOL_ENUM)) {
             Value const* value = &type->literal.value;
             bool truthy = value->tag == VALUE_STRING ? type->literal.string && type->literal.string->len != 0

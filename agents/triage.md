@@ -66,3 +66,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     alias Example2<...> in tsc; tttt's instantiation loses it and Result2 names it.
   - variadicTuples1: several generic-tuple indexing/spread printing differences (`[string, ...T, number][1]` is
     `number | T[number]` in tsc...), old failures, worth a session of their own.
+- interfaceMergeWithNonGenericTypeArguments: `class M extends B<any>` (B not generic, TS2315) merged with `interface M extends I`: tsc also reports TS2346 on `super()` (no base constructor for that many type arguments), but not without the interface merge; the mechanism (how the merge changes getBaseConstructorTypeOfClass) is unexplored (stage 3, agent A).
+- exportAssignmentImportMergeNoCrash: `import Obj from "./a"; export const Obj = void Obj;` misses TS2448: the reference resolves to the import alias's local symbol, not the merged one with the block-scoped variable (stage 3, agent A).
+- constructorWithIncompleteTypeAnnotation: tsc's baseline has the harness's TS-1 pre-/post-emit count mismatch (its TS7017 only post-emit); not matchable by a checker.

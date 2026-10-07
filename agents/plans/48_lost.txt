@@ -11,7 +11,6 @@ complexRecursiveCollections	ET	src-changed	bl-changed
 constructorWithIncompleteTypeAnnotation	E	src-changed	bl-changed
 erasableSyntaxOnly	ET	src-changed	bl-changed
 errorForConflictingExportEqualsValue	T	src-changed	bl-changed
-importAliasFromNamespace	ET	src-changed	bl-changed
 inferTypePredicates	T	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed
 jsFileMethodOverloads5	T	src-changed	bl-changed

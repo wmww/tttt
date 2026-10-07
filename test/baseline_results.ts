@@ -17741,7 +17741,7 @@ const baselines = {
         types: true,
     },
     'importAliasFromNamespace': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
