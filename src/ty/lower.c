@@ -162,7 +162,10 @@ static Ty const* make_declared(Checker* me, Symbol const* symbol, TyDeclaredKind
     if (kind == TY_DECLARED_CLASS_INSTANCE && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
         symbol_decl_js_function(&symbol->decls[0])
     ) {
-        ret->declared.name = checker_atom(me, ty_symbol_display_name(symbol).sv);
+        // (`module.exports = function MC() {}`: the `export=` symbol has no name of its own, the function's is it)
+        csview js_name = ty_symbol_display_name(symbol).sv;
+        if (!js_name.size) ty_js_assigned_class_name(symbol, &js_name);
+        ret->declared.name = checker_atom(me, js_name);
     }
     ret->declared.state = arena_new(&my arena, TyObjectState);
     if (kind == TY_DECLARED_INTERFACE || kind == TY_DECLARED_CLASS_INSTANCE || kind == TY_DECLARED_CLASS_STATIC) {
@@ -1939,19 +1942,27 @@ static Ty const* merged_export_equals_type(Checker* me, Symbol const* clone, boo
     Ty const* original = ty_type_of_symbol(me, symbol_rare(clone)->merged_export_equals_of);
     if (!(original->flags & TYF_OBJECT)) return original;
     Symbol const* original_symbol = symbol_rare(clone)->merged_export_equals_of;
-    for (u32 i = 0; !in_file && i < original_symbol->decl_count; i++) {
+    bool variable = false;
+    for (u32 i = 0; i < original_symbol->decl_count; i++) {
         if (!(original_symbol->decls[i].flags & SYMBOL_VALUE)) continue;
-        if (original_symbol->decls[i].kind == SYMBOL_DECL_VARIABLE) return original;
+        variable = original_symbol->decls[i].kind == SYMBOL_DECL_VARIABLE;
         break;
     }
+    if (variable && !in_file) return original;
     // A class or interface instance becomes an anonymous type with its members and the exports (tsc keeps the type's
     // symbol only if nothing was added)
     bool instance = original->kind == TY_REFERENCE || (original->kind == TY_DECLARED &&
         (original->declared.kind == TY_DECLARED_CLASS_INSTANCE || original->declared.kind == TY_DECLARED_INTERFACE));
     if (!instance && original->kind != TY_DECLARED && original->kind != TY_ANONYMOUS) return original;
+    // (Of `module.exports = <expression>` or of a variable every export counts, type-only typedefs too: tsc's
+    // getInitializerTypeFromAssignmentDeclaration adds all of them to the type's members, and keeps no symbol or
+    // alias when it added any. A function's or class's type, getTypeOfFuncClassEnumModule of getCommonJsExportEquals'
+    // clone, already has every export among its members: only what tttt's own type lacks, the values, counts)
+    bool all_meanings = variable || csview_equals(original_symbol->name, "export=");
     bool any = false;
     for (u32 i = 0; i < clone->exports->count && !any; i++) {
-        Symbol const* value = symbol_for_meaning(clone->exports->entries[i].symbol, SYMBOL_VALUE);
+        Symbol const* value = all_meanings ? clone->exports->entries[i].symbol :
+            symbol_for_meaning(clone->exports->entries[i].symbol, SYMBOL_VALUE);
         any = value && !value->is_placeholder;
     }
     if (!any) return original;
