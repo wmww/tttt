@@ -386,7 +386,24 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
             if (this_ref.interface) this_ref.interface->contains_this = true;
             if (names->file && names->file->is_js && this_ref.kind != THIS_CLASS_INSTANCE && this_ref.kind != THIS_INTERFACE) {
                 ThisRef value = scope_get_this(names, false);
-                if (value.kind == THIS_ANY) identifier_type_rare(me)->this_function = value.function;
+                if (value.kind == THIS_ANY) {
+                    identifier_type_rare(me)->this_function = value.function;
+                    // (Arrow functions between don't count: tsc's getThisContainer skips them)
+                    bool in_signature = false;
+                    for (Scope const* s = names; s; s = s->parent) {
+                        if (s->kind != SCOPE_FUNCTION) {
+                            in_signature |= s->parameters || s->return_type;
+                            continue;
+                        }
+                        if (s->function != value.function) {
+                            in_signature = false;
+                            continue;
+                        }
+                        // (A JSDoc `@return` is looked up in the function's scope itself, see function_impl.c)
+                        identifier_type_rare(me)->this_in_signature = in_signature || s->jsdoc_parameter_type;
+                        break;
+                    }
+                }
             }
         }
     } else {
@@ -719,7 +736,8 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
         for_each (i, vec_spanned_type, &my generic_params) type_typecheck(&i->type, errs);
     }
     if (my keyword == KEYWORD_IDENTIFIER_THIS && my this_kind != THIS_CLASS_INSTANCE && my this_kind != THIS_INTERFACE &&
-        !(identifier_type_this_function(me) && ty_js_this_class(identifier_type_this_function(me)))
+        !(identifier_type_this_function(me) && ty_js_this_class(identifier_type_this_function(me)) &&
+            (!my rare->this_in_signature || function_impl_rare(identifier_type_this_function(me))->prototype_of))
     ) {
         error_ctx_error_d(errs, my name, 2526, "A 'this' type is available only in a non-static member of a class or interface.");
     }

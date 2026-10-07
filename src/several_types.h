@@ -14,6 +14,9 @@ typedef struct IdentifierTypeRare {
     // A JavaScript `this` type outside a class: the function whose `this` it is, a constructor function or a method of
     // its prototype makes it the class's `this` (tsc's getThisType: isJSConstructor, getClassNameFromPrototypeMethod)
     struct FunctionImpl const* this_function;
+    // ... written in that function's parameters or return type, not its body: tsc's getThisType then takes only a method
+    // of a prototype (`F.prototype.m = function`), not a constructor function (isNodeDescendantOf(node, container.body))
+    bool this_in_signature;
     // `import("./a").A.B<T>`: names are looked up in the module's exports instead of the scope. `name` is null for a
     // bare `import("./a")`. With import_typeof it is a value (`typeof import("./a").x`)
     ModuleRef* import_ref;
