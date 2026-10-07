@@ -28942,7 +28942,7 @@ const baselines = {
     },
     'reachabilityChecksNoCrash1': {
         errors: false,
-        symbols: false,
+        symbols: true,
         types: false,
     },
     'reactDefaultPropsInferenceSuccess': {

@@ -2092,7 +2092,14 @@ static bool can_follow_default_keyword(Parser* p) {
     return false;
 }
 
+// `permit_const`: `const` is a modifier before a name (tsc's permitConstAsModifier: class members), else only before
+// `enum`
+static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_const, ModifierList* ret);
 static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* ret) {
+    return parse_modifier_list_ex(parent, is_member, is_member, ret);
+}
+
+static bool parse_modifier_list_ex(Parser* parent, bool is_member, bool permit_const, ModifierList* ret) {
     Parser p = parser(parent);
     const char* end_pos = p.pos;
     bool has_static = false;
@@ -2195,7 +2202,7 @@ static bool parse_modifier_list(Parser* parent, bool is_member, ModifierList* re
             mod.tag = MODIFIER_PROTECTED;
         } else if (span_equals(mod.span, "public")) {
             mod.tag = MODIFIER_PUBLIC;
-        } else if (is_member && span_equals(mod.span, "const")) {
+        } else if (is_member && span_equals(mod.span, "const") && (permit_const || starts_with_followed_by_word_break(&p, "enum"))) {
             mod.tag = MODIFIER_CONST;
         } else if (is_member && span_equals(mod.span, "in")) {
             mod.tag = MODIFIER_IN; // (Only on a type parameter: TS1274)
@@ -7092,7 +7099,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
     FunctionFlags flags = { .brace_expected = true };
     // tsc parses modifiers in front of any member and reports them from the checker (a grammar error)
     ModifierList modifiers;
-    parse_modifier_list(&p, true, &modifiers);
+    parse_modifier_list_ex(&p, true, false, &modifiers);
     hop_whitespace(&p);
     // (An `async` modifier makes a method only if a parameter list follows: `{ async x }` is a property with a modifier
     // that can't be used there, tsc's parseObjectLiteralElement)
