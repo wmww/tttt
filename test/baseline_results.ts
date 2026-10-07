@@ -33338,12 +33338,12 @@ const baselines = {
     'transformNestedGeneratorsWithTry(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'transformNestedGeneratorsWithTry(target=es5)': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'transformParenthesizesConditionalSubexpression(target=es2015)': {
         errors: true,
