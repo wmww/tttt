@@ -2401,7 +2401,20 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         ) {
             shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
         }
-        if (reused && reuses_nodes(param_d) && !param->optional &&
+        // A parameter without annotation whose initializer is a type assertion `x = v as T` reuses T (tsc's
+        // typeFromParameter -> typeFromExpression -> typeFromTypeAssertion), with undefined added like an annotation
+        TypeNode const* asserted = nullptr;
+        if (reusable && binding && !binding->has_explicit_type && binding->tag == BINDING_IDENTIFIER && initializer &&
+            initializer->tag == EXPR_AS_TYPE && !initializer->as_type->is_satisfies && !as_type_is_const(initializer->as_type) &&
+            !function->syntactically_contextual && !instantiated &&
+            node_type(me, (TyDisplay){0}, &initializer->as_type->type) == ty_without_undefined(me, param->type)
+        ) {
+            asserted = &initializer->as_type->type;
+        }
+        if (asserted && reuses_nodes(param_d)) {
+            if (!param->optional && annotation_plus_undefined(me, asserted, shown)) display_node_plus_undefined(me, param_d, asserted);
+            else display_annotated(me, param_d, asserted, shown, param->optional);
+        } else if (reused && reuses_nodes(param_d) && !param->optional &&
             annotation_plus_undefined(me, &binding->explicit_type, shown)
         ) {
             // The annotation with undefined added (a parameter with an initializer before a required one): tsc reuses

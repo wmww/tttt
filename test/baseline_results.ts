@@ -20683,7 +20683,7 @@ const baselines = {
     'isolatedDeclarationsAddUndefined': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'isolatedDeclarationsAddUndefined2': {
         errors: true,
@@ -20958,12 +20958,12 @@ const baselines = {
     'iterableWithNeverAsUnionMember(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iterableWithNeverAsUnionMember(target=esnext)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'iteratorExtraParameters': {
         errors: true,
