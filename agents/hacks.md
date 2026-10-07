@@ -6,8 +6,7 @@ src` finds the code-side markers; every significant one has an entry here.
 ## Global state, memory, parallelism
 - `ty_iterated_type_sending` (`ty/iterate.c`): TS2488 on a union is reported once per program like tsc's cached
   noIterationTypes: once per checker by a links key, across checkers by an `Error.once_key` hashed from the message
-  text (type ids differ between checkers). If two checkers print the union's members in different orders, both
-  report it.
+  text (type ids differ between checkers; the stable type order prints a union alike in every checker).
 - `reexec_with_huge_pages` (`main.c`): glibc reads `GLIBC_TUNABLES` only at startup, so tttt re-execs itself with
   `glibc.malloc.hugetlb=1` (not under valgrind or `TTTT_NO_REEXEC`): 5-20% wall time. An own malloc / AST arenas that
   madvise like the checker arena would remove it (`bugs/perf_leads.md`).
@@ -293,7 +292,7 @@ src` finds the code-side markers; every significant one has an entry here.
   context-sensitive functions as anyFunctionType; tttt leaves context-sensitive arguments out of
   `check_args_until_unfit` (`skipped_function_unfit()` relates anyFunctionType for bare functions) and relates the
   literal ones afterwards (`first_unfit_skipped_literal()`, regularised, nested generic calls skipped), so a literal is
-  related after the arguments behind it (creation order). `return_only_type()` gives generators anyFunctionType;
+  related after the arguments behind it. `return_only_type()` gives generators anyFunctionType;
   `first_unfit_argument` skips such arguments in the first overload round.
 - Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): with explicit type
   arguments, fitting arity and no candidate checked, the result is the union of every candidate's inferred return
@@ -369,7 +368,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - Expression memo (`check_with`, `LazyMemo.context`): an `Expr`'s memo is the last contextual check's;
   `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
   `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and
-  destructuring defaults don't. Union order depends on who asks first.
+  destructuring defaults don't.
 - `KEY_CONTEXT_NONE` / `ty_late_contextual_return` (expr.c HACK): tsc's ContextChecked is set at a function's first
   check even without a contextual signature, and getReturnTypeFromBody reads the context when the return type is
   computed. tttt marks only functions that aren't context sensitive (it checks sensitive ones where tsc skips them or
@@ -391,8 +390,7 @@ src` finds the code-side markers; every significant one has an entry here.
   tuples.
 - Expandos on functions are checked against existing members; `is_container_declaration()` approximates
   isAssignmentDeclaration for `ns.a = {}`.
-- `check_array`: tuples only from tuple-like context, patterns or `as const`. Literal ids follow tsc only where made in
-  the same order (`1 | 0` vs `0 | 1`).
+- `check_array`: tuples only from tuple-like context, patterns or `as const`.
 - `ty_apply_type_arguments` (instantiation expressions): the display is the expanded object.
 - `ty_access` skips nullish union members silently (TS18047/18048 come from `check_access`). `member_refs()` (check.c)
   duplicates `access()`'s walk to get `Prop`s without creating types.
@@ -491,7 +489,7 @@ src` finds the code-side markers; every significant one has an entry here.
   deferred references by their mapper only (tsc: the reference node first), unique symbols without a declaration
   position, and every final tie (fresh vs regular literals, intrinsic variants, same-symbol anonymous types: tsc's
   ids). Known misses: noImplicitAnyUnionNormalizedObjectLiteral1 (tsc's widening makes a new type per spread object
-  literal even when nothing widens, so creation order differs), instantiationExpressions.
+  literal even when nothing widens, so creation order differs).
   `Ty.order_key` caches the comparison prefix (8 bytes per type).
 - Member order (`builder_sort_stable()`, members.c, tsc's getNamedMembers): applied to object literals, mapped types,
   namespaces and merged values only; class/interface members keep tttt's own-then-inherited order (matches the
@@ -592,8 +590,9 @@ src` finds the code-side markers; every significant one has an entry here.
   constraint lacks inferConditionalConstraintMappedMember; big unions of them exhaust the relation budget).
   `generic_check_default()` (generic.c, same HACK) skips a deferred conditional type parameter default against its
   constraint.
-- `ty_check_index_constraints` on type literals only when syntactically needed: evaluating a literal early changes
-  union order and loses the alias name.
+- `ty_check_index_constraints` on type literals only when syntactically needed (`type_literal_has_index_constraints()`):
+  the others aren't lowered at their check, and an alias's literal body is made as the alias's type first (else it
+  loses the alias name).
 - Syntactic stand-ins: overload grouping (`statements_check_overloads`, `class_check_overloads`), TS2729
   (`initialized_in_static_blocks`, HACK: top-level `this.x =` instead of flow), member kinds in
   `class_check_member_overrides()` (`class_instance_member()`, not symbol flags; TS2612 skips what
@@ -817,10 +816,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `callee_compile_test_info`: `f<T>` gets its own line only when `?.` follows (source peek); `a<b>?.()` keeps an
   `EXPR_GENERIC_PARAMS` callee.
 - `render_types_or_symbols_file` drops one trailing line break per unit (a last unit before `// @link` lines is off).
-- `interface_member_typecheck()`: a property signature's annotation is lowered at the interface's check only when it
-  is a literal or a template literal (union order: the order types are made in). tsc's checkPropertySignature asks
-  for every property's type there; doing it for all moved 5 suite tests both ways (strictFunctionTypesErrors,
-  covariantCallbacks... variance measured in another order). chrome's `$ExpectType` union order needs more of it.
 
 - `unknown_symbol_text()` (baseline_test_traversal.c): the symbols baseline names tsc's unknownSymbol (names after an
   import of an unresolved module, in `import x = a.B` paths and heritage `extends a.B`) by the first alias of an

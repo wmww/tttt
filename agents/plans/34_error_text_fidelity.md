@@ -36,8 +36,8 @@ up are in `triage.md`.
   bigintWithLib (tsc repeats one line three times: a relation through the Symbol.toStringTag overloads?).
 
 ## Left (2026-10-06, agent D: 19 tests)
-`./errtextdiff.py` after `./failstats.py`: 21 tests, one fixed (destructuringUnspreadableIntoRest: getRestType makes
-every property's literal in order, the creation order the Omit keys' union goes by). What remains is relation-path or
+`./errtextdiff.py` after `./failstats.py`: 21 tests, one fixed (destructuringUnspreadableIntoRest: the Omit keys' union
+order, which the stable type ordering decides now). What remains is relation-path or
 identity work, no message rules:
 - Elaboration paths that take another route through the relation (chain:text/shallower/deeper): indexedAccessRelation,
   keyofAndIndexedAccessErrors (tsc explains `keyof T` through its constraint before splitting the intersection

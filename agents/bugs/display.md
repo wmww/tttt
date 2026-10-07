@@ -61,12 +61,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
 - A conditional type as a constraint prints parenthesized: `<Expected extends (Extends<A, Expected>) extends true ?
   ...>`, tsc without the parentheses (expect-type).
 
-- **Type creation order is union order.** tsc sorts union members by type id, so tttt has to make types in tsc's order.
-  Known rules now ported: the class check makes the class's value type first, type parameters are made in
-  checkTypeParameter order (constraint references first), type literals when the check walk meets them, annotations
-  before initializers, `{}` is one early type (emptyTypeLiteralType). C's unspecified argument evaluation order is a
-  trap: `union_of(me, make_a(), make_b())` makes b first under GCC. `./argorder.py` lists such calls (the remaining
-  ones are relation-only or deliberate).
 - TS2344 elaboration for `NonNullable<V[K]>` without strictNullChecks (`type F<V, K extends keyof V> =
   Box<NonNullable<V[K]>>`, `Box<T extends { [k: string]: string }>`): tsc says "Index signature for type 'string' is
   missing in type '{}'." (structuredTypeRelatedToWorker relates getApparentType(source); V[K] with no base constraint
