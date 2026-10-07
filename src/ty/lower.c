@@ -1915,6 +1915,13 @@ int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const*
     ) {
         return 0;
     }
+    // `o[k] = v` whose key isn't a literal or unique symbol type declares nothing (tsc's isLateBindableName): no member
+    // to type nor report
+    Expr const* late_bound_key = symbol_rare(member)->late_bound_key;
+    if (late_bound_key) {
+        bool is_number = false;
+        if (!ty_property_name_of_key(me, ty_expr_type(me, late_bound_key), &is_number)) return 0;
+    }
     ty_type_of_symbol(me, member);
     if (intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)value }, 2)) return 1;
     return (int)(uintptr_t)intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)member }, 2);
