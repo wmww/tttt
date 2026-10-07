@@ -98,6 +98,13 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     type alias x into one symbol (the export= clone's exports merge); tttt keeps two.
   - typeFromPropertyAssignment30: the expando `c.p = {}` of `const c: Combo = () => 1` is `p: {}` in tsc's type of the
     arrow; tttt takes Combo.p's declared type for it.
+  - typeFromPropertyAssignment18: `var GLOBSTAR = m.GLOBSTAR = {}` in JS: the variable's expandos (`GLOBSTAR.p`) and
+    `m.GLOBSTAR.q` go into one namespace, m.GLOBSTAR's (tsc's getExpandoSymbol through the chained assignment), printed
+    `typeof m.GLOBSTAR`; tttt makes two.
+  - uniqueSymbolsPropertyNames: a `unique symbol` member of an interface prints through a variable of that interface
+    type in scope (`[Op.equal]` with `const Op: OpTypes`: getContainersOfSymbol's firstVariableMatch over every value in
+    scope); out_unique_symbol_name() only knows the global `XConstructor` pattern. Asking ty_type_of_symbol() of every
+    value in scope from the printer risks circularity reports; annotated variables only would do for this test.
   - moduleExportsAliasLoop1/2 (symbols): `exports.fn2 = Foo.min` names `Foo.min`'s symbol `fn2` (with min's
     declarations) in tsc: the alias-like CommonJS export; old failures.
 - interfaceMergeWithNonGenericTypeArguments: `class M extends B<any>` (B not generic, TS2315) merged with `interface M extends I`: tsc also reports TS2346 on `super()` (no base constructor for that many type arguments), but not without the interface merge; the mechanism (how the merge changes getBaseConstructorTypeOfClass) is unexplored (stage 3, agent A).
