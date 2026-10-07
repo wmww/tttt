@@ -55756,12 +55756,12 @@ const baselines = {
         types: true,
     },
     'importDeferFromInvalid': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'importDeferInvalidDefault': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

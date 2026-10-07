@@ -11505,7 +11505,9 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         return parse_fail(&p);
     }
     if (span_valid(statement.defer_clause)) {
-        statement.defer_clause = span_make(statement.defer_clause.source, span_start_ptr(statement.defer_clause), p.pos);
+        char const* end = p.pos;
+        while (end > span_start_ptr(statement.defer_clause) && isspace((unsigned char)end[-1])) end--;
+        statement.defer_clause = span_make(statement.defer_clause.source, span_start_ptr(statement.defer_clause), end);
     }
     hop_whitespace(&p);
 
