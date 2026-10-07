@@ -410,7 +410,10 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     }
 
     object = ty_apparent_type(me, object);
-    if (object->flags & TYF_ANY) return object;
+    // (Reduced: a type parameter constrained to `{ a: "foo" } & { a: "bar" }` reads never, tsc's getReducedApparentType
+    // and getPropertyTypeForIndexType of never)
+    if (object->kind == TY_INTERSECTION) object = ty_reduced(me, object);
+    if (object->flags & (TYF_ANY | TYF_NEVER)) return object;
     if (object->kind == TY_UNION) return access(me, object, index, depth + 1, flags); // The constraint of a type parameter
     if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION))) return nullptr;
 
