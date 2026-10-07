@@ -1008,6 +1008,9 @@ static void infer_from_type_args(Checker* me, Inference* inf, Ty const* source, 
 static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty const* target) {
     if ((ty_is_tuple(source) || is_empty_tuple(source) || ty_is_array(me, source)) && ty_is_tuple(target)) {
         if ((ty_is_tuple(source) || is_empty_tuple(source)) && tuples_definitely_unrelated(me, source, target)) return;
+        // (An array against a readonly tuple: the tuple's elements aren't in the array, the array's mutators aren't in
+        // the tuple, tsc's typesDefinitelyUnrelated. `(string | number)[]` says nothing about `readonly [K, V]`)
+        if (ty_is_array(me, source) && types_definitely_unrelated(me, source, target)) return;
         infer_to_tuple(me, inf, source, target);
         return;
     }
