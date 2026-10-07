@@ -14040,7 +14040,9 @@ static bool parse_statement(Parser* parent, bool toplevel, Statement* ret) {
     char c = *p.pos;
     bool word = identifier_char_size(p.pos, true);
     if (c == ';') {
+        // tsc's EmptyStatement, the `;` its own (`if (c); else d`)
         *ret = statement_noop;
+        p.pos++;
     } else if (hop_start_if_ends_on_word_break(&p, "debugger")) {
         *ret = statement_noop;
     } else if (word && parse_label(&p, &label)) {

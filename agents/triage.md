@@ -228,8 +228,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   the booleans; other string/list options still ignore `null`).
 - **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 113, by code TS2349 x43, TS2345 x31, TS2339 x29, TS1128 x6,
   TS2440 x2, TS2344 x1, TS7008 x1. Root causes seen:
-  - Parser: `if (c); else {...}` (empty then-statement followed by `else`) gives TS1128 at `else`
-    (`if (t);else{t.y=2}` reproduces). In the minified schemas/WebpackOptions.check.js.
   - CommonJS: `module.exports=r,module.exports.default=r;` (export assignment inside a comma expression, the end of
     every generated schemas/**/*.check.js) isn't bound as the module's export: `require("./x.check")(...)` gives TS2349
     "not callable" (most of the 43) and `module.exports.default` TS2339.
