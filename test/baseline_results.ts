@@ -73153,7 +73153,7 @@ const baselines = {
     'instantiationExpressions': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterAsTypeParameterConstraint': {
         errors: true,

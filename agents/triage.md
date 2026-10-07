@@ -24,9 +24,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   import("inner")`, tsc doesn't reuse the `() => ` of `export const x: () => Thing` (Thing inaccessible from index.ts)
   where ty_display.c's "module's variable" annotation path reuses it partially; tsc's tryReuseExistingTypeNode seems to
   give up whole there. Find the rule before touching display_annotated().
-- `fx<>` (instantiationExpressions, agent C): the parser drops an empty type argument list (parse_expr_rest, `import<>`
-  excepted), so the types baseline misses tsc's `>fx<> :` line. Keeping the node would need the checker to ignore it
-  like tsc does (TS1099 only).
 - T_1 renames (agent C; pre-5.8 failures): computedTypesKeyofNoIndexSignatureType wants `K_1`..`K_9` because tsc's
   instantiateMappedType clones the key type parameter (ty_mapped_info_instantiate() doesn't);
   inferredReturnTypeIncorrectReuse1 (`fn_1`) and jsFileFunctionOverloads (`T_1`) rename where tttt sees no shadowing,

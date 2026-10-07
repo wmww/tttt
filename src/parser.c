@@ -9580,7 +9580,13 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
             parse_success(&generic_p);
             // (`import<>()` keeps its empty list: TS1326, where an empty list is otherwise only TS1099)
             bool import_keyword = left_and_ret->tag == EXPR_IDENTIFIER && left_and_ret->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
-            if (vec_spanned_type_size(&parsed.generic_params) || import_keyword) {
+            // (An instantiation expression `f<>` keeps it too: its type is f's, tsc's getInstantiationExpressionType
+            // without type arguments, but it is a node of its own in the types baseline. Not a call's)
+            Parser after = parser(&generic_p);
+            hop_whitespace(&after);
+            bool instantiation = *after.pos != '(' && *after.pos != '`' && !ctx.reject_operators;
+            parse_fail(&after);
+            if (vec_spanned_type_size(&parsed.generic_params) || import_keyword || instantiation) {
                 *left_and_ret = expr_generic_params(
                     span_from(a),
                     c_new(GenericParamsExpr, {

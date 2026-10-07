@@ -4813,6 +4813,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (A class's `extends B<T>` is a type reference's type arguments, what the class's base constructor type
             // and super calls make of them: tsc's getBaseConstructorTypeOfClass checks the expression alone)
             if (generic->heritage) return ty_expr_type(me, &generic->expr);
+            // (`f<>`, TS1099: the expression's type, tsc's getInstantiationExpressionType without type arguments)
+            if (vec_spanned_type_is_empty(&generic->params)) return ty_expr_type(me, &generic->expr);
             Ty const* args[32];
             u32 len = 0;
             for_each (i, vec_spanned_type, &generic->params) {

@@ -159,6 +159,7 @@ typedef struct ObjectSym {
     OrderPos pos;
     Symbol const* symbol; // If it is a symbol
     void const* identity;
+    u32 created; // A symbol made with the type (an instantiation expression's): its id, in creation order like tsc's
 } ObjectSym;
 
 static ObjectSym sym_of_symbol(Symbol const* s) {
@@ -185,7 +186,7 @@ static ObjectSym object_symbol(Ty const* t) {
         case TY_ANONYMOUS:
             // (An instantiation expression's type has a symbol of its own without declarations: tsc's
             // getInstantiatedTypePart, `__instantiationExpression`)
-            if (t->anonymous.applies_type_args) return (ObjectSym){ .has = true, .identity = t };
+            if (t->anonymous.applies_type_args) return (ObjectSym){ .has = true, .identity = t, .created = t->id + 1 };
             if (t->anonymous.target) return object_symbol(t->anonymous.target);
             if (t->anonymous.is_reverse) return (ObjectSym){0};
             if (t->anonymous.merged_value) return sym_of_symbol(t->anonymous.merged_value);
@@ -218,6 +219,8 @@ static int cmp_object_symbols(ObjectSym a, ObjectSym b) {
         return 1;
     }
     if (a.symbol && b.symbol) return cmp_sv(a.symbol->name, b.symbol->name);
+    // (Two `__instantiationExpression` symbols: by symbol id)
+    if (a.created && b.created) return a.created < b.created ? -1 : 1;
     return 0;
 }
 

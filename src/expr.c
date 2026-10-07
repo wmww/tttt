@@ -943,6 +943,8 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     for_each (i, vec_spanned_type, &my params) {
         type_typecheck(&i->type, errs);
     }
+    // (`f<>`: TS1099 only, tsc's getInstantiationExpressionType returns the type as it is without type arguments)
+    if (vec_spanned_type_is_empty(&my params)) return;
     Checker* checker = current_checker;
     Ty const* callee = ty_expr_type(checker, &my expr);
     if (callee->flags & TYF_ANY) return;
