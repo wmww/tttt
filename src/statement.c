@@ -127,7 +127,11 @@ static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* er
     if (my binding.tag != BINDING_IDENTIFIER || !my binding.symbol || initialized_binding_value(me)->tag != EXPR_OBJECT) return;
     SourceFile const* file = my binding.content_span.source;
     if (!file || !file->is_js) return;
-    Symbol const* symbol = my binding.symbol;
+    jsdoc_enum_check_members(my binding.symbol, initialized_binding_value(me), errs);
+}
+
+// The members of the object literal a JavaScript `@enum` symbol (a variable, or `A.B.C = {}`) is initialized with
+void jsdoc_enum_check_members(Symbol const* symbol, Expr const* object, ErrorCtx* errs) {
     TypeDecl const* enum_decl = nullptr;
     for (u32 d = 0; d < symbol->decl_count && !enum_decl; d++) {
         TypeDecl const* decl = symbol->decls[d].kind == SYMBOL_DECL_TYPE_ALIAS ? symbol->decls[d].node : nullptr;
@@ -136,7 +140,7 @@ static void variable_check_jsdoc_enum(InitializedBinding const* me, ErrorCtx* er
     if (!enum_decl) return;
     // (The alias's type, which names it: lowering the node on its own first would give the alias an unnamed type)
     Ty const* type = ty_declared_type_of(current_checker, symbol);
-    for_each (i, vec_object_expr_item, &initialized_binding_value(me)->object) {
+    for_each (i, vec_object_expr_item, &object->object) {
         if (i->tag != OBJECT_ITEM_PROPERTY || i->jsdoc_type) continue;
         ty_check_assignable_expr(current_checker, expr_get_type(&i->value), type, i->span, &i->value, errs);
     }

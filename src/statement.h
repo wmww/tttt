@@ -63,6 +63,8 @@ static inline char const* variable_statement_keyword_str(VariableStatement const
 void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared);
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, bool case_clause, bool ambient_using, ErrorCtx* errs);
+// `/** @enum {T} */`: the members of the object literal `object` that initializes `symbol` checked against T
+void jsdoc_enum_check_members(Symbol const* symbol, Expr const* object, ErrorCtx* errs);
 
 // Type declaration
 
