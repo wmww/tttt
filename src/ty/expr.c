@@ -2808,6 +2808,13 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
             !origin->decl->overload_count && !origin->decl->symbol && declared_type == prop_type(me, origin) ? origin->decl->node : nullptr;
         // (A property spread in from an object literal reuses what that one reused: `{ ...{ ...b1, z } }`)
         if (!annotation && origin->decl->asserted && declared_type == prop_type(me, origin)) annotation = origin->decl->asserted;
+        // (A mapped type's property is declared where the property it maps is, `{ ...(x as Readonly<A>) }`: tsc's mapped
+        // symbol's declarations, whose annotation is reused where it says the same)
+        Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
+        if (!annotation && mapped_from && declared_type == prop_type(me, mapped_from)) {
+            while (mapped_from->target) mapped_from = mapped_from->target;
+            annotation = ty_prop_annotation(mapped_from);
+        }
         TypeNode const* annotation_required = nullptr;
         if (annotation && type != declared_type) {
             annotation_required = annotation;

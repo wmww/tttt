@@ -2438,7 +2438,7 @@ static TyList pattern_keys(Checker* me, Binding const* pattern) {
 
 // The annotation a property was declared with, which the types baseline reuses for a copy of it where it still says
 // the same (ObjectLiteralProp.asserted)
-static TypeNode const* prop_annotation(Prop const* prop) {
+TypeNode const* ty_prop_annotation(Prop const* prop) {
     PropDecl const* decl = prop->decl;
     if (decl->asserted) return decl->asserted;
     return decl->node && decl->node->parsed && !decl->lazy && !decl->function && !decl->overload_count && !decl->symbol ? decl->node : nullptr;
@@ -2477,7 +2477,7 @@ static Ty const* intersection_rest_type(Checker* me, Ty const* source, TyList pa
                 .decl_span_count = origin ? origin->decl->decl_span_count : 0,
                 .name_is_value = origin && origin->decl->name_is_value,
                 .name_form = found.prop ? ty_prop_name_form_of(found.prop) : 0,
-                .asserted = origin ? prop_annotation(origin) : nullptr,
+                .asserted = origin ? ty_prop_annotation(origin) : nullptr,
                 .spread_variable = origin ? origin->decl->symbol : nullptr,
             };
         }
@@ -2569,11 +2569,11 @@ static Ty const* object_rest_type(Checker* me, Ty const* source, TyList pattern)
         Prop const* declared = prop;
         while (declared->target && !declared->decl->decl_span_count) declared = declared->target;
         // (A mapped type's property is declared where the property it maps is: tsc's mapped symbol's declarations)
-        TypeNode const* annotation = prop_annotation(declared);
+        TypeNode const* annotation = ty_prop_annotation(declared);
         Prop const* mapped_from = prop_decl_rare(prop->decl)->mapped_from;
         if (!annotation && mapped_from) {
             while (mapped_from->target) mapped_from = mapped_from->target;
-            annotation = prop_annotation(mapped_from);
+            annotation = ty_prop_annotation(mapped_from);
         }
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,

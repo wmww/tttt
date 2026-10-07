@@ -335,6 +335,9 @@ typedef struct FoundProp {
     Prop const* prop; // The property found (of an intersection: of its first member that has one)
 } FoundProp;
 FoundProp ty_find_prop(Checker* me, Ty const* ty, Atom const* name);
+// The annotation a property was declared with, which the types baseline reuses for a copy of it where it still says
+// the same (ObjectLiteralProp.asserted). Null if none (lower.c)
+TypeNode const* ty_prop_annotation(Prop const* prop);
 Ty const* ty_string_index_only_key(Checker* me, Ty const* object, Ty const* index); // access.c
 Ty const* ty_constructor_declared_flow_type(Checker* me, Symbol const* member, Expr const* reference, struct FlowNode const* flow); // lower.c
 // A CommonJS export with several declarations, every one `exports.x = <alias>` (tsc's isDuplicatedCommonJSExport of an
