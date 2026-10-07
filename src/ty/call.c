@@ -1954,7 +1954,10 @@ static Span report_unfit_argument(
         // arguments when there are several; getErrorSpanForNode then shortens functions to their name or first token)
         span = is_rest_tuple && (u32)index + 1 < args->len ? span_of_args(args, (u32)index, args->len - 1) :
             expr_error_span(effective);
-        ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple ? nullptr : effective, errs);
+        // (A tagged template's TemplateStringsArray is tsc's synthetic expression over the template, without the tag)
+        bool template_strings = info->tagged_template && arg->expr == info->tagged_template;
+        if (template_strings) span = info->tagged_template->template_->template_span;
+        ty_report_unfit_argument(me, arg_type, param_type, span, is_rest_tuple || template_strings ? nullptr : effective, errs);
     }
     free(shape.types);
     return span;
