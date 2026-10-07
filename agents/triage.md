@@ -54,3 +54,22 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   parser recovery (plan 27): labeledStatementDeclarationListInLoopNoCrash4, jsxAndTypeAssertion, tsxAttributeInvalidNames (one missing EOF TS1005 each), parser0_004152, jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative, varianceAnnotationsWithCircularlyReferencesError, reachabilityChecksNoCrash1, importAttributes10/11, decoratorOnUsing, scannerUnexpectedNullCharacter1.
 - enumWithBigint: tsc names a bigint enum member `__missing` (types show `E.__missing`) but the symbols baseline prints its declaration name (`E[0n]`); our symbol name drives both. Needs a name/printed-name split for enum members (stage 3, agent A).
 - iterableWithNeverAsUnionMember(target=esnext): `let [y] = x` with `x: T extends {a:"foo"}&{a:"bar"}` (TS2488) types y as never in tsc, any here (stage 3, agent A).
+- Plan 48 stage 3 agent D, second pass leftovers (types component), 2026-10-07:
+  - moduleAugmentationDuringSyntheticDefaultCheck: tsc merges `declare module "moment-timezone"` into the clone that
+    module's `export = moment` (a namespace import) resolves to, not into moment's own symbol; tttt merges into moment.
+  - enumIdentifierLiterals / enumWithUnicodeEscape1: enum member names are their source text in tttt
+    (EnumCase.name), tsc's are the numeric literal's canonical text (`1.0` -> "1", `0xF00D` -> "61453") and the cooked
+    string (`'gold ✰'`); needs a canonical symbol name that isn't a source span.
+  - accessorBodyInTypeContext: `type A = { get foo() { return 0 } }` (TS1183): tsc infers the getter's type from the
+    body (number) and walks it; tttt's interface accessor without annotation is any and its body isn't walked.
+  - jsdocParamTagTypeLiteral: `@param {string} [opts1.z]` members print `z?: string | undefined` in tsc (no `?` token
+    to reuse); the structure printer can't tell such a prop came from a bracketed tag. Also its `foo2` with an inline
+    `/** @param opts2 ... */` on the parameter is `{...}` in tsc, `{...}[]` in tttt.
+  - importDeclWithExportModifierAndExportAssignment(InAmbientContext): `export = x` of a namespace holding only an
+    interface prints `typeof x` in tsc (also under 5.8); tttt's harness prints any/error for an uninstantiated one.
+  - nodeModulesJson (symbols): `config3.version` through `import * as config3` of a JSON module in a .cts prints
+    `Symbol(version, ...)` unquoted in tsc, tttt quotes it like the JSON declaration's `"version"`.
+  - keyofAndIndexedAccess's Result2: `type Result2 = Example2<...>` (a mapped type over `keyof Helper2<T>`) keeps the
+    alias Example2<...> in tsc; tttt's instantiation loses it and Result2 names it.
+  - variadicTuples1: several generic-tuple indexing/spread printing differences (`[string, ...T, number][1]` is
+    `number | T[number]` in tsc...), old failures, worth a session of their own.
