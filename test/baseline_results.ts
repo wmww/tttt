@@ -9523,7 +9523,7 @@ const baselines = {
     'declarationEmitShadowing': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitShadowingInferNotRenamed': {
         errors: true,

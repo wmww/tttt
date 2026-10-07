@@ -1883,7 +1883,8 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
             if (own->is_const) out_lit(whole, "const ");
             if (own->is_in) out_lit(whole, "in ");
             if (own->is_out) out_lit(whole, "out ");
-            ty_display(me, whole, declared_param);
+            // (Renamed for shadowing too: the reused node keeps its range, tsc's trackExistingEntityName)
+            out_type_param_name(me, whole, declared_param, true);
             if (own->extends_explicit) {
                 out_lit(whole, " extends ");
                 display_node(me, whole, &own->extends);
