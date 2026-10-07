@@ -81,6 +81,35 @@ static int cmp_pos(OrderPos a, OrderPos b) {
     return a.offset < b.offset ? -1 : a.offset > b.offset;
 }
 
+// tsc's compareNodes: file order, then position; a missing node last (0: tie, or neither has one)
+static int cmp_node_spans(Span a, Span b, bool ha, bool hb) {
+    OrderPos pa = {0}, pb = {0};
+    ha = ha && span_pos(a, &pa);
+    hb = hb && span_pos(b, &pb);
+    if (ha && hb) return cmp_pos(pa, pb);
+    if (ha) return -1;
+    if (hb) return 1;
+    return 0;
+}
+
+// Where a deferred reference's node starts (tsc's node.pos, compared within a file): its first token
+static bool type_node_start(TypeNode const* node, Span* out) {
+    for (int depth = 0; node && depth < 16; depth++) {
+        switch (node->tag) {
+            case TYPE_IDENTIFIER: *out = identifier_type_span(node->identifier); return span_valid(*out);
+            case TYPE_TUPLE: *out = node->tuple.span; return span_valid(*out);
+            case TYPE_INTERFACE: *out = node->interface.span; return span_valid(*out);
+            case TYPE_ARRAY: node = node->array.element; break;
+            case TYPE_UNION:
+            case TYPE_INTERSECTION:
+                node = vec_type_size(&node->composite) ? vec_type_at(&node->composite, 0) : nullptr;
+                break;
+            default: return false;
+        }
+    }
+    return false;
+}
+
 // tsc's compareSymbols, minus symbol ids (0: tie)
 static int cmp_symbols(Symbol const* a, Symbol const* b) {
     if (a == b) return 0;
@@ -374,6 +403,8 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
         // (The common tie: a long common prefix)
         int c = a->literal.string == b->literal.string ? 0 : cmp_sv(atom_sv(a->literal.string), atom_sv(b->literal.string));
         if (c) return c;
+        // (A literal and its fresh twin: tsc makes the fresh one from the regular one, a later id)
+        if ((a->flags ^ b->flags) & TYF_FRESH_LITERAL) return a->flags & TYF_FRESH_LITERAL ? 1 : -1;
         return a->id < b->id ? -1 : 1;
     }
 
@@ -391,8 +422,16 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                     OrderPos pa = {0}, pb = {0};
                     bool ha = ua->member.sv.buf ? span_pos(ua->member, &pa) : (ua->owner && ua->owner->decl_count && span_pos(ua->owner->decls[0].full, &pa));
                     bool hb = ub->member.sv.buf ? span_pos(ub->member, &pb) : (ub->owner && ub->owner->decl_count && span_pos(ub->owner->decls[0].full, &pb));
+                    // (tsc's compareSymbols: a declaration first, then by name)
                     if (ha && hb) {
                         int c = cmp_pos(pa, pb);
+                        if (c) return c;
+                    } else if (ha) {
+                        return -1;
+                    } else if (hb) {
+                        return 1;
+                    } else if (ua->owner && ub->owner) {
+                        int c = cmp_sv(ua->owner->name, ub->owner->name);
                         if (c) return c;
                     }
                 }
@@ -405,6 +444,10 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             } else if (ra == RANK_BOOLEAN_LITERAL) {
                 bool x = a->literal.value.boolean, y = b->literal.value.boolean;
                 if (x != y) return x ? 1 : -1;
+            }
+            // (Equal values: a literal and its fresh twin, which tsc makes from the regular one, a later id)
+            if (ra != RANK_BIGINT_LITERAL && ra != RANK_UNIQUE_ES_SYMBOL && ((a->flags ^ b->flags) & TYF_FRESH_LITERAL)) {
+                return a->flags & TYF_FRESH_LITERAL ? 1 : -1;
             }
             break;
         }
@@ -435,6 +478,15 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
                         if (c) return c;
                     }
                 } else if (a->reference.deferred && b->reference.deferred) {
+                    // (By the reference node's position first: tsc's compareNodes)
+                    TypeNode const* na = a->reference.deferred->node;
+                    TypeNode const* nb = b->reference.deferred->node;
+                    if (na != nb) {
+                        Span sa = span_null, sb = span_null;
+                        bool ha = type_node_start(na, &sa), hb = type_node_start(nb, &sb);
+                        c = cmp_node_spans(sa, sb, ha, hb);
+                        if (c) return c;
+                    }
                     c = cmp_mappers(a->reference.deferred->mapper, b->reference.deferred->mapper);
                     if (c) return c;
                 }
@@ -494,10 +546,16 @@ int ty_compare_tie(Ty const* a, Ty const* b, u64 key) {
             break;
         }
         case TY_CONDITIONAL: {
-            // (tsc orders by the root's node; tttt keeps no node on the root: its id, creation order)
+            // By the root's node position (tsc's compareNodes(root.node)); roots not lowered from a node by id
             Ty const* xa = a->conditional.root;
             Ty const* xb = b->conditional.root;
-            if (xa != xb) return xa->id < xb->id ? -1 : 1;
+            if (xa != xb) {
+                TyConditionalOuter const* oa = xa->conditional.outer;
+                TyConditionalOuter const* ob = xb->conditional.outer;
+                int c = cmp_node_spans(oa ? oa->node : span_null, ob ? ob->node : span_null, oa != nullptr, ob != nullptr);
+                if (c) return c;
+                if (!oa || !ob || oa->node.sv.buf != ob->node.sv.buf) return xa->id < xb->id ? -1 : 1;
+            }
             int c = cmp_mappers(a->conditional.mapper, b->conditional.mapper);
             if (c) return c;
             break;

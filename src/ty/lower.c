@@ -1038,6 +1038,7 @@ static void conditional_set_outer(Checker* me, Ty const* root, TypeNode const* n
         csview text = cstr_sv(&decl.source->contents);
         outer->check_outside_block = block >= text.buf && block < text.buf + text.size && decl.sv.buf < block;
     }
+    outer->node = node->ternary->span;
     ((Ty*)root)->conditional.outer = outer; // (Set once, right after lowering it: a root is never shared between checkers)
 }
 

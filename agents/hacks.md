@@ -490,12 +490,17 @@ src` finds the code-side markers; every significant one has an entry here.
   signatures.
 
 ## Type core (`src/ty/`)
-- Stable type ordering (`ty/order.c`, tsc 6's compareTypes): ties tsc breaks by something tttt doesn't keep fall back
-  to type ids, i.e. tttt's creation order: conditional types by their root's id (tsc: the root's node position),
-  deferred references by their mapper only (tsc: the reference node first), unique symbols without a declaration
-  position, and every final tie (fresh vs regular literals, intrinsic variants, same-symbol anonymous types: tsc's
-  ids). Known misses: noImplicitAnyUnionNormalizedObjectLiteral1 (tsc's widening makes a new type per spread object
-  literal even when nothing widens, so creation order differs).
+- Stable type ordering (`ty/order.c`, tsc 6's compareTypes): conditional types compare by their root's node position
+  (`TyConditionalOuter.node`, the TernaryType span) and deferred references by their node's first token
+  (`type_node_start()`: identifier, tuple, type literal, through arrays and union/intersection members) before the
+  mapper, like tsc's compareNodes; fresh literals sort after their regular twin; unique symbols without a position go
+  after positioned ones, then by owner name. Still tsc-id ties that fall back to tttt's ids: roots not lowered from a
+  node (no `outer`), deferred references whose node has no cheap position (a parenthesized or keyword element type),
+  two nodes starting at the same token (`(A extends B ? 1 : 2) extends C ? ...` against its check type), unique
+  symbols of the same name without positions, bigint literals, intrinsic variants and every final tie
+  (same-symbol anonymous types with equal mappers). noImplicitAnyUnionNormalizedObjectLiteral1 is not a comparator
+  rule: tttt's nullable-widening pass keeps one member's id where tsc's widening recreates both (triage, agent D third
+  pass).
   `Ty.order_key` caches the comparison prefix (8 bytes per type).
 - Member order (`builder_sort_stable()`, members.c, tsc's getNamedMembers): applied to object literals, mapped types,
   namespaces and merged values only; class/interface members keep tttt's own-then-inherited order (matches the

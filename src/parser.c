@@ -2512,7 +2512,7 @@ fail:
     return parse_fail(&p);
 }
 
-static bool parse_ternary_type(Parser* parent, TypeNode* left_and_ret) {
+static bool parse_ternary_type(Parser* parent, char const* left_start, TypeNode* left_and_ret) {
     Parser p = parser(parent);
     TypeNode maybe_super = {0};
     TypeNode if_true = {0};
@@ -2546,6 +2546,7 @@ static bool parse_ternary_type(Parser* parent, TypeNode* left_and_ret) {
         .if_true = if_true,
         .if_false = if_false,
         .enclosing_block = p.shared->block_open,
+        .span = span_make(p.shared->source, left_start, p.pos),
     }));
     return parse_success(&p);
 }
@@ -2961,7 +2962,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
 
     // (tsc's parseType: not after a line break, where `extends` starts the next member: `a?: T\n extends?: U`)
     if (TYPE_PRECEDENCE_TERNARY >= min_precedence && p.whitespace != WHITESPACE_NEWLINE && !p.shared->disallow_conditional) {
-        if (parse_ternary_type(&p, left_and_ret)) {
+        if (parse_ternary_type(&p, left_start, left_and_ret)) {
             return parse_success(&p);
         }
     }

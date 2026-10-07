@@ -233,6 +233,7 @@ typedef struct TernaryType {
     // The `{` of the innermost Block it's written in, null if none: tsc's isTypeParameterPossiblyReferenced takes a
     // type parameter declared outside it to be possibly referenced (ty_conditional_distribution_dependent())
     const char* enclosing_block;
+    Span span; // From the check type to the end (tsc's ConditionalTypeNode, where compareTypes orders roots by)
 } TernaryType;
 
 void ternary_type_drop(TernaryType* me);
