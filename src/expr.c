@@ -833,9 +833,11 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
     IdentifierFlowIssue issue = ty_identifier_flow_issue(current_checker, me);
     switch (issue) {
         case IDENTIFIER_FLOW_OK: break;
-        case IDENTIFIER_FLOW_UNASSIGNED:
-            error_ctx_error_d(errs, identifier_expr_name(me), 2454, "Variable '", identifier_expr_name(me), "' is used before being assigned.");
-            break;
+        case IDENTIFIER_FLOW_UNASSIGNED: {
+            // (symbolToString: the name as its declaration writes it, `\u0078x`)
+            Span written = my target && span_valid(my target->name_span) && my target->name_span.sv.size ? my target->name_span : identifier_expr_name(me);
+            error_ctx_error_d(errs, identifier_expr_name(me), 2454, "Variable '", written, "' is used before being assigned.");
+        }   break;
         case IDENTIFIER_FLOW_IMPLICIT_ANY:
         case IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY: {
             if (!compiler_options()->no_implicit_any) break;

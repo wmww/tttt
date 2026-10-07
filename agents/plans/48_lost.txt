@@ -42,7 +42,6 @@ optionalChainWithInstantiationExpression1(target=es2020)	ET	src-same	bl-changed
 parenthesizedContexualTyping2	ET	src-changed	bl-changed
 parserComputedPropertyName18	T	src-same	bl-changed
 parserParameterList11	ET	src-changed	bl-changed
-parserUnicode1	E	src-changed	bl-changed
 partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
 plainJSGrammarErrors	ET	src-same	bl-changed
 reactImportDropped	T	src-changed	bl-changed

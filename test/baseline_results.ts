@@ -66166,7 +66166,7 @@ const baselines = {
         types: true,
     },
     'parserUnicode1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
