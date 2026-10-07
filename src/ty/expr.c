@@ -1918,9 +1918,19 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     if (identifier->assignment_target == FLOW_TARGET_DEFINITE) {
         return identifier->compound_like_target ? base_type_of_literal(me, type) : type;
     }
-    if (!identifier->flow) return type;
-    Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
     Ty const* auto_any = ty_intrinsic(me, TY_AUTO);
+    if (!identifier->flow) {
+        // `typeof x` in a signature without a body (an interface member, a function type): a flow container of its own
+        // with nothing in it, so the initial type (tsc's checkIdentifier at the container's start). An auto-typed
+        // outer variable that may be initialized stays auto: implicitly any
+        if ((type == auto_any || (type == my auto_array && type)) && identifier->outer_reference) {
+            if (ty_symbol_never_initialized(symbol)) return ty_intrinsic(me, TY_UNDEFINED);
+            *issue = type == auto_any ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
+            return type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_array(me, ty_intrinsic(me, TY_ANY), false);
+        }
+        return type;
+    }
+    Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
     if (type == auto_any || (type == my auto_array && type)) {
         // `let x;`, `let x = []` (tsc's checkIdentifier). Undefined until something is assigned. From a closure it is
         // assumed to be assigned, to something control flow may not know: any unless every path leads to an

@@ -693,8 +693,12 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         check_isolated_global_shadow(me, names, errs);
         // (First declared by another file: another flow container, whose walk may not have run yet, maybe on another
         // thread)
+        // (A signature without a body is a flow container of its own too, tsc's binder: its references have no flow
+        // node here, see identifier_flow_type())
         my outer_reference = names->flow && (symbol_first_declared_elsewhere(my target, names->file) ||
-            (my target->flow_start && names->flow->container_start != my target->flow_start));
+            (my target->flow_start && names->flow->container_start != my target->flow_start) ||
+            (names->flow->function && !names->flow->function->has_body && names->flow->container == names->flow->function &&
+                !my target->is_parameter));
     } else if (span_equals(identifier_expr_name(me), "arguments") && scope_has_arguments(names)) {
         if (in_initializer_or_static_block(names)) {
             // (tsc's checkIdentifier: the error type)
