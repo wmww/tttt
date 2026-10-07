@@ -158,6 +158,19 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
     // Ambient modules of every file are known by now. tsc doesn't mind unresolved side effect imports (`import "./a"`)
     // (In a namespace it is TS1147/TS1194 instead, and nothing is resolved: tsc's checkExternalImportOrExportDeclaration)
     bool unchecked = (my side_effect_only && !compiler_options()->no_unchecked_side_effect_imports) || my in_namespace;
+    // (An import clause with a grammar error resolves nothing either: tsc's checkImportDeclaration skips its bindings
+    // when checkGrammarImportClause reports, TS1363 or a deferred import's TS18058-TS18060)
+    if (!my jsdoc && my main.tag == PORT_IMPORT_DEFAULT && my main.type_only && vec_port_item_size(&my items)) unchecked = true;
+    if (span_valid(my defer_clause)) {
+        ModuleKind module = compiler_options()->module;
+        bool named = false;
+        for_each (i, vec_port_item, &my items) named |= i->tag != PORT_IMPORT_GATHER;
+        if (my main.tag == PORT_IMPORT_DEFAULT || named || (my main.tag == PORT_NOOP && !vec_port_item_size(&my items)) ||
+            (module != MODULE_KIND_ESNEXT && module != MODULE_KIND_PRESERVE)
+        ) {
+            unchecked = true;
+        }
+    }
     if (my module_ref && !unchecked && !my module_ref->file &&
         !binder_module_of_ref(scope->binder, my module_ref)
     ) {
