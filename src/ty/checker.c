@@ -1340,6 +1340,7 @@ static bool extract_redundant_templates(Checker* me, Ty const** types, u32* len,
 // tsc's isEmptyAnonymousObjectType: `{}` (a type literal or anonymous object without members)
 bool ty_is_empty_anonymous_object(Checker* me, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS) return false;
+    if (ty->anonymous.empty_symbol) return true;
     // A type literal goes by its syntax (tsc's isEmptyTypeLiteralSymbol): its members may not be resolvable yet, `type
     // Foo = { x: string } & { [x: number]: Foo }` (the same for its instantiations)
     Ty const* root = ty;

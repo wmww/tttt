@@ -139,6 +139,9 @@ typedef enum InferPosition {
     INFER_POSITION_REST, // `(...args: infer X)`, `[...infer X]`: unknown[]
     INFER_POSITION_TEMPLATE, // `${infer X}`: string
     INFER_POSITION_MAPPED_KEY, // `{ [K in infer X]: ... }`: keyof any
+    // `{ [K in C]: T } extends { [P in D]: infer X }`: T with C for K (InferredType.check_mapped is the check type's
+    // mapped member)
+    INFER_POSITION_MAPPED_TEMPLATE,
 } InferPosition;
 
 typedef struct InferredType {
@@ -150,6 +153,7 @@ typedef struct InferredType {
     InferPosition position;
     IdentifierType const* reference; // INFER_POSITION_TYPE_ARG: the reference it is type argument `arg_index` of
     u32 arg_index;
+    struct InterfaceMember const* check_mapped; // INFER_POSITION_MAPPED_TEMPLATE
 } InferredType;
 
 void inferred_type_drop(InferredType* me);

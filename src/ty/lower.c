@@ -700,6 +700,22 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
             case INFER_POSITION_REST: constraint = ty_array(me, ty_intrinsic(me, TY_UNKNOWN_), false); break;
             case INFER_POSITION_TEMPLATE: constraint = ty_intrinsic(me, TY_STRING); break;
             case INFER_POSITION_MAPPED_KEY: constraint = ty_keyof(me, ty_intrinsic(me, TY_ANY)); break;
+            case INFER_POSITION_MAPPED_TEMPLATE: {
+                // The check type's template with its key's constraint (string | number | symbol without one) for
+                // the key
+                InterfaceMember const* check = inferred->check_mapped;
+                if (!check->key.mapped->symbol_ref) break;
+                LowerCtx ctx = { .generic = true };
+                Ty const* key = ty_type_param(me, check->key.mapped->symbol_ref);
+                Ty const* key_constraint = check->key.mapped->in_type.parsed ? ty_from_node(me, &check->key.mapped->in_type, ctx) : nullptr;
+                if (!key_constraint) {
+                    Ty const* parts[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
+                    key_constraint = ty_union(me, parts, 3, nullptr, (TyList){0});
+                }
+                Ty const* template_ = ty_from_node(me, &check->type, ctx);
+                constraint = ty_instantiate(me, template_, ty_mapper_new(me, (TyList){ .data = &key, .len = 1 },
+                    (TyList){ .data = &key_constraint, .len = 1 }));
+            }   break;
             case INFER_POSITION_TYPE_ARG: {
                 IdentifierType const* reference = inferred->reference;
                 Symbol const* decl = canonical(me, reference->target);
@@ -1881,11 +1897,18 @@ Ty const* ty_dynamic_import_module_type(Checker* me, Symbol* module, SourceFile 
     CompilerOptions const* options = compiler_options();
     SourceFile const* target = module->module ? module->module->file : nullptr;
     bool node = options->module >= MODULE_KIND_NODE16 && options->module <= MODULE_KIND_NODENEXT;
-    if (node && target && target->is_json) return with_synthetic_default(me, type, false);
+    if (node && target && target->is_json) {
+        Ty const* ret = with_synthetic_default(me, type, false);
+        if (ret->kind == TY_ANONYMOUS) ((Ty*)ret)->anonymous.empty_symbol = true;
+        return ret;
+    }
     if (!dynamic_import_has_synthetic_default(module, importer)) return type;
-    // (tsc's isValidSpreadType: an object spreads, anything else is only the default)
+    // (tsc's isValidSpreadType: an object spreads, anything else is only the default; any spread is any)
+    if (type->flags & TYF_ANY) return type;
     bool structured = type->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED);
-    return with_synthetic_default(me, type, structured);
+    Ty const* ret = with_synthetic_default(me, type, structured);
+    if (ret->kind == TY_ANONYMOUS) ((Ty*)ret)->anonymous.empty_symbol = true;
+    return ret;
 }
 
 

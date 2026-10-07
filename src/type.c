@@ -143,6 +143,13 @@ void type_drop(TypeNode* me) {
     my tag = TYPE_ANY; // Makes repeated calls to drop safe
 }
 
+// The member of a mapped type node as written (not parenthesized), null for anything else
+static InterfaceMember const* mapped_member_of(TypeNode const* node) {
+    if (node->tag != TYPE_INTERFACE || node->parenthesized || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
+    InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
+    return member->key.tag == INTERFACE_KEY_MAPPED ? member : nullptr;
+}
+
 // Declares the `infer` type parameters of an extends type. `position` is where `me` is written (its immediate parent)
 static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPosition position, IdentifierType const* reference, u32 arg_index) {
     switch (my tag) {
@@ -365,6 +372,14 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             // (Declared before the extends type is looked up, which tells an `infer` without a conditional of its own)
             Scope* inferred_types_scope = scope_new(names, SCOPE_BLOCK);
             type_add_inferred_names_at(&my ternary->maybe_super, inferred_types_scope, INFER_POSITION_OTHER, nullptr, 0);
+            // An `infer X` that is the template of a mapped extends type, the check type being a mapped type too (tsc's
+            // getInferredTypeParameterConstraint)
+            InterfaceMember const* super_mapped = mapped_member_of(&my ternary->maybe_super);
+            InterfaceMember const* sub_mapped = mapped_member_of(&my ternary->maybe_sub);
+            if (super_mapped && sub_mapped && super_mapped->type.tag == TYPE_INFERRED && sub_mapped->type.parsed) {
+                super_mapped->type.inferred->position = INFER_POSITION_MAPPED_TEMPLATE;
+                super_mapped->type.inferred->check_mapped = sub_mapped;
+            }
             type_lookup_names(&my ternary->maybe_super, names, errs);
 
             TypeFlow const* saved_flow = current_flow;

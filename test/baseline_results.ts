@@ -12428,7 +12428,7 @@ const baselines = {
     'errorForConflictingExportEqualsValue': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'errorForUsingPropertyOfTypeAsType01': {
         errors: true,
@@ -18998,7 +18998,7 @@ const baselines = {
     'inferConditionalConstraintMappedMember': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferFromAnnotatedReturn1': {
         errors: true,
@@ -19088,7 +19088,7 @@ const baselines = {
     'inferTypePredicates': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferTypesWithFixedTupleExtendsAtVariadicPosition': {
         errors: true,
@@ -70913,7 +70913,7 @@ const baselines = {
     'intersectionsAndEmptyObjects': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'operatorsAndIntersectionTypes': {
         errors: true,

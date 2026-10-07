@@ -368,6 +368,9 @@ struct Ty {
             // The type of a namespace import of an `export =` module, made anew (tsc's cloneTypeAsModuleType: an anonymous
             // type whose symbol is a clone of the assigned one, `typeof x`): KEY_MODULE_CLONE says for which alias
             bool module_clone : 1;
+            // `import("m")`'s synthetic default object: tsc's anonymousSymbol (a TypeLiteral symbol without members, see
+            // getTypeWithSyntheticDefaultImportType), which makes isEmptyAnonymousObjectType say it's empty
+            bool empty_symbol : 1;
             bool mapped : 1; // A mapped type node (`{ [K in C]: X }`) or an instantiation of one (tsc's ObjectFlags.Mapped)
         } anonymous;
         struct {
