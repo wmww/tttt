@@ -2760,7 +2760,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
         out_lit(d, "{}");
         return;
     }
-    if (d.depth > MAX_DISPLAY_DEPTH) {
+    if (d.depth > MAX_DISPLAY_DEPTH && !d.enclosing) {
         out_lit(d, "...");
         return;
     }
@@ -3098,6 +3098,20 @@ static void display_distributive_conditional(Checker* me, TyDisplay d, Ty const*
     out(fresh, c_sv(" : "));
     ty_display(me, d, when_false);
     out(fresh, c_sv(" : never : never"));
+}
+
+static Ty const* anonymous_root(Ty const* ty) {
+    while (ty->kind == TY_ANONYMOUS && ty->anonymous.target && !ty->anonymous.applies_type_args) ty = ty->anonymous.target;
+    return ty;
+}
+
+static bool anonymous_elided(TyDisplay d, Ty const* ty) {
+    Ty const* root = anonymous_root(ty);
+    u32 depth = 0;
+    for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
+        depth += i->ty->kind == TY_ANONYMOUS && anonymous_root(i->ty) == root;
+    }
+    return depth > 10;
 }
 
 static bool conditional_elided(TyDisplay d, Ty const* ty) {
@@ -3564,6 +3578,13 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     display_node(me, node_d, query);
                     break;
                 }
+            }
+            // Eleven instantiations of one anonymous type deep (their symbol: the root they were instantiated from),
+            // the next is the elided information placeholder (tsc's visitAndTransformType's symbolDepth); `any`
+            // without truncation (the types baseline, declaration emit), `...` in messages
+            if (anonymous_elided(d, ty)) {
+                out(d, d.enclosing ? c_sv("any") : c_sv("..."));
+                break;
             }
             TyDisplayVisit visit = { .ty = ty, .outer = d.visiting };
             d.visiting = &visit;

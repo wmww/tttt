@@ -7808,12 +7808,12 @@ const baselines = {
     'cyclicGenericTypeInstantiation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cyclicGenericTypeInstantiationInference': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'cyclicModuleImport': {
         errors: true,
@@ -9411,7 +9411,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitPrivatePromiseLikeInterface': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10228,7 +10228,7 @@ const baselines = {
     'deeplyNestedCheck': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'deeplyNestedConditionalTypes': {
         errors: true,
@@ -14028,7 +14028,7 @@ const baselines = {
     'excessPropertyCheckIntersectionWithRecursiveType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'excessPropertyCheckWithEmptyObject': {
         errors: true,
