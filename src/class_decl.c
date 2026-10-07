@@ -216,7 +216,8 @@ static void lookup_names_without_super(Expr* expr, Scope* names, NoSuper why, bo
     }
     uint8_t initializer_context = names->flow->initializer_context;
     bool member_name = names->flow->member_name;
-    names->flow->initializer_context = INITIALIZER_NONE;
+    bool field_decorator = why == NO_SUPER_DECORATOR && names->parent && names->parent->in_field;
+    names->flow->initializer_context = field_decorator ? INITIALIZER_FIELD_DECORATOR : INITIALIZER_NONE;
     if (why == NO_SUPER_COMPUTED_NAME) names->flow->member_name = true;
     FlowNode* flow_before = names->flow->current;
     expr_lookup_names(expr, scope, errs);
@@ -246,11 +247,15 @@ static void class_item_lookup_names(ClassDecl const* class_decl, ClassItem* me, 
         names = scope_new(names, SCOPE_BLOCK);
         names->in_field = true;
     }
+    // (Its decorators' flow container is the member, tsc's getControlFlowContainer: what they read is an outer variable)
+    bool member_name = names->flow->member_name;
+    names->flow->member_name = true;
     for_each (i, vec_expr, &my decorators) {
         Scope* scope = scope_new(names, SCOPE_BLOCK);
         scope->member_decorator = true;
         lookup_names_without_super(i, scope, NO_SUPER_DECORATOR, false, decorator_errs);
     }
+    names->flow->member_name = member_name;
     switch (my tag) {
         case CLASS_ITEM_CONSTRUCTOR:
             function_impl_lookup_names(&my constructor.func, false, names, errs);

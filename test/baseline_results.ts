@@ -2831,12 +2831,12 @@ const baselines = {
         types: true,
     },
     'blockScopedVariablesUseBeforeDef(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'blockScopedVariablesUseBeforeDef(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10151,7 +10151,7 @@ const baselines = {
         types: true,
     },
     'decoratorUsedBeforeDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

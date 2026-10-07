@@ -233,6 +233,9 @@ typedef enum InitializerContext : uint8_t {
     // The computed name of an object literal's method or accessor in a field's initializer: only reading that field
     // is too early there
     INITIALIZER_MEMBER_NAME,
+    // A decorator of a field: inside the property declaration as far as tsc's isInPropertyInitializerOrClassStaticBlock
+    // goes, but nothing there is deferred (isUsedInFunctionOrInstanceProperty doesn't stop at a decorator)
+    INITIALIZER_FIELD_DECORATOR,
 } InitializerContext;
 
 typedef enum FlowAssignmentKind {

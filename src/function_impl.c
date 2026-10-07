@@ -237,7 +237,11 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
                 decorator_names->member_decorator = true;
                 scope_rare_mut(decorator_names)->decorated_function = me;
             }
+            // (The function is the flow container of its parameters' decorators: what they read is an outer variable)
+            bool member_name = names->flow && names->flow->member_name;
+            if (names->flow) names->flow->member_name = true;
             expr_lookup_names(decorator, decorator_names, decorator_errs);
+            if (names->flow) names->flow->member_name = member_name;
         }
     }
 

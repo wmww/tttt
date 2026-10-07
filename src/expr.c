@@ -283,9 +283,11 @@ __attribute__((always_inline)) static inline void check_declared_before_use(Iden
         // Used first: fine if the use is deferred until after the declaration ran
         bool through_computed_name = false;
         for (Scope const* i = names; i && !scope_declares_symbol(i, symbol); i = i->parent) {
-            if (i->kind == SCOPE_FUNCTION) return;
-            // A computed member name runs with the class, the members don't
-            if (i->no_super == NO_SUPER_COMPUTED_NAME) through_computed_name = true;
+            // (Not an immediately invoked one, async or not, which runs right there: tsc 6.0)
+            if (i->kind == SCOPE_FUNCTION && !(i->function && i->function->is_iife)) return;
+            // A computed member name runs with the class, the members don't. Neither do their decorators (and their
+            // parameters'): tsc 6.0's isUsedInFunctionOrInstancePropertyWorker asks about the class instead
+            if (i->no_super == NO_SUPER_COMPUTED_NAME || i->member_decorator) through_computed_name = true;
             if (scope_rare(i)->this_ref.kind == THIS_CLASS_INSTANCE && !through_computed_name) return;
             if (scope_rare(i)->this_ref.class_decl) through_computed_name = false;
         }
