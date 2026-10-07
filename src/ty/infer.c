@@ -1384,6 +1384,12 @@ static bool reduce_intersection_target(Checker* me, Inference* inf, Ty const** s
     if (left && kept_targets.len < targets.len) {
         *source = ty_intersection(me, kept_sources.data, kept_sources.len, nullptr, (TyList){0});
         *target = ty_intersection(me, kept_targets.data, kept_targets.len, nullptr, (TyList){0});
+    } else if (left && !compiler_options()->strict_null_checks && ((*source)->flags & TYF_NULLABLE) &&
+        ((*source)->xflags & TYX_CONTAINS_WIDENING)
+    ) {
+        // tsc remakes the source as an intersection, which without strictNullChecks makes a widening null or undefined
+        // the plain one (getIntersectionType): `f(null)` to `T & Bear` infers null, not the any a widening null becomes
+        *source = ty_intrinsic(me, ((*source)->flags & TYF_UNDEFINED) ? TY_UNDEFINED : TY_NULL);
     }
     ty_buf_drop(&kept_sources);
     ty_buf_drop(&kept_targets);
