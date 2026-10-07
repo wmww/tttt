@@ -1178,8 +1178,8 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_arguments_collision(me, errs);
     for (u32 i = 0; i < function_impl_rare(me)->jsdoc_unmatched_count; i++) type_typecheck(&function_impl_rare(me)->jsdoc_unmatched[i].type, errs);
     // A declaration's `@type` needs a call signature that takes its parameters (not a function expression's, which is
-    // checked as a value against it)
-    if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && !my is_expression && my has_body) {
+    // checked as a value against it, nor an accessor's: tsc's checkFunctionOrMethodDeclaration, not checkAccessorDeclaration)
+    if (span_valid(function_impl_rare(me)->jsdoc_signature_span) && !my is_expression && my has_body && !my accessor) {
         bool mismatch = my jsdoc_signature_mismatch;
         if (!mismatch && function_impl_rare(me)->jsdoc_signature_type) {
             mismatch = !ty_has_call_signature_for_arity(current_checker, ty_of_node(function_impl_rare(me)->jsdoc_signature_type), jsdoc_required_params(me));
