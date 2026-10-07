@@ -2563,14 +2563,17 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         // (A generic mapped type with an `as` clause stays `keyof` it: tsc 6.0's shouldDeferIndexType, see ty_simplified())
         if (!members->mapped) {
             TyBuf parts = {0};
+            u32 entries = 0; // (tsc's list of one type per property and per index info: getUnionType returns one alone as it is)
             for (u32 i = 0; i < members->prop_count; i++) {
                 if (!ty_prop_is_key(me, members->props[i])) continue;
                 ty_buf_push(&parts, ty_prop_key_literal(me, members->props[i]));
+                entries++;
             }
             // (An enum object's reverse mapping `[x: number]: string` is not a key: tsc's getLiteralTypeFromProperties
             // skips enumNumberIndexInfo)
             bool enum_object = operand->kind == TY_DECLARED && operand->declared.kind == TY_DECLARED_ENUM_OBJECT;
             for (u32 i = 0; i < members->index_count && !enum_object; i++) {
+                entries++;
                 ty_buf_push(&parts, members->index[i].key);
                 if (members->index[i].key->flags & TYF_STRING) {
                     // Anything indexable by string is indexable by number
@@ -2582,7 +2585,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
             // Of a mapped type with an `as` clause, the union of the names (tsc's getIndexTypeForMappedType), or its
             // constraint if that has the same members
             MappedInfo const* renamed = members->expanded_from && members->expanded_from->name_type ? members->expanded_from : nullptr;
-            bool named = !renamed && (operand->alias || operand->kind == TY_REFERENCE || (operand->kind == TY_DECLARED &&
+            bool named = !renamed && entries != 1 && (operand->alias || operand->kind == TY_REFERENCE || (operand->kind == TY_DECLARED &&
                 (operand->declared.kind == TY_DECLARED_INTERFACE || operand->declared.kind == TY_DECLARED_CLASS_INSTANCE)));
             OriginSpec spec = { TY_KEYOF, &operand, 1 };
             Ty const* ret = union_with_origin(me, parts.data, parts.len, nullptr, (TyList){0}, named ? &spec : nullptr);
