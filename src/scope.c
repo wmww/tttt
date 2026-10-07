@@ -3129,7 +3129,10 @@ static Symbol* resolve_alias_target(Symbol* me) {
             ) {
                 check_es_module_symbol(item, module, assigned, errs);
             }
-            Symbol* found = symbol_get_export(module, port_item_name(item->source_name));
+            // (An `export =` of nothing is tsc's unknownSymbol, whose exports are all there is: not the module's
+            // other exports, which only getCommonJsExportEquals' clone of a real target gets)
+            Symbol* found = assigned && assigned->is_placeholder && assigned->is_unresolved ? nullptr :
+                symbol_get_export(module, port_item_name(item->source_name));
             if (!found && assigned) {
                 if (assigned->is_placeholder) {
                     // (tsc's unknownSymbol has no members)
