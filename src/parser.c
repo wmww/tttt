@@ -5001,17 +5001,13 @@ static Generic jsdoc_comment_template_generic(VecJsDocTag* tags, const char* com
     for_each (i, vec_jsdoc_tag, tags) {
         if (i->kind != JSDOC_TAG_TEMPLATE || !span_valid(i->name)) continue;
         if (comment ? i->comment != comment : i->earlier) continue;
-        // The tag: from its `@` to the next tag of the comment or the comment's end
+        // The tag: from its `@` to the next tag's `@` (the line breaks and `*`s before it included) or the comment's end
         const char* at = i->tag_name.sv.buf - 1;
         const char* tag_end = nullptr;
         for (JsDocTag const* j = i + 1; j < tags->data + tags->size && !tag_end; j++) {
             if (j->comment == i->comment && j->tag_name.sv.buf != i->tag_name.sv.buf) tag_end = j->tag_name.sv.buf - 1;
         }
-        if (tag_end) {
-            while (tag_end > at && (is_jsdoc_space(tag_end[-1]) || tag_end[-1] == '*')) tag_end--;
-        } else {
-            tag_end = strstr(at, "*/");
-        }
+        if (!tag_end) tag_end = strstr(at, "*/");
         GenericItem item = {
             .name = i->name, .full_span = i->name, .jsdoc = true, .is_const = i->is_const, .is_in = i->is_in,
             .is_out = i->is_out, .jsdoc_tag = tag_end ? span_make(i->name.source, at, tag_end) : span_null,
