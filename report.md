@@ -166,3 +166,19 @@ test files changed, mostly mechanically). It will also decide whether to match 6
 ordering the types it prints, which could remove a source of fragility. Then come the switch itself, re-pinning the
 real projects at current versions, and a fair speed comparison against TypeScript 7. Expect the pass count to dip
 before it recovers.
+
+## 2026-10-07 — insights (after the eleventh window)
+The switch to the current TypeScript went better than expected: it took one window, not the dip-and-recover I
+predicted. tttt now targets the TypeScript 6 commit that TypeScript 7 (the Go rewrite) implements, including its new
+rule for ordering types, which let us delete some fragile code. 14829 of the 14969 tests in the new suite pass
+(99.1%), every real project was moved to its current version and is back to zero false errors (except Effect at 3),
+and tttt is 3x (VS Code) to 14x faster than TypeScript 7 with less memory on every project.
+
+The concern is diminishing returns. The last 140 failing tests each cost a special case, and the list of workarounds
+in the code keeps growing while the pass count barely moves. Many of those workarounds come from one place where tttt
+approximates how TypeScript handles function arguments inside generic calls, and it gets patched again almost every
+session. So this window stops chasing individual tests. It plans and lands a proper port of that mechanism, audits
+the workarounds list to delete the ones that are no longer needed, and lands one planned binder fix (plan 50). It also
+builds a new check that runs tttt on a hundred or more real TypeScript repositories at once, since every new real
+project has turned up bugs the tests never showed. One perf session targets VS Code, where our lead over TypeScript 7
+is smallest.

@@ -5,59 +5,52 @@ A complete TypeScript typechecker in C that is faster than typescript-go (tsgo).
 by building on a foundation that can't be fast or can't be complete. The tsc baseline tests (errors / symbols /
 types components) are the oracle, not the goal; real projects that are clean under tsc are the second oracle.
 
-## State (2026-10-07, insights after the tenth window)
-- **Switched (plan 48 stage 1, todo entry 2 of the eleventh window): suite 13683 / 14969** against TypeScript commit
-  4d4f005c (errors 14588, symbols 14858, types 13883); the remaining gap is mostly member order (stage 2) and
-  strict-by-default exposure (stage 3). The sweep / `$ExpectType` / flagflip caches are still tsc 5.8's until stage 4.
-  The 5.8 numbers below are history.
-- **Suite 13303 / 13540** fully pass (errors 13455, symbols 13490, types 13355) against **TypeScript 5.8.2**. +204 in
-  the window, 0 lost. 237 tests fail somewhere. Checker log_error output: none.
-- **Corpora** (all clean under tsc 5.8, pinned at their last commits before TypeScript 6): tsc `src/compiler`,
-  type-fest, valibot, react, nest, webpack, zod, xstate, drizzle, vue, tsc-src and typescript-eslint (`-b`), vscode
-  (1.39M lines), and this window's **excalidraw** (JSX app) and **tanstack-router** at 0; **effect** 7 -> 3 (a
-  TaggedClass cycle, plan 19); zod-root at tsc's level. **Sweep** 8589 / 8595 DefinitelyTyped packages exact, also under
-  nuia and eopt. **`$ExpectType`** (built this window) 68619 / 68640. **Flag flips** (built this window, 182 cells, 53k
-  tsc diagnostics): missing / spurious / other code 603 / 1460 / 1029 -> 51 / 45 / 10. **Mutation testing** (built this
-  window): fresh seeds now ~1% (single-file) and ~2% (multi-file/JS) productive.
-- **Perf**: callgrind flat over the window except tsc shortcuts added in the perf session and triage (drizzle -37%,
-  vue -13%). On the re-pinned corpora (2026-10-07, same configs for both): vscode (3.41M lines) 6.2 s / 5.8 GB vs tsgo
-  18.3 s / 8.7 GB; 3-14x faster than multi-threaded tsgo everywhere, memory below tsgo's everywhere, work volume
-  (types, relation cache sizes) within ~15% of tsc's on vscode and type-fest. Caveat: tsgo is 7.0, a newer language.
+## State (2026-10-07, insights after the eleventh window)
+- **Target: TypeScript commit 4d4f005c** (6.0.3 + stable type ordering, what tsgo 7.0.2 implements; plan 48, done in
+  one window). **Suite 14829 / 14969** (99.07%; errors 14903, symbols 14920, types 14872), 0 lost. The 140 failing
+  tests are a thin tail: no code is missing in more than 7 tests, 27 tests fail errors on a single code.
+- **Corpora**, re-pinned at current upstreams and clean under the commit's tsc: tsc `src/compiler`, type-fest,
+  valibot, react, nest, webpack (checkJs), zod, xstate, drizzle, vue, tsc-src and typescript-eslint (`-b`), vscode,
+  excalidraw, tanstack-router all **0**; effect 3 (dtslint TS2578s, plan 19); zod-root = tsc's 53. **Sweep** 8594 /
+  8595, **`$ExpectType`** 68628 / 68640, **flagflip** missing / spurious / other 18 / 10 / 4 (of 117k tsc
+  diagnostics), scenarios 240 / 0, fresh mutation seeds ~1% productive.
+- **Perf** (2026-10-07, same configs): 3.0x (vscode, 6.2 s / 5.8 GB vs 18.3 s / 8.7 GB) to 13.9x (type-fest) faster
+  than multi-threaded tsgo 7.0.2, less memory everywhere; work volume within ~15% of tsc's. Weakest: vscode, where the
+  four checkers redo ~24% of the type work and the AST is ~600 bytes a line.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
-  relation, mapper instantiation, tsc's inference flow (lazy fixing, contextual instantiation, intra-expression sites,
-  calls resolved once, skip-round rules), one circularity stack (plan 39), contextual typing, conditional/mapped/
-  indexed/template/substitution types, deferred references, flow graph + narrowing, module resolution + tsconfig,
-  iteration protocol, generators, `this` types, mixins, decorators, the missing type, union origins, elaboration, JSX,
-  tsc's type printer and symbol chains, JSDoc + CommonJS + expandos, parallel checking, loading and resolving,
-  declaration diagnostics (plan 40), project references / `-b` (plan 41), tsc's laziness and resolution barriers (plan
-  42), tsc's deferred checks. ~120k lines of C.
-- **Absent or approximated tsc mechanisms**: contextual instantiation (push-down, not tsc's leaf-wise pull;
-  type_core.md); permissive instantiation; TS7056 and TS5088; member identity (members aren't Symbols; the symbols
-  *harness* rebuilds tsc's merges for display, decided acceptable). **Everything since TypeScript 5.8** (5.9, 6.0's
-  new defaults and deprecations, 7.0). Out of scope: emit (JS and `.d.ts` text), watch mode, the language service.
+  relation, tsc 6's stable type ordering, mapper instantiation, tsc's inference flow, one circularity stack, contextual
+  typing, conditional/mapped/indexed/template/substitution types, deferred references, flow graph + narrowing, module
+  resolution + tsconfig, iteration protocol, generators, `this` types, mixins, decorators, union origins, elaboration,
+  JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos, parallel loading / resolving / checking,
+  declaration diagnostics, project references / `-b`, tsc's laziness and deferred checks. ~124k lines of C.
+- **Absent or approximated tsc mechanisms**: contextual instantiation (push-down, not tsc's leaf-wise pull) and
+  "the contextual type a function was checked with" (side channels standing in for tsc's ContextChecked state and
+  resolved-signature lookups: plan 51); tsc's symbol clones for `export =` / CommonJS (plan 50); permissive
+  instantiation; TS7056 and TS5088; member identity (members aren't Symbols; the symbols *harness* rebuilds tsc's
+  merges for display, decided acceptable). Out of scope: emit (JS and `.d.ts` text), watch mode, the language
+  service, 7.0's removal of deprecated options (until 7.x has a JS-free test oracle).
 
-## Course correction (insights of 2026-10-07, end of the tenth window)
-- **Health is good; no redesign.** Tenth clean window: all ten entries landed, 0 lost, two oracle tools built and
-  drained (flag flips, mutations) plus `$ExpectType`, two corpora pinned and drained. hacks.md 770 -> 826 lines (the
-  triage wrote leftovers up rather than leaving them in triage.md, fine).
-- **The target is stale: retarget to TypeScript 6.0/7.0 (plan 48), this window.** Every oracle is tsc 5.8.2
-  (2025-02). 5.9, 6.0 (2026-03: new defaults, deprecations, the last JavaScript tsc) and 7.0 (2026-07: tsgo, now
-  `typescript@latest`) have shipped; our corpora are pinned at "the last commit before TypeScript 6" because their
-  upstreams moved on; tsgo, the competitor, checks a newer language and rejects two of our corpus configs. The suite at
-  v6.0.3: 11.7k test case files changed (mostly options made explicit and code fixed for strict-by-default), 3080
-  `.types` / 2436 `.symbols` / 2113 `.errors.txt` baselines changed, 245 new tests. At 98.2% on 5.8, each further
-  5.8-parity session buys less than moving to the language users write today. Expect a dip in the pass count and a
-  window spent on the switch, the oracles' caches and re-pinned corpora.
-- **Decided (plan 48 planning, 2026-10-07): the oracle is TypeScript commit 4d4f005c**, the `tsgo-port` commit tsgo
-  7.0.2 pins: 6.0.3 plus `stableTypeOrdering` on by default (tests/cases identical to 6.0.3's; 650 `.types` differ by
-  member order only). tsc 6's `compareTypes` and tsgo's `CompareTypes` are the same rule, so tttt **adopts the stable
-  ordering** and deletes its creation-order mimicry. Prototypes: the switch reaches 92.3% of the new 14969-test suite
-  with defaults, libs and deprecations alone. Stable ordering landed 2026-10-07 (suite 14269 / 14969, a cached
-  per-type sort key, +0.9-2.1% instructions); session B deletes the creation-order machinery. tsgo's own baselines are not an oracle (they skip 1861 configs,
-  rework JS, keep source quotes). Deprecated options (es5, amd, outFile...) stay supported: 6.0 still tests them.
-- **The missing-diagnostic oracles are drained to their noise floor**; rerun them after the switch rather than
-  mining them further on 5.8.
+## Course correction (insights of 2026-10-07, end of the eleventh window)
+- **The retarget landed in one window, cleanly**: suite 13303/13540 (5.8) -> 14829/14969 (6.0+ordering), every
+  oracle regenerated, every corpus re-pinned and back to 0, creation-order mimicry deleted. No redesign needed.
+- **The suite has stopped being the lever.** At 99.07% the remaining 140 tests cost a hack each, and hacks.md keeps
+  growing (770 -> 826 -> 870 lines over three windows) while the pass count barely moves. **Decision: no more
+  per-test suite drains for their own sake.** Failing tests are fixed by mechanism ports, or picked up by triage when
+  cheap; a fix that needs a new special case goes to bugs/ instead.
+- **Pay down the debt where it concentrates**: hacks.md's "Calls and inference" and "Expressions and contextual
+  typing" (~140 lines) are mostly side channels for one approximation, tttt's push-down contextual instantiation and
+  its "contextual type of the last check" (KEY_CONTEXT_*). Two triage agents in a row patched it again. Plan 51
+  prototypes tsc's model (ContextChecked, instantiateContextualType, the resolved-signature lookup) and deletes the
+  side channels, plan-47 style: prototype the deletion first, measure what breaks. A second session audits every
+  hacks.md entry for hacks whose reason is gone (many predate plans 38, 39, 42, 48).
+- **The next oracle is real source code at breadth** (plan 52). The pinned corpora go quiet once drained, and every
+  new project found tens to hundreds of bugs; the DefinitelyTyped sweep is declarations plus small tests. A sweep of
+  ~100+ real TypeScript repositories (their own tsconfigs, installed dependencies, tsc 4d4f005c's diagnostics cached,
+  strict flag flips for the missing direction) is the source-code analogue of plan 44. It also exercises tsconfig/CLI
+  shapes the corpora don't.
+- **Perf stays a session per window**: vscode's 3.0x is the margin to defend (checkers redoing type work, AST bytes
+  per line).
 
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
@@ -137,7 +130,9 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    name resolution (45 stage 1)~~ done.
 10. ~~Oracles for missing diagnostics (46: flag flips, mutations), `$ExpectType` at breadth (44 stage 3), speculative
    checks (47: not needed), two new corpora (excalidraw, tanstack-router), a perf session~~ done.
-11. **Now**: retarget to TypeScript 6.0/7.0 (plan 48): the suite, the oracles' caches, re-pinned corpora, perf
-   against tsgo 7 like for like.
-12. Then: plan 45 stages 2-3 (JS resolve, declare/link), the check phase's load balance and file-to-checker affinity,
-   a token cache / node arenas in the parser, compact instantiated Props / the `Signature` split.
+11. ~~Retarget to TypeScript 6.0 + stable ordering (plan 48): suite, oracle caches, re-pinned corpora, perf against
+   tsgo 7~~ done.
+12. **Now**: contextual-check state (plan 51), export= clones (plan 50), a source-code breadth sweep (plan 52), a
+   hacks audit, a perf session (check-phase sharing / load balance on vscode, AST bytes per line).
+13. Then: plan 45 stage 3 (declare/link), a token cache / node arenas in the parser, compact instantiated Props / the
+   `Signature` split, whatever plan 52's sweep ranks first.
