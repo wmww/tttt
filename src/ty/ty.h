@@ -1763,6 +1763,10 @@ typedef struct ObjectLiteralProp {
     Ty const* type; // Null for an accessor (PROP_GETTER/PROP_SETTER): `accessor` has it
     FunctionImpl const* accessor;
     FunctionImpl const* setter; // See PropDecl.setter
+    // The methods of the name in an object literal, in order, while every declaration of it is a method (one binder
+    // symbol to tsc, whose type has the signatures of them all)
+    FunctionImpl const* const* methods;
+    u32 method_count;
     Span name_span;
     Span const* decl_spans;
     u32 decl_span_count;

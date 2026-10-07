@@ -3700,6 +3700,27 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         if (i->tag == OBJECT_ITEM_GETTER) flags |= PROP_GETTER | PROP_READONLY; // Until a setter shows up
         if (i->tag == OBJECT_ITEM_SETTER) flags |= PROP_SETTER;
         if (ctx.is_const) flags |= PROP_READONLY;
+        // `{ m(x: 'a') {}, m(x: 'b') {} }`: one method symbol to tsc's binder (MethodExcludes doesn't exclude a method),
+        // whose type (getTypeOfFuncClassEnumModule) has the signatures of every declaration
+        FunctionImpl const* const* methods = nullptr;
+        u32 method_count = 0;
+        if (i->tag == OBJECT_ITEM_METHOD && i->value.tag == EXPR_FUNCTION && !i->jsdoc_type) {
+            u32 before = redeclares && existing->method_count ? existing->method_count : 0;
+            FunctionImpl const** list = arena_new_n(&my arena, FunctionImpl const*, before + 1);
+            if (before) memcpy(list, existing->methods, sizeof(FunctionImpl const*) * before);
+            list[before] = i->value.function;
+            methods = list;
+            method_count = before + 1;
+            if (method_count > 1) {
+                u64 key[2] = { KEY_LITERAL_METHOD_OVERLOADS, (u64)(uintptr_t)i->value.function };
+                Ty const* overloaded = intern_get(&my links, key, 2);
+                if (!overloaded) {
+                    overloaded = ty_anonymous_from_overloads(me, methods, method_count, (LowerCtx){ .generic = true });
+                    *intern_slot(me, &my links, key, 2) = overloaded;
+                }
+                type = overloaded;
+            }
+        }
         if (pattern_context) {
             Prop const* implied = ty_get_prop(me, pattern_context, name);
             if (implied && (implied->flags & PROP_OPTIONAL)) flags |= PROP_OPTIONAL | PROP_PATTERN_OPTIONAL;
@@ -3715,6 +3736,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
             .flags = flags,
             .type = type,
             .accessor = is_accessor ? i->value.function : nullptr,
+            .methods = methods,
+            .method_count = method_count,
             .name_span = i->name_span,
             .decl_spans = decl_span,
             .decl_span_count = decl_span_count,
@@ -3806,6 +3829,10 @@ Ty const* ty_object_literal_member_type(Checker* me, Expr const* object, ObjectE
     bool accessor_pair = prop && (prop->flags & (PROP_GETTER | PROP_SETTER)) && spans == 2;
     bool own = prop && prop->decl->literal_own && (!spans || span_eq(prop->decl->decl_spans[spans - 1], item->span) ||
         (accessor_pair && span_eq(prop->decl->decl_spans[0], item->span)));
+    // (Methods of one name are one symbol typed by all of them)
+    for (u32 i = 0; prop && !own && item->tag == OBJECT_ITEM_METHOD && (prop->flags & PROP_METHOD) && prop->decl->literal_own && i < spans; i++) {
+        own = span_eq(prop->decl->decl_spans[i], item->span);
+    }
     if (prop && own) {
         // (An optional method's symbol has undefined in its type, tsc's getTypeOfFuncClassEnumModule)
         if ((prop->flags & PROP_OPTIONAL) && (prop->flags & PROP_METHOD)) return ty_optional_prop_type(me, prop_type(me, prop));
