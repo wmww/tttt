@@ -1932,7 +1932,15 @@ void statement_collect_return_types(Statement const* me, TyBuf* out) {
 
         case STATEMENT_RETURN_EXPR:
             if (statement_is_bare_return(me) || ty_is_recursive_return(current_checker, &my expr)) break;
-            ty_buf_push(out, ty_check_expr(current_checker, &my expr, current_checker->return_context));
+            Ty const* type = ty_check_expr(current_checker, &my expr, current_checker->return_context);
+            // In a const context (the contextual return type is a `const` type parameter) it keeps its literals (tsc 6.0's
+            // checkAndAggregateReturnExpressionTypes, getReturnTypeFromBody)
+            if (current_checker->return_context && ty_is_const_context_kind(&my expr) &&
+                ty_is_const_type_variable(current_checker, current_checker->return_context, 0)
+            ) {
+                type = ty_regular(current_checker, type);
+            }
+            ty_buf_push(out, type);
             break;
 
         case STATEMENT_LABELED: statement_collect_return_types(my labeled.body, out); break;

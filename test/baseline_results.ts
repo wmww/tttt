@@ -73251,9 +73251,9 @@ const baselines = {
         types: true,
     },
     'typeParameterConstModifiersReturnsAndYields': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeParameterConstModifiersReverseMappedTypes': {
         errors: true,

@@ -149,7 +149,7 @@ static bool identifier_uses_context(Checker* me, Expr const* expr) {
 }
 
 // tsc's isValidConstAssertionArgument, as far as a const context changes what these check to
-static bool is_const_context_kind(Expr const* expr) {
+bool ty_is_const_context_kind(Expr const* expr) {
     switch (expr->tag) {
         case EXPR_LITERAL:
         case EXPR_TEMPLATE:
@@ -158,6 +158,12 @@ static bool is_const_context_kind(Expr const* expr) {
             return true;
         case EXPR_UNARY_OP:
             return expr->unary_op->op == UNARY_OP_MINUS || expr->unary_op->op == UNARY_OP_PLUS;
+        case EXPR_PROPERTY: {
+            // A member of an enum (`E.A`, `E["A"]`)
+            Expr const* object = &expr->property->expr;
+            Symbol const* symbol = object->tag == EXPR_IDENTIFIER ? object->identifier.target : nullptr;
+            return symbol && (symbol->flags & SYMBOL_ENUM);
+        }
         default:
             return false;
     }
@@ -167,7 +173,7 @@ static bool is_const_context_kind(Expr const* expr) {
 // `f<const T>(t: T)`)
 static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
     return ctx.is_const || (ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-        is_const_context_kind(expr) && ty_is_const_type_variable(me, ctx.contextual, 0));
+        ty_is_const_context_kind(expr) && ty_is_const_type_variable(me, ctx.contextual, 0));
 }
 
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx);
@@ -364,14 +370,14 @@ Ty const* ty_check_expr(Checker* me, Expr const* expr, Ty const* contextual) {
 
 // `is_const`: in a const context whatever the contextual type (it was instantiated from a const type parameter)
 Ty const* ty_check_expr_in_const(Checker* me, Expr const* expr, Ty const* contextual, bool is_const) {
-    return check_with(me, expr, (ExprCtx){ .contextual = contextual, .is_const = is_const && is_const_context_kind(expr) });
+    return check_with(me, expr, (ExprCtx){ .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr) });
 }
 
 Ty const* ty_check_literal_argument(
     Checker* me, Expr const* expr, Ty const* contextual, bool is_const, bool skip_sensitive, GenericFunctionMode* mode
 ) {
     return check_with(me, expr, (ExprCtx){
-        .contextual = contextual, .is_const = is_const && is_const_context_kind(expr), .skip_sensitive = skip_sensitive,
+        .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr), .skip_sensitive = skip_sensitive,
         .generic_mode = expr->tag == EXPR_OBJECT || expr->tag == EXPR_ARRAY ? mode : nullptr,
     });
 }
@@ -379,7 +385,7 @@ Ty const* ty_check_literal_argument(
 // Checked with the context-sensitive functions in it left out: see ExprCtx.skip_sensitive
 Ty const* ty_check_expr_skipping_sensitive(Checker* me, Expr const* expr, Ty const* contextual, bool is_const) {
     return check_with(me, expr, (ExprCtx){
-        .contextual = contextual, .is_const = is_const && is_const_context_kind(expr), .skip_sensitive = true,
+        .contextual = contextual, .is_const = is_const && ty_is_const_context_kind(expr), .skip_sensitive = true,
     });
 }
 

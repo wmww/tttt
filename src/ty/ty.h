@@ -1173,6 +1173,8 @@ Ty* ty_clone_type_param(Checker* me, Ty const* param, TyMapper const* mapper, At
 // Whether a type parameter says anything about itself (a constraint or a default): only those need cloning
 bool ty_param_is_bounded(Ty const* param);
 bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth);
+// tsc's isValidConstAssertionArgument, as far as a const context changes what these check to (expr.c)
+bool ty_is_const_context_kind(struct Expr const* expr);
 bool ty_some_mutable_array_like(Checker* me, Ty const* ty);
 Ty const* ty_this_type_param(Checker* me, Ty const* declared); // Only make_declared() should call this
 Ty const* ty_reference(Checker* me, Ty const* target, TyList args);
