@@ -950,6 +950,18 @@ bool ty_check_heritage(
         if (!prop || !base_prop) continue;
         Ty const* source = heritage_prop_type(me, prop);
         Ty const* target = heritage_prop_type(me, base_prop);
+        if (base_apparent->kind == TY_INTERSECTION) {
+            // (The intersection's property, of the intersection of its members' types: tsc's getTypeOfSymbol of the
+            // synthetic property, `string & number` for a getter and a setter of other types)
+            FoundProp found = ty_find_prop(me, base_apparent, members[i].name);
+            if (found.found) {
+                target = found.type;
+                if ((found.flags & PROP_OPTIONAL) && compiler_options()->strict_null_checks) {
+                    Ty const* parts[2] = { target, ty_intrinsic(me, TY_UNDEFINED) };
+                    target = ty_union(me, parts, 2, nullptr, (TyList){0});
+                }
+            }
+        }
         if (ty_is_related(me, source, target, TY_RELATION_ASSIGNABLE)) continue;
         cstr name = ty_prop_written_name(me, prop);
         report_unassignable_with_head(me, source, target, 2416, cstr_d(
@@ -2329,6 +2341,25 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
     return nullptr;
 }
 
+// tsc's getFullyQualifiedName with a containing location: a file module by its specifier from `from` (`"./a".N.x`)
+static cstr qualified_name_from(Checker* me, Symbol const* symbol, SourceFile const* from) {
+    if (symbol->is_module && symbol->module && symbol->module->file && from && !cstr_size(&compiler_options()->out_file)) {
+        cstr specifier = program_module_specifier(my program, from, symbol->module->file, SPECIFIER_MODE_NONE);
+        cstr ret = cstr_d("\"", specifier, "\"");
+        cstr_drop(&specifier);
+        return ret;
+    }
+    Symbol const* parent = symbol->parent;
+    if (!parent || (parent->is_module && (!parent->module || !parent->exports ||
+        symbol_table_get(parent->exports, symbol->name) != symbol))
+    ) {
+        return symbol_fully_qualified_name(symbol);
+    }
+    cstr ret = qualified_name_from(me, parent, from);
+    cstr_append_d(&ret, DEFAULT_DISPLAY, ".", symbol->name);
+    return ret;
+}
+
 // The noImplicitAny errors of tsc's getPropertyTypeForIndexType for an element access `o[k]` that finds nothing:
 // TS7053 (with what is missing), TS7015 (a number index signature and a key that isn't a number), TS7052 (a `get`
 // method to call instead), TS2551, TS2576, and TS2339 on an object literal expression
@@ -2483,6 +2514,14 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         cstr index_str = index_name(me, index == full_index ? fresh_index : index);
         if (!error) {
         } else if (index->flags & TYF_UNIQUE_ES_SYMBOL) {
+            // (tsc's getFullyQualifiedName of the symbol's symbol: its containers, a module as its quoted name)
+            UniqueSymbolDecl const* unique = index->literal.unique;
+            if (unique && unique->owner && !span_valid(unique->member)) {
+                cstr qualified = qualified_name_from(me, unique->owner, span.source);
+                cstr_drop(&index_str);
+                index_str = cstr_d("[", qualified, "]");
+                cstr_drop(&qualified);
+            }
             // (index_name() has the brackets)
             error_sub_error_d(error, (Span){0}, TS_CODE_NONE, "Property '", index_str, "' does not exist on type '",
                 object_str, "'.");
