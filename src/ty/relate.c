@@ -5215,7 +5215,10 @@ static Ternary structured_related_members(
                 ty_buf_push(&keys, ty_keyof(me, ty_array(me, array->declared.type_params.data[0], shape->readonly)));
                 Ty const* known = ty_union(me, keys.data, keys.len, nullptr, (TyList){0});
                 ty_buf_drop(&keys);
-                return is_related_to(me, st, source, known, report);
+                // (Else on to the source's constraint: `K extends keyof [...E, 1]`)
+                Ternary related = is_related_to(me, st, source, known, report);
+                if (related) return related;
+                break;
             }
             // A union kept as `keyof` it because an instantiation may reduce it (ty_keyof()): keyof each member,
             // without that check (tsc's IndexFlags.NoReducibleCheck)
