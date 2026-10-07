@@ -254,3 +254,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 - tanstack-router @ 30fc108a (Oct 2026, TS6 upstream): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0 (626 files, 0.89 s).
   The three runtime tests excluded for 5.9's lib.dom are back in; the old pin's 27 TS2591 (`types: []`) are gone
   because react-router's (and router-core's) own tsconfigs now say `types: ["node"]`, which the overlay extends.
+
+## Corpora re-pin (plan 48 stage 5): vscode, typescript-eslint, excalidraw
+- excalidraw (53973c3a, Oct 2026, upstream on 5.9.3; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 2 (a third, TS5101 for `"baseUrl": null`, was fixed with nest/react's re-pin).
+  - TS2846 on `import "../global.d.ts"` (tests/history.test.tsx:46): tsc 6 allows a side-effect import of a .d.ts
+    (already seen on the old pin's prototype run).
+  - TS2322 at excalidraw-app/App.tsx:836: an async generator arrow inside `useCallback` returned to
+    `Required<ExcalidrawProps>["onExport"]` (returns `AsyncGenerator<OnExportProgress> | MaybePromise<void>`): tttt
+    widens the yielded object literals' `type: "progress"` to string, i.e. the yield expressions aren't contextually
+    typed by the generator's contextual return type through the union/generic call.

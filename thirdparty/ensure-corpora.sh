@@ -105,15 +105,15 @@ CORPORA=(
     # code in one program, nodenext, noImplicitOverride, useDefineForClassFields off. Checked through upstream's
     # src/tsconfig.json (the extensions are separate projects, left out). The lock is upstream's
     "vscode https://github.com/microsoft/vscode.git 156e400b9d45c29eb9975b4ee01e72cf22c3549a ."
-    # excalidraw (Dec 2025, todo entry 7 of the tenth window): the JSX-heavy application (149k lines of .tsx/.ts: the
-    # whiteboard editor's React 19 components, hooks, jotai atoms, the element/math/common packages, the collab app,
-    # vitest/testing-library tests), at the commit that moved it to TypeScript 5.9.3. Checked through
-    # tsconfig.corpus.json from the overlay: upstream's root tsconfig (paths to the package sources, moduleResolution
-    # node, jsx react-jsx) plus lib-dom-5.9-shim.d.ts, which gives TextEncoder.encode() 5.9's Uint8Array<ArrayBuffer>
-    # (3 tsc 5.8 errors otherwise). A yarn workspace: the dependencies are the root's, excalidraw-app's and the
-    # excalidraw/utils packages' (lint, format and coverage tools dropped: npm's lock of @isaacs/cliui doesn't `npm ci`),
-    # from corpora-locks/excalidraw.package.json
-    "excalidraw https://github.com/excalidraw/excalidraw.git d080833f4d359e808cd12acdc7dd1c9187c956e5 ."
+    # excalidraw (Oct 2026, plan 48 stage 5): the JSX-heavy application (whiteboard editor's React 19 components,
+    # hooks, jotai atoms, the element/math/common/fractional-indexing/laser-pointer packages, the collab app,
+    # vitest/testing-library tests), upstream's head, still on TypeScript 5.9.3. Checked through tsconfig.corpus.json
+    # from the overlay: upstream's root tsconfig (paths to the package sources, moduleResolution bundler, jsx
+    # react-jsx) with `"baseUrl": null` (its paths are all "./"-relative, so dropping baseUrl changes nothing; tsc 6
+    # reports TS5101 for it, 7.0 removes the option). A yarn workspace: the dependencies are the root's, excalidraw-app's
+    # and every package's (lint, format, coverage tools and the in-tree @excalidraw packages dropped), from
+    # corpora-locks/excalidraw.package.json
+    "excalidraw https://github.com/excalidraw/excalidraw.git 53973c3a423fbd75a4ce68107786b4fcb90e4968 ."
     # TanStack Router (Oct 2026, plan 48 stage 5): main's head, on TypeScript 6 (`@typescript/typescript6` ^6.0.2, CI
     # also runs tsgo 7 and 5.6-5.9). The inference-heavy corpus: react-router's src and tests, mostly *.test-d.tsx type
     # tests (expectTypeOf on route trees: path/search/params/loader inference through createRoute()/
