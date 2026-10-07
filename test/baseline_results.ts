@@ -21861,7 +21861,7 @@ const baselines = {
         types: true,
     },
     'jsxExcessPropsAndAssignability': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
