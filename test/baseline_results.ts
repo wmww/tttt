@@ -7441,14 +7441,14 @@ const baselines = {
         types: true,
     },
     'contravariantOnlyInferenceFromAnnotatedFunction': {
-        errors: true,
+        errors: false,
         symbols: true,
-        types: true,
+        types: false,
     },
     'contravariantOnlyInferenceFromAnnotatedFunctionJs': {
         errors: true,
         symbols: true,
-        types: true,
+        types: false,
     },
     'contravariantOnlyInferenceWithAnnotatedOptionalParameter': {
         errors: true,
