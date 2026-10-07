@@ -4069,9 +4069,17 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 Ty const* deeper = base_constraint(me, distributive, depth + 1);
                 if (deeper) return deeper;
             }
+            // (tsc's getDefaultConstraintOfConditionalType: an any branch is left out, the other one is all there is:
+            // `T extends string ? T : any` with T unconstrained has no base constraint, it's apparently unknown)
             Ty const* parts[2];
-            for (u32 i = 0; i < 2; i++) {
-                parts[i] = ty_conditional_branch(me, ty, i);
+            u32 count = 2;
+            Ty const* branches[2] = { ty_conditional_branch(me, ty, 0), ty_conditional_branch(me, ty, 1) };
+            if ((branches[0]->flags & TYF_ANY) != (branches[1]->flags & TYF_ANY)) {
+                branches[0] = branches[0]->flags & TYF_ANY ? branches[1] : branches[0];
+                count = 1;
+            }
+            for (u32 i = 0; i < count; i++) {
+                parts[i] = branches[i];
                 if (parts[i]->kind == TY_TYPE_PARAM || (parts[i]->flags & TYF_DEFERRED)) {
                     parts[i] = base_constraint(me, parts[i], depth + 1);
                     if (!parts[i]) return nullptr;
@@ -4086,7 +4094,7 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                     if (base) parts[i] = base;
                 }
             }
-            return ty_union(me, parts, 2, nullptr, (TyList){0});
+            return count == 1 ? parts[0] : ty_union(me, parts, 2, nullptr, (TyList){0});
         }
         case TY_TEMPLATE_LITERAL: {
             // The template of the constraints, string if one has none

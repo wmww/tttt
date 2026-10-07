@@ -1866,7 +1866,7 @@ static void check_access(
     // `this` is checked as its apparent type, the class with this-argument `this` (tsc's isThisTypeParameter case of
     // reportNonexistentProperty). TODO: other type parameters
     if (object->kind == TY_TYPE_PARAM && object->param.state->is_this) object = ty_apparent_type(me, object);
-    if ((object->kind == TY_TYPE_PARAM || object->kind == TY_INDEXED) && error_if_not_found) {
+    if ((object->kind == TY_TYPE_PARAM || object->kind == TY_INDEXED || object->kind == TY_CONDITIONAL) && error_if_not_found) {
         // A type parameter has what its apparent type has, and is named in the message (tsc's
         // checkPropertyAccessExpressionOrQualifiedName). Without a constraint (or `extends unknown`) that's unknown with
         // strictNullChecks: no properties at all, not even Object's
