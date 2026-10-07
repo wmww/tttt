@@ -238,7 +238,7 @@ void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, boo
         case BINDING_IDENTIFIER:
             error_ctx_error_d(
                 errs, toplevel ? parameter : my content_span, toplevel ? 7006 : 7031,
-                toplevel ? "Parameter" : "Binding element", " '", my content_span, "' implicitly has an 'any' type."
+                toplevel ? "Parameter" : "Binding element", " '", span_name_text(my content_span), "' implicitly has an 'any' type."
             );
             break;
 
@@ -293,7 +293,7 @@ void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initial
         Binding const* element = vec_binding_at(&my array, i);
         if (element->tag == BINDING_NOOP || element->default_value || (i == len - 1 && element->rest)) continue;
         // (tsc's reportImplicitAny of a binding element: the name for an identifier, else the whole pattern)
-        error_ctx_error_d(errs, element->content_span, 7031, "Binding element '", element->content_span,
+        error_ctx_error_d(errs, element->content_span, 7031, "Binding element '", span_name_text(element->content_span),
             "' implicitly has an 'any' type.");
     }
 }
@@ -556,7 +556,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     Ty const* raw = ty_element_before_widening(current_checker, me);
                     if (!raw) raw = parameter_element_before_widening(me);
                     if (raw && !binding_report_widening_errors_in_type(raw, errs)) {
-                        error_ctx_error_d(errs, my content_span, 7031, "Binding element '", my content_span,
+                        error_ctx_error_d(errs, my content_span, 7031, "Binding element '", span_name_text(my content_span),
                             "' implicitly has an '", type, "' type.");
                     }
                 }
@@ -929,14 +929,14 @@ static void report_errors_from_widening(InitializedBinding* me, Span parameter, 
         // strictNullChecks the widening below says the same)
         if (!initialized_binding_js_empty_array(me, ty) || initialized_binding_getter(me)) return;
         error_ctx_error_d(errs, span_valid(parameter) ? parameter : my binding.content_span, symbol->is_parameter ? 7006 : 7005,
-            symbol->is_parameter ? "Parameter '" : "Variable '", my binding.content_span, "' implicitly has an 'any[]' type.");
+            symbol->is_parameter ? "Parameter '" : "Variable '", span_name_text(my binding.content_span), "' implicitly has an 'any[]' type.");
         return;
     }
     if (!(ty->xflags & TYX_CONTAINS_WIDENING)) return;
     if (report_widening_errors_in_type(checker, ty, errs, 0)) return;
     cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, ty));
     error_ctx_error_d(errs, span_valid(parameter) ? parameter : my binding.content_span, symbol->is_parameter ? 7006 : 7005, symbol->is_parameter ? "Parameter '" : "Variable '",
-        my binding.content_span, "' implicitly has an '", type, "' type.");
+        span_name_text(my binding.content_span), "' implicitly has an '", type, "' type.");
     cstr_drop(&type);
 }
 

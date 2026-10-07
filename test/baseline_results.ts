@@ -29951,12 +29951,12 @@ const baselines = {
         types: true,
     },
     'reservedWords2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'reservedWords3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -36036,7 +36036,7 @@ const baselines = {
         types: true,
     },
     'varArgWithNoParamName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -46271,7 +46271,7 @@ const baselines = {
         types: true,
     },
     'destructuringParameterDeclaration6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -48411,12 +48411,12 @@ const baselines = {
         types: true,
     },
     'templateStringInFunctionParameterType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'templateStringInFunctionParameterTypeES6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63296,12 +63296,12 @@ const baselines = {
         types: true,
     },
     'parserEqualsGreaterThanAfterFunction1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserEqualsGreaterThanAfterFunction2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

@@ -1020,7 +1020,7 @@ static void function_check_arguments_collision(FunctionImpl const* me, ErrorCtx*
 void function_impl_check_implicit_any_return(FunctionImpl const* me, Span name, Span at, ErrorCtx* errs) {
     if (my private_ambient || my has_body || my ret_explicit || my accessor || my is_constructor || !span_valid(name)) return;
     if (!compiler_options()->no_implicit_any || (name.source && name.source->is_js)) return;
-    error_ctx_error_d(errs, at, 7010, "'", name, "', which lacks return-type annotation, implicitly has an 'any' return type.");
+    error_ctx_error_d(errs, at, 7010, "'", span_name_text(name), "', which lacks return-type annotation, implicitly has an 'any' return type.");
 }
 
 // tsc's getReturnTypeOfSignature when the inferred return type references itself: TS7023 at the name (a function
@@ -1051,7 +1051,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
             continue;
         }
         if (i->rest && i->initializer.binding.tag == BINDING_IDENTIFIER) {
-            error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", i->initializer.binding.content_span,
+            error_ctx_error_d(errs, i->span, 7019, "Rest parameter '", span_name_text(i->initializer.binding.content_span),
                 "' implicitly has an 'any[]' type.");
         } else {
             binding_add_implicit_any_type_errors(&i->initializer.binding, i->span, !my has_body, errs);
@@ -1069,13 +1069,13 @@ static void report_widened_return(FunctionImpl const* me, Span name, Ty const* u
     if (binding_report_widening_errors_in_type(unwidened, errs)) return;
     cstr type = ty_to_cstr(current_checker, ty_widened_nullable(current_checker, ty_widened_objects(current_checker, unwidened)));
     if (yield && span_valid(name)) {
-        error_ctx_error_d(errs, name, 7055, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
+        error_ctx_error_d(errs, name, 7055, "'", span_name_text(name), "', which lacks return-type annotation, implicitly has an '", type,
             "' yield type.");
     } else if (yield) {
         error_ctx_error_d(errs, function_error_span(me), 7025, "Generator implicitly has yield type '", type,
             "'. Consider supplying a return type annotation.");
     } else if (span_valid(name)) {
-        error_ctx_error_d(errs, name, 7010, "'", name, "', which lacks return-type annotation, implicitly has an '", type,
+        error_ctx_error_d(errs, name, 7010, "'", span_name_text(name), "', which lacks return-type annotation, implicitly has an '", type,
             "' return type.");
     } else {
         error_ctx_error_d(errs, function_error_span(me), 7011,

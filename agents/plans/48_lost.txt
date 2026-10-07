@@ -148,7 +148,6 @@ destructuringParameterDeclaration1ES5iterable	T	src-changed	bl-changed
 destructuringParameterDeclaration1ES6	T	src-same	bl-changed
 destructuringParameterDeclaration2	ET	src-changed	bl-changed
 destructuringParameterDeclaration4	T	src-changed	bl-changed
-destructuringParameterDeclaration6	E	src-changed	bl-changed
 destructuringSpread	ET	src-changed	bl-changed
 destructuringUnspreadableIntoRest	ET	src-same	bl-changed
 didYouMeanStringLiteral	ET	src-changed	bl-changed
@@ -395,8 +394,6 @@ parenthesizedContexualTyping2	ET	src-changed	bl-changed
 parenthesizedJSDocCastDoesNotNarrow	ET	src-changed	bl-changed
 parserArgumentList1	T	src-changed	bl-changed
 parserComputedPropertyName18	T	src-same	bl-changed
-parserEqualsGreaterThanAfterFunction1	E	src-changed	bl-changed
-parserEqualsGreaterThanAfterFunction2	E	src-changed	bl-changed
 parserParameterList11	ET	src-changed	bl-changed
 parserRealSource8	T	src-changed	bl-changed
 parserUnicode1	E	src-changed	bl-changed
@@ -423,8 +420,6 @@ recursiveTupleTypeInference	T	src-changed	bl-changed
 recursiveTypeRelations	T	src-changed	bl-changed
 redefineArray	ET	src-changed	bl-changed
 requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
-reservedWords2	ET	src-changed	bl-changed
-reservedWords3	E	src-changed	bl-changed
 resolveInterfaceNameWithSameLetDeclarationName2	T	src-changed	bl-changed
 returnTagTypeGuard	T	src-changed	bl-changed
 sharedMemory	T	src-same	bl-changed
@@ -485,8 +480,6 @@ templateLiteralTypes2	ET	src-changed	bl-changed
 templateLiteralTypes3	T	src-changed	bl-changed
 templateLiteralTypes4	T	src-same	bl-changed
 templateLiteralTypesPatterns	ET	src-changed	bl-changed
-templateStringInFunctionParameterType	E	src-changed	bl-changed
-templateStringInFunctionParameterTypeES6	E	src-same	bl-changed
 templateStringInTypeOf	T	src-changed	bl-changed
 templateStringInTypeOfES6	T	src-same	bl-changed
 templateStringWithEmbeddedConditional	T	src-changed	bl-changed
@@ -614,7 +607,6 @@ unusedImports_entireImportDeclaration	T	src-changed	bl-changed
 unusedLocalsAndParametersTypeAliases	T	src-changed	bl-changed
 useBeforeDeclaration_propertyAssignment	T	src-same	bl-changed
 useUnknownInCatchVariables01	T	src-changed	bl-changed
-varArgWithNoParamName	E	src-changed	bl-changed
 voidIsInitialized	T	src-changed	bl-changed
 vueLikeDataAndPropsInference	T	src-changed	bl-changed
 vueLikeDataAndPropsInference2	T	src-changed	bl-changed

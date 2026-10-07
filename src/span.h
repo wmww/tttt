@@ -11,6 +11,8 @@ typedef struct Span {
 } Span;
 
 #define span_null ((Span){0})
+// The text of a declaration's name as tsc's declarationNameToString has it: "(Missing)" where recovery left none
+static inline csview span_name_text(Span me) { return me.sv.size ? me.sv : c_sv("(Missing)"); }
 #define span_equals(span, lit) csview_equals_sv((span).sv, c_sv(lit))
 #define c_SPAN(span) c_SV((span).sv)
 
