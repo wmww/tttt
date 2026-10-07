@@ -147,6 +147,9 @@ typedef struct SourceFile {
     // Semantic diagnostics (names, types) inside this file aren't reported: JavaScript without `checkJs` or a leading
     // `// @ts-check`, any file with `// @ts-nocheck`
     bool unchecked;
+    // A second copy of a package (same name and version) whose imports mean the first: tsc's redirect source file has
+    // the first copy's AST, so nothing in this one's text is reported (not even parse errors)
+    bool package_redirect;
     // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
     // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
     u32 from_reference;

@@ -78,9 +78,8 @@ spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
 - **Regular expression patterns** (TS1487, TS1508, TS1535, TS1530, TS1517, TS1518, TS1507...): tsc's
   scanRegularExpressionWorker, ~1000 lines; only the flags are checked (`regex_check_flags`). Plan 27 stage 3.
 - **Variance annotations**: varianceAnnotationsWithCircularlyReferencesError (tsc's recovery for `type T1<in in>`).
-- duplicatePackage(_withErrors): the second copy of a package (same name+version) is still parsed and checked (tsc
-  makes it a redirect to the first copy's AST), and the default-exported class prints `X`, not `default`, in
-  `import("...").default` (display).
+- duplicatePackage: the default-exported class prints `X`, not `default`, in `import("...").default` (display:
+  tsc's getNameOfSymbolAsWritten for a `default` symbol in a qualified import type).
 - nodeModulesJson (node16/node18/nodenext): symbols and types of JSON imports.
 - The jsxImportSource runtime import (`jsx_runtime_module()`) reports TS2875/TS2792 and TS1479/TS1471, not the other
   resolveExternalModule diagnostics (TS7016 for a JavaScript runtime).

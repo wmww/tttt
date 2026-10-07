@@ -11556,7 +11556,7 @@ const baselines = {
         types: true,
     },
     'duplicatePackage_withErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

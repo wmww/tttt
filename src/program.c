@@ -635,7 +635,11 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                 if (cstr_size(&resolved.package_id) && ref->file) {
                     auto first = hmap_source_file_ptr_get(&my files_by_package_id, cstr_sv(&resolved.package_id));
                     if (first) {
-                        if (first->second != ref->file) ref->redirected_from = ref->file;
+                        if (first->second != ref->file) {
+                            ref->redirected_from = ref->file;
+                            ref->file->package_redirect = true;
+                            ref->file->unchecked = true;
+                        }
                         ref->file = first->second;
                     } else {
                         hmap_source_file_ptr_insert(&my files_by_package_id, cstr_clone(resolved.package_id), ref->file);
