@@ -32121,9 +32121,9 @@ const baselines = {
         types: true,
     },
     'subtypeReductionWithAnyFunctionType': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'subtypeRelationForNever': {
         errors: true,
@@ -64416,9 +64416,9 @@ const baselines = {
         types: true,
     },
     'parserParameterList11': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserParameterList12': {
         errors: true,

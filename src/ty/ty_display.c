@@ -2285,7 +2285,8 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // getTypeForVariableLikeDeclaration returns getTypeFromBindingPattern without addOptionality)
         bool bare_pattern = binding && binding->tag != BINDING_IDENTIFIER && !binding->has_explicit_type &&
             initializer && initializer->tag == EXPR_IMPLICIT_ANY;
-        if (param->optional && !param->rest && param->decl && (param->decl->explicit_optional || param->decl->jsdoc_optional_initialized) &&
+        if (param->optional && (!param->rest || (binding && binding->optional_parameter)) && param->decl &&
+            (param->decl->explicit_optional || param->decl->jsdoc_optional_initialized) &&
             compiler_options()->strict_null_checks && ty_without_undefined(me, shown) == shown && !bare_pattern
         ) {
             shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});

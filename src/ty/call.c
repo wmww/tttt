@@ -550,14 +550,15 @@ static Ty const* instantiate_with_return_mapper(Checker* me, Ty const* contextua
     return ret;
 }
 
-// Changes whenever the non-fixing mapper would: candidates are only added, and fixing is for good
+// Changes whenever the non-fixing mapper would: candidates are only added (or replaced by ones of a better priority,
+// which may leave their count as it was: `inf->replaced`), and fixing is for good
 static u64 inference_count(Inference const* inf) {
     u64 candidates = 1, fixed = 0;
     for (u32 j = 0; j < inf->len; j++) {
         candidates += inf->params[j].co_len + inf->params[j].contra_len;
         fixed += inf->params[j].fixed != nullptr;
     }
-    return candidates | fixed << 32;
+    return candidates | fixed << 32 | (u64)inf->replaced << 48;
 }
 
 static TyMapper const* non_fixing_mapper(Checker* me, OuterInference* outer) {

@@ -215,6 +215,9 @@ typedef struct Inference {
     // Walk state
     u32 priority;
     u32 hit_priority; // The best priority an inference was made at since it was last reset (tsc's inferencePriority)
+    // How many times a better priority replaced a parameter's candidates: a non-fixing mapper cached for the candidate
+    // count is stale then, though the count may be the same (see inference_count() in call.c)
+    u32 replaced;
     // HACK: the types of array literal arguments, which count as literals like object literal types do (tsc marks
     // them ObjectFlags.ArrayLiteral; tttt's array types are interned without that). Malloc'd
     Ty const** array_literals;

@@ -310,8 +310,9 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
-        // (An unannotated `...x?` is any[] as it is: tsc's getWidenedTypeForVariableLikeDeclaration's anyArrayType)
-        i->initializer.binding.optional_parameter = (i->explicit_optional && !(i->rest && !i->initializer.binding.has_explicit_type)) ||
+        // (An unannotated `...x?` is any[] as it is: tsc's getWidenedTypeForVariableLikeDeclaration's anyArrayType; a function
+        // expression's gets undefined anyway, its assignParameterType adds optionality after widening)
+        i->initializer.binding.optional_parameter = (i->explicit_optional && !(i->rest && !i->initializer.binding.has_explicit_type && !my is_expression)) ||
             i->jsdoc_optional_initialized;
         initialized_binding_add_names(&i->initializer, function_scope, (BindingAddNamesProps){
             .abstract_literals = true,
@@ -830,6 +831,10 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
             Binding const* binding = &i->initializer.binding;
             Checker* checker = current_checker;
             Ty const* rest_type = ty_binding_type(checker, binding, (LowerCtx){ .generic = true });
+            // (`...x?` is the symbol's type, with undefined: tsc's addOptionality)
+            if (binding->optional_parameter && compiler_options()->strict_null_checks && !(rest_type->flags & TYF_ANY)) {
+                rest_type = ty_union(checker, (Ty const*[]){ rest_type, ty_intrinsic(checker, TY_UNDEFINED) }, 2, nullptr, (TyList){0});
+            }
             // (A pattern's type is what the pattern implies, tsc's checkParameter doesn't check it)
             if (binding->tag == BINDING_IDENTIFIER && !ty_extends_array(checker, rest_type)) {
                 error_ctx_error_d(errs, i->span, 2370, "A rest parameter must be of an array type.");

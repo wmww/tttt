@@ -1470,6 +1470,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         if (!param || param->fixed || (source->flags & TYF_NON_INFERRABLE)) return;
         if (inf->priority < inf->hit_priority) inf->hit_priority = inf->priority;
         if (!param->has_priority || inf->priority < param->priority) {
+            if (param->co_len || param->contra_len) inf->replaced++;
             param->co_len = 0;
             param->contra_len = 0;
             param->top_level = true;
