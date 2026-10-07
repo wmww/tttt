@@ -269,8 +269,10 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   re-pin found (IntRange/Replace: tsc's 1000-step conditional tail loop is real recursion in tttt,
   ty_instantiate_tail -> ty_conditional, ~16 MB of stack) is fixed by running `main` on a 64 MB thread. Left:
   - Homomorphic mapped types over tuples print/relate as object types `{ 0: number; 1?: string; }` (TS2345 x2 in
-    rename-keys.ts:272, set-required-deep.ts:55; TS2379 in schema.ts:273): looks like a mapped type over a tuple (or
-    an intersection/union containing one) not producing a tuple. Repro from SetRequiredDeep / RenameKeys.
+    rename-keys.ts:272, set-required-deep.ts:55; TS2379 in schema.ts:273): the common factor is an optional *numeric*
+    key (`1?`): `SetRequiredDeep<{0?: 1; 1?: {2?: string}}, 0 | 1>` leaves `1` optional, `RenameKeys<{0: number; 1?:
+    string}, {0: 'a'; 1: 'a'}>` returns its input. Repro: a tsconfig with strict + exactOptionalPropertyTypes and a
+    file importing them from the corpus' index.d.ts (tsc 0, tttt 2); reduce through OptionalKeysOf/SetRequired.
   - TS2345 unwrap-partial.ts:67, only with exactOptionalPropertyTypes: `type U<P> = P extends Partial<infer O> ?
     (Partial<O> extends P ? O : P) : P; type A = U<Partial<string[]>>` is `string[]` in tsc, `(string |
     undefined)[]` in tttt (reverse inference of O from a homomorphic mapped type over an array keeps the undefined
