@@ -1304,7 +1304,17 @@ static TyMapper const* infer_type_arguments(
                 ty_instantiate(me, uninferred_contextual, outer->return_mapper) : uninferred_contextual;
             bool gaps = false;
             for (u32 i = 0; i < inf.len && !gaps; i++) gaps = !inf.params[i].co_len && !inf.params[i].contra_len;
-            if (return_source == source || !gaps) {
+            // (A generic contextual signature stays generic in it: tsc's returnMapper infers from the contextual type
+            // itself, only the main inference from the signature instantiated with its own type parameters, so a
+            // generic function argument isn't instantiated in its context: vue's `capitalize: <T extends string>(str:
+            // T) => Capitalize<T> = cacheStringFunction(<T extends string>(str: T) => ...)`)
+            if (source != contextual) {
+                Inference return_inf;
+                inference_init(&return_inf, sig->type_params);
+                infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
+                return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
+                inference_drop(&return_inf);
+            } else if (return_source == source || !gaps) {
                 return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
             } else {
                 Inference return_inf;
