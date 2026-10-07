@@ -97,6 +97,9 @@ typedef struct Program {
     u32 serial; // program_serial()
     HMapBoxSourceFile source_files_map;
     VecSourceFilePtr source_files_ordered;
+    // The program_order of the first file: the files of a parent program (the test harness's shared libraries, see
+    // program_copy_globals_from()) come before this one's, like tsc's default library files
+    u32 order_base;
     HMapSourceFilePtr files_by_package_id; // ResolvedModule.package_id -> the first file found with it
     // tsc's getPackagesMap: the package name of every module resolution that found a file of a package, whether one of
     // them was a declaration file
@@ -1277,7 +1280,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     }
 
     // Add here so imports come before importing file
-    source_file->program_order = (u32)vec_source_file_ptr_size(&my source_files_ordered);
+    source_file->program_order = my order_base + (u32)vec_source_file_ptr_size(&my source_files_ordered);
     vec_source_file_ptr_push(&my source_files_ordered, source_file);
 
     return source_file;
@@ -1435,6 +1438,8 @@ void program_load_automatic_types(Program* me) {
 
 void program_copy_globals_from(Program* me, Program const* other) {
     binder_set_parent(my binder, other->binder);
+    my order_base = other->order_base + (u32)vec_source_file_ptr_size(&other->source_files_ordered);
+    check(!vec_source_file_ptr_size(&my source_files_ordered));
 }
 
 static u32 count_asterisks(csview text) {
@@ -2447,7 +2452,7 @@ static void program_order_stdlib_first(Program* me) {
         }
         files[j] = file;
     }
-    for (isize i = 0; i < count; i++) files[i]->program_order = (u32)i;
+    for (isize i = 0; i < count; i++) files[i]->program_order = my order_base + (u32)i;
 }
 
 static void resolve_file(SourceFile* source, ErrorCtx* errs) {
