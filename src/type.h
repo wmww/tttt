@@ -148,6 +148,7 @@ typedef struct TypeNode {
         struct {
             TypeNode* element;
             bool readonly;
+            Span span; // The element to `]` (tsc's ArrayTypeNode, where TS4109 goes) when parsed as `T[]`, else null
         } array;
         struct {
             VecTupleElement elements;

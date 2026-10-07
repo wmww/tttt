@@ -2963,6 +2963,7 @@ static bool parse_type_right_side(Parser* parent, TypePrecedence min_precedence,
         } else {
             expect_char(&p, ']');
             *left_and_ret = type_array(c_new(TypeNode, *left_and_ret), false);
+            left_and_ret->array.span = span_make(p.shared->source, left_start, p.pos);
             return parse_success(&p);
         }
     }
