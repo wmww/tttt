@@ -2671,7 +2671,8 @@ static bool index_components_printed(Checker* me, TyDisplay d, IndexInfo const* 
 static bool track_property(Checker* me, TyDisplay d, Prop const* prop) {
     // A class's `prototype` isn't written; its private and protected members can't be in a type literal
     if (prop->flags & PROP_PROTOTYPE) return true;
-    if (prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) {
+    // (A `#private` one too: tsc's isPrivateIdentifierSymbol report in createTypeNodesFromResolvedType)
+    if ((prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) || ty_private_name_class(me, prop->name)) {
         d.tracker->report(d.tracker, DECL_REPORT_PRIVATE_IN_CLASS_LITERAL, atom_sv(prop->name));
     }
     if (!ty_unique_symbol_of_name(me, prop->name)) return false;

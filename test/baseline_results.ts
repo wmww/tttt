@@ -28376,7 +28376,7 @@ const baselines = {
         types: true,
     },
     'privateFieldsInClassExpressionDeclaration': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
