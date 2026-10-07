@@ -18993,7 +18993,7 @@ const baselines = {
     'inexistentPropertyInsideToStringType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferConditionalConstraintMappedMember': {
         errors: true,
@@ -43033,7 +43033,7 @@ const baselines = {
     'globalThisBlockscopedProperties': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'globalThisCollision': {
         errors: true,

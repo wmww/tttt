@@ -2500,6 +2500,16 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                 if (prop) builder_push(&builder, props, prop);
             }
             free(exports);
+            // (and tsc's undefinedSymbol, which its globals have: `globalThis.undefined`, `keyof typeof globalThis`)
+            if (ty->declared.namespace_symbol->is_global_this) {
+                Atom const* name = checker_atom(me, c_sv("undefined"));
+                if (!builder_find_prop(&builder, name)) {
+                    Prop* prop = arena_new(&my arena, Prop);
+                    *prop = (Prop){ .name = name, .type = ty_intrinsic(me, TY_UNDEFINED_WIDENING),
+                        .type_state = LAZY_STATE_DONE, .decl = prop_decl_none() };
+                    builder_push(&builder, props, prop);
+                }
+            }
             Symbol const* synthetic_default = symbol_rare(ty->declared.namespace_symbol)->synthetic_default;
             if (synthetic_default) {
                 SymbolEntry entry = symbol_entry_make(c_sv("default"), symbol_name_hash(c_sv("default")), (Symbol*)synthetic_default);

@@ -3506,6 +3506,16 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             // A JavaScript constructor function is a class
             Symbol const* js_class = ty->anonymous.function && !ty->anonymous.target ?
                 ty_js_constructor_class(ty->anonymous.function) : nullptr;
+            // (One merged with other declarations, a lib's `declare function toString(): string`: the symbol is still
+            // a class)
+            if (!js_class && !ty->anonymous.function && !ty->anonymous.target && !ty->anonymous.is_reverse &&
+                ty->anonymous.merged_value && (ty->anonymous.merged_value->flags & SYMBOL_CLASS)
+            ) {
+                Symbol const* merged = ty->anonymous.merged_value;
+                for (u32 i = 0; i < merged->decl_count && !js_class; i++) {
+                    if (merged->decls[i].kind == SYMBOL_DECL_FUNCTION) js_class = ty_js_constructor_class(merged->decls[i].node);
+                }
+            }
             if (js_class) {
                 out_lit(d, "typeof ");
                 csview js_name;
