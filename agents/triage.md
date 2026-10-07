@@ -161,10 +161,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   templateLiteralTypes1 (TS2590 goes at the innermost type node being checked: tsc's checkSourceElement sets currentNode per type node, tttt's type walk has no spans per TypeNode; template literal and tuple-spread cross products don't report TS2590 at all, ty/template.c TODO);
   relationComplexityError (TS2859 twice: at the assignment's left operand (checkTypeRelatedTo's errorNode) and at the binary expression (currentNode); tttt reports once at the statement);
   largeControlFlowGraph (TS2563 at flow depth 2000: ty/flow.c TODO, needs the containing body's first token and tsc's flowAnalysisDisabled);
+  largeControlFlowGraph (errors pass; types: tsc's first deep flow query comes from the end of the file, so every `data` is errorType there, tttt's from the 2000th statement);
+  jsDeclarationsFunctionsCjs (errors pass now; types: tsc doesn't reuse a JSDoc `typeof module.exports.b` / `typeof exports.x`, trackExistingEntityName's introducesError for a leftmost `exports`/`module.exports` in JS fails the whole annotation's reuse; ty_display.c has no whole-tree reuse failure to hang it on);
   unicodeEscapesInNames02(target=es5) (tsc's baseline has the harness's TS-1 pre/post-emit count mismatch: not matchable);
   parenthesizedContexualTyping2 (TS2345 at the outer parentheses of the argument, and the third argument isn't contextually typed by the arity-matching overload);
   mergedDeclarations7 (namespace import of an export= clone: `this` return types compare the clone with the interface);
-  limitDeepInstantiations, recursiveConditionalCrash4, recursivelyExpandingUnionNoStackoverflow (TS2589 where tttt reports TS2502/TS2615 or nothing: pre-existing, same baselines as 5.8).
+  recursivelyExpandingUnionNoStackoverflow (`type N<T, K> = T | { [P in K]: N<T, K> }[K]`: tsc doesn't cache an alias instantiation while it is being made, so it recurses with fresh types to the instantiation depth (TS2589) before a mapped symbol finds itself circular (TS2615, its message printing the mapped type unresolved `{ [P in "M"]: any; }`); tttt interns the instance and meets it again at once: TS2615 only. Not a count to tune).
 - Plan 48 fan-out agent A (errors, M..j), leftovers, 2026-10-07:
   - circularBaseTypes, infiniteConstraints (spurious TS2321), circularConstraintYieldsAppropriateError (TS2310):
     tsc's getResolvedBaseConstraint circularity (stack of recursion identities, circularConstraintType,
@@ -202,4 +204,9 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - augmentExportEquals7: same mechanism as D's exportAssignmentMembersVisibleInAugmentation (mergeSymbol of an
     augmentation into an `export =` target clones it; the clone is what the augmentation name means).
   - accessorBodyInTypeContext (above) stays: needs the getter body of a type literal checked and its return inferred.
-
+- Plan 48 fan-out agent A, complexity-limit list (A2), leftovers, 2026-10-07:
+  - longObjectInstantiationChain1-3 (errors): TS2339's message type (no enclosing declaration) is elided by tttt
+    (`Omit<Omit<..., ...> & ...`) where tsc prints the whole chain; printer, agent C's symbolDepth area.
+  - recursiveConditionalTypes, styledComponentsInstantiaionLimitNotReached: elaboration chains (tsc's goes deeper /
+    through other members), not a limit. mappedTypeRecursiveInference: member order of the printed reverse-mapped
+    `Deep<...>` (tsc has `dispatchEvent` first).
