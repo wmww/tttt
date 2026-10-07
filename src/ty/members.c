@@ -3380,6 +3380,16 @@ static void retarget_this_props(Checker* me, MembersBuilder* builder, u32 first,
     }
 }
 
+static void push_decimal_order(Prop** out, u32* at, Prop* const* props, u32 index, u32 count) {
+    out[(*at)++] = props[index];
+    if (!index) return; // (No "01")
+    for (u32 digit = 0; digit < 10; digit++) {
+        u64 next = (u64)index * 10 + digit;
+        if (next >= count) return;
+        push_decimal_order(out, at, props, (u32)next, count);
+    }
+}
+
 static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
     Ty const* target = tuple->kind == TY_REFERENCE ? tuple->reference.target : tuple;
     TupleShape const* shape = target->declared.tuple;
@@ -3418,6 +3428,7 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         length = ty_union(me, lengths, count, nullptr, (TyList){0});
         free(lengths);
     }
+    u32 fixed = builder.props_count;
     Prop* length_prop = prop_new(me);
     length_prop->name = checker_atom(me, c_sv("length"));
     length_prop->flags = shape->readonly ? PROP_READONLY : 0; // Like tsc's, a mutable tuple's length can be assigned
@@ -3430,6 +3441,25 @@ static Members const* resolve_tuple_members(Checker* me, Ty const* tuple) {
         builder_add_inherited(me, &builder, array);
         // (The empty tuple too, which is its own target: `[]`'s `sort()` returns `[]`)
         if (tuple->kind == TY_REFERENCE || !shape->arity) retarget_this_props(me, &builder, first, array, tuple);
+    }
+    // A tuple has no symbol, so tsc 6's getNamedMembers sorts all of its properties: the array's by declaration (the
+    // order they are in already), then the element properties and `length`, which have no declaration, by name
+    if (compiler_options()->stable_type_ordering && array && builder.props_count > fixed + 1) {
+        Prop* stack[16];
+        Prop** own = fixed + 1 <= c_arraylen(stack) ? stack : malloc(sizeof(Prop*) * (fixed + 1));
+        panic_if(!own, "out of memory");
+        if (fixed > 10) {
+            // ("10" before "2": the indices in the order of their decimal strings, a preorder walk of the digit trie)
+            u32 at = 0;
+            for (u32 first = 0; first < 10 && first < fixed; first++) push_decimal_order(own, &at, builder.props, first, fixed);
+            own[fixed] = builder.props[fixed]; // (`length` sorts after every digit)
+        } else {
+            memcpy(own, builder.props, sizeof(Prop*) * (fixed + 1));
+        }
+        u32 inherited = builder.props_count - (fixed + 1);
+        memmove(builder.props, builder.props + fixed + 1, sizeof(Prop*) * inherited);
+        memcpy(builder.props + inherited, own, sizeof(Prop*) * (fixed + 1));
+        if (own != stack) free(own);
     }
     return builder_finish(me, &builder);
 }
