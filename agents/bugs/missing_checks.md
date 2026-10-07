@@ -88,6 +88,44 @@ spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
   `typeof alias` in the parameter type is TS2304. Needs the setter's parameter as a parameter.
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
 
+## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... ./mutate.py -n 8000 --seed 2`: 32 -> 13)
+Known elsewhere: spreadUnion (TS2403 text), indexedAccessNormalization, cyclicGenericTypeInstantiationInference,
+recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage's seeds 11/13/14 list; TS4109
+(recursiveArrayNotCircular extends-object) is the TS4109/TS4110 item above. New ones, each one mutant:
+- tsc evaluation-order quirks, both "an error reported while a type is computed early": (1) typeGuardsAsAssertions
+  null-arg: `result = someFrom(isSome(null) ? result.some : makeSome())` in a `while` loop is TS2339 'some' on 'None'
+  in tsc, from the loop's flow evaluation seeing `result` as only its initial `None` while the assignment's type is in
+  flight (same family as the vue loop-flow TS2538/TS4111 note); (2) arrayFrom return-void: after a failed overload
+  `Array.from(v, ({ a }): B => ({ b: a }))` with `v: void`, tsc reports TS2339 'a' on 'unknown' only when the
+  body uses `a`: the binding element's type is computed (with error) from the contextual `unknown` before
+  assignContextualParameterTypes replaces unknown by the pattern's type (`f(v, ({ b }) => { b; })` errors,
+  `f(v, ({ b }) => {})` doesn't). tttt types elements once, lazily, from the final parameter type.
+- expandoFunctionSymbolProperty delete-stmt: an interface member with an unresolved (any-typed) computed key,
+  `readonly [symb]: boolean`, makes a number index signature in tsc (getIndexInfosOfIndexSymbol with
+  hasLateBindableIndexSignature: any is assignable to number), so `() => void` isn't assignable (TS2322 "Index
+  signature for type 'number' is missing"). tttt's late-bound index signatures (builder_add_computed_index_infos) exist
+  for classes only. Odd tsc detail when extending to interfaces: `interface A { [s]: boolean }` with `s: string` gives
+  A a string index whose reads are `any` (keyof A is string | number), while an any key's number index reads boolean.
+- contextualTypeFunctionObjectPropertyIntersection extends-object: `[K in TEvent["type"] as K extends Object<string> ?
+  K : never]?: Action<TEvent extends { type: K } ? TEvent : never>` (Object<string> is TS2315, errorType, so the
+  conditional is errorType and the key an any-keyed index signature) still gives `FOO: (ev) => ...` its contextual
+  type in tsc; tttt says TS7006. Repro: the interface MC/cm pair in the mutant (a reduced mapped type without the
+  `TEvent extends { type: K }` value type works).
+- interfaceExtendingOptionalChain extends-object: `interface C1 extends Object?.Bar {}` is TS2499 *and* the name
+  resolved as a type reference (TS2702 'Object' only refers to a type...; TS2503/TS2694 for others): tsc's
+  getTypeReferenceName takes the optional chain as an entity name (isEntityNameExpression ignores `?.`). tttt keeps
+  it as an invalid expression (HeritageClauses.invalid) without a TypeNode, so nothing resolves it.
+- infinitelyExpandingTypes1 add-optional: `owner?: List<List<T>>` against `owner: MyList<MyList<T>>` reaches tsc's
+  depth limit (TS2321 "Excessive stack depth comparing List<number> and MyList<number>" on `l == m`); tttt's
+  deeply-nested check stops it first. Needs tsc's exact isDeeplyNestedType accounting through optional properties.
+- twiceNestedKeyofIndexInference add-optional: an overload's signature in TS2769 prints
+  `Required<Pick<State, "d">>` in full in tsc, `Required<...>` in tttt (the elision budget of a signature in an
+  overload list).
+- multipleInferenceContexts delete-stmt (`& ThisType<Instance<Data>>` deleted): `this` in an object literal method
+  is `ComponentOptionsProperties<{ msg: string; }>` in tsc (the inferred instantiation of the contextual type) where
+  tttt prints `ComponentOptionsProperties<Data>`; tsc's errors baseline also has its TS-1 "pre-emit/post-emit
+  diagnostic counts" harness note from that.
+
 ## Circularity tsc finds and tttt doesn't (plan 39 stage 3)
 - TS2310/TS2313 for cycles found while resolving: circularBaseTypes (TS2313 for a mapped type's `K in keyof T` with T
   the interface whose base is being resolved), circularConstraintYieldsAppropriateError (TS2310).
