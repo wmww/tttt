@@ -149,7 +149,18 @@ own members: the prototype's attempt broke a declared `static prototype`, 7 test
 namespaces). Validation: union-order buckets in displaydiff/expecttypes gone, `./threadcheck.sh` and
 `./checkerdiff.py` identical (and remove checkerdiff's "inside quotes / union order" allowance if output is
 byte-identical now).
-**Session B (entry 5), delete the creation-order machinery**, one piece at a time, measuring each removal (suite,
+**Session B done 2026-10-07** (deletion part): the check walk no longer makes types early (references, type literals,
+tuples, unions, alias bodies, function-type parameters, type parameters, class value types, field annotations without
+initializer, literal property annotations), no early parameter typing in `signature_resolve` (getMinArgumentCount
+order), no tuple length unions, no `""`/`0` or Array/autoArray at checker start, no boolean id swap, no Omit-key
+literals; `argorder.py` deleted. Suite unchanged (14711: only `stableTypeOrdering(stabletypeordering=false)` lost,
+accepted: creation order is no longer reproduced), corpora byte-identical, instructions -0.1..-0.7% (none up). Kept,
+measured: `0n` at checker start (tsc's compareTypes has no bigint value order: ids decide, `0n | 1n`), the
+`KEY_UNION_NODE` memo plus the fresh twin of a written literal (removing both cost tsc +0.85%, more
+`union_with_origin` work; each alone nothing: unexplained, a HACK note in lower.c), the type-literal index-constraint
+gate (pure cost filter). Union-order bucket in displaydiff: 4 tests, all explained (ty_compare id ties, JS member
+order). Left: the id tie-breaks of hacks.md "Stable type ordering", class/interface getNamedMembers order.
+The original brief, for reference: **delete the creation-order machinery**, one piece at a time, measuring each removal (suite,
 corpora, instruction counts): `argorder.py`; plan 35 item 3 and its leftovers; the walk-order code that exists to
 create types in tsc's order (check-walk and node memoization in `type.c`, `lower.c`'s `KEY_UNION_NODE` and property
 literal order, `several_types.c`, `generic.c`, `function_impl.c`, `class_decl.c`, `interface_decl.c`,
