@@ -2911,7 +2911,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                     construct ? "construct " : "", "signatures, but none of those signatures are compatible with each other.");
                 cstr_drop(&rendered);
             }
-            return any;
+            return ty_intrinsic(me, TY_ERROR);
         }
         // Some member has none: the union isn't callable, and the first such member is named (tsc's
         // invocationErrorDetails). Not for `super(...)`, `new` of something callable, or tagged templates and decorators,
@@ -2956,7 +2956,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 suggest_await_for_invocation(me, e, apparent, construct, info);
                 cstr_drop(&rendered);
             }
-            return any;
+            return ty_intrinsic(me, TY_ERROR);
         }
     }
     if (apparent->kind == TY_UNION && !union_sigs) {
@@ -3060,7 +3060,9 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 error_add_related_d(e, expr_outer_span(&info->call->callable), 2734, "Are you missing a semicolon?");
             }
         }
-        return ret;
+        // (An invocation error is tsc's resolveErrorCall, unknownSignature: the error type. `new` of something with
+        // only call signatures is resolved as that call, any)
+        return call->uses_new && other_count && !call->is_extends ? ret : ty_intrinsic(me, TY_ERROR);
     }
 
     if (call->is_extends) {
@@ -3071,7 +3073,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
     if (call->uses_new) {
         if (!ty_constructor_accessible(me, call, signatures[0], call_span, errs)) {
             free(signatures);
-            return any;
+            return ty_intrinsic(me, TY_ERROR); // (tsc's resolveErrorCall)
         }
         // (tsc's resolveNewExpression: someSignature, which looks into a union signature's members)
         bool some_abstract = false;
@@ -3079,7 +3081,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
         if (some_abstract) {
             error_ctx_error_d(errs, call_span, 2511, "Cannot create an instance of an abstract class.");
             free(signatures);
-            return any;
+            return ty_intrinsic(me, TY_ERROR);
         }
     }
 

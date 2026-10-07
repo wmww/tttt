@@ -2196,7 +2196,9 @@ bool ty_class_base_constructor_unfit(Checker* me, ClassDecl const* class_decl) {
     if (((type->flags & TYF_TYPE_PARAM) || type->kind == TY_INDEXED) && !(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) {
         return true;
     }
-    if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    // (Anything else but any isn't an object type: a primitive like `void` is TS2507 (errorType), a union of
+    // constructors no base either, tsc's resolveBaseTypesOfClass)
+    if (!(constructor->flags & (TYF_OBJECT | TYF_INTERSECTION))) return !(constructor->flags & TYF_ANY) || (constructor->flags & TYF_ERROR);
     SourceFile const* file = extends->inner_span.source;
     return !ty_members(me, constructor)->construct_count || !ty_base_constructors_fit(me, constructor, count, file && file->is_js);
 }
