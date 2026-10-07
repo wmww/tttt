@@ -872,8 +872,15 @@ static bool array_like_with_literal_length(Checker* me, Ty const* ty) {
 // A spread of a type variable that is array-like stays a variadic element of the tuple it's spread into: `[...self,
 // that]` with `self: A extends readonly unknown[]` is `[...A, B]` (tsc's checkArrayLiteral, isArrayLikeType, and
 // createNormalizedTupleType keeping InstantiableNonPrimitive variadic elements)
+// (A generic mapped type too: createNormalizedTupleType keeps isGenericMappedType variadic elements, `[...x, y]` with
+// `x: { [P in keyof E]: X }` is `[...{ [P in keyof E]: X }, Y]`, its elements `{ ... }[number]` in an array)
 static bool is_generic_array_like(Checker* me, Ty const* ty) {
-    return (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && ty_extends_array(me, ty);
+    bool generic = (ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
+    if (!generic && ty->kind == TY_ANONYMOUS && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+        MappedInfo const* mapped = ty_members(me, ty)->mapped;
+        generic = mapped && ty_is_generic_index(mapped->constraint);
+    }
+    return generic && ty_extends_array(me, ty);
 }
 
 static bool context_is_tuple_like(Checker* me, Ty const* contextual, u32 depth) {
