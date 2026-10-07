@@ -251,7 +251,9 @@ static Ty const* mapped_element_optionality(Checker* me, MappedInfo const* mappe
             if (element->composite.types.data[i]->flags & (TYF_UNDEFINED | TYF_VOID)) return element;
         }
     }
-    Ty const* parts[2] = { element, ty_intrinsic(me, TY_UNDEFINED) };
+    // (The missing type under exactOptionalPropertyTypes: tsc's getTemplateTypeFromMappedType adds it with
+    // addOptionality, which is what reverse inference through Partial<O> takes back out)
+    Ty const* parts[2] = { element, ty_undefined_or_missing(me) };
     return ty_union(me, parts, 2, nullptr, (TyList){0});
 }
 
