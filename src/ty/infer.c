@@ -2119,8 +2119,8 @@ static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, 
         if (fallback) inferred[i] = true; // (Only for the constraint check below)
         Ty const* nothing = ty_intrinsic(me, inf->any_default ? TY_ANY : TY_UNKNOWN_); // (tsc's getDefaultTypeArgumentType)
         if (fallback && (fallback->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
-            // An earlier type parameter with neither inferences nor a default is its constraint by now if nothing
-            // doesn't satisfy that (tsc's getInferredType of it, which the default's back-reference mapper asks for):
+            // An earlier type parameter with neither inferences nor a default is its constraint by now (tsc's
+            // getInferredType of it, which the default's back-reference mapper asks for):
             // `<C extends Component, S = C["state"]>` without inferences for C is S = Component["state"]
             bool changed = false;
             // So is an earlier inference that doesn't satisfy its constraint (getInferredType through the default's
@@ -2148,8 +2148,10 @@ static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, 
                 if (inferred[j] || results[j] != nothing) continue;
                 Ty const* constraint = ty_param_constraint(me, params.data[j]);
                 if (!constraint || constraint == params.data[j]) continue;
+                // (Whether or not nothing would satisfy it: tsc's getInferredType takes the constraint when there's
+                // no inferred type at all, `<R extends AnyAction, T = R["payload"]>` with AnyAction unresolved)
                 Ty const* instantiated = ty_instantiate(me, constraint, mapper);
-                if (ty_is_related(me, nothing, instantiated, TY_RELATION_ASSIGNABLE)) continue;
+                if (instantiated == nothing) continue;
                 results[j] = instantiated;
                 changed = true;
             }
