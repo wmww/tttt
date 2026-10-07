@@ -3969,9 +3969,11 @@ static bool declared_in_base_class(Checker* me, ClassDecl const* class_decl, Ato
 
 // tsc's isPropertyInitializedInStaticBlocks, syntactically (HACK: tsc asks control flow at the end of each block): a
 // `static {}` before `before` assigns `this.name` (or `C.name`) in one of its statements
-static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview name, char const* before) {
+// `any_type`: the property's type is any or unknown, whose flow type never has undefined, so any static block counts
+static bool initialized_in_static_blocks(ClassDecl const* class_decl, csview name, char const* before, bool any_type) {
     for_each (i, vec_class_item, &class_decl->items) {
         if (i->tag != CLASS_ITEM_STATIC_BLOCK || span_start_ptr(i->span) >= before) continue;
+        if (any_type) return true;
         for_each (s, vec_statement, &i->static_block.statements) {
             if (s->tag != STATEMENT_EXPR || s->expr.tag != EXPR_BINARY_OP || s->expr.binary_op->op != BINARY_OP_EQUAL) continue;
             Expr const* target = &s->expr.binary_op->left;
@@ -4029,7 +4031,8 @@ static void check_used_before_initialization(Checker* me, PropertyExpr const* ac
         case INITIALIZER_INSTANCE_FIELD: deferred = !is_instance_field || !same_class; break;
         case INITIALIZER_STATIC_FIELD:
             deferred = (item && item->tag == CLASS_ITEM_METHOD) || (is_field && same_class && site->initializer_field &&
-                initialized_in_static_blocks(class_decl, access->prop.inner_span.sv, span_start_ptr(site->initializer_field->span)));
+                initialized_in_static_blocks(class_decl, access->prop.inner_span.sv, span_start_ptr(site->initializer_field->span),
+                    (prop_type(me, prop)->flags & (TYF_ANY | TYF_UNKNOWN)) != 0));
             break;
         case INITIALIZER_STATIC_BLOCK: deferred = declared_at < used_at; break;
     }
