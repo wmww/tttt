@@ -3367,6 +3367,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     switch ((TyKind)ty->kind) {
         case TY_INTRINSIC:
             out(d, ty->intrinsic.name);
+            if (ty->intrinsic.unresolved_args.len) {
+                out_lit(d, "<");
+                display_list(me, d, ty->intrinsic.unresolved_args);
+                out_lit(d, ">");
+            }
             break;
 
         case TY_LITERAL:

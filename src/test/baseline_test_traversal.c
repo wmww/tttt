@@ -1709,7 +1709,7 @@ void enum_decl_compile_test_info(EnumDecl const* me, BaselineTestCase* ctx) {
     });
     baseline_test_case_add_type(
         ctx, my name,
-        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_unresolved(current_checker, my name.sv)
+        my symbol ? ty_declared_type_of(current_checker, my symbol) : ty_unresolved(current_checker, my name.sv, (TyList){0})
     );
     for_each (i, vec_enum_case, &my cases) {
         //baseline_test_case_add_declaration(ctx, i->name, i->symbol);

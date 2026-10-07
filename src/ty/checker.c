@@ -507,16 +507,26 @@ static Ty const* literal_type(Checker* me, Value const* value, Symbol const* enu
     return *slot;
 }
 
-// The type of a type name that didn't resolve: the error type, but it prints as what was written, like in tsc
-Ty const* ty_unresolved(Checker* me, csview name) {
+// The type of a type name that didn't resolve: the error type, but it prints as the name with its type arguments'
+// types, one per (name, arguments), like tsc's errorTypes for an unresolved symbol (getTypeFromTypeAliasReference)
+Ty const* ty_unresolved(Checker* me, csview name, TyList args) {
     Atom const* atom = checker_atom(me, name);
-    u64 key[3] = { KEY_LITERAL, UINT32_MAX - 1, (u64)(uintptr_t)atom };
-    void const** slot = intern_slot(me, &my types, key, 3);
+    u64 stack_key[16];
+    u32 count = 3 + args.len;
+    u64* key = count <= c_arraylen(stack_key) ? stack_key : malloc(sizeof(u64) * count);
+    panic_if(!key, "out of memory");
+    key[0] = KEY_LITERAL;
+    key[1] = UINT32_MAX - 1;
+    key[2] = (u64)(uintptr_t)atom;
+    for (u32 i = 0; i < args.len; i++) key[3 + i] = args.data[i]->id;
+    void const** slot = intern_slot(me, &my types, key, count);
     if (!*slot) {
         Ty* ret = ty_alloc(me, TY_INTRINSIC, TYF_ANY | TYF_ERROR);
         ret->intrinsic.name = atom_sv(atom);
+        ret->intrinsic.unresolved_args = ty_list_copy(me, args.data, args.len);
         *slot = ret;
     }
+    if (key != stack_key) free(key);
     return *slot;
 }
 

@@ -426,7 +426,7 @@ static Ty const* intrinsic_alias_instance(Checker* me, Symbol const* decl, Ty co
 
 
 // The type of a type reference whose name doesn't resolve: tsc's unresolvedType, which prints as written
-static Ty const* unresolved_reference(Checker* me, IdentifierType const* identifier) {
+static Ty const* unresolved_reference(Checker* me, IdentifierType const* identifier, LowerCtx ctx) {
     // (A missing name, `a.` at the end of a line: no node to reuse, errorType)
     if (identifier->keyword || !span_valid(identifier->name) || !identifier->name.sv.size) return ty_intrinsic(me, TY_ERROR);
     cstr name = cstr_null;
@@ -435,19 +435,15 @@ static Ty const* unresolved_reference(Checker* me, IdentifierType const* identif
         cstr_append(&name, ".");
     }
     cstr_append_sv(&name, identifier->name.sv);
-    // (Printed as written, type arguments too: tsc reuses the reference's node, `Class<T>`)
-    if (vec_spanned_type_size(&identifier->generic_params)) {
-        cstr_append(&name, "<");
-        for_each (i, vec_spanned_type, &identifier->generic_params) {
-            if (i_index) cstr_append(&name, ", ");
-            // (Reprinted by tsc's printer: `{ a: string }` is `{ a: string; }`)
-            cstr arg = ty_type_node_to_cstr(me, &i->type);
-            cstr_append_sv(&name, cstr_sv(&arg));
-            cstr_drop(&arg);
-        }
-        cstr_append(&name, ">");
-    }
-    Ty const* ret = ty_unresolved(me, cstr_sv(&name));
+    // (The type arguments' types: tsc's typeArgumentsFromTypeReferenceNode, printed like any type, `KK` of a literal as
+    // the literal)
+    u32 arg_count = (u32)vec_spanned_type_size(&identifier->generic_params);
+    Ty const* stack_args[8];
+    Ty const** args = arg_count <= c_arraylen(stack_args) ? stack_args : malloc(sizeof(Ty const*) * arg_count);
+    panic_if(!args, "out of memory");
+    for (u32 i = 0; i < arg_count; i++) args[i] = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, i)->type, ctx);
+    Ty const* ret = ty_unresolved(me, cstr_sv(&name), (TyList){ .data = args, .len = arg_count });
+    if (args != stack_args) free(args);
     cstr_drop(&name);
     return ret;
 }
@@ -567,7 +563,7 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
     if (!decl || (decl->is_placeholder && decl->is_unresolved) ||
         (!identifier->jsdoc && !identifier->keyword && !(decl->flags & SYMBOL_TYPE) && !decl->is_placeholder)
     ) {
-        return unresolved_reference(me, identifier);
+        return unresolved_reference(me, identifier, ctx);
     }
     Ty const* args_buf[MAX_TYPE_ARGS];
 

@@ -263,6 +263,9 @@ struct Ty {
     union {
         struct {
             csview name;
+            // An unresolved reference (ty_unresolved()): its type arguments, printed after the name. Never instantiated,
+            // like tsc's error types for unresolved symbols
+            TyList unresolved_args;
         } intrinsic;
         struct {
             Value value; // Strings are borrowed from `string`
@@ -1101,7 +1104,7 @@ void const** intern_slot(Checker* me, InternTable* table, u64 const* words, u32 
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags);
 TyList ty_list_copy(Checker* me, Ty const* const* data, u32 len);
 
-Ty const* ty_unresolved(Checker* me, csview name);
+Ty const* ty_unresolved(Checker* me, csview name, TyList args);
 // A type node printed like tsc's printer reprints it (as the types baseline reuses annotations)
 cstr ty_type_node_to_cstr(Checker* me, TypeNode const* node);
 Ty const* ty_literal(Checker* me, Value const* value);
