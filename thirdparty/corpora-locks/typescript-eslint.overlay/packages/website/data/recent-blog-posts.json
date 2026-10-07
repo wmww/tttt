@@ -1,5 +1,12 @@
 [
   {
+    "date": "2026-10-05T00:00:00.000Z",
+    "description": "An uncovered line in a lint rule is usually a bug report in disguise. Here are the three things to do about it.",
+    "readingTime": 8,
+    "slug": "tips-for-increasing-lint-rule-test-coverage",
+    "title": "Tips For Increasing Lint Rule Test Coverage"
+  },
+  {
     "date": "2026-01-05T00:00:00.000Z",
     "description": "How the now-deprecated `ban-types` rule evolved over time to what is now several newer, targeted rules.",
     "readingTime": 5,
@@ -12,12 +19,5 @@
     "readingTime": 7,
     "slug": "project-service",
     "title": "Typed Linting with Project Service"
-  },
-  {
-    "date": "2025-01-21T00:00:00.000Z",
-    "description": "How typescript-eslint expands on TypeScript's type safety to catch explicit and implicit `any`s.",
-    "readingTime": 9,
-    "slug": "avoiding-anys",
-    "title": "Avoiding `any`s with Linting and TypeScript"
   }
 ]

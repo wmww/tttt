@@ -22,8 +22,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - `$ExpectType` knockout.mapping-tests.ts:109: tsc orders `KnockoutObservableArray<KnockoutObservableType<any>> |
     KnockoutObservableArray<any>`, tttt the other way round (same target: type argument lists, or deferred references
     by node position?).
-  - typescript-eslint (`-b`): 1 TS2345 'parameter of type never' at eslint-plugin/src/rules/naming-convention.ts:719,
-    predates this session (session start's build reports it too); check it against tsc 6 when stage 5 re-pins.
 - valibot under the commit's tsc with `--ignoreDeprecations 6.0` (without it tsc skips semantic diagnostics after the
   TS5107): 26 TS2554 "Expected 1 arguments, but got 0" on `expectTypeOf<...>().toEqualTypeOf<...>()` in
   `src/methods/partial/partial.test-d.ts` and others, i.e. tsc 6 finds types unequal that tttt finds equal (before and
@@ -302,3 +300,15 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   after 17 min single-threaded, then killed; `tsc -p .` multi-threaded was OOM-killed too). Not bisected: which
   package/file blows up tsgo might be a perf hazard worth knowing about (packages/bench and scripts/ are new since the
   old pin).
+
+## Corpora re-pin (plan 48 stage 5): typescript-eslint
+- typescript-eslint @ 70629871 (Oct 2026, TS6 upstream): tsc 4d4f005c -b 0, tsgo 7.0.2 -b 0, tttt 4 (38 projects,
+  8.9 s). The old pin's TS2345 at naming-convention.ts:719 is gone. The 4 are one root cause, TS2345 where
+  `isAwaitKeyword` (utils' `isTokenOfTypeWithConditions(AST_TOKEN_TYPES.Identifier, { value: 'await' })`) narrows
+  to `{ value: string } & IdentifierToken` instead of `{ value: "await" } & ...` (await-thenable.ts:91/210/263,
+  return-await.ts:256): tttt widens the literal when the type parameter's constraint is a homomorphic mapped type
+  over a generic intersection. Repro (tsc: `{ value: "await"; }`, tttt: `{ value: string; }`; without the
+  `Partial<>` or without `T` in it both keep the literal):
+  `type Token = { type: 'P'; value: '(' | ')' } | { type: 'I'; value: string };`
+  `declare function h<T extends Token['type'], C extends Partial<{ type: T } & Token>>(t: T, c: C): C;`
+  `const b = h('I', { value: 'await' });`

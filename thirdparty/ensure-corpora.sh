@@ -93,16 +93,20 @@ CORPORA=(
     # dependencies are every importer's (packages-private excluded; typescript the root's) at pnpm-lock.yaml's
     # versions (its second YAML document), from corpora-locks/vue.package.json
     "vue https://github.com/vuejs/core.git 4ab865a848a1da3d10fb674f857e5fff13094644 ."
-    # typescript-eslint v8.57.2 (Mar 2026, plan 41 stage 3): the last commit before its move to TypeScript 6, the
+    # typescript-eslint v8.71+ (main's head on 2026-10-07, plan 48 stage 5; on TypeScript 6: `typescript` is pnpm's
+    # override npm:@typescript/typescript6@6.0.2, with stableTypeOrdering in the base config, CI also runs tsgo 7), the
     # second project-references corpus (`tttt -b` at the root solution config: 38 composite projects, nested solution
     # configs, `${configDir}` in the shared base config, NodeNext; workspace packages import each other through
-    # node_modules symlinks whose package.json `types`/`exports` point at dist/*.d.ts, mapped back to the sources). A
-    # pnpm workspace: the dependencies are every importer's at pnpm-lock.yaml's versions (flat, no conflicts), in
-    # upstream's root package.json without `workspaces` (integration-tests imports its packageManager), from
-    # corpora-locks/typescript-eslint.package.json. The overlay has the two generated files the build needs:
-    # packages/types/src/generated/ast-spec.ts (ast-spec's tsc -b + api-extractor rollup + copy-ast-spec.mts) and
-    # packages/website/data/recent-blog-posts.json (the website's recent-blog-posts plugin)
-    "typescript-eslint https://github.com/typescript-eslint/typescript-eslint.git 1bf86c9f5c799916d12079c037c79e10b29cdc9c . workspace:packages/*"
+    # node_modules symlinks whose package.json `types`/`exports` point at dist/*.d.ts, mapped back to the sources).
+    # Clean under tsc 6 and tsgo 7 as is. A pnpm workspace: the dependencies are every importer's at pnpm-lock.yaml's
+    # versions (its second YAML document; flat, no conflicts; aliases as npm: specs), in upstream's root package.json
+    # without `workspaces` (integration-tests imports its packageManager), from
+    # corpora-locks/typescript-eslint.package.json. The postinstall moves the hoisted @types/esquery under its only
+    # dependent, as pnpm's layout has it. The overlay has the two generated files the build needs:
+    # packages/types/src/generated/ast-spec.ts (ast-spec's tsc -b, then api-extractor's rollup, with an
+    # overrideTsconfig since its bundled TS 5.9 rejects stableTypeOrdering, then copy-ast-spec.mts's enum transform,
+    # unprettified) and packages/website/data/recent-blog-posts.json (the website's recent-blog-posts plugin)
+    "typescript-eslint https://github.com/typescript-eslint/typescript-eslint.git 706298716de5edb95ff58a1ba8806f88f87423e7 . workspace:packages/*"
     # Effect v3.22.2 (Oct 2026, todo entry 2 of the ninth window; still the v3 branch's head at plan 48 stage 5):
     # upstream on TypeScript 5.8.3. main is Effect 4 on TypeScript 7 (tsgo), which tsc 6 doesn't check cleanly. The
     # core `effect` package's src, its vitest tests (through @effect/vitest's sources) and its tstyche type tests
