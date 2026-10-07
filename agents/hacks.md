@@ -490,6 +490,12 @@ src` finds the code-side markers; every significant one has an entry here.
   signatures.
 
 ## Type core (`src/ty/`)
+- `name_type_filters()`/`peek_cond_branch()` (`ty/members.c`): whether a mapped type's `as` clause filters or remaps
+  (tsc's getMappedTypeNameTypeKind, which decides whether its properties keep their declarations and so their stable
+  order) is told by the declared clause's shape (each union member / conditional branch is the key, never, or an
+  intersection with it), not by relating it to the key as tsc does: relating, or even lowering a self-referential
+  branch, reaches the members being resolved (mappedTypeAsClauseRecursiveNoCrash1). A pending lazy branch counts as
+  remapping. The fix is a relation that can't resolve these members (or tsc's resolution order).
 - Stable type ordering (`ty/order.c`, tsc 6's compareTypes): conditional types compare by their root's node position
   (`TyConditionalOuter.node`, the TernaryType span) and deferred references by their node's first token
   (`type_node_start()`: identifier, tuple, type literal, through arrays and union/intersection members) before the

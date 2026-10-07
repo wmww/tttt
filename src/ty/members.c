@@ -2987,6 +2987,53 @@ static bool intersection_has_generic_part(Checker* me, Ty const* intersection) {
     return false;
 }
 
+// A conditional type's branch without lowering or instantiating it (that can reach the mapped type whose members are
+// being resolved): one still to be lowered is unknown (null), one still to be instantiated is known if it's a type
+// parameter (Exclude's `T`) or never
+static Ty const* peek_cond_branch(TyCondBranch const* branch) {
+    if ((!branch->node && !branch->source) || branch->state == LAZY_STATE_DONE) return branch->type;
+    if (branch->node || branch->state != LAZY_STATE_NOT_STARTED) return nullptr;
+    Ty const* source = branch->source;
+    if (source->flags & TYF_NEVER) return source;
+    if (source->kind != TY_TYPE_PARAM) return nullptr;
+    for (u32 i = 0; branch->mapper && i < branch->mapper->len; i++) {
+        if (branch->mapper->sources[i] == source) return branch->mapper->targets[i];
+    }
+    return source;
+}
+
+// Whether an `as` clause only filters the keys (tsc's getMappedTypeNameTypeKind: Filtering when the clause is assignable
+// to the key parameter), told by its shape: each union member and conditional branch is the key, never, or an
+// intersection with the key. (Relating it as tsc does can reach the members of the mapped type being resolved:
+// `as `${K}.${keyof Self<T[K]>}``)
+static bool name_type_filters(Checker* me, Ty const* name, Ty const* key, u32 depth) {
+    if (name == key || (name->flags & TYF_NEVER)) return true;
+    if (depth > 8) return false;
+    switch ((TyKind)name->kind) {
+        case TY_UNION:
+            for (u32 i = 0; i < name->composite.types.len; i++) {
+                if (!name_type_filters(me, name->composite.types.data[i], key, depth + 1)) return false;
+            }
+            return true;
+        case TY_INTERSECTION:
+            for (u32 i = 0; i < name->composite.types.len; i++) {
+                if (name_type_filters(me, name->composite.types.data[i], key, depth + 1)) return true;
+            }
+            return false;
+        case TY_CONDITIONAL: {
+            for (u32 which = 0; which < 2; which++) {
+                Ty const* branch = peek_cond_branch(&name->conditional.branches[which]);
+                if (!branch || !name_type_filters(me, branch, key, depth + 1)) return false;
+            }
+            return true;
+        }
+        case TY_SUBSTITUTION:
+            return name_type_filters(me, name->substitution.base, key, depth + 1);
+        default:
+            return false;
+    }
+}
+
 // A mapped type whose key type is known has ordinary members: a property per literal key (or per literal the `as`
 // clause maps a key to), an index signature per primitive key. Returns the members unchanged while the key type is
 // generic (or something this can't expand yet)
@@ -3115,6 +3162,11 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     prop_decl_rare_mut(me, template->decl)->template_of = mapped;
 
     MembersBuilder builder = { .mapped = generic ? mapped : nullptr };
+    // (Of the declared mapped type, tsc's type.target)
+    MappedInfo const* declared_mapped = mapped;
+    while (declared_mapped->template_from) declared_mapped = declared_mapped->template_from;
+    bool remapping = declared_mapped->name_type &&
+        !name_type_filters(me, declared_mapped->name_type, declared_mapped->type_param, 0);
     for (u32 i = 0; i < key_count; i++) {
         Ty const* key = keys[i];
         TyMapper const* mapper = ty_mapper_new(
@@ -3163,8 +3215,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
                 };
                 *intern_slot(me, &my links, (u64[]){ KEY_PROP_MAPPED_TYPE, (u64)(uintptr_t)prop }, 2) = ty;
                 // A fresh symbol, declared where the property it comes from is (tsc's resolveMappedTypeMembers), unless
-                // the `as` clause renamed it (tsc: a remapping rather than a filtering `as` clause; approximated per key)
-                Prop const* declared = prop_name == key ? from : nullptr;
+                // the `as` clause remaps rather than filters (any key: tsc's shouldLinkPropDeclarations, see below)
+                Prop const* declared = prop_name == key && !remapping ? from : nullptr;
                 while (declared && declared->target && !declared->decl->decl_span_count) declared = declared->target;
                 if (declared) {
                     prop->decl = arena_new(&my arena, PropDecl);

@@ -110,6 +110,12 @@ static bool type_node_start(TypeNode const* node, Span* out) {
     return false;
 }
 
+// A symbol's name as tsc's escapedName: a module's default export is `default` whatever its declaration is named
+// (declareSymbol), tttt's Symbol.name is the name as written
+static csview escaped_name(Symbol const* s) {
+    return s->is_default_export ? c_sv("default") : s->name;
+}
+
 // tsc's compareSymbols, minus symbol ids (0: tie)
 static int cmp_symbols(Symbol const* a, Symbol const* b) {
     if (a == b) return 0;
@@ -126,7 +132,7 @@ static int cmp_symbols(Symbol const* a, Symbol const* b) {
     } else if (hb) {
         return 1;
     }
-    return cmp_sv(a->name, b->name);
+    return cmp_sv(escaped_name(a), escaped_name(b));
 }
 
 // The symbol tsc's compareTypeNames orders by (getTypeNameSymbol): a name, and the symbol for the identity test
@@ -150,7 +156,7 @@ static TypeName type_name(Ty const* t) {
                 case TY_DECLARED_INTERFACE:
                 case TY_DECLARED_CLASS_INSTANCE:
                 case TY_DECLARED_SYNTHETIC:
-                    if (t->declared.symbol) return (TypeName){ true, t->declared.symbol, t->declared.symbol->name };
+                    if (t->declared.symbol) return (TypeName){ true, t->declared.symbol, escaped_name(t->declared.symbol) };
                     return (TypeName){ true, t, atom_sv(t->declared.name) };
                 default:
                     return (TypeName){0};
@@ -247,7 +253,7 @@ static int cmp_object_symbols(ObjectSym a, ObjectSym b) {
     } else if (b.positioned) {
         return 1;
     }
-    if (a.symbol && b.symbol) return cmp_sv(a.symbol->name, b.symbol->name);
+    if (a.symbol && b.symbol) return cmp_sv(escaped_name(a.symbol), escaped_name(b.symbol));
     // (Two `__instantiationExpression` symbols: by symbol id)
     if (a.created && b.created) return a.created < b.created ? -1 : 1;
     return 0;
