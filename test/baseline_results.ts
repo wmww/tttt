@@ -2203,7 +2203,7 @@ const baselines = {
     'augmentExportEquals7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'augmentedClassWithPrototypePropertyOnModule': {
         errors: true,
@@ -14192,8 +14192,8 @@ const baselines = {
     },
     'exportAsNamespace_augment': {
         errors: true,
-        symbols: false,
-        types: false,
+        symbols: true,
+        types: true,
     },
     'exportAssignClassAndModule': {
         errors: true,
@@ -14258,7 +14258,7 @@ const baselines = {
     'exportAssignmentMembersVisibleInAugmentation': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportAssignmentOfDeclaredExternalModule': {
         errors: true,
@@ -32046,7 +32046,7 @@ const baselines = {
         types: true,
     },
     'styledComponentsInstantiaionLimitNotReached': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67338,7 +67338,7 @@ const baselines = {
     'sourceFileMergeWithFunction': {
         errors: true,
         symbols: false,
-        types: false,
+        types: true,
     },
     'spellingUncheckedJS': {
         errors: true,
