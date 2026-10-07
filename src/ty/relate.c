@@ -5127,7 +5127,16 @@ static Ternary structured_related_members(
     if (source->kind == TY_INTERSECTION) {
         bool saved_source = st->intersection_source;
         st->intersection_source = true;
-        Ternary related = some_related(me, st, source->composite.types, target, false);
+        // (Not an intersection of object types against a union, which related_to_some() above tried member by member
+        // with the whole intersection: tsc's unionOrIntersectionRelatedTo never relates the source's members alone to a
+        // union target, and doing so skips the optional property check below, `{ open?: F | undefined } & { read: R }`
+        // to `C | undefined`. A generic intersection still goes by its members here, standing in for tsc's
+        // getEffectiveConstraintOfIntersection, which effective_intersection_constraint() doesn't always match)
+        bool objects_only = target->kind == TY_UNION;
+        for (u32 i = 0; objects_only && i < source->composite.types.len; i++) {
+            objects_only = (source->composite.types.data[i]->flags & TYF_OBJECT) && !(source->composite.types.data[i]->flags & TYF_DEFERRED);
+        }
+        Ternary related = objects_only ? TERNARY_FALSE : some_related(me, st, source->composite.types, target, false);
         st->intersection_source = saved_source;
         // The members' constraints together may be related (tsc's getEffectiveConstraintOfIntersection): `T & {}` with
         // `T extends Node | undefined` is a Node
