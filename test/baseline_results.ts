@@ -29206,7 +29206,7 @@ const baselines = {
         types: true,
     },
     'recursiveConditionalTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -67337,7 +67337,7 @@ const baselines = {
     },
     'sourceFileMergeWithFunction': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'spellingUncheckedJS': {
