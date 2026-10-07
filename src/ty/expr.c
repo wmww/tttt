@@ -3515,6 +3515,8 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
         // in X's initializer)
         Ty const* member_sig_context = nullptr;
         if ((ctx.contextual || ctx.sig_contextual) && !is_accessor) {
+            // (tsc asks for it from the value's checkExpression: what goes wrong making it is the value's)
+            CurrentNode saved_node = ty_enter_expr(me, &i->value);
             if (name) {
                 if (ctx.contextual) member_context = contextual_named_prop_type(me, ctx.contextual, name);
                 if (ctx.sig_contextual) member_sig_context = contextual_named_prop_type(me, ctx.sig_contextual, name);
@@ -3522,6 +3524,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
                 if (ctx.contextual) member_context = contextual_prop_type(me, ctx.contextual, key_type);
                 if (ctx.sig_contextual) member_sig_context = contextual_prop_type(me, ctx.sig_contextual, key_type);
             }
+            ty_leave_node(me, saved_node);
         }
         ExprCtx member_ctx = {
             .contextual = member_context, .sig_contextual = member_sig_context,
