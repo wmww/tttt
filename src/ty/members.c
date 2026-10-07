@@ -5,6 +5,22 @@
 #include "enum_decl.h"
 #include "compiler_options.h"
 
+// tsc's isReadonlyAssignmentDeclaration of `Object.defineProperty(o, "x", descriptor)`: written as an object literal
+// that is syntax (expr_define_property_readonly()); any other descriptor goes by its type (checkExpressionCached):
+// without `value` readonly unless it has `set`, with one unless `writable` is there and not `false`
+static bool define_property_readonly(Checker* me, Expr const* call) {
+    Expr const* descriptor = vec_expr_at(&call->call->args, 2);
+    if (descriptor->tag == EXPR_OBJECT) return expr_define_property_readonly(call);
+    Ty const* type = ty_apparent_type(me, ty_expr_type(me, descriptor));
+    if (!(type->flags & TYF_OBJECT)) return false;
+    if (!ty_get_prop(me, type, checker_atom(me, c_sv("value")))) return !ty_get_prop(me, type, checker_atom(me, c_sv("set")));
+    Prop const* writable = ty_get_prop(me, type, checker_atom(me, c_sv("writable")));
+    if (!writable) return true;
+    Ty const* flag = prop_type(me, writable);
+    return (flag->flags & TYF_BOOLEAN_LITERAL) && !flag->literal.value.boolean;
+}
+
+
 // Members of object types are resolved on first use, never at construction. That's what makes recursive types legal:
 // `interface List<T> { tail: List<T> }` only needs the *identity* of `List<T>` to describe its members.
 
@@ -1161,7 +1177,7 @@ static void builder_add_assignment_members(Checker* me, MembersBuilder* builder,
                 prop->flags |= PROP_METHOD;
             }
             if (member->decl_count && member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY &&
-                expr_define_property_readonly(member->decls[0].node)
+                define_property_readonly(me, member->decls[0].node)
             ) {
                 prop->flags |= PROP_READONLY;
             }
@@ -1806,7 +1822,7 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     if (member != symbol && (symbol->flags & SYMBOL_ALIAS)) prop->flags |= PROP_NO_VALUE_DECLARATION;
     // (`Object.defineProperty(o, "x", { value: 1 })`: isReadonlyAssignmentDeclaration)
     if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
-        member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && expr_define_property_readonly(member->decls[0].node)
+        member->decls[0].assignment == ASSIGNMENT_DECL_DEFINE_PROPERTY && define_property_readonly(me, member->decls[0].node)
     ) {
         prop->flags |= PROP_READONLY;
     }
