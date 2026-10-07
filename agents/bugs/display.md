@@ -239,3 +239,6 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   tttt, extHostTypeConverters.ts:673/688 and three more): not looked at again; the e.ts-style repro in the 2026-10-07
   triage stands. Likely elaborateObjectLiteral's order (tsc elaborates the first property whose *declared* target
   property fails with an expression it can descend into, and stops at the first reported one per literal).
+- bundledDtsLateExportRenaming: with outFile tsc names modules non-relative from the common source directory with
+  minimal endings (getSpecifierForModuleSymbol's isBundle: baseUrl = common source dir, `non-relative`):
+  `import("nested").B`; module_specifiers.c has no bundle mode (needs the common source directory in Generator).
