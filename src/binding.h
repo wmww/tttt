@@ -95,6 +95,9 @@ void binding_report_iterated_widening(Binding const* me, struct Ty const* elemen
 void binding_collect_names(Binding const* me, VecSpan* out);
 /// `initializer`: what the binding is initialized with, if anything (a failed check is elaborated into it)
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs);
+// Set while checking a parameter of a signature without a body (a type's, an overload's): an element's default is
+// TS2371 (reported by the signature) and nothing else of that element is checked
+extern _Thread_local bool binding_check_bodiless;
 
 void object_binding_item_drop(ObjectBindingItem* me);
 

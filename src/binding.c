@@ -430,6 +430,8 @@ static void binding_report_rest_trailing_comma(Binding const* element, ErrorCtx*
 
 static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, ErrorCtx* errs);
 
+_Thread_local bool binding_check_bodiless;
+
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
     binding_typecheck_at(me, initializer, span_null, true, false, errs);
 }
@@ -517,6 +519,16 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
             initializer, errs);
     }
 
+    // (tsc's checkVariableLikeDeclaration: an element's initializer in a signature without a body is TS2371, after its
+    // own elements were checked, and then it returns)
+    if (my default_value && my parent && binding_check_bodiless) {
+        if (my tag == BINDING_ARRAY) {
+            for_each (i, vec_binding, &my array) binding_typecheck(i, nullptr, errs);
+        } else if (my tag == BINDING_OBJECT) {
+            for_each (i, vec_object_binding_item, &my object) binding_typecheck(&i->target, nullptr, errs);
+        }
+        return;
+    }
     if (my default_value) {
         Ty const* default_type = ty_binding_default_type(current_checker, me);
         expr_typecheck(my default_value, errs);
