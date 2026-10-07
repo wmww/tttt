@@ -3792,8 +3792,14 @@ static bool binary_op_typecheck(
             ) {
                 break;
             }
-            assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right,
-                expr->binary_op->access_site, errs);
+            {
+                // (tsc's checkBinaryLikeExpression: the assignment is the current node, where a relation without an
+                // error node reports, TS2859)
+                CurrentNode saved = ty_enter_expr(current_checker, expr);
+                assignment_target_typecheck(&expr->binary_op->left, right, &expr->binary_op->right,
+                    expr->binary_op->access_site, errs);
+                ty_leave_node(current_checker, saved);
+            }
             break;
 
         case BINARY_OP_DOUBLE_EQUAL:

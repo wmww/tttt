@@ -26351,7 +26351,7 @@ const baselines = {
         types: true,
     },
     'normalizedIntersectionTooComplex': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29676,7 +29676,7 @@ const baselines = {
         types: true,
     },
     'relationComplexityError': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

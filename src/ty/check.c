@@ -757,8 +757,11 @@ static bool check_assignable(
     if (my instantiation_limit_hits != limit_hits) {
         if (errs && my relation_complexity_hits != complexity_hits) {
             // tsc's explaining pass runs out of budget too, which reports TS2859 a second time, and nothing else
+            // (tsc's checkTypeRelatedTo with the error node: reported there)
             VecTyReportLine lines = {0};
+            CurrentNode saved = ty_enter_node(me, span);
             ty_explain_unrelated(me, source, target, TY_RELATION_ASSIGNABLE, &lines);
+            ty_leave_node(me, saved);
             vec_ty_report_line_drop(&lines);
         }
         return false;
