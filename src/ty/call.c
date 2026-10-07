@@ -1051,15 +1051,15 @@ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper
 // type is the rest type's element at its position, and a literal that has room in it isn't widened as a candidate
 // (`Literal("a")` under `...literals: Literals` with `Literals extends readonly LiteralValue[]` is `["a"]`)
 static Ty const* rest_arg_contextual(Checker* me, ParamShape const* shape, Args const* args, u32 i, u32 from) {
-    if (!ty_is_tuple(shape->rest_variadic) || args->spread_index >= 0) {
+    if (!ty_is_tuple(shape->rest_variadic)) {
         // A rest type that isn't a tuple gives `T[i]` (with a `const T`, each argument is in a const context), by
-        // position even with spreads among the arguments (tsc's getSpreadArgumentType): `f11(1, ...u)` keeps 1. So
-        // does a tuple after a spread argument (i - index, whatever the spread expands to)
+        // position even with spreads among the arguments (tsc's getSpreadArgumentType): `f11(1, ...u)` keeps 1
         Value index = value_number((double)(i - from));
         return ty_indexed(me, shape->rest_variadic, ty_literal(me, &index));
     }
-    if (args->spread_index >= 0) return nullptr;
-    // (A tuple's elements after a variadic one count from the end, tsc's getContextualTypeForElementExpression)
+    // A tuple's elements after a variadic one count from the end, spread arguments counting one each (tsc's
+    // getContextualTypeForElementExpression without spread indices): `pipe(1, ...xs, (...v) => {})` against
+    // `...args: [...T, (...v: T) => void]` types the function by the last element
     return ty_contextual_element_type_of(me, shape->rest_variadic, i - from, args->len - from);
 }
 
