@@ -271,8 +271,23 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - Homomorphic mapped types over tuples print/relate as object types `{ 0: number; 1?: string; }` (TS2345 x2 in
     rename-keys.ts:272, set-required-deep.ts:55; TS2379 in schema.ts:273): looks like a mapped type over a tuple (or
     an intersection/union containing one) not producing a tuple. Repro from SetRequiredDeep / RenameKeys.
-  - TS2345 unwrap-partial.ts:67: `(string | undefined)[]` vs `string[]`, UnwrapPartial<Partial<string[]>> (the
-    homomorphic `?` modifier on an array removed again by `-?`: tsc strips the undefined it added).
+  - TS2345 unwrap-partial.ts:67, only with exactOptionalPropertyTypes: `type U<P> = P extends Partial<infer O> ?
+    (Partial<O> extends P ? O : P) : P; type A = U<Partial<string[]>>` is `string[]` in tsc, `(string |
+    undefined)[]` in tttt (reverse inference of O from a homomorphic mapped type over an array keeps the undefined
+    the `?` added; strict and noUncheckedIndexedAccess don't matter).
   - TS2578 x2 in internal/apply-default-options.ts:76,86: the `@ts-expect-error`ed line has no error in tttt.
   - Peak RSS 2.3 GB (IntRange<0, 999> tests): check in the perf session.
 - valibot @ d4da61a0: tttt 4, TS2339 x3 on `this.cache` in cache/cacheAsync, TS2322 on pipeAsync's variadic tuple.
+
+## Corpora re-pin (plan 48 stage 5): effect
+- effect stays at e730f59d (v3 branch head, v3.22.2, upstream on TypeScript 5.8.3): main is Effect 4 on TypeScript
+  ^7.0.2 (tsgo, `@effect/tsgo` patch) and isn't clean under tsc 6: its packages/effect/src alone gives 2 TS2345
+  (SchemaAST.ts:3109, SchemaCompiler/runtime.ts:73, an Exit-vs-Effect callback union under exactOptionalPropertyTypes)
+  where tsgo is clean, so it can't be checked against our oracle. Revisit (a second, Effect 4 corpus) when tsgo 7
+  becomes the oracle. tsc 6 also took 43 s on that src vs tsgo's 8.6 s: a heavy perf corpus candidate.
+- The overlay unsets the base config's deprecated `downlevelIteration` (no effect at ES2022) and `esModuleInterop:
+  false` with `null` (6.0's default true; the checker sees the same under NodeNext): tsc 4d4f005c 0, tttt 3 (the known
+  TS2578 x3 in dtslint Tagged{Class,Error,Request}, plan 19). tsgo 7.0.2 reports 3 that tsc 6 doesn't (upstream
+  doesn't run tsgo on v3): TS2345 at src/Schema.ts:3770 (`typeSchema(self)`: `SchemaClass<any, any, never>` not
+  assignable to `S extends Schema.Any` inside `dual(2, <S, FD>(...) => transformOrFail(self, typeSchema(self), ...))`)
+  and TS2769 x2 in packages/vitest/src/internal/internal.ts:132,153. tsgo-vs-tsc 6 divergences, like vue's.

@@ -6,6 +6,8 @@
     "noEmit": true,
     "composite": false,
     "incremental": false,
-    "noUnusedLocals": false
+    "noUnusedLocals": false,
+    "downlevelIteration": null,
+    "esModuleInterop": null
   }
 }

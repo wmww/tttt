@@ -100,14 +100,16 @@ CORPORA=(
     # packages/types/src/generated/ast-spec.ts (ast-spec's tsc -b + api-extractor rollup + copy-ast-spec.mts) and
     # packages/website/data/recent-blog-posts.json (the website's recent-blog-posts plugin)
     "typescript-eslint https://github.com/typescript-eslint/typescript-eslint.git 1bf86c9f5c799916d12079c037c79e10b29cdc9c . workspace:packages/*"
-    # Effect v3.22.2 (Oct 2026, todo entry 2 of the ninth window): the head of the v3 branch, still on TypeScript 5.8
-    # (main is Effect 4 on TypeScript 7). The core `effect` package's src, its vitest tests (through @effect/vitest's
-    # sources) and its tstyche type tests (dtslint/*.tst.ts): HKT encodings, generators as do-notation, `pipe` and
-    # dual APIs with many overloads, variance annotations, branded types, Schema. Checked through
-    # packages/effect/tsconfig.corpus.json from the overlay (upstream's tsconfig.src/test.json and dtslint's, one
-    # program, noEmit, noUnusedLocals off as in dtslint's). A pnpm workspace: the dependencies are the type
-    # dependencies of effect, @effect/vitest and the root at pnpm-lock.yaml's versions, from
-    # corpora-locks/effect.package.json; the workspace packages are linked into the root's node_modules
+    # Effect v3.22.2 (Oct 2026, todo entry 2 of the ninth window; still the v3 branch's head at plan 48 stage 5):
+    # upstream on TypeScript 5.8.3. main is Effect 4 on TypeScript 7 (tsgo), which tsc 6 doesn't check cleanly. The
+    # core `effect` package's src, its vitest tests (through @effect/vitest's sources) and its tstyche type tests
+    # (dtslint/*.tst.ts): HKT encodings, generators as do-notation, `pipe` and dual APIs with many overloads, variance
+    # annotations, branded types, Schema. Checked through packages/effect/tsconfig.corpus.json from the overlay
+    # (upstream's tsconfig.src/test.json and dtslint's, one program, noEmit, noUnusedLocals off as in dtslint's; the
+    # base's 6.0-deprecated downlevelIteration and esModuleInterop=false unset with null). tsc 6 is clean; tsgo 7.0.2
+    # is not (3: a TS2345 in Schema.ts, TS2769 x2 in @effect/vitest; upstream doesn't run tsgo on v3). A pnpm
+    # workspace: the dependencies are the type dependencies of effect, @effect/vitest and the root at pnpm-lock.yaml's
+    # versions, from corpora-locks/effect.package.json; the workspace packages are linked into the root's node_modules
     "effect https://github.com/Effect-TS/effect.git e730f59d29db5f1e312be6476a95d07bcad45788 . workspace:packages/*"
     # VS Code (Mar 2025, todo entry 5 of the ninth window): the last commit before its move to TypeScript 5.9 nightlies,
     # the large application (4.5k files, 1.39M lines in src/ with monaco.d.ts and vscode.d.ts): the workbench, editor,
