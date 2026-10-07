@@ -276,6 +276,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - TS2578 x2 in internal/apply-default-options.ts:76,86: the `@ts-expect-error`ed line has no error in tttt.
   - Peak RSS 2.3 GB (IntRange<0, 999> tests): check in the perf session.
 - valibot @ d4da61a0: tttt 4, TS2339 x3 on `this.cache` in cache/cacheAsync, TS2322 on pipeAsync's variadic tuple.
+  The TS2339 is the *second* `this.cache` of the `'~run'` method (`let outputDataset = this.cache.get(key); if
+  (!outputDataset) { this.cache.set(key, (outputDataset = ...)) }`), not the first: the `let`'s initializer seems to
+  get typed while `this` (ThisType<TSchema>, TSchema inferred from the return type SchemaWithCache<...>) is still
+  the constraint `BaseSchema | BaseSchemaAsync`. Reproduces with cache.ts's implementation copied into a file
+  importing valibot's types, `_LruCache` and `_cloneDataset` from the corpus; a hand-written cut-down of the types
+  doesn't (yet).
 
 ## Corpora re-pin (plan 48 stage 5): effect
 - effect stays at e730f59d (v3 branch head, v3.22.2, upstream on TypeScript 5.8.3): main is Effect 4 on TypeScript
