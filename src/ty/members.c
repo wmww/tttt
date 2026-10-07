@@ -3892,7 +3892,12 @@ Symbol const* ty_js_constructor_class(FunctionImpl const* function) {
 // called where it is made. Every argument is optional (getMinArgumentCount)
 static bool function_is_untyped_js(FunctionImpl const* function) {
     SourceFile const* file = function->full_span.source;
-    return file && file->is_js && !function->is_type && !function->is_iife && !function->jsdoc_typed;
+    if (!file || !file->is_js || function->is_type || function->is_iife || function->jsdoc_typed) return false;
+    // (Nor with a parameter of its own JSDoc type, `/** @type {string} */ message`: getJSDocType of a parameter)
+    for_each (i, vec_function_arg, &function->args) {
+        if (i->initializer.binding.has_explicit_type && i->initializer.binding.explicit_type.from_jsdoc) return false;
+    }
+    return true;
 }
 
 // A JavaScript function declaration's or class method's `@type {F}` naming a function type: F's one call signature, which

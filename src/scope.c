@@ -1702,13 +1702,15 @@ void scope_add_port(Scope* me, PortItem* item) {
     // declareModuleMember)
     SymbolTable* table = !exported && (my kind == SCOPE_MODULE || my kind == SCOPE_NAMESPACE) ? &my locals :
         scope_declaration_table(me, exported);
-    if (block_export) {
+    // (An import in a block, TS1232, too: in a script's block it is a global)
+    bool block_import = !block_export && item->wrong_context && my kind == SCOPE_BLOCK;
+    if (block_export || block_import) {
         // (tsc's declareSymbolAndAddToSymbolTable goes by the container: a block's is the function or file around it)
         Scope* container = me;
         while (container->kind == SCOPE_BLOCK && container->parent) container = container->parent;
         // (declareModuleMember puts an export specifier in a namespace's or module's exports)
         table = container->kind == SCOPE_SCRIPT ? scope_declaration_table(container, false) :
-            (container->kind == SCOPE_NAMESPACE || container->kind == SCOPE_MODULE) && container->container ?
+            block_export && (container->kind == SCOPE_NAMESPACE || container->kind == SCOPE_MODULE) && container->container ?
             scope_declaration_table(container, true) : &container->locals;
     }
     bool merged;

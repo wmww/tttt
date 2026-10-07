@@ -34548,7 +34548,7 @@ const baselines = {
     'typeofImportInstantiationExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeofInObjectLiteralType': {
         errors: true,
@@ -58223,7 +58223,7 @@ const baselines = {
     'jsdocTypeTagOnParameter1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeTagParameterType': {
         errors: true,

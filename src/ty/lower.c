@@ -532,6 +532,16 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
                 previous = prop;
                 ret = prop_type(me, prop);
             }
+            // `typeof import("./m").f<A>`: an instantiation expression (tsc's resolveImportSymbolType,
+            // getInstantiationExpressionType)
+            u32 arg_count = (u32)vec_spanned_type_size(&identifier->generic_params);
+            if (identifier_type_import_typeof(identifier) && arg_count) {
+                Ty const** args = malloc(sizeof(Ty const*) * arg_count);
+                panic_if(!args, "out of memory");
+                for (u32 i = 0; i < arg_count; i++) args[i] = ty_from_node(me, &vec_spanned_type_at(&identifier->generic_params, i)->type, ctx);
+                ret = ty_apply_type_arguments(me, ret, (TyList){ .data = args, .len = arg_count });
+                free(args);
+            }
             // (A JSDoc `import("./m").C` of a class value means its instance, tsc's getTypeFromJSDocValueReference)
             if (!identifier_type_import_typeof(identifier) && ret->kind == TY_DECLARED && ret->declared.kind == TY_DECLARED_CLASS_STATIC &&
                 ret->declared.symbol
