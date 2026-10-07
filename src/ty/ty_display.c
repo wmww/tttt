@@ -292,6 +292,14 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         out(d, js_name);
         return;
     }
+    if (!d.enclosing && symbol_is_augmented_export_equals(symbol) && symbol->decl_count) {
+        // What an augmented `export =` assigns is a module to tsc's printer (see below), in a message too
+        SourceFile const* file = symbol->decls[0].full.source;
+        out_lit(d, "import(\"");
+        out(d, file ? source_file_display_path(file) : c_sv(""));
+        out_lit(d, "\")");
+        return;
+    }
     Symbol const* parent = symbol->parent;
     if ((!parent && !d.enclosing) || (symbol->is_global_this && !d.enclosing) || (!d.enclosing && !d.fully_qualified)) {
         out(d, ty_symbol_display_name(symbol).sv);
