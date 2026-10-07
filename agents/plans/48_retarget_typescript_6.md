@@ -160,6 +160,13 @@ measured: `0n` at checker start (tsc's compareTypes has no bigint value order: i
 `union_with_origin` work; each alone nothing: unexplained, a HACK note in lower.c), the type-literal index-constraint
 gate (pure cost filter). Union-order bucket in displaydiff: 4 tests, all explained (ty_compare id ties, JS member
 order). Left: the id tie-breaks of hacks.md "Stable type ordering", class/interface getNamedMembers order.
+Fan-out part (4 agents, ~80 picks): 14711 -> **14804 / 14969**, 0 lost; `48_lost.txt` 22 -> 13. Ordering ties
+ported where tttt has the node (conditional roots by node position, deferred references by node, fresh after regular,
+unpositioned unique symbols); hacks.md lists the ties still left to ids. Mechanisms: tsc's symbolDepth printer
+elision, the predicate/alias/property re-entry rules behind TS2589 vs TS2502, TS2563/TS2590/TS2859 placement,
+`require()` of ESM (`"module.exports"` export), parse-error deduplication order, tsc 6's getNamedMembers for type
+literals with late-bound names, a harness use-after-free (class field declarations). Leftovers: triage.md "fan-out
+agent A/B/C/D" sections.
 The original brief, for reference: **delete the creation-order machinery**, one piece at a time, measuring each removal (suite,
 corpora, instruction counts): `argorder.py`; plan 35 item 3 and its leftovers; the walk-order code that exists to
 create types in tsc's order (check-walk and node memoization in `type.c`, `lower.c`'s `KEY_UNION_NODE` and property

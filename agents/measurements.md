@@ -10,6 +10,17 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Plan 48 stage 2 session B (2026-10-07, eleventh window's todo entry 5)
+Creation-order deletion, then a 4-agent fan-out: suite 14712 -> **14804 / 14969** (errors 14890, symbols 14917,
+types 14855; lost only `stableTypeOrdering(stabletypeordering=false)`, accepted). Corpora unchanged (`./realworld.py`:
+tsc, zod 0; type-fest, react, drizzle, vue, excalidraw 1; nest 4; effect 5; tanstack-router 28; xstate 30; valibot
+31; webpack 5297). checkerdiff as before (vue's `--checkers 1` TS2345, webpack 4 inside quotes). Instructions
+(callgrind, e1ff62a5 -> after the deletion -> end): tsc 4.804 -> 4.796 -> 4.816, type-fest 3.143 -> 3.132 -> 3.139,
+valibot 4.500 -> 4.496 -> 4.522, react 1.544 -> 1.546, nest 1.155 -> 1.157, webpack 5.140 -> 5.105 -> 5.136, zod
+5.004 -> 5.035, xstate 3.021 -> 3.033, drizzle 8.312 -> 8.304 -> 8.350, vue 6.755 -> 6.794, effect 9.624 -> 9.570 ->
+9.629, vscode 33.117 -> 33.056 -> 33.168, excalidraw 5.233 -> 5.249, tanstack-router 4.447 -> 4.468 (fan-out creep
++0.2-0.6%, spread over ~75 picks; a +1.6% drizzle from one pick was fixed by its author).
+
 ## Plan 48 stage 3 fan-out (2026-10-07, eleventh window's todo entry 4)
 Suite 14269 -> **14712 / 14969** (errors 14846, symbols 14905, types 14782; 0 lost). Corpora (`./realworld.py`, 4
 checkers): tsc, zod 0; type-fest, react, drizzle, vue, excalidraw 1; nest 4; effect 5; tanstack-router 28; webpack

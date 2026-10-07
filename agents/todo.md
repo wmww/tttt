@@ -22,7 +22,9 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
    tanstack-router/zod, vue -2% (plan 48 has the details and what's left for session B).
 4. Done (execution, 2026-10-07): plan 48 stage 3 fan-out, suite **14712 / 14969** (98.3%, 0 lost); xstate 30 and
    valibot 31 now equal the commit's tsc; zod +4% instructions from a tsc-faithful merged-interface instantiation.
-5. **Execution: plan 48 stage 2 session B**, delete the creation-order machinery piece by piece, then `48_lost.txt`.
+5. Done (execution, 2026-10-07): plan 48 stage 2 session B. Creation-order machinery deleted (suite and corpora
+   unchanged, instructions -0.1..-0.7%), then a 4-agent fan-out: suite **14804 / 14969** (98.9%), `48_lost.txt` 22 ->
+   13 (all with triage notes), corpora unchanged, instructions +0.2-0.6% vs the session start.
 6. **Execution: plan 48 stage 4**, the other oracles' caches on the new tsc (sweep ~40 min: commit first), drain cheap.
 7. **Corpora: plan 48 stage 5**, re-pin every corpus at current upstream (clean under the commit's tsc and tsgo 7.0.2).
 8. **Corpora: stage 5 drain** with sub-agents.
