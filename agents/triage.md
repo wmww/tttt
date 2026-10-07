@@ -48,3 +48,10 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     instructions (ZodType<...> is merged, 53 member types now instantiated per schema type), +1% tsc. An identity-only
     cost (the instances are structurally equal); a relation fast path for two instances of one root whose syntactic
     free parameters map alike would win some of it back.
+- Plan 48 stage 3 agent B leftovers (errors component, all pre-6.0 or display/elaboration, not new 6.0 checks):
+  bigintPropertyName (bigint literal property names: 6.0 parses them, binds them as no member (`{1n: 1}` is `{}`), TS1539; parser + binder work);
+  inlineJsxFactoryDeclarationsLocalTypes ('Its return type' must qualify `import("renderer2").predom.JSX.Element` like tsc's getTypeNamesForErrorDisplay; same 5.8 baseline, passed before the switch);
+  complexRecursiveCollections (TS2430 elaborates `map(...).filter(...).filter` where tsc's first failing property is `map(...).size`: property comparison order);
+  requireOfJsonFileWithoutResolveJsonModule (6.0 resolves the .json: tsc's JSON parser recovery on non-JSON text gives TS1005/TS1136 and an object type `{ contents: any; Not: any; read: any; }`, tttt gives TS1328);
+  arityAndOrderCompatibility01, styledComponentsInstantiaionLimitNotReached, bigintWithLib, conditionalTypes1/2 (elaboration chain depth/order);
+  parser recovery (plan 27): labeledStatementDeclarationListInLoopNoCrash4, jsxAndTypeAssertion, tsxAttributeInvalidNames (one missing EOF TS1005 each), parser0_004152, jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative, varianceAnnotationsWithCircularlyReferencesError, reachabilityChecksNoCrash1, importAttributes10/11, decoratorOnUsing, scannerUnexpectedNullCharacter1.
