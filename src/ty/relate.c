@@ -3307,9 +3307,10 @@ static Ternary related_to_some(Checker* me, RelationState* st, Ty const* source,
         Ternary related = is_related_to_side(me, st, source, match, false, 1);
         if (related) return related;
     }
-    // A unit type is only ever related to a union member by identity (above) or through a non-unit member
+    // A unit type is only ever related to a union member by identity (above) or through a non-unit member (null and
+    // undefined relate to every literal without strictNullChecks: tsc's isSimpleTypeRelatedTo)
     bool source_is_unit = (source->kind == TY_LITERAL && !source->literal.enum_decl) ||
-        (source->kind == TY_INTRINSIC && (source->flags & TYF_NULLABLE));
+        (source->kind == TY_INTRINSIC && (source->flags & TYF_NULLABLE) && compiler_options()->strict_null_checks);
     // Nor is an enum literal to another member of its enum (members of one value share their type)
     Symbol const* source_enum = source->kind == TY_LITERAL && (source->flags & TYF_ENUM_LITERAL) ?
         source->literal.enum_decl : nullptr;
