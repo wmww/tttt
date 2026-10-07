@@ -13,13 +13,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   `src/methods/partial/partial.test-d.ts` and others, i.e. tsc 6 finds types unequal that tttt finds equal (before and
   after stable ordering). Missing-diagnostic lead for plan 48 stage 5 (valibot re-pin), 2026-10-07.
 - typeofImportDefer (plan 48 stage 3, agent B): `typeof import.defer("./a").Foo` in a type: tsc's parseImportType recovery says '(' expected at the `.`, TS1141 over `.defer`, ')' expected at `(`, then TS2339 'Foo' on '"./a"'; tttt says TS2304 'import'. One test, quirky recovery.
-- Namespace import of an ES module with a `default` (plan 48 stage 3, agent C): under esModuleInterop (6.0's
-  default) tsc's resolveESModuleSymbol clones it too (cloneTypeAsModuleType), so `ns` no longer names the module:
-  `import("./a")`'s type is `typeof import("./a")`, not `typeof ns` (importAttributes9, verbatimModuleSyntaxRestrictionsCJS,
-  probably transformNestedGeneratorsWithTry's Bluebird). Tried making namespace_import_type() (lower.c) return a
-  module_clone copy for that case too and dropping symbol_chain.c's container_lookup restriction: +2 but 14 lost
-  (symbols naming `self.default` through the object type in baseline_test_traversal.c, `export { ns }` re-exports,
-  esModuleInteropDefaultImports...). Wants a real clone symbol (hacks.md, namespace_import_is_clone), plan-sized.
 - legacyNodeModulesExportsSpecifierGenerationConditions (agent C): in the synthetic-default object of `await
   import("inner")`, tsc doesn't reuse the `() => ` of `export const x: () => Thing` (Thing inaccessible from index.ts)
   where ty_display.c's "module's variable" annotation path reuses it partially; tsc's tryReuseExistingTypeNode seems to
