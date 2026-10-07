@@ -57103,7 +57103,7 @@ const baselines = {
     'jsDeclarationsExportDefinePropertyEmit': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsExportDoubleAssignmentInClosure': {
         errors: true,
@@ -57238,7 +57238,7 @@ const baselines = {
     'jsDeclarationsFunctionsCjs': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsDeclarationsGetterSetter': {
         errors: true,

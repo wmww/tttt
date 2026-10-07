@@ -1282,6 +1282,16 @@ static void display_entity_expr(Checker* me, TyDisplay d, Expr const* expr) {
 
 static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) {
     Expr const* leftmost = entity_leftmost(node->typeof_->expr);
+    // (In JavaScript a name through `exports` or `module.exports` is never reused: tsc's trackExistingEntityName)
+    if (leftmost->tag == EXPR_IDENTIFIER && leftmost->inner_span.source && leftmost->inner_span.source->is_js) {
+        csview entity = expr_outer_span(node->typeof_->expr).sv;
+        bool exports = csview_equals(leftmost->inner_span.sv, "exports") || (csview_starts_with(entity, "module.exports") &&
+            (entity.size == 14 || entity.buf[14] == '.'));
+        if (exports) {
+            display_node_fallback(me, d, node);
+            return;
+        }
+    }
     if (leftmost->tag == EXPR_IDENTIFIER && !leftmost->identifier.keyword &&
         !name_accessible(me, d, leftmost->identifier.symbol, leftmost->inner_span.sv, SYMBOL_VALUE)
     ) {
