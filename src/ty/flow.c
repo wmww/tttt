@@ -652,7 +652,9 @@ static Symbol const* access_key_symbol(PropertyExpr const* access) {
     Expr const* key = &access->prop;
     if (access->form != PROPERTY_EXPR_BRACKET || key->tag != EXPR_IDENTIFIER || key->identifier.keyword) return nullptr;
     Symbol const* symbol = key->identifier.target;
-    if (!symbol) return nullptr;
+    // (Not an imported one, nor an exported one: tsc's getResolvedSymbol is the alias, or the local export symbol, which
+    // aren't variables to isConstantVariable)
+    if (!symbol || key->identifier.symbol != symbol || symbol->exported) return nullptr;
     if (symbol->is_const) return symbol;
     // (A `let` of a script's top level is a global, not a mutable local: tsc's isMutableLocalVariableDeclaration)
     bool mutable_local = symbol->is_local && (symbol->flags & SYMBOL_BLOCK_SCOPED_VARIABLE);
