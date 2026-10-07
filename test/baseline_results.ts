@@ -30263,7 +30263,7 @@ const baselines = {
     'reverseMappedTypeIntersectionConstraint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reverseMappedTypeLimitedConstraint': {
         errors: true,

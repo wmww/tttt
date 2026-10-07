@@ -654,7 +654,8 @@ u32 ty_reverse_mapped_source_props(Checker* me, Ty const* source, ObjectLiteralP
                 .name = prop->name, .flags = prop->flags, .type = prop_type(me, prop), .name_form = ty_prop_name_form_of(prop),
                 .name_span = prop->decl->name_span, .decl_spans = prop->decl->decl_spans,
                 .decl_span_count = prop->decl->decl_span_count, .name_is_value = prop->decl->name_is_value,
-                .asserted = annotation, .name_type = prop->decl->name_type,
+                // (Or an object literal property's type assertion: tsc's typeFromExpression reuses it too)
+                .asserted = annotation ? annotation : origin == prop ? decl->asserted : nullptr, .name_type = prop->decl->name_type,
             };
         }
         return members->prop_count;
