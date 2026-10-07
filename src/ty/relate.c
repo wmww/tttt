@@ -4562,6 +4562,8 @@ static bool relation_deeply_nested(
 
 static Ternary identity_related(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if ((source->flags ^ target->flags) & IDENTITY_FLAGS) return TERNARY_FALSE;
+    // (An enum's own type is a union with tsc's TypeFlags.EnumLiteral, which the union of its members isn't)
+    if (ty_is_enum_union(source) != ty_is_enum_union(target)) return TERNARY_FALSE;
     // tsc's TypeFlags.Object covers interfaces, references and type literals alike: `interface P { x: number }` is
     // identical to `{ x: number }`
     if (source->kind != target->kind && !(source->flags & TYF_OBJECT)) return TERNARY_FALSE;
@@ -6802,8 +6804,10 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
     if (source->kind == TY_UNION || source->kind == TY_INTERSECTION) source = ty_reduced(me, source);
     if (target->kind == TY_UNION || target->kind == TY_INTERSECTION) target = ty_reduced(me, target);
     if (source == target) return TERNARY_TRUE;
-    // Unions of the same members (differing in alias or origin only)
+    // Unions of the same members (differing in alias or origin only; to identity, not an enum's own type and the union
+    // of its members: see identity_related())
     if (source->kind == TY_UNION && target->kind == TY_UNION &&
+        (st->relation != TY_RELATION_IDENTITY || ty_is_enum_union(source) == ty_is_enum_union(target)) &&
         source->composite.types.len == target->composite.types.len &&
         !memcmp(source->composite.types.data, target->composite.types.data,
             sizeof(Ty const*) * source->composite.types.len)) {
