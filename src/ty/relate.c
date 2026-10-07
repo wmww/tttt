@@ -5509,6 +5509,8 @@ static Ternary structured_related_members(
         ) {
             return related;
         }
+        // (The fallback below says nothing when it fails either: tsc's False for a generic mapped target has no chain)
+        report = false;
     }
 
     // Generic sources
