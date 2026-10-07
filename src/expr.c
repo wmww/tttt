@@ -3564,16 +3564,13 @@ static bool instanceof_target_ok(Checker* checker, Ty const* ty) {
         if (count) return true;
         ty_union_signatures(checker, ty->composite.types, true, &count);
         if (count) return true;
+        // (Of a member with signatures also Function's, tsc's getPropertyOfType: `[Symbol.hasInstance]` from the lib)
+        Atom const* has_instance = ty_well_known_symbol_name(checker, "hasInstance");
+        if (!has_instance) return false;
         for (u32 i = 0; i < ty->composite.types.len; i++) {
             Ty const* apparent = ty_apparent_type(checker, ty->composite.types.data[i]);
             if (!(apparent->flags & TYF_OBJECT)) return false;
-            Members const* members = ty_members(checker, apparent);
-            bool has_instance = false;
-            for (u32 p = 0; p < members->prop_count && !has_instance; p++) {
-                csview name = atom_sv(members->props[p]->name);
-                for (isize c = 0; c + 12 <= name.size && !has_instance; c++) has_instance = memcmp(name.buf + c, "@hasInstance", 12) == 0;
-            }
-            if (!has_instance) return false;
+            if (!ty_has_prop(checker, apparent, has_instance)) return false;
         }
         return true;
     }

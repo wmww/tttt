@@ -1588,6 +1588,12 @@ Ty const* ty_prop_type_of(Checker* me, Ty const* ty, Atom const* name) {
     return prop ? prop_type(me, prop) : nullptr;
 }
 
+// Whether `ty` has the property `name`, the apparent members included (tsc's getPropertyOfType: Function's of a type
+// with signatures, Object's)
+bool ty_has_prop(Checker* me, Ty const* ty, Atom const* name) {
+    return ty_find_prop(me, ty, name).found;
+}
+
 // tsc's isUnitType (unlike is_unit_type(), with computed enum members)
 static bool is_key_unit(Ty const* ty) {
     return ty->kind != TY_UNION && (ty->flags & (TYF_LITERAL | TYF_ENUM | TYF_UNIQUE_ES_SYMBOL | TYF_NULLABLE));
