@@ -6807,7 +6807,17 @@ Ty const* ty_report_target(Checker* me, Ty const* source, Ty const* target) {
         target = next;
     }
     target = normalized_generic_tuple(me, target, true);
-    return ty_strip_nullable_target(me, ty_regular(me, source), target);
+    Ty const* stripped = ty_strip_nullable_target(me, ty_regular(me, source), target);
+    // (What's left is normalized too, as is_related_to() has it: tsc's getNormalizedType(nullStrippedTarget, writing))
+    if (stripped != target) {
+        for (u32 i = 0; i < 16 && (stripped->kind == TY_INDEXED || stripped->kind == TY_CONDITIONAL || stripped->kind == TY_SUBSTITUTION); i++) {
+            Ty const* next = stripped->kind != TY_SUBSTITUTION ? ty_regular(me, ty_simplified(me, stripped, true)) :
+                stripped->substitution.base;
+            if (next == stripped) break;
+            stripped = next;
+        }
+    }
+    return stripped;
 }
 
 static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
