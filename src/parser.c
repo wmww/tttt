@@ -4224,7 +4224,40 @@ static const char* jsdoc_line_comment_start(const char* line, const char* end) {
     return nullptr;
 }
 
+// Whether a comment starting at `start` is among the leading comments of what follows it (tsc's
+// getLeadingCommentRanges): only those after the first line break since the previous token are (or everything at the
+// start of the file); `{ /** @type {T} */ this.x = [] }` on one line is a trailing comment of the `{`
+static bool jsdoc_comment_is_leading(const char* file_start, const char* start) {
+    const char* c = start;
+    while (true) {
+        while (c > file_start && (c[-1] == ' ' || c[-1] == '\t' || c[-1] == '\v' || c[-1] == '\f')) c--;
+        if (c == file_start || c[-1] == '\n' || c[-1] == '\r') return true;
+        if (c - file_start >= 4 && c[-1] == '/' && c[-2] == '*') {
+            // (Another block comment before it on the line: its line breaks don't count)
+            const char* open = c - 2;
+            while (open > file_start + 1 && !(open[-2] == '/' && open[-1] == '*')) open--;
+            if (open <= file_start + 1) return true;
+            c = open - 2;
+            continue;
+        }
+        return false;
+    }
+}
+
+static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, bool trailing_ok);
+
+// The JSDoc of a host that takes leading comments only (statements, class and object literal members: tsc's
+// getJSDocCommentRanges, unlike parameters, variable declarations, function expressions and parenthesized expressions,
+// whose trailing comments count too)
+static bool jsdoc_before_leading(Parser* parent, const char* pos, VecJsDocTag* tags) {
+    return jsdoc_before_ex(parent, pos, tags, false);
+}
+
 static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
+    return jsdoc_before_ex(parent, pos, tags, true);
+}
+
+static bool jsdoc_before_ex(Parser* parent, const char* pos, VecJsDocTag* tags, bool trailing_ok) {
     VecJsDocRange const* comments = &parent->shared->jsdoc_comments;
     if (!comments->size) return false;
     const char* file_start = source_file_start(parent->shared->source);
@@ -4262,6 +4295,7 @@ static bool jsdoc_before(Parser* parent, const char* pos, VecJsDocTag* tags) {
         }
         return false;
     }
+    if (!trailing_ok && !jsdoc_comment_is_leading(file_start, comments->data[lo].start)) return false;
     // The JSDoc comments before it among the leading comments (other comments may come between) are the host's too:
     // their `@overload` tags count (tsc's getJSDocOverloadTags), and their errors (tsc parses and checks every one)
     isize first = lo;
@@ -7317,7 +7351,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         // The tags of a method, or of a property whose value is a function, are the function's
         VecJsDocTag tags = {0};
         FunctionImpl* function = item.tag == OBJECT_ITEM_SHORTHAND ? nullptr : jsdoc_function_of(&item.value);
-        if ((function || item.tag == OBJECT_ITEM_PROPERTY || item.tag == OBJECT_ITEM_SHORTHAND) && jsdoc_before(&p, a.start, &tags)) {
+        if ((function || item.tag == OBJECT_ITEM_PROPERTY || item.tag == OBJECT_ITEM_SHORTHAND) && jsdoc_before_leading(&p, a.start, &tags)) {
             // A `@type` that isn't a written signature (`{F["tap"]}`) is the declared type, which a function value is
             // contextually typed by
             JsDocTag* tag = jsdoc_find_typed(&tags, JSDOC_TAG_TYPE);
@@ -7815,7 +7849,7 @@ static uint8_t jsdoc_modifiers(VecJsDocTag const* tags) {
 
 static void jsdoc_apply_class_item(Parser* p, const char* start, ClassItem* item) {
     VecJsDocTag tags = {0};
-    if (!jsdoc_before(p, start, &tags)) return;
+    if (!jsdoc_before_leading(p, start, &tags)) return;
     // The modifier tags add to the written modifiers (tsc's getEffectiveModifierFlags)
     uint8_t modifiers = jsdoc_modifiers(&tags);
     if (item->access == ACCESS_MODIFIER_PUBLIC) {
@@ -13804,7 +13838,7 @@ static void jsdoc_apply_initializer_types(Parser* p, VariableStatement* variable
 
 static void jsdoc_apply_statement(Parser* p, const char* start, bool toplevel, Statement* statement) {
     VecJsDocTag tags = {0};
-    if (!jsdoc_before(p, start, &tags)) return;
+    if (!jsdoc_before_leading(p, start, &tags)) return;
     bool hosts = false; // A function took the tags (which checks what it doesn't take itself)
     bool class_host = false;
     switch (statement->tag) {
