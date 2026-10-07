@@ -1,13 +1,4 @@
 {
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "jsxImportSource": "react"
-  },
-  "include": ["packages/react-router/src", "packages/react-router/tests"],
-  "exclude": [
-    "packages/react-router/tests/Matches.test.tsx",
-    "packages/react-router/tests/optional-path-params.test.tsx",
-    "packages/react-router/tests/useParams.test.tsx"
-  ]
+  "extends": "./packages/react-router/tsconfig.json",
+  "include": ["packages/react-router/src", "packages/react-router/tests"]
 }

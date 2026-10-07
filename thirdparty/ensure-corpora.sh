@@ -114,18 +114,18 @@ CORPORA=(
     # excalidraw/utils packages' (lint, format and coverage tools dropped: npm's lock of @isaacs/cliui doesn't `npm ci`),
     # from corpora-locks/excalidraw.package.json
     "excalidraw https://github.com/excalidraw/excalidraw.git d080833f4d359e808cd12acdc7dd1c9187c956e5 ."
-    # TanStack Router (Mar 2026, todo entry 7 of the tenth window): the last commit before its move to TypeScript 6
-    # (its CI still checked the sources with 5.8). The inference-heavy corpus: react-router's src and tests, mostly
-    # *.test-d.tsx type tests (expectTypeOf on route trees: path/search/params/loader inference through createRoute()/
+    # TanStack Router (Oct 2026, plan 48 stage 5): main's head, on TypeScript 6 (`@typescript/typescript6` ^6.0.2, CI
+    # also runs tsgo 7 and 5.6-5.9). The inference-heavy corpus: react-router's src and tests, mostly *.test-d.tsx type
+    # tests (expectTypeOf on route trees: path/search/params/loader inference through createRoute()/
     # createFileRoute() chains, Link/navigate `to` as template-literal unions over the whole tree, Register module
-    # augmentation), checked through tsconfig.corpus.json from the overlay against router-core's and history's
-    # declarations as upstream does (corpora-locks/tanstack-router.postinstall.sh builds them with tsc 5.8: checking
-    # router-core's sources inside react-router's program sees react-router's augmentations of its interfaces and
-    # fails). Three runtime test files need TypeScript 5.9's lib.dom (`textContent: string`) and are excluded.
-    # moduleResolution bundler, noUncheckedIndexedAccess, checkJs. A pnpm workspace: the dependencies are the type
-    # dependencies of react-router, router-core and the root at pnpm-lock.yaml's versions, from
+    # augmentation), checked through tsconfig.corpus.json from the overlay (react-router's own tsconfig, `types:
+    # ["node"]`, limited to src + tests) against router-core's and history's declarations as upstream does
+    # (corpora-locks/tanstack-router.postinstall.sh builds them with thirdparty/tsc through their own tsconfigs:
+    # checking router-core's sources inside react-router's program sees react-router's augmentations of its interfaces
+    # and fails). moduleResolution bundler, noUncheckedIndexedAccess, checkJs. A pnpm workspace: the dependencies are
+    # the type dependencies of react-router, router-core and the root at pnpm-lock.yaml's versions, from
     # corpora-locks/tanstack-router.package.json
-    "tanstack-router https://github.com/TanStack/router.git 837917a40c1c232eb482677eef848ffe60e9413d . workspace:packages/*"
+    "tanstack-router https://github.com/TanStack/router.git 30fc108a5ebbc4eadd48439282bf1c27d55fbb94 . workspace:packages/*"
     # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (./sweep.py), every types/NAME with its own
     # tsconfig and tests. DT's pnpm workspace links each @types/X to types/X: node_modules/@types -> ../types does the
     # same for the latest version of each. The npm dependencies are the few non-@types ones that many packages need

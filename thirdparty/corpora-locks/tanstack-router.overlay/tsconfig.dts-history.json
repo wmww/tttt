@@ -1,1 +1,1 @@
-{"extends": "./tsconfig.json", "compilerOptions": {"noEmit": false, "declaration": true, "emitDeclarationOnly": true, "rootDir": "packages/history/src", "outDir": "packages/history/dist/esm"}, "include": ["packages/history/src"]}
+{"extends": "./packages/history/tsconfig.json", "compilerOptions": {"noEmit": false, "declaration": true, "emitDeclarationOnly": true, "rootDir": "packages/history/src", "outDir": "packages/history/dist/esm"}, "include": ["packages/history/src"]}

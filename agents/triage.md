@@ -251,3 +251,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   (the overload error lands lines below the `@ts-expect-error`), one pair in setupHelpers.test-d.ts, TS2322 in
   functionalComponent.test-d.tsx:25, TS2345 in runtime-dom/src/directives/vModel.ts:446 (`DirectiveBinding<any,
   string>` vs `<any, "number">`). tsgo-vs-tsc 6 divergences; worth a look when tsgo 7 becomes the oracle.
+- tanstack-router @ 30fc108a (Oct 2026, TS6 upstream): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0 (626 files, 0.89 s).
+  The three runtime tests excluded for 5.9's lib.dom are back in; the old pin's 27 TS2591 (`types: []`) are gone
+  because react-router's (and router-core's) own tsconfigs now say `types: ["node"]`, which the overlay extends.

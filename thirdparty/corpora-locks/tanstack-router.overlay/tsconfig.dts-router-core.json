@@ -1,2 +1,1 @@
-{"extends": "./tsconfig.json", "compilerOptions": {"noEmit": false, "declaration": true, "emitDeclarationOnly": true, "rootDir": "packages/router-core/src", "outDir": "packages/router-core/dist/esm",
- "paths": {"@tanstack/router-core/isServer": ["./packages/router-core/src/isServer/development.ts"]}}, "include": ["packages/router-core/src"]}
+{"extends": "./packages/router-core/tsconfig.json", "compilerOptions": {"noEmit": false, "declaration": true, "emitDeclarationOnly": true, "rootDir": "packages/router-core/src", "outDir": "packages/router-core/dist/esm"}, "include": ["packages/router-core/src"]}
