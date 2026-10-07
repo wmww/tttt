@@ -33226,7 +33226,7 @@ const baselines = {
         types: true,
     },
     'thislessFunctionsNotContextSensitive1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -55821,7 +55821,7 @@ const baselines = {
         types: true,
     },
     'typeofImportDefer': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
