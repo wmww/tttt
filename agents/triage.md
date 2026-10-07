@@ -44,7 +44,34 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   complexRecursiveCollections (TS2430 elaborates `map(...).filter(...).filter` where tsc's first failing property is `map(...).size`: property comparison order);
   requireOfJsonFileWithoutResolveJsonModule (6.0 resolves the .json: tsc's JSON parser recovery on non-JSON text gives TS1005/TS1136 and an object type `{ contents: any; Not: any; read: any; }`, tttt gives TS1328);
   arityAndOrderCompatibility01, styledComponentsInstantiaionLimitNotReached, bigintWithLib, conditionalTypes1/2 (elaboration chain depth/order);
-  parser recovery (plan 27): labeledStatementDeclarationListInLoopNoCrash4, jsxAndTypeAssertion, tsxAttributeInvalidNames (one missing EOF TS1005 each), parser0_004152, jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative, varianceAnnotationsWithCircularlyReferencesError, reachabilityChecksNoCrash1, importAttributes10/11, decoratorOnUsing, scannerUnexpectedNullCharacter1.
+  parser recovery (plan 27): parser0_004152, jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative.
+- Plan 48 stage 3 agent B, third pass (2026-10-07), leftovers:
+  - varianceAnnotationsWithCircularlyReferencesError: `<in in>`: tsc reads the second `in` as a reserved-word name
+    (TS1359, a missing name, not consumed), then a second empty type parameter with a missing name (consumed by the
+    list's no-progress rule); both are '(Missing)', TS2300, and share the In modifier through the merged symbol (TS2637
+    twice). tttt fails the whole list; needs missing type parameter names.
+  - scannerUnexpectedNullCharacter1: a NUL byte in the source ends tttt's parser (`*p.pos` is EOF everywhere); tsc
+    reports TS1127 and goes on. Needs an end pointer instead of the terminator, or a loader-side substitution that the
+    baseline printer undoes.
+  - reachabilityChecksNoCrash1: the last stray `}` is TS1109 in tsc (an ExpressionStatement of a missing identifier),
+    TS1128 in tttt; the rest matches since the object-literal `const` fix.
+  - manyCompilerErrorsInTheTwoFiles: tsc's scanner returns Unknown after only the `#` of a `#!` (pos++), so the `!`
+    is scanned again and recovery reports TS1134 at it; tttt's TS18026 mapping consumes both.
+  - tsxStatelessFunctionComponentOverload1 (and `declare function f({a: b})` generally): TS7031 for a renamed binding
+    element of a bodiless signature is reported by tsc only when something computes the parameter's type (a call, the
+    overload/implementation compatibility check); tttt skips bodiless renamings eagerly. Lazy reporting (ty_error_at
+    when the binding type is computed) would match.
+  - JS `this.y = null` in a constructor function that nothing reads: tsc types the access as autoType (no TS7008);
+    tttt reports TS7008 eagerly in js_assignment_implicit_any_check. Same laziness issue.
+  - pushTypeGetTypeOfAlias: `exports.blah = exports.someProp` is an alias in tsc whose resolution reaches its own
+    module's type: TS2303. tttt types it as a property.
+  - jsdocFunctionTypeFalsePositive (types): the recovered `@param {<}` type `() => any` prints its return as a reused
+    node; tsc's missing type node isn't reusable.
+  - jsxComplexSignatureHasApplicabilityError: spurious TS2769 (no elaboration even) on a generic JSX element
+    `<ReactSelectClass<ExtractValueType<WrappedProps>> {...props} .../>`; not investigated, likely a relation of the
+    spread generic props against the conditional ExtractValueType.
+  - Two non-tsc facts found: inference_count() (the non-fixing mapper cache key) ignored priority replacements (fixed);
+    stableTypeOrdering(stabletypeordering=false) depends on type-id creation order and can flip with unrelated changes.
 - enumWithBigint: tsc names a bigint enum member `__missing` (types show `E.__missing`) but the symbols baseline prints its declaration name (`E[0n]`); our symbol name drives both. Needs a name/printed-name split for enum members (stage 3, agent A).
 - iterableWithNeverAsUnionMember(target=esnext): `let [y] = x` with `x: T extends {a:"foo"}&{a:"bar"}` (TS2488) types y as never in tsc, any here (stage 3, agent A).
 - Plan 48 stage 3 agent D, second pass leftovers (types component), 2026-10-07:
