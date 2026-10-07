@@ -81,18 +81,16 @@ echo "tttt phases (one run):"
 
 # The modern corpora (plan 17, thirdparty/ensure-corpora.sh): type-level heavy, clean under tsc 5.8 as pinned (plan 48 stage 5 re-pins them for 6.0). tttt still reports
 # plenty there (./realworld.py --corpus NAME), so these times are of an incomplete check. tsgo 7 dropped
-# moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change), and
-# removed baseUrl, so the React app (plan 25) gets a generated tsconfig.tsgo.json that unsets it (its paths are
-# relative to the tsconfig either way). The NestJS app (plan 31) is `incremental`: without --incremental false tsc
-# writes a tsbuildinfo and later runs check nothing; tsgo 7 also defaults to strict, which its tsconfig doesn't unset.
+# moduleResolution node10, so it gets bundler/esnext instead (valibot: 2 TS2554 of its own, a TS 7 change). The React
+# app (plan 25) and the NestJS app (plan 31) are checked through our tsconfig.corpus.json (React: baseUrl unset, the
+# NestJS app: not strict as under 5.x, not incremental).
 # webpack (plan 33) is checkJs JavaScript; tsgo 7 rejects 3 of its JSDoc comments (TS1003), so its time may not be of
 # a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json.
 # VS Code's src (todo entry 5 of the ninth window, 1.39M lines) is the scale benchmark; tsgo 7 reports ~10 TS2300 of
 # its own there (its lib.dom declares the WebGPU types @webgpu/types also declares), which costs it nothing measurable
 thirdparty/ensure-corpora.sh
-REACT=bulletproof-react/apps/react-vite
-NEST=nestjs-boilerplate
-echo '{"extends": "./tsconfig.json", "compilerOptions": {"baseUrl": null}}' > thirdparty/corpora/$REACT/tsconfig.tsgo.json
+REACT=bulletproof-react/apps/react-vite/tsconfig.corpus.json
+NEST=nestjs-boilerplate/tsconfig.corpus.json
 # drizzle and vue import through baseUrl too (`type-tests/utils.ts`, `packages/...`): tsgo gets `"*": ["./*"]` instead.
 # tsgo 7 still reports its own TS2769/TS2578 on both (16 drizzle, 8 vue: TS 7 differences), so its times may not be of
 # a full check
@@ -102,10 +100,8 @@ for CORPUS in type-fest valibot/library $REACT $NEST webpack zod/packages/zod/ts
     DIR=thirdparty/corpora/$CORPUS
     TSGO_ARGS="--moduleResolution bundler --module esnext -p $DIR"
     TSC_EXTRA=""
-    if test $CORPUS = $REACT; then TSGO_ARGS="-p $DIR/tsconfig.tsgo.json"; fi
     if test $CORPUS = webpack || test $CORPUS = vscode/src || test ${CORPUS%.json} != $CORPUS; then TSGO_ARGS="-p $DIR"; fi
     case $CORPUS in drizzle/*|vue/*) TSGO_ARGS="-p $(dirname $DIR)/tsconfig.tsgo.json";; esac
-    if test $CORPUS = $NEST; then TSC_EXTRA="--incremental false"; TSGO_ARGS="$TSGO_ARGS --incremental false --strict false"; fi
     echo
     echo "corpus $CORPUS: $(node thirdparty/tsc/built/local/tsc.js -p $DIR --noEmit $TSC_EXTRA --listFilesOnly | grep -c .) files incl. dependencies and libs"
     measure "tttt" ./release/tttt -q --keep-going -p $DIR

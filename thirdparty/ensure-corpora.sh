@@ -27,13 +27,18 @@ CORPORA=(
     "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
     # valibot v1.0.0, the library package: schema library with inference chains + vitest tests (expectTypeOf)
     "valibot https://github.com/fabian-hiller/valibot.git 15e430e97267711ffd9f0633bc81bb49ce60a247 library"
-    # bulletproof-react (May 2026), the Vite app: a React 18 application (react-query, react-router, radix,
-    # react-hook-form + zod, tailwind) with vitest/testing-library tests; the lock is npm's resolution of its
-    # package.json (upstream ships a yarn.lock)
+    # bulletproof-react (May 2026, still upstream's head in Oct 2026, on TypeScript ^5.4.5), the Vite app: a React 18
+    # application (react-query, react-router, radix, react-hook-form + zod, tailwind) with vitest/testing-library tests;
+    # the lock is npm's resolution of its package.json (upstream ships a yarn.lock). Checked through
+    # apps/react-vite/tsconfig.corpus.json from the overlay: upstream's with `"baseUrl": null` (6.0 deprecates baseUrl,
+    # 7.0 removes it; its `paths` are relative to the tsconfig either way), clean under tsc 6 and tsgo 7
     "bulletproof-react https://github.com/alan2207/bulletproof-react.git 9506629ed003a561c6627735480cce4994244bb4 apps/react-vite"
-    # nestjs-boilerplate (Aug 2026, plan 31): a NestJS 11 server application (TypeORM + Mongoose, class-validator,
-    # passport, swagger; experimentalDecorators + emitDecoratorMetadata, CommonJS, @types/node) with jest e2e tests;
-    # the lock is upstream's
+    # nestjs-boilerplate (Aug 2026, plan 31, still upstream's head in Oct 2026, on TypeScript 5.9.3): a NestJS 11 server
+    # application (TypeORM + Mongoose, class-validator, passport, swagger; experimentalDecorators +
+    # emitDecoratorMetadata, CommonJS, @types/node) with jest e2e tests; the lock is upstream's. Checked through
+    # tsconfig.corpus.json from the overlay: upstream's (strictNullChecks + noImplicitAny, strictBindCallApply off) with
+    # `"strict": false` as 5.x defaulted (6.0's strict default finds 2 TS2322 under strictFunctionTypes and 2 TS18046
+    # under useUnknownInCatchVariables) and incremental off (tsc would write a tsbuildinfo)
     "nestjs-boilerplate https://github.com/brocoders/nestjs-boilerplate.git 9620f159eefe38f47747d02ab162852367c5472c ."
     # webpack (May 2026, plan 33): the last commit before its move to TypeScript 6. JavaScript checked with checkJs and
     # JSDoc types (lib/, tooling/, examples' configs), CommonJS, @types/node. Its examples require("webpack"). The lock

@@ -253,8 +253,10 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
         return COMPILER_OPTION_OK;
     }
     if (name_equals(name, "baseurl")) {
-        cstr_take(&my base_url, cstr_from_sv(value));
-        my base_url_set = true;
+        // null (a config's JSON null, the command line's `--baseUrl null`) unsets it
+        bool unset = name_equals(value, "null");
+        cstr_take(&my base_url, unset ? cstr_null : cstr_from_sv(value));
+        my base_url_set = !unset;
         return COMPILER_OPTION_OK;
     }
 #define LIST_OPTION(lowercase, field, set_field) \

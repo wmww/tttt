@@ -94,6 +94,14 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
     for (isize i = 0; i < compiler_options->count; i++) {
         const char* name = cstr_str(&compiler_options->members[i].key);
         JsonValue const* value = &compiler_options->members[i].value;
+        if (value->tag == JSON_NULL) {
+            // null takes back what an extended config gave (tsc: the option is undefined again), e.g. a config
+            // extending one with the 6.0-deprecated baseUrl. Only the options that tell "unset" from a value here
+            if (!strcmp(name, "baseUrl") || compiler_option_is_boolean(csview_from(name))) {
+                ignore compiler_options_set(my options, csview_from(name), c_sv("null"));
+            }
+            continue;
+        }
         if (!strcmp(name, "paths")) {
             if (value->tag != JSON_OBJECT) continue;
             compiler_options_clear_paths(my options);

@@ -21,8 +21,8 @@ CORPORA = {
     'tsc-src': 'thirdparty/tsc/src',
     'type-fest': 'thirdparty/corpora/type-fest',
     'valibot': 'thirdparty/corpora/valibot/library',
-    'react': 'thirdparty/corpora/bulletproof-react/apps/react-vite',
-    'nest': 'thirdparty/corpora/nestjs-boilerplate',
+    'react': 'thirdparty/corpora/bulletproof-react/apps/react-vite/tsconfig.corpus.json',
+    'nest': 'thirdparty/corpora/nestjs-boilerplate/tsconfig.corpus.json',
     'webpack': 'thirdparty/corpora/webpack',
     'zod': 'thirdparty/corpora/zod/packages/zod/tsconfig.test.json',
     # zod's root tsconfig: every package (docs excluded), nodenext with customConditions; also clean under tsc
