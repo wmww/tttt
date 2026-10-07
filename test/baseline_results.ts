@@ -7566,9 +7566,9 @@ const baselines = {
         types: true,
     },
     'controlFlowFunctionLikeCircular1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'controlFlowInitializedDestructuringVariables': {
         errors: true,

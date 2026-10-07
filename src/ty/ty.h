@@ -623,7 +623,8 @@ struct Signature {
     // The return type is lazier than the rest, use signature_return_type(): it's often inferred from a function body
     // that is in the middle of being checked
     uint8_t ret_state; // LazyState
-    bool predicate_done;
+    bool predicate_done : 1;
+    bool predicate_in_flight : 1; // signature_predicate() is lowering its type node
     bool drops_mapped_type_params; // Part of an instantiation expression, see Ty.anonymous.applies_type_args
     // Its mapper gives its own type parameters their arguments (ty_signature_instantiation()). Otherwise an outer
     // mapper that has them (a recursive type met again inside its own instantiation) doesn't reach inside: they're

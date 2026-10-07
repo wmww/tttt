@@ -4142,9 +4142,24 @@ bool ty_signature_return_resolving(Checker* me, Signature const* sig) {
 
 // Only ever from an annotation, so asking doesn't infer a return type (TODO: tsc 5.5 infers `x is T` for functions
 // that return a narrowing expression)
+static LowerCtx predicate_ctx(Signature const* sig) {
+    LowerCtx ctx = sig->ctx;
+    ctx.generic |= !sig->function->is_type || sig->type_params.len > 0;
+    ctx.method = false;
+    return ctx;
+}
+
 TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) {
     Signature* sig = (Signature*)const_sig;
-    if (sig->predicate_done) return sig->predicate;
+    if (sig->predicate_done) {
+        if (sig->predicate_in_flight) {
+            // tsc's getTypePredicateOfSignature has no guard: asked again while its type is lowered, it lowers it
+            // again, which is where an alias in the middle of resolving finds itself (TS2456). Once
+            sig->predicate_in_flight = false;
+            ty_from_node(me, &sig->function->predicate->type, predicate_ctx(sig));
+        }
+        return sig->predicate;
+    }
     signature_resolve(me, sig);
     sig->predicate_done = true;
     if (sig->class_instance) return nullptr;
@@ -4171,10 +4186,9 @@ TyPredicate const* signature_predicate(Checker* me, Signature const* const_sig) 
         u32 arg_count = (u32)vec_function_arg_size(&sig->function->args);
         if (predicate->param_index >= 0 && sig->param_count < arg_count) predicate->param_index--;
         if (node->has_type) {
-            LowerCtx ctx = sig->ctx;
-            ctx.generic |= !sig->function->is_type || sig->type_params.len > 0;
-            ctx.method = false;
-            predicate->type = ty_from_node(me, &node->type, ctx);
+            sig->predicate_in_flight = true;
+            predicate->type = ty_from_node(me, &node->type, predicate_ctx(sig));
+            sig->predicate_in_flight = false;
         }
         sig->predicate = predicate;
     } else if (sig->function && !sig->function->ret_explicit) {
