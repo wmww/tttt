@@ -20,7 +20,7 @@ CORPORA = {
     # sources). Its 12 diagnostics today are checker bugs in services/ and testRunner/
     'tsc-src': 'thirdparty/tsc/src',
     'type-fest': 'thirdparty/corpora/type-fest',
-    'valibot': 'thirdparty/corpora/valibot/library',
+    'valibot': 'thirdparty/corpora/valibot/library/tsconfig.corpus.json',
     'react': 'thirdparty/corpora/bulletproof-react/apps/react-vite/tsconfig.corpus.json',
     'nest': 'thirdparty/corpora/nestjs-boilerplate/tsconfig.corpus.json',
     'webpack': 'thirdparty/corpora/webpack',

@@ -23,10 +23,16 @@ ONLY=" $* "
 # corpora-locks/NAME.overlay/ are copied into the checkout (a tsconfig of our own, when upstream's doesn't fit), and
 # corpora-locks/NAME.postinstall.sh runs in the checkout after installing (generated files a build would make)
 CORPORA=(
-    # type-fest v4.26.1: type-level utilities (template literal types, key remapping, deep recursion) + tsd tests
-    "type-fest https://github.com/sindresorhus/type-fest.git 2b98d9f2ac8921b79ed07ceeef278a5406edbe05 ."
-    # valibot v1.0.0, the library package: schema library with inference chains + vitest tests (expectTypeOf)
-    "valibot https://github.com/fabian-hiller/valibot.git 15e430e97267711ffd9f0633bc81bb49ce60a247 library"
+    # type-fest v5.10.0 (Sep 2026 head, plan 48 stage 5): type-level utilities (template literal types, key remapping,
+    # deep recursion: IntRange and Replace near the instantiation-depth limits) + tsd tests. Upstream is on TypeScript
+    # ^5.9.2 (its CI hasn't moved); clean under tsc 6 and tsgo 7 with its own tsconfig
+    "type-fest https://github.com/sindresorhus/type-fest.git e9f614f191aa039e4aefa2d41d62c2a3fd070cfd ."
+    # valibot v1.5.0 (Sep 2026 head, plan 48 stage 5), the library package: schema library with inference chains +
+    # vitest tests (expectTypeOf). Upstream is on TypeScript ^5.9.3 (its CI hasn't moved): checked through
+    # library/tsconfig.corpus.json from the overlay, upstream's with moduleResolution bundler instead of node10
+    # (deprecated in 6, removed in 7) and minus 7 type tests tsc 6 fails (keyof's union-to-tuple order under stable
+    # type ordering; partial/required/record's toEqualTypeOf on optional properties, a 6.0 change: clean under 5.9.3)
+    "valibot https://github.com/fabian-hiller/valibot.git d4da61a0ac696f8421f97328f329a560b67143a9 library"
     # bulletproof-react (May 2026, still upstream's head in Oct 2026, on TypeScript ^5.4.5), the Vite app: a React 18
     # application (react-query, react-router, radix, react-hook-form + zod, tailwind) with vitest/testing-library tests;
     # the lock is npm's resolution of its package.json (upstream ships a yarn.lock). Checked through

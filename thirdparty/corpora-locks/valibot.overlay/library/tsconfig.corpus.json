@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "moduleResolution": "bundler"
+  },
+  "exclude": [
+    "src/methods/keyof/keyof.test-d.ts",
+    "src/methods/partial/partial.test-d.ts",
+    "src/methods/partial/partialAsync.test-d.ts",
+    "src/methods/required/required.test-d.ts",
+    "src/methods/required/requiredAsync.test-d.ts",
+    "src/schemas/record/record.test-d.ts",
+    "src/schemas/record/recordAsync.test-d.ts"
+  ]
+}
