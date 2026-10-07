@@ -216,6 +216,12 @@ semantic diagnostics) and `sloppy`'s `--alwaysStrict false` too: give those cell
 `es5`), and check every cell's tsc output for TS5xxx before trusting it.
 
 ### Stage 5: corpora re-pinned (2 sessions, todo entries 7 and 8)
+**Done 2026-10-07 (entry 7)**: all corpora at upstream heads (type-fest v5.10.0, valibot v1.5.0, webpack, zod,
+xstate, vue, vscode, excalidraw, tanstack-router, typescript-eslint) or unchanged where upstream hasn't moved (react,
+nest, drizzle, effect's v3 branch; Effect 4 is TypeScript 7 only), each 0 under the commit's tsc through upstream's
+config or a minimal overlay (`"baseUrl": null` and other deprecated options unset, valibot minus 7 tests 6.0 changed,
+vscode minus 3 tests tsc 6 and tsgo 7 disagree on). tsgo 7.0.2 isn't clean on webpack (JS), vue, drizzle, effect:
+recorded in ensure-corpora.sh. Flagflip regenerated. The drain (entry 8) has triage.md's "Corpora re-pin" sections.
 After re-pinning, regenerate flagflip (`./flagflip.py --tsc --force`, see stage 4 for the deprecated flags). Every corpus at a current upstream commit, checked by the commit's tsc and by tsgo 7.0.2 (both must be clean: effect
 uses 7.0, most others 6.0 now). Upstreams still on 5.x (zod, drizzle, type-fest, valibot, excalidraw) re-pin at
 their current commit with an overlay adding `"ignoreDeprecations": "6.0"` where tsc 6 reports only deprecations

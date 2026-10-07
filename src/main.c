@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <sys/stat.h>
+#include <sys/resource.h>
 
 #include "ty/ty.h"
 #include "type.h"
@@ -843,26 +844,19 @@ static int run(int argc, const char** argv) {
     return ret;
 }
 
-typedef struct { int argc; const char** argv; int ret; } MainArgs;
-
-static void* run_thread(void* args) {
-    MainArgs* a = args;
-    a->ret = run(a->argc, a->argv);
-    return nullptr;
+// The checker recurses per nesting level, and tsc's tail-recursive conditional types (1000 steps of `A<...> extends X ?
+// ... : A<...>`, type-fest's IntRange) recurse here too: 8 MB of main thread stack isn't enough. The main thread's
+// stack grows up to the limit as it is when it grows (and the re-exec starts with it), so raise it. (Not a thread of
+// our own with a big stack: glibc's malloc gives other threads a slower arena, +0.2-0.9% instructions)
+static void raise_stack_limit(void) {
+    struct rlimit limit;
+    if (getrlimit(RLIMIT_STACK, &limit) || limit.rlim_cur == RLIM_INFINITY || limit.rlim_cur >= worker_stack_size()) return;
+    limit.rlim_cur = limit.rlim_max != RLIM_INFINITY && limit.rlim_max < worker_stack_size() ? limit.rlim_max : worker_stack_size();
+    setrlimit(RLIMIT_STACK, &limit);
 }
 
-// The checker recurses per nesting level, and tsc's tail-recursive conditional types (1000 steps of `A<...> extends X ?
-// ... : A<...>`, type-fest's IntRange) recurse here too: the main thread's 8 MB isn't enough, so everything runs on a
-// thread with the workers' stack size
 int main(int argc, const char** argv) {
+    raise_stack_limit();
     reexec_with_huge_pages(argv);
-    MainArgs args = { argc, argv, 1 };
-    pthread_attr_t attr;
-    pthread_attr_init(&attr);
-    pthread_attr_setstacksize(&attr, worker_stack_size());
-    pthread_t thread;
-    panic_if(pthread_create(&thread, &attr, run_thread, &args), "couldn't start the main thread");
-    pthread_join(thread, nullptr);
-    pthread_attr_destroy(&attr);
-    return args.ret;
+    return run(argc, argv);
 }

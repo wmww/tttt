@@ -265,6 +265,9 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     key (`1?`): `SetRequiredDeep<{0?: 1; 1?: {2?: string}}, 0 | 1>` leaves `1` optional, `RenameKeys<{0: number; 1?:
     string}, {0: 'a'; 1: 'a'}>` returns its input. Repro: a tsconfig with strict + exactOptionalPropertyTypes and a
     file importing them from the corpus' index.d.ts (tsc 0, tttt 2); reduce through OptionalKeysOf/SetRequired.
+    **Order-dependent**: with `--checkers 1` on the whole corpus these three are gone (type-fest gives 3 instead of
+    6), so it's something like which of `1` / `"1"` a cache or interned name saw first, and checkerdiff's
+    "inside quotes" allowance doesn't cover it.
   - TS2345 unwrap-partial.ts:67, only with exactOptionalPropertyTypes: `type U<P> = P extends Partial<infer O> ?
     (Partial<O> extends P ? O : P) : P; type A = U<Partial<string[]>>` is `string[]` in tsc, `(string |
     undefined)[]` in tttt (reverse inference of O from a homomorphic mapped type over an array keeps the undefined

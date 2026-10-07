@@ -863,5 +863,6 @@ src` finds the code-side markers; every significant one has an entry here.
   (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
 - Conditional tail recursion (`ty_instantiate_tail`) is C recursion where tsc loops (getConditionalType's tailCount):
-  1000 steps need ~16 MB, so `main()` runs on a 64 MB thread (`worker_stack_size`). Bounded by tsc's limits, but a
-  loop would be cheaper and wouldn't depend on the stack size.
+  1000 steps need ~16 MB, so `main()` raises the soft RLIMIT_STACK to 64 MB (`raise_stack_limit`, workers get
+  `worker_stack_size`). A hard limit below that still overflows. Bounded by tsc's limits, but a loop would be cheaper
+  and wouldn't depend on the stack size.

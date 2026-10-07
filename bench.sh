@@ -86,8 +86,7 @@ echo "tttt phases (one run):"
 # NestJS app: not strict as under 5.x, not incremental).
 # webpack (plan 33) is checkJs JavaScript; tsgo 7 reports ~600 diagnostics there of its own (TS 7's reduced JS
 # support), so its time may not be of a full check. zod (plan 19) is checked through its tsconfig.test.json, xstate, drizzle and vue through our tsconfig.corpus.json.
-# VS Code's src (todo entry 5 of the ninth window, 1.39M lines) is the scale benchmark; tsgo 7 reports ~10 TS2300 of
-# its own there (its lib.dom declares the WebGPU types @webgpu/types also declares), which costs it nothing measurable
+# VS Code's src (re-pinned Oct 2026: 3.41M lines, tsconfig.corpus.json) is the scale benchmark; tsgo 7 is clean on it
 thirdparty/ensure-corpora.sh
 REACT=bulletproof-react/apps/react-vite/tsconfig.corpus.json
 NEST=nestjs-boilerplate/tsconfig.corpus.json

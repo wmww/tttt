@@ -17,7 +17,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 CORPORA = {
     'tsc': 'thirdparty/tsc/src/compiler',
     # TypeScript's whole src: a solution config of 13 composite projects, checked with -b (plan 41: references read as
-    # sources). Its 12 diagnostics today are checker bugs in services/ and testRunner/
+    # sources). Clean, like tsc
     'tsc-src': 'thirdparty/tsc/src',
     'type-fest': 'thirdparty/corpora/type-fest',
     'valibot': 'thirdparty/corpora/valibot/library/tsconfig.corpus.json',
@@ -36,7 +36,7 @@ CORPORA = {
     'vue': 'thirdparty/corpora/vue/tsconfig.corpus.json',
     # Effect v3's core package, its tests and tstyche type tests: HKTs, generators, dual/pipe overloads, Schema
     'effect': 'thirdparty/corpora/effect/packages/effect/tsconfig.corpus.json',
-    # VS Code's src: the large application (1.39M lines), decorator-based DI, browser/node/electron in one program
+    # VS Code's src: the large application (3.41M lines), decorator-based DI, browser/node/electron in one program
     'vscode': 'thirdparty/corpora/vscode/src/tsconfig.corpus.json',
     # excalidraw: the JSX-heavy React 19 application (whiteboard editor, its packages and tests)
     'excalidraw': 'thirdparty/corpora/excalidraw/tsconfig.corpus.json',
