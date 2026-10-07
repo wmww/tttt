@@ -4375,12 +4375,7 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
         LazyMemo* param_memo = lazy_type_state_peek((LazyType*)&i->initializer.lazy_type);
         if (param_memo && param_memo->evaluation_started) continue;
         Ty const* type = nullptr;
-        // (What a spread element gives a parameter that isn't a rest isn't done)
         bool unknown = false;
-        for (u32 a = at; a < arg_count && (i->rest || a == at); a++) {
-            unknown |= args[a].expr && args[a].spread && !i->rest;
-        }
-        if (unknown) continue;
         if (i->rest) {
             u32 arity = arg_count > at ? arg_count - at : 0;
             if (arg_count && args[arg_count - 1].spread && at >= arg_count - 1) {
@@ -4433,7 +4428,9 @@ static void assign_iife_parameter_types(Checker* me, FunctionImpl const* functio
             EffectiveArg const* arg = &args[at];
             // (Checked with the contextual type of an argument of a call being resolved, any: tsc's resolvingSignature,
             // so a generic reference with a union constraint is narrowed as its constraint, getNarrowableTypeForReference)
-            Ty const* arg_type = arg->expr ? ty_check_expr(me, arg->expr, ty_intrinsic(me, TY_ANY)) :
+            // (A spread of something else than a tuple: what it iterates, tsc's checkExpression of the SpreadElement)
+            Ty const* arg_type = arg->expr && arg->spread ? ty_iterated_type(me, ITERATION_SPREAD, arg->type, span_null, nullptr) :
+                arg->expr ? ty_check_expr(me, arg->expr, ty_intrinsic(me, TY_ANY)) :
                 arg->spread ? ty_reference_args(me, arg->type).data[0] : arg->type;
             type = ty_widened_for_declaration(me, arg_type, true);
         } else if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) {
