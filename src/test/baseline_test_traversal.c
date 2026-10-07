@@ -3252,6 +3252,8 @@ void expr_compile_test_info_inner(Expr* me, BaselineTestCase* ctx) {
 
         case EXPR_ARRAY:
             for_each (i, vec_expr, &my array) {
+                // (An omitted element, `[, x]`, has no line: tsc 6's typeWriter skips OmittedExpression)
+                if (i->tag == EXPR_LITERAL && i->literal.tag == VALUE_UNDEFINED && !i->inner_span.sv.size) continue;
                 expr_compile_test_info(i, ctx);
             }
             break;

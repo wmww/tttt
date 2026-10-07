@@ -5033,17 +5033,17 @@ const baselines = {
     'commentOnArrayElement10': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnArrayElement11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnArrayElement12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnArrayElement13': {
         errors: true,
@@ -5073,7 +5073,7 @@ const baselines = {
     'commentOnArrayElement3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'commentOnArrayElement4': {
         errors: true,
@@ -10451,7 +10451,7 @@ const baselines = {
         types: true,
     },
     'deprecatedCompilerOptions1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -10461,22 +10461,22 @@ const baselines = {
         types: true,
     },
     'deprecatedCompilerOptions3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'deprecatedCompilerOptions6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20811,7 +20811,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesOut': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30933,12 +30933,12 @@ const baselines = {
     'sourceMapValidationDestructuringForArrayBindingPattern2(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForArrayBindingPattern2(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForArrayBindingPatternDefaultValues(target=es2015)': {
         errors: true,
@@ -30953,12 +30953,12 @@ const baselines = {
     'sourceMapValidationDestructuringForArrayBindingPatternDefaultValues2(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForArrayBindingPatternDefaultValues2(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForObjectBindingPattern': {
         errors: true,
@@ -30993,12 +30993,12 @@ const baselines = {
     'sourceMapValidationDestructuringForOfArrayBindingPattern2(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPattern2(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues(target=es2015)': {
         errors: true,
@@ -31013,12 +31013,12 @@ const baselines = {
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues2(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfArrayBindingPatternDefaultValues2(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringForOfObjectBindingPattern(target=es2015)': {
         errors: true,
@@ -31153,12 +31153,12 @@ const baselines = {
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern3(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern3(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPattern4': {
         errors: true,
@@ -31203,12 +31203,12 @@ const baselines = {
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues3(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementArrayBindingPatternDefaultValues3(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'sourceMapValidationDestructuringVariableStatementDefaultValues': {
         errors: true,
@@ -31918,7 +31918,7 @@ const baselines = {
     'strictOptionalProperties1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'strictOptionalProperties2': {
         errors: true,
@@ -33318,12 +33318,12 @@ const baselines = {
     'trailingCommasES5(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'trailingCommasES5(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'transformArrowInBlockScopedLoopVarInitializer(target=es2015)': {
         errors: true,
@@ -51688,12 +51688,12 @@ const baselines = {
     'arrayLiterals2ES5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiterals2ES6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'arrayLiterals3': {
         errors: true,
@@ -62373,42 +62373,42 @@ const baselines = {
     'parserArrayLiteralExpression11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression4': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression5': {
         errors: true,
@@ -62418,7 +62418,7 @@ const baselines = {
     'parserArrayLiteralExpression6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression7': {
         errors: true,
@@ -62428,7 +62428,7 @@ const baselines = {
     'parserArrayLiteralExpression8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserArrayLiteralExpression9': {
         errors: true,
@@ -74618,7 +74618,7 @@ const baselines = {
     'arrayLiteralWidened': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'initializersWidened': {
         errors: true,
@@ -74633,7 +74633,7 @@ const baselines = {
     'strictNullChecksNoWidening': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextualTypeWithUnionTypeCallSignatures': {
         errors: true,

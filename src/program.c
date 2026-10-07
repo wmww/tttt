@@ -1569,9 +1569,9 @@ static void program_validate_options(Program* me) {
     }
     for (isize i = 0; i < o->removed_options.count && (removed || deprecated); i++) {
         cstr const* name = &o->removed_options.items[i];
-        const char* instead = cstr_equals(name, "out") ? "outFile" :
-            cstr_equals(name, "importsNotUsedAsValues") || cstr_equals(name, "preserveValueImports") ?
-                "verbatimModuleSyntax" : nullptr;
+        // (6.0 no longer says to use outFile instead of out: outFile is deprecated too)
+        const char* instead = cstr_equals(name, "importsNotUsedAsValues") || cstr_equals(name, "preserveValueImports") ?
+            "verbatimModuleSyntax" : nullptr;
         Span sites[4];
         u32 site_count = option_sites(me, cstr_str(name), nullptr, true, sites);
         for (u32 j = 0; j < site_count; j++) {

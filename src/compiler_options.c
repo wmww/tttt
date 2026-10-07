@@ -313,6 +313,8 @@ void compiler_options_resolve(CompilerOptions* me) {
     DEFAULT(allow_js, my check_js);
     DEFAULT(isolated_modules, my verbatim_module_syntax);
     DEFAULT(no_unchecked_side_effect_imports, true);
+    // (tsc 6.0's default at 4d4f005c, plan 48. Parsed only: tttt orders types one way whatever it says)
+    DEFAULT(stable_type_ordering, true);
     DEFAULT(es_module_interop, true);
     DEFAULT(allow_synthetic_default_imports, true);
     DEFAULT(use_define_for_class_fields, my target >= SCRIPT_TARGET_ES2022);

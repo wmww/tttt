@@ -121,6 +121,7 @@ typedef enum ModuleDetectionKind {
     X(rewrite_relative_import_extensions, "rewriterelativeimportextensions", false) \
     X(skip_default_lib_check, "skipdefaultlibcheck", false) \
     X(source_map, "sourcemap", false) \
+    X(stable_type_ordering, "stabletypeordering", false) \
     X(skip_lib_check, "skiplibcheck", false) \
     X(suppress_excess_property_errors, "suppressexcesspropertyerrors", false) \
     X(suppress_implicit_any_index_errors, "suppressimplicitanyindexerrors", false) \
