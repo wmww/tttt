@@ -2744,21 +2744,21 @@ static void report_non_local_export(ErrorCtx* errs, Span name) {
 
 // An ES module's import of a file sure to be an ES module: no synthetic default (tsc's canHaveSyntheticDefault with
 // getEmitSyntaxForUsageLocation)
-static bool esm_imports_esm(PortItem const* item, SourceFile const* target) {
+// Whether the import is emitted as ES module syntax (tsc's getEmitSyntaxForModuleSpecifierExpression is ESNext)
+static bool esm_usage(PortItem const* item) {
     SourceFile const* importer = item->decl_name.source;
     if (!importer || item->is_require) return false;
     ModuleKind usage = source_file_emit_module_kind(importer);
-    bool esm = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
-    return esm && source_file_implied_format_for_emit(target) == MODULE_KIND_ESNEXT;
+    return usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
+}
+
+static bool esm_imports_esm(PortItem const* item, SourceFile const* target) {
+    return esm_usage(item) && source_file_implied_format_for_emit(target) == MODULE_KIND_ESNEXT;
 }
 
 // An ES module's import of a CommonJS module under node16/nodenext: always a synthetic default
 static bool esm_imports_cjs(PortItem const* item, SourceFile const* target) {
-    SourceFile const* importer = item->decl_name.source;
-    if (!importer || item->is_require) return false;
-    ModuleKind usage = source_file_emit_module_kind(importer);
-    bool esm = usage == MODULE_KIND_PRESERVE || (usage >= MODULE_KIND_ES2015 && usage <= MODULE_KIND_ESNEXT);
-    return esm && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
+    return esm_usage(item) && source_file_implied_format_for_emit(target) == MODULE_KIND_COMMONJS;
 }
 
 // tsc resolves the members of a module's object type (resolveAnonymousTypeMembers -> getNamedMembers) with
@@ -2919,6 +2919,11 @@ static bool can_have_synthetic_default(PortItem const* item, Symbol* module, Sou
         // be ES modules there is none, whatever `module` says
         if (module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT && esm_imports_cjs(item, file)) return true;
         if (esm_imports_esm(item, file)) return false;
+        // A referenced project's file, without a format of its own: its project's
+        if (file->reference_emits_esm && source_file_implied_format_for_emit(file) == MODULE_KIND_NONE &&
+            esm_usage(item)) {
+            return false;
+        }
     }
     if (!compiler_options()->allow_synthetic_default_imports) return false;
     if (!file || source_file_reads_as_declaration(file)) {

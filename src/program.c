@@ -1039,6 +1039,7 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
             CompilerOptions const* options = project_redirects_options(my redirects, source_file->from_reference - 1);
             source_file->reference_const_enums_ambient = !options->preserve_const_enums && !options->isolated_modules &&
                 !options->verbatim_module_syntax;
+            source_file->reference_emits_esm = options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT;
         }
     }
 
@@ -2949,6 +2950,7 @@ void program_typecheck(Program* me) {
     if (my declaration_errs) {
         bool keep = !program_declaration_diagnostics_gated(me) || error_ctx_empty(my errs);
         for (u32 c = 0; c < count; c++) {
+            for_each (e, vec_error, &my declaration_errs[c].errors) e->declaration = true;
             if (keep) error_ctx_merge(my errs, &my declaration_errs[c]);
             error_ctx_drop(&my declaration_errs[c]);
         }

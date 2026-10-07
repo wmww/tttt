@@ -250,6 +250,7 @@ typedef enum DiagnosticKind {
     DIAGNOSTIC_SYNTACTIC,
     DIAGNOSTIC_OPTIONS,
     DIAGNOSTIC_SEMANTIC,
+    DIAGNOSTIC_DECLARATION, // Not gated when emitting: the emit reports them
     DIAGNOSTIC_KIND_COUNT
 } DiagnosticKind;
 
@@ -257,7 +258,7 @@ static DiagnosticKind diagnostic_kind(Error const* error) {
     bool in_config = !span_valid(error->span) || (error->span.source && error->span.source->is_config);
     if (in_config) return error->phase == ERROR_PHASE_PARSE ? DIAGNOSTIC_CONFIG_PARSING : DIAGNOSTIC_OPTIONS;
     if (error->phase == ERROR_PHASE_PARSE && !error->grammar) return DIAGNOSTIC_SYNTACTIC;
-    return DIAGNOSTIC_SEMANTIC;
+    return error->declaration ? DIAGNOSTIC_DECLARATION : DIAGNOSTIC_SEMANTIC;
 }
 
 static void count_diagnostic_kinds(ErrorCtx const* errs, intptr_t counts[DIAGNOSTIC_KIND_COUNT]) {
@@ -294,7 +295,7 @@ static void verify_references(Program* program, ProjectSet const* projects, u32 
         Project const* referenced = project_set_at(projects, p->referenced[i]);
         if (!referenced->readable) {
             program_config_error(program, reference->start, reference->end, 6053,
-                cstr_d("File '", reference->path, "' not found."));
+                cstr_d("File '", reference->written, "' not found."));
             continue;
         }
         // (A program without files of its own, a container, may reference anything)
@@ -425,17 +426,25 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     phase_done(opts, out, "load+parse files", &last_time);
 
     int ret = 0;
-    // tsc's emitFilesAndReportErrors: semantic diagnostics only without syntactic, options and global ones
+    // tsc's emitFilesAndReportErrors: semantic diagnostics only without syntactic, options and global ones. With
+    // noEmitOnError, emitting (handleNoEmitOptions) reports all of them anyway, ungated
+    CompilerOptions const* options = program_options(program);
+    bool ungated = opts->keep_going || (options->no_emit_on_error && !options->no_emit);
     intptr_t kinds[DIAGNOSTIC_KIND_COUNT];
     count_diagnostic_kinds(errs, kinds);
-    bool gated = !opts->keep_going && (kinds[DIAGNOSTIC_SYNTACTIC] || kinds[DIAGNOSTIC_OPTIONS]);
-    if (!opts->keep_going && kinds[DIAGNOSTIC_SYNTACTIC]) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
+    bool syntactic = kinds[DIAGNOSTIC_SYNTACTIC];
+    bool gated = !ungated && (syntactic || kinds[DIAGNOSTIC_OPTIONS]);
+    if (!ungated && kinds[DIAGNOSTIC_SYNTACTIC]) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
     if (gated) drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
     const intptr_t parse_errors = report_errors(out, errs);
     if (parse_errors) ret = 1;
 
+    // Gated, the emit still reports the declaration diagnostics: checked only for them. Gated by options diagnostics
+    // alone, the rest of them (program_resolve_names() validates the options) are still reported
+    bool emit_declarations = !options->no_emit && (options->declaration || options->composite);
+    bool typecheck = !gated || emit_declarations;
     intptr_t name_errors = 0, type_errors = 0;
-    if (!gated) {
+    if (typecheck || !syntactic) {
         program_resolve_names(program);
         // (Not reported yet: global diagnostics found from here on hide them)
         ErrorCtx names = error_ctx_scratch(errs);
@@ -449,14 +458,18 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         }
 
         program_declaration_diagnostics_cli(program, parse_errors || !error_ctx_empty(&names));
-        program_typecheck(program);
+        if (typecheck) program_typecheck(program);
         // Global diagnostics (the checker's, without a file) hide the semantic ones
         count_diagnostic_kinds(&names, kinds);
         intptr_t type_kinds[DIAGNOSTIC_KIND_COUNT];
         count_diagnostic_kinds(errs, type_kinds);
-        if (!opts->keep_going && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS])) {
+        if (gated || (!ungated && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS]))) {
             drop_diagnostic_kind(&names, DIAGNOSTIC_SEMANTIC);
             drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
+        }
+        if (gated && syntactic) {
+            drop_diagnostic_kind(&names, DIAGNOSTIC_OPTIONS);
+            drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
         }
         name_errors = report_errors(out, &names);
         error_ctx_drop(&names);
@@ -471,7 +484,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         type_errors = report_errors(out, errs);
         if (type_errors) ret = 1;
         phase_done(opts, out, "typecheck", &last_time);
-        if (opts->expect_types) {
+        if (opts->expect_types && typecheck) {
             output_flush(out);
             program_print_expect_types(program, opts->expect_types);
         }

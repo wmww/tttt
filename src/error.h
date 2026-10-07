@@ -35,6 +35,9 @@ typedef struct Error {
     // Reported even where errors are only collected (an overload candidate's): tsc's elaborateElementwise adds its
     // exactOptionalPropertyTypes error to the diagnostics directly
     bool always_logged;
+    // A declaration diagnostic (tsc's getDeclarationDiagnostics, TS4xxx/TS9xxx): emit reports them whatever gated the
+    // semantic ones
+    bool declaration;
     // A diagnostic tsc reports once per program, from whichever file asks first (a checker-wide memo): non-zero, what
     // it is about. Each checker reports it once; error_ctx_keep_first_once() keeps the one with the lowest once_order
     // (the index of the file being checked), which is the one a single checker reports

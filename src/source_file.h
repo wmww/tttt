@@ -159,6 +159,9 @@ typedef struct SourceFile {
     // A referenced project's file whose project doesn't preserve const enums: tsc -b reads its `.d.ts`, where they're
     // ambient (TS2748 under isolatedModules, tsc's shouldPreserveConstEnums of the redirect)
     bool reference_const_enums_ambient;
+    // A referenced project's file whose project emits ES modules (`module` es2015..esnext): an ES module's import of it
+    // has no synthetic default (tsc's canHaveSyntheticDefault, getRedirectFromSourceFile)
+    bool reference_emits_esm;
     // Unchecked, but checked anyway for a few errors (tsc's isPlainJsFile: JavaScript without a `@ts-check`/`@ts-nocheck`
     // and with checkJs not set at all): only the ones on tsc's plainJSErrors list are reported
     bool plain_js;
