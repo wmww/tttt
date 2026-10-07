@@ -822,6 +822,13 @@ static bool merged_interface_base_has(Checker* checker, ClassDecl const* me, Pro
     return false;
 }
 
+// A class property's accessor flags (tsc's SymbolFlags.GetAccessor 1, SetAccessor 2), 0 if it isn't one
+static u32 accessor_kinds(Prop const* prop) {
+    if (!(prop->flags & PROP_ACCESSOR)) return 0;
+    bool getter = prop->flags & PROP_CLASS_GETTER;
+    return (getter ? 1 : 0) | (!getter || !(prop->flags & PROP_READONLY) ? 2 : 0);
+}
+
 // tsc's checkKindsOfPropertyMemberOverrides(): what an instance member of the base class is overridden with (a
 // property with an accessor or the other way around, a method with an accessor...), and the abstract members a
 // class that isn't abstract inherits without implementing
@@ -848,6 +855,20 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
                 seen = (earlier_type->flags & TYF_OBJECT) && ty_get_prop(checker, earlier_type, base_prop->name);
             }
             if (seen) continue;
+            // (One that a later part has too is the intersection's synthetic property, which is a property unless every
+            // part has the same kind of accessor: tsc's createUnionOrIntersectionProperty)
+            // A synthetic one any declaration of which is an interface's or abstract isn't checked (tsc's
+            // isPropertyAbstractOrInterface with `some`)
+            bool synthetic = false, synthetic_exempt = false;
+            for (u32 later = part + 1; later < parts.len; later++) {
+                Ty const* later_type = parts.data[later];
+                Prop const* other = (later_type->flags & TYF_OBJECT) ? ty_get_prop(checker, later_type, base_prop->name) : nullptr;
+                if (!other) continue;
+                synthetic |= accessor_kinds(other) != accessor_kinds(base_prop);
+                ClassDecl const* other_class = class_of_prop(other);
+                MemberInfo other_info = other_class ? class_instance_member(checker, other_class, other->name) : (MemberInfo){0};
+                synthetic_exempt |= !other_class || other_info.is_abstract;
+            }
             ClassDecl const* base_class = class_of_prop(base_prop);
             if (!base_class) continue; // (an interface merged into the class)
             MemberInfo base_info = class_instance_member(checker, base_class, base_prop->name);
@@ -877,6 +898,8 @@ static void class_check_member_overrides(ClassDecl* me, Ty const* type, Ty const
             Span at = derived_info.name;
             if (base_property_like && derived_property_like) {
                 if (base_info.is_abstract && (base_info.kind != MEMBER_PROPERTY || base_info.uninitialized_field)) continue;
+                if (synthetic && (synthetic_exempt || base_info.is_abstract)) continue;
+                if (synthetic) base_info.kind = MEMBER_PROPERTY;
                 if (base_info.kind == MEMBER_ACCESSOR && derived_info.kind == MEMBER_PROPERTY) {
                     error_ctx_error_d(errs, at, 2610, "'", atom_sv(base_prop->name), "' is defined as an accessor in class '",
                         base, "', but is overridden here in '", type, "' as an instance property.");
