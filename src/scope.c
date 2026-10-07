@@ -1990,6 +1990,13 @@ static void add_define_property_export(Scope* me, Expr* call, bool top_level) {
 
 void scope_add_commonjs_export(Scope* me, Expr* assignment) {
     if (my kind != SCOPE_MODULE || !my file || !my file->is_commonjs || !my container) return;
+    // Each operand of a comma expression (tsc binds an assignment wherever it is: minified
+    // `module.exports=r,module.exports.default=r`)
+    if (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_COMMA) {
+        scope_add_commonjs_export(me, &assignment->binary_op->left);
+        scope_add_commonjs_export(me, &assignment->binary_op->right);
+        return;
+    }
     // Every assignment of a chain (`exports = module.exports = C`)
     while (assignment->tag == EXPR_BINARY_OP && assignment->binary_op->op == BINARY_OP_EQUAL) {
         add_commonjs_export(me, assignment, true, false);

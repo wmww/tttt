@@ -226,11 +226,9 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 - **nest** (pin unchanged, `tsconfig.corpus.json` with `strict: false`): tttt 0. **react** (pin unchanged,
   `tsconfig.corpus.json` with `baseUrl: null`): tttt 0 (after making a JSON `null` in compilerOptions unset baseUrl and
   the booleans; other string/list options still ignore `null`).
-- **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 113, by code TS2349 x43, TS2345 x31, TS2339 x29, TS1128 x6,
+- **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 64 (113 before the `if (c);else` parser fix and binding
+  `module.exports=` inside comma expressions); originally by code TS2349 x43, TS2345 x31, TS2339 x29, TS1128 x6,
   TS2440 x2, TS2344 x1, TS7008 x1. Root causes seen:
-  - CommonJS: `module.exports=r,module.exports.default=r;` (export assignment inside a comma expression, the end of
-    every generated schemas/**/*.check.js) isn't bound as the module's export: `require("./x.check")(...)` gives TS2349
-    "not callable" (most of the 43) and `module.exports.default` TS2339.
   - JSDoc generics: `@typedef {import("../util/SourceProcessor").PrintContext<CssPath, Node, CssPrintOptions>}` (a JS
     class with `@template TPath, TNode, [TPrintOptions=object]`) keeps its type parameters uninstantiated: TS2345
     "'Node' is not assignable to 'TNode'" and TS2339 on `writer.options.X` (`PrintOptions & TPrintOptions`), in
