@@ -838,13 +838,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     redeclared = prop;
                 }
             }
-            // A property after a method of its name joined the method's symbol (see builder_add_interface_member)
+            // A property after a method or accessor of its name joined its symbol (see builder_add_interface_member)
             Prop const* joined = nullptr;
             if (!my key.name_is_member_function && ctx->member_owner && !redeclared && span_valid(my declaration)) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
+                while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
                 bool mine = false;
-                for (u32 i = 0; prop && (prop->flags & PROP_METHOD) && i < prop->decl->decl_span_count; i++) {
+                for (u32 i = 0; prop && (prop->flags & (PROP_METHOD | PROP_ACCESSOR)) && i < prop->decl->decl_span_count; i++) {
                     mine |= span_eq(prop->decl->decl_spans[i], my declaration);
                 }
                 if (mine) joined = prop;
@@ -876,8 +877,10 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             if (!merged && !redeclared && !my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
-                if (prop && (prop->flags & PROP_METHOD) && prop->decl->decl_span_count && span_valid(my declaration) &&
-                    !span_eq(prop->decl->decl_spans[0], my declaration)
+                Prop const* root = prop;
+                while (root && root->target && !root->decl->decl_span_count) root = root->target;
+                if (prop && (root->flags & (PROP_METHOD | PROP_ACCESSOR)) && root->decl->decl_span_count && span_valid(my declaration) &&
+                    !span_eq(root->decl->decl_spans[0], my declaration)
                 ) {
                     type = prop_type(checker, prop);
                 }
@@ -1814,9 +1817,9 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             } else {
                 vec_span_push(&declarations, my span);
             }
-            // A method of a class merged with an interface: the member's declarations are both's (the checker's member
-            // has them, see builder_add_interface_member)
-            if (!my method.accessor && !my method.computed_key && ctx->class_symbol && !span_valid(class_item_private_name(me))) {
+            // A method or accessor of a class merged with an interface: the member's declarations are both's (the
+            // checker's member has them, see builder_add_interface_member)
+            if (!my method.computed_key && ctx->class_symbol && !span_valid(class_item_private_name(me))) {
                 Checker* checker = current_checker;
                 Ty const* owner = my method.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);
@@ -1906,6 +1909,13 @@ void class_item_compile_test_info(ClassItem* me, VecClassItem const* items, Span
             }
             bool prototype = my field.is_static && name && csview_equals(atom_sv(name), "prototype");
             if ((first != me || prototype) && ctx->class_symbol && name) {
+                Checker* checker = current_checker;
+                Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
+                    ty_declared_type_of(checker, ctx->class_symbol);
+                Prop const* prop = ty_get_prop(checker, owner, name);
+                if (prop) type = prop_type(checker, prop);
+            } else if (vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], my span) && ctx->class_symbol && name) {
+                // (Joined into a symbol an interface merged with the class declared first: that symbol's type)
                 Checker* checker = current_checker;
                 Ty const* owner = my field.is_static ? ty_static_type_of(checker, ctx->class_symbol) :
                     ty_declared_type_of(checker, ctx->class_symbol);

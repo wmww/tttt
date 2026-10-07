@@ -3440,37 +3440,59 @@ static Atom const* type_member_name(Checker* me, InterfaceMember const* member) 
     return ty_literal_name(me, ty_expr_type(me, key));
 }
 
-// TS2717 across a class and the interfaces it merges with: a property signature after a field of its name (or the
-// other way around) is a secondary declaration of the one property symbol (tsc's checkVariableLikeDeclaration)
+// The declared member of a class's (or interface's) declared type, of its declarations' property symbol
+static Prop const* declared_member_root(Checker* me, Ty const* declared, Atom const* name) {
+    Prop const* prop = ty_get_prop(me, declared, name);
+    while (prop && prop->target && !prop->decl->decl_span_count) prop = prop->target;
+    return prop && prop->decl->decl_span_count ? prop : nullptr;
+}
+
+static bool prop_declared_by(Prop const* prop, Span span) {
+    for (u32 i = 0; i < prop->decl->decl_span_count; i++) {
+        if (span_eq(prop->decl->decl_spans[i], span)) return true;
+    }
+    return false;
+}
+
+static bool is_class_item_span(ClassDecl const* class_decl, Span span) {
+    for_each (item, vec_class_item, &class_decl->items) {
+        if (span_eq(item->span, span)) return true;
+    }
+    return false;
+}
+
+// TS2717 across a class and the interfaces it merges with: a property signature after a class member of its name (a
+// field, method or accessor), or a field after an interface member, is a secondary declaration of the one property
+// symbol, whose type is its first declaration's (tsc's checkVariableLikeDeclaration). Declarations of one kind are
+// checked by the class and the interface themselves
 void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, ErrorCtx* errs) {
     ClassDecl const* class_decl = nullptr;
-    u32 class_at = 0;
     for (u32 d = 0; d < symbol->decl_count && !class_decl; d++) {
-        if (symbol->decls[d].kind == SYMBOL_DECL_CLASS) {
-            class_decl = symbol->decls[d].node;
-            class_at = d;
-        }
+        if (symbol->decls[d].kind == SYMBOL_DECL_CLASS) class_decl = symbol->decls[d].node;
     }
     if (!class_decl) return;
+    Ty const* declared = ty_declared_type_of(me, symbol);
+    if (!(declared->flags & TYF_OBJECT)) return;
     for (u32 d = 0; d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
         InterfaceDecl const* interface_decl = symbol->decls[d].node;
         if (interface_decl->name.source && interface_decl->name.source->is_stdlib) continue;
         for_each (i, vec_interface_member, &interface_decl->type.interface.members) {
             if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function || i->accessor) continue;
-            for_each (field, vec_class_item, &class_decl->items) {
-                if (field->tag != CLASS_ITEM_FIELD || field->field.is_static || field->field.computed_key) continue;
-                if (!cstr_eq(&field->field.name_string, &i->key.name_string)) continue;
-                Ty const* field_type = class_item_get_type(field);
-                Ty const* member_type = member_declared_type(me, i);
-                if (class_at < d) {
-                    check_subsequent_property(me, i->key.span, field_type, member_type, field->field.name_span, errs);
-                } else {
-                    check_subsequent_property(me, field->field.name_span, member_type, field_type, i->key.span, errs);
-                }
-                break;
+            if (!span_valid(i->declaration)) continue;
+            Prop const* root = declared_member_root(me, declared, checker_atom(me, cstr_sv(&i->key.name_string)));
+            if (!root || !is_class_item_span(class_decl, root->decl->decl_spans[0]) || !prop_declared_by(root, i->declaration)) {
+                continue;
             }
+            check_subsequent_property(me, i->key.span, prop_type(me, root), member_declared_type(me, i), root->decl->name_span, errs);
         }
+    }
+    for_each (field, vec_class_item, &class_decl->items) {
+        if (field->tag != CLASS_ITEM_FIELD || field->field.is_static || field->field.computed_key) continue;
+        if (span_valid(class_item_private_name(field))) continue;
+        Prop const* root = declared_member_root(me, declared, checker_atom(me, cstr_sv(&field->field.name_string)));
+        if (!root || is_class_item_span(class_decl, root->decl->decl_spans[0]) || !prop_declared_by(root, field->span)) continue;
+        check_subsequent_property(me, field->field.name_span, prop_type(me, root), class_item_get_type(field), root->decl->name_span, errs);
     }
 }
 

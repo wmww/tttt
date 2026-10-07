@@ -376,9 +376,9 @@ static void builder_add_interface_member(
                                 ty_prop_name_form(existing->decl->name_span.sv, nullptr, nullptr, false),
                                 ty_prop_name_form(i->key.span.sv, nullptr, nullptr, false));
                         }
-                    } else if (!is_method && (existing->flags & PROP_METHOD) && !i->has_write_type && !i->computed_accessor) {
-                        // A property after a method of its name joins its symbol (PropertyExcludes is nothing), which
-                        // stays a method: only a declaration more
+                    } else if (!is_method && !i->has_write_type && !i->computed_accessor) {
+                        // A property after a method of its name (or a class member of a merged class) joins its symbol
+                        // (PropertyExcludes is nothing), which stays what it was: only a declaration more
                         { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                     }
                     break;
@@ -1005,7 +1005,9 @@ static Prop* builder_add_class_prop(
     Prop* existing = builder_find_prop(builder, name);
     if (existing) {
         // A field after a parameter property of its name: one symbol, the parameter's type (tsc's PropertyExcludes)
-        if (existing->decl->parameter_property && item->tag == CLASS_ITEM_FIELD) prop_add_shared_decl_spans(me, existing, &item->span, 1);
+        // A field after any other member of its name (an interface's merged with the class too) joins its symbol the
+        // same way (tsc's PropertyExcludes), the first declaration's type
+        if (item->tag == CLASS_ITEM_FIELD) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         return nullptr;
     }
     Prop* prop = prop_new_declared(me);
@@ -1348,6 +1350,28 @@ static void builder_add_class_items(
                         }
                     }
                     if (!count) break;
+                    // After an interface's method of its name (the class merges with it): one method, the interface's
+                    // signatures then the class's (tsc's getSignaturesOfSymbol over the symbol's declarations)
+                    Prop* interface_method = !i->method.computed_key && !span_valid(class_item_private_name(i)) ?
+                        builder_find_prop(builder, checker_atom(me, cstr_sv(&i->method.name_string))) : nullptr;
+                    if (interface_method && (interface_method->flags & PROP_METHOD) && interface_method->decl->node &&
+                        interface_method->decl->node->tag == TYPE_CALLABLE
+                    ) {
+                        u32 had = interface_method->decl->overload_count ? interface_method->decl->overload_count : 1;
+                        FunctionImpl const** all = arena_new_n(&my arena, FunctionImpl const*, had + count);
+                        if (interface_method->decl->overload_count) {
+                            memcpy(all, interface_method->decl->overloads, sizeof(FunctionImpl const*) * had);
+                        } else {
+                            all[0] = interface_method->decl->node->callable->function;
+                        }
+                        memcpy(all + had, functions, sizeof(FunctionImpl const*) * count);
+                        interface_method->decl->overloads = all;
+                        interface_method->decl->overload_count = had + count;
+                        for (u32 f = 0; f < count; f++) interface_method->thisless &= function_is_thisless(functions[f]);
+                        prop_add_shared_decl_spans(me, interface_method, &i->span, 1);
+                        prop_add_decl_spans(me, interface_method, spans, span_count);
+                        break;
+                    }
                     LowerCtx method_ctx = ctx;
                     method_ctx.method = true;
                     Prop* prop = builder_add_class_prop(me, builder, &i->method.name_string, parent, method_ctx, i);
