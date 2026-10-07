@@ -16,9 +16,7 @@ declarationsIndirectGeneratedAliasReference	T	src-changed	bl-changed
 discriminateWithMissingProperty	E	src-changed	bl-changed
 erasableSyntaxOnly	ET	src-changed	bl-changed
 errorForConflictingExportEqualsValue	T	src-changed	bl-changed
-exportsAndImports4-es6	T	src-same	bl-changed
 importAliasFromNamespace	ET	src-changed	bl-changed
-importAttributes9	T	src-same	bl-changed
 inferTypePredicates	T	src-changed	bl-changed
 inlineJsxFactoryDeclarationsLocalTypes	E	src-changed	bl-changed
 jsFileMethodOverloads5	T	src-changed	bl-changed
@@ -42,6 +40,3 @@ thisInPropertyBoundDeclarations	T	src-changed	bl-changed
 tsxStatelessFunctionComponentOverload1	E	src-changed	bl-changed
 typePredicateStructuralMatch	S	src-changed	bl-changed
 typesVersionsDeclarationEmit.multiFileBackReferenceToUnmapped	T	src-same	bl-changed
-unusedImports11	T	src-changed	bl-changed
-unusedImports12	T	src-changed	bl-changed
-unusedImports_entireImportDeclaration	T	src-changed	bl-changed

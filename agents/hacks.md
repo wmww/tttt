@@ -693,9 +693,9 @@ src` finds the code-side markers; every significant one has an entry here.
 - `symbol_chain.c` accessibility: `decl_visible()` fails open (visible) where it doesn't know a declaration's
   statement list (no `block`, an ambient module, a namespace block it can't match).
 - `namespace_import_is_clone()` (`symbol_chain.c`, HACK): under esModuleInterop tsc resolves `import * as ns` of a
-  module with a `default` (or signatures) to a clone, so `ns` doesn't name the module as a container
-  (esModuleInteropDefaultImports). tttt types `ns` as the module itself, so the rule only applies to container lookups
-  (`ChainCtx.container_lookup`); a module printed as `typeof ns` still goes through `ns`. For an `export =` module the
+  module with a `default` (or signatures) to a clone, so `ns` names neither the module nor anything but itself. The
+  clone is make_gather_target()'s per-alias symbol, whose namespace type ty_display.c names through the chain of that
+  symbol (`typeof ns` where the import reaches, else as the module). The predicate is syntactic. For an `export =` module the
   clone is now modelled: `namespace_import_type()` (lower.c) makes the type once per alias, flagged
   `TyAnonymous.module_clone` and printed by `display_module_clone()`, and `export_equals_namespace_import_is_clone()`
   keeps such an `ns` from naming what the module assigns. Its predicate (signatures or `default`) is syntactic and

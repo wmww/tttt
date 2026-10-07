@@ -146,11 +146,12 @@ static Symbol const* resolve_alias(Symbol const* symbol) {
 // module. tttt's type of `ns` is the module's, so this only matters where the module is a container something is
 // named through (ChainCtx.container_lookup); the module's own type is printed through `ns` like tsc prints the
 // clone's. HACK
-static bool namespace_import_is_clone(Symbol const* symbol) {
+bool namespace_import_is_clone(Symbol const* symbol) {
     if (!symbol_rare(symbol)->gather_module || !compiler_options()->es_module_interop || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
     PortItem const* item = decl->kind == SYMBOL_DECL_ALIAS ? decl->node : nullptr;
-    if (!item || item->tag != PORT_IMPORT_GATHER) return false;
+    // (Not `import x = require()` nor a JavaScript `require`: tsc's resolveExternalModuleSymbol doesn't clone)
+    if (!item || item->tag != PORT_IMPORT_GATHER || item->is_require) return false;
     Symbol* module = symbol_rare(symbol)->gather_module;
     if (symbol_get_export(module, c_sv("default"))) return true;
     Symbol const* assigned = module->is_module ? module_export_equals(module) : module;
@@ -242,7 +243,9 @@ static bool is_accessible(
     // getCommonJsExportEquals records it as that symbol's merged symbol)
     if (resolved && resolved != symbol && symbol_rare(resolved)->merged_export_equals_of) named = symbol_rare(resolved)->merged_export_equals_of;
     if (named != symbol && identity(me, named) != identity(me, symbol)) return false;
-    if (my container_lookup && symbol->is_module && named != symbol && namespace_import_is_clone(merged(me, named))) return false;
+    if (symbol->is_module && named != symbol && namespace_import_is_clone(merged(me, named))) return false;
+    // (and nothing but itself names the clone)
+    if (named != symbol && symbol_rare(symbol)->gather_module && namespace_import_is_clone(symbol)) return false;
     // (Nor does it name what the module assigns: the clone is a symbol of its own, printed by ty_display.c's
     // display_module_clone())
     if (from_table != symbol && export_equals_namespace_import_is_clone(from_table)) return false;

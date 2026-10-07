@@ -35258,12 +35258,12 @@ const baselines = {
     'unusedImports11': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports12': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedImports13': {
         errors: true,
@@ -35328,7 +35328,7 @@ const baselines = {
     'unusedImports_entireImportDeclaration': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'unusedInterfaceinNamespace1': {
         errors: true,
@@ -47658,27 +47658,27 @@ const baselines = {
     'exportsAndImports4-amd(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports4-amd(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports4-es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports4(target=es2015)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports4(target=es5)': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'exportsAndImports5': {
         errors: true,
@@ -55323,7 +55323,7 @@ const baselines = {
     'verbatimModuleSyntaxRestrictionsCJS': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'verbatimModuleSyntaxRestrictionsESM(esmoduleinterop=false)': {
         errors: true,
@@ -55688,7 +55688,7 @@ const baselines = {
     'importAttributes9': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'dynamicImportDefer(module=commonjs)': {
         errors: true,

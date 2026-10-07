@@ -494,6 +494,12 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
         return;
     }
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
+    if (d.enclosing && symbol && symbol != symbol_members(symbol) && namespace_import_is_clone(symbol)) {
+        // The clone `import * as ns` makes is named by the import where that reaches it, else as the module
+        SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.underline || d.tracker);
+        out_symbol_name(me, d, chain.len ? symbol : symbol_members(symbol), meaning);
+        return;
+    }
     if (d.enclosing && symbol && symbol_members(symbol)->is_module) {
         out_symbol_name(me, d, symbol_is_augmented_export_equals(symbol) ? symbol : symbol_members(symbol), meaning);
         return;
