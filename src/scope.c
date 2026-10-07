@@ -3061,6 +3061,19 @@ static Symbol* resolve_alias_target(Symbol* me) {
             found = file->scope->container;
         }
         if (found == me) return nullptr;
+        // tsc's resolveNameHelper looks a CommonJS module's exports up after its locals and before the globals, and
+        // discards what it finds (but typedefs); getSymbol's meaning test resolves a pure alias there all the same, so
+        // `exports.y = y` or `module.exports = { parseInt }` with no local of the name is its own target in flight:
+        // circular (TS2303), the global or TS2304 aside
+        if (file && file->is_js && file->is_commonjs && file->scope && file->scope->container &&
+            file->scope->container->exports && (!found || found == symbol_table_get(&my binder->globals, my alias->name.sv))
+        ) {
+            Symbol* exported = symbol_table_get(file->scope->container->exports, my alias->name.sv);
+            if (exported && (exported->flags & SYMBOL_ALIAS) && !(exported->flags & (SYMBOL_VALUE | SYMBOL_TYPE | SYMBOL_NAMESPACE))) {
+                symbol_resolve_alias(exported);
+                if (my alias->state == ALIAS_CIRCULAR) return nullptr;
+            }
+        }
         if (!found && span_valid(my alias->name) && my binder->suggestion_count < 10 && !binder_shard(my binder)) {
             // (tsc's resolveEntityName reports TS2304 through resolveName, whose spelling suggestion resolves the
             // aliases among the candidates: one that reaches this alias in flight makes it TS2303. The TS2304 itself
@@ -3259,7 +3272,10 @@ Symbol* symbol_resolve_alias(Symbol* me) {
     if (my alias->state == ALIAS_CIRCULAR && (my alias->item || (my decl_count && span_valid(my decls[0].full)))) {
         // (Import-equals declarations and `export =` are reported on the whole statement)
         PortItem const* item = my alias->item;
-        Span at = !item ? my decls[0].full :
+        // (A CommonJS export's at its name: `exports.y`, the shorthand)
+        SourceFile const* file = my alias->scope->file;
+        bool commonjs = !item && file && file->is_js && file->is_commonjs && span_valid(my decls[0].name);
+        Span at = commonjs ? my decls[0].name : !item ? my decls[0].full :
             item->tag == PORT_IMPORT_ALIAS || item->is_require ? span_with_semicolon(item->full_span) : item->decl_name;
         if (!(item && item->wrong_context)) {
             error_ctx_error_d(my alias->scope->binder->errs, at, 2303, "Circular definition of import alias '", my name, "'.");
