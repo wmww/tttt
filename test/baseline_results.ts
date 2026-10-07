@@ -8603,7 +8603,7 @@ const baselines = {
     'declarationEmitComputedNameWithQuestionToken': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitComputedNamesInaccessible': {
         errors: true,
@@ -66258,7 +66258,7 @@ const baselines = {
     'parserComputedPropertyName18': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'parserComputedPropertyName19': {
         errors: true,

@@ -600,13 +600,18 @@ static void builder_add_interface(
         TyBuf types = {0};
         for_each (i, vec_interface_member, &interface->members) {
             if (!(interface_computed_index_kind(me, i) & (1u << k))) continue;
-            ty_buf_push(&types, ty_from_node(me, &i->type, ctx));
+            // (The type of each member's symbol: an optional one's has undefined, getTypeOfSymbol)
+            Ty const* type = ty_from_node(me, &i->type, ctx);
+            ty_buf_push(&types, i->optional ? ty_optional_prop_type(me, type) : type);
         }
         for (u32 j = 0; j < builder->props_count; j++) {
             Atom const* name = builder->props[j]->name;
             bool symbol_name = ty_unique_symbol_of_name(me, name) != nullptr;
             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
-            if (included) ty_buf_push(&types, prop_type(me, builder->props[j]));
+            if (included) {
+                Ty const* type = prop_type(me, builder->props[j]);
+                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_type(me, type) : type);
+            }
         }
         IndexInfo info = {
             .key = key,
@@ -1302,7 +1307,10 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             if (!(kind & (1u << k))) continue;
             bool field = i->tag == CLASS_ITEM_FIELD;
             if (!field && i->method.accessor && i->method.accessor_first != i) continue; // One type per accessor pair
-            ty_buf_push(&types, field || i->method.accessor ? class_item_get_type((ClassItem*)i) : ty_function_type(me, &i->method.func));
+            Ty const* type = field || i->method.accessor ? class_item_get_type((ClassItem*)i) : ty_function_type(me, &i->method.func);
+            // (The type of each member's symbol: an optional one's has undefined, getTypeOfSymbol)
+            bool optional = field ? i->field.is_optional : i->method.is_optional;
+            ty_buf_push(&types, optional ? ty_optional_prop_type(me, type) : type);
         }
         for (u32 j = 0; j < builder->props_count; j++) {
             Atom const* name = builder->props[j]->name;
@@ -1310,7 +1318,10 @@ static void builder_add_computed_index_infos(Checker* me, MembersBuilder* builde
             bool included = k == 0 ? !symbol_name : k == 1 ? ty_is_numeric_name(name) : symbol_name;
             // (The static side's `prototype` too: tsc's class exports have it, "all static string indexers include the
             // instance type")
-            if (included) ty_buf_push(&types, prop_type(me, builder->props[j]));
+            if (included) {
+                Ty const* type = prop_type(me, builder->props[j]);
+                ty_buf_push(&types, builder->props[j]->flags & PROP_OPTIONAL ? ty_optional_prop_type(me, type) : type);
+            }
         }
         IndexInfo info = {
             .key = key,

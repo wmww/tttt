@@ -9,7 +9,6 @@ arityAndOrderCompatibility01	E	src-changed	bl-changed
 bundledDtsLateExportRenaming	T	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed
 constructorWithIncompleteTypeAnnotation	E	src-changed	bl-changed
-declarationEmitComputedNameWithQuestionToken	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference2	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference3	ET	src-changed	bl-changed
@@ -35,7 +34,6 @@ legacyNodeModulesExportsSpecifierGenerationConditions	ET	src-changed	bl-changed
 moduleExportAlias5	T	src-changed	bl-changed
 nullishCoalescingOperator5	ET	src-changed	bl-changed
 parenthesizedContexualTyping2	ET	src-changed	bl-changed
-parserComputedPropertyName18	T	src-same	bl-changed
 parserParameterList11	ET	src-changed	bl-changed
 partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
 plainJSGrammarErrors	ET	src-same	bl-changed
