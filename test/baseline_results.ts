@@ -17843,12 +17843,12 @@ const baselines = {
     'importDeclWithExportModifierAndExportAssignment': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclWithExportModifierAndExportAssignmentInAmbientContext': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'importDeclWithExportModifierInAmbientContext': {
         errors: true,

@@ -407,6 +407,7 @@ typedef struct PropSymbolInfo {
 } PropSymbolInfo;
 
 static void collect_found_prop(Checker* checker, Ty const* object, Prop const* prop, PropSymbolInfo* info);
+static Symbol const* namespace_export_equals_clone(Symbol const* symbol);
 
 // The property symbol a union's or intersection's members' properties (collected into `inner`) make, added to `info`
 static void merge_composite_info(PropSymbolInfo* info, PropSymbolInfo const* inner_info) {
@@ -1592,6 +1593,8 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     }));
                     baseline_test_case_add_type_node(ctx, *i, &t);
                     type_drop(&t);
+                } else if (!decl->is_placeholder && namespace_export_equals_clone(decl)) {
+                    baseline_test_case_add_type(ctx, *i, ty_namespace_type(current_checker, namespace_export_equals_clone(decl)));
                 } else if (!decl->is_placeholder && !symbol_for_meaning(decl, SYMBOL_VALUE)) {
                     // Neither a type nor a value (an uninstantiated namespace): errorType (isInRightSideOfImportOrExportAssignment)
                     baseline_test_case_add_type(ctx, *i, ty_intrinsic(current_checker, TY_ERROR));
@@ -2587,6 +2590,21 @@ static void new_target_function_symbol(IdentifierExpr const* me, Span span, Base
     });
 }
 
+// An uninstantiated namespace a module's `export =` assigns while the module has other exports: tsc's
+// getCommonJsExportEquals clones it into a ValueModule and records the clone as its merged symbol, so once the module
+// is checked every reference to it is that clone, `typeof x`. Null otherwise
+static Symbol const* namespace_export_equals_clone(Symbol const* symbol) {
+    if (!symbol || (symbol->flags & SYMBOL_VALUE) || !(symbol->flags & SYMBOL_NAMESPACE_MODULE)) return nullptr;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        Scope const* block = symbol->decls[i].block;
+        Symbol* module = block && (block->kind == SCOPE_MODULE || block->kind == SCOPE_NAMESPACE) ? block->container : nullptr;
+        if (!module || !module->is_module) continue;
+        Symbol const* assigned = module_export_equals(module);
+        if (assigned && assigned != symbol && symbol_rare(assigned)->merged_export_equals_of == symbol) return assigned;
+    }
+    return nullptr;
+}
+
 void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx) {
     if (my keyword == KEYWORD_IDENTIFIER_NEW_TARGET && !my target && identifier_this_function(me)) {
         new_target_function_symbol(me, identifier_expr_name(me), ctx);
@@ -3529,6 +3547,12 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                         .span = my expr.inner_span,
                         .name = shown_declaration(my expr.identifier.symbol, namespace)->name_span,
                     });
+                    // (Cloned into a value by the module's other exports: that clone's type, `typeof x`)
+                    Symbol const* clone = namespace_export_equals_clone(namespace);
+                    if (clone) {
+                        baseline_test_case_add_type(ctx, my expr.inner_span, ty_namespace_type(current_checker, clone));
+                        break;
+                    }
                 }
             }
             // fallthrough
