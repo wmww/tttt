@@ -626,9 +626,9 @@ Ty const* ty_string_literal(Checker* me, csview sv) {
 
 // Unions and intersections
 
-// Sorts by id. The input is usually a few sorted runs back to back (the members of the unions being combined, plus a
-// few more), so this is a natural merge sort: it merges the runs that are there instead of sorting from scratch
-// Sorts types in union order (ty_compare(); stable)
+// Sorts types in union order (ty_compare(); stable). The input is usually a few sorted runs back to back (the members
+// of the unions being combined, plus a few more), so this is a natural merge sort: it merges the runs that are there
+// instead of sorting from scratch
 static void sort_by_id(Ty const** data, u32 len) {
     if (len <= 8) {
         for (u32 i = 1; i < len; i++) {

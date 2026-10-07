@@ -37,8 +37,8 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
    and vscode 1 (stateToProgressAdapter, unreduced); flagflip missing / spurious / other 260 / 90 / 10 -> 42 / 12 / 5;
    then mutation seeds 11, 13, 14 and multi/js 12 drained, `$ExpectType` 68621, suite 14805. Instructions -0.6..+1.0%.
    New plan 49 (destructured references and widening, audit stages); leftovers in triage.md.
-9. **Perf session** (plan 48 stage 6): instruction baselines on the re-pinned corpora, `./bench.sh` against tsgo 7.0.2.
-   New since the re-pin: vscode is 3.41M lines now (was 1.39M; tsc 6 needs > 8 GB heap, tttt 5.6 GB RSS),
-   type-fest's IntRange tests peak at 2.3 GB RSS, tsgo runs away on zod-root (18 GB).
+9. Done (execution, 2026-10-07): plan 48 stage 6. Instructions identical to entry 8's end (vscode 92.151 G);
+   `./bench.sh` on every re-pinned corpus: tttt 3.0x (vscode, 6.2 s / 5.8 GB vs 18.3 s / 8.7 GB) to 13.9x (type-fest)
+   faster than multi-threaded tsgo 7.0.2, less memory everywhere; work volume within ~15% of tsc's. No code changes.
 10. **Triage.**
 11. **Insights.**

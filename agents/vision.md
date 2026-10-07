@@ -20,8 +20,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   tsc diagnostics): missing / spurious / other code 603 / 1460 / 1029 -> 51 / 45 / 10. **Mutation testing** (built this
   window): fresh seeds now ~1% (single-file) and ~2% (multi-file/JS) productive.
 - **Perf**: callgrind flat over the window except tsc shortcuts added in the perf session and triage (drizzle -37%,
-  vue -13%). vscode 2.2 s / 2.1 GB vs tsgo 6.75 s / 3.7 GB; 1.5-7x faster than multi-threaded tsgo elsewhere, memory
-  below tsgo's everywhere. Caveat: tsgo is 7.0, a newer language (see below).
+  vue -13%). On the re-pinned corpora (2026-10-07, same configs for both): vscode (3.41M lines) 6.2 s / 5.8 GB vs tsgo
+  18.3 s / 8.7 GB; 3-14x faster than multi-threaded tsgo everywhere, memory below tsgo's everywhere, work volume
+  (types, relation cache sizes) within ~15% of tsc's on vscode and type-fest. Caveat: tsgo is 7.0, a newer language.
 - **Built and holding**: hand-written backtracking parser (JSX, tsc's lexical diagnostics and regex checks),
   tsc-shaped binder with persistent symbols and merging, interned `Ty` core with id-keyed relations and tsc's identity
   relation, mapper instantiation, tsc's inference flow (lazy fixing, contextual instantiation, intra-expression sites,

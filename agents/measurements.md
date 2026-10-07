@@ -6,9 +6,43 @@ append history, git has it (this file before the 2026-09-27 triage holds every e
 AMD EPYC-Turin, 4 vCPUs = 2 cores x 2 SMT threads (KVM), 31 GB; Ubuntu 26.04, GCC 15.2, node 22.22, tsc = TypeScript 4d4f005c (6.0.3 + stable ordering, `thirdparty/tsc`, since 2026-10-07; 5.8.2 before), tsgo =
 `typescript@7.0.2`. Wall times drift by ~15% between days (a shared machine) and anything running alongside skews
 them: compare walls only within one session. Callgrind instruction counts (`valgrind --tool=callgrind ./release/tttt
--q --keep-going -p DIR`) are the stable measure across sessions. tsgo exits 1 on valibot (TS5108,
-`moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
-there than a clean run.
+-q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
+effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
+
+## Perf session on the re-pinned corpora (2026-10-07, eleventh window's todo entry 9, plan 48 stage 6)
+No code changes; bench.sh now runs every corpus (effect added) on the same config for tsgo, tsc with a 16 GB heap,
+and its obsolete synthetic corpus is gone. Instructions (callgrind, `--checkers 1`, 6650c15e) **identical to entry 8's
+end**, vscode measured for the first time since its re-pin: tsc 4.786, type-fest 19.552, valibot 4.217, react 1.540,
+nest 1.148, webpack 10.682, zod 5.069, xstate 3.178, drizzle 8.053, vue 7.021, effect 9.998, **vscode 92.151**,
+excalidraw 7.956, tanstack-router 5.878 G. `./bench.sh --runs 3` (quiet machine but for one idle agent session), best
+wall / peak RSS, tttt at its defaults (4 checkers, 4 threads on 2 cores x 2 SMT):
+| corpus | tttt | tsc 4d4f005c | tsgo 7.0.2 | tsgo 1 thread | tsgo / tttt |
+|---|---|---|---|---|---|
+| tsc `src/compiler` | **0.32 s** / 322 MB | 7.40 s / 616 | 1.36 s / 623 | 1.89 s / 481 | 4.3x |
+| type-fest | **0.83 s** / 2307 MB | 27.66 s / 5386 | 11.52 s / 6090 | 12.58 s / 4448 | 13.9x |
+| valibot | **0.26 s** / 336 MB | 8.55 s / 942 | 1.66 s / 948 | 2.46 s / 737 | 6.4x |
+| react | **0.12 s** / 215 MB | 3.88 s / 605 | 0.93 s / 550 | 0.83 s / 296 | 7.8x |
+| nest | **0.10 s** / 154 MB | 2.28 s / 380 | 0.36 s / 251 | 0.47 s / 212 | 3.6x |
+| webpack | **0.72 s** / 697 MB | 16.62 s / 1572 | 2.73 s / 1303 | 3.97 s / 1046 | 3.8x |
+| zod | **0.38 s** / 571 MB | 10.79 s / 1404 | 2.68 s / 1362 | 3.42 s / 1027 | 7.1x |
+| xstate | **0.21 s** / 311 MB | 5.53 s / 620 | 0.95 s / 497 | 1.22 s / 360 | 4.5x |
+| drizzle | **0.65 s** / 911 MB | 11.89 s / 1602 | 3.53 s / 1897 | 3.72 s / 1079 | 5.4x |
+| vue | **0.44 s** / 444 MB | 11.44 s / 941 | 1.85 s / 894 | 2.75 s / 723 | 4.2x |
+| effect | **0.72 s** / 881 MB | 19.38 s / 2112 | 3.86 s / 2060 | 5.91 s / 1623 | 5.4x |
+| vscode (3.41M lines) | **6.16 s** / 5774 MB | 141.2 s / 9785 | 18.27 s / 8707 | 33.38 s / 7540 | 3.0x |
+| excalidraw | **0.50 s** / 529 MB | 12.56 s / 1040 | 2.16 s / 1091 | 2.77 s / 734 | 4.3x |
+| tanstack-router | **0.37 s** / 427 MB | 12.26 s / 1256 | 2.40 s / 1079 | 3.21 s / 786 | 6.5x |
+| `-b` tsc `src` (14 configs) | **1.12 s** / 531 MB | 15.02 s / 758 | 2.41 s / 856 | 3.47 s / 572 | 2.2x |
+tttt is 3.0x (vscode) to 13.9x (type-fest) faster than multi-threaded tsgo (single-threaded tsgo is faster than its threaded
+run only on react) and uses less memory on every corpus. vscode phases (K4): load+parse 981 ms (2.16 GB resident after it), resolve
+703 ms, typecheck 4.27 s (checkers 3.82-4.27 s, arenas 466-571 MB, 3.19M types); `--threads 1` load 1876 / resolve
+1515 ms, so both scale ~2x on the 2 cores; `--checkers 1` typecheck 10.2 s (2.57M types, 1.73 GB arena), so the four
+checkers redo ~24% of the type work (plan 36). Work volume against tsc's `--extendedDiagnostics` (tttt K1 vs tsc):
+vscode types 2.57M vs 2.89M, assignable 960k vs 1008k, subtype 281k vs 277k, strict subtype 219k vs 258k, identity 38k
+vs 42k (tsc check time 121 s); type-fest types 4.80M vs 5.08M (its 2.3 GB is IntRange's real work: tsc 5.3 GB). Stable
+ordering's cost in the tsc corpus profile: `sort_by_id` 1.1% inclusive, `union_with_origin` 3.1% inclusive; the
+profile is flat (top self cost `type_at_flow_node` 3.2%). Strict-by-default costs the corpora nothing: every corpus
+config sets `strict` explicitly (nest: false).
 
 ## Corpora drained (2026-10-07, eleventh window's todo entry 8, 4 sub-agents)
 `./realworld.py` (4 checkers): every corpus **0** except effect 3 (known TS2578, plan 19), vscode **1** (8 -> 1),
@@ -345,25 +379,7 @@ zod 4.479 -> 4.471, xstate 2.769 -> 2.747, drizzle 13.335 -> 13.214 (-0.9%: shor
 per checker instead of round robin (drizzle K=4 -25%), `Prop` 80 -> 56 bytes, `Signature` 200 -> 176, `Ty` 152 ->
 136; superseded by plan 43's table above.
 
-`./bench.sh --runs 3` at session start (02ca5d29 + the base_constraint memo, round robin; quiet machine), best wall /
-peak RSS, tttt at its defaults:
-| corpus | tttt | tsc 5.8 | tsgo | tsgo 1 thread |
-|---|---|---|---|---|
-| synthetic (1077 x 200, 3.11 M lines) | **4.45 s** / 5297 MB | 43.9 s (aborted) / 4294 | 11.14 s / 6690 | 13.91 s / 4286 |
-| tsc `src/compiler` | **0.43 s** / 435 MB | 6.73 s / 595 | 1.33 s / 610 | 1.86 s / 537 |
-| type-fest | **0.24 s** / 539 MB | 4.72 s / 1022 | 1.76 s / 793 | 2.14 s / 789 |
-| valibot | **0.33 s** / 513 MB | 7.93 s / 806 | 1.48 s / 806 | 2.15 s / 595 |
-| react | **0.17 s** / 320 MB | 3.30 s / 498 | 0.91 s / 543 | 0.81 s / 311 |
-| nest | **0.15 s** / 273 MB | 2.25 s / 400 | 0.38 s / 246 | 0.45 s / 212 |
-| webpack | **0.35 s** / 470 MB | 7.64 s / 733 | 0.58 s / 492 | 0.53 s / 303 |
-| zod | **0.38 s** / 701 MB | 9.61 s / 1302 | 2.44 s / 1426 | 3.34 s / 1004 |
-| xstate | **0.23 s** / 394 MB | 5.25 s / 602 | 0.88 s / 472 | 1.15 s / 361 |
-| drizzle | **1.09 s** / 1686 MB | 11.25 s / 1456 | 3.26 s / 1881 | 3.56 s / 1073 |
-| vue | **0.56 s** / 680 MB | 10.11 s / 918 | 1.77 s / 866 | 2.58 s / 670 |
-| `-b` tsc `src` (14 configs) | **1.33 s** / 822 MB | 13.55 s / 744 | 2.32 s / 842 | 3.44 s / 578 |
-Like-for-like now: tsc does declaration diagnostics on nest, drizzle, valibot and the compiler corpus, and so does
-tttt (plan 40). tttt is 1.5x (webpack) to 7.3x (type-fest) faster than multi-threaded tsgo, 2.6-10x than its
-single thread (`-b` 1.7x / 2.6x). tsgo exits 1 on valibot, webpack, xstate, drizzle, vue and `-b` (TS 7 differences).
+(Its 5.8-era bench table is superseded by the 2026-10-07 one above.)
 
 ## Todo entry 6: plan 40 stage 3, plan 41 stage 3 (2026-10-04)
 Suite 12712 -> 12728, 0 lost (TS2742 +14, tsc-src fixes +2). Corpora: **tsc-src 12 -> 0**, new corpus

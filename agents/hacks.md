@@ -859,8 +859,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - `@noTypesAndSymbols` counts symbols/types as passed (free passes). `TTTT_IGNORE_UNDERLINES=1` is measurement only.
 - `engine.c` (reads `test/baseline_results.ts`): no let/const/var distinction, drops array property assignment,
   `value_loose_eq` stringifies.
-- `failstats.py`'s `line_ratio` is multiset overlap, not a diff. `bench/make_corpus.py` replicates passing tests
-  (flatters tttt).
+- `failstats.py`'s `line_ratio` is multiset overlap, not a diff.
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
 - Conditional tail recursion (`ty_instantiate_tail`) is C recursion where tsc loops (getConditionalType's tailCount):
   1000 steps need ~16 MB, so `main()` raises the soft RLIMIT_STACK to 64 MB (`raise_stack_limit`, workers get

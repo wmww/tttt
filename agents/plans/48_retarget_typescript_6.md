@@ -231,6 +231,10 @@ src/compiler, mostly TS2591 = `types` handling). Drain with sub-agents in the se
 above (tsc 6 finds 30 that tttt doesn't: strict-by-default `@ts-expect-error`/TS2322) as a missing-diagnostic lead.
 
 ### Stage 6: perf (1 session, todo entry 9)
+**Done 2026-10-07**: numbers in measurements.md "Perf session on the re-pinned corpora". Nothing to fix: instructions
+flat, tttt 3.0-13.9x faster than tsgo 7.0.2 with less memory on every corpus, vscode's and type-fest's work volume
+(types, relation caches) within ~15% of tsc's, the ordering comparator ~1-3% of the tsc corpus profile,
+strict-by-default inert on the corpora (every config sets `strict`). The brief, for reference:
 New instruction-count baselines on the re-pinned corpora (`./instrcount.sh`), `./bench.sh` against tsgo 7.0.2 on
 every corpus (now that no config is rejected for baseUrl), the stable-ordering comparator's cost in the profile,
 anything strict-by-default made slower (strict checks run on corpora that didn't set strict before).
