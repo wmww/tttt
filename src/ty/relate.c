@@ -5817,6 +5817,9 @@ static Ternary structured_related_members(
 static Ty const* recursion_identity(Ty const* ty) {
     switch ((TyKind)ty->kind) {
         case TY_REFERENCE: return ty->reference.target;
+        // (A non-generic class or interface is its symbol: tsc's getRecursionIdentity. `interface M { [k: string]: V }`
+        // with `V = string | M` nests as M)
+        case TY_DECLARED: return ty;
         // (An uninstantiated type literal or function type is its own: tsc tracks object types by their symbol, and
         // `type S = { states?: Record<string, S> }` nests as S. Not object literal expressions)
         case TY_ANONYMOUS: return ty->anonymous.target ? ty->anonymous.target : ty->anonymous.object_literal ? nullptr : ty;
