@@ -114,9 +114,10 @@ static bool shows_alias(TyDisplay d, Ty const* ty) {
     if (!ty->alias) return false;
     if (!d.enclosing) return true;
     // (The types baseline's typeToTypeNode and declaration emit don't have UseAliasDefinedOutsideCurrentScope, which
-    // typeToString adds: an alias that isn't accessible from where it's printed prints its structure)
+    // typeToString adds: an alias that isn't accessible from where it's printed prints its structure. A message's type
+    // printed from its expression is typeToString's: the local alias shows)
     TypeDecl const* type_decl = symbol_find_node(ty->alias, SYMBOL_DECL_TYPE_ALIAS);
-    if (type_decl && type_decl->local && !d.tracker) return false;
+    if (type_decl && type_decl->local && !d.tracker && d.underline) return false;
     if (!d.tracker && !d.underline) return true;
     return symbol_type_accessible_at(d.enclosing, ty->alias);
 }
