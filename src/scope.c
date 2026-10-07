@@ -2030,6 +2030,14 @@ static void add_commonjs_export(Scope* me, Expr* assignment, bool top_level, boo
             Span shown = op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_BRACKET &&
                 op->left.property->prop.tag == EXPR_LITERAL ? op->left.property->prop.inner_span : name;
             declare_commonjs_export(me, name.sv, shown, &op->right, op->jsdoc_type, expr_outer_span(&op->left), statement, ASSIGNMENT_DECL_PROPERTY, top_level, true);
+            // (The property access is the declaration, which a read in its flow container finds undefined before it:
+            // expr_link_assignment_declaration())
+            if (op->left.tag == EXPR_PROPERTY && op->left.property->form == PROPERTY_EXPR_DOT && !op->left.property->declares &&
+                !op->jsdoc_enum_export
+            ) {
+                Symbol* exported = symbol_table_get(my container->exports, name.sv);
+                if (exported && !(exported->flags & SYMBOL_ALIAS)) op->left.property->declares = exported;
+            }
             add_jsdoc_enum_export_namespace_decl(me, op, name);
         }   break;
         case COMMONJS_TARGET_MODULE_EXPORTS: {
