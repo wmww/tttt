@@ -7,8 +7,6 @@ YieldExpression5_es6	T	src-same	bl-same
 YieldStarExpression3_es6	T	src-same	bl-same
 generatorTypeCheck42	E	src-same	bl-same
 generatorTypeCheck44	E	src-same	bl-same
-unicodeEscapesInNames01(target=es2015)	E	src-same	bl-same
-unicodeEscapesInNames01(target=esnext)	E	src-same	bl-same
 ## rebaselined
 FunctionDeclaration3_es6	E	src-same	bl-changed
 MemberFunctionDeclaration5_es6	E	src-same	bl-changed
@@ -258,7 +256,6 @@ intrinsicTypes	T	src-changed	bl-changed
 isolatedDeclarationErrorsObjects	T	src-same	bl-changed
 isomorphicMappedTypeInference	T	src-changed	bl-changed
 jsContainerMergeTsDeclaration3	E	src-changed	bl-changed
-jsDeclarationsInheritedTypes	E	src-changed	bl-changed
 jsDeclarationsNonIdentifierInferredNames	T	src-changed	bl-changed
 jsFileFunctionOverloads2	T	src-changed	bl-changed
 jsFileMethodOverloads	T	src-changed	bl-changed
@@ -591,8 +588,6 @@ typeofOperatorWithStringType	T	src-changed	bl-changed
 typeofUnknownSymbol	T	src-changed	bl-changed
 typesVersionsDeclarationEmit.multiFileBackReferenceToUnmapped	T	src-same	bl-changed
 uncalledFunctionChecksInConditional2	T	src-changed	bl-changed
-unicodeEscapesInNames01(target=es5)	E	src-same	bl-changed
-unicodeEscapesInNames02(target=es2015)	E	src-changed	bl-changed
 unionAndIntersectionInference1	T	src-same	bl-changed
 unionAndIntersectionInference3	T	src-same	bl-changed
 unionExcessPropertyCheckNoApparentPropTypeMismatchErrors	T	src-changed	bl-changed

@@ -5702,7 +5702,7 @@ void scope_note_ts_this_assignment(Scope const* me, Expr const* left) {
     Symbol const* class_symbol = object->identifier.target;
     ClassDecl const* class_decl = class_symbol ? symbol_find_node(class_symbol, SYMBOL_DECL_CLASS) : nullptr;
     if (!class_decl) return;
-    ClassItem* field = span_valid(name) ? class_decl_find_member(class_decl, name.sv, is_static) : nullptr;
+    ClassItem* field = span_valid(name) ? class_decl_find_member(class_decl, name_cooked(name.sv), is_static) : nullptr;
     // `this[k] = v` of a field `[k]: T`, written the same way
     for_each (i, vec_class_item, &class_decl->items) {
         if (field) break;

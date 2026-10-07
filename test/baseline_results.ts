@@ -321,7 +321,7 @@ const baselines = {
         types: true,
     },
     'accessorInAmbientContextES5(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21036,7 +21036,7 @@ const baselines = {
         types: true,
     },
     'jsDeclarationsInheritedTypes': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21086,7 +21086,7 @@ const baselines = {
         types: true,
     },
     'jsExportMemberMergedWithModuleAugmentation': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -34816,22 +34816,22 @@ const baselines = {
         types: true,
     },
     'unicodeEscapesInNames01(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeEscapesInNames01(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeEscapesInNames01(target=esnext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'unicodeEscapesInNames02(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -56881,22 +56881,22 @@ const baselines = {
         types: false,
     },
     'jsDeclarationsClasses(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsDeclarationsClasses(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsDeclarationsClassesErr(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'jsDeclarationsClassesErr(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

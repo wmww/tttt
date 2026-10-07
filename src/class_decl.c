@@ -1837,9 +1837,9 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
     ClassItem const* constructor = class_constructor_with_body(me);
     for_each (i, vec_class_item, &my items) {
         if (i->tag != CLASS_ITEM_FIELD || i->field.is_static || i->field.is_declare || i->field.is_abstract || i->field.is_optional) continue;
-        if (i->field.is_auto_accessor || i->field.value.tag != EXPR_IMPLICIT_ANY || !span_valid(i->field.name_span)) continue;
+        // (Auto-accessors and JavaScript fields too)
+        if (i->field.value.tag != EXPR_IMPLICIT_ANY || !span_valid(i->field.name_span)) continue;
         if (i->field.name_is_value && !i->field.computed_key) continue; // (a string or numeric name)
-        if (i->field.name_span.source && i->field.name_span.source->is_js) continue;
         if (class_item_field_is_definite(i)) continue;
         Ty const* type = class_item_get_type((ClassItem*)i);
         if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || contains_undefined(type)) continue;
