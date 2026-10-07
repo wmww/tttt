@@ -14081,7 +14081,7 @@ const baselines = {
         types: true,
     },
     'excessivelyLargeTupleSpread': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
