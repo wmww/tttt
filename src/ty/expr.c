@@ -1432,6 +1432,7 @@ static void assign_contextual_signature_as(
 ) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
+    if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)function }, 2)) return;
     Signature const* sig = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
     if (!sig) return;
     // The type parameters of the generic call this is an argument of are fixed now (a contextual type that left them
@@ -4955,6 +4956,15 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its
             // return type only sees the context once the call is resolved (ty_late_contextual_return())
             u64 none_key[2] = { KEY_CONTEXT_NONE, (u64)(uintptr_t)expr->function };
+            // A context-sensitive function's first full check without a contextual signature, in the implementation's
+            // check of a failed overloaded call, decides it has none (tsc's ContextChecked; see
+            // add_implementation_success)
+            if (my implementation_elaboration && ty_function_is_context_sensitive(expr->function) &&
+                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
+                !contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0)
+            ) {
+                *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) = expr->function;
+            }
             // A first check while a call infers whose contextual type, instantiated with what it knows so far, has no
             // signature for it (`<TP extends Partial<T> = {}>(p?: TP)`: the default `{}`) decides its return type
             // without one (tsc's getReturnTypeFromBody then reports widening, TS7011, whatever comes later)

@@ -2001,7 +2001,13 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     Signature const* sig = single_call_or_construct(me, ty_function_type(me, impl));
     if (!sig) return;
     Signature* impl_sig = (Signature*)sig;
+    // (Its check may be the first full one of a context-sensitive function argument after the failing one, which then
+    // has no contextual signature for good if the implementation gives none: tsc's chooseOverload([implementation])
+    // sets ContextChecked, `(c: any, ...rest: unknown[])` makes `(md, opts) => ...` implicitly any, TS7006)
+    bool saved_elaboration = my implementation_elaboration;
+    my implementation_elaboration = true;
     bool fits = resolve_with_signatures(me, &impl_sig, 1, args, info, call_span, nullptr).chosen.sig;
+    my implementation_elaboration = saved_elaboration;
     // The arguments stay typed as checked against the overload (what the types baseline shows)
     ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
     check_args(me, &shape, args, false);

@@ -981,6 +981,8 @@ struct Checker {
     // Inferring an overload failure's fallback instantiation (tsc's inferSignatureInstantiationForOverloadFailure):
     // nested generic calls already resolved keep their types instead of being skipped (see check_expr_ctx())
     bool overload_failure_inference;
+    // Checking the arguments against an overload set's implementation for TS2793 (add_implementation_success)
+    bool implementation_elaboration;
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     // Printing a type the way tsc's eager error message would (see missing_property_type()): an inferred return type found
     // in progress becomes circular (TS7023) but keeps its type (tsc prints it from the body, and its types baseline
