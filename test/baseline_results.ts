@@ -17856,7 +17856,7 @@ const baselines = {
         types: true,
     },
     'importDeclarationInModuleDeclaration1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23946,17 +23946,17 @@ const baselines = {
         types: true,
     },
     'moduleElementsInWrongContext': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
     'moduleElementsInWrongContext2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'moduleElementsInWrongContext3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -28256,7 +28256,7 @@ const baselines = {
         types: true,
     },
     'privacyGloImportParseErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
