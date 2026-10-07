@@ -4165,6 +4165,8 @@ Ty const* ty_object_literal_of(
         words_push(&words, props[i].name_form | (props[i].name_type ? (u64)props[i].name_type->id << 8 : 0));
         if (props[i].setter) words_push(&words, (u64)(uintptr_t)props[i].setter);
         if (props[i].parent) words_push(&words, (u64)(uintptr_t)props[i].parent | 1);
+        // (The annotation the types baseline reuses: two literals differing only there print differently)
+        if (props[i].asserted) words_push(&words, (u64)(uintptr_t)props[i].asserted | 2);
     }
     for (u32 i = 0; i < index_count; i++) {
         words_push(&words, 3);
