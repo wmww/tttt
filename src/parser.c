@@ -3131,9 +3131,9 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
-    if (!hop_char(&p, '(')) {
-        return parse_fail(&p);
-    }
+    // (`import` starts an import type whatever follows: tsc's parseNonArrayType goes to parseImportType on the keyword,
+    // and parseExpected reports the missing `(`)
+    expect_char(&p, '(');
     hop_whitespace(&p);
     cstr path = cstr_null;
     Anchor path_anchor = anchor(&p);
@@ -3144,6 +3144,16 @@ static bool parse_import_type(Parser* parent, TypeNode* ret) {
         TypeNode argument;
         if (parse_type(&p, TYPE_PRECEDENCE_NULL, &argument)) {
             rare.import_argument = c_new(TypeNode, argument);
+            rare.import_argument_span = span_from(path_anchor);
+        } else if (*p.pos == '.') {
+            // `import.defer(...)`: tsc's parseType makes an entity name with a missing first identifier of `.defer`
+            // (its error at the same position as the missing `(`, dropped), which checkImportType says TS1141 about
+            while (hop_char(&p, '.')) {
+                hop_whitespace(&p);
+                Span name;
+                if (!parse_identifier_or_keyword(&p, &name)) break;
+            }
+            rare.import_argument = c_new(TypeNode, {0}); // (Nothing to look up: an any)
             rare.import_argument_span = span_from(path_anchor);
         } else {
             parse_error(&p, span_from_token(&p), 1141, "String literal expected.");
