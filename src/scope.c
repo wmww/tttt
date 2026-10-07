@@ -4034,7 +4034,7 @@ void binder_link(Binder* me) {
         if (!(local_flags & excluded)) {
             // An import merged with a local value looks like a value to a transpiler (isolatedModules itself, not
             // verbatimModuleSyntax, which says the import needs `type` anyway)
-            if (compiler_options()->isolated_modules && !port_item_is_export(item) && !item->type_only &&
+            if (compiler_options()->isolated_modules && !port_item_is_export(item) && !item->type_only && !item->jsdoc &&
                 !item->type_modifier && local_flags & SYMBOL_VALUE
             ) {
                 error_ctx_error_d(errs, at, 2865, "Import '", item->decl_name, "' conflicts with local value, so must "
@@ -4057,6 +4057,9 @@ void binder_link(Binder* me) {
             cross_file = true;
         }
         if (cross_file) continue;
+        // (tsc's checkJSDocImportTag checks only the attributes, no checkAliasSymbol for an `@import`: a local
+        // declaration of the same name, like a `@typedef`, doesn't conflict)
+        if (item->jsdoc) continue;
         if (port_item_is_export(item)) {
             error_ctx_error_d(errs, item->full_span, 2484,
                 "Export declaration conflicts with exported declaration of '", item->decl_name, "'.");
