@@ -2955,6 +2955,22 @@ static void report_non_default_export(PortItem const* item, Symbol* module, Erro
     cstr_drop(&module_name);
 }
 
+// An ES module's `export { x as "module.exports" }`, what Node.js's require() of it returns (node20..nodenext)
+static Symbol* module_dot_exports(Symbol* module) {
+    ModuleKind module_kind = compiler_options()->module;
+    if (module_kind < MODULE_KIND_NODE20 || module_kind > MODULE_KIND_NODENEXT || !module->is_module) return nullptr;
+    return symbol_get_export(module, c_sv("module.exports"));
+}
+
+// A CommonJS import (by emit syntax: tsc's getEmitSyntaxForModuleSpecifierExpression) of an ES module file
+static bool cjs_imports_esm(PortItem const* item, Symbol const* module) {
+    SourceFile const* importer = item->decl_name.source;
+    SourceFile const* target = module->is_module ? module->module->file : nullptr;
+    if (!importer || !target || item->is_require) return false;
+    return source_file_emit_module_kind(importer) == MODULE_KIND_COMMONJS &&
+        source_file_implied_format_for_emit(target) == MODULE_KIND_ESNEXT;
+}
+
 // tsc's getTargetofModuleDefault: `import d from "m"`, `import { default as d }`, `export { default } from "m"`
 static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* assigned, ErrorCtx* errs) {
     SourceFile const* file = module->is_module ? module->module->file : nullptr;
@@ -2963,6 +2979,20 @@ static Symbol* resolve_default_target(PortItem* item, Symbol* module, Symbol* as
     // module itself (tsc's isOnlyImportableAsDefault in getTargetOfImportClause)
     ModuleKind module_kind = compiler_options()->module;
     SourceFile const* importer = item->decl_name.source;
+    // A CommonJS default import of an ES module with a `module.exports` export: `__importDefault(require())` with
+    // esModuleInterop, broken without
+    Symbol* dot_exports = cjs_imports_esm(item, module) ? module_dot_exports(module) : nullptr;
+    if (dot_exports) {
+        if (!compiler_options()->es_module_interop) {
+            cstr module_name = module_name_for_error(module, item->module_ref, false);
+            error_ctx_error_d(errs, item->decl_name, 1259, "Module '", module_name,
+                "' can only be default-imported using the 'esModuleInterop' flag");
+            cstr_drop(&module_name);
+            return nullptr;
+        }
+        item->source_symbol = dot_exports;
+        return resolve_if_pure_alias(dot_exports);
+    }
     bool default_only = file && importer && module_kind >= MODULE_KIND_NODE16 && module_kind <= MODULE_KIND_NODENEXT &&
         !item->is_require && source_file_emit_module_kind(importer) == MODULE_KIND_ESNEXT &&
         (file->is_json || csview_ends_with(cstr_sv(&file->canonical_path), ".d.json.ts"));
@@ -3264,11 +3294,23 @@ static Symbol* resolve_alias_target(Symbol* me) {
         }
 
         case PORT_IMPORT_GATHER:
-        case PORT_REEXPORT_GATHER:
+        case PORT_REEXPORT_GATHER: {
+            // Node.js's require() of an ES module is its `export { x as "module.exports" }` if it has one: for
+            // `import x = require()` and JS's `require()` under node20..nodenext (tsc's
+            // getTargetOfImportEqualsDeclaration), for a CommonJS file's `import * as ns` of an ES module (tsc's
+            // resolveESModuleSymbol)
+            if (item->tag == PORT_IMPORT_GATHER && (item->is_require || cjs_imports_esm(item, module))) {
+                Symbol* dot_exports = module_dot_exports(assigned ? assigned : module);
+                if (dot_exports) {
+                    item->source_symbol = dot_exports;
+                    return resolve_if_pure_alias(dot_exports);
+                }
+            }
             if (!item->is_require) check_es_module_symbol(item, module, assigned, errs);
             if (assigned) return assigned;
             if (namespace_import_resolves_type_members(item)) resolve_module_type_members(module);
             return make_gather_target(me, module);
+        }
 
         case PORT_IMPORT_ALIAS:
             return resolve_import_alias_path(me);
