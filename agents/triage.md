@@ -226,13 +226,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 - **nest** (pin unchanged, `tsconfig.corpus.json` with `strict: false`): tttt 0. **react** (pin unchanged,
   `tsconfig.corpus.json` with `baseUrl: null`): tttt 0 (after making a JSON `null` in compilerOptions unset baseUrl and
   the booleans; other string/list options still ignore `null`).
-- **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 64 (113 before the `if (c);else` parser fix and binding
-  `module.exports=` inside comma expressions); originally by code TS2349 x43, TS2345 x31, TS2339 x29, TS1128 x6,
-  TS2440 x2, TS2344 x1, TS7008 x1. Root causes seen:
-  - (Fixed: a JSDoc `import("./m").C` of a class value, `M.C = C` expando, now applies its type arguments: 64 -> 4.)
-  - Singles: TS2440 `/** @import { SharedModuleFilter } from "./SharePlugin" */` vs a local declaration
-    (sharing/*SharedPlugin.js), TS2344 `InstanceType<ExportInfo>` (graph/ExportsInfo.js:462), TS7008 `labels` in
-    javascript/syntax-parser.js:15742.
+- **webpack** (new pin 86d31e06, TS ^6.0.3, tsc 0): tttt 0 (from 113: the `if (c);else` parser fix, `module.exports=`
+  inside comma expressions, JSDoc `import("./m").C<A>` of an expando class applying its type arguments, no TS2440 for
+  `@import`, no TS2344 in `@returns`, no TS7008 for a method's `this.x = []` that the base class's x overrides).
+  Seen on the way (tsc differs, not in a corpus): `const old = this.labels; this.labels = []; this.labels = old;` in
+  two methods of a class extending any: tsc TS7022 on `old` (first method) and on `labels` (first assignment), tttt
+  TS7022 on both `old`s.
 
 ## Corpora re-pin (plan 48 stage 5): xstate, tanstack-router, vue
 - xstate @ 38dcaffb (Oct 2026, TS6 upstream): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0 (648 files, 0.74 s). The old

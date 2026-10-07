@@ -638,6 +638,10 @@ src` finds the code-side markers; every significant one has an entry here.
   (tsc's markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m.
 
 ## JavaScript and JSDoc (plan 26)
+- A `@returns`/`@throws` type is never checkSourceElement'd in tsc (only resolved), but `function_impl_typecheck`
+  still runs `type_typecheck` on it; only the type argument constraint check is skipped (`IdentifierType.jsdoc_unchecked`
+  in `identifier_type_check_arity()`). Other check-only checks (TS2536, tuple/mapped shapes) would need a
+  resolution-only walk (arity errors must stay: jsdocArrayObjectPromiseNoImplicitAny).
 - `ClassDecl.jsdoc_base` (a mismatched or empty `@augments`, tsc's getEffectiveBaseTypeNode) is only what
   `class_base()` resolves; the other readers of `ClassDecl.extends` (base constructor checks, arity, display) still
   see the clause. Dotted tag names (`@augments {ns.A}`) keep the clause.

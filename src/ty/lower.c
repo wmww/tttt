@@ -1906,6 +1906,15 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
 // getWidenedTypeForAssignmentDeclaration): 1 if `value` (an assignment of `[]`) made it any[], 2 if only null or
 // undefined are assigned (any), 3 if the constructor only assigns `[]` (any[]), else 0. Evaluates the member's type
 int ty_js_assignment_implicit_any(Checker* me, Symbol const* member, Expr const* value) {
+    // A class member only `this.x = v` outside of the constructor declares is the base class's namesake if it has one
+    // (tsc's addInheritedMembers): the member's own type is never asked for, nor reported
+    if (member->decl_count && member->decls[0].kind == SYMBOL_DECL_ASSIGNMENT &&
+        member->parent && (member->parent->flags & SYMBOL_CLASS) && symbol_rare(member->parent)->members &&
+        symbol_table_get(symbol_rare(member->parent)->members, member->name) == member && !ty_is_constructor_declared(member) &&
+        base_class_property_type(me, member)
+    ) {
+        return 0;
+    }
     ty_type_of_symbol(me, member);
     if (intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)value }, 2)) return 1;
     return (int)(uintptr_t)intern_get(&my links, (u64[]){ KEY_JS_IMPLICIT_ANY, (u64)(uintptr_t)member }, 2);
