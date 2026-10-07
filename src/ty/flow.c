@@ -1220,9 +1220,14 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
         u32 keyword = expr->identifier.keyword;
         if (keyword == KEYWORD_IDENTIFIER_SUPER) return ty_identifier_reference_type(me, &expr->identifier);
         if (keyword == KEYWORD_IDENTIFIER_THIS) {
-            // Only a declared `this`: a `this` parameter's or a class's (tsc's getExplicitThisType), not a contextual
-            // one, which may be what a call inferring now fixes
+            // Only a declared `this`: a `this` parameter's or a class's (tsc's getExplicitThisType), or the one the
+            // contextual signature's `this` parameter gave the function once it was contextually typed (tsc's
+            // assignContextualParameterTypes sets the signature's thisParameter), not one a call inferring now fixes
             ThisKind kind = expr->identifier.this_kind;
+            if (kind == THIS_ANY && identifier_this_function(&expr->identifier)) {
+                u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)identifier_this_function(&expr->identifier) };
+                return intern_get(&my links, this_key, 2);
+            }
             bool is_explicit = kind == THIS_PARAMETER || kind == THIS_CLASS_INSTANCE || kind == THIS_CLASS_STATIC;
             return is_explicit ? ty_identifier_reference_type(me, &expr->identifier) : nullptr;
         }

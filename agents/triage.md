@@ -320,7 +320,7 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   tsgo 7.0.2 0. The program more than doubled since the Mar 2025 pin: ~10.1k source files / 3.41M lines (+870
   node_modules files; the agent host, chat and sessions code), so walls/RSS/instruction counts aren't comparable with the old pin's. tsc 6 needs more than
   8 GB of heap (OOM at `--max-old-space-size=8000`); tttt's typecheck peaks at 5.5 GB resident with 4 checkers.
-- tttt 9 (414 before the enum evaluator followed `N.C` to a namespace's const variable: ~400 of them came from
+- tttt 8 (414 before the enum evaluator followed `N.C` to a namespace's const variable: ~400 of them came from
   vscode's `AgentSessionProviders` enum over `namespace SessionType { export const Local = 'local' }`). Left:
   - Inference: a context-sensitive arrow inside `x && (...)` sees the type parameter's constraint instead of the
     inference so far, and T then fails against the earlier argument (TS2345 + TS2339; mcpResourceScannerService.ts:174):
@@ -331,9 +331,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     that probe: `{ set a(v: string) {}, ...p }` with `p: { a?: number }` is `{ a: number | undefined }` in tttt,
     `{ a: number }` in tsc; and the order/printing of `{ get g() {..}, ...(x as Partial<R>) }`: tsc sorts R's
     properties first (first declaration) and prints them `name?: string | undefined`.)
-  - Narrowing after a `never`-returning `this.skip()` on a contextual `this` (mocha): `interface Ctx { skip(): never }
-    declare function setup(fn: (this: Ctx) => void): void; setup(function () { const t = f(); if (!t) { this.skip(); }
-    s = t; })` keeps `t` possibly undefined (TS2322, agentSdkDownloader.test.ts:221).
   - Indexing a generic mapped type by its unconstrained type parameter: `type OD<T> = { [P in keyof T]: ... };
     function g<T>(a: string, o: OD<T>) { o[a as T].type }` gives TS2536 (tsc: `o[a as T]` is the mapped template's
     union). platform/environment/node/argv.ts:279.
