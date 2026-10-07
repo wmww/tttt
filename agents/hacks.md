@@ -862,3 +862,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `failstats.py`'s `line_ratio` is multiset overlap, not a diff. `bench/make_corpus.py` replicates passing tests
   (flatters tttt).
 - Commits f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
+- Conditional tail recursion (`ty_instantiate_tail`) is C recursion where tsc loops (getConditionalType's tailCount):
+  1000 steps need ~16 MB, so `main()` runs on a 64 MB thread (`worker_stack_size`). Bounded by tsc's limits, but a
+  loop would be cheaper and wouldn't depend on the stack size.
