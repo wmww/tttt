@@ -188,32 +188,6 @@ static char const* declaration_extension(csview path, isize* stem) {
     return nullptr;
 }
 
-// tsc's computeCommonSourceDirectoryOfFilenames: the longest directory every file is in
-static cstr common_source_directory(Project const* project) {
-    cstr common = cstr_null;
-    bool any = false;
-    for (isize i = 0; i < project->root_files.count; i++) {
-        csview file = cstr_sv(&project->root_files.items[i]);
-        if (is_declaration_name(file)) continue;
-        csview dir = dirname_of(file);
-        if (!any) {
-            cstr_assign_sv(&common, dir);
-            any = true;
-            continue;
-        }
-        // Shorten common to a directory both are in
-        isize n = 0, last = 0;
-        csview c = cstr_sv(&common);
-        while (n < c.size && n < dir.size && c.buf[n] == dir.buf[n]) {
-            n++;
-            if (n < c.size && c.buf[n] == '/') last = n;
-        }
-        bool whole = n == c.size && (n == dir.size || dir.buf[n] == '/');
-        if (!whole) cstr_take(&common, cstr_from_sv(csview_slice(c, 0, last ? last : 1)));
-    }
-    return any ? common : cstr_from_sv(dirname_of(cstr_sv(&project->config)));
-}
-
 static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
     project_set_root_files(my set, project_index);
     Project const* project = &my set->projects[project_index];
@@ -232,9 +206,8 @@ static void redirects_add_project(ProjectRedirects* me, u32 project_index) {
         cstr output = cstr_null;
         if (declaration_dir.size) {
             if (!cstr_size(&common)) {
-                common = cstr_size(&o->root_dir) ? cstr_clone(o->root_dir) :
-                    o->composite ? cstr_from_sv(dirname_of(cstr_sv(&project->config))) :
-                    common_source_directory(project);
+                // (tsc's getCommonSourceDirectoryOfConfig: a project never infers it from its files since 6.0)
+                common = cstr_size(&o->root_dir) ? cstr_clone(o->root_dir) : cstr_from_sv(dirname_of(cstr_sv(&project->config)));
             }
             // (Outside the root directory it goes up with `..`, and the program says TS6059)
             cstr relative = relative_path_of(cstr_sv(&common), csview_slice(file, 0, stem));

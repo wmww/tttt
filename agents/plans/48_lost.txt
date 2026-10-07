@@ -85,7 +85,6 @@ coAndContraVariantInferences2	T	src-changed	bl-changed
 coAndContraVariantInferences5	E	src-changed	bl-changed
 coAndContraVariantInferences6	T	src-changed	bl-changed
 commaOperatorLeftSideUnused	T	src-changed	bl-changed
-commonSourceDirectory_dts	E	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed
 complicatedIndexesOfIntersectionsAreInferencable	T	src-changed	bl-changed
 computedPropertyNamesContextualType6_ES6	T	src-same	bl-changed
@@ -152,9 +151,6 @@ declarationEmitIdentifierPredicates01	T	src-changed	bl-changed
 declarationEmitIdentifierPredicatesWithPrivateName01	T	src-changed	bl-changed
 declarationEmitInferredUndefinedPropFromFunctionInArray	T	src-changed	bl-changed
 declarationEmitInterfaceWithNonEntityNameExpressionHeritage	T	src-changed	bl-changed
-declarationEmitMonorepoBaseUrl	E	src-changed	bl-changed
-declarationEmitPathMappingMonorepo	E	src-changed	bl-changed
-declarationEmitPathMappingMonorepo2	ET	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference2	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference3	ET	src-changed	bl-changed
@@ -447,8 +443,6 @@ parserharness	T	src-changed	bl-changed
 partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
 partiallyDiscriminantedUnions	ST	src-changed	bl-changed
 partiallyNamedTuples2	T	src-changed	bl-changed
-pathMappingBasedModuleResolution_rootImport_aliasWithRoot_realRootFile	E	src-changed	bl-changed
-pathMappingBasedModuleResolution_rootImport_noAliasWithRoot_realRootFile	E	src-changed	bl-changed
 plainJSGrammarErrors	ET	src-same	bl-changed
 predicateSemantics	ET	src-changed	bl-changed
 privacyGloImportParseErrors	E	src-changed	bl-changed

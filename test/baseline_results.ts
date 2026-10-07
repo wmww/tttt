@@ -5726,7 +5726,7 @@ const baselines = {
         types: true,
     },
     'commonSourceDirectory_dts': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9211,7 +9211,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitMonorepoBaseUrl': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9366,12 +9366,12 @@ const baselines = {
         types: false,
     },
     'declarationEmitPathMappingMonorepo': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'declarationEmitPathMappingMonorepo2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27906,7 +27906,7 @@ const baselines = {
         types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_aliasWithRoot_realRootFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -27916,7 +27916,7 @@ const baselines = {
         types: true,
     },
     'pathMappingBasedModuleResolution_rootImport_noAliasWithRoot_realRootFile': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

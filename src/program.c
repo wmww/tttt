@@ -1822,9 +1822,13 @@ static cstr emit_output_path(Program const* me, csview path, csview out_dir, csv
     try (fs_get_cwd(my fs, &cwd)) or_panic;
     cstr absolute = absolute_path_of(cstr_sv(&cwd), path);
     csview rest = cstr_sv(&absolute);
-    if (rest.size >= common_dir.size && !memcmp(rest.buf, common_dir.buf, (size_t)common_dir.size)) rest = csview_slice(rest, common_dir.size, rest.size);
-    while (rest.size && rest.buf[0] == '/') rest = csview_slice(rest, 1, rest.size);
-    cstr joined = cstr_d(out_dir, out_dir.buf[out_dir.size - 1] == '/' ? "" : "/", rest);
+    bool inside = rest.size >= common_dir.size && !memcmp(rest.buf, common_dir.buf, (size_t)common_dir.size) &&
+        (rest.size == common_dir.size || !common_dir.size || common_dir.buf[common_dir.size - 1] == '/' || rest.buf[common_dir.size] == '/');
+    if (inside) rest = csview_slice(rest, common_dir.size, rest.size);
+    while (inside && rest.size && rest.buf[0] == '/') rest = csview_slice(rest, 1, rest.size);
+    // (tsc's getSourceFilePathInNewDirWorker: a file outside the common directory keeps its absolute path, which
+    // combinePaths keeps as it is rooted)
+    cstr joined = inside ? cstr_d(out_dir, out_dir.buf[out_dir.size - 1] == '/' ? "" : "/", rest) : cstr_from_sv(rest);
     cstr ret = emit_change_extension(cstr_sv(&joined), extension);
     c_drop(cstr, &cwd, &absolute, &joined);
     return ret;
@@ -1840,7 +1844,7 @@ static bool emit_source_may_be_emitted(Program const* me, SourceFile const* sour
     if (!cstr_size(&my options.out_dir)) return false;
     // Not when it would be written over itself, if the common source directory is known up front
     CompilerOptions const* o = &my options;
-    if (!cstr_size(&o->root_dir) && !(o->composite && cstr_size(&o->config_dir))) return true;
+    if (!cstr_size(&o->root_dir) && !cstr_size(&o->config_dir)) return true;
     csview cwd = program_cwd(me);
     cstr common = cstr_size(&o->root_dir) ? absolute_path_of(cwd, cstr_sv(&o->root_dir)) : cstr_clone(o->config_dir);
     cstr absolute = absolute_path_of(cwd, cstr_sv(&source->canonical_path));
@@ -1917,11 +1921,79 @@ static csview path_root_of(csview path) {
     return csview_slice(path, 0, path.size > 2 ? 3 : 2);
 }
 
+// tsc's computeCommonSourceDirectoryOfFilenames on the files that may be emitted (getComputedCommonSourceDirectory),
+// empty without any
+static cstr computed_common_dir(Program* me, csview cwd) {
+    cstr common_dir = cstr_null;
+    bool first = true;
+    for_each (i, vec_source_file_ptr, &my source_files_ordered) {
+        if (!emit_source_may_be_emitted(me, *i)) continue;
+        cstr absolute = absolute_path_of(cwd, cstr_sv(&(*i)->canonical_path));
+        csview dir = dirname_of(cstr_sv(&absolute));
+        if (first) {
+            cstr_assign_sv(&common_dir, dir);
+            first = false;
+        } else {
+            // The longest common prefix of whole components
+            csview common = cstr_sv(&common_dir);
+            isize n = 0, last_sep = 0;
+            while (n < common.size && n < dir.size && common.buf[n] == dir.buf[n]) {
+                if (common.buf[n] == '/') last_sep = n;
+                n++;
+            }
+            bool whole = (n == common.size || common.buf[n] == '/') && (n == dir.size || dir.buf[n] == '/');
+            cstr_resize(&common_dir, whole ? n : last_sep ? last_sep : 1, '\0');
+        }
+        cstr_drop(&absolute);
+    }
+    return common_dir;
+}
+
+// tsc's verifyCompilerOptions, 6.0: a project's output layout follows its config's directory where 5.x inferred the
+// common directory of its files, so where those differ the rootDir has to be said (TS5011)
+static void program_verify_inferred_root_dir(Program* me) {
+    CompilerOptions const* o = &my options;
+    if (o->no_emit || o->composite || cstr_size(&o->root_dir) || !my config_source || !cstr_size(&o->config_dir)) return;
+    bool declaration_dir = (o->declaration || o->composite) && cstr_size(&o->declaration_dir);
+    if (!cstr_size(&o->out_dir) && !declaration_dir && !cstr_size(&o->out_file)) return;
+    csview cwd = program_cwd(me);
+    cstr dir59 = computed_common_dir(me, cwd);
+    cstr config_dir = absolute_path_of(cwd, cstr_sv(&o->config_dir));
+    cstr relative = cstr_size(&dir59) ? relative_path_of(cstr_sv(&config_dir), cstr_sv(&dir59)) : cstr_null;
+    bool same = !cstr_size(&relative) || cstr_equals(&relative, ".") ||
+        (o->case_insensitive_file_names && csview_iequals_sv(cstr_sv(&dir59), cstr_sv(&config_dir)));
+    if (!same) {
+        cstr config = absolute_path_of(cwd, cstr_sv(&my config_source->canonical_path));
+        csview config_name = cstr_sv(&config);
+        for (isize i = config_name.size; i > 0; i--) {
+            if (config_name.buf[i - 1] == '/') {
+                config_name = csview_slice(config_name, i, config_name.size);
+                break;
+            }
+        }
+        // (getRelativePathFromFile: ensurePathIsNonModuleName)
+        while (cstr_size(&relative) > 1 && cstr_ends_with(&relative, "/")) cstr_resize(&relative, cstr_size(&relative) - 1, '\0');
+        if (!cstr_starts_with(&relative, ".") && !cstr_starts_with(&relative, "/")) cstr_insert(&relative, 0, "./");
+        char const* name = cstr_size(&o->out_file) ? "outFile" : cstr_size(&o->out_dir) ? "outDir" : "declarationDir";
+        char const* name2 = !cstr_size(&o->out_file) && cstr_size(&o->out_dir) ? "declarationDir" : nullptr;
+        Span sites[4];
+        u32 count = option_sites(me, name, name2, true, sites);
+        for (u32 i = 0; i < count; i++) {
+            Error* error = option_error_d_one(me, sites[i], 5011, "The common source directory of '", config_name, "' is '",
+                relative, "'. The 'rootDir' setting must be explicitly set to this or another path to adjust your output's "
+                "file layout.");
+            error_sub_error_d(error, span_null, TS_CODE_NONE, "Visit https://aka.ms/ts6 for migration information.");
+        }
+        cstr_drop(&config);
+    }
+    c_drop(cstr, &dir59, &config_dir, &relative);
+}
+
 static void program_verify_emit_paths(Program* me) {
     CompilerOptions const* o = &my options;
     // tsc's verifyCompilerOptions: with an outDir and no rootDir, files on different drives have no common source
     // directory (getCommonSourceDirectory is "", which only another root than `/` can make)
-    if (cstr_size(&o->out_dir) && !cstr_size(&o->root_dir) && !(o->composite && cstr_size(&o->config_dir))) {
+    if (cstr_size(&o->out_dir) && !cstr_size(&o->root_dir) && !cstr_size(&o->config_dir)) {
         csview root = {0};
         bool differ = false, drive = false;
         for_each (i, vec_source_file_ptr, &my source_files_ordered) {
@@ -1961,30 +2033,11 @@ static void program_verify_emit_paths(Program* me) {
         try (fs_get_cwd(my fs, &cwd)) or_panic;
         if (cstr_size(&o->root_dir)) {
             common_dir = absolute_path_of(cstr_sv(&cwd), cstr_sv(&o->root_dir));
-        } else if (o->composite && cstr_size(&o->config_dir)) {
+        } else if (cstr_size(&o->config_dir)) {
+            // (A project never infers its root from its files, 6.0: TS5011 says where 5.x put it)
             common_dir = cstr_clone(o->config_dir);
         } else {
-            bool first = true;
-            for_each (i, vec_source_file_ptr, &my source_files_ordered) {
-                if (!emit_source_may_be_emitted(me, *i)) continue;
-                cstr absolute = absolute_path_of(cstr_sv(&cwd), cstr_sv(&(*i)->canonical_path));
-                csview dir = dirname_of(cstr_sv(&absolute));
-                if (first) {
-                    cstr_assign_sv(&common_dir, dir);
-                    first = false;
-                } else {
-                    // The longest common prefix of whole components
-                    csview common = cstr_sv(&common_dir);
-                    isize n = 0, last_sep = 0;
-                    while (n < common.size && n < dir.size && common.buf[n] == dir.buf[n]) {
-                        if (common.buf[n] == '/') last_sep = n;
-                        n++;
-                    }
-                    bool whole = (n == common.size || common.buf[n] == '/') && (n == dir.size || dir.buf[n] == '/');
-                    cstr_resize(&common_dir, whole ? n : last_sep ? last_sep : 1, '\0');
-                }
-                cstr_drop(&absolute);
-            }
+            common_dir = computed_common_dir(me, cstr_sv(&cwd));
         }
         cstr_drop(&cwd);
     }
@@ -2023,14 +2076,14 @@ static void program_error_explaining_file(Program* me, SourceFile const* file, u
 }
 
 // tsc's verifyCompilerOptions on the files of the program: a composite project lists every file it emits (TS6307),
-// and with a rootDir (or composite's, the config's directory) every emitted file is in it (TS6059, from
+// and with a rootDir (else the config's directory, 6.0) every emitted file is in it (TS6059, from
 // getCommonSourceDirectory's checkSourceFilesBelongToPath)
 static void program_verify_project_files(Program* me) {
     CompilerOptions const* o = &my options;
     bool has_config = my config_source && cstr_size(&o->config_dir);
     bool common_dir = cstr_size(&o->out_dir) || cstr_size(&o->root_dir) || cstr_size(&o->source_root) ||
         cstr_size(&o->map_root) || ((o->declaration || o->composite) && cstr_size(&o->declaration_dir));
-    bool root_dir_check = common_dir && (cstr_size(&o->root_dir) || (o->composite && has_config));
+    bool root_dir_check = common_dir && (cstr_size(&o->root_dir) || has_config);
     bool list_check = o->composite && has_config;
     if (!root_dir_check && !list_check) return;
     csview cwd = program_cwd(me);
@@ -2495,6 +2548,7 @@ void program_resolve_names(Program* me) {
     my pool = nullptr;
     program_validate_options(me);
     program_verify_module_kind(me);
+    program_verify_inferred_root_dir(me);
     program_verify_emit_paths(me);
     program_verify_project_files(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
