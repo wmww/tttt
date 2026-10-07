@@ -990,8 +990,12 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     if (!binding->parent) {
         InitializedBinding const* initialized = root_initializer(binding);
         if (!initialized) return ty_binding_assigned_type(me, binding);
-        if (binding->has_explicit_type && ty_expr_is_context_sensitive(initialized_binding_value(initialized))) {
-            // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below)
+        if (binding->has_explicit_type) {
+            // Typed by the annotation, like in the walk (see FLOW_ASSIGN_EXPR below). Also when the walk hasn't checked
+            // the declaration yet (tsc's getTypeOfInitializer -> checkExpression finds the contextual type up the
+            // tree): a call's effects resolved from a function's end reachability, before its statements are checked,
+            // may read the variable, and `const image: U = { type: E.A, ... }` without its context widens `E.A` to E,
+            // which no member of U takes (vscode stateToProgressAdapter.test.ts with node's `assert.deepStrictEqual`)
             Ty const* annotated = ty_from_node(me, &binding->explicit_type, (LowerCtx){ .generic = true });
             return ty_check_expr(me, initialized_binding_value(initialized), annotated);
         }

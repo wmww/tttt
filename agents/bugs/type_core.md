@@ -252,22 +252,14 @@ fails types in both configurations.
   assignment pattern is resolved but not checked (`ObjectExprItem.shorthand_default`).
 
 ## Corpus cells (flagflip) left after triage 2026-10-07 (each re-checked that day)
-- vscode TS2322 stateToProgressAdapter.test.ts:1956, the last vscode error (also in the nonia cell): `{ ...image, data:
-  '' }` spreads the declared union `ToolResultContent` (the message lists every member with `data` added, and the
-  excess property check fails on `ToolResultFileEditContent`) instead of `image`'s initializer-narrowed member
-  (`const image: ToolResultContent = { type: ToolResultContentType.EmbeddedResource, ... }`): the declaration's
-  assignment narrowing doesn't apply. Deterministic at every `--checkers` count. **Trigger found**: electron's
-  typings loaded before the test file. A tsconfig outside the corpus (`extends` vscode's src/tsconfig.json,
-  `compilerOptions: { rootDir: "/", typeRoots: [<vscode>/node_modules/@types, <vscode>/node_modules] }` so its
-  `types` resolve, `include: []`) whose `files` are `[e.ts, stateToProgressAdapter.test.ts]` with e.ts = `import type
-  * as E from 'electron'; export {};` reproduces; the test file alone doesn't (in the corpus electron comes in through
-  playwright-core's `typeof import('electron')` from browserToolHelpers.ts). A 4-line imitation of the declaration and
-  spread with electron first does not reproduce, so something else in the test file takes part: line-reduce the test
-  file (imports made absolute) with e.ts as the first root (each run ~3 s; a reduction got it to ~900 lines before
-  its time limit; keep a copy of the last reproducing state). Suspects: declaration merging/symbol order of a global
-  that electron declares (it declares many DOM-ish globals), changing which of two declarations the enum literal or
-  the union member types come from, so getAssignmentReducedType's comparison of the initializer with the members
-  fails.
+- (Fixed 2026-10-07, vscode now 0: TS2322 at stateToProgressAdapter.test.ts:1956. Mechanism, for similar cases: the
+  arrow's return type inference asks whether its end is reachable; the reachability walk meets `assert.deepStrictEqual(
+  calls, 1)` (node's `assert`, a generic assertion signature, so its effects need the call resolved, as in tsc's
+  getEffectsSignature), which types `calls`, its initializer and the `image` reference before the declarations are
+  checked. initial_binding_type() then typed `image`'s initializer without the annotation as contextual type, so
+  `type: ToolResultContentType.EmbeddedResource` widened to the enum, no member of the declared union took it, and
+  the cached assignment reduction was the declared union. It looked like an electron trigger because electron's
+  typings bring @types/node, which is what makes `import assert from 'assert'` resolve.)
 - valibot/nosnc -TS2578 x2 (forward.ts:51, forwardAsync.ts:55): iterating `path: ValidPath<TInput, TPath>` (a
   deferred conditional) gives tsc a generic key (`KeyOf<TInput> | KeyOf<TInput[...]> | ...`), so `unknown[key]` is no
   error; tttt iterates the conditional's constraint and gets `string | number` (TS7053). Iteration types of a
