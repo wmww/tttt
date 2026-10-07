@@ -330,6 +330,13 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
     Ty const* error = ty_intrinsic(checker, TY_ERROR);
     Ty const* circular = ty_intrinsic(checker, TY_CIRCULAR);
+    // (A first declaration whose annotation references itself (TS2502) is the error type: tsc's reportCircularityError)
+    Binding const* first_annotated = first->kind == SYMBOL_DECL_VARIABLE ? first->node : nullptr;
+    if (first_annotated && first_annotated->has_explicit_type &&
+        ty_binding_type(checker, first_annotated, (LowerCtx){ .generic = true }) == circular
+    ) {
+        return;
+    }
     if (type == error || declared == error || declared == circular ||
         ty_is_related(checker, type, declared, TY_RELATION_IDENTITY)
     ) {
