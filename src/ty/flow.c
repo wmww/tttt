@@ -2059,8 +2059,10 @@ static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, E
     }
     if (assume_true) {
         if (!double_equals && ((type->flags & TYF_UNKNOWN) || some_member_is_empty_object(me, type))) {
-            // (Primitives: `boolean` and enums, unions of them, too)
-            if (value_type->kind == TY_INTRINSIC || value_type->kind == TY_LITERAL || (value_type->flags & TYF_BOOLEAN) ||
+            // (Primitives: `boolean` and enums, unions of them, too; not any, unknown or never, which aren't tsc's
+            // Primitive | NonPrimitive: `{}` compared with an any stays `{}`)
+            if ((value_type->kind == TY_INTRINSIC && !(value_type->flags & (TYF_ANY | TYF_UNKNOWN | TYF_NEVER))) ||
+                value_type->kind == TY_LITERAL || (value_type->flags & TYF_BOOLEAN) ||
                 ty_is_enum_union(value_type) || is_empty_anonymous_object(me, value_type)
             ) {
                 return value_type;
