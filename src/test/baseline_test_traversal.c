@@ -648,13 +648,20 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                 // (One symbol with a field of its name: the class's)
                 VecSpan declarations = class_prop_declarations(ctx->parameter_property_symbol, false, my content_span.sv,
                     ctx->parameter_property_arg, 1);
+                // (Not its first declaration, an overload's parameter or a field's: the type of the property)
+                bool secondary = vec_span_size(&declarations) > 1 && !span_eq(declarations.data[0], ctx->parameter_property_arg);
                 if (vec_span_is_empty(&declarations)) declarations = baseline_symbol_declaration_spans(my symbol);
                 baseline_test_case_add_symbol(ctx, (BaselineSym){
                     .declarations = declarations,
                     .namespaces = vec_span_single(ctx->parameter_property_class),
                     .span = my content_span,
                 });
-                baseline_test_case_add_symbol_value(ctx, my content_span, my symbol);
+                Checker* checker = current_checker;
+                Prop const* prop = secondary ?
+                    ty_get_prop(checker, ty_declared_type_of(checker, ctx->parameter_property_symbol), checker_atom(checker, my content_span.sv)) :
+                    nullptr;
+                if (prop) baseline_test_case_add_type(ctx, my content_span, prop_type(checker, prop));
+                else baseline_test_case_add_symbol_value(ctx, my content_span, my symbol);
                 break;
             }
             baseline_test_case_add_declaration(ctx, my content_span, my symbol);

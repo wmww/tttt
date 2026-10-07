@@ -3496,6 +3496,34 @@ void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, 
     }
 }
 
+// tsc's checkVariableLikeDeclaration for a parameter property that isn't its property's first declaration (the same
+// parameter of another constructor declaration, an overload's, or a field before it): node.symbol is the class
+// property, whose type is its first declaration's (TS2403, "variable": a parameter isn't a property declaration)
+void ty_check_parameter_property_redeclaration(Checker* me, Symbol const* class_symbol, FunctionArg const* arg, ErrorCtx* errs) {
+    Binding const* binding = &arg->initializer.binding;
+    if (!class_symbol || binding->tag != BINDING_IDENTIFIER || !binding->content_span.sv.size) return;
+    Ty const* declared = ty_declared_type_of(me, class_symbol);
+    if (!(declared->flags & TYF_OBJECT)) return;
+    Prop const* root = declared_member_root(me, declared, checker_atom(me, binding->content_span.sv));
+    if (!root || span_eq(root->decl->decl_spans[0], arg->span) || !prop_declared_by(root, arg->span)) return;
+    Ty const* type = prop_type(me, root);
+    Ty const* own = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
+    Ty const* error = ty_intrinsic(me, TY_ERROR);
+    Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
+    if (type == error || own == error || own == circular || type == circular || ty_is_related(me, type, own, TY_RELATION_IDENTITY)) {
+        return;
+    }
+    cstr type_str = ty_to_cstr(me, type);
+    cstr own_str = ty_to_cstr(me, own);
+    Error* e = error_ctx_error_d(errs, binding->content_span, 2403,
+        "Subsequent variable declarations must have the same type.  Variable '", binding->content_span, "' must be of type '",
+        type_str, "', but here has type '", own_str, "'.");
+    // (A parameter's declaration starts at its modifiers)
+    Span first = root->decl->parameter_property ? root->decl->decl_spans[0] : root->decl->name_span;
+    error_add_related_d(e, first, 6203, "'", binding->content_span, "' was also declared here.");
+    c_drop(cstr, &type_str, &own_str);
+}
+
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {
     MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
     panic_if(!tables, "out of memory");

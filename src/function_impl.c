@@ -780,6 +780,9 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         if (i->is_parameter_property && !(my is_constructor && my has_body)) {
             error_ctx_error_d(errs, i->span, 2369, "A parameter property is only allowed in a constructor implementation.");
         }
+        if (i->is_parameter_property && my is_constructor) {
+            ty_check_parameter_property_redeclaration(current_checker, function_impl_rare(me)->constructed_class, i, errs);
+        }
         if (i->is_parameter_property && my is_constructor && i->initializer.binding.tag == BINDING_IDENTIFIER &&
             span_equals(i->initializer.binding.content_span, "constructor")
         ) {

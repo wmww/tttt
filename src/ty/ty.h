@@ -1988,6 +1988,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
 // a type literal), whose binder table is shared; checkObjectTypeForDuplicateDeclarations runs per list
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs);
 void ty_check_class_interface_property_types(Checker* me, Symbol const* symbol, ErrorCtx* errs);
+void ty_check_parameter_property_redeclaration(Checker* me, Symbol const* class_symbol, struct FunctionArg const* arg, ErrorCtx* errs);
 // TS2687: the property declarations of each instance member of the classes and interfaces that declare `symbol` (else of
 // a class without one, else of a type literal) have the same modifiers and optionality
 void ty_check_property_modifiers(Checker* me, Symbol const* symbol, struct ClassDecl const* class_decl,
