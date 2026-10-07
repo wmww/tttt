@@ -10,6 +10,17 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Corpora re-pinned (2026-10-07, eleventh window's todo entry 7, plan 48 stage 5)
+**New baselines: corpus numbers before this entry aren't comparable** (new pins and configs; vscode is now 3.41M
+lines). `./realworld.py` (4 checkers): tsc, tsc-src, react, nest, zod, xstate, drizzle, vue, tanstack-router,
+typescript-eslint 0; excalidraw 1; effect 3; valibot 4; type-fest 6 (3 with `--checkers 1`); vscode 8; webpack 64;
+zod-root 53 (= tsc). Flagflip regenerated: 182 cells, tsc 116954 diagnostics, tttt missing **260**, spurious **90**,
+other code 10. Sweep 8594 / 8595, `$ExpectType` 68620 / 68640, suite 14804 / 14969: unchanged. Instructions
+(callgrind, c30d6bd6; tsc, react, nest identical to the session start's 36cc5a5e): tsc 4.815, type-fest 19.455,
+valibot 4.176, react 1.542, nest 1.150, webpack 10.708, zod 5.040, xstate 3.177, drizzle 8.019, vue 7.053, effect
+9.984, vscode 92.239, excalidraw 7.981, tanstack-router 5.866 G (instrcount.sh gives valgrind a 64 MB main stack now:
+type-fest's IntRange needs ~16 MB).
+
 ## Oracles on tsc 4d4f005c (2026-10-07, eleventh window's todo entry 6, plan 48 stage 4)
 New caches: `./sweep.py` (DefinitelyTyped 2026-10-02 pin) 8585 on the fresh oracle -> **8594 / 8595** match, 0 crash
 (5.8's last: 8589); `./expecttypes.py` 68574 -> **68620 / 68640** (5.8's last: 68619); `./scenarios.py` 200 / 16 / 90

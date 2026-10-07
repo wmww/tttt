@@ -39,7 +39,7 @@ else
     echo "(perf unavailable: callgrind counts)"
     DIR=$(mktemp -d /tmp/instrcount.XXXXXX)
     for n in "${NAMES[@]}"; do
-        TTTT_NO_REEXEC=1 valgrind --tool=callgrind --callgrind-out-file="$DIR/$n.out" "$BIN" "${ARGS[@]}" \
+        TTTT_NO_REEXEC=1 valgrind --tool=callgrind --main-stacksize=67108864 --callgrind-out-file="$DIR/$n.out" "$BIN" "${ARGS[@]}" \
             "$(realpath "${C[$n]}")" > /dev/null 2> "$DIR/$n.log" &
     done
     wait
