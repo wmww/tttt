@@ -3221,8 +3221,8 @@ static Ty const* spread_acc_finish(Checker* me, SpreadAcc* acc, LiteralBuilder* 
             for (u32 j = 0; j < alt->part_count; j++) {
                 SpreadPart const* part = &alt->parts[j];
                 ty_buf_push(&parts, part->generic ? part->generic :
-                    ty_object_literal_of(me, part->object.props, part->object.count, part->object.index, part->object.index_count,
-                        kind, expr));
+                    ty_object_literal_alternative(me, part->object.props, part->object.count, part->object.index,
+                        part->object.index_count, kind, expr, acc->alt_count > 1 ? i + 1 : 0));
             }
             ty_buf_push(&alts, parts.len == 0 ? ty_object_literal(me, nullptr, 0, nullptr, 0, kind) :
                 parts.len == 1 ? parts.data[0] : ty_intersection(me, parts.data, parts.len, nullptr, (TyList){0}));

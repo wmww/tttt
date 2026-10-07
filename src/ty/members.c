@@ -4495,12 +4495,23 @@ Ty const* ty_object_literal_of(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
     void const* expr
 ) {
+    return ty_object_literal_alternative(me, props, count, index, index_count, kind, expr, 0);
+}
+
+Ty const* ty_object_literal_alternative(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
+    void const* expr, u32 alternative
+) {
     WordBuf words = {0};
     words_push(&words, KEY_STRUCTURAL);
     words_push(&words, kind);
     if (expr) {
         words_push(&words, 4);
         words_push(&words, (u64)(uintptr_t)expr);
+    }
+    if (alternative) {
+        words_push(&words, 5);
+        words_push(&words, alternative);
     }
     for (u32 i = 0; i < count; i++) {
         if (props[i].reuse) {
@@ -4586,6 +4597,7 @@ Ty const* ty_object_literal_of(
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
         fresh->anonymous.no_inferable_index = no_inferable_index;
         fresh->anonymous.regular = kind == OBJECT_LITERAL_REGULAR;
+        fresh->anonymous.spread_alternative = (uint16_t)alternative;
         fresh->anonymous.jsx_attributes = kind == OBJECT_JSX_ATTRIBUTES || kind == OBJECT_JSX_ATTRIBUTES_FRESH;
         fresh->anonymous.js_literal = js;
         if (kind != OBJECT_SYNTHETIC) fresh->anonymous.literal_expr = expr;
@@ -4752,9 +4764,9 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         index[i].value = ty_widened_objects(me, index[i].value);
     }
     // (JSX attributes stay what they are: hyphenated names are still never excess nor weak-type failures)
-    Ty const* ret = ty_object_literal_of(me, props, count, index, index_count,
+    Ty const* ret = ty_object_literal_alternative(me, props, count, index, index_count,
         (ty->anonymous.jsx_attributes ? OBJECT_JSX_ATTRIBUTES : OBJECT_LITERAL) | (ty->anonymous.js_literal ? OBJECT_JS : 0),
-        ty->anonymous.literal_expr);
+        ty->anonymous.literal_expr, ty->anonymous.spread_alternative);
     free(props);
     return ret;
 }
@@ -4890,11 +4902,11 @@ static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
             changed |= index[i].value != members->index[i].value;
         }
         if (changed) {
-            ret = ty_object_literal_of(me, props, members->prop_count, index, index_count,
+            ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count,
                 (ty->anonymous.jsx_attributes ? (ty->flags & TYF_FRESH_OBJECT ? OBJECT_JSX_ATTRIBUTES_FRESH : OBJECT_JSX_ATTRIBUTES) :
                 ty->anonymous.regular ? OBJECT_LITERAL_REGULAR : ty->flags & TYF_FRESH_OBJECT ? OBJECT_LITERAL_FRESH : OBJECT_LITERAL) |
                 (ty->anonymous.js_literal ? OBJECT_JS : 0),
-                ty->anonymous.literal_expr);
+                ty->anonymous.literal_expr, ty->anonymous.spread_alternative);
         }
         free(props);
     }
@@ -4961,8 +4973,9 @@ Ty const* ty_regular_object_literal(Checker* me, Ty const* ty) {
     IndexInfo index[8] = {0};
     u32 index_count = members->index_count < c_arraylen(index) ? members->index_count : c_arraylen(index);
     for (u32 i = 0; i < index_count; i++) index[i] = members->index[i];
-    Ty const* ret = ty_object_literal_of(me, props, members->prop_count, index, index_count,
-        OBJECT_LITERAL_REGULAR | (ty->anonymous.js_literal ? OBJECT_JS : 0), ty->anonymous.literal_expr);
+    Ty const* ret = ty_object_literal_alternative(me, props, members->prop_count, index, index_count,
+        OBJECT_LITERAL_REGULAR | (ty->anonymous.js_literal ? OBJECT_JS : 0), ty->anonymous.literal_expr,
+        ty->anonymous.spread_alternative);
     free(props);
     *intern_slot(me, &my links, key, 2) = ret;
     return ret;

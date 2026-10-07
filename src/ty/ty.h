@@ -347,6 +347,9 @@ struct Ty {
             TyList free_params;
             TyObjectState* state;
             uint16_t overload_count;
+            // object_literal: which alternative of a spread of a union it is (ty_object_literal_alternative()), 0 if not
+            // one: part of its identity, and of its regular and widened versions'
+            uint16_t spread_alternative;
             LowerCtx ctx;
             // An instantiation expression (`Bar<string>` as a value): target is any object type, and the mapper is
             // about the type parameters of its signatures, which lose them
@@ -1809,6 +1812,12 @@ Ty const* ty_object_literal(
 Ty const* ty_object_literal_of(
     Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
     void const* expr
+);
+// The same as one of several alternatives a spread of a union makes (1 on): each is a type of its own however equal,
+// like tsc's getSpreadType makes a new anonymous type per member
+Ty const* ty_object_literal_alternative(
+    Checker* me, ObjectLiteralProp const* props, u32 count, IndexInfo const* index, u32 index_count, ObjectLiteralKind kind,
+    void const* expr, u32 alternative
 );
 
 // function.c
