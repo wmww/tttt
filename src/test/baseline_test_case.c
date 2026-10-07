@@ -717,6 +717,12 @@ static void format_error_tree(
                 csview_starts_with(name, "lib.") ? "" : "lib.", name, "(--,--): ", error_category_name(error), " TS",
                 error->ts_code, ": "
             );
+        } else if (strlen(filename) >= 8 && !strncasecmp(filename, "lib", 3) &&
+            !strcasecmp(filename + strlen(filename) - 5, ".d.ts")
+        ) {
+            // (tsc's harness masks the position of any summary line naming a `lib*.d.ts`, a test's own file too:
+            // /^(lib.*\.d\.ts)\(\d+,\d+\)/gim)
+            cstr_append_d(global_target, DEFAULT_DISPLAY, filename, "(--,--): ", error_category_name(error), " TS", error->ts_code, ": ");
         } else {
             cstr_append_d(
                 global_target, DEFAULT_DISPLAY,
