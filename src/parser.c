@@ -57,6 +57,7 @@ typedef struct ParserShared {
     isize scanner_error_index;
     isize scanner_error_first; // The errors before the token was read
     const char* scanner_error_token;
+    bool using_forced; // The next variable statement starts with `using` whatever follows it (see parse_decl_statement())
     // What kind of function the parser is currently inside, decides if `await` and `yield` are operators
     bool in_async;
     bool in_generator;
@@ -12144,6 +12145,8 @@ static void note_exports_alias(Parser* p, InitializedBinding const* initializer)
 
 static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, VariableStatement* ret) {
     Parser p = parser(parent);
+    bool using_forced = p.shared->using_forced;
+    p.shared->using_forced = false;
 
     Anchor start = anchor(&p);
     if (hop_start_if_ends_on_word_break(&p, "var")) {
@@ -12152,7 +12155,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         ret->keyword = VAR_INIT_LET;
     } else if (hop_start_if_ends_on_word_break(&p, "const")) {
         ret->keyword = VAR_INIT_CONST;
-    } else if (hop_start_if_ends_on_word_break(&p, "using") && using_declaration_follows(&p, in_for)) {
+    } else if (hop_start_if_ends_on_word_break(&p, "using") && (using_forced || using_declaration_follows(&p, in_for))) {
         ret->keyword = VAR_INIT_USING;
     } else if (hop_start_if_ends_on_word_break(&p, "await")) {
         hop_whitespace(&p);
@@ -13498,9 +13501,13 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
     bool outer_ambient = p.shared->in_ambient;
     p.shared->in_ambient |= modifiers.includes[MODIFIER_DECLARE];
 
-    if (decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
-        parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable)
-    ) {
+    // (After decorators `using` is a variable statement whatever follows: tsc's parseDeclarationWorker, reached
+    // without isUsingDeclaration's lookahead, `@dec using 1` is TS1134)
+    p.shared->using_forced = !vec_expr_is_empty(&decorators);
+    bool variable = decl_props.exported != DECL_EXPORTED_YES_DEFAULT &&
+        parse_variable_statement(&p, expr_ctx_null, false, &parsed.variable);
+    p.shared->using_forced = false;
+    if (variable) {
         modified.kind = MODIFIED_VARIABLE_STATEMENT;
         modified.using_kind = parsed.variable.keyword == VAR_INIT_USING ? 1 :
             parsed.variable.keyword == VAR_INIT_AWAIT_USING ? 2 :

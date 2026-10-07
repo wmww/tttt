@@ -42251,9 +42251,9 @@ const baselines = {
         types: true,
     },
     'decoratorOnUsing': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'decoratorOnVar': {
         errors: true,
