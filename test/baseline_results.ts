@@ -1108,27 +1108,27 @@ const baselines = {
     'argumentsReferenceInConstructor1_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor2_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor3_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor4_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor5_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInConstructor6_Js': {
         errors: true,
@@ -1148,37 +1148,37 @@ const baselines = {
     'argumentsReferenceInMethod1_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod2_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod3_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod4_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod5_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod6_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInMethod7_Js': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsReferenceInObjectLiteral_Js(alwaysstrict=false)': {
         errors: true,
@@ -25173,22 +25173,22 @@ const baselines = {
     'nestedBlockScopedBindings13': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings14': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings15': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings16': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings2': {
         errors: true,
@@ -25218,12 +25218,12 @@ const baselines = {
     'nestedBlockScopedBindings7': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings8': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nestedBlockScopedBindings9': {
         errors: true,

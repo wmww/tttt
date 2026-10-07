@@ -3091,6 +3091,13 @@ bool ty_symbol_never_initialized(Symbol const* symbol) {
 
 // Whether narrowing of the reference survives the function boundary: a function expression sees the narrowed type
 // of what can't have changed by the time it runs (tsc's checkIdentifier())
+// tsc's convertAutoToAny
+static Ty const* auto_to_any(Checker* me, Ty const* type) {
+    if (type == ty_intrinsic(me, TY_AUTO)) return ty_intrinsic(me, TY_ANY);
+    if (type == ty_auto_array(me)) return ty_array(me, ty_intrinsic(me, TY_ANY), false);
+    return type;
+}
+
 static bool continues_outside(FlowQuery* q, FlowNode const* start, FunctionImpl const* function) {
     Expr const* reference = skip_reference_wrappers(q->reference);
     if (reference->tag != EXPR_IDENTIFIER) return false;
@@ -3188,7 +3195,12 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
             q->overrides = override.outer;
         } else if (flags & FLOW_START) {
             FunctionImpl const* function = flow->node;
-            if ((flags & FLOW_CONTINUES_OUTSIDE) && function->outer_flow && continues_outside(q, flow, function)) {
+            if ((flags & FLOW_CONTINUES_OUTSIDE) && continues_outside(q, flow, function)) {
+                // (A function in unreachable code continues into the unreachable flow)
+                if (!function->outer_flow) {
+                    type = (FlowType){ auto_to_any(me, q->declared), false };
+                    break;
+                }
                 flow = function->outer_flow;
                 if (!function->is_iife) q->left_container = true;
                 continue;
@@ -3204,8 +3216,9 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
                 continue;
             }
         } else {
-            // Unreachable: errors come from the builder, the declared type keeps follow-on errors away
-            type = (FlowType){ q->declared, false };
+            // Unreachable: errors come from the builder, the declared type keeps follow-on errors away (an auto type
+            // as any: tsc's convertAutoToAny)
+            type = (FlowType){ auto_to_any(me, q->declared), false };
         }
         break;
     }

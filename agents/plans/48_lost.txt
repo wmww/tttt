@@ -374,12 +374,6 @@ narrowingTypeofUndefined1	T	src-changed	bl-changed
 narrowingTypeofUndefined2	T	src-changed	bl-changed
 narrowingUnionToUnion	T	src-changed	bl-changed
 narrowingUnionWithBang	T	src-changed	bl-changed
-nestedBlockScopedBindings13	T	src-changed	bl-same
-nestedBlockScopedBindings14	T	src-changed	bl-same
-nestedBlockScopedBindings15	T	src-changed	bl-same
-nestedBlockScopedBindings16	T	src-changed	bl-same
-nestedBlockScopedBindings7	T	src-changed	bl-same
-nestedBlockScopedBindings8	T	src-changed	bl-same
 nestedLoopTypeGuards	T	src-changed	bl-changed
 nestedTypeVariableInfersLiteral	T	src-changed	bl-changed
 neverAsDiscriminantType(strict=false)	T	src-changed	bl-changed
