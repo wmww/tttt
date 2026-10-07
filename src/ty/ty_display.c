@@ -2383,6 +2383,15 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     // `?` adds undefined to the template (tsc's getTemplateTypeFromMappedType; the missing type under
     // exactOptionalPropertyTypes isn't printed)
     Ty const* template = ty_mapped_template(me, mapped);
+    if (keyof_wrapper) {
+        // tsc 6 writes the root's template over the new T_1 too (`{ [K in keyof T_1]: T_1[K]; }`, not the instantiated
+        // modifiers type indexed): its type parameter is this one's, its modifiers type the wrapper
+        MappedInfo const* root = mapped_root(mapped);
+        Ty const* sources[2] = { root->type_param, root->modifiers_type };
+        Ty const* targets[2] = { mapped->type_param, wrapper };
+        template = ty_instantiate(me, ty_mapped_template(me, root),
+            ty_mapper_new(me, (TyList){ .data = sources, .len = 2 }, (TyList){ .data = targets, .len = 2 }));
+    }
     if (mapped->optional > 0 && compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) {
         Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
         template = ty_union(me, parts, 2, nullptr, (TyList){0});

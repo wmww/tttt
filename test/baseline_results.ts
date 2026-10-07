@@ -9168,7 +9168,7 @@ const baselines = {
     'declarationEmitMappedTypeDistributivityPreservesConstraints': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitMappedTypePreservesTypeParameterConstraint': {
         errors: false,
@@ -22873,7 +22873,7 @@ const baselines = {
     'mappedTypeGenericInstantiationPreservesHomomorphism': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'mappedTypeGenericInstantiationPreservesInlineForm': {
         errors: true,
@@ -25503,7 +25503,7 @@ const baselines = {
     'noCircularitySelfReferentialGetter1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCircularitySelfReferentialGetter2': {
         errors: true,

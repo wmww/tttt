@@ -152,7 +152,6 @@ declarationEmitIdentifierPredicates01	T	src-changed	bl-changed
 declarationEmitIdentifierPredicatesWithPrivateName01	T	src-changed	bl-changed
 declarationEmitInferredUndefinedPropFromFunctionInArray	T	src-changed	bl-changed
 declarationEmitInterfaceWithNonEntityNameExpressionHeritage	T	src-changed	bl-changed
-declarationEmitMappedTypeDistributivityPreservesConstraints	T	src-changed	bl-changed
 declarationEmitMonorepoBaseUrl	E	src-changed	bl-changed
 declarationEmitPathMappingMonorepo	E	src-changed	bl-changed
 declarationEmitPathMappingMonorepo2	ET	src-changed	bl-changed
@@ -331,7 +330,6 @@ mapGroupBy	T	src-same	bl-changed
 mappedTypeAsClauses	T	src-changed	bl-changed
 mappedTypeConstraints2	ET	src-changed	bl-changed
 mappedTypeErrors	E	src-changed	bl-changed
-mappedTypeGenericInstantiationPreservesHomomorphism	T	src-changed	bl-changed
 mappedTypeGenericWithKnownKeys	ET	src-changed	bl-changed
 mappedTypeIndexedAccess	ET	src-changed	bl-changed
 mappedTypeNotMistakenlyHomomorphic	T	src-changed	bl-changed
