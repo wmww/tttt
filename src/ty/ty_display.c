@@ -3021,12 +3021,14 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     out_lit(d, "}");
 }
 
+static bool anonymous_elided(TyDisplay d, Ty const* ty);
 static bool is_function_like(Checker* me, TyDisplay d, Ty const* ty) {
     if (ty->kind != TY_ANONYMOUS || shows_alias(d, ty)) return false;
     // (Inside its own rendering it is `any` (or `typeof f`): no function type node to parenthesize)
     for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
         if (i->ty == ty) return false;
     }
+    if (anonymous_elided(d, ty)) return false; // (The placeholder is a keyword)
     Members const* members = ty_members(me, ty);
     return !members->prop_count && !members->index_count && !members->mapped &&
         members->call_count + members->construct_count == 1;
@@ -3287,7 +3289,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
-    if (d.depth > MAX_DISPLAY_DEPTH * 4) {
+    if (d.depth > MAX_DISPLAY_DEPTH * (d.enclosing ? 16 : 4)) {
         out_lit(d, "...");
         return;
     }

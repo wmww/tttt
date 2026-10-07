@@ -22773,17 +22773,17 @@ const baselines = {
     'longObjectInstantiationChain1': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'longObjectInstantiationChain2': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'longObjectInstantiationChain3': {
         errors: false,
         symbols: true,
-        types: false,
+        types: true,
     },
     'm7Bugs': {
         errors: true,
