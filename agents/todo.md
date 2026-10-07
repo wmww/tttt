@@ -33,10 +33,10 @@ numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built
    first drain: type-fest's SIGSEGV (64 MB stack), vscode 414 -> 8, webpack 113 -> 64, typescript-eslint 4 -> 0,
    flagflip missing 1583 -> 260. tttt now: type-fest 6, valibot 4, webpack 64, effect 3, vscode 8, excalidraw 1, the
    rest 0 (zod-root = tsc's 53). Suite 14804; sweep and `$ExpectType` unchanged.
-8. **Corpora: stage 5 drain** with sub-agents: triage.md's "Corpora re-pin" sections (webpack's JSDoc generic
-   classes through import() typedefs is most of its 64; valibot's `this.cache`; type-fest's optional numeric keys and
-   UnwrapPartial; vscode's leftovers) and flagflip's 260 missing / 90 spurious (`./flagflip.py --cells`, vscode/eopt
-   TS2339 x138 first).
+8. Done (execution, 2026-10-07): corpora drain with 4 sub-agents (~70 picks). Every corpus 0 but effect 3 (plan 19)
+   and vscode 1 (stateToProgressAdapter, unreduced); flagflip missing / spurious / other 260 / 90 / 10 -> 42 / 12 / 5;
+   then mutation seeds 11, 13, 14 and multi/js 12 drained, `$ExpectType` 68621, suite 14805. Instructions -0.6..+1.0%.
+   New plan 49 (destructured references and widening, audit stages); leftovers in triage.md.
 9. **Perf session** (plan 48 stage 6): instruction baselines on the re-pinned corpora, `./bench.sh` against tsgo 7.0.2.
    New since the re-pin: vscode is 3.41M lines now (was 1.39M; tsc 6 needs > 8 GB heap, tttt 5.6 GB RSS),
    type-fest's IntRange tests peak at 2.3 GB RSS, tsgo runs away on zod-root (18 GB).

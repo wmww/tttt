@@ -256,7 +256,7 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   The three runtime tests excluded for 5.9's lib.dom are back in; the old pin's 27 TS2591 (`types: []`) are gone
   because react-router's (and router-core's) own tsconfigs now say `types: ["node"]`, which the overlay extends.
 
-## Corpora re-pin (plan 48 stage 5): vscode, typescript-eslint, excalidraw
+## Corpora re-pin (plan 48 stage 5): excalidraw
 - excalidraw (53973c3a, Oct 2026, upstream on 5.9.3; tsc 4d4f005c and tsgo 7.0.2 clean): tttt 0.
 
 ## Corpora re-pin (plan 48 stage 5): type-fest, valibot
@@ -334,6 +334,7 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
 ## Corpora re-pin (plan 48 stage 5): typescript-eslint
 - typescript-eslint @ 70629871 (Oct 2026, TS6 upstream): tsc 4d4f005c -b 0, tsgo 7.0.2 -b 0, tttt 0 (its 4 TS2345, a
   widened `value: 'await'`, were indexed accesses of a reducible intersection resolved eagerly; fixed).
+
 ## Corpora re-pin (plan 48 stage 5): vscode
 - vscode @ 2afa73ea (main's head, 2026-10-07; upstream builds with `@typescript/typescript6` ^6.0.2 and checks with
   tsgo 7.0.2): checked through src/tsconfig.corpus.json from the overlay, upstream's src/tsconfig.json minus 3 test
@@ -400,11 +401,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   before `const items = []` under `@type {typeof import(...)}` loses the annotation (jsDeclarationsTypeReassignment
   FromDeclaration), and typeFromParamTagForFunction's `declare function require(id: number)` gets TS2345 at the
   require calls in tsc only when other files of the program are ES modules (not reduced).
-  - Unreduced: TS7006 x3 + TS2365 `'{}' + number` in inlineEdits longDistanceHint (`derived(this, r => { ... return obs.map(heights => ...) })
-    .flatten()` with overloaded `derived`/`map`; a single-file imitation is clean), and TS2322 at
-    stateToProgressAdapter.test.ts:1956: `{ ...image, data: '' }` spreads the declared union `ToolResultContent`
-    instead of `image`'s initializer-narrowed member (`const image: ToolResultContent = { type: EmbeddedResource, ... }`;
-    also clean in a single-file imitation; the const enum is re-exported through sessionState.ts).
 
 ## Mutation testing, single-file seeds 11, 13, 14 (4000 mutants each)
 Drained to these leftovers (`MUTATE_DIR=/tmp/a-mutateN ./mutate.py --seed N -n 4000` regenerates them):

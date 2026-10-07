@@ -10,6 +10,19 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Corpora drained (2026-10-07, eleventh window's todo entry 8, 4 sub-agents)
+`./realworld.py` (4 checkers): every corpus **0** except effect 3 (known TS2578, plan 19), vscode **1** (8 -> 1),
+zod-root 53 (= tsc); webpack 64 -> 0, type-fest 6 -> 0, valibot 4 -> 0, excalidraw 1 -> 0. Flagflip (182 cells,
+116954 tsc diagnostics) missing 260 -> **42**, spurious 90 -> **12**, other code 10 -> **5**. `$ExpectType` 68620 ->
+**68621 / 68640**, sweep **8594 / 8595**, scenarios **240 / 0**, suite 14804 -> **14805 / 14969** (0 components lost).
+Mutation seeds drained: single-file 11, 13, 14 (4000 each, ~38 -> ~14 mismatches), multi/js 12 (3000, 31 -> 20).
+Instructions (callgrind, `--checkers 1`), 909cf14e -> end: tsc 4.815 -> 4.786 (-0.6%), type-fest 19.455 -> 19.552
+(+0.5%), valibot 4.176 -> 4.217 (+1.0%: TS2344 on deferred conditional arguments, a check tsc does), react 1.542 ->
+1.540, nest 1.150 -> 1.148, webpack 10.708 -> 10.682, zod 5.040 -> 5.069 (+0.6%), xstate 3.177 -> 3.178 (a +8.4% from
+the TS2344 check was fixed by giving non-generic classes/interfaces a recursion identity), drizzle 8.019 -> 8.053
+(+0.4%), vue 7.053 -> 7.021, effect 9.984 -> 9.998, excalidraw 7.981 -> 7.956, tanstack-router 5.866 -> 5.878 G
+(vscode not re-measured).
+
 ## Corpora re-pinned (2026-10-07, eleventh window's todo entry 7, plan 48 stage 5)
 **New baselines: corpus numbers before this entry aren't comparable** (new pins and configs; vscode is now 3.41M
 lines). `./realworld.py` (4 checkers): tsc, tsc-src, react, nest, zod, xstate, drizzle, vue, tanstack-router,
