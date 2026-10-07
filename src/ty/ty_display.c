@@ -3109,11 +3109,21 @@ static Ty const* anonymous_root(Ty const* ty) {
     return ty;
 }
 
-static bool anonymous_elided(TyDisplay d, Ty const* ty) {
+// What stands for tsc's symbol of an anonymous type: the declaration it was instantiated from, an object literal's
+// expression (its widened and regular copies have the literal's symbol too), a function's declaration
+static void const* anonymous_key(Ty const* ty) {
     Ty const* root = anonymous_root(ty);
+    if (root->kind != TY_ANONYMOUS) return root;
+    if (root->anonymous.object_literal && !root->anonymous.overload_count && root->anonymous.literal_expr) return root->anonymous.literal_expr;
+    if (root->anonymous.function) return root->anonymous.function;
+    return root;
+}
+
+static bool anonymous_elided(TyDisplay d, Ty const* ty) {
+    void const* key = anonymous_key(ty);
     u32 depth = 0;
     for (TyDisplayVisit const* i = d.visiting; i; i = i->outer) {
-        depth += i->ty->kind == TY_ANONYMOUS && anonymous_root(i->ty) == root;
+        depth += i->ty->kind == TY_ANONYMOUS && anonymous_key(i->ty) == key;
     }
     return depth > 10;
 }

@@ -9883,7 +9883,7 @@ const baselines = {
     'declarationsWithRecursiveInternalTypesProduceUniqueTypeParams': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declareAlreadySeen': {
         errors: true,
