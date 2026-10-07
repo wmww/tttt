@@ -3042,6 +3042,20 @@ static void spread_acc_add_alt(SpreadAcc* acc, SpreadAlt alt) {
 
 // An object spread into an alternative: into its last part if that's objects, else a new part
 static void spread_alt_object(Checker* me, SpreadAlt* alt, LiteralBuilder const* right, bool readonly) {
+    // After a generic intersection whose last member is a non-generic object, `T & { a }`, that member takes the
+    // object spread: `T & { a, b }` (tsc's getSpreadType: lastLeft)
+    Ty const* last_generic = alt->part_count ? alt->parts[alt->part_count - 1].generic : nullptr;
+    if (last_generic && last_generic->kind == TY_INTERSECTION) {
+        TyList members = last_generic->composite.types;
+        Ty const* last = members.data[members.len - 1];
+        if ((last->flags & TYF_OBJECT) && !ty_is_generic_object(me, last)) {
+            alt->parts[alt->part_count - 1].generic = members.len == 2 ? members.data[0] :
+                ty_intersection(me, members.data, members.len - 1, nullptr, (TyList){0});
+            LiteralBuilder left = { .empty_object = false };
+            spread_props_of(me, last, false, readonly, &left);
+            spread_alt_push(alt, (SpreadPart){ .object = left });
+        }
+    }
     if (!alt->part_count || alt->parts[alt->part_count - 1].generic) {
         spread_alt_push(alt, (SpreadPart){ .object = { .empty_object = true } });
     }
