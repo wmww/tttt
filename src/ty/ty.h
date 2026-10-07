@@ -830,6 +830,10 @@ enum {
     // A union with an intersection among its members that may reduce to never (tsc's ObjectFlags.ContainsIntersections):
     // ty_reduced() looks at it. Only read on the union itself
     TYX_CONTAINS_INTERSECTIONS = 8,
+    // Something in it widens (ty_widened_nullable()): TYX_CONTAINS_WIDENING, and also an object literal that has such
+    // a property only through a spread, whose ContainsWideningType tsc doesn't propagate (nothing in it is reported,
+    // TS7018, but getWidenedType still widens every object literal)
+    TYX_WIDENS = 16,
 };
 
 typedef enum TyIntrinsic {
@@ -1765,6 +1769,7 @@ typedef struct ObjectLiteralProp {
     // existing property takes this one's type without undefined (spread_into())
     TypeNode const* asserted_required;
     bool own; // Written in the literal itself, not spread into it: only those get excess property checks
+    bool own_merged; // Merged by a spread with one written in the literal itself (whose declaration it keeps)
     uint8_t name_form; // See PropDecl.name_form
     Ty const* name_type; // See PropDecl.name_type
     Prop const* reuse; // The property is this one as it is (tsc: the same symbol), the other fields are ignored

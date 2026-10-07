@@ -357,7 +357,7 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_UNDEFINED_WIDENING] = my intrinsics[TY_UNDEFINED];
     if (!compiler_options()->strict_null_checks) {
         Ty* widening = (Ty*)make_intrinsic(me, "undefined", TYF_UNDEFINED);
-        widening->xflags = TYX_CONTAINS_WIDENING;
+        widening->xflags = TYX_CONTAINS_WIDENING | TYX_WIDENS;
         my intrinsics[TY_UNDEFINED_WIDENING] = widening;
     }
     my intrinsics[TY_MISSING] = make_intrinsic(me, "undefined", TYF_UNDEFINED);
@@ -366,7 +366,7 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_NULL_WIDENING] = my intrinsics[TY_NULL];
     if (!compiler_options()->strict_null_checks) {
         Ty* widening = (Ty*)make_intrinsic(me, "null", TYF_NULL);
-        widening->xflags = TYX_CONTAINS_WIDENING;
+        widening->xflags = TYX_CONTAINS_WIDENING | TYX_WIDENS;
         my intrinsics[TY_NULL_WIDENING] = widening;
     }
     my intrinsics[TY_STRING] = make_intrinsic(me, "string", TYF_STRING);

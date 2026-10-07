@@ -2941,6 +2941,7 @@ static void spread_into(Checker* me, LiteralBuilder* left, LiteralBuilder const*
         }
         l = &merged;
         merged.flags = (l->flags & (PROP_OPTIONAL | PROP_METHOD)) | PROP_NO_VALUE_DECLARATION; // (tsc: a fresh symbol)
+        merged.own_merged = merged.own || merged.own_merged;
         merged.own = false;
         // (Under exactOptionalPropertyTypes only the missing goes, which the declared type doesn't have: tsc's
         // removeMissingOrUndefinedType)

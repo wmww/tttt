@@ -4507,8 +4507,12 @@ Ty const* ty_object_literal_of(
         }
         Ty* fresh = ty_alloc(me, TY_ANONYMOUS, flags);
         if (kind != OBJECT_SYNTHETIC && !compiler_options()->strict_null_checks) {
+            // (A spread property's ContainsWideningType doesn't propagate: tsc's checkObjectLiteral only collects its own
+            // properties' flags)
             for (u32 i = 0; i < count; i++) {
-                if (!props[i].reuse && props[i].type) fresh->xflags |= props[i].type->xflags;
+                if (props[i].reuse || !props[i].type) continue;
+                u32 xflags = props[i].type->xflags;
+                fresh->xflags |= props[i].own || props[i].own_merged ? xflags : xflags & ~(u32)TYX_CONTAINS_WIDENING;
             }
             for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
         }
@@ -4742,7 +4746,7 @@ static Ty const* widen_objects(Checker* me, Ty const* ty) {
 }
 
 static Ty const* widen_nullable(Checker* me, Ty const* ty, u32 depth) {
-    if (depth > 16 || !(ty->xflags & TYX_CONTAINS_WIDENING)) return ty;
+    if (depth > 16 || !(ty->xflags & TYX_WIDENS)) return ty;
     if (ty->kind != TY_UNION && (ty->flags & TYF_NULLABLE)) return ty_intrinsic(me, TY_ANY);
     u64 key[2] = { KEY_WIDENED_NULLABLE, (u64)(uintptr_t)ty };
     void const* known = intern_get(&my links, key, 2);

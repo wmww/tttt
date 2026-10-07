@@ -884,6 +884,18 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     return ret;
 }
 
+// Whether an object literal's property is declared by the literal itself rather than spread into it (tsc's
+// reportWideningErrorsInType: the valueDeclaration whose parent is the literal)
+static bool declared_in_literal(Ty const* ty, Prop const* prop) {
+    Expr const* literal = ty->anonymous.literal_expr;
+    if (!literal || literal->tag != EXPR_OBJECT) return true;
+    char const* at = prop->decl->decl_spans[0].sv.buf;
+    for_each (i, vec_object_expr_item, &literal->object) {
+        if (i->tag != OBJECT_ITEM_SPREAD && at >= i->span.sv.buf && at < i->span.sv.buf + i->span.sv.size) return true;
+    }
+    return false;
+}
+
 // tsc's reportWideningErrorsInType: TS7018 on the object literal properties whose null/undefined widen to any. A union
 // with an empty object type in it counts as reported (tsc: nothing is said)
 static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, ErrorCtx* errs, u32 depth) {
@@ -907,14 +919,15 @@ static bool report_widening_errors_in_type(Checker* checker, Ty const* ty, Error
             if (!(t->xflags & TYX_CONTAINS_WIDENING)) continue;
             bool inner = report_widening_errors_in_type(checker, t, errs, depth + 1);
             // (At the property's declaration, `a: null` and not just its name: tsc's valueDeclaration, a spread one's too)
-            if (!inner && prop->decl->decl_span_count && prop->decl->decl_spans[0].source) {
+            if (!inner && prop->decl->decl_span_count && prop->decl->decl_spans[0].source && declared_in_literal(ty, prop)) {
                 cstr name = ty_prop_name_cstr(checker, prop->name);
                 cstr type = ty_to_cstr(checker, ty_widened_nullable(checker, t));
                 error_ctx_error_d(errs, prop->decl->decl_spans[0], 7018, "Object literal's property '", name, "' implicitly has an '", type, "' type.");
                 c_drop(cstr, &name, &type);
                 inner = true;
             }
-            reported |= inner;
+            // (tsc's `errorReported = ...`: the last property that has something to widen decides)
+            reported = inner;
         }
     }
     return reported;
