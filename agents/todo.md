@@ -49,5 +49,7 @@ commit.
    suite 13232 -> 13299 (errors failing 127 -> 85), effect 7 -> 3 (the TaggedClass cycle left is plan-sized, plan 19),
    flagflip 67 / 57 / 11 -> 51 / 47 / 11, `$ExpectType` 68610 -> 68619, sweep 8588 / 6 / 1 flat. Instructions +0.4-1%
    on most corpora (two mid-session regressions, +15% valibot and +2.4% xstate, sent back and fixed). measurements.md.
-10. **Triage.**
+10. ~~Triage~~ done 2026-10-07: four sub-agents took every triage.md item: 44 fixes, the rest written up (bugs/*.md,
+   plan 26 Leftovers, hacks.md). Suite 13299 -> 13303 (0 lost), sweep 8589, flagflip 51 / 45 / 10, `$ExpectType` flat;
+   drizzle -23.5% (deferred references with non-generic arguments aren't generic), valibot +2.8%. measurements.md.
 11. **Insights.**

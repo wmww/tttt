@@ -45,7 +45,9 @@ fails types in both configurations.
   the shortcut skips return-type inference; how tsc's returnMapper avoids K2 = `never` is unknown).
   indexedAccessRelation differs in its elaboration (tsc: `Type 'Foo' is not assignable to type 'S["a"] & T'`,
   the constraint of T) and in the union order of `keyof S | "a"`.
-
+- (triage 2026-10-07) The contextual type of an argument for a rest parameter typed as a mapped type over `keyof
+  [...E, "abc"]` (index 0 -> `{ bar: [...E, "abc"][0] }`) keeps the literal in tsc: TS2345 messages print `{ bar:
+  "abc"; }` where tttt prints `{ bar: string; }`. circularInlineMappedGenericTupleTypeNoCrash itself needs tsc's TS2589.
 ## Relations, instantiation, reduction
 - **Two copies of one declaration file (webpack through a symlink): one diagnostic left.** From a worktree (where
   `thirdparty/corpora` is a symlink) webpack's `types.d.ts` is in the program twice, as in tsc (root files keep the
@@ -74,8 +76,7 @@ fails types in both configurations.
 - **Intersection reduction by constraint**: `T & P` for a type parameter T with a primitive constraint is reduced
   (`reduce_type_variable_intersection`, and `(T & "a") | (T & "b")` back to T), but not for indexed access type
   variables (see hacks.md) nor type parameters with a deferred declared constraint. mappedTypeNotMistakenlyHomomorphic
-  (`keyof Gen<ABC.A>` misses `a`), mixinAccessModifiers (protected access through an intersection names the wrong
-  class).
+  (`keyof Gen<ABC.A>` misses `a`).
 - **Permissive instantiation** for conditional types is missing (`ty_conditional_resolve` defers where tsc picks the
   false branch); a flat `TyMapper` can't say "every type parameter -> any". Needs a wildcard type + cached permissive
   instantiation.
@@ -116,7 +117,20 @@ fails types in both configurations.
   nonoptional, _zod...`, tsc's with `default`, which fails at once. Union order again; the TS2344 text there also
   differs (property order, tsc's `... 62 more ...` truncation). `perf_leads.md` "Variance measurements" says how to
   build that zod variant (strip `in`/`out` both after `<`/`,` and at line starts inside multi-line lists).
-
+- (triage 2026-10-07, mut3125) AllowMissing for destructuring defaults should go by tsc's isObjectLiteralType of the
+  unwidened parent. tsc has three states (fresh, regular, widened; getWidenedTypeOfObjectLiteral builds a type
+  without ObjectFlags.ObjectLiteral), so `var b = {y: 0}; var {x = ""} = b` is TS2339 while `var {x = ""} = {y: 0}` is
+  TS2353. tttt's `ty_widened_objects()` keeps `anonymous.object_literal`, so `binding_assigned_type` (lower.c) and
+  binding.c treat widened declarations as literals. Fix: the widened twin gets `object_literal = false`, after auditing
+  every reader (union partial-property rule, excess properties, the isObjectLiteralType relation rules) and the array
+  literal element types tttt widens early (`for (var {x = ""} of [{}])`). Medium to large.
+- (mut1640) An element *write* with a `never` index on a union of objects (`both[sym] = 'x'`, `sym: never`, members
+  `{ s: number, '0': number, [sym]: boolean } | { [n: number]: number, [s: string]: string | number }`): tsc reads the
+  union's number index info (getUnionIndexInfos, getApplicableIndexInfo with never: `number | boolean`), tttt `never`.
+- The conditional base-constraint fallback (`base_constraint_uncached` TY_CONDITIONAL, used when there's no
+  distributive constraint) leaves an `any` branch out like tsc's getDefaultConstraintOfConditionalType but uses the
+  raw true branch, not tsc's inferred one. `ReturnType<T[M]>` property access (seed-5 mut0710/mut3585) still misses
+  TS2339.
 ## Circularity (plan 29 stage 3 leftovers; the outer-declaration cases are plan 39)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
   TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax.
@@ -144,13 +158,20 @@ fails types in both configurations.
   `tree`'s initializer resolves `variantA`'s type. Not caused by the deferral/checkReturnStatement work (base fails it
   identically); worth a TTTT_DEBUG_CYCLE look.
 - selfReferentialDefaultNoStackOverflow wants TS7022 on `export default { mixins: [DefaultSpinner] }` importing itself.
-
+- (mut0806) `class D extends class extends Base1 { root() { return undefined } }` with `abstract root(): D`
+  (strictNullChecks): tsc's checkClassExpression -> checkClassLikeDeclaration runs eagerly inside D's
+  getBaseConstructorTypeOfClass; relating `() => undefined` to `() => D` calls isWeakType(D), which needs D's members
+  while its base constructor resolves: TS2506 + TS2310, D ends with no base (types print `typeof (Anonymous class)`).
+  tttt defers class expression members and meets neither cycle. Plan 39 territory, low value.
 ## Classes and declarations
 - Plan 32 leftovers: a class extending a base that constructs `any` should get tsc's anyBaseTypeIndexInfo
   (`[x: string]: any`) instead of the `ty_has_unresolved_base()` gate; tsc's display of `new Outer<string>().m` clones
   generic method type parameters (`Outer<string>.Outer.m<U>.In`).
 - multipleDeclarations (JS): `F.prototype.m = function` next to `this.m = v` is two symbols in tsc, one member here.
-
+- mergedDeclarations7: tsc's combineValueAndTypeSymbols (a named import from an `export =` whose value has property
+  `Passport` and whose namespace exports interface `Passport`) makes a transient symbol whose declared type is a
+  *fresh* interface type with its own `this`, so `use(): this` fails structurally (TS2322 "could be instantiated with
+  a different subtype"). Needs a synthetic merged symbol with its own declared type. Quirk, low value.
 ## Narrowing and flow
 - dependentDestructuredVariables (types only now): narrowing destructured variables by each other (tsc's
   getCandidateDiscriminantPropertyAccess on binding elements) still differs somewhere; re-diff before working on it.

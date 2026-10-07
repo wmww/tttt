@@ -334,6 +334,27 @@ From the four sub-agents' reports; test names are the ones to probe.
   (jsdocParamTagTypeLiteral, jsdocParamTag2); `{...T=}` (jsdocParseStarEquals); `typeof b` in `@param` sees the
   function's own parameters (jsDeclarationsFunctions); jsdocTemplateClass, jsdocTemplateConstructorFunction2,
   returnTagTypeGuard, jsdocTypeTagCast, overloadTag2.
+- **JSDoc names resolved lazily** (triage 2026-10-07): tsc resolves names inside a `@returns`/`@param` type literal
+  (`{{ new <T>(v: ReadonlyArray<T>): S<T> }}`) and in `@overload` tags only when needed (unresolved ones never get
+  TS2304/TS2583), and resolveEntityName's resolveEntityNameFromAssignmentDeclaration re-resolves each name from the
+  host function (isUse), marking an outer `@template T` used (webpack deprecation.js:204, +TS6133 under `unused`).
+  tttt resolves and reports every JSDoc name in the binder's resolve walk (`error_cannot_find_name()`). Fix: defer
+  those reports to the checker's lowering and mark the host-level resolution as a use then. Medium, low value.
+- **`@typedef {import("./MC")} MC`** of a `module.exports = function MC() {...}` from another file is `typeof MC` where
+  tsc has `{ (): MW; new (): MC; }` (jsdocTypeReferenceToImportOfFunctionExpression): tttt puts the JS-class flag on the
+  `export=` symbol (`set_function_class_symbol`), so several_types.c takes the `export = C` type branch; in tsc the
+  class-ness is the function expression symbol's and the reference falls through to getTypeFromJSDocValueReference.
+- **More symbol leftovers** (agent D 2026-10-06, re-confirmed 2026-10-07): alias-to-property symbol chains (`import {
+  version } from "./config.json"` names `config3.version` `version`: nodeModulesJson x3; `exports.fn2 = Math.min`:
+  moduleExportsAliasLoop1/2; tttt's props have no symbols); mergeSymbol into an alias merges into its target
+  (duplicateVarsAcrossFileBoundaries) and an alias resolving to unknownSymbol is replaced by the merged declaration
+  (importEqualsError45874; tttt declares all files' globals into one table at bind time); `var G = m.G = {}` makes one
+  container (typeFromPropertyAssignment18); typedefCrossModule3 (the clone mergeSymbols the typedef into `ns.Foo`,
+  local references see the clone); sourceFileMergeWithFunction (baseline prints the function's own symbol where tsc
+  names the merged one); allowJscheckJsTypeParameterNoCrash, lateBoundAssignmentDeclarationSupport7,
+  moduleExportPropertyAssignmentDefault (recordMergedSymbol: `typeof axios` everywhere in the file).
+- An orphaned earlier `/** @enum {number} */` comment also declares type alias `b` for `module.exports.b = {}` in tsc
+  (every JSDoc comment before a statement attaches; two `@enum`s give TS2300). Mutation-only.
 - **Late-bound expandos** (`f[symb] =`, `this[_symbol]`, `F.prototype[k]`): expandoFunctionSymbolPropertyJs,
   lateBoundMethodNameAssigmentJS, lateBoundAssignmentDeclarationSupport4/5 (an annotated host's late-bound expando takes
   the annotation's member by key type since 2026-10-05: webpack's cleverMerge.js).

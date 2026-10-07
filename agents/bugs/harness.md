@@ -42,3 +42,5 @@
   throws), so `./filetest.sh` reports "did not run" without saying why.
 - A corpus's output can depend on the checker count (4 by default): a file can look fine alone and fail in the corpus.
   Reproduce with `--checkers 1` and the suspect file first in `files`; `./checkerdiff.py` flags it.
+- tsconfig.c reads package.json leniently for `extends`; `json_parse_strict()` matches parseJsonText's syntax errors
+  by hand (escapes, odd numbers unchecked). Not investigated.

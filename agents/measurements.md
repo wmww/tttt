@@ -10,6 +10,17 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 `moduleResolution=node10` removed) and on webpack (3 TS1003 on JSDoc it parses differently), so it may do less work
 there than a clean run.
 
+## Triage (2026-10-07, tenth window's todo entry 10, four sub-agents)
+Suite 13299 -> **13303** (errors 13455, symbols 13490, types 13355; 0 lost), corpora 0 but effect 3, sweep 8588 / 6 /
+1 -> **8589 / 5 / 1**, flagflip 51 / 47 / 11 -> **51 / 45 / 10**, `$ExpectType` 68619, scenarios 214 / 0. Mutation
+seeds 4 (single-file, 8000) 26 -> 21 and 5 (single-file, 8000) 29 -> 25. Instructions (callgrind, eab13296 -> end):
+tsc 4.652 -> 4.662, type-fest 3.089 -> 3.085, valibot 4.254 -> **4.375 (+2.8%)**, react 1.490 -> 1.487, nest 1.259 ->
+1.260, webpack 3.892 -> 3.896, zod 4.714 -> 4.719, xstate 2.921 -> 2.928, drizzle 10.834 -> **8.287 (-23.5%)**, vue
+7.041 -> 6.984 (-0.8%), effect 9.832 -> 9.848, vscode 32.482 -> 32.634 (+0.5%), excalidraw 5.069 -> 5.090,
+tanstack-router 4.532 -> 4.518. Bisected: 0a162dca (a deferred reference whose type parameters all map to non-generic
+types isn't TYF_COULD_CONTAIN_TYPE_VARIABLES) is drizzle -24% and valibot +1.9%; 5dcc11f5 (dedupe_unions removed)
+valibot +0.5%. Valibot's +1.9% not profiled (likely work the generic flag used to defer).
+
 ## Suite-tail fan-out (2026-10-06, tenth window's todo entry 9, five sub-agents)
 Suite 13232 -> **13299** (errors 13413 -> 13455, symbols 13469 -> 13489, types 13306 -> 13352; 0 lost), corpora 0 but
 effect 7 -> **3**, flagflip 67 / 57 / 11 -> **51 / 47 / 11**, `$ExpectType` 68610 -> **68619**, sweep 8588 / 6 / 1, scenarios

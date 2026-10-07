@@ -130,8 +130,8 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
      `["a" | "b", number] | ["c", string]` even when `["c", string]` was written earlier: its clone is newer
      (assignmentCompatWithDiscriminatedUnion, dependentDestructuredVariablesFromNestedPatterns,
      typeInferenceWithExcessPropertiesJsx). tttt has no such type; adding one touches identity everywhere. Plan-sized.
-   - **Object literal types are interned in tttt** (ty_object_literal by structure); tsc makes a new one per check, and
-     per spread member (spreadUnion: `{ ...union, ...union }` reuses `{ b: string }` from the line before).
+   - **Object literal types are interned in tttt** (ty_object_literal by structure and, since 2026-10-07, by
+     expression and reused annotation); tsc makes a new one per check, and per spread member.
    - **The type writer re-check**: tsc's harness re-checks each printed expression, so object literals there are
      newest (contextualTyping36, conditionalOperatorWithIdenticalBCT, heterogeneousArrayLiterals `[{}, Object]`).
      Needs object literal types to know their node (harness side table). Not worth it alone.

@@ -67,7 +67,23 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   before initializers, `{}` is one early type (emptyTypeLiteralType). C's unspecified argument evaluation order is a
   trap: `union_of(me, make_a(), make_b())` makes b first under GCC. `./argorder.py` lists such calls (the remaining
   ones are relation-only or deliberate).
-
+- TS2344 elaboration for `NonNullable<V[K]>` without strictNullChecks (`type F<V, K extends keyof V> =
+  Box<NonNullable<V[K]>>`, `Box<T extends { [k: string]: string }>`): tsc says "Index signature for type 'string' is
+  missing in type '{}'." (structuredTypeRelatedToWorker relates getApparentType(source); V[K] with no base constraint
+  is unknown, emptyObjectType without strictNullChecks), tttt names 'NonNullable<V[K]>'. relate.c keeps an
+  intersection source as is, and apparent_type_resolve's intersection case keeps unknown/any members (its HACK);
+  removing only that HACK changes nothing. Needs the structural step on the intersection's apparent type.
+- quickIntersectionCheckCorrectlyCachesErrors with a required `children`: tsc's chain goes `{ o: object }` -> `CP &
+  {...}` -> the different-subtype line -> `CP` to `{ children }`, from relation cache state (what the test is named
+  after); tttt explains `CP` to `{ children }` directly. Evaluation order, low value.
+- jsdocThisType with a TS annotation on the JS variable (`/** @type {M} */ export const f1: never = function() {...}`,
+  `M = (this: Foo) => void`): tsc's getContextualSignature returns getSignatureOfTypeTag first, so the message prints
+  `(this: Foo) => void`; tttt types `this` right (jsdoc_signature_type) but its contextual signature comes from the TS
+  annotation. Fix: the JSDoc signature as contextual signature ahead of the annotation. JS-only (already TS8010).
+- tanstack-router `test/probes/plan19/tanstack-router/conditional_source_weak_target.ts`: tsc first relates the
+  source's constraint `(TFrom extends TTo ? Opt<TFrom> : Req<TFrom>) | Opt<TFrom>` to the whole intersection target,
+  then repeats the chain against the weak member `{ comp?: "a" }` (14 lines, printing the inner check type as `TFrom`
+  where the source has `string`); tttt goes straight to the weak member (4 lines). Plan 34 queue.
 ## Names and specifiers
 - enumAssignmentCompat6 (passes errors): in f.ts, a function-local `enum DiagnosticCategory` shadows the file's exported
   one; tsc prints the exported one as `import("f").DiagnosticCategory` in the types baseline (not accessible by name
@@ -86,7 +102,19 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   prints `error` in tsc (tttt `any`); tsc lists a same-named `@typedef` as a second declaration of the alias symbol;
   `module.exports = f` of a function declaration prints `typeof f` (require_property_value_only.ts); a JS `const S =
   Symbol()` read through a `@type {typeof S}` const prints `symbol` in tsc (jsdoc_accessor_type.ts).
-
+- jsFileFunctionOverloads (`<T_1>`): tsc binds all `@template T`s of a JS function's JSDoc comments (`@overload`
+  ones included) into one type-parameter symbol per name, so typeParameterShadowsOtherTypeParameterInScope never
+  renames. Putting the overloads' generics in the harness scope fails either way (`type_param_name()` compares type
+  identities). Fix: one type parameter per same-named JSDoc template of a host function, or treat them as equal there.
+- A function declaration's name prints with the function as enclosing declaration, its parameters in scope: a JSDoc
+  `{{y: typeof b}} b` reuses `typeof b` only when b resolves to the same symbol there (tsc prints `typeof
+  import("index").b` for a plain outer function, `typeof b` when b has expandos; tttt the other way round).
+  jsDeclarationsFunctions, jsDeclarationsFunctionsCjs, callbackTag4.
+- A JSDoc typedef reference reused from a parameter annotation prints bare from another file (`(p: MyType) => void`),
+  where a TS `export type U` reuses as `import("/a").U`: tsc's trackExistingEntityName apparently doesn't apply to JSDoc
+  typedefs; reason not found. jsdocPropertyTagInvalid.
+- declarationFileNoCrashOnExtraExportModifier: an `export { Sub }` inside `declare namespace exports` prints
+  `exports.Sub` in tsc (tttt `Sub`; reason not found).
 ## Underlines (node reuse)
 - A binding default `{} as any` misses tsc's empty `^^^` types-mask line (bindingDefaultAnyRemovesUndefined types).
 - `() => 'foo' as const`: tsc's underline reuses the `"foo"` (`^^^^^^     `), tttt underlines the whole return type.

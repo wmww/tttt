@@ -353,6 +353,16 @@ src` finds the code-side markers; every significant one has an entry here.
   parameters are declared).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
+- `access()` any-key case (`ACCESS_ELEMENT`, HACK): only an element access *expression* reads an intersection's index
+  signatures for an `any` key; an `X[any]` *type* on an intersection still gives any. tsc reads them there too, but
+  doing so makes jquery's `NamespacedTypeToTriggeredEventMap<...>[any]` the intersection of every event (tsc's too),
+  and tttt then fails to relate those intersections of generic event instantiations during JQuery's variance
+  measurement (a nested pair relates one member's `relatedTarget` alone against `null | undefined`): JQuery<T> comes
+  out invariant, 13 DT sweep packages regress. The real bug is the intersection-source relation. Repro: `declare const
+  a: JQuery<HTMLElement>; const b: JQuery<Node> = a;` with jquery's and sizzle's index.d.ts, `TTTT_DEBUG_RELATE_NESTED=1`.
+- `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a type parameter the node mentions is unmapped
+  or mapped to something generic (tsc's couldContainTypeVariables says yes for any reference with a node). Precise
+  where conditional.c's "infer constraint that stays generic" HACK needs it (react-relay); drizzle -24%, valibot +2%.
 - `apply_type_arguments_part` (instantiation expressions): signatures whose type arguments violate the constraints
   are dropped when some other signature was dropped by arity (tsc keeps them uninstantiated); only the "nothing fits,
   nothing dropped: the type unchanged" case is tsc's.
@@ -487,7 +497,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `UnaryOpExpr.no_type_params_in_scope` approximates getResolvedSignature's instantiation for `yield` (TS7057): only a
   bare type parameter counts as a call's, a contextual `T[]` is taken as is.
 - Union origins (`Ty.composite.origin`): not instantiated, dropped by union-mapping helpers (plan 37 B stage 2).
-  `dedupe_unions` merges same-member unions with different origins in intersections (display only).
 - `ty_realias`: a renamed object type is a second `Ty` (members resolved twice); renamed deferred types are copies. No
   "local alias" exception. `renames` in `lower`: whether an alias instance keeps the name is syntactic.
 - `ty_conditional_resolve` (conditional.c HACK): an unsatisfied `infer X extends C` falls back to C only if C is then

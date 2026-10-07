@@ -5,10 +5,18 @@ alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src
 here was failing on 2026-10-06 (suite 13299; harness-only causes are in `harness.md`, type-core causes in
 `type_core.md`).
 
-## Buckets (2026-10-06, suite 13299)
-Errors component: 85 failing (127 at the start of the 2026-10-06 suite-tail fan-out, which drained it by two agents'
-alphabetical halves; what they judged plan-sized or resolution-order artifacts is below). Single-code tests: missing
-TS2589 4, missing TS1005 3, missing TS2344 2, spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
+## Buckets (2026-10-07, suite 13303)
+Errors component: 85 failing at 13299 (127 at the start of the 2026-10-06 suite-tail fan-out). What's left, by
+mechanism (re-checked by the 2026-10-07 triage): text only (conditionalTypes1, tsxUnionElementType3/4,
+genericCallWithGenericSignatureArguments3: plan 34); circularity / depth (circularBaseTypes, circularConstraintYields
+AppropriateError, recursiveMappedTypes, recursivelyExpandingUnionNoStackoverflow, limitDeepInstantiations,
+recursiveConditionalCrash4, circularIndexedAccessErrors, infiniteConstraints, the "NoCrash" ones: plan 39 and the
+Circularity section below); limits (TS2563, TS2590, TS2859, TS2799's position); inference
+(contravariantOnlyInferenceFromAnnotatedFunction, inferFromGenericFunctionReturnTypes3); JS (plan 26), declaration
+emit (plan 40), `@typescript/lib-*` resolution (libTypeScriptOverride*/SubfileResolving*), noLib tests, parser
+recovery (parser0_004152, jsxInvalidEsprimaTestSuite, varianceAnnotationsWithCircularlyReferencesError,
+thisTypeInFunctionsNegative's `...this`). Single-code tests: missing TS2589 4, missing TS1005 3, missing TS2344 2,
+spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
 
 ## Known missing checks
 - TS4109/TS4110 (type arguments circularly referencing themselves: circularlyReferentialInterfaceAccessNoCrash,
@@ -125,7 +133,23 @@ TS2589 4, missing TS1005 3, missing TS2344 2, spurious TS2321 2, missing/misplac
   whose symbol has more than one declaration (the merged P, S and the class's `this`), so the type literal is
   instantiated per instance (RC1's and RC2's are two types). tttt's collect_free_params() is purely syntactic. A fix
   needs the owner's merged type parameters at ty_anonymous_from_node() (LowerCtx carries no owner).
-
+- vscode eopt `extHostTypeConverters.ts:647/662`: spurious TS2375 on the nested `options: { ...entry.options, contents
+  }` and `textEdit: {...}` inside `result.edits.push({...})`, where tsc reports only TS2412 on `metadata`. Target
+  `Array<IWorkspaceFileEditDto | IWorkspaceTextEditDto | IWorkspaceCellEditDto>`, `Dto<T>` a conditional over a
+  homomorphic mapped type over `Omit<...> & {...}`. Three reductions all match tsc (which reports TS2375 there too).
+  Lead: tsc's elaborateElementwise (getBestMatchIndexedAccessTypeOrUndefined, then getBestMatchingType for a union
+  target member lacking the property may skip it). Next step: instrument tsc's elaborateElementwise on the real file.
+- Seed-5 mutation leftovers (triage 2026-10-07, `MUTATE_DIR=/tmp/tb-mutate ./mutate.py -n 8000 --seed 5`; 25 left):
+  `if (true) type s = string;` (TS1156) is bound into the enclosing block-scope container in tsc, so an earlier `"" as
+  s` resolves (tttt: spurious TS2304; interfaces work); `[...x = a] = a` never checks a rest element's initializer
+  (TS1186 only), tttt resolves `a` at bind time (TS2304), `export default v` in a block likewise; `interface C1 extends
+  Object?.Bar` (TS2499) still resolves the name in tsc (TS2702 too); two `get [Symbol.hasInstance]()` (TS2355 from the
+  merged accessor's type); `({ key }) => {}` under a `[testD()]` computed key with testD unresolved is TS7031 in tsc
+  (reason not found); `Object<Initable> & Initable` constraint (TS2315) then a mixin: tsc says TS2507 on `{...} & K`;
+  missing TS2313 (mut4105/mut3177, plan 39); 9 text/elaboration ones.
+- Seed-4 mutation leftovers (`MUTATE_DIR=/tmp/tc-mutate4 ./mutate.py --last`, 21 left, lib DOM union order WONTFIX):
+  missing TS2339 x3, spurious TS2304 x3, TS2420, TS1109, TS2347, TS2741, TS2403, TS2355, TS2359, TS2551->TS2339,
+  spurious TS2322 (mut2988); elaboration paths mut4551/mut7482 (plan 34). Not looked at.
 ## Inference
 contravariantOnlyInferenceFromAnnotatedFunction (A from an annotated arrow inside a reverse mapped type's source: tsc
 infers string, tttt unknown; mechanism not found), tsxStatelessFunctionComponentsWithTypeArguments4 (overloaded components don't get
@@ -170,7 +194,8 @@ expando-heavy JS-like file), jsDocDeclarationEmitDoesNotUseNodeModulesPathWithou
 40). Declaration emit (plan 40): jsDeclarationsCrossfileMerge (TS6232),
 jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsTypeReassignmentFromDeclaration2
 (TS9006).
-
+- CommonJS leftovers: `exports.Date = Date; exports.Date = 1` also gets TS2322; `function f() { var z = 1; exports.z =
+  z; }` gets TS2339 (exports inside functions).
 ## Parser recovery (plan 27 territory, each its own mechanism)
 - Error dedupe order at the end of the file: tsc reports two errors at the same EOF position because another error
   came in between (labeledStatementDeclarationListInLoopNoCrash4: '}' expected + TS1160; jsxAndTypeAssertion: ':'
@@ -181,7 +206,15 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   tttt's parse: `*p.pos` is the EOF test everywhere), parser0_004152, jsxInvalidEsprimaTestSuite,
   thisTypeInFunctionsNegative, manyCompilerErrorsInTheTwoFiles (scanner recovery after `#!` mid-line).
 - A class member starting with `<` (`class D { <T>() {} }`): tsc says '=>' expected at the `{`, tttt TS2304/TS1109.
-
+- Object literal grammar errors in destructuring assignment targets (TS1255 `!`, TS1042 modifiers, TS1162 `?`): tsc
+  reports checkGrammarObjectLiteralExpression's errors for a target exactly when checkObjectLiteral runs on it, i.e.
+  when the right side asks for its contextual type: `({ a!: a } = { a: 1 })` reports, `= x` and `for ({ a!: a } of
+  ...)` don't, nested targets of a reporting assignment do. tttt reports TS1255/TS1042 in the parser always (silent
+  in for-of) and TS1162 (`object_check_grammar`) never in targets. Fix: move them to the checker's grammar check, run
+  for a target only when the right side is contextually sensitive. Low value.
+- importTag14 (`/** @import * from "./foo" with */`): tsc says `'as' expected` at `from`, `'from' expected`, TS1464 and
+  TS2823 on `with`, `'{' expected`; tttt only `'from' expected` at the wrong token. `jsdoc_import_statement()`'s
+  pre-scan bails at the first problem instead of recovering like parseImportTag/parseNamespaceImport. Low value.
 ## JSX
 - TS6229 isn't checked for union tag types or inside an overload chain.
 
