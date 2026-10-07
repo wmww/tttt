@@ -1179,14 +1179,18 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
             display_node_fallback(me, d, node);
         }
         // tsc names it anew (serializeTypeName) in a node it marks as reused: of an `import("m").A` it made, the
-        // `import(` and `).` are reused and the rest isn't
+        // `import(` and `).` are reused and the rest isn't (of an `import("m")`, the `import(` and `)`)
         char const* text = cstr_str(d.target) + start;
         if (!mapped && d.underline && strncmp(text, "import(\"", 8) == 0) {
             char const* close = strstr(text, "\").");
             char* underline = (char*)cstr_str(d.underline) + underline_start;
+            char const* quote = strchr(text + 8, '"');
             if (close) {
                 memset(underline, ' ', strlen("import("));
                 memset(underline + (close + 1 - text), ' ', 2);
+            } else if (quote && quote[1] == ')' && !quote[2]) {
+                memset(underline, ' ', strlen("import("));
+                underline[quote + 1 - text] = ' ';
             }
         }
         return;
@@ -1709,10 +1713,39 @@ static bool annotation_plus_undefined(Checker* me, TypeNode const* node, Ty cons
     return ty_without_undefined(me, ty) == annotated;
 }
 
+// tsc's canAddUndefined (expressionToTypeNode.ts): an annotation made only of keywords, literals, function, array,
+// tuple, object literal and template literal types takes `undefined` syntactically
+static bool can_add_undefined(TypeNode const* node, u32 depth) {
+    if (depth > 8) return false;
+    switch (node->tag) {
+        case TYPE_ANY: case TYPE_UNKNOWN: case TYPE_NEVER: case TYPE_VOID: case TYPE_BOOLEAN: case TYPE_NUMBER:
+        case TYPE_STRING: case TYPE_SYMBOL: case TYPE_BIGINT: case TYPE_VALUE: case TYPE_CALLABLE: case TYPE_ARRAY:
+        case TYPE_TUPLE: case TYPE_TEMPLATE:
+            return true;
+        case TYPE_INTERFACE: // (A type literal, not a mapped type)
+            return vec_interface_member_size(&node->interface.members) != 1 ||
+                vec_interface_member_at(&node->interface.members, 0)->key.tag != INTERFACE_KEY_MAPPED;
+        case TYPE_IDENTIFIER:
+            return node->identifier->keyword && !vec_spanned_type_size(&node->identifier->generic_params);
+        case TYPE_UNION: case TYPE_INTERSECTION:
+            for_each (i, vec_type, &node->composite) {
+                if (!i->placeholder && !can_add_undefined(i, depth + 1)) return false;
+            }
+            return true;
+        default:
+            return false;
+    }
+}
+
 // An annotation in a new union with `undefined` (tsc's addUndefined): a union annotation's members are reused in a new
-// union node, whose ` | ` aren't
+// union node, whose ` | ` aren't. One that can't take it syntactically (it names a type, can_add_undefined()) is the
+// checker's whole clone in a new union (serializeExistingTypeNode), which a union or intersection is parenthesized in
 static void display_node_plus_undefined(Checker* me, TyDisplay d, TypeNode const* node) {
-    if (node->tag == TYPE_UNION && !node->parenthesized && !node->jsdoc_variadic && vec_type_size(&node->composite)) {
+    if ((node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION) && !node->parenthesized && !can_add_undefined(node, 0)) {
+        out(reused_if(d, false), c_sv("("));
+        display_node(me, d, node);
+        out(reused_if(d, false), c_sv(")"));
+    } else if (node->tag == TYPE_UNION && !node->parenthesized && !node->jsdoc_variadic && vec_type_size(&node->composite)) {
         for_each (i, vec_type, &node->composite) {
             if (i_index) out(reused_if(d, false), c_sv(" | "));
             display_node(me, d, i);
@@ -1849,6 +1882,9 @@ static Expr const* single_return_expr(FunctionImpl const* function) {
 static TypeNode const* single_return_assertion(Checker* me, FunctionImpl const* function, Ty const* ret) {
     Expr const* expr = single_return_expr(function);
     if (!expr || expr->tag != EXPR_AS_TYPE) return nullptr;
+    // (Where something may type it contextually only the assertion itself, `=> (<T>x)` isn't one: tsc's
+    // typeFromFunctionLikeExpression with isContextuallyTyped, else typeFromExpression looks through parentheses)
+    if (function->syntactically_contextual && expr_is_perenthisized(expr)) return nullptr;
     AsTypeExpr const* as_type = expr->as_type;
     if (as_type->is_satisfies || as_type_is_const(as_type) || ty_expr_type(me, expr) != ret) return nullptr;
     return &as_type->type;
