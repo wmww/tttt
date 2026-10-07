@@ -126,6 +126,56 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   tttt prints `ComponentOptionsProperties<Data>`; tsc's errors baseline also has its TS-1 "pre-emit/post-emit
   diagnostic counts" harness note from that.
 
+## Triage drain 2026-10-07 (agent D): checker items re-checked, not fixed
+- jsxComplexSignatureHasApplicabilityError: spurious TS2769 with no elaboration. Narrowed: both overloads (Component's
+  two constructors) fail in the assignable pass on tsc's extra whole-intersection property check (target
+  `IntrinsicAttributes & IntrinsicClassAttributes<..> & Readonly<{children?}> & Readonly<ReactSelectProps<X>>` is no
+  generic object type), property `onChange`: source `Props<X>.onChange` (a method, param `Option<X> | undefined`;
+  the attribute's anyFunctionType stand-in is absorbed by the intersection as tsc's empty anonymous type would be)
+  against `OnChangeHandler<X>` (param `Option<X> | Options<X> | null`), which fails both ways even bivariantly. Each
+  target member alone relates (the third source member, the attributes object, against Readonly<ReactSelectProps>
+  too). tsc reports nothing at all (not even the TS2345 one would expect inside the arrow's body), so some
+  mechanism makes tsc's relation succeed there; ruled out: the Omit<...> conditional member's constraint (a reduced
+  `omit.ts`-style probe fails in tsc too). Probe: copy the test to a project with react16.d.ts as
+  node_modules/react/index.d.ts; `TTTT_DEBUG_RELATE=1 TTTT_DEBUG_RELATE_NESTED=1`. Dropping the `onChange` attribute
+  or the spread makes it pass. Next: instrument tsc (memory: instrument-tsc-copy) on the same relation.
+- tsxStatelessFunctionComponentOverload1 (TS7031 for `declare function f({y1: string})`): tsc reports it when
+  something computes the parameter's type (here overload resolution), since checkVariableLikeDeclaration returns early
+  for renamed elements of bodiless signatures; tttt skips them eagerly (binding_add_implicit_any_type_errors'
+  `bodiless && renaming`). Reporting from lazy type computation (ty_error_at) needs care with several checkers each
+  computing it; one test.
+- awaitedTypeNoLib: unchanged (without lib, tsc keeps NotPromise<TResult> through `instanceof Thenable` narrowing,
+  TS2345, and TS2318 'Awaited' from an unlocated lookup).
+- declarationEmitBindingPatternsUnused: unchanged; needs the interface accessor's FunctionImpl in InterfaceMember
+  (parse_interface keeps only the setter's parameter type node: spurious TS2304, missing TS2842).
+- parenthesizedContexualTyping2: tsc puts TS2345 at the argument's outer parentheses for the two-argument calls
+  (lines 26-28: `fun((cond ? f : g), 10)`) but inside them for the three-argument one (line 29); and the third
+  argument of `fun(..., x => {...}, 10)` isn't contextually typed in tttt (TS7006 + TS2347 where tsc says TS2345 on
+  `undefined`). Two mechanisms; unexplored beyond that.
+- templateLiteralTypes1: TS2590 position (tsc's currentNode per checked type node) and no TS2590 from template literal
+  / tuple-spread cross products (ty/template.c TODO), unchanged.
+- Circularity only an elaboration finds: `const a = { prop: 42, get self() { return a } } satisfies { prop: string;
+  self: any }` is TS7022 + TS7023 in tsc (elaborateError types the getter while `a` is resolving), only the TS2322 in
+  tttt. Still so.
+- Diagnostic order at one position (TS2741 before TS2454 at `[d1, d2]` against `Base[]`,
+  derivedTypeDoesNotRequireExtendsClause with `extends Object`): tsc's check order; not looked into further.
+- webpack flagflip leftovers (unused imports only in a JSDoc `{T=}`; TS2488 once per union in nuia, also excalidraw)
+  and vue's loop-flow TS2538/TS4111 (errors tsc reports from inside loop flow evaluations, like the
+  typeGuardsAsAssertions mutant above): order-dependent laziness in tsc, see triage's plan 48 notes; no cheap tttt
+  emulation. The TS7022 `labels` note (class extending any, `const old = this.labels; this.labels = []; this.labels =
+  old;` in two methods: tsc TS7022 on the first `old` and on `labels`, tttt on both `old`s) is the same family:
+  which declaration's resolution meets the cycle first.
+- Default lib files are never checked (react-intl-redux: `lib: [..., "esnext.intl"]` without es2021.intl, TS2552
+  DateTimeRangeFormatPart in lib.esnext.intl.d.ts). Decision: don't check lib files in full; tsc spends 2.67 s of a
+  3.73 s run on an empty es2022+dom project checking them (skipLibCheck false), which would be most of tttt's time on
+  small projects. The faithful-enough cheap form, if wanted: when lib_files_checked(), resolve every type reference of
+  the loaded lib files eagerly and report what doesn't resolve (TS2304/TS2552/TS2694); error_ctx_error_s() currently
+  drops lib-file errors because names there resolve lazily. Worth noting for benchmarks: on corpora without
+  skipLibCheck tsc pays this lib check and tttt doesn't.
+- libTypeScriptOverride*/libTypeScriptSubfileResolving* (4 tests): libReplacement (`/// <reference lib="dom">` and
+  the default libs resolve `@typescript/lib-dom` from node_modules) isn't implemented at all; the harness's shared lib
+  program would also have to be replaced per test. The option defaults off in 6.0; low value.
+
 ## Circularity tsc finds and tttt doesn't (plan 39 stage 3)
 - TS2310/TS2313 for cycles found while resolving: circularBaseTypes (TS2313 for a mapped type's `K in keyof T` with T
   the interface whose base is being resolved), circularConstraintYieldsAppropriateError (TS2310).
