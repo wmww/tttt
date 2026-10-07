@@ -2572,8 +2572,22 @@ static Resolution resolve_with_signatures_inner(
     } else {
         if (errs) {
             if (!type_argument_arity_ok) {
-                // (A `super(...)`'s are the heritage clause's, which reports them: TS2314/TS2315)
-                if (!(info->call && is_super_call(info->call))) report_type_argument_arity(me, signatures, count, info, errs);
+                // (A `super(...)`'s are the heritage clause's, which reports them: TS2314/TS2315. The call itself then
+                // has no constructors for those type arguments: tsc's resolveCall with no candidates, TS2346)
+                if (!(info->call && is_super_call(info->call))) {
+                    report_type_argument_arity(me, signatures, count, info, errs);
+                } else {
+                    // (getInstantiatedConstructorsForTypeArguments: JavaScript may give fewer than the minimum)
+                    bool js = expr_outer_span(&info->call->callable).source && expr_outer_span(&info->call->callable).source->is_js;
+                    bool any_constructor = false;
+                    for (u32 i = 0; i < count && !any_constructor; i++) {
+                        any_constructor = (js || info->type_args.len >= min_type_arguments(me, signatures[i])) &&
+                            info->type_args.len <= signatures[i]->type_params.len;
+                    }
+                    if (!any_constructor) {
+                        error_ctx_error_d(errs, expr_outer_span(&info->call->callable), 2346, "Call target does not contain any signatures.");
+                    }
+                }
             } else if (unfit_count) {
                 report_no_match(me, unfit, unfit_count, count, args, info, call_span, errs);
             } else if (arity_candidate.sig) {

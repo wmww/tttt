@@ -1583,6 +1583,16 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
 
 // Identifiers
 
+// An interface merged into the class that extends something (tsc's getBaseTypes of the class type has its bases)
+static bool merged_interface_extends(Symbol const* symbol) {
+    for (u32 d = 0; symbol && d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface = symbol->decls[d].node;
+        if (vec_spanned_type_size(&interface->extends)) return true;
+    }
+    return false;
+}
+
 // tsc's checkSuperExpression: for a property access the base class instance with `this` as this-argument, in a static
 // member the base constructor; the callee of `super(...)` is the base constructor
 static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
@@ -1594,8 +1604,9 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
     if (class_decl->extends.tag == EXPR_LITERAL && class_decl->extends.literal.tag == VALUE_NULL) {
         return identifier->super_member ? ty_intrinsic(me, TY_NULL_WIDENING) : ty_intrinsic(me, TY_ERROR);
     }
-    // (No base type, the base class got the wrong number of type arguments: tsc's checkSuperExpression)
-    if (!class_decl_base_arity_fits(class_decl)) return ty_intrinsic(me, TY_ERROR);
+    // (No base type, the base class got the wrong number of type arguments: tsc's checkSuperExpression. Unless an
+    // interface merged into the class extends something: getBaseTypes has that, and `super` is the base constructor)
+    if (!class_decl_base_arity_fits(class_decl) && !merged_interface_extends(identifier->target)) return ty_intrinsic(me, TY_ERROR);
     if (!identifier->super_member) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
@@ -1608,8 +1619,12 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
             ty_union_signatures(me, apparent_base->composite.types, true, &count);
             if (!count) return ty_intrinsic(me, TY_ERROR);
         }
-        // (Nor is one whose construct signatures don't take the type arguments, TS2508: no base type)
-        if (ty_class_base_constructor_unfit(me, class_decl)) return ty_intrinsic(me, TY_ERROR);
+        // (Nor is one whose construct signatures don't take the type arguments, TS2508: no base type. But a merged
+        // interface's bases are base types too, and then `super` is the base constructor, getBaseConstructorTypeOfClass)
+        if (ty_class_base_constructor_unfit(me, class_decl)) {
+            bool constructs = (apparent_base->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_members(me, apparent_base)->construct_count;
+            if (!constructs || !merged_interface_extends(identifier->target)) return ty_intrinsic(me, TY_ERROR);
+        }
         return base;
     }
     if (identifier->this_kind == THIS_CLASS_STATIC) return ty_expr_type(me, &class_decl->extends);
