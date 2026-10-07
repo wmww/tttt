@@ -1551,6 +1551,9 @@ Ty const* ty_rest_element_type(Checker* me, Ty const* rest) {
         Ty const* array = tuple_as_array(me, rest);
         return ty_reference_args(me, array).data[0];
     }
+    // (Indexing never is never, the silent one included: tsc's getPropertyTypeForIndexType returns an any or never
+    // object type as it is, so `(...args: A)` with an outer A silenced infers nothing)
+    if (rest->flags & TYF_NEVER) return rest;
     return ty_intrinsic(me, TY_ANY);
 }
 
