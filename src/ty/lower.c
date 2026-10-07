@@ -1155,6 +1155,9 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file) {
     Ty const* exports;
     if (assigned != module) {
         exports = symbol_rare(assigned)->merged_export_equals_of ? merged_export_equals_type(me, assigned, true) : ty_type_of_symbol(me, assigned);
+        // Nothing but null, undefined or never assigned is any in JavaScript (tsc's getTypeOfFuncClassEnumModule through
+        // getWidenedTypeForAssignmentDeclaration of `export=`, which reports it: TS7008 in expr.c)
+        if (file->is_js && !(exports->flags & TYF_ANY) && ty_only_nullable(exports)) exports = ty_intrinsic(me, TY_ANY);
     } else if (symbol_table_get(module->exports, c_sv("export="))) {
         // `module.exports = window.nonprop`: an alias that resolves to nothing (tsc's unknownSymbol). One of the
         // module itself (`module.exports = exports` in a function) is the module's namespace, `typeof import("m")`

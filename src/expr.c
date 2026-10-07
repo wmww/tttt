@@ -4049,11 +4049,32 @@ static void binary_expr_typecheck_rest(Expr const* me, bool root, ErrorCtx* errs
     }
 }
 
+// `module.exports = v` in JavaScript where v is nothing but null, undefined or never: the module's type is any, which
+// tsc's getTypeOfFuncClassEnumModule reports at the assignment (getWidenedTypeForAssignmentDeclaration of `export=`
+// through reportImplicitAny of a BinaryExpression, whose name is missing)
+static void js_module_exports_implicit_any_check(Expr const* me, ErrorCtx* errs) {
+    SourceFile const* file = my inner_span.source;
+    if (!file || !file->is_js || !compiler_options()->no_implicit_any) return;
+    Symbol const* module = file->scope ? file->scope->container : nullptr;
+    Symbol const* export_equals = module && module->exports ? symbol_table_get(module->exports, c_sv("export=")) : nullptr;
+    if (!export_equals) return;
+    Span left = expr_outer_span(&my binary_op->left);
+    // (At the value declaration, the first)
+    if (!export_equals->decl_count || export_equals->decls[0].name.sv.buf != left.sv.buf) return;
+    Ty const* type = ty_type_of_symbol(current_checker, export_equals);
+    if (!ty_only_nullable(type) || (type->flags & TYF_ANY)) return;
+    error_ctx_error_d(errs, my inner_span, 7008, "Member '(Missing)' implicitly has an 'any' type.");
+}
+
 // A JavaScript assignment declaration whose member's type is any because of what it assigns: TS7008 on `this.x = []`
 // (any[]) or on the first declaration of a member only null or undefined are assigned (tsc's reportImplicitAny in
 // getWidenedTypeForAssignmentDeclaration and getInitializerTypeFromAssignmentDeclaration)
 static void js_assignment_implicit_any_check(Expr const* me, ErrorCtx* errs) {
     BinaryOpExpr const* op = my binary_op;
+    if (op->op == BINARY_OP_EQUAL && expr_is_module_exports(&op->left)) {
+        js_module_exports_implicit_any_check(me, errs);
+        return;
+    }
     if (op->op != BINARY_OP_EQUAL || op->left.tag != EXPR_PROPERTY || !op->left.property->declares) return;
     SourceFile const* file = my inner_span.source;
     if (!file || !file->is_js || !compiler_options()->no_implicit_any) return;
