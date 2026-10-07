@@ -330,20 +330,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     ToolResultContent = { type: EmbeddedResource, ... }`). Clean in single-file imitations and with only the
     sessionState imports; reproduces with the whole test file copied into a probe project (imports rewritten to
     absolute paths, `types` + node): an automatic reduction got it to ~2200 lines without finding the trigger.
-- Flagflip vscode nosnc/sloppy/nonia/nosft/nuia (agent C, 196 missing / 6 spurious -> 6 / 0). Left:
+- Flagflip vscode nosnc/sloppy/nonia/nosft/nuia (agent C, 196 missing / 6 spurious -> 5 / 0). Left:
   - nonia resultCodeEditorView.ts:170-192 TS2339 x5 on '{}': with noImplicitAny off tsc reports isConflicting
     missing on `m.left` (TLeft of the generator `join` inferred as unknown) at every use after
     `if (x === active)`, tttt only at the last one; a hand-written imitation infers TLeft and is clean.
-  - nosnc agentHostAutomationService.test.ts:680 TS7018 (`{ ..., runProviders }` of a `for (const { name,
-    runProviders } of [...])` element): tsc's reference to a destructured const with a union parent is
-    getNarrowedTypeOfSymbol's *unwidened* element even when nothing narrows it (tttt returns the widened declared
-    type when the flow leaves the parent as is: ty_destructured_narrowed_type()). Tried returning the unwidened
-    element: right here, but nuia cells broke (+51 TS18048 in webpack: nested `[[a, b, c]] = m` elements keep
-    `| undefined` that the declared path drops), so it needs tsc's initial-type/flow handling of binding elements
-    too. Related: tsc's widened object literal types (getWidenedTypeOfObjectLiteral) aren't ObjectLiteral, so a
-    union member missing a property reads as partial (TS2339), while tttt treats every widened literal as one
-    that reads undefined (ty_is_object_literal_without_spread()); switching that alone made excalidraw/sloppy
-    report 4 spurious TS2339 through the destructuring above.
+  - (Fixed: nosnc agentHostAutomationService.test.ts:680 TS7018, for-of `const` variables weren't constants. The
+    destructured-reference / widened-literal mechanism behind it is written up in plans/49_destructured_widening.md.)
   - nosft copilotAgent.ts:5860 TS2339 'never' (fixed by something on ai-main by the time of the last run; if it
     comes back: `(await p.catch(() => [])).find(w => ...)` with `readonly W[] | never[]`: tsc's union property
     type orders never[]'s `find` first and its union signature makes w never; tttt's id order put readonly W[]'s
