@@ -4448,7 +4448,7 @@ const baselines = {
     'coAndContraVariantInferences3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'coAndContraVariantInferences4': {
         errors: true,
@@ -19288,7 +19288,7 @@ const baselines = {
     'inferredReturnTypeIncorrectReuse1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'inferrenceInfiniteLoopWithSubtyping': {
         errors: true,

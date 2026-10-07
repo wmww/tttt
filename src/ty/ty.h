@@ -2155,6 +2155,11 @@ typedef struct TyParamNames {
     TyParamName* given;
     u32 len;
     u32 cap;
+    // While an instantiated signature's type parameters are named: the names of its parameters that are copies (tsc's
+    // instantiateSymbol), each a symbol other than the type parameter of its name it was declared with (the binder's
+    // one symbol of both), so a type parameter of that name is shadowed (tsc's params fake scope)
+    SigParam const* value_params;
+    u32 value_param_count;
     // Conditional types printed so far and where (tsc's serializedTypes: printed again, a type is the same text, names
     // and all, and isn't worked out twice). Freed with ty_param_names_drop()
     struct TyPrinted* printed;

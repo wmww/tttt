@@ -1343,7 +1343,16 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             ctx->member_container = nullptr;
             u32 outer_class_params_len = ctx->class_params_len;
             ctx->class_params_len = 0; // (A type literal's computed names see them)
+            // (A mapped type's key is a type parameter in scope in it: tsc's MappedType has locals)
+            u32 saved_generic = 0;
+            bool mapped = vec_interface_member_size(&my interface.members) == 1 &&
+                vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED;
+            MappedInfo const* info = mapped && ctx->member_owner ? ty_mapped_info_unexpanded(current_checker, ctx->member_owner) : nullptr;
+            if (info && info->type_param) {
+                saved_generic = baseline_test_case_enter_type_params(ctx, (TyList){ .data = &info->type_param, .len = 1 });
+            }
             interface_compile_test_info(&my interface, span_null, ctx);
+            if (info && info->type_param) baseline_test_case_leave_generic(ctx, saved_generic);
             ctx->class_params_len = outer_class_params_len;
             ctx->member_container = outer_container;
             ctx->member_owner = outer_owner;

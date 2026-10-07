@@ -864,6 +864,7 @@ static Atom const* type_param_name(Checker* me, TyDisplay d, Ty const* param) {
     for (u32 n = 1;; n++) {
         bool taken = false;
         for (u32 i = 0; i < names->len && !taken; i++) taken = names->given[i].name == name;
+        for (u32 i = 0; i < names->value_param_count && !taken; i++) taken = names->value_params[i].name == name;
         // (tsc's typeParameterShadowsOtherTypeParameterInScope)
         for (u32 i = names->in_scope.len; i-- && !taken;) {
             Ty const* other = names->in_scope.data[i];
@@ -2257,7 +2258,28 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     bool reusable = (d.underline || d.reuse_nodes) && function;
     bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
     d.syntactic_function = nullptr;
+    // (An instantiated signature's parameters that could contain type variables are copies: one named like a type
+    // parameter shadows it, see TyParamNames.value_params)
+    SigParam* copies = nullptr;
+    u32 copy_count = 0;
+    if (instantiated && sig->type_params.len && d.param_names && !d.param_names->value_param_count) {
+        for (u32 i = 0; i < root->param_count && i < sig->param_count; i++) {
+            bool named_like = false;
+            for (u32 j = 0; j < sig->type_params.len && !named_like; j++) {
+                named_like = sig->type_params.data[j]->param.name == root->params[i].name;
+            }
+            if (!named_like || !mentions(me, root->params[i].type, root->type_params)) continue;
+            if (!copies) copies = arena_new_n(&my arena, SigParam, root->param_count);
+            copies[copy_count++] = root->params[i];
+        }
+        d.param_names->value_params = copies;
+        d.param_names->value_param_count = copy_count;
+    }
     display_type_params(me, d, sig->type_params, reusable, syntactic);
+    if (copy_count) {
+        d.param_names->value_params = nullptr;
+        d.param_names->value_param_count = 0;
+    }
     out_lit(d, "(");
     u32 param_count = sig->param_count;
     SigParam const* params = expanded_params(me, sig, &param_count);
