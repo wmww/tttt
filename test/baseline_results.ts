@@ -67523,7 +67523,7 @@ const baselines = {
     'typeFromPropertyAssignment29': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'typeFromPropertyAssignment3': {
         errors: true,

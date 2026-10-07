@@ -243,20 +243,24 @@ static Symbol const* export_equals_clone_of(Symbol const* function) {
     return assigned && symbol_rare(assigned)->merged_export_equals_of == function ? function : nullptr;
 }
 
-// A function with expando properties that is local (declared in a function or block): tsc prints a non-local one as
-// `typeof f`, a local one's type like any function's (observed; the non-local rule is shouldWriteTypeOfFunctionSymbol's
-// isNonLocalFunctionSymbol, why the expando members make it apply without recursion isn't pinned down)
+// A function with expando properties none of which is assigned at the top level of a file: tsc's binder makes a
+// function a ValueModule (bindPotentiallyMissingNamespaces) only for a top-level `f.x = v` (isTopLevelNamespaceAssignment),
+// which is what prints it as `typeof f`; otherwise it is a function like any other, whose type prints structurally
+// (shouldWriteTypeOfFunctionSymbol wants UseTypeOfFunction or recursion): `{ (): void; p6: number; }` in a namespace
 static bool is_nested_expando_function(Ty const* ty) {
     Symbol const* symbol = ty->declared.kind == TY_DECLARED_NAMESPACE ? ty->declared.namespace_symbol : nullptr;
     if (!symbol) symbol = ty->declared.symbol;
-    if (!symbol || !(symbol->flags & SYMBOL_FUNCTION) || symbol->parent) return false;
-    bool expando = false;
+    if (!symbol || !(symbol->flags & SYMBOL_FUNCTION)) return false;
+    bool expando = false, top_level = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
         if (decl->kind == SYMBOL_DECL_NAMESPACE || decl->kind == SYMBOL_DECL_CLASS) return false;
-        if (decl->kind == SYMBOL_DECL_EXPANDO) expando = true;
+        if (decl->kind != SYMBOL_DECL_EXPANDO) continue;
+        expando = true;
+        // (add_expando_namespace_decls(): a top-level assignment's declaration is named)
+        top_level |= span_valid(decl->name);
     }
-    return expando && !is_non_local_function(symbol);
+    return expando && !top_level;
 }
 
 // `import("m")` for a module at the root of a name (tsc's symbolToTypeNode: an ImportTypeNode), named from a place
