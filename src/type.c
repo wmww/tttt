@@ -454,6 +454,15 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             break;
         case TYPE_IDENTIFIER:
             identifier_type_typecheck(my identifier, errs);
+            // tsc's checkTypeReferenceNode resolves the reference (getTypeFromTypeReference): a generic alias's
+            // instantiation runs into its limits here, at the reference (TS2589)
+            if (my identifier->target && (my identifier->target->flags & SYMBOL_TYPE_ALIAS) &&
+                vec_spanned_type_size(&my identifier->generic_params)
+            ) {
+                CurrentNode saved = ty_enter_node(current_checker, identifier_type_span(my identifier));
+                ty_of_node(me);
+                ty_leave_node(current_checker, saved);
+            }
             break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:

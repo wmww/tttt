@@ -3783,11 +3783,45 @@ static bool setter_is_annotated(FunctionImpl const* setter) {
     return vec_function_arg_size(&setter->args) && vec_function_arg_at(&setter->args, 0)->initializer.binding.has_explicit_type;
 }
 
+static Ty const* instantiated_prop_type(Checker* me, Prop const* prop) {
+    MappedInfo const* template_of = prop_decl_rare(prop->target->decl)->template_of;
+    Ty const* type = template_of && template_of->template_from ? ty_mapped_template_instantiated(me, template_of, prop->mapper) :
+        ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
+    // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
+    // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`)
+    if (prop->flags & PROP_STRIP_UNDEFINED) {
+        type = compiler_options()->exact_optional_property_types ? ty_remove_missing(me, type, true) : ty_without_undefined(me, type);
+    }
+    // (An optional property's declared-type view: tsc's getNonMissingTypeOfSymbol)
+    return ty_remove_missing(me, type, prop->flags & PROP_OPTIONAL);
+}
+
+// How deep instantiated properties are being re-entered (see prop_type()): a backstop, the instantiation depth is
+// what stops it
+static _Thread_local u32 prop_reentry_depth;
+
+static Ty const* prop_type_slow(Checker* me, Prop* prop);
+
 Ty const* prop_type(Checker* me, Prop const* const_prop) {
     Prop* prop = (Prop*)const_prop; // The lazily resolved type is the one mutable thing about a Prop
+    if (prop->type_state == LAZY_STATE_DONE) return prop->type;
+    return prop_type_slow(me, prop);
+}
+
+// (Out of line: the resolved case above is what nearly every call is)
+static __attribute__((noinline)) Ty const* prop_type_slow(Checker* me, Prop* prop) {
     switch (prop->type_state) {
         case LAZY_STATE_DONE: return prop->type;
         case LAZY_STATE_IN_FLIGHT:
+            // An instantiated property asked again while instantiated is instantiated again (tsc's
+            // getTypeOfInstantiatedSymbol has no guard): `{ "true": Foo<T, Foo<T, B>> }[T]` recurses until the
+            // instantiation depth (TS2589), not a circularity
+            if (prop->target && !prop->mapped && prop_reentry_depth < 200) {
+                prop_reentry_depth++;
+                Ty const* again = instantiated_prop_type(me, prop);
+                prop_reentry_depth--;
+                return again;
+            }
             prop->circular = true;
             // (An instantiated property isn't resolved on its own: tsc's getTypeOfInstantiatedSymbol asks its target)
             for (Prop const* p = prop; ; p = p->target) {
@@ -3812,16 +3846,7 @@ Ty const* prop_type(Checker* me, Prop const* const_prop) {
             type = ty_object_literal_accessor_type(me, prop->decl->function, prop->flags & PROP_GETTER);
         }
     } else if (prop->target) {
-        MappedInfo const* template_of = prop_decl_rare(prop->target->decl)->template_of;
-        type = template_of && template_of->template_from ? ty_mapped_template_instantiated(me, template_of, prop->mapper) :
-            ty_instantiate(me, prop_type(me, prop->target), prop->mapper);
-        // (Only set with strictNullChecks. With exactOptionalPropertyTypes only the missing type goes: tsc's
-        // removeMissingOrUndefinedType, `Required<{ a?: number | undefined }>` is `{ a: number | undefined }`)
-        if (prop->flags & PROP_STRIP_UNDEFINED) {
-            type = compiler_options()->exact_optional_property_types ? ty_remove_missing(me, type, true) : ty_without_undefined(me, type);
-        }
-        // (An optional property's declared-type view: tsc's getNonMissingTypeOfSymbol)
-        type = ty_remove_missing(me, type, prop->flags & PROP_OPTIONAL);
+        type = instantiated_prop_type(me, prop);
     } else if (prop->decl->overload_count) {
         type = ty_anonymous_from_overloads(me, prop->decl->overloads, prop->decl->overload_count, prop->decl->ctx);
     } else if (prop->decl->symbol) {

@@ -22686,7 +22686,7 @@ const baselines = {
         types: true,
     },
     'limitDeepInstantiations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -29196,7 +29196,7 @@ const baselines = {
         types: false,
     },
     'recursiveConditionalCrash4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -70926,7 +70926,7 @@ const baselines = {
         types: true,
     },
     'circularIndexedAccessErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
