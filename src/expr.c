@@ -4386,7 +4386,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             error_ctx_merge(errs, &found);
             error_ctx_drop(&found);
             ty_check_element_implicit_any(current_checker, my property, expr_type, my inner_span, errs);
-            ty_check_generic_element_access(current_checker, my property, expr_type, my inner_span, errs);
+            // (Unless the flow type replaced the deferred `O[K]` by its constraint: tsc's checkIndexedAccessIndexType)
+            if (ty_expr_type(current_checker, me)->flags & TYF_ERROR) {
+                ty_check_generic_element_access(current_checker, my property, expr_type, my inner_span, errs);
+            }
             ty_check_generic_index_write(current_checker, my property, expr_type, my inner_span, errs);
             ty_check_member_modifiers(current_checker, my property, expr_type, my inner_span, errs);
             if (compiler_options()->no_property_access_from_index_signature) {

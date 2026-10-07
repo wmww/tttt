@@ -4701,9 +4701,16 @@ static Ty const* generic_element_access(Checker* me, PropertyExpr const* access,
     }
     // (A read under noUncheckedIndexedAccess: tsc's AccessFlags.IncludeUndefined on the deferred type)
     bool include_undefined = compiler_options()->no_unchecked_indexed_access && access->assignment_target != FLOW_TARGET_DEFINITE;
-    Ty const* ret = ty_indexed_include_undefined(me, object, key, include_undefined);
-    // (What tsc's checkIndexedAccessIndexType rejects is the error type, reported as TS2536 by the typecheck pass)
-    return ret->kind == TY_INDEXED && !ty_indexed_access_index_ok(me, ret) ? ty_intrinsic(me, TY_ERROR) : ret;
+    // (What tsc's checkIndexedAccessIndexType rejects becomes the error type once the flow type is known, see
+    // invalid_generic_access_type())
+    return ty_indexed_include_undefined(me, object, key, include_undefined);
+}
+
+// tsc's checkIndexedAccessIndexType on the flow type of an element access: an `O[K]` whose index isn't a key of O is
+// the error type (reported as TS2536 by the typecheck pass), unless getNarrowableTypeForReference replaced it with its
+// constraint (`o[k as T].p` with `o: { [P in keyof T]: A | B }`)
+static Ty const* invalid_generic_access_type(Checker* me, Ty const* type) {
+    return type->kind == TY_INDEXED && !ty_indexed_access_index_ok(me, type) ? ty_intrinsic(me, TY_ERROR) : type;
 }
 
 // `o[k]` with k generic that tsc's checkIndexedAccessIndexType rejects: the indexed access type, else null
@@ -4833,7 +4840,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (!ret && ty_is_fresh_object(object) && !expr->property->assignment_target && expr->property->form == PROPERTY_EXPR_BRACKET) {
                 ret = object_literal_access(me, object, key);
             }
-            if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_element_access(me, expr->property, object, key);
+            Ty const* generic_access = nullptr;
+            if (!ret && expr->property->form == PROPERTY_EXPR_BRACKET) ret = generic_access = generic_element_access(me, expr->property, object, key);
             if (!ret && expr->property->qualified_name && (key->flags & TYF_STRING_LITERAL)) {
                 Prop const* prop = ty_namespace_type_only_prop(me, object, ty_literal_name(me, key));
                 if (prop) ret = prop_type(me, prop);
@@ -4853,6 +4861,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (expr->property->form != PROPERTY_EXPR_DOT || !(ty_apparent_type(me, object)->flags & TYF_ANY)) {
                 ret = access_flow_type(me, expr, ret, ctx.contextual);
             }
+            if (generic_access) ret = invalid_generic_access_type(me, ret);
             return propagate_optional(me, ret, expr->property->continues_chain, optional);
         }
 
