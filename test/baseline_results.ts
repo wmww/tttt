@@ -58871,7 +58871,7 @@ const baselines = {
         types: true,
     },
     'tsxAttributeInvalidNames': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -70431,12 +70431,12 @@ const baselines = {
         types: true,
     },
     'labeledStatementDeclarationListInLoopNoCrash4(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'labeledStatementDeclarationListInLoopNoCrash4(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

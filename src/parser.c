@@ -51,6 +51,12 @@ typedef struct ParserShared {
     const char* fail_cache_start;
     VecU8 fail_cache;
     VecError errors;
+    // The last scanner error about a token (an unterminated literal, an identifier after a number) and that token's
+    // start: tsc's scanner reports it as soon as the token is scanned, before the parser's errors at that token, which
+    // decides which error the next one at its position is deduplicated against (see last_error_starts_at())
+    isize scanner_error_index;
+    isize scanner_error_first; // The errors before the token was read
+    const char* scanner_error_token;
     // What kind of function the parser is currently inside, decides if `await` and `yield` are operators
     bool in_async;
     bool in_generator;
@@ -658,6 +664,19 @@ static Error* grammar_error_s(Parser* me, Span span, unsigned ts_code, cstr mess
 
 /// Builds the message from a display sequence
 #define parse_error(me, span, ts_code, ...) parse_error_s(me, span, ts_code, cstr_d(__VA_ARGS__))
+
+// A scanner error about the token that starts at `token`, see ParserShared.scanner_error_index
+// `first_error`: how many errors there were when tttt started reading the token (what came after are its scanner errors)
+static void scanner_error_s(Parser* me, const char* token, isize first_error, Span span, unsigned ts_code, cstr message) {
+    Error* error = parse_error_s(me, span, ts_code, message);
+    if (!error) return;
+    error->scanner = true;
+    my shared->scanner_error_index = vec_error_size(&my shared->errors) - 1;
+    my shared->scanner_error_first = first_error;
+    my shared->scanner_error_token = token;
+}
+#define scanner_error(me, token, first_error, span, ts_code, ...) \
+    scanner_error_s(me, token, first_error, span, ts_code, cstr_d(__VA_ARGS__))
 // An error inside a literal (an escape sequence): whatever character it starts at, it's not a token
 #define parse_error_in_literal(me, span, ts_code, ...) parse_error_inner(me, span, ts_code, cstr_d(__VA_ARGS__), true)
 
@@ -8918,7 +8937,7 @@ static double digits_value(csview digits, int base) {
 
 // After a numeric literal that ends at c (tsc's checkForIdentifierStartAfterNumericLiteral): an identifier right
 // after it is TS1351 and a token of its own, but a lone `n` is a bigint suffix in the wrong place (consumed)
-static const char* check_identifier_after_number(Parser* p, const char* start, const char* c, bool scientific) {
+static const char* check_identifier_after_number(Parser* p, const char* start, isize first_error, const char* c, bool scientific) {
     // (tsc looks at the code point there: a `\` is no identifier start, even if an escape starts one)
     if (*c == '\\') return c;
     int size = identifier_char_size(c, true);
@@ -8931,7 +8950,7 @@ static const char* check_identifier_after_number(Parser* p, const char* start, c
         else parse_error(p, span, 1353, "A bigint literal must be an integer.");
         return id_end;
     }
-    parse_error(p, span_make(p->shared->source, c, id_end), 1351,
+    scanner_error(p, start, first_error, span_make(p->shared->source, c, id_end), 1351,
         "An identifier or keyword cannot immediately follow a numeric literal.");
     return c;
 }
@@ -8940,6 +8959,7 @@ static const char* check_identifier_after_number(Parser* p, const char* start, c
 // is set for an `n` suffix (the value stays a double, see Value)
 static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
     const char* start = parent->pos;
+    isize first_error = vec_error_size(&parent->shared->errors);
     const char* c = start;
     if (!(*c >= '0' && *c <= '9') && !(*c == '.' && c[1] >= '0' && c[1] <= '9')) return false;
     *bigint = false;
@@ -9024,13 +9044,13 @@ static bool scan_numeric_literal(Parser* parent, double* ret, bool* bigint) {
         parse_error(parent, span_make(parent->shared->source, start, end), 1489,
             "Decimals with leading zeros are not allowed.");
     } else if (decimal || scientific) {
-        c = check_identifier_after_number(parent, start, c, !decimal && scientific);
+        c = check_identifier_after_number(parent, start, first_error, c, !decimal && scientific);
     } else {
         if (*c == 'n') {
             *bigint = true;
             c++;
         }
-        c = check_identifier_after_number(parent, start, c, false);
+        c = check_identifier_after_number(parent, start, first_error, c, false);
     }
     parent->pos = c;
     return true;
@@ -9064,6 +9084,8 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
         case '"': case '\'': case '`': break;
         default: return parse_fail(&p);
     }
+    const char* literal_start = p.pos;
+    isize literal_errors = vec_error_size(&p.shared->errors);
     p.pos++;
     cstr str = cstr_null;
     while (true) {
@@ -9096,9 +9118,9 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
     if (*p.pos == quote) {
         p.pos++;
     } else if (quote == '`') {
-        parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
+        scanner_error(&p, literal_start, literal_errors, span_from_pos(&p), 1160, "Unterminated template literal.");
     } else {
-        parse_error(&p, span_from_pos(&p), 1002, "Unterminated string literal.");
+        scanner_error(&p, literal_start, literal_errors, span_from_pos(&p), 1002, "Unterminated string literal.");
     }
 
     return parse_success(&p);
@@ -9714,6 +9736,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     VecExpr substitutions = vec_expr_init();
     VecCStr cooked = vec_cstr_init();
     cstr text = cstr_null;
+    const char* segment = p.pos - 1; // Where the token of the text being read starts: the backtick or a `}`
+    isize segment_errors = vec_error_size(&p.shared->errors);
     // A missing `}` ends the template (tsc's parseTemplateSpan: a missing template tail)
     bool missing_tail = false;
     while (*p.pos && *p.pos != '`') {
@@ -9743,6 +9767,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
                 unhop_trivia(&p); // (tsc's missing template tail is at the token's full start)
                 break;
             }
+            segment = p.pos - 1;
+            segment_errors = vec_error_size(&p.shared->errors);
         } else {
             cstr_append_n(&text, p.pos, 1);
             p.pos++;
@@ -9760,7 +9786,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     if (*p.pos == '`') {
         p.pos++;
     } else if (!missing_tail) {
-        parse_error(&p, span_from_pos(&p), 1160, "Unterminated template literal.");
+        scanner_error(&p, segment, segment_errors, span_from_pos(&p), 1160, "Unterminated template literal.");
     }
 
     shrink_list(vec_expr, &substitutions);
@@ -9912,6 +9938,18 @@ static bool last_error_starts_at(Parser* me, Span span) {
     for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
         Error const* last = vec_error_at(&my shared->errors, i);
         if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code) || last->grammar) continue;
+        // A scanner error came before the errors tttt reported at or after its token (tsc's scanner reports it when
+        // the token is scanned): the latest of those is tsc's last error
+        if (i == my shared->scanner_error_index && my shared->scanner_error_token && my shared->scanner_error_first <= i) {
+            for (intptr_t j = my shared->scanner_error_first; j-- > 0;) {
+                Error const* before = vec_error_at(&my shared->errors, j);
+                if (is_js_syntax_code(before->ts_code) || is_grammar_code(before->ts_code) || before->grammar) continue;
+                if (before->span.source == last->span.source && span_start_ptr(before->span) >= my shared->scanner_error_token) {
+                    last = before;
+                }
+                break;
+            }
+        }
         return last->span.source == span.source && span_start_ptr(last->span) == span_start_ptr(span);
     }
     return false;

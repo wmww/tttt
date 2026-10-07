@@ -384,10 +384,12 @@ static intptr_t insertion_index_for_span(ErrorCtx* me, Error const* error) {
                 return i - 1;
             } else if (error->phase == ERROR_PHASE_PARSE && vec_error_at(&my errors, i - 1)->ts_code != error->ts_code &&
                 (error_is_js_syntax(error) != error_is_js_syntax(vec_error_at(&my errors, i - 1)) ||
-                    error->grammar || vec_error_at(&my errors, i - 1)->grammar)
+                    error->grammar || vec_error_at(&my errors, i - 1)->grammar ||
+                    error->scanner || vec_error_at(&my errors, i - 1)->scanner)
             ) {
-                // A JavaScript file's TypeScript-only syntax error (tsc's getJSSyntacticDiagnosticsForFile) or a
-                // grammar error (the checker's) is a diagnostic of its own next to another there: by code
+                // A JavaScript file's TypeScript-only syntax error (tsc's getJSSyntacticDiagnosticsForFile), a
+                // grammar error (the checker's) or a scanner error the parser's dedupe already saw (see
+                // last_error_starts_at() in parser.c) is a diagnostic of its own next to another there: by code
                 Error const* other = vec_error_at(&my errors, i - 1);
                 return other->ts_code < error->ts_code ? i : i - 1;
             } else {

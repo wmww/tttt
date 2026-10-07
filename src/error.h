@@ -28,6 +28,9 @@ typedef struct Error {
     // One of tsc's getJSSyntacticDiagnosticsForFile (a JavaScript file's TypeScript-only syntax): reported whatever the
     // file's parse errors and in unchecked JavaScript, even with a grammar error's code (TS1206)
     bool js_syntax;
+    // A scanner error about a token (parser.c's scanner_error()): the parser decided whether a parse error at its position
+    // is kept, tsc's order of the two differs from tttt's
+    bool scanner;
     bool suggestion; // tsc's DiagnosticCategory.Suggestion (only with CompilerOptions.capture_suggestions)
     // Reported even where errors are only collected (an overload candidate's): tsc's elaborateElementwise adds its
     // exactOptionalPropertyTypes error to the diagnostics directly
