@@ -2128,8 +2128,22 @@ Ty const* ty_deferred_reference(
     u32 kept = 0;
     Ty const* stack_pairs[32];
     Ty const** pairs = stack_pairs;
+    bool generic = ctx.generic;
     if (mapper) {
         TyConditionalOuter const* outer = deferred_node_outer(me, node);
+        // Whether it mentions type variables isn't known until the arguments resolve, but with every type parameter
+        // it mentions mapped to a type without any, it can't (`EP<any, any>`, an interface reference written in the
+        // alias EP: not generic, so an `infer` constraint mentioning it is no generic one, see ty_conditional_resolve())
+        if (generic && !outer->unknown) {
+            generic = false;
+            for (u32 j = 0; j < outer->params.len && !generic; j++) {
+                Ty const* target = nullptr;
+                for (u32 i = 0; i < mapper->len && !target; i++) {
+                    if (mapper->sources[i] == outer->params.data[j]) target = mapper->targets[i];
+                }
+                generic = !target || (target->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+            }
+        }
         pairs = mapper->len * 2 <= c_arraylen(stack_pairs) ? stack_pairs : malloc(sizeof(Ty const*) * mapper->len * 2);
         for (u32 i = 0; i < mapper->len; i++) {
             bool mentioned = outer->unknown;
@@ -2164,8 +2178,7 @@ Ty const* ty_deferred_reference(
             mapper = kept ? ty_mapper_new(me, (TyList){ .data = sources, .len = kept }, (TyList){ .data = targets, .len = kept }) : nullptr;
         }
         Ty const* target = deferred_reference_target(me, node);
-        // Whether it mentions type variables isn't known until the arguments resolve
-        Ty* fresh = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (ctx.generic ? TYF_COULD_CONTAIN_TYPE_VARIABLES : 0));
+        Ty* fresh = ty_alloc(me, TY_REFERENCE, TYF_OBJECT | (generic ? TYF_COULD_CONTAIN_TYPE_VARIABLES : 0));
         fresh->reference.target = target;
         fresh->reference.state = arena_new(&my arena, TyObjectState);
         TyDeferredRef* deferred = arena_new(&my arena, TyDeferredRef);
