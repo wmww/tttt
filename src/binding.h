@@ -85,6 +85,9 @@ void binding_add_implicit_any_type_errors(Binding const* me, Span parameter, boo
 // any (tsc's padTupleType)
 void binding_add_padded_implicit_any_errors(Binding const* me, Ty const* initializer, ErrorCtx* errs);
 bool binding_is_parameter(Binding const* pattern);
+// The type a pattern's elements are taken from as far as reporting what they lack goes (tsc's
+// getBindingElementTypeFromParentType), null if nothing is. `initializer`: the root's initializer or the pattern's default
+Ty const* binding_element_parent_type(Binding const* me, Expr const* initializer);
 // tsc's reportWideningErrorsInType: TS7018 where an object literal property in `ty` widens to any. Whether it said anything
 bool binding_report_widening_errors_in_type(struct Ty const* ty, ErrorCtx* errs);
 // The names of the variables it declares, in order

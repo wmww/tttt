@@ -371,7 +371,7 @@ static bool possibly_undefined(Ty const* type) {
 // getBindingElementTypeFromParentType): null when nothing is reported (any, or nothing an element could be missing from).
 // An object pattern lacks every property of unknown (TS2339), an array pattern reports it once (TS2461).
 // `initializer`: what the pattern's declaration is initialized with (a root's initializer, else the pattern's default)
-static Ty const* element_parent_type(Binding const* me, Expr const* initializer) {
+Ty const* binding_element_parent_type(Binding const* me, Expr const* initializer) {
     Checker* checker = current_checker;
     Ty const* type = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
     // (Not widened: `= null` is null, not any, without strictNullChecks. tsc's getTypeForBindingElementParent)
@@ -575,7 +575,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 if (assigned->flags & TYF_NULLABLE) type = assigned;
             }
             ty_iterated_type(current_checker, ITERATION_DESTRUCTURING, type, empty_pattern ? at : my content_span, errs);
-            Ty const* parent = element_parent_type(me, nullptr);
+            Ty const* parent = binding_element_parent_type(me, nullptr);
             for_each (i, vec_binding, &my array) {
                 if (i->rest && i_index + 1 < vec_binding_size(&my array)) { // (tsc's checkGrammarBindingElement)
                     error_ctx_grammar_error_d(errs, i->content_span, 2462, "A rest element must be last in a destructuring pattern.");
@@ -594,7 +594,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
             break;
 
         case BINDING_OBJECT: {
-            Ty const* parent = element_parent_type(me, my parent ? my default_value : initializer);
+            Ty const* parent = binding_element_parent_type(me, my parent ? my default_value : initializer);
             // (tsc's isThisInitializedDeclaration: the pattern's own declaration is initialized with `this`)
             bool from_this = !my parent && initializer && initializer->tag == EXPR_IDENTIFIER &&
                 initializer->identifier.keyword == KEYWORD_IDENTIFIER_THIS && !expr_is_perenthisized(initializer);

@@ -2361,6 +2361,18 @@ Ty const* ty_destructured_assignment_flow_type(Checker* me, void const* owner, E
 
 // `const { a } = x.y` after `if (x.y.a)`: an element of a pattern whose initializer is a reference has the flow type of
 // `x.y.a` there (tsc's getFlowTypeOfDestructuring)
+// The type an object pattern's elements are reported missing from keeps null or undefined (tsc's
+// getBindingElementTypeFromParentType: the property of the whole type, which undefined lacks)
+static bool pattern_parent_keeps_nullish(Checker* me, Binding const* pattern) {
+    Expr const* initializer = pattern->parent ? pattern->default_value : nullptr;
+    if (!pattern->parent && pattern->source && pattern->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
+        initializer = initialized_binding_value(c_container_of(pattern->source, InitializedBinding, lazy_type));
+        if (initializer->tag == EXPR_IMPLICIT_ANY) initializer = nullptr;
+    }
+    Ty const* reported = binding_element_parent_type(pattern, initializer);
+    return reported && ty_can_be_nullish(me, reported) && ty_non_nullable(me, reported) != reported;
+}
+
 static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty const* declared) {
     FlowNode* flow = nullptr;
     Expr const* access = synthetic_element_access(me, binding, &flow);
@@ -3035,11 +3047,8 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         }
         if (past_end) ret = ty_intrinsic(me, TY_UNDEFINED);
         if (ret && !parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
-    } else if (compiler_options()->strict_null_checks && !parent->parent && !parent->has_explicit_type &&
-        !(object->flags & (TYF_ANY | TYF_TYPE_PARAM)) && ty_can_be_nullish(me, object) && ty_non_nullable(me, object) != object &&
-        (!binding_is_parameter(parent) || (!parent->ambient &&
-            initialized_binding_value(c_container_of(parent, InitializedBinding, binding))->tag != EXPR_IMPLICIT_ANY &&
-            ty_can_be_nullish(me, ty_expr_type(me, initialized_binding_value(c_container_of(parent, InitializedBinding, binding))))))
+    } else if (compiler_options()->strict_null_checks && !(object->flags & (TYF_ANY | TYF_TYPE_PARAM)) &&
+        ty_can_be_nullish(me, object) && pattern_parent_keeps_nullish(me, parent)
     ) {
         // `const { s } = t` with t possibly undefined: the property of the whole type, which undefined lacks (TS2339 by
         // binding_typecheck(), tsc's getBindingElementTypeFromParentType keeps undefined when the initializer has it)
