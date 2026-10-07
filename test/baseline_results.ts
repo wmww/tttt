@@ -26841,14 +26841,14 @@ const baselines = {
         types: true,
     },
     'optionalChainWithInstantiationExpression1(target=es2019)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalChainWithInstantiationExpression1(target=es2020)': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'optionalChainWithInstantiationExpression2(target=es2019)': {
         errors: true,

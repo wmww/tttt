@@ -34,8 +34,6 @@ jsxNamespacePrefixInNameReact	T	src-changed	bl-changed
 legacyNodeModulesExportsSpecifierGenerationConditions	ET	src-changed	bl-changed
 moduleExportAlias5	T	src-changed	bl-changed
 nullishCoalescingOperator5	ET	src-changed	bl-changed
-optionalChainWithInstantiationExpression1(target=es2019)	ET	src-same	bl-changed
-optionalChainWithInstantiationExpression1(target=es2020)	ET	src-same	bl-changed
 parenthesizedContexualTyping2	ET	src-changed	bl-changed
 parserComputedPropertyName18	T	src-same	bl-changed
 parserParameterList11	ET	src-changed	bl-changed
