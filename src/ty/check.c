@@ -2434,7 +2434,8 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
     if (!index) return;
     if (!(object->flags & TYF_UNKNOWN)) {
         if (object->flags & (TYF_ANY | TYF_NEVER | TYF_UNKNOWN | TYF_DEFERRED | TYF_TYPE_PARAM)) return;
-        if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION))) return;
+        // (void has no apparent type of its own: `f()["x"]` of a void function, tsc's getPropertyTypeForIndexType)
+        if (!(object->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_UNION | TYF_VOID))) return;
         if (object->kind == TY_UNION) {
             // (A primitive member by its apparent type: `number | C`, tsc's getPropertyOfType of the union)
             u32 primitive = TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL | TYF_BIGINT | TYF_BIGINT_LITERAL | TYF_BOOLEAN |
@@ -2516,8 +2517,10 @@ void ty_check_element_implicit_any(Checker* me, PropertyExpr const* access, Ty c
         } else if (index->flags & TYF_UNIQUE_ES_SYMBOL) {
             // (tsc's getFullyQualifiedName of the symbol's symbol: its containers, a module as its quoted name)
             UniqueSymbolDecl const* unique = index->literal.unique;
-            if (unique && unique->owner && !span_valid(unique->member)) {
+            if (unique && unique->owner) {
+                // (A property's, `readonly isConcatSpreadable: unique symbol`, by its container: SymbolConstructor.x)
                 cstr qualified = qualified_name_from(me, unique->owner, span.source);
+                if (span_valid(unique->member)) cstr_append_d(&qualified, DEFAULT_DISPLAY, ".", unique->member.sv);
                 cstr_drop(&index_str);
                 index_str = cstr_d("[", qualified, "]");
                 cstr_drop(&qualified);
