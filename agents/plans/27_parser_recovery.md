@@ -261,3 +261,28 @@ it's paying off unusually well.
   reused), an import's non-string module specifier isn't in the AST, `a<b>?.()` doesn't print `a<b>`, `extends (B)`
   prints `B : B` (tsc `typeof B`), the alias position of a decorated import-equals, literal property names in binding
   patterns (renamingDestructuredPropertyInFunctionType), `typeof foo<unknown>` / `...any` vs `...any[]` printing.
+- Triage drain 2026-10-07 (agent D), re-checked, each one test:
+  - varianceAnnotationsWithCircularlyReferencesError (`<in in>`): tsc reads the second `in` as a reserved-word name
+    (TS1359, missing name, not consumed), then an empty type parameter with a missing name consumed by the list's
+    no-progress rule; both are '(Missing)': TS2300, and TS2637 twice through the merged symbol. Needs type parameters
+    with missing names (GenericItem without a name span) that the binder declares as `(Missing)`.
+  - scannerUnexpectedNullCharacter1: still the NUL-as-EOF item above (an end pointer instead of the terminator, or a
+    loader-side substitute byte the baseline printer maps back).
+  - reachabilityChecksNoCrash1: everything matches but the final stray `}`, TS1109 (an ExpressionStatement of a
+    missing identifier, typed `any` in the types baseline) in tsc, TS1128 in tttt: tsc reaches it inside an
+    expression context left open by the earlier object-literal recovery (`> { const out = [] ... }`), not through the
+    source-element list's abort. Find which construct still parses at that `}`.
+  - manyCompilerErrorsInTheTwoFiles: tsc's scanner returns Unknown after only the `#` of a non-initial `#!` (pos++),
+    so the `!` is scanned again and recovery reports TS1134 at it (`const a =!@#!@$`: (1,13)); tttt maps TS18026 in
+    parse_error_inner() over both characters. Token-level rescan semantics, no cheap emulation found.
+  - jsxNamespacePrefixInName(React): errors pass; `<a attr:=...>` recovery types `a` undefined in tsc, any in tttt.
+  - requireOfJsonFileWithoutResolveJsonModule: 6.0 resolves the .json even without resolveJsonModule; tsc's JSON
+    parser recovery on the non-JSON text gives TS1005/TS1136 and an object `{ contents: any; Not: any; read: any; }`;
+    tttt says TS1328. Needs JSON files parsed with tsc's parseJsonText recovery (an object literal expression parse of
+    arbitrary text).
+  - parser0_004152 (`new X([), ...`), jsxInvalidEsprimaTestSuite, thisTypeInFunctionsNegative (`...this`): as listed
+    above, unchanged.
+  - allowUnescapedParagraphAndLineSeparatorsInStringLiteral with a closing backquote deleted (mutation): the
+    unterminated template's recovery (TS1160 placement and what the rest of the file becomes).
+  - typeofImportDefer: fixed (`import` in a type always starts an import type); its symbols/types still want the
+    missing identifier of `.defer` printed as `Symbol(unknown)` / `> : any`.
