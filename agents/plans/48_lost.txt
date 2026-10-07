@@ -143,7 +143,6 @@ derivedUninitializedPropertyDeclaration	T	src-changed	bl-changed
 destructuringArrayBindingPatternAndAssignment5SiblingInitializer	T	src-changed	bl-changed
 destructuringAssignmentWithDefault	T	src-changed	bl-changed
 destructuringControlFlow	T	src-changed	bl-changed
-destructuringObjectBindingPatternAndAssignment4	E	src-changed	bl-same
 destructuringParameterDeclaration10(strict=true)	T	src-changed	bl-changed
 destructuringParameterDeclaration1ES5	T	src-changed	bl-changed
 destructuringParameterDeclaration1ES5iterable	T	src-changed	bl-changed

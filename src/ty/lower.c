@@ -3033,6 +3033,18 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         Ty const* rest_object = ty_rest_binding_initializer_type(me, initialized_binding_value(initialized));
         if (rest_object) object = rest_object;
     }
+    // Of any, any: the default isn't looked at (tsc's getBindingElementTypeFromParentType returns the parent type
+    // first, so `{ f = f } = x as any` isn't circular). Not of the any a `= null` initializer widens to, whose
+    // unwidened null tsc goes by
+    if ((object->flags & TYF_ANY) && !binding->rest) {
+        bool widened_null = false;
+        if (!parent->parent && parent->source && parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
+            InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+            widened_null = initialized_binding_value(initialized)->tag != EXPR_IMPLICIT_ANY &&
+                (ty_expr_type(me, initialized_binding_value(initialized))->flags & TYF_NULLABLE);
+        }
+        if (!widened_null) return object;
+    }
     bool in_array = parent->tag == BINDING_ARRAY;
     // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives
     // (tsc's getTypeForBindingElement). What an element lacks is reported by binding_typecheck()

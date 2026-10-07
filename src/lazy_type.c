@@ -217,7 +217,12 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     }
 
     if (!state->done) {
-        // The calls this function made didn't decide that we're self-referential, result is valid
+        // The calls this function made didn't decide that we're self-referential, result is valid. A declaration that
+        // only reads one that is circular (`var b = a` after `var a = a`) is plain any: the circular one reported
+        // it (tsc's getTypeOfSymbol of it is anyType)
+        if (resolving && result == ty_intrinsic(current_checker, TY_CIRCULAR) && !lazy_type_pattern_root(me)) {
+            result = ty_intrinsic(current_checker, TY_ANY);
+        }
         state->evaluated = result;
         state->done = true;
     }

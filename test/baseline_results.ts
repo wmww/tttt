@@ -46166,7 +46166,7 @@ const baselines = {
         types: true,
     },
     'destructuringObjectBindingPatternAndAssignment4': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -69941,12 +69941,12 @@ const baselines = {
         types: true,
     },
     'ES5For-of17(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'ES5For-of17(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
