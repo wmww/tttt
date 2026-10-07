@@ -17,7 +17,10 @@
 // Prints a Ty the way tsc's typeToString() does, in its order of preference: alias name, reference name + arguments
 // (array and tuple syntax for those targets), declared name, structure.
 
-#define MAX_DISPLAY_DEPTH 8
+// How deep a type literal prints in a message before `...`: a stand-in for tsc's approximateLength truncation (160
+// characters), deep enough that tsc's own elision of an anonymous type nested eleven times (anonymous_elided()) comes
+// first. HACK: by depth, not length
+#define MAX_DISPLAY_DEPTH 11
 
 // One underline character per UTF-16 code unit of what was printed since `start`, like the harness' underlineFor()
 static void underline_since(TyDisplay d, isize_t start) {
@@ -3310,7 +3313,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
     if (!d.no_reduction && (ty->kind == TY_INTERSECTION || ty->kind == TY_UNION)) ty = ty_reduced(me, ty);
     d.depth++;
     d.mapped_by = nullptr; // (A type is printed as it is, annotations of other declarations inside it aren't instantiated)
-    if (d.depth > MAX_DISPLAY_DEPTH * (d.enclosing ? 16 : 4)) {
+    if (d.depth > (d.enclosing ? 8 * 16 : MAX_DISPLAY_DEPTH * 4)) { // (Declaration emit: unchanged, see hacks.md TS7056)
         out_lit(d, "...");
         return;
     }
