@@ -2177,7 +2177,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
         // An optional parameter's type has undefined under strictNullChecks (tsc's getOptionalType in
         // serializeTypeForDeclaration), which a reused annotation doesn't say
         Ty const* shown = param->type;
-        if (param->optional && !param->rest && param->decl && param->decl->explicit_optional &&
+        if (param->optional && !param->rest && param->decl && (param->decl->explicit_optional || param->decl->jsdoc_optional_initialized) &&
             compiler_options()->strict_null_checks && ty_without_undefined(me, shown) == shown
         ) {
             shown = ty_union(me, (Ty const*[]){ shown, ty_intrinsic(me, TY_UNDEFINED) }, 2, nullptr, (TyList){0});

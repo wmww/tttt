@@ -44,6 +44,9 @@ typedef struct FunctionArg {
     bool is_parameter_property : 1;
     bool is_readonly_property : 1;
     bool is_override_property : 1; // `constructor(override x: T)`
+    // A JavaScript parameter `@param [x=v]` or `{T=}` makes optional though it has an initializer: its declared type has
+    // undefined (tsc's isJSDocOptionalParameter in isOptionalDeclaration)
+    bool jsdoc_optional_initialized : 1;
     bool jsdoc_this : 1; // The `this` parameter a JSDoc `@this {T}` declares (not in the baselines' walk)
     uint8_t access; // AccessModifier (class_decl.h) of a parameter property
 } FunctionArg;

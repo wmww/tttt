@@ -304,7 +304,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
 
     // Loop through all arguments and add them to the scope
     for_each (i, vec_function_arg, &my args) {
-        i->initializer.binding.optional_parameter = i->explicit_optional;
+        i->initializer.binding.optional_parameter = i->explicit_optional || i->jsdoc_optional_initialized;
         initialized_binding_add_names(&i->initializer, function_scope, (BindingAddNamesProps){
             .abstract_literals = true,
             .is_function_arg = true,

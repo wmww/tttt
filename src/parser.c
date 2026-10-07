@@ -4821,6 +4821,8 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
             JsDocTag const* untyped = jsdoc_param_tag_any(tags, function, i);
             if (untyped && untyped->bracketed && initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) {
                 i->explicit_optional = true;
+            } else if (untyped && untyped->bracketed) {
+                i->jsdoc_optional_initialized = true;
             }
             continue;
         }
@@ -4860,6 +4862,7 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         if (binding->explicit_type.jsdoc_optional || bracketed) {
             // `{T=}` (of type `T | undefined`, which tsc prints) and `[name]` are optional parameters
             if (initialized_binding_value(&i->initializer)->tag == EXPR_IMPLICIT_ANY) i->explicit_optional = true;
+            else i->jsdoc_optional_initialized = true;
         }
         i->jsdoc_variadic = variadic && !i->rest;
         if (variadic && i->rest && binding->explicit_type.jsdoc_optional) {

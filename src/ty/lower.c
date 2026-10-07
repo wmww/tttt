@@ -1686,9 +1686,21 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
             return ty_widened_literal(me, ty_expr_type(me, init));
         }
     }
-    // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration)
+    // The first JSDoc `@type` of an assignment is the type (tsc's getAnnotatedTypeForAssignmentDeclaration), possibly
+    // undefined when only methods assign it (definedInMethod)
     for (u32 i = 0; i < symbol->decl_count; i++) {
-        if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol_decl_jsdoc_type(&symbol->decls[i])) return ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[i]));
+        if (symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT && symbol_decl_jsdoc_type(&symbol->decls[i])) {
+            Ty const* annotated = ty_of_node(symbol_decl_jsdoc_type(&symbol->decls[i]));
+            if (!compiler_options()->strict_null_checks) return annotated;
+            bool in_constructor = false, in_method = false;
+            for (u32 j = 0; j < symbol->decl_count; j++) {
+                in_constructor |= symbol->decls[j].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
+                in_method |= symbol->decls[j].assignment == ASSIGNMENT_DECL_THIS_IN_METHOD;
+            }
+            if (!in_method || in_constructor) return annotated;
+            Ty const* parts[2] = { annotated, ty_intrinsic(me, TY_UNDEFINED) };
+            return ty_union(me, parts, 2, nullptr, (TyList){0});
+        }
     }
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
