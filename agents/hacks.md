@@ -853,6 +853,11 @@ src` finds the code-side markers; every significant one has an entry here.
   (or a scope pointer stored on the Expr by the resolve walk).
 
 ## Harness and tools
+- `identifier_expr_compile_test_info`: a name resolving straight to a file's module symbol is `exports` (declared by
+  the whole file) only when its text is `exports`; any other such name (a UMD global merged into its module) is shown
+  like any symbol. Decided by text because nothing else marks the CommonJS `exports` reference.
+- `namespace_decl_compile_test_info`: an ambient module's name uses symbol_text() (an alias in scope, `import * as Foo`)
+  unless that comes back quoted, then the quoted path. A quote test on the printed text, not a chain query.
 - `apply_setting`: `@baselineFile`, `@fullEmitPaths`, bad values ignored.
 - `mount_test_lib_folder` copies tsc's `tests/lib` per test; `baseline_test_cache_get_program_with_libs` keeps one lib
   `Program` per lib list, never evicted.
