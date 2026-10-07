@@ -6278,7 +6278,7 @@ static bool parse_function_args_inner(
                 ignore parse_decorators(&p, &decorators);
 
                 ModifierList modifier_list;
-                parse_modifier_list(&p, true, &modifier_list);
+                parse_modifier_list_ex(&p, true, false, &modifier_list);
                 // The end of the first decorator or modifier (tsc's parseParameterWorker reports it on a `this`)
                 const char* first_modifier_end = vec_expr_size(&decorators) ?
                     span_end_ptr(expr_outer_span(vec_expr_at(&decorators, 0))) :
@@ -7568,7 +7568,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         ignore parse_decorators(&p, &decorators);
         vec_expr_drop(&decorators);
         ModifierList modifiers;
-        parse_modifier_list(&p, true, &modifiers);
+        parse_modifier_list_ex(&p, true, false, &modifiers);
         bool has_modifiers = vec_spanned_modifier_size(&modifiers.spanned) != 0;
         bool is_property = modifiers.includes[MODIFIER_READONLY] || modifiers.includes[MODIFIER_PUBLIC] ||
             modifiers.includes[MODIFIER_PROTECTED] || modifiers.includes[MODIFIER_PRIVATE] ||
@@ -7875,7 +7875,8 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
     intptr_t mark = error_mark(&p);
 
     ModifierList modifiers;
-    if (!parse_modifier_list(&p, true, &modifiers)) {
+    // (A type member's `const` isn't one: tsc's parseTypeMember has no permitConstAsModifier)
+    if (!parse_modifier_list_ex(&p, true, !is_type, &modifiers)) {
         return parse_fail(&p);
     }
     hop_whitespace(&p);
