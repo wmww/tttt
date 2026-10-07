@@ -9,6 +9,7 @@ typedef struct ErrorCtx ErrorCtx;
 typedef struct SourceFile SourceFile;
 typedef struct Fs Fs;
 typedef struct Symbol Symbol;
+typedef struct ModuleRef ModuleRef;
 typedef union arc_js_object ArcObject;
 
 Program* program_new(ErrorCtx* errs, Fs const* fs);
@@ -96,11 +97,18 @@ void program_declaration_diagnostics_cli(Program* me, bool earlier_errors);
 // getSpecifierForModuleSymbol): an import of the file that resolves to it, else module_specifier_generate(). override:
 // the resolution mode an import type asks for. Thread safe
 cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override);
+// The same, with the resolution mode that picks the ending (getSpecifierForModuleSymbol's resolutionMode: "js" in ESM)
+// when that isn't the importing file's default
+cstr program_module_specifier_ending(
+    Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override, SpecifierMode ending_mode
+);
+// tsc's getModeForUsageLocation of an import of the file
+SpecifierMode program_usage_mode(Program const* me, SourceFile const* file, ModuleRef const* ref);
 // How tsc 6 names a module symbol from a place in `from` (symbolToString and symbolToTypeNode with an enclosing
 // declaration: getSpecifierForModuleSymbol, which always has a resolver host now), in double quotes: a file by the
 // module specifier an import in `from` would write (`"./b"`). An ambient module, a JSON file, no place, or an outFile
 // bundle (tsc: non-relative from the common source directory, not ported) as module_name_for_error()
-cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override);
+cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override, ModuleRef const* usage);
 // Different for every program this process makes (what memos that outlive a program key on, rather than its address)
 u32 program_serial(Program const* me);
 // tsc's getDefaultResolutionModeForFile

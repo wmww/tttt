@@ -1222,7 +1222,8 @@ cstr module_specifier_generate(SpecifierRequest const* request) {
         .source_dir = parent_dir(request->importing),
         .node_next = o->module_resolution == MODULE_RESOLUTION_NODE16 || o->module_resolution == MODULE_RESOLUTION_NODENEXT,
     };
-    SpecifierMode emit_mode = request->override_mode ? request->override_mode : request->importing_default_mode;
+    SpecifierMode emit_mode = request->ending_mode ? request->ending_mode :
+        request->override_mode ? request->override_mode : request->importing_default_mode;
     gen.prefer_js = emit_mode == SPECIFIER_MODE_ESM;
     gen.file_preferred = ending_preference(&gen, request->importing_default_mode);
     ModulePaths paths = all_module_paths(&gen);

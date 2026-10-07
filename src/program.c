@@ -2986,7 +2986,7 @@ SpecifierMode program_default_resolution_mode(Program const* me, SourceFile cons
 }
 
 // tsc's getModeForUsageLocation of an import
-static SpecifierMode program_usage_mode(Program const* me, SourceFile const* file, ModuleRef const* ref) {
+SpecifierMode program_usage_mode(Program const* me, SourceFile const* file, ModuleRef const* ref) {
     if (ref->resolution_override == IMPORT_RESOLUTION_IMPORT) return SPECIFIER_MODE_ESM;
     if (ref->resolution_override == IMPORT_RESOLUTION_REQUIRE) return SPECIFIER_MODE_COMMONJS;
     if (!import_syntax_affects_resolution(program_options_of(me, file))) return SPECIFIER_MODE_NONE;
@@ -2996,6 +2996,12 @@ static SpecifierMode program_usage_mode(Program const* me, SourceFile const* fil
 }
 
 cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override) {
+    return program_module_specifier_ending(me, importing, target, override, SPECIFIER_MODE_NONE);
+}
+
+cstr program_module_specifier_ending(
+    Program* me, SourceFile const* importing, SourceFile const* target, SpecifierMode override, SpecifierMode ending_mode
+) {
     SpecifierMode default_mode = program_default_resolution_mode(me, importing);
     SpecifierMode wanted = override ? override : default_mode;
     // An import that already names it (computeModuleSpecifiers' existingSpecifier, by the file's include reasons)
@@ -3030,6 +3036,7 @@ cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFi
         .imports = imports,
         .import_count = import_count,
         .override_mode = override,
+        .ending_mode = ending_mode,
         .target = cstr_sv(&target_path),
         .project_dir = cstr_sv(&project_dir),
     };
@@ -3040,7 +3047,7 @@ cstr program_module_specifier(Program* me, SourceFile const* importing, SourceFi
 }
 
 static cstr program_common_source_dir(Program* me);
-cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override) {
+cstr program_module_display_name(Program* me, Symbol const* module, SourceFile const* from, SpecifierMode override, ModuleRef const* usage) {
     SourceFile const* target = module->module ? module->module->file : nullptr;
     // (A JSON file's module symbol has no SourceFile declaration in tsc: named like an ambient module, by its quoted
     // escapedName)
@@ -3077,7 +3084,8 @@ cstr program_module_display_name(Program* me, Symbol const* module, SourceFile c
         if (under) return ret;
         return module_name_for_error(module, nullptr, false);
     }
-    cstr specifier = program_module_specifier(me, from, target, override);
+    SpecifierMode ending = override ? override : usage ? program_usage_mode(me, from, usage) : SPECIFIER_MODE_NONE;
+    cstr specifier = program_module_specifier_ending(me, from, target, override, ending);
     cstr ret = cstr_d("\"", specifier, "\"");
     cstr_drop(&specifier);
     return ret;

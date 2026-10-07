@@ -41,6 +41,7 @@ typedef struct SpecifierRequest {
     SpecifierImport const* imports;
     u32 import_count;
     SpecifierMode override_mode;
+    SpecifierMode ending_mode; // Else override_mode, else importing_default_mode: ESM prefers the `.js` ending
     csview target; // The file to name (a referenced project's source by its output declaration file)
     csview project_dir; // The tsconfig's directory, else empty (the current directory)
 } SpecifierRequest;

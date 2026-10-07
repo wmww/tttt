@@ -2208,6 +2208,9 @@ typedef struct TyDisplay {
     // The types baseline: where in the file the type is printed (a parameter's name is only visible inside its
     // function, see index_components_printed())
     Span at;
+    // The module specifier of the import or export declaration whose name is printed (tsc's
+    // tryGetModuleSpecifierFromDeclaration of the enclosing declaration): its usage mode picks the specifier ending
+    struct ModuleRef const* usage_ref;
     bool fully_qualified;
     // The types baseline's `^^^` line: every character printed gets a `^`, or a space where tsc's declaration
     // emitter would have reused a node from the source (`reused`, see display_signature()). Null: not wanted

@@ -82,7 +82,7 @@ static cstr symbol_text(BaselineTestCase* ctx, Symbol const* symbol) {
 // A module symbol's name from here (tsc's symbolToString with the node's parent as the enclosing declaration)
 static cstr module_text(BaselineTestCase* ctx, Symbol const* module) {
     return program_module_display_name(ctx->program, module, ctx->enclosing ? ctx->enclosing->file : nullptr,
-        SPECIFIER_MODE_NONE);
+        SPECIFIER_MODE_NONE, ctx->usage_ref);
 }
 
 // The name of a file's module from here: its module specifier in quotes, unless an alias in scope names it (`var m =
@@ -1448,7 +1448,14 @@ void function_impl_compile_test_info(FunctionImpl* me, BaselineTestCase* ctx) {
 // An alias shows its own declaration as the symbol and the value of what it resolves to as the type. In a type-only
 // `import type`/`export type` (not `* as ns`) its name is a type declaration's to tsc's getTypeOfNode: the declared
 // type of what it resolves to, errorType if that isn't a type
+static void port_item_add_alias_inner(PortItem const* me, BaselineTestCase* ctx, bool type_declaration);
 static void port_item_add_alias(PortItem const* me, BaselineTestCase* ctx, bool type_declaration) {
+    ctx->usage_ref = my module_ref;
+    port_item_add_alias_inner(me, ctx, type_declaration);
+    ctx->usage_ref = nullptr;
+}
+
+static void port_item_add_alias_inner(PortItem const* me, BaselineTestCase* ctx, bool type_declaration) {
     baseline_test_case_add_symbol(ctx, (BaselineSym){
         .declarations = baseline_symbol_declaration_spans(my symbol),
         .span = my decl_name,

@@ -270,7 +270,7 @@ static void out_module_import(Checker* me, TyDisplay d, Symbol const* module) {
     bool resolution_mode = (resolution == MODULE_RESOLUTION_NODE16 || resolution == MODULE_RESOLUTION_NODENEXT) &&
         target && context && target->has_format && target->is_esm && !(context->has_format && context->is_esm);
     cstr module_name = program_module_display_name(my program, module, context,
-        resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE);
+        resolution_mode ? SPECIFIER_MODE_ESM : SPECIFIER_MODE_NONE, d.usage_ref);
     csview name = cstr_sv(&module_name);
     out_lit(d, "import(");
     if (name.size >= 2 && name.buf[0] == '\'') {
@@ -1124,8 +1124,21 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
     if (identifier_type_import_ref(identifier) || identifier_type_import_argument(identifier)) {
         if (identifier_type_import_typeof(identifier)) out_lit(d, "typeof ");
         out_lit(d, "import(");
-        if (identifier_type_import_ref(identifier)) display_string_literal(d, cstr_sv(&identifier_type_import_ref(identifier)->path));
-        else display_node(me, d, identifier_type_import_argument(identifier));
+        ModuleRef const* ref = identifier_type_import_ref(identifier);
+        // (Reused from another file, the specifier is made anew from here: tsc's rewriteModuleSpecifier)
+        SourceFile const* here = d.enclosing && span_valid(d.at) ? d.at.source : nullptr;
+        SourceFile const* written = span_valid(identifier->name) ? identifier->name.source : nullptr;
+        if (ref && here && written && written != here && ref->module_state == ALIAS_DONE && ref->module &&
+            ref->module->is_module && ref->module->module && ref->module->module->file
+        ) {
+            cstr name = program_module_display_name(my program, ref->module, here, SPECIFIER_MODE_NONE, d.usage_ref);
+            out(d, cstr_sv(&name));
+            cstr_drop(&name);
+        } else if (ref) {
+            display_string_literal(d, cstr_sv(&ref->path));
+        } else {
+            display_node(me, d, identifier_type_import_argument(identifier));
+        }
         out_lit(d, ")");
         for_each (i, vec_span, identifier_type_namespaces(identifier)) {
             out_lit(d, ".");

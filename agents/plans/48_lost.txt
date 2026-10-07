@@ -24,7 +24,6 @@ parenthesizedContexualTyping2	ET	src-changed	bl-changed
 parserParameterList11	ET	src-changed	bl-changed
 partiallyAnnotatedFunctionInferenceWithTypeParameter	T	src-changed	bl-changed
 plainJSGrammarErrors	ET	src-same	bl-changed
-reactImportDropped	T	src-changed	bl-changed
 requireOfJsonFileWithoutResolveJsonModule	EST	src-changed	bl-changed
 styledComponentsInstantiaionLimitNotReached	E	src-changed	bl-changed
 thisInPropertyBoundDeclarations	T	src-changed	bl-changed

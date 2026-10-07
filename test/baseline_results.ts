@@ -9263,12 +9263,12 @@ const baselines = {
     'declarationEmitNoInvalidCommentReuse1': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNoInvalidCommentReuse2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'declarationEmitNoInvalidCommentReuse3': {
         errors: true,
@@ -28958,7 +28958,7 @@ const baselines = {
     'reactImportDropped': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'reactImportUnusedInNewJSXEmit(jsx=react-jsx)': {
         errors: true,
