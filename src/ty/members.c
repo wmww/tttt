@@ -3432,6 +3432,8 @@ static Members const* resolve_members_inner(Checker* me, Ty const* ty) {
             MembersBuilder builder = {0};
             if (ty->anonymous.merged_value && !ty->anonymous.is_reverse) {
                 builder_add_merged_value(me, &builder, ty, ty->anonymous.merged_value);
+                // (By declaration, like a declared type's: the exports of a CommonJS `export =` clone among its own)
+                builder_sort_stable(&builder);
             } else if (ty->anonymous.function) {
                 FunctionImpl const* function = ty->anonymous.function;
                 Signature* sig = signature_from_function(me, function, ty->anonymous.ctx);

@@ -67068,7 +67068,7 @@ const baselines = {
     'moduleExportAlias5': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportAliasElementAccessExpression': {
         errors: true,
