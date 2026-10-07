@@ -59221,12 +59221,12 @@ const baselines = {
         types: true,
     },
     'tsxGenericAttributesType5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'tsxGenericAttributesType6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -74081,7 +74081,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithOptionalProperties': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

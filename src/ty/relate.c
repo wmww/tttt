@@ -808,7 +808,8 @@ static void report_missing_constraint(Checker* me, RelationState* st, Ty const* 
     Symbol const* param_symbol = item ? item->owned_symbol : infer_symbol;
     Scope const* enclosing = param_symbol && param_symbol->decl_count ? param_symbol->decls[0].block : nullptr;
     cstr target_str = cstr_null;
-    ty_display(me, (TyDisplay){ .target = &target_str, .enclosing = enclosing }, target);
+    // (With an enclosing declaration tsc's node builder reuses the annotations it can: `{ s?: number }` as written)
+    ty_display(me, (TyDisplay){ .target = &target_str, .enclosing = enclosing, .reuse_nodes = enclosing != nullptr }, target);
     report_related(st, 2208, cstr_d("This type parameter might need an `extends ", target_str, "` constraint."),
         item ? item->name : infer_symbol->decls[0].name);
     cstr_drop(&target_str);

@@ -464,7 +464,6 @@ subtypesOfTypeParameter	T	src-changed	bl-changed
 subtypesOfTypeParameterWithConstraints2	T	src-changed	bl-changed
 subtypesOfTypeParameterWithConstraints4	T	src-changed	bl-changed
 subtypesOfTypeParameterWithRecursiveConstraints	T	src-changed	bl-changed
-subtypingWithOptionalProperties	E	src-changed	bl-changed
 switchComparableCompatForBrands	T	src-changed	bl-changed
 switchStatements	T	src-changed	bl-changed
 symbolType17	T	src-changed	bl-changed
@@ -497,8 +496,6 @@ truthinessCallExpressionCoercion2	T	src-changed	bl-changed
 truthinessCallExpressionCoercion4	T	src-changed	bl-changed
 tryCatchFinallyControlFlow	T	src-changed	bl-changed
 tsxDiscriminantPropertyInference	T	src-changed	bl-changed
-tsxGenericAttributesType5	E	src-changed	bl-changed
-tsxGenericAttributesType6	E	src-changed	bl-changed
 tsxSpreadAttributesResolution12	E	src-changed	bl-changed
 tsxSpreadAttributesResolution14	E	src-changed	bl-changed
 tsxSpreadAttributesResolution2	E	src-changed	bl-changed
