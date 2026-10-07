@@ -1628,7 +1628,9 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
 Ty const* ty_identifier_reference_type(Checker* me, IdentifierExpr const* identifier) {
     Symbol const* decl = identifier->target;
     // (`import * as ns` of an `export =` module can be more than what it assigns: see ty_type_of_symbol())
-    if (identifier->symbol && (identifier->symbol->flags & SYMBOL_ALIAS) && identifier->symbol != decl) {
+    if (identifier->symbol && (identifier->symbol->flags & SYMBOL_ALIAS) && identifier->symbol != decl &&
+        !(identifier->symbol->alias && identifier->symbol->alias->export_value == decl)
+    ) {
         decl = identifier->symbol;
     }
     if (identifier->keyword == KEYWORD_IDENTIFIER_SUPER) return super_type(me, identifier);

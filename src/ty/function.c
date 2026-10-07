@@ -194,7 +194,9 @@ Ty const* ty_function_return_before_widening(Checker* me, FunctionImpl const* fu
 // a function expression) doesn't contribute to its return type
 bool ty_is_recursive_return(Checker* me, Expr const* returned) {
     FunctionImpl const* function = my return_inference_of;
-    if (!function) return false;
+    // (Only return statements: tsc's forEachReturnStatement, an expression body is checked like any expression, `const
+    // f = () => f()` is circular, TS7023)
+    if (!function || function->expression_body) return false;
     Expr const* expr = returned;
     if (function->is_async && expr->tag == EXPR_UNARY_OP && expr->unary_op->op == UNARY_OP_AWAIT) expr = &expr->unary_op->expr;
     if (expr->tag != EXPR_CALL || expr->call->uses_new || expr->call->optional_chain) return false;

@@ -3999,8 +3999,11 @@ void binder_link(Binder* me) {
         u32 local_flags = symbol->flags;
         Symbol const* container = symbol->alias->scope->container;
         if (container && !port_item_declares_export(symbol->alias->item)) {
-            Symbol const* exported = symbol_table_get(container->exports, symbol->name);
+            Symbol* exported = symbol_table_get(container->exports, symbol->name);
             if (exported && exported != symbol) local_flags |= exported->flags & ~(u32)SYMBOL_ALIAS;
+            if (exported && exported != symbol && (exported->flags & SYMBOL_VALUE) && !(exported->flags & SYMBOL_ALIAS)) {
+                symbol->alias->export_value = exported;
+            }
         }
         if (!(local_flags & SYMBOL_ANY_MEANING)) continue;
         // An alias merged with local declarations: fine as long as they mean different things (tsc: checkAliasSymbol)
@@ -4736,7 +4739,12 @@ static Symbol const* scope_get(Scope const* me, csview name, u32 meaning, Symbol
 }
 
 Symbol const* scope_get_value(Scope const* me, csview name, Symbol const** found) {
-    return scope_get(me, name, SYMBOL_VALUE, found);
+    Symbol* symbol = scope_resolve(me, name, SYMBOL_VALUE);
+    if (found) *found = symbol;
+    // (An import merged with an exported value of the module: the value, tsc's getExportSymbolOfValueSymbolIfExported
+    // of the merged local)
+    if (symbol && (symbol->flags & SYMBOL_ALIAS) && symbol->alias && symbol->alias->export_value) return symbol->alias->export_value;
+    return symbol_for_meaning(symbol, SYMBOL_VALUE);
 }
 
 Symbol const* scope_get_type(Scope const* me, csview name, Symbol const** found) {

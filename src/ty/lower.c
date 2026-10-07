@@ -1661,6 +1661,14 @@ static Ty const* namespace_import_type_uncached(Checker* me, Symbol const* symbo
     Symbol* module = binder_module_of_ref(symbol->binder, item->module_ref);
     Symbol* assigned = module ? module_export_equals(module) : nullptr;
     if (!assigned || assigned == module || assigned->is_placeholder) return nullptr;
+    // What is neither a namespace nor a variable is TS2497 and stays itself (tsc's resolveESModuleSymbol returns
+    // early, see check_es_module_symbol())
+    Symbol const* assigned_target = symbol_resolve_alias(assigned);
+    if (assigned_target && !assigned_target->is_placeholder && !assigned_target->is_module && !item->is_require &&
+        !(symbol_resolved_flags(assigned) & (SYMBOL_VALUE_MODULE | SYMBOL_NAMESPACE_MODULE | SYMBOL_VARIABLE))
+    ) {
+        return nullptr;
+    }
     CompilerOptions const* options = compiler_options();
     SourceFile const* importer = item->decl_name.source;
     SourceFile const* target = item->module_ref->file;

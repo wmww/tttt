@@ -227,6 +227,8 @@ static bool class_decorator_runs_first(Scope const* names, void const* class_dec
 // (as a value) before its declaration, unless the use is deferred: in a function, in an instance member
 __attribute__((always_inline)) static inline void check_declared_before_use(IdentifierExpr const* me, Scope const* names, ErrorCtx* errs) {
     Symbol const* symbol = my symbol;
+    // (An import merged with an exported value: the value, see scope_get_value())
+    if ((symbol->flags & SYMBOL_ALIAS) && my target && symbol->alias && symbol->alias->export_value == my target) symbol = my target;
     u32 flags = symbol->flags;
     if (!(flags & (SYMBOL_BLOCK_SCOPED_VARIABLE | SYMBOL_CLASS | SYMBOL_ENUM)) || symbol->is_ambient) return;
     if (flags & SYMBOL_CLASS && flags & (SYMBOL_FUNCTION | SYMBOL_FUNCTION_SCOPED_VARIABLE)) return;

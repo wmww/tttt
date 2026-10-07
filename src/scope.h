@@ -219,6 +219,9 @@ typedef struct SymbolAlias {
     // `export = a.b.c` / `export default a.b.c` (tsc's exportAssignmentIsAlias: an entity name expression): resolved
     // like tsc's resolveEntityName with every meaning, see resolve_entity_alias()
     struct Expr* entity;
+    // An import of the name an exported value of its module also declares (`import x from "m"; export const x = 1`):
+    // that value, which a value use of the name is (tsc's merged local symbol, getExportSymbolOfValueSymbolIfExported)
+    Symbol* export_value;
 } SymbolAlias;
 
 // What only modules (files and ambient modules) have
