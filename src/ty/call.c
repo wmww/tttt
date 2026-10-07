@@ -819,7 +819,17 @@ Ty const* ty_instantiate_fixing(Checker* me, Ty const* type) {
 static void infer_from_annotated_params_of(Checker* me, Inference* inf, FunctionImpl const* function, Signature const* contextual);
 Signature const* ty_fix_contextual_signature(Checker* me, Signature const* sig, FunctionImpl const* function) {
     OuterInference* outer = my outer_inference;
-    if (!outer || !outer->fixing || !ty_function_is_context_sensitive(function)) return sig;
+    if (!outer) return sig;
+    if (!ty_function_is_context_sensitive(function)) {
+        // A function that isn't context sensitive but has fewer parameters than its contextual signature infers from
+        // its annotated ones too (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod)
+        signature_resolve(me, sig);
+        if (!vec_generic_item_size(&function->generic.items) && sig->param_count > vec_function_arg_size(&function->args)) {
+            infer_from_annotated_params_of(me, outer->inf, function, sig);
+        }
+        return sig;
+    }
+    if (!outer->fixing) return sig;
     signature_resolve(me, sig);
     Inference* inf = outer->inf;
     // (A rest parameter of type parameter type fixes nothing: the signature is instantiated with the non-fixing mapper,
