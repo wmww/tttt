@@ -1442,6 +1442,12 @@ static bool check_expandos(Walk* me, Symbol const* symbol, bool report_them) {
     for (u32 i = 0; i < symbol->exports->count; i++) {
         Symbol const* member = symbol->exports->entries[i].symbol;
         if (!member || !member->decl_count || member->decls[0].kind != SYMBOL_DECL_ASSIGNMENT) continue;
+        // (A late-bound one (`f[k] = v`) whose key isn't a property name type isn't a member at all: tsc's
+        // lateBindMember skips it in getExportsOfSymbol)
+        if (symbol_rare(member)->late_bound_key) {
+            bool is_number = false;
+            if (!ty_property_name_of_key(my checker, ty_expr_type(my checker, symbol_rare(member)->late_bound_key), &is_number)) continue;
+        }
         any = true;
         if (!report_them) continue;
         report(me, member->decls[0].name, 9023, "Assigning properties to functions without declaring them is not "
