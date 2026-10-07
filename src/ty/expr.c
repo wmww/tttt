@@ -2144,6 +2144,9 @@ static bool is_read_in_declaring_container(Checker* me, PropertyExpr const* acce
     Prop const* prop = ty_property_of_type(me, apparent, ty_literal_name(me, ty_access_key_type(me, access)));
     // (Of a class instance: the declared property, which an instantiation's `target` is)
     while (prop && prop->target) prop = prop->target;
+    // (A method, `F.prototype.m = function`, has its declared type unless that's a union: tsc's
+    // getFlowTypeOfAccessExpression doesn't look at the flow for anything but variables, properties and accessors)
+    if (prop && (prop->flags & PROP_METHOD) && prop_type(me, prop)->kind != TY_UNION) return false;
     Symbol const* symbol = prop && prop->decl ? prop->decl->symbol : nullptr;
     if (!symbol || !symbol->decl_count) return false;
     SymbolDecl const* decl = &symbol->decls[0];
