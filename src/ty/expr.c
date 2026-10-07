@@ -2862,6 +2862,10 @@ static void spread_props_of(Checker* me, Ty const* object, bool partial, bool re
         if (partial && !(flags & PROP_OPTIONAL)) {
             flags |= PROP_OPTIONAL;
             if (compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) type = optional_type(me, type);
+            // (Under exactOptionalPropertyTypes tsc's addOptionality adds missing, which a read of an optional property
+            // already has: `{ ...(c ? {} : { d: o.d }) }` is `{ d?: string }`. An optional property holds its type without
+            // it here)
+            else type = ty_remove_missing(me, type, true);
         }
         // The annotation of the property it comes from still says what it is, unless instantiated (or made optional:
         // an optional one of a partial spread, `{ ...(o as Opts | undefined) }`, still is what it says)
