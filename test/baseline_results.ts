@@ -18396,9 +18396,9 @@ const baselines = {
         types: true,
     },
     'importNonExportedMember12': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'importNonExportedMember2': {
         errors: true,
@@ -55351,9 +55351,9 @@ const baselines = {
         types: true,
     },
     'functionImplementations': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'functionNameConflicts': {
         errors: true,

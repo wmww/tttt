@@ -678,6 +678,10 @@ static void program_load_resolved(Program* me, SourceFile* source, ModuleRef* re
                     ref->file->node_modules_js_depth = source->node_modules_js_depth + 1;
                     ref->file->unchecked = true;
                 }
+            } else if (my options.allow_js && program_find_source(me, cstr_sv(&resolved.path))) {
+                // Not added for this import, but in the program anyway (a root file): tsc's resolveExternalModule finds
+                // it with host.getSourceFile
+                ref->file = program_find_source(me, cstr_sv(&resolved.path));
             } else {
                 ref->failure = MODULE_REF_IS_JS;
                 cstr_take(&ref->resolved_path, program_path_for_message(me, cstr_sv(&resolved.path)));
