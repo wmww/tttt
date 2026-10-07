@@ -9613,6 +9613,15 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
                 .optional_chain = optional_chain,
             })
         );
+        // (`module["exports"]` too: tsc's isModuleExportsAccessExpression takes a literal element access)
+        if (p.shared->source->is_js && expr_is_module_exports(left_and_ret)) {
+            u32 n = p.shared->module_exports_access_count++;
+            if (!(n & (n - 1))) {
+                p.shared->module_exports_accesses = realloc(p.shared->module_exports_accesses, sizeof(Span) * (n ? n * 2 : 1));
+                panic_if(!p.shared->module_exports_accesses, "out of memory");
+            }
+            p.shared->module_exports_accesses[n] = left_and_ret->property->expr.inner_span;
+        }
         return parse_success(&p);
     }
     if (optional_chain) {
