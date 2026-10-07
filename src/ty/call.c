@@ -3005,7 +3005,7 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
                 return any;
             }
         }
-        if (lacking && !super_call && !info->tagged_template && !info->decorator && !info->jsx) {
+        if (lacking && !super_call && !info->decorator && !info->jsx) { // (A tagged template too: resolveTaggedTemplateExpression's invocationError)
             if (errs) {
                 cstr rendered = ty_to_cstr(me, apparent);
                 Error* e = error_ctx_error_d(errs, invocation_error_span(info), construct ? 2351 : 2349,

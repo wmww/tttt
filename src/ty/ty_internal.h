@@ -71,6 +71,7 @@ enum {
     KEY_CHECK_MARKER,   // (type parameter name atom, which) -> `super-T`/`sub-T` of a variance annotation check
     KEY_CHECK_MARKER_REF, // type id -> non-null if it is a reference a variance annotation is checked with
     KEY_CONTEXT_PARAM,  // InitializedBinding (an unannotated parameter) -> Ty from the contextual signature
+    KEY_CONTEXT_PARAM_UNWIDENED, // InitializedBinding -> its contextual type before a wider initializer replaced it
     KEY_CONTEXT_PARAM_PATTERN, // Binding (a parameter's pattern) -> non-null if its contextual type fell back to it
     KEY_CONTEXT_RETURN, // FunctionImpl -> contextual return type
     // FunctionImpl -> non-null: its contextual signature is its own, so its unit return type is the literal of its

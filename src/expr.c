@@ -2544,6 +2544,13 @@ static void assignment_target_typecheck_of(
                             error_ctx_grammar_error_d(errs, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
                         }
                     }
+                    // (With an initializer TS1186 is all: tsc's checkArrayLiteralDestructuringElementAssignment returns)
+                    if (rest_target->tag == EXPR_BINARY_OP && rest_target->binary_op->op == BINARY_OP_EQUAL &&
+                        !expr_is_perenthisized(rest_target)
+                    ) {
+                        index++;
+                        continue;
+                    }
                     // The rest of a tuple, else an array of the elements (tsc's checkArrayLiteralDestructuringElementAssignment)
                     Ty const* rest = nullptr;
                     if (source) {
@@ -4517,6 +4524,10 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
             }
             if (!my call->uses_new && !my call->is_extends) {
                 callee_type = ty_check_non_null_callee(checker, callee_type, expr_outer_span(callee), errs);
+            } else if (my call->uses_new && !my call->is_extends) {
+                // (tsc's resolveNewExpression: checkNonNullExpression, `new o.m()` with an optional m is TS18048)
+                Ty const* non_null = ty_check_non_null_type(checker, callee_type, callee, errs);
+                callee_type = non_null ? non_null : ty_intrinsic(checker, TY_ERROR);
             }
             // `import("m", options)`: the options are ImportCallOptions
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT &&
@@ -4636,6 +4647,13 @@ void expr_typecheck(Expr const* me, ErrorCtx* errs) {
 
         case EXPR_ARRAY:
             for_each (i, vec_expr, &my array) {
+                // (A destructuring rest element with an initializer is TS1186 and not checked any further: tsc's
+                // checkArrayLiteralDestructuringElementAssignment returns there, see assignment_target_typecheck())
+                if (my assignment_pattern && i->tag == EXPR_SPREAD && i->spread->tag == EXPR_BINARY_OP &&
+                    i->spread->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(i->spread)
+                ) {
+                    continue;
+                }
                 expr_typecheck(i, errs);
             }
             break;

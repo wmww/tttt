@@ -1051,9 +1051,19 @@ void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, 
     // was the initializer's type instead (tsc's assignContextualParameterTypes: when the contextual type is assignable
     // to the widened initializer but not the other way around)
     Checker* checker = current_checker;
-    if (!ty_contextual_parameter_type(checker, me)) return;
-    Ty const* type = ty_binding_type(checker, &my binding, (LowerCtx){ .generic = true });
+    Ty const* contextual = ty_contextual_parameter_type(checker, me);
+    if (!contextual) return;
     Ty const* value = ty_expr_type(checker, initializer);
+    // (A binding pattern's initializer is checked against the contextual type itself: tsc's checkVariableLikeDeclaration
+    // asks getWidenedTypeForVariableLikeDeclaration there, not the symbol's assigned type)
+    Ty const* unwidened = my binding.tag != BINDING_IDENTIFIER ? ty_contextual_parameter_type_unwidened(checker, me) : nullptr;
+    if (unwidened && unwidened != contextual) {
+        if (!ty_is_related(checker, value, unwidened, TY_RELATION_ASSIGNABLE)) {
+            ty_check_assignable_expr(checker, value, unwidened, span, initializer, errs);
+        }
+        return;
+    }
+    Ty const* type = ty_binding_type(checker, &my binding, (LowerCtx){ .generic = true });
     if (ty_is_related(checker, value, type, TY_RELATION_ASSIGNABLE)) return;
     if (ty_is_related(checker, type, ty_widened_for_declaration(checker, value, false), TY_RELATION_ASSIGNABLE)) return;
     ty_check_assignable_expr(checker, value, type, span, initializer, errs);

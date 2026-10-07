@@ -1211,6 +1211,13 @@ bool ty_contextual_parameter_is_pattern(Checker* me, Binding const* pattern) {
     return intern_get(&my links, key, 2) != nullptr;
 }
 
+// The contextual signature's own type for a parameter, before assignContextualParameterTypes let a wider initializer
+// win (what checkVariableLikeDeclaration checks a binding pattern's initializer against)
+Ty const* ty_contextual_parameter_type_unwidened(Checker* me, InitializedBinding const* parameter) {
+    Ty const* raw = intern_get(&my links, (u64[]){ KEY_CONTEXT_PARAM_UNWIDENED, (u64)(uintptr_t)parameter }, 2);
+    return raw ? raw : ty_contextual_parameter_type(me, parameter);
+}
+
 Ty const* ty_contextual_parameter_type(Checker* me, InitializedBinding const* parameter) {
     u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)parameter };
     Ty const* ret = intern_get(&my links, key, 2);
@@ -1469,6 +1476,7 @@ static void assign_contextual_signature_as(
             if (raw && raw != sig) type = signature_type_at(me, raw, at, i->rest);
         }
         if (!type) continue;
+        Ty const* unwidened = nullptr;
         if (initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY) {
             // An initializer that doesn't fit the contextual type but is wider than it wins (tsc's
             // assignContextualParameterTypes): `(max = 3) => {}` against `(max: 1 | 2) => void` takes a number
@@ -1476,7 +1484,12 @@ static void assign_contextual_signature_as(
             Ty const* initializer = ty_check_expr(me, initialized_binding_value(&i->initializer), type);
             if (!ty_is_related(me, initializer, type, TY_RELATION_ASSIGNABLE)) {
                 Ty const* widened = ty_widened_for_declaration(me, initializer, true);
-                if (ty_is_related(me, type, widened, TY_RELATION_ASSIGNABLE)) type = widened;
+                if (ty_is_related(me, type, widened, TY_RELATION_ASSIGNABLE)) {
+                    // (Not under a generic call's inference: tsc's parameter type was fixed by its first assignment,
+                    // which the inferred contextual type then repeats)
+                    if ((!raw_contextual || raw_contextual == contextual) && sig == unfixed) unwidened = type;
+                    type = widened;
+                }
             }
         }
         // A destructured parameter inference gave nothing but `unknown` falls back to its pattern's type (tsc's
@@ -1490,6 +1503,10 @@ static void assign_contextual_signature_as(
         }
         u64 key[2] = { KEY_CONTEXT_PARAM, (u64)(uintptr_t)&i->initializer };
         *intern_slot(me, &my links, key, 2) = type;
+        // (Per assignment: a later one that didn't widen clears what an earlier pass left)
+        if (unwidened || intern_get(&my links, (u64[]){ KEY_CONTEXT_PARAM_UNWIDENED, (u64)(uintptr_t)&i->initializer }, 2)) {
+            *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_PARAM_UNWIDENED, (u64)(uintptr_t)&i->initializer }, 2) = unwidened;
+        }
     }
     set_contextual_return(me, function, unfixed);
 }
@@ -4519,6 +4536,10 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
         callee_type = ty_intrinsic(me, TY_ERROR); // (See expr_typecheck(): TS18046)
     }
     if (!call->uses_new && !call->is_extends) callee_type = ty_check_non_null_callee(me, callee_type, span_null, nullptr);
+    else if (call->uses_new && !call->is_extends) {
+        Ty const* non_null = ty_check_non_null_type(me, callee_type, &call->callable, nullptr); // (See expr_typecheck())
+        callee_type = non_null ? non_null : ty_intrinsic(me, TY_ERROR);
+    }
     // (A call's arguments are checked as its own resolution says, not as members of an outer argument's return)
     u32 saved_argument_return_depth = my argument_return_depth;
     my argument_return_depth = 0;
