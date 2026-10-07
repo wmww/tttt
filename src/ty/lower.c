@@ -1400,6 +1400,31 @@ bool ty_export_equals_property_missing(Checker* me, Symbol const* property) {
     return !export_equals_property_type_of(me, property);
 }
 
+// `export default e`: resolved like tsc's getTypeOfVariableOrParameterOrProperty pushing the symbol, which e reaching
+// again (`import D from "./self"; export default { m: [D] }`) makes any, TS7022 at the statement. The expression keeps
+// its own type; the declaration has no memo of its own, so a circular one is remembered
+static Ty const* export_expression_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
+    Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
+    u64 key[2] = { KEY_CIRCULAR_BINDING, (u64)(uintptr_t)decl };
+    if (my circular_bindings && intern_get(&my links, key, 2)) return circular;
+    if (ty_resolving_find(me, RESOLVING_DECLARATION, decl)) {
+        ty_resolving_cycle(me, RESOLVING_DECLARATION, decl);
+        return circular;
+    }
+    ty_resolving_push(me, RESOLVING_DECLARATION, decl);
+    Ty const* type = ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
+    if (ty_resolving_pop(me)) {
+        my circular_bindings = true;
+        *intern_slot(me, &my links, key, 2) = (void*)decl;
+        if (compiler_options()->no_implicit_any && span_valid(decl->full)) {
+            ty_error_at(me, decl->full, 7022, cstr_d("'", symbol->name, "' implicitly has type 'any' because it does not "
+                "have a type annotation and is referenced directly or indirectly in its own initializer."));
+        }
+        return circular;
+    }
+    return type;
+}
+
 static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl const* decl) {
     switch (decl->kind) {
         case SYMBOL_DECL_VARIABLE: {
@@ -1434,7 +1459,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
             ) {
                 return ty_intrinsic(me, TY_ERROR);
             }
-            return ty_regular(me, ty_widened_objects(me, ty_expr_type(me, decl->node)));
+            return export_expression_type(me, symbol, decl);
         case SYMBOL_DECL_ASSIGNMENT:
             if (is_js_container(symbol, decl->node, span_null)) return ty_namespace_type(me, symbol);
             // tsc's getInitializerTypeFromAssignmentDeclaration: `exports.x = 1` exports `1`, `module.exports = 1` number
