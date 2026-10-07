@@ -1012,6 +1012,9 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
         for (u32 i = 0; my binding.tag == BINDING_OBJECT && i < initialized_binding_rare(me)->require_port_count; i++) {
             port_item_check_export_equals_property(&initialized_binding_rare(me)->require_ports[i], errs);
         }
+        // (A destructuring declaration has no alias symbol of its own: tsc checks its initializer, the `require()`
+        // call against a declared `require` function's signature)
+        if (my binding.tag == BINDING_OBJECT) expr_typecheck(initialized_binding_value(me), errs);
         return;
     }
     // tsc's checkSourceElement of the VariableDeclaration: what goes wrong deep inside is reported at its name, and
