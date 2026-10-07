@@ -3427,6 +3427,9 @@ typedef struct PropertyDeclEntry {
     csview name;
     Span span;
     bool optional;
+    // A method of the name (`m(): T` then `m?: T`): it may be the property symbol's first declaration, which the others
+    // are compared with, but isn't variable-like itself (tsc's checkVariableLikeDeclaration: isVariableLike)
+    bool method;
     uint8_t modifiers; // PROPERTY_MOD_*
 } PropertyDeclEntry;
 
@@ -3463,7 +3466,13 @@ static void collect_class_property_decls(ClassDecl const* class_decl, VecPropert
 
 static void collect_interface_property_decls(VecInterfaceMember const* members, VecPropertyDeclEntry* out) {
     for_each (i, vec_interface_member, members) {
-        if (i->key.tag != INTERFACE_KEY_NAME || i->is_method || i->key.name_is_member_function) continue;
+        if (i->key.tag != INTERFACE_KEY_NAME) continue;
+        if (i->is_method || i->key.name_is_member_function) {
+            vec_property_decl_entry_push(out, (PropertyDeclEntry){
+                .name = cstr_sv(&i->key.name_string), .span = i->key.span, .optional = i->optional, .method = true,
+            });
+            continue;
+        }
         // (Accessors aren't variable-like: tsc's checkVariableLikeDeclaration compares property declarations only)
         if (i->accessor || interface_declaration_kind(i->declaration) != MEMBER_PROPERTY) continue;
         vec_property_decl_entry_push(out, (PropertyDeclEntry){
@@ -3480,7 +3489,7 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
     isize count = vec_property_decl_entry_size(decls);
     for (isize i = 0; i < count; i++) {
         PropertyDeclEntry const* decl = vec_property_decl_entry_at(decls, i);
-        if (!span_valid(decl->span) || decl->span.source->is_stdlib) continue;
+        if (!span_valid(decl->span) || decl->span.source->is_stdlib || decl->method) continue;
         PropertyDeclEntry const* first = nullptr;
         bool differs = false;
         for (isize j = 0; j < count; j++) {
@@ -3489,7 +3498,7 @@ static void check_property_modifiers(VecPropertyDeclEntry const* decls, ErrorCtx
             if (!first) first = other;
             bool identical = other->optional == decl->optional && other->modifiers == decl->modifiers;
             if (first == decl) {
-                differs |= other != decl && !identical;
+                differs |= other != decl && !other->method && !identical;
             } else {
                 differs = !identical;
                 break;
@@ -3646,6 +3655,19 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
             }
             if (!first || !span_valid(first->key.span)) continue;
             Ty const* first_type = member_declared_type(me, first);
+            // (The property symbol is optional if any declaration is: its type then has undefined, tsc's
+            // getTypeOfSymbol of the merged symbol, `(() => string) | undefined` for `bold(): string; bold?: string`)
+            bool any_optional = first->optional;
+            for (u32 k = 0; k < list_count && !any_optional; k++) {
+                for_each (other, vec_interface_member, lists[k]) {
+                    if (!other->optional || other->key.tag != INTERFACE_KEY_NAME || i->key.tag != INTERFACE_KEY_NAME) continue;
+                    if (cstr_eq(&other->key.name_string, &i->key.name_string)) any_optional = true;
+                }
+            }
+            if (any_optional && !first->optional && compiler_options()->strict_null_checks && !(first_type->flags & TYF_ANY)) {
+                Ty const* types[2] = { first_type, ty_intrinsic(me, TY_UNDEFINED) };
+                first_type = ty_union(me, types, 2, nullptr, (TyList){0});
+            }
             check_subsequent_property(me, i->key.span, first_type, member_declared_type(me, i), first->key.span, errs);
         }
     }
@@ -4124,10 +4146,18 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         IndexInfo const* info = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, apparent, key) : nullptr;
         // (Of a union, any member's: tsc's getIndexedAccessType goes member by member, `string | T` has String's
         // readonly number index signature, and names the union)
-        for (u32 i = 0; !info && apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN) && i < apparent->composite.types.len; i++) {
-            Ty const* member = ty_apparent_type(me, apparent->composite.types.data[i]);
-            IndexInfo const* member_info = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, member, key) : nullptr;
-            if (member_info && member_info->readonly) info = member_info;
+        // (A union has an index signature only if every member has one: tsc's getIndexInfosOfType of a union. A member
+        // without one makes it TS7053, nothing about reading)
+        if (!info && apparent->kind == TY_UNION && !(apparent->flags & TYF_BOOLEAN)) {
+            IndexInfo const* readonly_info = nullptr;
+            bool all = true;
+            for (u32 i = 0; all && i < apparent->composite.types.len; i++) {
+                Ty const* member = ty_apparent_type(me, apparent->composite.types.data[i]);
+                IndexInfo const* member_info = member->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_applicable_index_info(me, member, key) : nullptr;
+                all = member_info != nullptr;
+                if (member_info && member_info->readonly) readonly_info = member_info;
+            }
+            if (all) info = readonly_info;
         }
         if (info && info->readonly) {
             cstr object_str = ty_to_cstr(me, apparent); // (tsc shows the apparent type either way)

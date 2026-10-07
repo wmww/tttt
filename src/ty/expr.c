@@ -4870,6 +4870,13 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 return ty_intrinsic(me, TY_UNDEFINED); // TS2493/TS2514 (tsc's getPropertyTypeForIndexType)
             }
             if (!ret) return missing_property_type(me, expr, object);
+            // (A generic object whose apparent type is never, `never[keyof T]`, has no properties either: TS2339 and the
+            // error type, not never, tsc's checkPropertyAccessExpressionOrQualifiedName)
+            if (expr->property->form == PROPERTY_EXPR_DOT && (ret->flags & TYF_NEVER) && !(object->flags & TYF_NEVER) &&
+                (ty_reduced(me, ty_apparent_type(me, object))->flags & TYF_NEVER)
+            ) {
+                return any_type(me);
+            }
             if (ty_is_readonly_assignment(me, expr->property, object)) return any_type(me);
             if (expr->property->assignment_target == FLOW_TARGET_DEFINITE) {
                 Ty const* write = key->kind == TY_UNION ? union_key_write_type(me, object, key) : ty_access_write_type(me, object, key);

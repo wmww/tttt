@@ -2609,6 +2609,9 @@ static Symbol* resolve_import_alias_path(Symbol* me) {
         if (!container || container->is_placeholder) return nullptr; // A placeholder: anything goes
         Symbol* found = symbol_get_export(container, name.sv);
         Symbol* next = resolve_if_pure_alias(found);
+        // (An export that is an alias resolving to nothing, a circular one (TS2303 there): found, unknown, nothing more
+        // to say, tsc's resolveEntityName gets unknownSymbol from resolveAlias)
+        if (found && !next) return nullptr;
         if (!next || (!last && !(symbol_resolved_flags(next) & SYMBOL_NAMESPACE) && !next->is_placeholder)) {
             if (next && !last && (symbol_resolved_flags(next) & SYMBOL_TYPE)) {
                 // An exported type used as a namespace (tsc's resolveEntityName): said at what follows it
