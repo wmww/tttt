@@ -3987,8 +3987,9 @@ static void merge_into_umd_globals(Binder* me) {
             symbol_add_decl(target, global->decls[d]);
             retarget_decl(&global->decls[d], target);
         }
-        // (The alias is declared by `export as namespace` alone: what merged went into the target)
+        // (The alias is declared by `export as namespace` alone: what merged went into the target, with its meanings)
         global->decl_count = kept;
+        global->flags = SYMBOL_ALIAS;
         if (global->exports) {
             symbol_ensure_exports(target);
             u32 count;

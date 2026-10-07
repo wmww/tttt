@@ -2672,8 +2672,11 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         }
         return;
     }
-    if (my target && my symbol == my target && my target->is_module && my target->module->file) {
-        // `exports` in a CommonJS file: the file's symbol, `"a"` declared by the whole file
+    if (my target && my symbol == my target && my target->is_module && my target->module->file &&
+        csview_equals(identifier_expr_name(me).sv, "exports")
+    ) {
+        // `exports` in a CommonJS file: the file's symbol, `"a"` declared by the whole file (a UMD global that
+        // declarations merged into is that module too, but named and declared like any symbol)
         SourceFile const* file = my target->module->file;
         VecSpan declarations = vec_span_init();
         vec_span_push(&declarations, (Span){ .source = file, .sv = csview_from_n(source_file_start(file), 0) });
@@ -2724,7 +2727,8 @@ void identifier_expr_compile_test_info(IdentifierExpr* me, BaselineTestCase* ctx
         }
     }
     // (an alias of an anonymous declaration, `export default class {}`, has a name)
-    if (shown && (span_valid(target->name_span) || span_valid(shown->name_span))) {
+    // (and a module that declarations merged into, the UMD global's)
+    if (shown && (span_valid(target->name_span) || span_valid(shown->name_span) || (shown->is_module && shown->decl_count))) {
         baseline_test_case_add_symbol(ctx, (BaselineSym){
             .declarations = merged_local ? declarations : declaration_get_spans(shown),
             .span = identifier_expr_name(me),
