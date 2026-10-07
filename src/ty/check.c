@@ -1796,6 +1796,16 @@ static void check_access(
         cstr_drop(&index_str);
         return;
     }
+    // A symbol that only a string index signature takes reads it, and is TS2538 (tsc's getPropertyTypeForIndexType with
+    // an access node)
+    if (!error_if_not_found && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE) &&
+        ty_symbol_reads_string_index(me, ty_non_nullable(me, object), index)
+    ) {
+        cstr index_str = index_type_str(me, index, index_span);
+        error_ctx_error_d(errs, index_span, 2538, "Type '", index_str, "' cannot be used as an index type.");
+        cstr_drop(&index_str);
+        return;
+    }
 
     // A union of intersections that all reduce to never is never (tsc's getReducedApparentType): narrowing a union by a
     // predicate it has nothing in common with intersects each member with the candidate
@@ -2007,6 +2017,8 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
             return;
         }
     }
+    // (A symbol that only a string index signature takes reads it, TS2538: tsc's getPropertyTypeForIndexType)
+    if (is_key && ty_symbol_reads_string_index(me, apparent, index)) is_key = false;
     if (is_key && ty_access(me, apparent, index)) return;
     // A numeric name of tuples is their element (tsc's isNumericLiteralName(propName)): `T["1"]` as `T[1]`
     if ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string &&
@@ -2279,10 +2291,10 @@ static Ty const* missing_index_member(Checker* me, Ty const* object, Ty const* i
         }
         return ty_applicable_index_info(me, object, index) ? nullptr : index;
     }
-    if (index->kind != TY_UNION || (index->flags & TYF_BOOLEAN)) return ty_access(me, object, index) ? nullptr : index;
+    if (index->kind != TY_UNION || (index->flags & TYF_BOOLEAN)) return ty_access_element(me, object, index, false) ? nullptr : index;
     for (u32 i = 0; i < index->composite.types.len; i++) {
         Ty const* member = index->composite.types.data[i];
-        if (!ty_access(me, object, member)) return member;
+        if (!ty_access_element(me, object, member, false)) return member;
     }
     return nullptr;
 }

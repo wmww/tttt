@@ -4748,6 +4748,8 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             Ty const* ret = deferred_never ? nullptr :
                 deferred_tuple ? ty_indexed_include_undefined(me, object, ty_regular(me, key),
                     compiler_options()->no_unchecked_indexed_access && expr->property->assignment_target != FLOW_TARGET_DEFINITE) :
+                expr->property->form == PROPERTY_EXPR_BRACKET ?
+                    ty_access_element(me, object, key, expr->property->assignment_target != FLOW_TARGET_DEFINITE) :
                 expr->property->assignment_target == FLOW_TARGET_DEFINITE ? ty_access(me, object, key) :
                 ty_access_reading(me, object, key);
             // (An element access: a property access of what an object literal lacks is TS2339, checkPropertyAccessExpression)

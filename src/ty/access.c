@@ -159,9 +159,13 @@ bool ty_union_non_public_conflict(Checker* me, Ty const* object, Atom const* nam
 
 enum {
     ACCESS_INCLUDE_UNDEFINED = 1 << 0,
-    // No access node (tsc's getIndexedAccessTypeOrUndefined for a constraint): a symbol key that no index signature
-    // applies to reads the string index signature
-    ACCESS_NO_NODE = 1 << 1,
+    // No access node (tsc's getIndexedAccessTypeOrUndefined for a constraint): a negative index of a tuple without a
+    // rest element is its number index signature's
+    ACCESS_NO_NODE = 1 << 2,
+    // A symbol key that no index signature applies to reads the string index signature, as tsc's
+    // getPropertyTypeForIndexType does (reporting TS2538 where there's an access node). Not for lookups by name (tsc's
+    // getPropertyOfType and getApplicableIndexInfoForName: a late-bound name only looks for symbol index signatures)
+    ACCESS_SYMBOL_STRING = 1 << 1,
 };
 
 // ACCESS_INCLUDE_UNDEFINED: what an index signature or the rest of a tuple gives includes undefined (noUncheckedIndexedAccess, tsc's
@@ -227,8 +231,8 @@ static bool union_index_applies(Checker* me, Ty const* object, Ty const* index, 
     Members const* first_members = ty_members(me, first);
     for (u32 k = 0; k < first_members->index_count; k++) {
         IndexInfo const* info = &first_members->index[k];
-        // (Without an access node a symbol reads the string index signature: getPropertyTypeForIndexType)
-        bool symbol_string = (flags & ACCESS_NO_NODE) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE) && (info->key->flags & TYF_STRING);
+        // (A symbol reads the string index signature: getPropertyTypeForIndexType)
+        bool symbol_string = (flags & ACCESS_SYMBOL_STRING) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE) && (info->key->flags & TYF_STRING);
         if (!symbol_string && !find_applicable_index_info(me, info, 1, index)) continue;
         bool every = true;
         for (u32 i = 0; i < object->composite.types.len && every; i++) {
@@ -327,6 +331,11 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
                 }
             }
         }
+        // A symbol reads the string index signature of the union, not of each member: one member's own `[sym]`
+        // doesn't make a union property with the others' string index signatures (tsc's
+        // createUnionOrIntersectionProperty skips index signatures for a late-bound name)
+        bool symbol_string = (flags & ACCESS_SYMBOL_STRING) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE);
+        if (symbol_string) flags &= ~(u32)ACCESS_SYMBOL_STRING;
         // Every member has to have it. null and undefined don't count: what to say about them is the caller's business
         Ty const** parts = malloc(sizeof(Ty const*) * object->composite.types.len);
         Ty const* ret = nullptr;
@@ -389,6 +398,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
         free(parts);
         Atom const* name = ret ? ty_literal_name(me, index) : nullptr;
         if (name && ty_union_non_public_conflict(me, object, name)) ret = nullptr;
+        if (!ret && symbol_string) ret = access(me, object, ty_intrinsic(me, TY_STRING), depth + 1, flags);
         return ret;
     }
 
@@ -476,7 +486,7 @@ static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 dept
     Ty const* value = access_index_infos(me, object, index);
     // A symbol reads the string index signature when none applies (tsc's getPropertyTypeForIndexType), an
     // intersection's too
-    if (!value && (flags & ACCESS_NO_NODE) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE)) {
+    if (!value && (flags & ACCESS_SYMBOL_STRING) && (ty_key_flags(index) & TYF_ES_SYMBOL_LIKE)) {
         value = access_index_infos(me, object, ty_intrinsic(me, TY_STRING));
     }
     // (Not an enum object indexed by its own members: `E[E.A]`)
@@ -512,11 +522,25 @@ Ty const* ty_access_own_named_prop(Checker* me, Ty const* object, Atom const* na
 }
 
 Ty const* ty_access_without_node_include_undefined(Checker* me, Ty const* object, Ty const* index, bool include_undefined) {
-    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
+    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | ACCESS_SYMBOL_STRING | (include_undefined ? ACCESS_INCLUDE_UNDEFINED : 0));
 }
 
 Ty const* ty_access_without_node(Checker* me, Ty const* object, Ty const* index) {
-    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE);
+    return access(me, object, ty_regular(me, index), 0, ACCESS_NO_NODE | ACCESS_SYMBOL_STRING);
+}
+
+// `object[index]` as an element access expression reads it: a symbol key reads a string index signature too (TS2538)
+Ty const* ty_access_element(Checker* me, Ty const* object, Ty const* index, bool reading) {
+    u32 flags = ACCESS_SYMBOL_STRING | (reading && compiler_options()->no_unchecked_indexed_access ? ACCESS_INCLUDE_UNDEFINED : 0);
+    return access(me, object, ty_regular(me, index), 0, flags);
+}
+
+// Whether `object[index]` finds something only because a symbol key read the string index signature: tsc's
+// getPropertyTypeForIndexType reports TS2538 at the access node then
+bool ty_symbol_reads_string_index(Checker* me, Ty const* object, Ty const* index) {
+    index = ty_regular(me, index);
+    if (!(ty_key_flags(index) & TYF_ES_SYMBOL_LIKE) || (index->flags & TYF_ANY)) return false;
+    return access(me, object, index, 0, ACCESS_SYMBOL_STRING) && !access(me, object, index, 0, 0);
 }
 
 // The type a write to `object[index]` is checked against when it isn't what a read gets: a divergent accessor's
