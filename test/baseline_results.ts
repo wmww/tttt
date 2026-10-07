@@ -1201,9 +1201,9 @@ const baselines = {
         types: true,
     },
     'argumentsUsedInClassFieldInitializerOrStaticInitializationBlock': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'argumentsUsedInObjectLiteralProperty': {
         errors: true,
@@ -38621,12 +38621,12 @@ const baselines = {
         types: true,
     },
     'classStaticBlock6(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'classStaticBlock6(target=es5)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

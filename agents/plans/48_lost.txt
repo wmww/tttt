@@ -5,7 +5,6 @@
 ## true
 ## rebaselined
 MemberFunctionDeclaration5_es6	E	src-same	bl-changed
-argumentsUsedInClassFieldInitializerOrStaticInitializationBlock	ET	src-changed	bl-changed
 arityAndOrderCompatibility01	E	src-changed	bl-changed
 bundledDtsLateExportRenaming	T	src-changed	bl-changed
 complexRecursiveCollections	ET	src-changed	bl-changed

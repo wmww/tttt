@@ -78,8 +78,9 @@ FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scop
     scope->flow = &flow;
     for_each (i, vec_statement, &my statements) {
         flow.statement_list = &my statements;
-        // Its expression statements run with the class (TS2729), the rest is like any other code
-        flow.initializer_context = i->tag == STATEMENT_EXPR ? INITIALIZER_STATIC_BLOCK : INITIALIZER_NONE;
+        // It runs with the class (TS2729), nested blocks too, up to a function (tsc 6.0's
+        // isInPropertyInitializerOrClassStaticBlock; 5.x only counted its expression statements)
+        flow.initializer_context = INITIALIZER_STATIC_BLOCK;
         statement_resolve_names(i, scope, errs);
     }
     flow.initializer_context = INITIALIZER_NONE;

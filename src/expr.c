@@ -353,7 +353,8 @@ static FlowBuilder* yield_generator_body_flow(Scope const* names) {
 // in it (tsc's isInPropertyInitializerOrClassStaticBlock)
 static bool in_initializer_or_static_block(Scope const* scope) {
     for (; scope; scope = scope->parent) {
-        if (scope->kind == SCOPE_FUNCTION) return false;
+        // (Through arrow functions: tsc 6.0's isInPropertyInitializerOrClassStaticBlock with ignoreArrowFunctions)
+        if (scope->kind == SCOPE_FUNCTION && !(scope->function && function_impl_is_arrow(scope->function))) return false;
         if (scope->in_field || scope->kind == SCOPE_STATIC_BLOCK) return true;
     }
     return false;
@@ -2020,7 +2021,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 if (this_ref.kind == THIS_ANY) context.this_function = this_ref.function;
                 context.in_constructor_of = flow->constructor_of;
                 if (my property->form == PROPERTY_EXPR_DOT && my property->expr.tag != EXPR_PROPERTY) {
-                    context.initializer_context = flow->initializer_context;
+                    // (Not inside `typeof this.x` written as a type: tsc's isInPropertyInitializerOrClassStaticBlock quits
+                    // at a TypeQuery)
+                    context.initializer_context = flow->in_type_query ? INITIALIZER_NONE : flow->initializer_context;
                     context.initializer_field = flow->initializer_field;
                 }
                 context.containing_function = names->function;
