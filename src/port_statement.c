@@ -209,8 +209,11 @@ static void port_statement_check_emit_helpers(PortStatement const* me, Span span
             break;
     }
     if (!interop) return;
+    // (tsc's checkImportDeclaration checks named imports' bindings only when the module resolves)
+    bool resolved = my module_ref->file || binder_module_of_ref(current_checker->binder, my module_ref);
     for_each (i, vec_port_item, &my items) {
         if (i->tag != PORT_IMPORT_SPECIFIC && i->tag != PORT_REEXPORT_SPECIFIC) continue;
+        if (i->tag == PORT_IMPORT_SPECIFIC && !resolved) continue;
         if (csview_equals(port_item_name(i->source_name), "default")) {
             Span at = i->full_span; // (which may end in whitespace)
             while (at.sv.size && (at.sv.buf[at.sv.size - 1] == ' ' || at.sv.buf[at.sv.size - 1] == '\n' ||
