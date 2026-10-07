@@ -40,7 +40,7 @@ SKIP = {
 
 # Flags dropped from the command (output only), and flags with a value
 DROP = {"--verbose", "-v", "--v", "--explainFiles", "--listEmittedFiles", "--traceResolution", "--listFiles",
-        "--extendedDiagnostics", "--diagnostics", "-i", "--incremental", "--force", "-f", "--generateTrace"}
+        "--extendedDiagnostics", "--diagnostics", "-i", "--i", "--incremental", "--force", "-f", "--generateTrace"}
 DROP_VALUE = {"--pretty"}
 
 
