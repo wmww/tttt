@@ -264,21 +264,21 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   (IntRange<0, 999> tests): check in the perf session.
 - valibot @ d4da61a0: tttt 0.
 - Flagflip left in valibot/xstate/excalidraw cells (drizzle, effect, tanstack-router clean):
-  - valibot/nosnc -TS2578 x2 (forward.ts:51, forwardAsync.ts:55): iterating \`path: ValidPath<TInput, TPath>\` (a
-    deferred conditional) gives tsc a generic key (\`KeyOf<TInput> | KeyOf<TInput[...]> | ...\`), so \`unknown[key]\`
-    is no error; tttt iterates the conditional's constraint and gets \`string | number\` (TS7053). Iteration types of a
+  - valibot/nosnc -TS2578 x2 (forward.ts:51, forwardAsync.ts:55): iterating `path: ValidPath<TInput, TPath>` (a
+    deferred conditional) gives tsc a generic key (`KeyOf<TInput> | KeyOf<TInput[...]> | ...`), so `unknown[key]`
+    is no error; tttt iterates the conditional's constraint and gets `string | number` (TS7053). Iteration types of a
     deferred conditional type vs tsc's apparent type/base constraint.
-  - xstate/sloppy,nosnc +TS2589 at graph/utils.ts:91 (\`snapshot.getMeta()[id]\`, Record<StateId<any> & string, ..>):
+  - xstate/sloppy,nosnc +TS2589 at graph/utils.ts:91 (`snapshot.getMeta()[id]`, Record<StateId<any> & string, ..>):
     a self-contained probe gives TS2589 on both sides, so it's which instantiations tsc has cached by then.
-  - xstate/eopt +TS2322 input.test.ts:272: generic Spawner signatures compared, \`options\` intersections that print the
-    same are unrelated in tttt (\`input?: number\` & \`input: unknown\` reads number | undefined against number).
+  - xstate/eopt +TS2322 input.test.ts:272: generic Spawner signatures compared, `options` intersections that print the
+    same are unrelated in tttt (`input?: number` & `input: unknown` reads number | undefined against number).
   - excalidraw/nuia TS2488 -2/+1: tsc reports TS2488 once per union type object (getIterationTypesOfIterable caches
-    noIterationTypes); tsc's array literal \`[0, 0]\` is its own tuple type object (ObjectFlags.ArrayLiteral), so
-    \`cond ? pts[1] : [0, 0]\` and \`outline[0]\` are different unions there and the same one in tttt.
-  - excalidraw/nonia TS2345->TS2769 renderOverrides.test.tsx:527 (\`entries.map\` inside \`new Map\`, entries from an
-    \`it.each([...] as const)\` callback): cut-down probes match tsc; not reduced further.
+    noIterationTypes); tsc's array literal `[0, 0]` is its own tuple type object (ObjectFlags.ArrayLiteral), so
+    `cond ? pts[1] : [0, 0]` and `outline[0]` are different unions there and the same one in tttt.
+  - excalidraw/nonia TS2345->TS2769 renderOverrides.test.tsx:527 (`entries.map` inside `new Map`, entries from an
+    `it.each([...] as const)` callback): cut-down probes match tsc; not reduced further.
   - 9751c955 (TS2344 on deferred conditional arguments) costs valibot ~0.75%: mostly one relation,
-    \`TSchema extends ... ? IssueDotPath<TSchema> : string\` against keyof any (Record's K, flatten.ts:41), ~13 ms;
+    `TSchema extends ... ? IssueDotPath<TSchema> : string` against keyof any (Record's K, flatten.ts:41), ~13 ms;
     legitimate work tsc does too, but tttt's relation through IssueDotPath's constraint may be slower than needed.
 
 ## Corpora re-pin (plan 48 stage 5): effect
