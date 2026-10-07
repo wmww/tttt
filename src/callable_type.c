@@ -31,11 +31,6 @@ void callable_type_resolve_names(CallableType* me, Scope* names, ErrorCtx* errs)
     }
 }
 
-static void make_literals(TypeNode const* node) {
-    if (node->tag == TYPE_VALUE) ty_of_node(node);
-    if (node->tag == TYPE_UNION) for_each (i, vec_type, &node->composite) make_literals(i);
-}
-
 void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     // A JSDoc `function(...)` without `: R` (tsc's checkJSDocFunctionType, whatever noImplicitAny says)
     if (my function->jsdoc_type && !my function->jsdoc_callback && !my function->jsdoc_unchecked && !my function->ret_explicit &&
@@ -49,13 +44,6 @@ void callable_type_typecheck(CallableType const* me, ErrorCtx* errs) {
     for_each (i, vec_function_arg, &my function->args) {
         if (!i->initializer.binding.has_explicit_type) continue;
         type_typecheck(&i->initializer.binding.explicit_type, errs);
-        // The parameter's type is made here (tsc's checkParameter asks for the parameter symbol's type), which decides
-        // union order: `AnyRecord[]` of one overload's callback is older than a later overload's union naming it
-        if (current_checker->alias_body_walks) {
-            make_literals(&i->initializer.binding.explicit_type);
-        } else {
-            ty_of_node(&i->initializer.binding.explicit_type);
-        }
     }
     type_typecheck(&my function->ret, errs);
     if (my function->predicate && my function->predicate->has_type) type_typecheck(&my function->predicate->type, errs);

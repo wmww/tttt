@@ -738,11 +738,6 @@ static void identifier_type_typecheck_inner(IdentifierType const* me, ErrorCtx* 
     }
     // tsc's getTypeFromTypeReference: a referenced alias is resolved (TS2456 if that is circular)
     if (my target && (my target->flags & (SYMBOL_TYPE_ALIAS | SYMBOL_CLASS | SYMBOL_INTERFACE | SYMBOL_ENUM)) && !my target->is_placeholder) ty_declared_type_of(current_checker, my target);
-    // (And a referenced type parameter is made: after its type arguments, before the parameter whose constraint this
-    // is, which decides union order: `U | T` for `<T extends Foo<U>, U>`)
-    if (my target && (my target->flags & SYMBOL_TYPE_PARAMETER) && !identifier_type_namespace_count(me)) {
-        ty_declared_type_of(current_checker, my target);
-    }
     if (my target) {
         /*
         //This can be enabled once we're parsing the standard library

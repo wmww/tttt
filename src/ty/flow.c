@@ -2076,8 +2076,6 @@ static Ty const* narrow_by_type_name(Checker* me, Ty const* type, csview name) {
     if (csview_equals(name, "symbol")) return narrow_by_type_facts(me, type, ty_intrinsic(me, TY_ES_SYMBOL), TF_TYPEOF_EQ_SYMBOL);
     if (csview_equals(name, "object")) {
         if (type->flags & TYF_ANY) return type;
-        // (In this order: C leaves the order arguments are evaluated in open, and which type is made first decides
-        // union order, `(T & object) | (T & null)`)
         Ty const* object = narrow_by_type_facts(me, type, ty_intrinsic(me, TY_NON_PRIMITIVE), TF_TYPEOF_EQ_OBJECT);
         return union_of(me, object, narrow_by_type_facts(me, type, ty_intrinsic(me, TY_NULL), TF_EQ_NULL));
     }

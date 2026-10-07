@@ -949,12 +949,6 @@ struct Checker {
     struct Signature** unknown_signature; // tsc's unknownSignature (no parameters, returning errorType) as a list of one
     Ty const* global_types[14]; // GlobalType in relate.c: String, Number... looked up on first use
     bool global_types_resolved[14];
-    // Inside the walk of a type alias's body, whose nodes lower in the alias's context (deferred references), so the
-    // walk doesn't make their types early (type_typecheck())
-    u32 alias_body_walks;
-    // The type literal body of the alias being checked, made by the walk once its members are (type_decl_typecheck())
-    void const* alias_literal_body;
-    Symbol const* alias_literal_symbol;
     u32 instantiation_depth;
     // Conditional types picked as the branch of a conditional type being instantiated now, which don't count towards
     // instantiation_depth (tsc resolves those in a loop, getConditionalType's tailCount), and the next ty_instantiate()

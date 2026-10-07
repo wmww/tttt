@@ -1961,13 +1961,6 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
             break;
         }
     }
-    // The class's types are made here, before its members and heritage are looked at: its instance type and its value
-    // type, which merges a namespace of the same name (tsc's checkClassLikeDeclarationWorker, getTypeOfSymbol). Which
-    // types are older decides union order: `typeof c | T` for a T declared after the class
-    if (my symbol) {
-        ty_declared_type_of(current_checker, my symbol);
-        ty_type_of_symbol(current_checker, my symbol);
-    }
     if (!my is_ambient) class_check_static_name_conflicts(me, errs);
     bool legacy = compiler_options()->experimental_decorators;
     for_each (i, vec_class_item, &my items) {
@@ -2091,7 +2084,7 @@ void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs) {
 
     class_check_emit_helpers(me, errs);
 
-    generic_typecheck(&my generic, false, errs);
+    generic_typecheck(&my generic, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
 
     // (The base an `@augments` tag names instead: tsc checks its expression, checkClassLikeDeclaration, without the
@@ -2282,12 +2275,10 @@ void class_decl_typecheck_members(ClassDecl* me, ErrorCtx* errs) {
                 }
                 expr_typecheck(&i->field.value, errs);
                 class_field_check_implicit_any(me, i, errs);
-                if (i->field.has_explicit_type) {
-                    // (The declared type is resolved either way, like tsc's checkVariableLikeDeclaration: which types
-                    // come first is union order. A field without initializer isn't assigned anything)
+                if (i->field.has_explicit_type && i->field.value.tag != EXPR_IMPLICIT_ANY) {
                     Ty const* declared = ty_of_node(&i->field.explicit_type);
                     if (i->field.is_optional) declared = ty_optional_prop_type(current_checker, declared);
-                    if (i->field.value.tag != EXPR_IMPLICIT_ANY) ty_check_assignable_expr(
+                    ty_check_assignable_expr(
                         current_checker, expr_get_type(&i->field.value), declared, i->field.name_span, &i->field.value, errs
                     );
                 }

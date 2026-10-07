@@ -2589,8 +2589,6 @@ static Ty const* generic_rest_type(Checker* me, Ty const* source, TyList pattern
         Members const* members = ty_members(me, apparent);
         for (u32 i = 0; i < members->prop_count; i++) {
             Prop const* prop = members->props[i];
-            // (tsc's getLiteralTypeFromProperty of every property, in order: the creation order its union goes by)
-            if (!(prop->flags & (PROP_PRIVATE | PROP_PROTECTED)) && !ty_private_name_class(me, prop->name)) ty_prop_name_literal(me, prop->name);
             if (ty_is_spreadable_prop(me, prop)) continue;
             // (A private or protected member, or a `#x`, has no key to omit: keyof lacks it already. tsc's
             // getLiteralTypeFromProperty gives never)
@@ -3449,19 +3447,6 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
 static inline __attribute__((always_inline)) Ty const* lower(
     Checker* me, TypeNode const* node, LowerCtx ctx, Symbol const* alias, TyList alias_args
 ) {
-    // A union node or a generic reference outside an alias body is lowered once: the check walk makes it (tsc's
-    // checkUnionOrIntersectionType, checkTypeReferenceNode) before the declaration it annotates asks (tsc's
-    // links.resolvedType)
-    bool memo_node = node->tag == TYPE_UNION ||
-        (node->tag == TYPE_IDENTIFIER && vec_spanned_type_size(&node->identifier->generic_params));
-    if (memo_node && !alias && !ctx.in_alias && !ctx.method && !node->flow) {
-        u64 key[2] = { KEY_UNION_NODE | (u64)ctx.generic << 32, (u64)(uintptr_t)node };
-        Ty const* memo = intern_get(&my links, key, 2);
-        if (memo) return memo;
-        Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
-        *intern_slot(me, &my links, key, 2) = ret;
-        return ret;
-    }
     Ty const* ret = lower_node(me, node, ctx, alias, alias_args);
     return node->flow ? conditional_flow_type(me, node, ret) : ret;
 }
@@ -3482,17 +3467,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_UNIQUE_SYMBOL: return ty_unique_symbol(me, &node->unique_symbol);
         case TYPE_BIGINT: return ty_intrinsic(me, TY_BIGINT);
         case TYPE_VALUE: {
-            // tsc checks the literal as an expression, which makes the fresh twin too (it's in the id order). A negative
-            // one is `-` of the positive literal, which checkPrefixUnaryExpression checks first
-            if (node->value.tag == VALUE_NUMBER && node->value.number < 0) {
-                ty_fresh_literal(me, ty_literal(me, &(Value){ .tag = VALUE_NUMBER, .number = -node->value.number }));
-            } else if (node->value.tag == VALUE_BIGINT && node->value.bigint.negative) {
-                Value positive = value_bigint_negated(&node->value);
-                ty_fresh_literal(me, ty_literal(me, &positive));
-            }
-            Ty const* ret = ty_literal(me, &node->value);
-            ty_fresh_literal(me, ret);
-            return ret;
+            return ty_literal(me, &node->value);
         }
         case TYPE_IDENTIFIER: {
             if (alias || ctx.in_alias) {

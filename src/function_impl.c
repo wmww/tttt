@@ -758,7 +758,7 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
     if (!my has_body && my full_span.source && !my full_span.source->is_declaration) {
         for_each (i, vec_function_arg, &my args) binding_check_unused_renamings(me, &i->initializer.binding, i, errs);
     }
-    generic_typecheck(&my generic, true, errs);
+    generic_typecheck(&my generic, errs);
     function_impl_check_use_strict_parameters(me, errs);
     bool grammar_error = function_impl_check_grammar_parameters(me, errs);
     if (!grammar_error && my accessor && span_valid(function_impl_member_name(me))) {
@@ -1137,8 +1137,7 @@ static u32 jsdoc_required_params(FunctionImpl const* me) {
 void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
     function_check_emit_helpers(me, errs);
     function_impl_check_implicit_any_parameters(me, errs);
-    // (Type parameters first, then the parameters: tsc's checkSignatureDeclaration. Their constraints make the types
-    // they mention before the parameters' annotations do, which decides union order)
+    // (Type parameters first, then the parameters: tsc's checkSignatureDeclaration)
     function_impl_typecheck_signature(me, false, errs);
     // (The parameter decorators of a class member are the class's to check: they are calls with synthetic arguments,
     // which is what gives them their contextual type)

@@ -340,12 +340,6 @@ static Ty const* make_intrinsic(Checker* me, char const* name, u32 flags) {
     return ret;
 }
 
-static void swap_twin_ids(Ty const* fresh, Ty const* regular) {
-    u32 id = fresh->id;
-    ((Ty*)fresh)->id = regular->id;
-    ((Ty*)regular)->id = id;
-}
-
 Checker* checker_new(Program* program) {
     Checker* me = calloc(1, sizeof(Checker));
     panic_if(!me, "out of memory");
@@ -380,12 +374,8 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_BIGINT] = make_intrinsic(me, "bigint", TYF_BIGINT);
     Value false_value = { .tag = VALUE_BOOLEAN, .boolean = false };
     Value true_value = { .tag = VALUE_BOOLEAN, .boolean = true };
-    // tsc makes each fresh boolean before its regular twin (only those are intrinsics): the ids are swapped to match,
-    // which is fine before anything else refers to them
     my intrinsics[TY_FALSE] = ty_literal(me, &false_value);
-    swap_twin_ids(ty_fresh_literal(me, my intrinsics[TY_FALSE]), my intrinsics[TY_FALSE]);
     my intrinsics[TY_TRUE] = ty_literal(me, &true_value);
-    swap_twin_ids(ty_fresh_literal(me, my intrinsics[TY_TRUE]), my intrinsics[TY_TRUE]);
     my intrinsics[TY_BOOLEAN] = ty_union(me, &my intrinsics[TY_FALSE], 2, nullptr, (TyList){0});
     my intrinsics[TY_ES_SYMBOL] = make_intrinsic(me, "symbol", TYF_ES_SYMBOL);
     my intrinsics[TY_VOID] = make_intrinsic(me, "void", TYF_VOID);
@@ -395,10 +385,7 @@ Checker* checker_new(Program* program) {
     my intrinsics[TY_UNREACHABLE_NEVER] = make_intrinsic(me, "never", TYF_NEVER);
     my intrinsics[TY_NON_PRIMITIVE] = make_intrinsic(me, "object", TYF_NON_PRIMITIVE);
     {
-        // tsc's emptyStringType, zeroType and zeroBigIntType come first (`"" | "a"` prints in that order)
-        ty_string_literal(me, c_sv(""));
-        Value zero = { .tag = VALUE_NUMBER, .number = 0 };
-        ty_literal(me, &zero);
+        // tsc's zeroBigIntType comes first: compareTypes orders bigint literals by type id (`0n | 1n`)
         Value zero_bigint = value_bigint("0", 1, false);
         ty_literal(me, &zero_bigint);
     }
@@ -412,11 +399,6 @@ Checker* checker_new(Program* program) {
     my atom_constructor = checker_atom(me, c_sv("constructor"));
     my atom_prototype = checker_atom(me, c_sv("prototype"));
     my atom_bind = checker_atom(me, c_sv("bind"));
-    // tsc's initializeTypeChecker makes the global Array type and autoArrayType next: the lowest ids of the arrays
-    Checker* saved = current_checker;
-    checker_make_current(me);
-    ty_auto_array(me);
-    checker_make_current(saved);
     return me;
 }
 
@@ -2276,27 +2258,11 @@ Ty const* ty_tuple_target(Checker* me, TupleShape const* shape) {
         unsigned char* flags = arena_new_n(&my arena, unsigned char, shape->arity);
         Atom const** names = shape->names ? arena_new_n(&my arena, Atom const*, shape->arity) : nullptr;
         bool variable = false;
-        u32 min_length = 0;
         for (u32 i = 0; i < shape->arity; i++) {
             params[i] = ty_synthetic_type_param(me, c_sv("T"));
             flags[i] = shape->flags[i];
             if (names) names[i] = shape->names[i];
             variable |= (shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
-            if (!variable && !(shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) min_length = i + 1;
-        }
-        // The literal types of its lengths are made with it (tsc's createTupleTargetType makes its length property's
-        // type), which decides union order: a pair makes 2 (the members' length property is made from them again)
-        if (!variable) {
-            Ty const* stack_lengths[8];
-            u32 count = shape->arity - min_length + 1;
-            Ty const** lengths = count <= c_arraylen(stack_lengths) ? stack_lengths : malloc(sizeof(Ty const*) * count);
-            panic_if(!lengths, "out of memory");
-            for (u32 i = 0; i < count; i++) {
-                Value value = value_number(min_length + i);
-                lengths[i] = ty_literal(me, &value);
-            }
-            if (count > 1) ty_union(me, lengths, count, nullptr, (TyList){0});
-            if (lengths != stack_lengths) free(lengths);
         }
         Ty* ret = ty_alloc(me, TY_DECLARED, TYF_OBJECT);
         ret->declared.kind = TY_DECLARED_TUPLE_TARGET;

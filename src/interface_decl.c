@@ -196,7 +196,7 @@ static void interface_heritage_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
 }
 
 void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
-    generic_typecheck(&my generic, false, errs);
+    generic_typecheck(&my generic, errs);
     ty_check_variance_annotations(current_checker, my symbol, &my generic, false, errs);
     // tsc's getBaseTypes() reports every declaration of an interface whose bases lead back to it (resolving the bases
     // first: reducing one can find the cycle, `interface Y extends X<Y>` with a mapped type over `keyof Y` in X)
@@ -210,8 +210,7 @@ void interface_decl_typecheck(InterfaceDecl* me, ErrorCtx* errs) {
     }
 
     // The bases and index signatures are checked before the heritage clauses and members are walked (tsc's
-    // checkInterfaceDeclaration, its first lazy diagnostic), which decides union order: checkIndexConstraints makes
-    // the literal type of every property's name, `open` before `status: "new" | "open"` is walked
+    // checkInterfaceDeclaration, its first lazy diagnostic)
     interface_heritage_typecheck(me, errs);
     check(my type.tag == TYPE_INTERFACE);
     for_each (extends, vec_spanned_type, &my extends) {

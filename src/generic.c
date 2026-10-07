@@ -69,17 +69,14 @@ static void generic_check_default(GenericItem const* item, Ty const* param, Erro
     c_drop(cstr, &source_str, &target_str);
 }
 
-// `own_params`: the declaration's type parameters are its own (not merged with other declarations' like an interface's
-// or class's), so they can be made here, in tsc's order
-void generic_typecheck(Generic const* me, bool own_params, ErrorCtx* errs) {
+void generic_typecheck(Generic const* me, ErrorCtx* errs) {
     bool found_optional = false;
     for_each (i, vec_generic_item, &my items) {
         type_typecheck(&i->extends, errs);
         if (i->fallback) type_typecheck(i->fallback, errs);
-        // tsc's checkTypeParameter: the type parameter is made after what its constraint and default mention (which
-        // decides union order), then hasNonCircularBaseConstraint
+        // tsc's checkTypeParameter: hasNonCircularBaseConstraint
         bool circularity = i->extends_explicit && span_valid(i->extends_span);
-        Ty const* param = i->symbol_ref && (own_params || circularity) ? ty_type_param(current_checker, i->symbol_ref) : nullptr;
+        Ty const* param = i->symbol_ref && circularity ? ty_type_param(current_checker, i->symbol_ref) : nullptr;
         if (circularity && param && ty_param_constraint_is_circular(current_checker, param)) {
             error_ctx_error_d(errs, i->extends_span, 2313, "Type parameter '", i->name, "' has a circular constraint.");
         }

@@ -255,8 +255,8 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
 
 bool type_literal_has_index_constraints(TypeNode const* me) {
     if (my tag != TYPE_INTERFACE) return false;
-    // Only a literal with an index signature and something else to check against it: evaluating the others early
-    // would give their types ids (and so union orders) before the code that uses them does
+    // Only a literal with an index signature and something else to check against it (the others have nothing to
+    // check: not lowering them saves the work)
     u32 index_count = 0, other_count = 0;
     for_each (i, vec_interface_member, &my interface.members) {
         if (i->key.tag == INTERFACE_KEY_MAPPED) return false;
@@ -439,27 +439,11 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             break;
         case TYPE_IDENTIFIER:
             identifier_type_typecheck(my identifier, errs);
-            // A generic reference is made when the walk meets it, after its type arguments (tsc's
-            // checkTypeReferenceOrImport asks getTypeFromTypeNode), which decides union order: `string[] | Box<number>`
-            // makes Box<number> first. (A plain one is its declared type, made by identifier_type_typecheck)
-            if (vec_spanned_type_size(&my identifier->generic_params) && my identifier->target &&
-                !current_checker->alias_body_walks
-            ) {
-                ty_of_node(me);
-            }
             break;
         case TYPE_CALLABLE: callable_type_typecheck(my callable, errs); break;
         case TYPE_INTERFACE:
             // A type literal (an interface's body is checked by interface_decl_typecheck())
             interface_typecheck(&my interface, errs);
-            // Its type is made once its members are walked, before the declaration it annotates resolves its type (tsc's
-            // checkTypeLiteral), which decides union order: `{ a: string } | "xyz"`. An alias's body is the alias's type
-            // (`type Box = { content?: Foo | Box }` makes Foo first)
-            if (me == current_checker->alias_literal_body) {
-                ty_declared_type_of(current_checker, current_checker->alias_literal_symbol);
-            } else {
-                ty_of_node(me);
-            }
             // tsc's checkMappedType: a mapped type without a type (reportImplicitAny)
             if (vec_interface_member_size(&my interface.members) &&
                 vec_interface_member_at(&my interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED &&
@@ -505,8 +489,6 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
             for_each (i, vec_tuple_element, &my tuple.elements) {
                 type_typecheck(&i->type, errs);
             }
-            // (Made once its elements are walked: tsc's checkTupleType)
-            if (!current_checker->alias_body_walks) ty_of_node(me);
             // tsc's checkTupleType: a variadic element (`...T`, T no array type syntactically) must be array-like; a
             // rest element (`...T[]`, `...[...T[]]`) can't follow another nor be followed by an optional one, and a
             // required element can't follow an optional one (grammar errors). The first error ends the walk
@@ -564,17 +546,6 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
         case TYPE_INTERSECTION:
             for_each (i, vec_type, &my composite) {
                 type_typecheck(i, errs);
-            }
-            // Made after its members are walked (tsc's checkUnionOrIntersectionType), which decides union order:
-            // `(string & {}) | "-moz-initial"`, `string[] | PathResult` (a union node is lowered once, see lower())
-            if (!current_checker->alias_body_walks) {
-                ty_of_node(me);
-            } else if (my tag == TYPE_UNION) {
-                // But a union's literal members are made then, in order (tsc's getTypeFromUnionTypeNode): what a literal
-                // type's id is shows, `type T1 = { a: "a" | "b" }` before `{ b: 1 }` asks for "b" (typeSatisfaction)
-                for_each (i, vec_type, &my composite) {
-                    if (i->tag == TYPE_VALUE) ty_of_node(i);
-                }
             }
             break;
 
