@@ -54,12 +54,15 @@ CORPORA=(
     # (~600: TS 7's reduced JS support, e.g. TS2749 for JSDoc type references to values) and can't be made so short of
     # dropping the JS. The lock is npm's resolution of its package.json (upstream ships a yarn.lock)
     "webpack https://github.com/webpack/webpack.git 86d31e06c4e3ed3c63596ee313549d16d9e76600 . .."
-    # zod v4.6.5 (Sep 2026): the schema library's package (classic, mini, core, v3) and its vitest tests (expectTypeOf,
-    # heavy inference), checked through packages/zod/tsconfig.test.json (tsconfig.json has noUnusedLocals, which only
-    # biome satisfies); exactOptionalPropertyTypes, nodenext, customConditions. A pnpm workspace: the dependencies are the
-    # root's devDependencies (without `zod: workspace:*`, plus the @types/node vitest hoists), from
-    # corpora-locks/zod.package.json
-    "zod https://github.com/colinhacks/zod.git 59bbc03e10c636b9eb3c393dfeb552819774ec21 . ../packages/zod"
+    # zod (main's head on 2026-10-07, 4.6.5+, plan 48 stage 5): the schema library's package (classic, mini, core, v3)
+    # and its vitest tests (expectTypeOf, heavy inference), checked through packages/zod/tsconfig.test.json
+    # (tsconfig.json has noUnusedLocals, which only biome satisfies); exactOptionalPropertyTypes, nodenext,
+    # customConditions. Upstream is still on TypeScript ~5.5.4 (its CI hasn't moved), but needs no overlay: tsc 6 and
+    # tsgo 7.0.2 are clean on it as is. The root tsconfig (realworld's zod-root) isn't clean under tsc 6 (53: missing
+    # bench/fixture dependencies, unused locals) and tsgo 7.0.2 runs away on it (>18 GB). A pnpm workspace: the
+    # dependencies are the root's devDependencies (without `zod: workspace:*`, plus the @types/node vitest hoists),
+    # from corpora-locks/zod.package.json
+    "zod https://github.com/colinhacks/zod.git 0b216ef674e297ebe41d8bf902262e56f8755822 . ../packages/zod"
     # xstate (Oct 2026, plan 48 stage 5): main's head, on TypeScript 6 (`@typescript/typescript6` ^6.0.2, CI also runs
     # tsgo 7). The core package (state machines, setup()/createMachine()/assign() configs typed through generic call
     # inference with callbacks) and its vitest tests (types.test.ts, setup.types.test.ts: @ts-expect-error on inference

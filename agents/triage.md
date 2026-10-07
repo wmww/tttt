@@ -293,3 +293,12 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   doesn't run tsgo on v3): TS2345 at src/Schema.ts:3770 (`typeSchema(self)`: `SchemaClass<any, any, never>` not
   assignable to `S extends Schema.Any` inside `dual(2, <S, FD>(...) => transformOrFail(self, typeSchema(self), ...))`)
   and TS2769 x2 in packages/vitest/src/internal/internal.ts:132,153. tsgo-vs-tsc 6 divergences, like vue's.
+
+## Corpora re-pin (plan 48 stage 5): zod
+- zod @ 0b216ef6 (2 Oct 2026, main's head; upstream still on TypeScript ~5.5.4): tsc 4d4f005c 0, tsgo 7.0.2 0, tttt 0
+  (packages/zod/tsconfig.test.json, no overlay needed: tsc 6 reports no deprecations on it). No tttt bugs to drain.
+- zod-root: tsc 6 53 (26 TS2307 bench/fixture deps not in the lock, 14 TS6133 + 8 TS6196 unused, TS2345/TS2403/
+  TS2412/TS2305/TS7016 singles), tttt the same 53 (identical file:line:code). tsgo 7.0.2 runs away on it (18 GB RSS
+  after 17 min single-threaded, then killed; `tsc -p .` multi-threaded was OOM-killed too). Not bisected: which
+  package/file blows up tsgo might be a perf hazard worth knowing about (packages/bench and scripts/ are new since the
+  old pin).
