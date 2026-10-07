@@ -353,14 +353,16 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
         error_ctx_error_d(errs, my span, wildcard ? 2580 : 2591, "Cannot find name '", my path, "'. Do you need to install type "
             "definitions for node? Try `npm i --save-dev @types/node`",
             wildcard ? "." : " and then add 'node' to the types field in your tsconfig.");
+    } else if (side_effect) {
+        // (A side-effect import's message is the caller's, which comes before classic resolution's: tsc's
+        // resolveExternalModuleName)
+        Error* error = error_ctx_error_d(errs, my span, 2882,
+            "Cannot find module or type declarations for side-effect import of '", my path, "'.");
+        if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
     } else if (options->module_resolution == MODULE_RESOLUTION_CLASSIC) {
         error_ctx_error_d(errs, my span, 2792,
             "Cannot find module '", my path, "'. Did you mean to set the 'moduleResolution' option to 'nodenext', "
             "or to add aliases to the 'paths' option?");
-    } else if (side_effect) {
-        Error* error = error_ctx_error_d(errs, my span, 2882,
-            "Cannot find module or type declarations for side-effect import of '", my path, "'.");
-        if (error && cstr_size(&my alternate_result)) module_ref_add_not_found_chain(me, error, cstr_sv(&my path));
     } else {
         Error* error = error_ctx_error_d(errs, my span, 2307,
             "Cannot find module '", my path, "' or its corresponding type declarations.");

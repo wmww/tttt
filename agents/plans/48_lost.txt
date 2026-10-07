@@ -11,7 +11,6 @@ MemberFunctionDeclaration5_es6	E	src-same	bl-changed
 TypeGuardWithArrayUnion	T	src-changed	bl-changed
 TypeGuardWithEnumUnion	T	src-changed	bl-changed
 ambientExportDefaultErrors	T	src-changed	bl-changed
-amdDependencyCommentName4	E	src-changed	bl-changed
 anonymousClassExpression1	T	src-changed	bl-changed
 argumentsUsedInClassFieldInitializerOrStaticInitializationBlock	ET	src-changed	bl-changed
 arityAndOrderCompatibility01	E	src-changed	bl-changed
@@ -448,7 +447,6 @@ symbolType17	T	src-changed	bl-changed
 symbolType18	T	src-changed	bl-changed
 symbolType19	T	src-same	bl-changed
 symbolType3	T	src-same	bl-changed
-systemModule9	E	src-changed	bl-changed
 taggedPrimitiveNarrowing	T	src-changed	bl-changed
 taggedTemplateStringsTypeArgumentInference	ET	src-changed	bl-changed
 taggedTemplateStringsTypeArgumentInferenceES6	ET	src-same	bl-changed
