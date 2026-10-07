@@ -1724,6 +1724,12 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
         Ty const* type = ty_apparent_type(me, ty_expr_type(me, extends));
         if (type->flags & (TYF_OBJECT | TYF_INTERSECTION) && type != ty) base_constructor = type;
+    } else if (base_expr_constructor && (base_expr_constructor->kind == TY_INTERSECTION ||
+        ty_members(me, base_expr_constructor)->construct_count)
+    ) {
+        // (A constructor whose instance type is no valid base, the error type of a broken construct signature: its
+        // properties are still the static side's, tsc's resolveAnonymousTypeMembers goes by getBaseConstructorTypeOfClass)
+        base_constructor = base_expr_constructor;
     }
     if (base_constructor && base_constructor->kind == TY_INTERSECTION) {
         builder_add_intersection_members(me, builder, base_constructor, true);
