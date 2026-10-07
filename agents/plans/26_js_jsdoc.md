@@ -375,3 +375,44 @@ From the four sub-agents' reports; test names are the ones to probe.
   The fixing side is handled narrowly in `assignment_mentions()` (`meets_jsdoc_node_in()`). A real fix records the
   in-scope `@template`s on the lowering context.
 
+- Triage 2026-10-07 (binder/modules share; the TypeScript-side items are in bugs/binder_modules.md):
+  - **Lazy TS7008 for `this.x = null`/`undefined`**: tsc reports reportImplicitAny inside
+    getWidenedTypeForAssignmentDeclaration, i.e. only when something resolves the member's type (a read `d.y`, a
+    method returning `this.w`); the declaring assignment itself types its target as autoType and doesn't. Probe:
+    `function C() { this.y = null }` alone is clean under tsc, `function D() { this.y = null }; new D().y` is
+    TS7008 at the assignment; the same for a class constructor's `this.w = null` with and without `m() { return
+    this.w }`. tttt reports all of them from js_assignment_implicit_any_check(). Needs reporting where
+    assignment_symbol_type() first computes the member's type (once, checker-count independent), excluding the
+    declaring assignment's own left side. Same shape as the bodiless-renaming TS7031 laziness.
+  - allowJscheckJsTypeParameterNoCrash: object literal methods bind with PropertyExcludes (not MethodExcludes), so
+    `this.data2 = 1` inside method `data1` (bindThisPropertyAssignment into the literal's members) and the later
+    method `data2` are one symbol (both declarations in the symbols baseline); tsc then leaves data2 out of the
+    literal's type (`{ data1(val: any): void; }`, `this.data2 : any`). Why it drops it wasn't found.
+  - typeFromPropertyAssignment30 (TS): `const c: Combo = () => 1; c.p = {}`: tsc prints the arrow as `{ (): number;
+    p: {}; }` (the expando member typed by its initializer) while `c.p` reads Combo's `p`; tttt gives the member
+    the annotation's type (getAnnotatedTypeForAssignmentDeclaration would too, so the member the arrow's type gets
+    through mergeJSSymbols must be another symbol). typeFromPropertyAssignment18: `var GLOBSTAR = m.GLOBSTAR = {}`
+    makes one container, m.GLOBSTAR's (getExpandoSymbol through the chained assignment), `typeof m.GLOBSTAR`.
+  - jsDeclarationsClassStaticMethodAugmentation: `Clazz.method.prop = 5` (an expando on a static method) is a member
+    of the method in tsc (class statics are the class symbol's exports, lookupSymbolForPropertyAccess finds them);
+    tttt's spurious TS2339 because class members aren't binder symbols (lookup_for_property_access() only walks
+    exports). Fixing it needs static members reachable as expando hosts.
+  - pushTypeGetTypeOfAlias: `module.exports = function () {}; exports.blah = exports.someProp` is an alias whose
+    resolution goes through getCommonJsExportEquals' clone back to blah: TS2303 at `exports.blah`; tttt resolves
+    the entity alias to nothing, silently.
+  - ensureNoCrashExportAssignmentDefineProperrtyPotentialMerge: `B.NS = require(...)` and
+    `Object.defineProperty(B, "NS", ...)` on a `module.exports = B` container are TS2323 "Cannot redeclare exported
+    variable 'NS'" at both in tsc.
+  - typeFromParamTagForFunction mutation (`declare function require(id: number)`): tsc's checkCallExpression
+    resolves the signature before isCommonJsRequire, but a require *declaration* doesn't check its initializer; the
+    TS2345 tsc shows only with ES module files in the program wasn't reduced.
+  - JSDoc attachment: statements and class/object literal members now take leading comments only (fixed: a comment
+    on the same line as the previous token is a trailing one). Hosts that tsc lets take trailing comments too
+    (parameters, variable declarations, function expressions, parenthesized expressions) still use jsdoc_before();
+    the initializer hosts of jsdoc_apply_variable_initializers() (object, class, identifier) are leading-only in tsc
+    and aren't distinguished yet.
+  - JS declaration emit diagnostics (TS9005/TS9006 jsDeclarationsExportAssignedConstructorFunctionWithSub and
+    jsDeclarationsTypeReassignmentFromDeclaration2, TS6232 jsDeclarationsCrossfileMerge, TS18042
+    jsDeclarationsImportAliasExposedWithinNamespace, TS5088 arrayFakeFlatNoCrashInferenceDeclarations) all come from
+    JS declaration emit (symbolTableToDeclarationStatements), which tttt doesn't do (plan 40 excludes it; emit is out
+    of scope). TS5088 is plan 40's leftover for TS too. Leave them unless declaration emit comes into scope.
