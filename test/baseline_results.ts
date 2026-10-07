@@ -52561,9 +52561,9 @@ const baselines = {
         types: true,
     },
     'nullishCoalescingOperator5': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'nullishCoalescingOperator6': {
         errors: true,
@@ -67206,9 +67206,9 @@ const baselines = {
         types: true,
     },
     'plainJSGrammarErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'plainJSGrammarErrors2': {
         errors: true,

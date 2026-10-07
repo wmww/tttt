@@ -4694,9 +4694,9 @@ int binary_op_get_precedence(BinaryOp op) {
         case BINARY_OP_OR_OR:
             return 30;
 
-        // Below `||` (tsc's Coalesce): `a ?? b || c` is `a ?? (b || c)`, which is an error anyway (TS5076)
+        // Like `||` (tsc 6's Coalesce = LogicalOR): `a ?? b || c` is `(a ?? b) || c`, an error anyway (TS5076)
         case BINARY_OP_EH_EH:
-            return 25;
+            return 30;
 
         case BINARY_OP_EQUAL:
         case BINARY_OP_PLUS_EQUAL:
