@@ -1262,10 +1262,29 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
             symbol->function = scope->function;
         }
     }
-    symbol_add_decl(symbol, (SymbolDecl){
+    SymbolDecl decl = {
         .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full, .block = scope,
         .hoisted = scope->hoisting,
-    });
+    };
+    // A function of a module or namespace block declared both exported and not: tsc's declareModuleMember gives the
+    // exported declarations a local too (ExportValue, which FunctionExcludes doesn't exclude), so the block's local
+    // symbol has every declaration of the name and its type every signature, the export only the exported ones
+    if (props.kind == SYMBOL_DECL_FUNCTION && !props.default_export && scope->container &&
+        (scope->kind == SCOPE_MODULE || scope->kind == SCOPE_NAMESPACE) && scope->container->exports
+    ) {
+        if (table == scope->container->exports) {
+            Symbol* local = symbol_table_get_own(&scope->locals, name, symbol_name_hash(name));
+            if (local && local != symbol && (local->flags & SYMBOL_FUNCTION)) symbol_add_decl(local, decl);
+        } else if (table == &scope->locals && !merged) {
+            Symbol* exported = symbol_table_get_own(scope->container->exports, name, symbol_name_hash(name));
+            if (exported && exported != symbol && (exported->flags & SYMBOL_FUNCTION)) {
+                for (u32 i = 0; i < exported->decl_count; i++) {
+                    if (exported->decls[i].kind == SYMBOL_DECL_FUNCTION && exported->decls[i].block == scope) symbol_add_decl(symbol, exported->decls[i]);
+                }
+            }
+        }
+    }
+    symbol_add_decl(symbol, decl);
     if (props.default_export && span_valid(props.name)) scope_declare_default_local(scope, symbol, props.name, excludes);
     if (includes & (SYMBOL_NAMESPACE_MODULE | SYMBOL_VALUE_MODULE | SYMBOL_ENUM)) symbol_ensure_exports(symbol);
     *ret = symbol;

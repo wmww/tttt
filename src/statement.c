@@ -2213,6 +2213,11 @@ static u32 function_local_symbol_decls(Symbol const* symbol, SymbolDecl const** 
         for (u32 i = 0; symbols[s] && i < symbols[s]->decl_count && count < cap; i++) {
             SymbolDecl const* decl = &symbols[s]->decls[i];
             if (s == 1 && decl->block != block) continue;
+            // (The local has the exported declarations of its block too, see scope_init_declaration(): counted once,
+            // as exported)
+            bool also_exported = false;
+            for (u32 k = 0; s == 0 && exports && k < exports->decl_count && !also_exported; k++) also_exported = exports->decls[k].node == decl->node;
+            if (also_exported) continue;
             // (insertion into source order)
             u32 at = count;
             while (at > 0 && out[at - 1]->full.source == decl->full.source &&

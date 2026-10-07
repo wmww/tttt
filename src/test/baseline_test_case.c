@@ -1977,7 +1977,12 @@ VecSpan baseline_symbol_declaration_spans(Symbol const* me) {
     SymbolDecl* decls = malloc(sizeof(SymbolDecl) * (me->decl_count + count));
     u32 len = 0;
     for (u32 i = 0; i < twin->decl_count; i++) if (!twin_same_block || twin->decls[i].block == block) decls[len++] = twin->decls[i];
-    for (u32 i = 0; i < me->decl_count; i++) decls[len++] = me->decls[i];
+    for (u32 i = 0; i < me->decl_count; i++) {
+        // (A local function has the exported declarations of its block already, see scope_init_declaration())
+        bool seen = false;
+        for (u32 k = 0; k < len && !seen; k++) seen = decls[k].node && decls[k].node == me->decls[i].node;
+        if (!seen) decls[len++] = me->decls[i];
+    }
     for (u32 i = 1; i < len; i++) {
         for (u32 j = i; j > 0 && span_start_ptr(decls[j].full) < span_start_ptr(decls[j - 1].full); j--) {
             SymbolDecl t = decls[j];
