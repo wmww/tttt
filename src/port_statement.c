@@ -369,7 +369,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     }
     port_statement_check_json_import(me, errs);
     // (tsc's checkImportEqualsDeclaration)
-    if (compiler_options()->erasable_syntax_only && !ambient && !my jsdoc && (my main.tag == PORT_IMPORT_ALIAS || my is_import_require)) {
+    if (compiler_options()->erasable_syntax_only && !ambient && !my jsdoc && !my wrong_context && (my main.tag == PORT_IMPORT_ALIAS || my is_import_require)) {
         error_ctx_error_d(errs, span_with_semicolon(span), 1294, "This syntax is not allowed when 'erasableSyntaxOnly' is enabled.");
     }
     if (!ambient) port_statement_check_emit_helpers(me, span, errs);
@@ -400,7 +400,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
     // tsc's checkImportEqualsDeclaration: `import x = require()` can't be emitted as an ES module (by the module
     // option, whatever the file's format)
     ModuleKind module_kind = compiler_options()->module;
-    if (my is_import_require && !ambient && !my main.type_only &&
+    if (my is_import_require && !ambient && !my main.type_only && !my wrong_context && !my in_namespace &&
         module_kind >= MODULE_KIND_ES2015 && module_kind <= MODULE_KIND_ESNEXT
     ) {
         error_ctx_grammar_error_d(errs, span_with_semicolon(span), 1202,
