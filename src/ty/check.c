@@ -688,8 +688,9 @@ static bool elaborate_did_you_mean_to_call(
             fits = !(ret->flags & (TYF_ANY | TYF_NEVER)) && ty_is_related(me, ret, target, TY_RELATION_ASSIGNABLE);
         }
         if (!fits) continue;
-        Error* error = report_unassignable(me, head, source, target, expr_outer_span(expr), errs);
-        error_add_related_s(error, expr_outer_span(expr), construct ? 6213 : 6212, construct ?
+        // (At the expression's error span: a class expression's `class`, tsc's getErrorSpanForNode)
+        Error* error = report_unassignable(me, head, source, target, expr_error_span(expr), errs);
+        error_add_related_s(error, expr_error_span(expr), construct ? 6213 : 6212, construct ?
             cstr_lit("Did you mean to use 'new' with this expression?") : cstr_lit("Did you mean to call this expression?"));
         return true;
     }
