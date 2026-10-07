@@ -2766,9 +2766,40 @@ void ty_check_delete_operand(Checker* me, Expr const* operand, ErrorCtx* errs) {
     error_ctx_error_d(errs, operand->inner_span, 2790, "The operand of a 'delete' operator must be optional.");
 }
 
+// A key of a union written through (`o[k] = v`, k: "a" | "b") that names a readonly property: 1, 0 if it names a
+// writable one, -1 if it names none (tsc's getPropertyTypeForIndexType with AccessFlags.Writing, isAssignmentToReadonlyEntity)
+static int readonly_key_member(Checker* me, PropertyExpr const* access, Ty const* object, Atom const* name) {
+    MemberRefs member = {0};
+    int readonly = member_refs(me, object, name, &member, 0);
+    if (readonly <= 0) return readonly;
+    // (A class's own readonly property through `this` in its constructor)
+    PropertyContext const* site = property_context(access);
+    if (member.len == 1 && is_keyword(&access->expr, KEYWORD_IDENTIFIER_THIS) && site->in_constructor_of &&
+        !(member.props[0]->flags & PROP_ACCESSOR) && member.props[0]->parent == site->in_constructor_of
+    ) {
+        return 0;
+    }
+    return 1;
+}
+
+// The key of an element access written to, when it is a (non-generic) union of keys written one by one
+static Ty const* written_union_key(Checker* me, PropertyExpr const* access) {
+    if (!access->assignment_target || access->form != PROPERTY_EXPR_BRACKET || access_name(me, access)) return nullptr;
+    Ty const* key = ty_regular(me, ty_access_key_type(me, access));
+    return key->kind == TY_UNION && !(key->flags & TYF_BOOLEAN) && !ty_is_generic_index(key) ? key : nullptr;
+}
+
 bool ty_is_readonly_assignment(Checker* me, PropertyExpr const* access, Ty const* object) {
     MemberRefs refs = {0};
-    return readonly_assignment(me, access, object, &refs);
+    if (readonly_assignment(me, access, object, &refs)) return true;
+    // (Through a union of keys, one readonly property makes the whole access the error type: tsc's
+    // getIndexedAccessTypeOrUndefined gives up when a key's getPropertyTypeForIndexType does)
+    Ty const* key = written_union_key(me, access);
+    for (u32 i = 0; key && i < key->composite.types.len; i++) {
+        Atom const* name = ty_literal_name(me, key->composite.types.data[i]);
+        if (name && readonly_key_member(me, access, object, name) > 0) return true;
+    }
+    return false;
 }
 
 static ClassDecl const* class_decl_of(Symbol const* symbol) {
@@ -4145,6 +4176,32 @@ void ty_check_member_modifiers(Checker* me, PropertyExpr const* access, Ty const
         // Assigning to a generic object doesn't go through its index signatures (TS2339 instead)
         bool generic = object->kind == TY_TYPE_PARAM && !object->param.state->is_this;
         if (!access->assignment_target || generic) return;
+        // Through a union of keys, each one is written (tsc's getIndexedAccessType goes key by key with
+        // AccessFlags.Writing): a readonly property is TS2540 at the key, a readonly index signature TS2542 at the access
+        Ty const* union_key = written_union_key(me, access);
+        if (union_key) {
+            Ty const* apparent = ty_apparent_type(me, object);
+            bool index_reported = false;
+            for (u32 i = 0; i < union_key->composite.types.len; i++) {
+                Ty const* key = union_key->composite.types.data[i];
+                Atom const* member_name = ty_literal_name(me, key);
+                int readonly = member_name ? readonly_key_member(me, access, object, member_name) : -1;
+                if (readonly > 0) {
+                    error_ctx_error_d(errs, expr_outer_span(&access->prop), 2540,
+                        "Cannot assign to '", atom_sv(member_name), "' because it is a read-only property.");
+                    continue;
+                }
+                if (readonly == 0 || index_reported || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+                IndexInfo const* info = ty_applicable_index_info(me, apparent, key);
+                if (info && info->readonly) {
+                    index_reported = true;
+                    cstr object_str = ty_to_cstr(me, apparent); // (tsc shows the apparent type either way)
+                    error_ctx_error_d(errs, span, 2542, "Index signature in type '", object_str, "' only permits reading.");
+                    cstr_drop(&object_str);
+                }
+            }
+            return;
+        }
         // A readonly index signature (`readonly T[]`)
         Ty const* apparent = ty_apparent_type(me, object);
         Ty const* key = ty_regular(me, ty_access_key_type(me, access));
