@@ -333,7 +333,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         // What an augmented `export =` assigns is a module to tsc's printer, named by the file of its first
         // declaration as that is called (getSpecifierForModuleSymbol without a resolver host: the extension stays)
         SourceFile const* file = chain.items[0]->decls[0].full.source;
-        if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file);
+        if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file, symbol);
         out_lit(d, "import(\"");
         csview path = file ? source_file_display_path(file) : c_sv("");
         out(d, path);
@@ -348,7 +348,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
         // (tsc's name of a file an import found is its absolute path, `/.src/` included where the harness writes the
         // underline: see SourceFile.loaded_by_import)
         SourceFile const* file = chain.items[0]->module ? chain.items[0]->module->file : nullptr;
-        if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file);
+        if (d.tracker && file && d.tracker->track_module_file) d.tracker->track_module_file(d.tracker, file, symbol);
         csview path = file ? source_file_display_path(file) : c_sv("");
         if (d.underline && file && file->loaded_by_import && path.size && path.buf[0] != '/') {
             cstr_append(d.underline, d.reused ? "      " : "^^^^^^");

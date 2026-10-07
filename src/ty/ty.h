@@ -2170,8 +2170,8 @@ typedef struct DeclTracker {
     void (*track_computed_name)(struct DeclTracker* me, csview name, struct SourceFile const* file);
     void (*report)(struct DeclTracker* me, DeclTrackReport report, csview name);
     // A name the printer roots at `import("...")` of this file (symbolToTypeNode's import type: the specifier may only
-    // reach it through a node_modules, TS2742)
-    void (*track_module_file)(struct DeclTracker* me, struct SourceFile const* file);
+    // reach it through a node_modules, TS2883 naming `symbol`)
+    void (*track_module_file)(struct DeclTracker* me, struct SourceFile const* file, Symbol const* symbol);
     void* ctx;
     // The printed type passed the length tsc serializes (reportTruncationError, reported): the printer stops
     bool truncated;

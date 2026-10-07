@@ -2814,8 +2814,7 @@ static void export_assignment_check_isolated(Statement const* me, Scope* names, 
     bool illegal_in_cjs = !export_equals && options->verbatim_module_syntax &&
         source_file_emit_module_kind(file) == MODULE_KIND_COMMONJS;
     if (illegal_in_cjs) {
-        error_ctx_error_d(errs, span_with_semicolon(my span), 1286,
-            "ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'.");
+        source_file_verbatim_cjs_error(file, errs, span_with_semicolon(my span), false);
         return;
     }
     if (my expr.tag != EXPR_IDENTIFIER || my expr.identifier.keyword || expr_is_perenthisized(&my expr)) return;

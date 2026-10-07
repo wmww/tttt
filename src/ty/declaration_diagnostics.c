@@ -533,7 +533,7 @@ static bool reaches_into_node_modules(cstr const* specifier) {
     return csview_find_sv(cstr_sv(specifier), c_sv("/node_modules/")) != c_NPOS;
 }
 
-// symbolToTypeNode's import type: TS2742 when its specifier can only reach the module through a node_modules (in
+// symbolToTypeNode's import type: TS2883 when its specifier can only reach the module through a node_modules (in
 // node16/nodenext, unless the other resolution mode's specifier can, with a `resolution-mode` attribute)
 static cstr unsafe_specifier(Walk* me, SourceFile const* target) {
     CompilerOptions const* o = compiler_options();
@@ -584,7 +584,7 @@ static cstr walk_module_specifier(void* ctx, SourceFile const* target) {
     return cstr_clone(memo->plain);
 }
 
-static void track_module_file(DeclTracker* tracker, SourceFile const* target) {
+static void track_module_file(DeclTracker* tracker, SourceFile const* target, Symbol const* symbol) {
     Walk* me = tracker->ctx;
     if (my emitting.kind == EMIT_NONE || target == my file) return;
     SpecifierMemo* memo = specifier_memo(me, target);
@@ -595,8 +595,8 @@ static void track_module_file(DeclTracker* tracker, SourceFile const* target) {
     if (!cstr_size(&memo->unsafe)) return;
     csview name;
     Span at = error_name_node(me, &name);
-    report_once(me, at, 2742, cstr_d("The inferred type of '", name, "' cannot be named without a reference to '",
-        memo->unsafe, "'. This is likely not portable. A type annotation is necessary."));
+    report_once(me, at, 2883, cstr_d("The inferred type of '", name, "' cannot be named without a reference to '",
+        symbol->name, "' from '", memo->unsafe, "'. This is likely not portable. A type annotation is necessary."));
 }
 
 // trackComputedName: the first identifier of a late bound name as resolved from here, else as resolved where the name

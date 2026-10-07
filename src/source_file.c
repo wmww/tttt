@@ -26,6 +26,23 @@ ModuleKind source_file_emit_module_kind(SourceFile const* me) {
     return implied != MODULE_KIND_NONE ? implied : compiler_options()->module;
 }
 
+// tsc's getVerbatimModuleSyntaxErrorMessage: ESM syntax in a CommonJS file under verbatimModuleSyntax (TS1286 in a
+// .cts/.cjs, else TS1295 with the hint about package.json's `type`)
+void source_file_verbatim_cjs_error(SourceFile const* me, ErrorCtx* errs, Span at, bool grammar) {
+    csview path = me ? cstr_sv(&my canonical_path) : c_sv("");
+    if (csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs")) {
+        char const* message = "ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'.";
+        if (grammar) error_ctx_grammar_error_d(errs, at, 1286, message);
+        else error_ctx_error_d(errs, at, 1286, message);
+        return;
+    }
+    char const* message = "ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'. "
+        "Adjust the 'type' field in the nearest 'package.json' to make this file an ECMAScript module, or adjust your "
+        "'verbatimModuleSyntax', 'module', and 'moduleResolution' settings in TypeScript.";
+    if (grammar) error_ctx_grammar_error_d(errs, at, 1295, message);
+    else error_ctx_error_d(errs, at, 1295, message);
+}
+
 // Whether some line break of the text isn't \n or \r\n: a lone \r, U+2028 or U+2029
 static bool has_other_line_breaks(const char* start, const char* end) {
     for (const char* pos = start; (pos = memchr(pos, '\r', (size_t)(end - pos))); pos++) {

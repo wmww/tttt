@@ -3029,8 +3029,7 @@ static void import_call_check_grammar(Expr const* me, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     ModuleKind module = options->module;
     if (options->verbatim_module_syntax && module == MODULE_KIND_COMMONJS) {
-        error_ctx_grammar_error_d(errs, my inner_span, 1286,
-            "ECMAScript imports and exports cannot be written in a CommonJS file under 'verbatimModuleSyntax'.");
+        source_file_verbatim_cjs_error(my inner_span.source, errs, my inner_span, true);
         return;
     }
     if (module == MODULE_KIND_ES2015) {

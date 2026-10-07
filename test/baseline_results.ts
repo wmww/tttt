@@ -8581,7 +8581,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitCommonJsModuleReferencedType': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9286,7 +9286,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitObjectAssignedDefaultExport': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9481,7 +9481,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitReexportedSymlinkReference3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -9696,7 +9696,7 @@ const baselines = {
         types: true,
     },
     'declarationEmitUnsafeImportSymbolName': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -9711,7 +9711,7 @@ const baselines = {
         types: false,
     },
     'declarationEmitUsingTypeAlias1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20881,7 +20881,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=false,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20891,7 +20891,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20901,7 +20901,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=false,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -20911,7 +20911,7 @@ const baselines = {
         types: true,
     },
     'isolatedModulesSketchyAliasLocalMerge(isolatedmodules=true,verbatimmodulesyntax=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -25606,7 +25606,7 @@ const baselines = {
         types: true,
     },
     'noCrashWithVerbatimModuleSyntaxAndImportsNotUsedAsValues': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -55321,7 +55321,7 @@ const baselines = {
         types: true,
     },
     'verbatimModuleSyntaxRestrictionsCJS': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -60581,7 +60581,7 @@ const baselines = {
         types: false,
     },
     'legacyNodeModulesExportsSpecifierGenerationConditions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -60756,22 +60756,22 @@ const baselines = {
         types: true,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=node20)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesExportsBlocksSpecifierResolution(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -60811,22 +60811,22 @@ const baselines = {
         types: true,
     },
     'nodeModulesExportsSourceTs(module=node16)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesExportsSourceTs(module=node18)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesExportsSourceTs(module=node20)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'nodeModulesExportsSourceTs(module=nodenext)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },

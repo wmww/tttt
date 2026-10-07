@@ -159,7 +159,6 @@ controlFlowWithIncompleteTypes	T	src-changed	bl-changed
 controlFlowWithTemplateLiterals	T	src-changed	bl-changed
 crashInGetTextOfComputedPropertyName	T	src-changed	bl-changed
 declarationEmitBundleWithAmbientReferences	T	src-changed	bl-changed
-declarationEmitCommonJsModuleReferencedType	E	src-changed	bl-changed
 declarationEmitComputedNameWithQuestionToken	T	src-changed	bl-changed
 declarationEmitDestructuring5	T	src-changed	bl-changed
 declarationEmitDestructuringArrayPattern1	T	src-changed	bl-changed
@@ -172,14 +171,12 @@ declarationEmitInlinedDistributiveConditional	T	src-changed	bl-changed
 declarationEmitInterfaceWithNonEntityNameExpressionHeritage	T	src-changed	bl-changed
 declarationEmitMappedTypeDistributivityPreservesConstraints	T	src-changed	bl-changed
 declarationEmitMonorepoBaseUrl	E	src-changed	bl-changed
-declarationEmitObjectAssignedDefaultExport	E	src-same	bl-changed
 declarationEmitPathMappingMonorepo	E	src-changed	bl-changed
 declarationEmitPathMappingMonorepo2	ET	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference2	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference3	ET	src-changed	bl-changed
 declarationEmitStringEnumUsedInNonlocalSpread	T	src-changed	bl-changed
-declarationEmitUsingTypeAlias1	E	src-changed	bl-changed
 declarationsAndAssignments	T	src-changed	bl-changed
 declarationsIndirectGeneratedAliasReference	T	src-changed	bl-changed
 deeplyNestedConditionalTypes	T	src-changed	bl-changed
@@ -329,10 +326,6 @@ intrinsicTypes	T	src-changed	bl-changed
 isolatedDeclarationErrorsAugmentation	T	src-same	bl-changed
 isolatedDeclarationErrorsExpressions	T	src-same	bl-changed
 isolatedDeclarationErrorsObjects	T	src-same	bl-changed
-isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=false,verbatimmodulesyntax=true)	E	src-changed	bl-changed
-isolatedModulesShadowGlobalTypeNotValue(isolatedmodules=true,verbatimmodulesyntax=true)	E	src-changed	bl-changed
-isolatedModulesSketchyAliasLocalMerge(isolatedmodules=false,verbatimmodulesyntax=true)	E	src-changed	bl-changed
-isolatedModulesSketchyAliasLocalMerge(isolatedmodules=true,verbatimmodulesyntax=true)	E	src-changed	bl-changed
 isomorphicMappedTypeInference	T	src-changed	bl-changed
 jsContainerMergeTsDeclaration3	E	src-changed	bl-changed
 jsDeclarationsCommonjsRelativePath	T	src-changed	bl-changed
@@ -455,7 +448,6 @@ neverAsDiscriminantType(strict=false)	T	src-changed	bl-changed
 neverAsDiscriminantType(strict=true)	T	src-changed	bl-changed
 neverReturningFunctions1	ET	src-changed	bl-changed
 neverType	T	src-changed	bl-changed
-noCrashWithVerbatimModuleSyntaxAndImportsNotUsedAsValues	E	src-changed	bl-changed
 noImplicitAnyForIn	T	src-changed	bl-changed
 noInferUnionExcessPropertyCheck1	ET	src-changed	bl-changed
 noIterationTypeErrorsInCFA	T	src-same	bl-changed
