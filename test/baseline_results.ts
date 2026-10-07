@@ -49803,7 +49803,7 @@ const baselines = {
     'YieldExpression5_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldExpression6_es6': {
         errors: true,
@@ -49838,7 +49838,7 @@ const baselines = {
     'YieldStarExpression3_es6': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'YieldStarExpression4_es6': {
         errors: true,

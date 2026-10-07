@@ -3,8 +3,6 @@
 # 'true' = file and baselines unchanged: all are strict-by-default exposure (6.0 defaults), not code regressions.
 # 1123 names that passed under 5.8 no longer exist (option matrices changed) and aren't listed. Delete lines as they pass.
 ## true
-YieldExpression5_es6	T	src-same	bl-same
-YieldStarExpression3_es6	T	src-same	bl-same
 generatorTypeCheck42	E	src-same	bl-same
 generatorTypeCheck44	E	src-same	bl-same
 ## rebaselined

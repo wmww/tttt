@@ -84,7 +84,9 @@ static Ty const* infer_generator_type(Checker* me, FunctionImpl const* function,
             if (delegate && delegate->next_type) ty_buf_push(&nexts, delegate->next_type);
         }
         Ty const* type;
-        if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
+        if (yield->expr.tag == EXPR_IMPLICIT_ANY && yield->op == UNARY_OP_YIELD_STAR) {
+            type = ty_intrinsic(me, TY_ANY); // (`yield*` missing its operand delegates to the error type)
+        } else if (yield->expr.tag == EXPR_IMPLICIT_ANY) {
             type = ty_intrinsic(me, TY_UNDEFINED_WIDENING); // A bare `yield`
         } else if (yield->op == UNARY_OP_YIELD_STAR) {
             u32 use = async ? ITERATION_ASYNC_YIELD_STAR : ITERATION_YIELD_STAR;
