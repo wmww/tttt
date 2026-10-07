@@ -44,10 +44,13 @@ types components) are the oracle, not the goal; real projects that are clean und
   `.types` / 2436 `.symbols` / 2113 `.errors.txt` baselines changed, 245 new tests. At 98.2% on 5.8, each further
   5.8-parity session buys less than moving to the language users write today. Expect a dip in the pass count and a
   window spent on the switch, the oracles' caches and re-pinned corpora.
-- **The bigger question inside it: type ordering.** tsgo orders union members deterministically, not by creation
-  order. tttt mimics tsc's creation order (type ids), which costs hacks (`argorder.py`, union-order buckets in every
-  oracle) and makes multi-checker output differ "inside quotes". If 7.0's ordering is where the language is going,
-  adopting it could delete a class of fragility. Plan 48's planner decides with measurements, not this file.
+- **Decided (plan 48 planning, 2026-10-07): the oracle is TypeScript commit 4d4f005c**, the `tsgo-port` commit tsgo
+  7.0.2 pins: 6.0.3 plus `stableTypeOrdering` on by default (tests/cases identical to 6.0.3's; 650 `.types` differ by
+  member order only). tsc 6's `compareTypes` and tsgo's `CompareTypes` are the same rule, so tttt **adopts the stable
+  ordering** and deletes its creation-order mimicry. Prototypes: the switch reaches 92.3% of the new 14969-test suite
+  with defaults, libs and deprecations alone; the ordering port 13220 -> 13790 against the commit (+4-11%
+  instructions until it gets a per-type sort key). tsgo's own baselines are not an oracle (they skip 1861 configs,
+  rework JS, keep source quotes). Deprecated options (es5, amd, outFile...) stay supported: 6.0 still tests them.
 - **The missing-diagnostic oracles are drained to their noise floor**; rerun them after the switch rather than
   mining them further on 5.8.
 

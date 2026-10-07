@@ -1,0 +1,160 @@
+From 105c13b3e24924545476e0579eb45d247c1910af Mon Sep 17 00:00:00 2001
+From: "Sophie Winter [AI]" <git@phie.me>
+Date: Wed, 7 Oct 2026 01:40:20 +0000
+Subject: [PATCH 3/4] Prototype TS 6.0.3: harness splits at \r?\n, types
+ defaults to [], uplevel iteration needs Iterable
+
+---
+ src/module_resolution.c       | 28 +++++++++++++++++++++++++++-
+ src/scope.c                   |  6 +++++-
+ src/test/baseline_test_case.c | 22 +++++++---------------
+ src/ty/iterate.c              |  4 +++-
+ thirdparty/ensure-tsc.sh      |  3 ++-
+ 5 files changed, 44 insertions(+), 19 deletions(-)
+
+diff --git a/src/module_resolution.c b/src/module_resolution.c
+index af5fc546..d59eb455 100644
+--- a/src/module_resolution.c
++++ b/src/module_resolution.c
+@@ -1663,12 +1663,38 @@ ResolvedModule module_resolver_resolve_type_reference(
+     return ret;
+ }
+ 
++static StrList module_resolver_wildcard_types(ModuleResolver* me);
++
+ StrList module_resolver_automatic_types(ModuleResolver* me) {
+     StrList ret = {0};
+-    if (my options->types_set) {
++    // TypeScript 6.0: `types` defaults to [], "*" stands for every package of the type roots (in its position)
++    bool wildcard = false;
++    for (isize i = 0; i < my options->types.count; i++) wildcard |= cstr_equals(&my options->types.items[i], "*");
++    if (!wildcard) {
+         for (isize i = 0; i < my options->types.count; i++) str_list_push(&ret, cstr_sv(&my options->types.items[i]));
+         return ret;
+     }
++    StrList wild = {0};
++    for (isize i = 0; i < my options->types.count; i++) {
++        if (!cstr_equals(&my options->types.items[i], "*")) {
++            bool seen = false;
++            for (isize j = 0; j < ret.count && !seen; j++) seen = cstr_equals(&ret.items[j], cstr_str(&my options->types.items[i]));
++            if (!seen) str_list_push(&ret, cstr_sv(&my options->types.items[i]));
++            continue;
++        }
++        wild = module_resolver_wildcard_types(me);
++        for (isize k = 0; k < wild.count; k++) {
++            bool seen = false;
++            for (isize j = 0; j < ret.count && !seen; j++) seen = cstr_equals(&ret.items[j], cstr_str(&wild.items[k]));
++            if (!seen) str_list_push(&ret, cstr_sv(&wild.items[k]));
++        }
++        str_list_drop(&wild);
++    }
++    return ret;
++}
++
++static StrList module_resolver_wildcard_types(ModuleResolver* me) {
++    StrList ret = {0};
+     State state = state_make(me, RESOLUTION_MODE_COMMONJS);
+     StrList roots = effective_type_roots(me);
+     for (isize i = 0; i < roots.count; i++) {
+diff --git a/src/scope.c b/src/scope.c
+index 3f9061a2..8949212e 100644
+--- a/src/scope.c
++++ b/src/scope.c
+@@ -4175,7 +4175,11 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
+         "Atomics", "AsyncIterable", "AsyncIterableIterator", "AsyncGenerator", "AsyncGeneratorFunction", "BigInt",
+         "Reflect", "BigInt64Array", "BigUint64Array",
+     };
+-    bool types = compiler_options()->types_set;
++    // (tsc 6.0's usesWildcardTypes: the long message unless `types` has "*")
++    bool types = true;
++    for (isize i = 0; i < compiler_options()->types.count; i++) {
++        if (cstr_equals(&compiler_options()->types.items[i], "*")) types = false;
++    }
+     csview n = name.sv;
+     if (name_is_one_of(n, dom, 2)) {
+         error_ctx_error_d(errs, name, 2584, "Cannot find name '", name, "'. Do you need to change your target library? "
+diff --git a/src/test/baseline_test_case.c b/src/test/baseline_test_case.c
+index 5d72af23..1eb01484 100644
+--- a/src/test/baseline_test_case.c
++++ b/src/test/baseline_test_case.c
+@@ -459,32 +459,25 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
+     bool seen_filename = false;
+     csview current_filename = basename_of(my source_path);
+     my current_unit = current_filename;
+-    // tsc's Utils.splitContentByNewlines: a file with a `\r\n` is split at those only, so a "line" may hold `\n`s. One that
+-    // starts as an option is an option line whole (its other options still apply: tsc's extractCompilerSettings scans
+-    // the whole file), a `@filename` after its first line included
+-    bool crlf_only = csview_find_sv(contents_sv, c_sv("\r\n")) != c_NPOS;
+-    // (Without any `\n`, split at `\r`: a file whose line breaks are all CR)
+-    bool cr_only = !crlf_only && csview_find_sv(contents_sv, c_sv("\n")) == c_NPOS && csview_find_sv(contents_sv, c_sv("\r")) != c_NPOS;
++    // tsc 6.0's Utils.splitContentByNewlines: split at /\r?\n/ (never at a lone `\r`)
+     csview* chunks = nullptr;
+     isize chunk_count = 0, chunk_cap = 0;
+ #define PUSH_CHUNK(sv) do { \
+         if (chunk_count == chunk_cap) { chunk_cap = chunk_cap ? chunk_cap * 2 : 64; chunks = realloc(chunks, sizeof(csview) * (size_t)chunk_cap); } \
+         chunks[chunk_count++] = (sv); \
+     } while (0)
+-    if (crlf_only || cr_only) {
++    {
+         csview rest = contents_sv;
+-        csview separator = crlf_only ? c_sv("\r\n") : c_sv("\r");
+         for (;;) {
+-            isize at = csview_find_sv(rest, separator);
++            isize at = csview_find_sv(rest, c_sv("\n"));
+             if (at == c_NPOS) {
+                 if (rest.size) PUSH_CHUNK(rest); // (like lines_sv: no empty line after the last line break)
+                 break;
+             }
+-            PUSH_CHUNK(csview_slice(rest, 0, at));
+-            rest = csview_slice(rest, at + separator.size, rest.size);
++            isize end = at > 0 && rest.buf[at - 1] == '\r' ? at - 1 : at;
++            PUSH_CHUNK(csview_slice(rest, 0, end));
++            rest = csview_slice(rest, at + 1, rest.size);
+         }
+-    } else {
+-        for_each (i, lines_sv, contents_sv) PUSH_CHUNK(i);
+     }
+ #undef PUSH_CHUNK
+     for (isize chunk_index = 0; chunk_index < chunk_count; chunk_index++) {
+@@ -527,8 +520,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
+     free(chunks);
+     // (the empty line after the test file's last line break is a line of the last unit too; a lone `\r` at the end,
+     // which tsc's harness keeps, breaks a line when rendered)
+-    bool ends_with_break = crlf_only ? csview_ends_with(contents_sv, "\r\n") :
+-        csview_ends_with(contents_sv, "\n") || csview_ends_with(contents_sv, "\r");
++    bool ends_with_break = csview_ends_with(contents_sv, "\n");
+     if (cstr_size(&source_contents) && ends_with_break) {
+         cstr_append(&source_contents, "\r\n");
+     }
+diff --git a/src/ty/iterate.c b/src/ty/iterate.c
+index b6fdb7a4..5f1e857a 100644
+--- a/src/ty/iterate.c
++++ b/src/ty/iterate.c
+@@ -692,7 +692,9 @@ Ty const* ty_iterated_type_sending(Checker* me, u32 use, Ty const* input, Ty con
+         return ty_intrinsic(me, TY_ANY);
+     }
+     ScriptTarget target = compiler_options()->target;
+-    bool uplevel = target >= SCRIPT_TARGET_ES2015;
++    // (tsc 6.0: uplevel iteration needs the global Iterable too, without it arrays iterate the ES5 way)
++    bool uplevel = target >= SCRIPT_TARGET_ES2015 &&
++        program_get_global(my program, c_sv("Iterable"), SYMBOL_TYPE) != nullptr;
+     bool downlevel = !uplevel && compiler_options()->downlevel_iteration;
+     if (uplevel || downlevel || async) {
+         TyIterationTypes const* types = ty_iteration_types_of_iterable(me, input, use);
+diff --git a/thirdparty/ensure-tsc.sh b/thirdparty/ensure-tsc.sh
+index 8d805bdd..b27cbf99 100755
+--- a/thirdparty/ensure-tsc.sh
++++ b/thirdparty/ensure-tsc.sh
+@@ -23,7 +23,8 @@ else
+ fi
+ 
+ # Build the TypeScript compiler and test infra if needed
+-if test ! -e tsc/built/local/run.js && test -z "${TTTT_SKIP_TSC_BUILD:-}"; then
++# (The suite only needs tsc's tests: building tsc is opt-in, TTTT_BUILD_TSC=1)
++if test ! -e tsc/built/local/run.js && test -n "${TTTT_BUILD_TSC:-}"; then
+     (
+         printf "\x1b[1;33mInstalling Hereby with npm...\x1b[0m\n"
+         cd tsc
+-- 
+2.53.0
+

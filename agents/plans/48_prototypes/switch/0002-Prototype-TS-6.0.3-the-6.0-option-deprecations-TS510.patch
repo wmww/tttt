@@ -1,0 +1,82 @@
+From df7739bd57f62d5ba9d32cd366889fb56163348b Mon Sep 17 00:00:00 2001
+From: "Sophie Winter [AI]" <git@phie.me>
+Date: Wed, 7 Oct 2026 01:36:20 +0000
+Subject: [PATCH 2/4] Prototype TS 6.0.3: the 6.0 option deprecations
+ (TS5101/TS5107 + 'Visit aka.ms/ts6')
+
+---
+ src/program.c | 51 +++++++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 49 insertions(+), 2 deletions(-)
+
+diff --git a/src/program.c b/src/program.c
+index 1b7480f1..2d7b705c 100644
+--- a/src/program.c
++++ b/src/program.c
+@@ -1509,8 +1509,8 @@ static void program_validate_options(Program* me) {
+     unsigned version = parse_major_minor(cstr_size(&o->typescript_version) ? cstr_sv(&o->typescript_version) : c_sv("6.0"));
+     unsigned ignore_version = 0;
+     if (cstr_size(&o->ignore_deprecations)) {
+-        if (cstr_equals(&o->ignore_deprecations, "5.0")) {
+-            ignore_version = parse_major_minor(c_sv("5.0"));
++        if (cstr_equals(&o->ignore_deprecations, "5.0") || cstr_equals(&o->ignore_deprecations, "6.0")) {
++            ignore_version = parse_major_minor(cstr_sv(&o->ignore_deprecations));
+         } else {
+             option_error_d(me, "ignoreDeprecations", nullptr, false, 5103, "Invalid value for '--ignoreDeprecations'.");
+         }
+@@ -1583,6 +1583,53 @@ static void program_validate_options(Program* me) {
+             if (instead) error_sub_error_d(error, span_null, TS_CODE_NONE, "Use '", instead, "' instead.");
+         }
+     }
++    // The 6.0 deprecations (removed in 7.0), "ignoreDeprecations": "6.0" silences them
++    bool removed7 = version >= parse_major_minor(c_sv("7.0"));
++    bool deprecated6 = !removed7 && ignore_version < parse_major_minor(c_sv("6.0"));
++    if (removed7 || deprecated6) {
++        struct { char const* name; char const* value; bool given; bool visit; } const deps[] = {
++            { "alwaysStrict", "false", o->is_set[COMPILER_OPTION_always_strict] && !o->always_strict, false },
++            { "target", "ES5", o->target_set && o->target == SCRIPT_TARGET_ES5, false },
++            { "moduleResolution", "node10", o->module_resolution_set && o->module_resolution == MODULE_RESOLUTION_NODE10, true },
++            { "moduleResolution", "classic", o->module_resolution_set && o->module_resolution == MODULE_RESOLUTION_CLASSIC, false },
++            { "baseUrl", nullptr, o->base_url_set, true },
++            { "esModuleInterop", "false", o->is_set[COMPILER_OPTION_es_module_interop] && !o->es_module_interop, false },
++            { "allowSyntheticDefaultImports", "false",
++                o->is_set[COMPILER_OPTION_allow_synthetic_default_imports] && !o->allow_synthetic_default_imports, false },
++            { "outFile", nullptr, cstr_size(&o->out_file) > 0, false },
++            { "module", o->module == MODULE_KIND_NONE ? "None" : o->module == MODULE_KIND_AMD ? "AMD" :
++                o->module == MODULE_KIND_UMD ? "UMD" : "System",
++                o->module_set && (o->module == MODULE_KIND_NONE || o->module == MODULE_KIND_AMD ||
++                    o->module == MODULE_KIND_UMD || o->module == MODULE_KIND_SYSTEM), false },
++            { "downlevelIteration", nullptr, o->is_set[COMPILER_OPTION_downlevel_iteration], false },
++        };
++        for (u32 i = 0; i < c_arraylen(deps); i++) {
++            if (!deps[i].given) continue;
++            Span sites[4];
++            u32 site_count = option_sites(me, deps[i].name, nullptr, !deps[i].value, sites);
++            for (u32 j = 0; j < site_count; j++) {
++                Error* error;
++                if (deps[i].value) {
++                    error = removed7 ?
++                        option_error_d_one(me, sites[j], 5108, "Option '", deps[i].name, "=", deps[i].value,
++                            "' has been removed. Please remove it from your configuration.") :
++                        option_error_d_one(me, sites[j], 5107, "Option '", deps[i].name, "=", deps[i].value,
++                            "' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption ",
++                            "'\"ignoreDeprecations\": \"6.0\"' to silence this error.");
++                } else {
++                    error = removed7 ?
++                        option_error_d_one(me, sites[j], 5102, "Option '", deps[i].name,
++                            "' has been removed. Please remove it from your configuration.") :
++                        option_error_d_one(me, sites[j], 5101, "Option '", deps[i].name,
++                            "' is deprecated and will stop functioning in TypeScript 7.0. Specify compilerOption ",
++                            "'\"ignoreDeprecations\": \"6.0\"' to silence this error.");
++                }
++                if (deps[i].visit) {
++                    error_sub_error_d(error, span_null, TS_CODE_NONE, "Visit https://aka.ms/ts6 for migration information.");
++                }
++            }
++        }
++    }
+     if (!o->source_map && !o->inline_source_map) {
+         if (o->inline_sources) {
+             option_error_d(me, "inlineSources", nullptr, true, 5051, "Option 'inlineSources can only be used when either ",
+-- 
+2.53.0
+

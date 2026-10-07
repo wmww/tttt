@@ -1,48 +1,190 @@
-# Plan 48: retarget from TypeScript 5.8 to the current language (6.0 / 7.0)
-Written by the insights of 2026-10-07 as a **stub for a planning session**: the planner investigates, decides and
-rewrites this file into the real plan (stages, validation, session budget).
+# Plan 48: retarget from TypeScript 5.8 to TypeScript 6.0 with stable type ordering (what tsgo 7.0 implements)
+Written by the planning session of 2026-10-07 (todo entry 1 of the eleventh window), from four prototypes/measurements
+(sub-agents; scratch in /tmp may be gone, the code is saved in `48_prototypes/`).
 
-## Why
-tttt's every oracle is TypeScript 5.8.2 (February 2025): the suite (`thirdparty/tsc` at v5.8.2), `tscbaseline.sh`,
-the sweep / `$ExpectType` / flagflip / mutation caches, and every corpus pinned at "the last commit before
-TypeScript 6". Since then 5.9 (2025-07), **6.0** (2026-03, the last JavaScript tsc, changed defaults and deprecations
-as a bridge to 7) and **7.0** (2026-07, tsgo, now the `typescript` package's `latest`) shipped. The competitor we
-benchmark against implements a language one major version newer than the one we check; it rejects two of our corpus
-configs outright (`baseUrl`, TS5102). Real projects (our corpora's upstreams, DefinitelyTyped's CI) have moved on, so
-"fully support TypeScript" now means 6.0/7.0 semantics. Every session spent polishing 5.8 parity from here is spent on
-a frozen target.
+## Decisions
+1. **The oracle is TypeScript commit `4d4f005c8541e0255a9d8791205fdce326e462bc`** (2026-06-29, branch `tsgo-port`,
+   version string `6.0.0-dev`): the commit tsgo 7.0.2's `_submodules/TypeScript` pins. It is **v6.0.3 plus
+   `stableTypeOrdering` defaulting to true** plus three one-line fixes (TS1344's stray apostrophe, a scanner
+   parenthesization, lib comments). `tests/cases` is byte-identical to v6.0.3's; the baselines are 6.0.3's except
+   654 `.types` (650 member order only), 100 `.errors.txt` (~61 order inside quotes, ~8 a different member elaborated
+   first, ~28 TS1344) and 17 `.symbols` (union property `Decl` order). So: 6.0's semantics (the last JavaScript tsc,
+   runnable for every cached oracle), with the type order of 7.0, the language's future.
+   - Not tsgo's own baselines: tsgo skips 1861 configurations (es5, amd/umd/system, node10/classic, baseUrl, outFile,
+     esModuleInterop false...), drops the `^^^` lines, keeps source quote style, reworked JS/CommonJS/JSDoc (370
+     `.types` differ), dropped the 10-suggestion limit (TS2304 -> TS2552 in 193 files). A poor exact-match oracle.
+   - tsgo 7.0.2 (`tsc` on PATH) stays the perf competitor and a cross-check on the corpora.
+2. **Adopt the stable type ordering** (stage 2). tsc 6's `compareTypes`/`compareSymbols` (checker.ts) and tsgo's
+   `CompareTypes` (internal/checker/utilities.go) are the same rule, line for line; a probe gives identical output.
+   It replaces tttt's creation-order mimicry (`sort_by_id`/`insert_by_id`/`sorted_contains` in `src/ty/checker.c`,
+   `union_has_member` in `src/ty/relate.c`), which then becomes dead weight to delete: `argorder.py`, plan 35 item 3
+   ("creation order"), the union-order hacks (hacks.md: "Union order depends on who asks first", creation order of
+   intrinsics/globals, the TS2488 `once_key`), the union-order buckets in displaydiff/expecttypes/errtextdiff, and
+   checkerdiff's "may differ inside quotes" (multi-checker output can become byte-identical). See "Stage 2" for the
+   prototype's measurements.
+3. **6.0's defaults everywhere**, the CLI included (they are tsc's defaults, not the harness's): `strict` true,
+   `alwaysStrict` true and outside the strict family, target es2025 (es3 = unset + TS5108), module from target,
+   moduleResolution bundler (node16/nodenext/classic by module), esModuleInterop/allowSyntheticDefaultImports true,
+   `types: []` (`"*"` = every @types package), `noUncheckedSideEffectImports` true (TS2882), `libReplacement` false.
+   Default lib for es2015 = `lib.es2015.full` (es2015 + dom + dom.iterable + scripthost).
+4. **Deprecated options stay supported** (6.0 still runs them under `ignoreDeprecations: "6.0"`, and ~1950 suite
+   baselines carry TS5107/TS5101 for them): es5, amd/umd/system/none, node10/classic, baseUrl, outFile,
+   downlevelIteration, esModuleInterop false. Deleting them waits for a 7.x retarget. Nothing of 5.8-only behaviour
+   is kept: no dual-version mode, no 5.8 suite side by side (the prototype showed the switch is cheap enough to do in
+   one step).
+5. **Pass counts are not comparable across the switch.** The suite grows 13540 -> 14969 tests (option variations:
+   1132 names gone, 2561 new). Report both and define losses as below.
 
-## Measured at writing (blob hashes, `git ls-tree` of v5.8.2 vs v6.0.3, `/tmp/ts6probe` is a blobless clone)
-- `tests/cases`: 11747 files changed, 245 added, 11 removed. Sampled diffs: mostly options made explicit
-  (`// @target: es2015`, `// @module: commonjs`) and code fixed for strict-by-default (`isSunk: boolean = false`).
-- `tests/baselines/reference`: 22255 changed (`.types` 3080, `.symbols` 2436, `.errors.txt` 2113, emit the rest),
-  11614 added, 3976 removed.
-So the suite is mostly the same tests made to keep their meaning under new defaults: the bulk should be cheap, but the
-pass count is not comparable across the switch, and "0 lost" needs a per-test definition during the transition.
+## Measurements (prototype of the switch against v6.0.3's baselines, `48_prototypes/switch/`)
+| step | full | errors | symbols | types |
+|---|---|---|---|---|
+| tttt as is, 5.8 libs and defaults | 9598 | 10636 | 14357 | 13032 |
+| + 6.0 libs (`thirdparty/lib` from 6.0's `src/lib`) | 9664 | 10655 | 14495 | 13067 |
+| + 6.0 option defaults | 11686 | 12286 | 14589 | 14024 |
+| + 6.0 deprecations (TS5107/TS5101/TS5102/TS5108, "Visit https://aka.ms/ts6") | 13701 | 14442 | 14589 | 14024 |
+| + harness splits at `\r?\n` only, `types: []`, uplevel iteration needs a global `Iterable` | 13791 | 14554 | 14650 | 14078 |
+| + `noUncheckedSideEffectImports` default (TS2882) | **13817 / 14969 (92.3%)** | 14580 | 14650 | 14078 |
 
-## Questions for the planning session
-1. **Which oracle**: tsc 6.0.3 (JavaScript, the repo's own baselines, runs anywhere tscbaseline.sh/sweep need it) or
-   tsgo 7.0.2 (typescript-go's `testdata/baselines/reference/submodule/**` plus its `.diff` files against 6.0). The
-   prior: 6.0.3 for the suite and caches, tsgo 7 as the benchmark and a cross-check, unless tsgo's differences are
-   ones we'd want anyway. **Look specifically at type ordering**: tsgo orders union members deterministically instead
-   of by creation order (6.0 has `--stableTypeOrdering` to emulate it). tttt's creation-order mimicry is a source of
-   hacks (hacks.md, `argorder.py`, checkerdiff's "may differ inside quotes, union order") and of parallel
-   nondeterminism. If 7.0's ordering is the language's future, adopting it could delete a class of fragility; measure
-   how many `.types` baselines differ between 6.0 and tsgo by ordering alone.
-2. **What changed in the checker** between 5.8 and 6.0 that our tests will see: option defaults (strict, target,
-   module, types, ...), deprecation diagnostics (TS5101/TS5107-style for es5, node10, baseUrl, ...,
-   `ignoreDeprecations`), lib changes (es2025, lib.dom refresh), new features (`import defer`, `--module node20`, 5.9's
-   and 6.0's release notes), changed messages. List them with test counts.
-3. **Staging**: one switch commit (new `thirdparty/tsc`, harness defaults, saved results regenerated) followed by
-   fan-outs, or both suites side by side for a while? Prototype the switch in a worktree and measure the suite under
-   6.0 before committing to a budget.
-4. **The other oracles**: regenerate the sweep / `$ExpectType` / flagflip / mutation / scenarios caches with the new
-   tsc, move DefinitelyTyped to a current commit, re-pin the corpora at current upstream commits (and drop the 5.9
-   lib shims). Order and budget.
-5. What of 5.8 behaviour to keep: none by default (tsc 6 itself still supports the deprecated options under
-   `ignoreDeprecations`, so do they). Delete code that only 5.8 needed.
+No crashes, hangs or log_errors. Of the 5.8 passes that fail at the last step: 501 had test file and baselines
+changed, 123 only baselines, 12 only the file, 9 neither. 286 new test names fail.
+Top buckets left (by tests): `import("./t1")` vs our `import("t1")` in printed types under bundler resolution (304
+`.types`, 153 tests alone), other printing ~400 tests unclassified, reworded messages 118 tests (TS1323/1343/1378/
+2821/2823/1355/2725 + 28 new codes: cheap), spurious TS2454 82 in 17 tests and TS2564 ± from strict-by-default,
+TS7005 98 in one test, new checks TS2880 (6 tests), TS2883 (14), TS1540 (`module` keyword is an error, 2 tests but
+all real code), TS2871, parser TS1005/1109/1434 (38 tests), spurious TS2304 (20 tests), TS2307 under bundler (11),
+TS1286/TS1295 (verbatimModuleSyntax), TS2742 (14), TS2591 missing (8). The harness also stopped printing omitted
+array elements (`[, x]`) in `.types` and dropped `@libFiles`/`@includeBuiltFile`.
 
-## Validation (for the real plan to refine)
-Suite under the new baselines at or above today's 13303 / 13540 equivalent, every corpus re-pinned and at 0 against
-the new tsc, sweep and `$ExpectType` at today's match rates against the new caches, bench against tsgo 7 on configs it
-accepts.
+**Corpora as pinned today**, tsc 6.0.3 vs the prototype (`-p`, counts and top codes):
+| corpus | tsc 6.0.3 | prototype |
+|---|---|---|
+| type-fest, valibot | 1 (TS5107) | same |
+| react, drizzle, vue | 1 (TS5101) | same |
+| effect, excalidraw | 2 (TS5107+TS5101) | +TS2578 x3 / +TS2846 |
+| zod | 0 | 0 |
+| nest | 4 (TS2322, TS18046: strict-by-default finds real ones) | +TS6500 x2 |
+| tanstack-router | 28 (TS2591 x27: `types: []`) | 27 (TS2307 x2 for TS2420) |
+| xstate | 30 (TS2578 x15, TS2322 x14) | **0: missed** |
+| webpack | 307 (TS2300, TS2451: @types/node twice?) | 10514 (TS6203/TS2300/TS2451) |
+| v6.0.3's own src/compiler | 0 | 87 (TS2591 x43, TS2724, TS2307) |
+Upstreams today: vue (~6.0.3), webpack (^6.0.3), xstate/vscode/tanstack-router (`@typescript/typescript6`), effect
+(^7.0.2), typescript-eslint (catalog); zod (5.5), drizzle (5.6), type-fest/valibot/excalidraw (5.9) haven't moved.
+DefinitelyTyped is pinned at 2026-10-02 (already TS6-era configs: `module: node16`, `types: []`): keep the pin.
+
+## Stages
+### Stage 1: the switch (1 session, todo entry 2)
+1. `thirdparty/ensure-tsc.sh` pins the commit, not a tag: `git init`, `git fetch --depth 1 origin <sha>`, checkout;
+   the version check is `git rev-parse HEAD`. Keep building tsc with hereby (needed by `tscbaseline.sh`, `filetest.sh`
+   and every cached oracle: they must use `built/local/typescript.js` / `tsc.js` of *this* commit, not the repo's
+   `lib/` LKG, which is a 6.0 release build without stable ordering by default). Then `thirdparty/refresh.sh`.
+   `thirdparty/lib` = the commit's `src/lib` (refresh.sh's copy function, as the prototype did).
+2. Apply `48_prototypes/switch/*.patch` (`git am`; written against 3ec44902, conflicts should be small) except the
+   prototype's `TTTT_BUILD_TSC` opt-in in ensure-tsc.sh (it only existed to keep the prototype from building inside a
+   shared clone). Regenerate `src/lib_features.c`. Review the `src/ty/iterate.c` change (uplevel iteration needs a
+   global `Iterable`): check it against tsc's `getIterationTypesOfIterable` rather than trusting it.
+3. Parse `stableTypeOrdering` (true is the default; `@stableTypeOrdering: false` is one test configuration, which may
+   stay failing until stage 2 decides whether to keep creation order as an option: recommendation no).
+4. The cheap buckets: the reworded/new messages (diff diagnosticMessages.json between v5.8.2 and the commit, update
+   every changed text tttt emits), `import("./x")` module specifiers under bundler resolution, omitted array elements
+   in the harness's `.types` printing.
+5. **Saved results and "lost"**: `./fasttest.sh -s` regenerates `test/baseline_results.ts` under the new names. Before
+   that, write the list of tests that passed under 5.8 (old saved results) and fail now, split into (a) test file and
+   all three baselines byte-identical between v5.8.2 and the commit (a true regression: must be 0 or explained in the
+   commit) and (b) re-baselined: `agents/plans/48_lost.txt`, the queue for stages 3-4 (delete it when drained). The
+   other tools comparing against saved results (`resultdiff.py`) work from the next commit on.
+6. Docs: CLAUDE.md's TypeScript version mentions, `documentation.md` (defaults, lib), `agents/vision.md`, and every
+   script docstring that says "tsc 5.8" (`grep -rn '5\.8' *.py *.sh test/*.js`).
+Expected: the prototype measured 13220 / 14969 against the commit's baselines (13817 against 6.0.3's: the difference
+is member order, stage 2), plus whatever item 4 recovers.
+Corpora numbers are recorded but not chased here (their oracle moves in stage 5).
+
+### Stage 2: stable type ordering (2 sessions, todo entries 3 and 5)
+**Prototype** (`48_prototypes/ordering/`, on top of the switch prototype): `src/ty/order.c` `ty_compare()`, a port of
+`compareTypes`/`compareSymbols`, replacing id order in `sort_by_id`, `insert_by_id`, `sorted_contains`,
+`sorted_list_contains`, `union_has_member`, the constrained-type-variable re-insert and the optional-marker scan;
+object literal and spread properties sorted by declaration (`builder_sort_stable` in `members.c`); `[]` (a bare tuple
+target in tttt) counts as a reference. Against the commit's baselines: **13220 -> 13790 / 14969**, 3 lost. Of the 576
+order-only tests that passed against 6.0.3, 568 pass again. tsc's key order: TS 6's TypeFlags rank (any < unknown <
+undefined < null < void < string < number < bigint < boolean < symbol < literals < unique symbol < enum < `object` <
+never < type parameter < object type < keyof < template < string mapping < substitution < indexed access <
+conditional < union < intersection), then the name (alias, type parameter, class/interface/reference; named before
+unnamed; same alias -> alias arguments), then per kind (objects: symbol = first declaration's file order then
+position, references first, tuples by readonly/arity/flags/labels, type arguments, deferred node + mapper; literals
+by value, false < true; type parameters by declaration; composite types by their parts; conditionals by root node
+then mapper), type id last. Intersections stay unsorted; `typeof` keys, `getNamedMembers` (own members before
+inherited for classes/interfaces) and spelling-suggestion candidates are sorted too.
+
+**Session A (entry 3), productionize**: apply the patch; **a sort key computed once per type** (rank, then a value /
+name prefix / declaration position: most comparisons one integer compare). The prototype costs +11.5% instructions on
+the tsc corpus (`ty_compare` 9.5% inclusive), +6.1% drizzle, +4.5% type-fest, +1-3.5% elsewhere: the session must
+end within ~1% of the switch's instruction counts. `stableTypeOrdering: false` (one test configuration; keep the
+old id order behind it only if it's free, otherwise leave that test failing and say so). The two lost evolving-array
+tests (`selfReferencingSpreadInLoop`, `yieldExpressionInControlFlow`: `ty_array()` relied on the auto array having
+the lowest id among arrays). `getNamedMembers` ordering for every member kind (class static side's `prototype` after
+own members: the prototype's attempt broke a declared `static prototype`, 7 tests; mapped type properties,
+namespaces). Validation: union-order buckets in displaydiff/expecttypes gone, `./threadcheck.sh` and
+`./checkerdiff.py` identical (and remove checkerdiff's "inside quotes / union order" allowance if output is
+byte-identical now).
+**Session B (entry 5), delete the creation-order machinery**, one piece at a time, measuring each removal (suite,
+corpora, instruction counts): `argorder.py`; plan 35 item 3 and its leftovers; the walk-order code that exists to
+create types in tsc's order (check-walk and node memoization in `type.c`, `lower.c`'s `KEY_UNION_NODE` and property
+literal order, `several_types.c`, `generic.c`, `function_impl.c`, `class_decl.c`, `interface_decl.c`,
+`callable_type.c`, `checker.c`'s eager Array/autoArray/`typeof` setup and `swap_twin_ids`, `members.c` ~3914,
+`call.c` ~1284, `flow.c` ~2080); hacks.md's `interface_member_typecheck()` literal lowering, early
+`ty_check_index_constraints`, "Union order depends on who asks first", the TS2488 once-key caveat. Ids still break a
+few ties (fresh vs regular literals, intrinsic variants, conditional roots, deferred references); subtype reduction
+and inference iterate in member order, so removals can move results: measure, don't assume. Some of this code may
+also be doing laziness/perf work: keep what still earns its place. The rest of the session is fan-out-style work on
+`48_lost.txt`.
+
+### Stage 3: fan-out on what the switch broke (1 session, todo entry 4; leftovers go to session B and after insights)
+Four Opus sub-agents per session in worktrees, disjoint test lists cut from `48_lost.txt` and `./failstats.py`
+buckets, 0 true losses enforced at merge (vision.md's fan-out recipe). Candidate buckets from the prototype: other
+printing differences; strict-by-default exposure (TS2454, TS2564, TS7006, TS2322: these are latent checker bugs the
+5.8 suite's non-strict default hid, so expect real fixes, not 6.0 specifics); new 6.0 checks (TS2880, TS2883,
+TS1540, TS2871, TS1286/TS1295, TS2882 corners, the unreachable-code/unused-label move from binder to checker:
+TS7027/TS7028); bundler/`types: []` resolution (TS2307, TS2591); parser diffs. The 6.0 inference tweaks (functions
+not using `this` aren't context sensitive, yield counts for context sensitivity, return-type filtering by constraint,
+`createOuterReturnMapper`, `getSingleCommonSupertype`, const-context return literals, void -> undefined unions,
+mixin accessor flags, `shouldDeferIndexType`; each 1-5 new tests) are one agent's bucket. `import defer` (14 tests,
+TS18058-18061) and `--module node20` semantics (79 tests, mostly in module lists) are one agent's bucket if they're
+not done by then. Target: >= 98% of 14969 (~14670) by the end of stage 2's session B, or note what's left in the plan.
+
+### Stage 4: the other oracles on the new tsc (1 session, todo entry 6)
+Commit before each long job. All caches from the commit's built tsc (decision 1), with stable ordering on (default):
+- `test/sweep_tsc.js`: `thirdparty/tsc/built/local/typescript.js`; `./sweep.py --tsc` (~40 min on 4 cores, run in
+  the foreground with a timeout, commit first); `$ExpectType` cache (`./expecttypes.py`, same script `--expect`).
+  DefinitelyTyped keeps its 2026-10-02 pin. Expect the defaults (strict, `types: []` is already explicit in DT)
+  to matter little there.
+- `./flagflip.py --tsc` (every cell), `./mutate.py` (its /tmp cache regenerates itself from the suite), `./scenarios.py`
+  (the tsbuild baselines changed; re-check the skip reasons), `tscbaseline.sh`/`filetest.sh` (`tsc_custom_baseline.js`
+  against the new harness: test it on two probes).
+- Drain what's cheap; record match rates in `agents/measurements.md` next to the last 5.8 ones (sweep 99.8%,
+  `$ExpectType`, flagflip, mutation numbers) so the next insights can compare.
+
+### Stage 5: corpora re-pinned (2 sessions, todo entries 7 and 8)
+Every corpus at a current upstream commit, checked by the commit's tsc and by tsgo 7.0.2 (both must be clean: effect
+uses 7.0, most others 6.0 now). Upstreams still on 5.x (zod, drizzle, type-fest, valibot, excalidraw) re-pin at
+their current commit with an overlay adding `"ignoreDeprecations": "6.0"` where tsc 6 reports only deprecations
+(their CI hasn't moved; record that in ensure-corpora.sh). Drop the 5.9 lib shims (grep corpora-locks and the
+overlays for them). `tsc`/`tsc-src` follow the commit automatically (its `src/`: the prototype gave 87 spurious on
+src/compiler, mostly TS2591 = `types` handling). Drain with sub-agents in the second session; note the xstate gap
+above (tsc 6 finds 30 that tttt doesn't: strict-by-default `@ts-expect-error`/TS2322) as a missing-diagnostic lead.
+
+### Stage 6: perf (1 session, todo entry 9)
+New instruction-count baselines on the re-pinned corpora (`./instrcount.sh`), `./bench.sh` against tsgo 7.0.2 on
+every corpus (now that no config is rejected for baseUrl), the stable-ordering comparator's cost in the profile,
+anything strict-by-default made slower (strict checks run on corpora that didn't set strict before).
+
+## Not in this window
+A second suite fan-out (after insights), `import defer` / node20 if stage 3 didn't take them, tsgo-only behaviour
+(7.0 removes the deprecated options: a later retarget, when 7.x has its own JS-free test oracle).
+
+## Validation
+- Suite >= 98% of the new total with 0 true losses (stage 1's definition) by the end of entry 5.
+- Stable ordering: union-order buckets in displaydiff/expecttypes empty or explained; `--checkers 4` output
+  byte-identical to `--checkers 1` on every corpus (checkerdiff's "inside quotes" allowance removed).
+- Every corpus re-pinned and at 0 against the commit's tsc (and tsgo 7.0.2 clean on the same configs).
+- Sweep and `$ExpectType` at or above the last 5.8 match rates against the new caches; flagflip and mutation
+  re-measured.
+- `./bench.sh` against tsgo 7.0.2 on every corpus.

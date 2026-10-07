@@ -7,23 +7,22 @@ triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh
 (`./realworld.py --corpus X` for every pinned corpus), `./sweep.py` and `./flagflip.py` after checker changes, `./instrcount.sh` and a
 commit.
 
-**This window retargets tttt from TypeScript 5.8 to 6.0/7.0 (plan 48).** Entry 1 rewrites plan 48 and **may
-rewrite entries 2-9** to fit what it measures, keeping the count. Until the switch, keep 5.8 work to what's needed.
+**This window retargets tttt from TypeScript 5.8 to TypeScript commit 4d4f005c (6.0.3 + stable type ordering, what
+tsgo 7.0.2 implements; plan 48).** Pass counts aren't comparable across the switch (13540 -> 14969 tests). Until entry 6 regenerates
+them, the sweep / `$ExpectType` / flagflip / mutation caches are tsc 5.8's: skip those tools in entries 2-5, and corpus
+numbers are only meaningful against the commit's tsc (`node thirdparty/tsc/built/local/tsc.js -p ...`).
 
-1. **Planning: plan 48** (retarget). Answer its questions with prototypes: the oracle (tsc 6.0.3 vs tsgo 7.0.2
-   baselines, type ordering in particular), the checker-visible changes with test counts, the staging (prototype the
-   switch in a worktree and measure the suite under 6.0), the other oracles' order. Rewrite plan 48 and entries 2-9.
-2. **Execution: plan 48 stage 1**, the switch: `thirdparty/tsc` to the new version, option defaults and deprecation
-   diagnostics, libs, harness; saved results regenerated; per-test "lost" defined against the old run.
-3. **Execution: fan-out on the switch's regressions** (four sub-agents, failstats buckets, disjoint test lists).
-4. **Execution: second fan-out**, or plan 48's next stage if the suite is back.
-5. **Execution: plan 48 stage 2**, the tools: sweep / `$ExpectType` / flagflip / mutation / scenarios caches and
-   `tscbaseline.sh` on the new tsc, DefinitelyTyped at a current commit; drain what's cheap.
-6. **Corpora: re-pin** every corpus at a current upstream commit (TypeScript-6-era), drop the 5.9 lib shims, record
-   tsc's counts; drain with sub-agents.
-7. **Corpora / sweep drain** continued.
-8. **Perf session**: new instruction-count baselines on the re-pinned corpora, `./bench.sh` against tsgo 7.0.2 (which
-   now accepts every config), look at anything that moved.
-9. **Execution**: 5.9/6.0 language features plan 48 listed that the switch didn't need (or plan 48's leftovers).
+1. Done (planning, 2026-10-07): plan 48 rewritten from four prototypes. Switch prototype 92.3% against 6.0.3,
+   stable-ordering prototype 13220 -> 13790 against the commit; both saved in `agents/plans/48_prototypes/`.
+2. **Execution: plan 48 stage 1**, the switch: pin `thirdparty/tsc` at the commit (built with hereby), libs, apply
+   `48_prototypes/switch`, cheap buckets (messages, `import("./x")`), `48_lost.txt`, saved results regenerated.
+3. **Execution: plan 48 stage 2 session A**, stable type ordering productionized (`48_prototypes/ordering`, a per-type
+   sort key to get the +4-11% instructions back, member ordering).
+4. **Execution: fan-out** (plan 48 stage 3: four sub-agents on `48_lost.txt` and failstats buckets, disjoint lists).
+5. **Execution: plan 48 stage 2 session B**, delete the creation-order machinery piece by piece, then `48_lost.txt`.
+6. **Execution: plan 48 stage 4**, the other oracles' caches on the new tsc (sweep ~40 min: commit first), drain cheap.
+7. **Corpora: plan 48 stage 5**, re-pin every corpus at current upstream (clean under the commit's tsc and tsgo 7.0.2).
+8. **Corpora: stage 5 drain** with sub-agents.
+9. **Perf session** (plan 48 stage 6): instruction baselines on the re-pinned corpora, `./bench.sh` against tsgo 7.0.2.
 10. **Triage.**
 11. **Insights.**

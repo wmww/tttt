@@ -1,0 +1,690 @@
+From 9fbdfedb14bdd614309fc4a080baf573b1531237 Mon Sep 17 00:00:00 2001
+From: "Sophie Winter [AI]" <git@phie.me>
+Date: Wed, 7 Oct 2026 02:09:54 +0000
+Subject: [PATCH] Prototype: tsc 6/7 stable type ordering (union member order
+ by compareTypes, object literal props by declaration)
+
+Time-boxed derisking prototype on top of the TS 6.0.3 prototype (471175dc), measured against the tsgo-port
+baselines (4d4f005c, stableTypeOrdering on). New src/ty/order.c: ty_compare(), a port of checker.ts's compareTypes
+(TS 6 TypeFlags rank, compareTypeNames by alias/type-param/class/interface/reference name, object symbol declaration
+order (file program_order, then position), tuple shape, type argument lists, literal values, enum member/unique symbol
+declarations, union origins, keyof/indexed/substitution/template/string mapping operands, array mappers) with type
+id as the final tie-break (and for conditional roots, deferred reference nodes: tttt keeps no node there).
+sort_by_id/insert_by_id/sorted_contains/sorted_list_contains/union_has_member, the constrained-type-variable
+re-insertion and the optional-marker scan use it instead of ids. Object literal (and spread) types sort their props
+by declaration position (getNamedMembers), props without one last by name.
+
+Suite (results file = tsgo-port baselines): 13220 -> 13790 / 14969 (errors 14490 -> 14546, types 13509 -> 14082).
+Lost 3: stableTypeOrdering(stabletypeordering=false) (option not honoured: no id-order fallback), and
+selfReferencingSpreadInLoop / yieldExpressionInControlFlow (TS7034/TS7005: ty_array()'s "autoArray has the lowest id
+so it survives subtype reduction" no longer holds: Array<any> now sorts before Array<auto>). Left of the 576
+order-only tests that passed against 6.0.3: 8 (class static side `prototype` member order: tsc 6 lists it after
+the class's own members; moving it broke a declared `static prototype`, reverted; deeplyNestedMappedTypes).
+Perf (callgrind, --checkers 1): tsc +11.5%, drizzle +6.1%, type-fest +4.5%, zod +3.5%, vue +2.6%, effect +1.3%:
+ty_compare is ~9.5% inclusive on tsc's src/compiler (sort + is-sorted checks). Needs a cached sort key per type.
+valibot gains 4 TS2344 in keyof.test-d.ts that tsgo 7.0.2 reports identically (UnionToTuple-style order dependence).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ src/meson.build      |   1 +
+ src/ty/checker.c     |  21 +-
+ src/ty/members.c     |  43 +++++
+ src/ty/order.c       | 449 +++++++++++++++++++++++++++++++++++++++++++
+ src/ty/relate.c      |   2 +-
+ src/ty/ty_internal.h |   3 +
+ 6 files changed, 508 insertions(+), 11 deletions(-)
+ create mode 100644 src/ty/order.c
+
+diff --git a/src/meson.build b/src/meson.build
+index 2967ab4a..49ef91f3 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -44,6 +44,7 @@ core_files = files(
+     'engine.c',
+     'string_helpers.c',
+     'ty/checker.c',
++    'ty/order.c',
+     'ty/members.c',
+     'ty/enums.c',
+     'ty/declaration_diagnostics.c',
+diff --git a/src/ty/checker.c b/src/ty/checker.c
+index 70365e18..739bd361 100644
+--- a/src/ty/checker.c
++++ b/src/ty/checker.c
+@@ -627,8 +627,9 @@ static bool sorted_contains(TyBuf const* buf, u32 len, Ty const* t) {
+     u32 lo = 0, hi = len;
+     while (lo < hi) {
+         u32 mid = lo + (hi - lo) / 2;
+-        if (buf->data[mid]->id == t->id) return buf->data[mid] == t;
+-        if (buf->data[mid]->id < t->id) lo = mid + 1; else hi = mid;
++        int c = ty_compare(buf->data[mid], t);
++        if (c == 0) return true;
++        if (c < 0) lo = mid + 1; else hi = mid;
+     }
+     return false;
+ }
+@@ -649,7 +650,7 @@ static void sort_by_id(Ty const** data, u32 len) {
+         for (u32 i = 1; i < len; i++) {
+             Ty const* t = data[i];
+             u32 j = i;
+-            for (; j && data[j - 1]->id > t->id; j--) data[j] = data[j - 1];
++            for (; j && ty_compare(data[j - 1], t) > 0; j--) data[j] = data[j - 1];
+             data[j] = t;
+         }
+         return;
+@@ -660,7 +661,7 @@ static void sort_by_id(Ty const** data, u32 len) {
+     panic_if(!bounds || !tmp, "out of memory");
+     u32 runs = 0;
+     bounds[runs++] = 0;
+-    for (u32 i = 1; i < len; i++) if (data[i - 1]->id > data[i]->id) bounds[runs++] = i;
++    for (u32 i = 1; i < len; i++) if (ty_compare(data[i - 1], data[i]) > 0) bounds[runs++] = i;
+     bounds[runs] = len;
+     Ty const** src = data;
+     Ty const** dst = tmp;
+@@ -669,7 +670,7 @@ static void sort_by_id(Ty const** data, u32 len) {
+         for (u32 k = 0; k < runs; k += 2) {
+             u32 lo = bounds[k], mid = bounds[k + 1], hi = k + 2 <= runs ? bounds[k + 2] : mid;
+             u32 a = lo, b = mid, o = lo;
+-            while (a < mid && b < hi) dst[o++] = src[b]->id < src[a]->id ? src[b++] : src[a++];
++            while (a < mid && b < hi) dst[o++] = ty_compare(src[b], src[a]) < 0 ? src[b++] : src[a++];
+             while (a < mid) dst[o++] = src[a++];
+             while (b < hi) dst[o++] = src[b++];
+             bounds[merged++] = lo;
+@@ -825,7 +826,7 @@ static bool sorted_list_contains(TyList list, Ty const* t) {
+     while (lo < hi) {
+         u32 mid = lo + (hi - lo) / 2;
+         if (list.data[mid] == t) return true;
+-        if (list.data[mid]->id < t->id) lo = mid + 1; else hi = mid;
++        if (ty_compare(list.data[mid], t) < 0) lo = mid + 1; else hi = mid;
+     }
+     return false;
+ }
+@@ -847,7 +848,7 @@ Ty const* ty_named_union_of_reduced(Checker* me, Ty const* const* inputs, u32 le
+ static void insert_by_id(TyBuf* buf, Ty const* t) {
+     ty_buf_push(buf, t);
+     u32 j = buf->len - 1;
+-    for (; j && buf->data[j - 1]->id > t->id; j--) buf->data[j] = buf->data[j - 1];
++    for (; j && ty_compare(buf->data[j - 1], t) > 0; j--) buf->data[j] = buf->data[j - 1];
+     buf->data[j] = t;
+ }
+ 
+@@ -918,7 +919,7 @@ static Ty const* union_with_origin(
+     } else {
+         // The members of a union are sorted: a filtered union (narrowing) comes in sorted already
+         bool sorted = true;
+-        for (u32 i = 1; i < buf.len && sorted; i++) sorted = buf.data[i - 1]->id <= buf.data[i]->id;
++        for (u32 i = 1; i < buf.len && sorted; i++) sorted = ty_compare(buf.data[i - 1], buf.data[i]) <= 0;
+         if (!sorted) sort_by_id(buf.data, buf.len);
+         bool strict_null_checks = compiler_options()->strict_null_checks;
+         if (includes & TYF_FRESH_LITERAL) {
+@@ -1552,7 +1553,7 @@ static u32 remove_constrained_type_variables(Checker* me, Ty const** types, u32
+             }
+             // (Sorted insertion)
+             u32 at = out;
+-            while (at > 0 && types[at - 1]->id > variable->id) {
++            while (at > 0 && ty_compare(types[at - 1], variable) > 0) {
+                 types[at] = types[at - 1];
+                 at--;
+             }
+@@ -2967,7 +2968,7 @@ Ty const* ty_remove_optional_marker(Checker* me, Ty const* ty) {
+     if (ty->kind != TY_UNION) return ty;
+     TyList members = ty->composite.types;
+     // (Members sort by id, and the marker's is among the lowest)
+-    for (u32 i = 0; i < members.len && members.data[i]->id <= marker->id; i++) {
++    for (u32 i = 0; i < members.len && ty_order_rank(members.data[i]) <= ty_order_rank(marker); i++) {
+         if (members.data[i] != marker) continue;
+         Ty const** kept = malloc(sizeof(Ty const*) * members.len);
+         panic_if(!kept, "out of memory");
+diff --git a/src/ty/members.c b/src/ty/members.c
+index 5a8e3908..c1df576c 100644
+--- a/src/ty/members.c
++++ b/src/ty/members.c
+@@ -151,6 +151,46 @@ static void builder_late_bound_last(MembersBuilder* builder, u32 from) {
+     free(moved);
+ }
+ 
++// tsc 6's getNamedMembers with stableTypeOrdering: properties in declaration order (file order, then position), those
++// without a declaration last (PROTOTYPE: by name; tsc then by symbol id)
++static bool prop_order_pos(Prop const* prop, u32* file, char const** at) {
++    while (prop && !span_valid(prop->decl->name_span)) prop = prop->target;
++    if (!prop) return false;
++    Span s = prop->decl->decl_span_count ? prop->decl->decl_spans[0] : prop->decl->name_span;
++    if (!s.source) s = prop->decl->name_span;
++    *file = s.source->program_order;
++    *at = s.sv.buf;
++    return true;
++}
++
++static int prop_cmp_stable(Prop const* a, Prop const* b) {
++    u32 fa = 0, fb = 0;
++    char const* pa = nullptr;
++    char const* pb = nullptr;
++    bool ha = prop_order_pos(a, &fa, &pa), hb = prop_order_pos(b, &fb, &pb);
++    if (ha && hb) {
++        if (fa != fb) return fa < fb ? -1 : 1;
++        if (pa != pb) return pa < pb ? -1 : 1;
++        return 0;
++    }
++    if (ha != hb) return ha ? -1 : 1;
++    csview na = atom_sv(a->name), nb = atom_sv(b->name);
++    isize n = na.size < nb.size ? na.size : nb.size;
++    int c = n ? memcmp(na.buf, nb.buf, (size_t)n) : 0;
++    if (c) return c;
++    return na.size < nb.size ? -1 : na.size > nb.size;
++}
++
++static void builder_sort_stable(MembersBuilder* builder) {
++    // (Insertion sort: stable, and the props are mostly in order already)
++    for (u32 i = 1; i < builder->props_count; i++) {
++        Prop* p = builder->props[i];
++        u32 j = i;
++        for (; j && prop_cmp_stable(builder->props[j - 1], p) > 0; j--) builder->props[j] = builder->props[j - 1];
++        builder->props[j] = p;
++    }
++}
++
+ static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
+     Members* ret = arena_new(&my arena, Members);
+     if (builder->props_count > 8) {
+@@ -1474,6 +1514,8 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder,
+         prototype->type = instance;
+     }
+     prototype->type_state = LAZY_STATE_DONE;
++    // PROTOTYPE (stable ordering): tsc 6 lists `prototype` after the members declared in the class (getNamedMembers's
++    // contained/non-contained split); moving it here breaks a declared `static prototype` (first wins), not done
+     builder_push(builder, props, prototype);
+ 
+     builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
+@@ -4234,6 +4276,7 @@ Ty const* ty_object_literal_of(
+         fresh->anonymous.js_literal = js;
+         if (kind != OBJECT_SYNTHETIC) fresh->anonymous.literal_expr = expr;
+         fresh->anonymous.state = arena_new(&my arena, TyObjectState);
++        builder_sort_stable(&builder);
+         fresh->anonymous.state->members = builder_finish(me, &builder);
+         fresh->anonymous.state->members_state = LAZY_STATE_DONE;
+         *intern_slot(me, &my links, words.data, words.len) = fresh;
+diff --git a/src/ty/order.c b/src/ty/order.c
+new file mode 100644
+index 00000000..05af1ba2
+--- /dev/null
++++ b/src/ty/order.c
+@@ -0,0 +1,449 @@
++// tsc 6/7's stable type ordering (stableTypeOrdering, checker.ts's compareTypes): the order of a union's members,
++// independent of type creation order. PROTOTYPE: ties tsc breaks with mappers or nodes tttt doesn't keep fall back to
++// type ids
++#include "ty/ty_internal.h"
++#include "scope.h"
++#include "source_file.h"
++
++// tsc 6's TypeFlags bit (getSortOrderFlags: enum-like unit types are TypeFlags.Enum)
++enum {
++    RANK_ANY = 0, RANK_UNKNOWN, RANK_UNDEFINED, RANK_NULL, RANK_VOID, RANK_STRING, RANK_NUMBER, RANK_BIGINT,
++    RANK_BOOLEAN, RANK_ES_SYMBOL, RANK_STRING_LITERAL, RANK_NUMBER_LITERAL, RANK_BIGINT_LITERAL, RANK_BOOLEAN_LITERAL,
++    RANK_UNIQUE_ES_SYMBOL, RANK_ENUM_LITERAL, RANK_ENUM, RANK_NON_PRIMITIVE, RANK_NEVER, RANK_TYPE_PARAMETER,
++    RANK_OBJECT, RANK_INDEX, RANK_TEMPLATE_LITERAL, RANK_STRING_MAPPING, RANK_SUBSTITUTION, RANK_INDEXED_ACCESS,
++    RANK_CONDITIONAL, RANK_UNION, RANK_INTERSECTION,
++};
++
++u32 ty_order_rank(Ty const* t) {
++    switch ((TyKind)t->kind) {
++        case TY_INTRINSIC:
++        case TY_LITERAL: {
++            u32 f = t->flags;
++            if (f & (TYF_ENUM_LITERAL | TYF_ENUM)) return RANK_ENUM;
++            if (f & TYF_ANY) return RANK_ANY;
++            if (f & TYF_UNKNOWN) return RANK_UNKNOWN;
++            if (f & TYF_UNDEFINED) return RANK_UNDEFINED;
++            if (f & TYF_NULL) return RANK_NULL;
++            if (f & TYF_VOID) return RANK_VOID;
++            if (f & TYF_STRING_LITERAL) return RANK_STRING_LITERAL;
++            if (f & TYF_NUMBER_LITERAL) return RANK_NUMBER_LITERAL;
++            if (f & TYF_BIGINT_LITERAL) return RANK_BIGINT_LITERAL;
++            if (f & TYF_BOOLEAN_LITERAL) return RANK_BOOLEAN_LITERAL;
++            if (f & TYF_UNIQUE_ES_SYMBOL) return RANK_UNIQUE_ES_SYMBOL;
++            if (f & TYF_STRING) return RANK_STRING;
++            if (f & TYF_NUMBER) return RANK_NUMBER;
++            if (f & TYF_BIGINT) return RANK_BIGINT;
++            if (f & TYF_ES_SYMBOL) return RANK_ES_SYMBOL;
++            if (f & TYF_NON_PRIMITIVE) return RANK_NON_PRIMITIVE;
++            if (f & TYF_NEVER) return RANK_NEVER;
++            return RANK_ANY;
++        }
++        case TY_TYPE_PARAM: return RANK_TYPE_PARAMETER;
++        case TY_DECLARED:
++        case TY_REFERENCE:
++        case TY_ANONYMOUS:
++        case TY_EVOLVING_ARRAY: return RANK_OBJECT;
++        case TY_UNION: return RANK_UNION;
++        case TY_INTERSECTION: return RANK_INTERSECTION;
++        case TY_KEYOF: return RANK_INDEX;
++        case TY_INDEXED: return RANK_INDEXED_ACCESS;
++        case TY_CONDITIONAL: return RANK_CONDITIONAL;
++        case TY_SUBSTITUTION: return RANK_SUBSTITUTION;
++        case TY_TEMPLATE_LITERAL: return RANK_TEMPLATE_LITERAL;
++        case TY_STRING_MAPPING: return RANK_STRING_MAPPING;
++    }
++    return RANK_ANY;
++}
++
++static int cmp_u64(u64 a, u64 b) { return a < b ? -1 : a > b; }
++
++static int cmp_sv(csview a, csview b) {
++    isize n = a.size < b.size ? a.size : b.size;
++    int c = n ? memcmp(a.buf, b.buf, (size_t)n) : 0;
++    if (c) return c < 0 ? -1 : 1;
++    return cmp_u64((u64)a.size, (u64)b.size);
++}
++
++// A declaration's place in the program: tsc's compareNodes (file order, then position)
++typedef struct OrderPos {
++    u32 file;
++    char const* at;
++} OrderPos;
++
++static bool span_pos(Span s, OrderPos* out) {
++    if (!s.source || !s.sv.buf) return false;
++    *out = (OrderPos){ s.source->program_order, s.sv.buf };
++    return true;
++}
++
++static int cmp_pos(OrderPos a, OrderPos b) {
++    if (a.file != b.file) return a.file < b.file ? -1 : 1;
++    return a.at < b.at ? -1 : a.at > b.at;
++}
++
++// tsc's compareSymbols, minus symbol ids (0: tie)
++static int cmp_symbols(Symbol const* a, Symbol const* b) {
++    if (a == b) return 0;
++    if (!a) return 1;
++    if (!b) return -1;
++    OrderPos pa, pb;
++    bool ha = a->decl_count && span_pos(a->decls[0].full, &pa);
++    bool hb = b->decl_count && span_pos(b->decls[0].full, &pb);
++    if (ha && hb) {
++        int c = cmp_pos(pa, pb);
++        if (c) return c;
++    } else if (ha) {
++        return -1;
++    } else if (hb) {
++        return 1;
++    }
++    return cmp_sv(a->name, b->name);
++}
++
++// The symbol tsc's compareTypeNames orders by (getTypeNameSymbol): a name, and the symbol for the identity test
++typedef struct TypeName {
++    bool named;
++    void const* identity;
++    csview name;
++} TypeName;
++
++static TypeName type_name(Ty const* t) {
++    if (t->alias) return (TypeName){ true, t->alias, t->alias->name };
++    switch ((TyKind)t->kind) {
++        case TY_TYPE_PARAM:
++            if (t->param.symbol) return (TypeName){ true, t->param.symbol, t->param.symbol->name };
++            return (TypeName){ true, t, atom_sv(t->param.name) };
++        case TY_STRING_MAPPING:
++            if (t->string_mapping.symbol) return (TypeName){ true, t->string_mapping.symbol, t->string_mapping.symbol->name };
++            return (TypeName){0};
++        case TY_DECLARED:
++            switch (t->declared.kind) {
++                case TY_DECLARED_INTERFACE:
++                case TY_DECLARED_CLASS_INSTANCE:
++                case TY_DECLARED_SYNTHETIC:
++                    if (t->declared.symbol) return (TypeName){ true, t->declared.symbol, t->declared.symbol->name };
++                    return (TypeName){ true, t, atom_sv(t->declared.name) };
++                default:
++                    return (TypeName){0};
++            }
++        case TY_REFERENCE:
++            return type_name(t->reference.target);
++        default:
++            return (TypeName){0};
++    }
++}
++
++static int cmp_lists(Ty const* const* a, u32 alen, Ty const* const* b, u32 blen) {
++    if (alen != blen) return alen < blen ? -1 : 1;
++    for (u32 i = 0; i < alen; i++) {
++        int c = ty_compare(a[i], b[i]);
++        if (c) return c;
++    }
++    return 0;
++}
++
++static int cmp_tylist(TyList a, TyList b) { return cmp_lists(a.data, a.len, b.data, b.len); }
++
++static int cmp_mappers(TyMapper const* a, TyMapper const* b) {
++    if (a == b) return 0;
++    if (!a) return 1;
++    if (!b) return -1;
++    int c = cmp_lists(a->sources, a->len, b->sources, b->len);
++    return c ? c : cmp_lists(a->targets, a->len, b->targets, b->len);
++}
++
++// The symbol of an object type, as tsc's compareSymbols(t.symbol) would place it: a position, or none
++typedef struct ObjectSym {
++    bool has; // has a symbol at all
++    bool positioned;
++    OrderPos pos;
++    Symbol const* symbol; // If it is a symbol
++    void const* identity;
++} ObjectSym;
++
++static ObjectSym sym_of_symbol(Symbol const* s) {
++    ObjectSym r = { .has = s != nullptr, .symbol = s, .identity = s };
++    if (s && s->decl_count) r.positioned = span_pos(s->decls[0].full, &r.pos);
++    return r;
++}
++
++static ObjectSym sym_of_span(Span s, void const* identity) {
++    ObjectSym r = { .has = true, .identity = identity };
++    r.positioned = span_pos(s, &r.pos);
++    return r;
++}
++
++static ObjectSym object_symbol(Ty const* t) {
++    switch ((TyKind)t->kind) {
++        case TY_DECLARED:
++            if (t->declared.kind == TY_DECLARED_NAMESPACE && t->declared.namespace_symbol) {
++                return sym_of_symbol(t->declared.namespace_symbol);
++            }
++            return sym_of_symbol(t->declared.symbol);
++        case TY_REFERENCE:
++            return object_symbol(t->reference.target);
++        case TY_ANONYMOUS:
++            if (t->anonymous.target) return object_symbol(t->anonymous.target);
++            if (t->anonymous.is_reverse) return (ObjectSym){0};
++            if (t->anonymous.merged_value) return sym_of_symbol(t->anonymous.merged_value);
++            if (t->anonymous.function) return sym_of_span(t->anonymous.function->full_span, t->anonymous.function);
++            if (t->anonymous.node) {
++                TypeNode const* n = t->anonymous.node;
++                if (n->tag == TYPE_INTERFACE) return sym_of_span(n->interface.span, n);
++                if (n->tag == TYPE_CALLABLE) return sym_of_span(n->callable->function->full_span, n);
++                return (ObjectSym){ .has = true, .identity = n };
++            }
++            if (t->anonymous.object_literal && t->anonymous.literal_expr) {
++                return sym_of_span(t->anonymous.literal_expr->inner_span, t->anonymous.literal_expr);
++            }
++            return (ObjectSym){0};
++        default:
++            return (ObjectSym){0};
++    }
++}
++
++static int cmp_object_symbols(ObjectSym a, ObjectSym b) {
++    if (a.identity == b.identity && a.has == b.has) return 0;
++    if (!a.has) return 1;
++    if (!b.has) return -1;
++    if (a.positioned && b.positioned) {
++        int c = cmp_pos(a.pos, b.pos);
++        if (c) return c;
++    } else if (a.positioned) {
++        return -1;
++    } else if (b.positioned) {
++        return 1;
++    }
++    if (a.symbol && b.symbol) return cmp_sv(a.symbol->name, b.symbol->name);
++    return 0;
++}
++
++// tsc's ObjectFlags.ObjectTypeKindMask bit of a non-reference object type
++static u32 object_kind(Ty const* t) {
++    switch ((TyKind)t->kind) {
++        case TY_DECLARED:
++            switch (t->declared.kind) {
++                case TY_DECLARED_CLASS_INSTANCE: return 1;
++                case TY_DECLARED_INTERFACE:
++                case TY_DECLARED_SYNTHETIC: return 2;
++                default: return 16;
++            }
++        case TY_ANONYMOUS:
++            if (t->anonymous.is_reverse) return 1024;
++            return t->anonymous.mapped ? 32 : 16;
++        case TY_EVOLVING_ARRAY: return 256;
++        default: return 16;
++    }
++}
++
++// Whether tsc would see a reference (ObjectFlags.Reference): generic instantiations and tuples
++static bool is_reference(Ty const* t) {
++    return t->kind == TY_REFERENCE || (t->kind == TY_DECLARED && t->declared.kind == TY_DECLARED_TUPLE_TARGET);
++}
++
++static u32 tuple_element_flags(unsigned char f) {
++    return f & TUPLE_ELEMENT_REST ? 4 : f & TUPLE_ELEMENT_OPTIONAL ? 2 : 1;
++}
++
++static int cmp_tuples(TupleShape const* a, TupleShape const* b) {
++    if (a == b) return 0;
++    if (a->readonly != b->readonly) return a->readonly ? 1 : -1;
++    if (a->arity != b->arity) return a->arity < b->arity ? -1 : 1;
++    for (u32 i = 0; i < a->arity; i++) {
++        u32 fa = tuple_element_flags(a->flags ? a->flags[i] : 0), fb = tuple_element_flags(b->flags ? b->flags[i] : 0);
++        if (fa != fb) return fa < fb ? -1 : 1;
++    }
++    if (a->names || b->names) {
++        for (u32 i = 0; i < a->arity; i++) {
++            Atom const* na = a->names ? a->names[i] : nullptr;
++            Atom const* nb = b->names ? b->names[i] : nullptr;
++            if (na == nb) continue;
++            if (!na) return -1;
++            if (!nb) return 1;
++            int c = cmp_sv(atom_sv(na), atom_sv(nb));
++            if (c) return c;
++        }
++    }
++    return 0;
++}
++
++static TupleShape const* tuple_of(Ty const* ref) {
++    Ty const* target = ref->kind == TY_REFERENCE ? ref->reference.target : ref;
++    return target->kind == TY_DECLARED ? target->declared.tuple : nullptr;
++}
++
++static u32 origin_rank(Ty const* o) {
++    return o->kind == TY_KEYOF ? RANK_INDEX : o->kind == TY_UNION ? RANK_UNION : RANK_INTERSECTION;
++}
++
++int ty_compare(Ty const* a, Ty const* b) {
++    if (a == b) return 0;
++    u32 ra = ty_order_rank(a), rb = ty_order_rank(b);
++    if (ra != rb) return ra < rb ? -1 : 1;
++
++    // tsc's compareTypeNames
++    TypeName na = type_name(a), nb = type_name(b);
++    if (na.named && nb.named && na.identity == nb.identity) {
++        if (a->alias && a->alias == b->alias) {
++            int c = cmp_tylist(a->alias_args, b->alias_args);
++            if (c) return c;
++        }
++    } else if (na.named != nb.named) {
++        return na.named ? -1 : 1;
++    } else if (na.named) {
++        int c = cmp_sv(na.name, nb.name);
++        if (c) return c;
++    }
++
++    switch ((TyKind)a->kind) {
++        case TY_INTRINSIC:
++            break;
++        case TY_LITERAL: {
++            if (ra == RANK_ENUM) {
++                int c = cmp_symbols(a->literal.enum_member, b->literal.enum_member);
++                if (c) return c;
++            } else if (ra == RANK_UNIQUE_ES_SYMBOL) {
++                UniqueSymbolDecl const* ua = a->literal.unique;
++                UniqueSymbolDecl const* ub = b->literal.unique;
++                if (ua && ub) {
++                    OrderPos pa, pb;
++                    bool ha = ua->member.sv.buf ? span_pos(ua->member, &pa) : (ua->owner && ua->owner->decl_count && span_pos(ua->owner->decls[0].full, &pa));
++                    bool hb = ub->member.sv.buf ? span_pos(ub->member, &pb) : (ub->owner && ub->owner->decl_count && span_pos(ub->owner->decls[0].full, &pb));
++                    if (ha && hb) {
++                        int c = cmp_pos(pa, pb);
++                        if (c) return c;
++                    }
++                }
++            } else if (ra == RANK_STRING_LITERAL) {
++                int c = cmp_sv(atom_sv(a->literal.string), atom_sv(b->literal.string));
++                if (c) return c;
++            } else if (ra == RANK_NUMBER_LITERAL) {
++                double x = a->literal.value.number, y = b->literal.value.number;
++                if (x != y) return x < y ? -1 : 1;
++            } else if (ra == RANK_BOOLEAN_LITERAL) {
++                bool x = a->literal.value.boolean, y = b->literal.value.boolean;
++                if (x != y) return x ? 1 : -1;
++            }
++            break;
++        }
++        case TY_DECLARED:
++        case TY_REFERENCE:
++        case TY_ANONYMOUS:
++        case TY_EVOLVING_ARRAY: {
++            int c = cmp_object_symbols(object_symbol(a), object_symbol(b));
++            if (c) return c;
++            bool ia = is_reference(a), ib = is_reference(b);
++            if (ia && ib) {
++                TupleShape const* ta = tuple_of(a);
++                TupleShape const* tb = tuple_of(b);
++                if (ta && tb) {
++                    c = cmp_tuples(ta, tb);
++                    if (c) return c;
++                }
++                if (a->kind != TY_REFERENCE || b->kind != TY_REFERENCE) {
++                    // (A tuple target without elements: no arguments)
++                    if (a->kind != b->kind) return a->kind == TY_REFERENCE ? 1 : -1;
++                } else if (!a->reference.deferred && !b->reference.deferred) {
++                    c = cmp_tylist(a->reference.args, b->reference.args);
++                    if (c) return c;
++                    if (a->reference.this_arg != b->reference.this_arg) {
++                        if (!a->reference.this_arg) return -1;
++                        if (!b->reference.this_arg) return 1;
++                        c = ty_compare(a->reference.this_arg, b->reference.this_arg);
++                        if (c) return c;
++                    }
++                } else if (a->reference.deferred && b->reference.deferred) {
++                    c = cmp_mappers(a->reference.deferred->mapper, b->reference.deferred->mapper);
++                    if (c) return c;
++                }
++            } else if (ia) {
++                return -1;
++            } else if (ib) {
++                return 1;
++            } else {
++                u32 ka = object_kind(a), kb = object_kind(b);
++                if (ka != kb) return ka < kb ? -1 : 1;
++                if (a->kind == TY_ANONYMOUS && b->kind == TY_ANONYMOUS) {
++                    c = cmp_mappers(a->anonymous.mapper, b->anonymous.mapper);
++                    if (c) return c;
++                }
++            }
++            break;
++        }
++        case TY_UNION: {
++            Ty const* oa = a->composite.origin;
++            Ty const* ob = b->composite.origin;
++            if (!oa && !ob) {
++                int c = cmp_tylist(a->composite.types, b->composite.types);
++                if (c) return c;
++            } else if (!oa) {
++                return 1;
++            } else if (!ob) {
++                return -1;
++            } else {
++                // (A keyof origin isn't a Ty that ty_compare() knows the identity of, compare its operand)
++                if (oa->kind != ob->kind) return origin_rank(oa) < origin_rank(ob) ? -1 : 1;
++                int c = oa->kind == TY_KEYOF ? ty_compare(oa->keyof.operand, ob->keyof.operand) :
++                    cmp_tylist(oa->composite.types, ob->composite.types);
++                if (c) return c;
++            }
++            break;
++        }
++        case TY_INTERSECTION: {
++            int c = cmp_tylist(a->composite.types, b->composite.types);
++            if (c) return c;
++            break;
++        }
++        case TY_TYPE_PARAM: {
++            int c = cmp_symbols(a->param.symbol, b->param.symbol);
++            if (c) return c;
++            break;
++        }
++        case TY_KEYOF: {
++            int c = ty_compare(a->keyof.operand, b->keyof.operand);
++            if (c) return c;
++            break;
++        }
++        case TY_INDEXED: {
++            int c = ty_compare(a->indexed.object, b->indexed.object);
++            if (c) return c;
++            c = ty_compare(a->indexed.index, b->indexed.index);
++            if (c) return c;
++            break;
++        }
++        case TY_CONDITIONAL: {
++            // (tsc orders by the root's node; tttt keeps no node on the root: its id, creation order)
++            Ty const* xa = a->conditional.root;
++            Ty const* xb = b->conditional.root;
++            if (xa != xb) return xa->id < xb->id ? -1 : 1;
++            int c = cmp_mappers(a->conditional.mapper, b->conditional.mapper);
++            if (c) return c;
++            break;
++        }
++        case TY_SUBSTITUTION: {
++            int c = ty_compare(a->substitution.base, b->substitution.base);
++            if (c) return c;
++            c = ty_compare(a->substitution.constraint, b->substitution.constraint);
++            if (c) return c;
++            break;
++        }
++        case TY_TEMPLATE_LITERAL: {
++            u32 la = a->template_literal.types.len + 1, lb = b->template_literal.types.len + 1;
++            for (u32 i = 0; i < la; i++) {
++                if (i >= lb) return 1;
++                int c = cmp_sv(atom_sv(a->template_literal.texts[i]), atom_sv(b->template_literal.texts[i]));
++                if (c) return c;
++            }
++            if (la < lb) return -1;
++            int c = cmp_tylist(a->template_literal.types, b->template_literal.types);
++            if (c) return c;
++            break;
++        }
++        case TY_STRING_MAPPING: {
++            int c = ty_compare(a->string_mapping.type, b->string_mapping.type);
++            if (c) return c;
++            break;
++        }
++    }
++    return a->id < b->id ? -1 : 1;
++}
+diff --git a/src/ty/relate.c b/src/ty/relate.c
+index d707a919..94fb499f 100644
+--- a/src/ty/relate.c
++++ b/src/ty/relate.c
+@@ -3274,7 +3274,7 @@ static bool union_has_member(Ty const* u, Ty const* t) {
+     while (lo < hi) {
+         u32 mid = lo + (hi - lo) / 2;
+         if (members.data[mid] == t) return true;
+-        if (members.data[mid]->id < t->id) lo = mid + 1; else hi = mid;
++        if (ty_compare(members.data[mid], t) < 0) lo = mid + 1; else hi = mid;
+     }
+     return false;
+ }
+diff --git a/src/ty/ty_internal.h b/src/ty/ty_internal.h
+index ba422883..99d55843 100644
+--- a/src/ty/ty_internal.h
++++ b/src/ty/ty_internal.h
+@@ -249,6 +249,9 @@ typedef struct Inference {
+ void inference_init(Inference* inf, TyList params);
+ // How many elements a tuple has before its first rest element (tsc's fixedLength)
+ u32 ty_tuple_fixed_length(TupleShape const* shape);
++// tsc 6's compareTypes (stableTypeOrdering): the order of union members (order.c)
++int ty_compare(Ty const* a, Ty const* b);
++u32 ty_order_rank(Ty const* t);
+ // The union of elements `from` to `arity - end_skip` of a tuple reference, rest elements by their element type, null
+ // if that's none (tsc's getElementTypeOfSliceOfTupleType)
+ // `no_reductions`: the union of the elements as a contextual type (tsc's noReductions), literals next to their primitive
+-- 
+2.53.0
+
