@@ -313,31 +313,41 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   tsgo 7.0.2 0. The program more than doubled since the Mar 2025 pin: ~10.1k source files / 3.41M lines (+870
   node_modules files; the agent host, chat and sessions code), so walls/RSS/instruction counts aren't comparable with the old pin's. tsc 6 needs more than
   8 GB of heap (OOM at `--max-old-space-size=8000`); tttt's typecheck peaks at 5.5 GB resident with 4 checkers.
-- tttt 8 (414 before the enum evaluator followed `N.C` to a namespace's const variable: ~400 of them came from
+- tttt 1 (8 at this pin's start; 414 before the enum evaluator followed `N.C` to a namespace's const variable: ~400 of them came from
   vscode's `AgentSessionProviders` enum over `namespace SessionType { export const Local = 'local' }`). Left:
-  - Inference: a context-sensitive arrow inside `x && (...)` sees the type parameter's constraint instead of the
-    inference so far, and T then fails against the earlier argument (TS2345 + TS2339; mcpResourceScannerService.ts:174):
-    `declare function parse(c: string): { readonly wrapped: boolean; readonly servers: Record<string, number> };`
-    `declare function withFile<T extends { readonly servers: Record<string, number> }>(p: (c: string) => T, u: ((c: string, parsed: T) => string) | undefined): void;`
-    `function f(update?: (c: string, w: boolean) => string) { withFile(parse, update && ((c, { wrapped }) => update(c, wrapped))); }`
   - (Fixed: an object literal's own getter spread over an optional property was typed as its function. Left from
     that probe: `{ set a(v: string) {}, ...p }` with `p: { a?: number }` is `{ a: number | undefined }` in tttt,
     `{ a: number }` in tsc; and the order/printing of `{ get g() {..}, ...(x as Partial<R>) }`: tsc sorts R's
     properties first (first declaration) and prints them `name?: string | undefined`.)
-  - Indexing a generic mapped type by its unconstrained type parameter: `type OD<T> = { [P in keyof T]: ... };
-    function g<T>(a: string, o: OD<T>) { o[a as T].type }` gives TS2536 (tsc: `o[a as T]` is the mapped template's
-    union). platform/environment/node/argv.ts:279.
   - tsc 6 vs tsgo 7 (why the overlay excludes agentFinderRestProvider.test.ts, codexProviderConfiguration.test.ts,
     extHostNotebookStatusCommands.test.ts): `class C { count = 0; constructor(r: () => number) {} } function id(n:
     number) { return n; } const c = new C(() => id(c.count));` is TS7022+TS7024 under tsc 6 and clean under tsgo 7.0.2.
     tttt matches tsgo on that file but reported 3 of tsc's 5 pairs in vscode (agentFinderRestProvider.test.ts:613,
     codexProviderConfiguration.test.ts:148/156; not :138 nor extHostNotebookStatusCommands.test.ts:37), so its
     circularity detection there is neither oracle's. Decide which behaviour to follow when tsgo 7 becomes the oracle.
-  - Unreduced: TS7006 x3 + TS2365 `'{}' + number` in inlineEdits longDistanceHint (`derived(this, r => { ... return obs.map(heights => ...) })
-    .flatten()` with overloaded `derived`/`map`; a single-file imitation is clean), and TS2322 at
-    stateToProgressAdapter.test.ts:1956: `{ ...image, data: '' }` spreads the declared union `ToolResultContent`
-    instead of `image`'s initializer-narrowed member (`const image: ToolResultContent = { type: EmbeddedResource, ... }`;
-    also clean in a single-file imitation; the const enum is re-exported through sessionState.ts).
+  - TS2322 at stateToProgressAdapter.test.ts:1956 (the last vscode one): `{ ...image, data: '' }` spreads the
+    declared union `ToolResultContent` instead of `image`'s initializer-narrowed member (`const image:
+    ToolResultContent = { type: EmbeddedResource, ... }`). Clean in single-file imitations and with only the
+    sessionState imports; reproduces with the whole test file copied into a probe project (imports rewritten to
+    absolute paths, `types` + node): an automatic reduction got it to ~2200 lines without finding the trigger.
+- Flagflip vscode nosnc/sloppy/nonia/nosft/nuia (agent C, 196 missing / 6 spurious -> 6 / 0). Left:
+  - nonia resultCodeEditorView.ts:170-192 TS2339 x5 on '{}': with noImplicitAny off tsc reports isConflicting
+    missing on `m.left` (TLeft of the generator `join` inferred as unknown) at every use after
+    `if (x === active)`, tttt only at the last one; a hand-written imitation infers TLeft and is clean.
+  - nosnc agentHostAutomationService.test.ts:680 TS7018 (`{ ..., runProviders }` of a `for (const { name,
+    runProviders } of [...])` element): tsc's reference to a destructured const with a union parent is
+    getNarrowedTypeOfSymbol's *unwidened* element even when nothing narrows it (tttt returns the widened declared
+    type when the flow leaves the parent as is: ty_destructured_narrowed_type()). Tried returning the unwidened
+    element: right here, but nuia cells broke (+51 TS18048 in webpack: nested `[[a, b, c]] = m` elements keep
+    `| undefined` that the declared path drops), so it needs tsc's initial-type/flow handling of binding elements
+    too. Related: tsc's widened object literal types (getWidenedTypeOfObjectLiteral) aren't ObjectLiteral, so a
+    union member missing a property reads as partial (TS2339), while tttt treats every widened literal as one
+    that reads undefined (ty_is_object_literal_without_spread()); switching that alone made excalidraw/sloppy
+    report 4 spurious TS2339 through the destructuring above.
+  - nosft copilotAgent.ts:5860 TS2339 'never' (fixed by something on ai-main by the time of the last run; if it
+    comes back: `(await p.catch(() => [])).find(w => ...)` with `readonly W[] | never[]`: tsc's union property
+    type orders never[]'s `find` first and its union signature makes w never; tttt's id order put readonly W[]'s
+    first).
 - Flagflip vscode/eopt and vue cells, left after agent D's pass (each reproduced, root cause known, not fixed):
   - TS7006 x18 (vscode/eopt chatToolProgressPart.test.ts): tsc's addImplementationSuccessElaboration runs
     chooseOverload([implementation]) on a failed overloaded call, which is the *first* Normal-mode check of a
