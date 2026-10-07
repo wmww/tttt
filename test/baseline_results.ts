@@ -48638,7 +48638,7 @@ const baselines = {
     'templateStringMultiline3': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'templateStringMultiline3_ES6': {
         errors: true,

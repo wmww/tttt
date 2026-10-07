@@ -513,7 +513,6 @@ templateStringInFunctionParameterType	E	src-changed	bl-changed
 templateStringInFunctionParameterTypeES6	E	src-same	bl-changed
 templateStringInTypeOf	T	src-changed	bl-changed
 templateStringInTypeOfES6	T	src-same	bl-changed
-templateStringMultiline3	T	src-changed	bl-changed
 templateStringWithEmbeddedConditional	T	src-changed	bl-changed
 templateStringWithEmbeddedConditionalES6	T	src-same	bl-changed
 templateStringWithEmbeddedTypeOfOperator	T	src-changed	bl-changed

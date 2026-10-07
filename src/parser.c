@@ -960,8 +960,7 @@ static inline bool hop_comment(Parser* parent) {
     const char* start = parent->pos;
     switch (*(parent->pos + 1)) {
         case '/': {
-            const char* newline = strchr(parent->pos + 2, '\n');
-            parent->pos = newline ? newline : parent->pos + 2 + strlen(parent->pos + 2);
+            parent->pos += 2 + strcspn(parent->pos + 2, "\n\r");
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
@@ -1152,9 +1151,21 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
     parent->whitespace = WHITESPACE_NONE;
     while (true) {
         switch (*parent->pos) {
+            case '\r':
+                // (A lone \r is a line terminator, of a CRLF the \n is)
+                if (parent->pos[1] == '\n') {
+                    parent->pos++;
+                    break;
+                }
+                if (!hop_newlines) {
+                    goto ws_end;
+                }
+                parent->whitespace = WHITESPACE_NEWLINE;
+                parent->pos++;
+                break;
+
             case ' ':
             case '\t':
-            case '\r':
                 // (Indentation: runs of spaces, taken without going around the switch for each)
                 do parent->pos++; while (*parent->pos == ' ');
                 break;
@@ -9040,7 +9051,8 @@ static bool parse_string_or_tagged(Parser* parent, cstr* ret, bool report_escape
             if (!parse_string_escape(&p, &str, &errors, quote == '`' && !report_escapes) && report_escapes) report_escape_errors(&p, &errors);
             continue;
         } else if (*p.pos == '\r') {
-            // Ignore?
+            // (A template's lone \r is a line break, \n in its value: tsc's scanner normalizes CR and CRLF)
+            if (quote == '`' && p.pos[1] != '\n') cstr_append_lit(&str, "\n");
         } else {
             // The plain run up to whatever the loop has to look at, appended at once
             const char* run = p.pos++;
@@ -9676,6 +9688,7 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
             // (An invalid escape is fine in a tagged template)
             if (!parse_string_escape(&p, &text, &errors, !texts) && texts) report_escape_errors(&p, &errors);
         } else if (*p.pos == '\r') {
+            if (p.pos[1] != '\n') cstr_append_lit(&text, "\n"); // (a lone \r is a line break too)
             p.pos++;
         } else if (p.pos[0] == '$' && p.pos[1] == '{') {
             vec_cstr_push(&cooked, text);
