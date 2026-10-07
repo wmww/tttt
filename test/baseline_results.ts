@@ -10816,7 +10816,7 @@ const baselines = {
         types: false,
     },
     'discriminateWithMissingProperty': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23351,14 +23351,14 @@ const baselines = {
         types: true,
     },
     'missingDiscriminants': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingDiscriminants2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'missingDomElement_UsingDomLib': {
         errors: true,

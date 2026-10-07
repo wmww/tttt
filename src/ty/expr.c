@@ -3199,7 +3199,10 @@ static Ty const* discriminate_by_items(Checker* me, Ty const* contextual, Discri
     unsigned char include[64];
     u32 const primitive = TYF_STRING | TYF_NUMBER | TYF_BIGINT | TYF_ES_SYMBOL_LIKE | TYF_BOOLEAN | TYF_LITERAL | TYF_ENUM |
         TYF_NULLABLE | TYF_VOID;
-    for (u32 i = 0; i < types.len; i++) include[i] = types.data[i]->flags & primitive ? 0 : 3;
+    // (Nor a member that reduces to never, tsc 6.0)
+    for (u32 i = 0; i < types.len; i++) {
+        include[i] = types.data[i]->flags & primitive || (ty_reduced(me, types.data[i])->flags & TYF_NEVER) ? 0 : 3;
+    }
     for (u32 d = 0; d < count; d++) {
         Ty const* value = items[d].type;
         Ty const* key = ty_prop_name_literal(me, items[d].name);
@@ -3207,8 +3210,10 @@ static Ty const* discriminate_by_items(Checker* me, Ty const* contextual, Discri
         for (u32 i = 0; i < types.len; i++) {
             if (!include[i]) continue;
             Ty const* target = ty_access(me, types.data[i], key);
+            // (A member without the property stays in: tsc 6.0)
+            if (!target) continue;
             bool related = false;
-            if (target) {
+            {
                 Ty const* const* parts = &value;
                 u32 part_count = 1;
                 if (value->kind == TY_UNION) {

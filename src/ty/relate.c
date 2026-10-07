@@ -6252,7 +6252,11 @@ static Ty const* discriminated_union_target(
     TyList types = target->composite.types;
     unsigned char include_buf[64];
     unsigned char* include = types.len <= sizeof(include_buf) ? include_buf : malloc(types.len);
-    for (u32 i = 0; i < types.len; i++) include[i] = !(types.data[i]->kind == TY_INTRINSIC || types.data[i]->kind == TY_LITERAL);
+    // (Nor a member that reduces to never, tsc 6.0)
+    for (u32 i = 0; i < types.len; i++) {
+        include[i] = !(types.data[i]->kind == TY_INTRINSIC || types.data[i]->kind == TY_LITERAL) &&
+            !(ty_reduced(me, types.data[i])->flags & TYF_NEVER);
+    }
     // (Of an intersection, the properties of its members, with the types they have together)
     u32 prop_count;
     SourceProp* props = nullptr;
@@ -6274,6 +6278,7 @@ static Ty const* discriminated_union_target(
         for (u32 i = 0; i < types.len; i++) {
             if (!include[i]) continue;
             Ty const* target_prop = prop_or_index_type(me, types.data[i], prop->name);
+            if (!target_prop) continue; // (A member without the property stays in: tsc 6.0)
             bool related = false;
             for (u32 j = 0; target_prop && j < parts.len && !related; j++) {
                 related = related_for_matching(me, st, parts.data[j], target_prop);

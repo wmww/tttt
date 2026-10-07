@@ -13,7 +13,6 @@ declarationEmitReexportedSymlinkReference	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference2	T	src-changed	bl-changed
 declarationEmitReexportedSymlinkReference3	ET	src-changed	bl-changed
 declarationsIndirectGeneratedAliasReference	T	src-changed	bl-changed
-discriminateWithMissingProperty	E	src-changed	bl-changed
 erasableSyntaxOnly	ET	src-changed	bl-changed
 errorForConflictingExportEqualsValue	T	src-changed	bl-changed
 importAliasFromNamespace	ET	src-changed	bl-changed
