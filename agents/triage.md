@@ -112,9 +112,6 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
   - moduleElementsInWrongContext: `declare module "ambient"` inside a block of a script is a global ambient module to
     tsc (a block is no container); tttt declares block contents during the resolve walk, after link, so it stays a
     module of its own and the block's imports of it are any. Imports in blocks now go to the container's table.
-  - overloadModifiersMustAgree: `declare function bar(); export function bar(s: string); function bar(s?) {}`: tsc's
-    local symbol holds the exported declaration too, so the implementation is skipped as adjacent to an overload and
-    the local's type is `{ (): any; (s: string): any; }`; tttt's local has only its own two.
   - sourceFileMergeWithFunction: a global `declare function foo()` merges into the UMD alias of `export as namespace
     foo` (tsc's mergeSymbolTable of globalExports; the merged symbol's type is the alias's, `typeof import("./types")`).
   - mergedClassWithNamespacePrototype: a class's `prototype` export shadows a merged `namespace prototype` in tsc's
@@ -130,6 +127,31 @@ gone by earlier work, the rest written up into bugs/*.md, plan 26 Leftovers and 
     type in scope (`[Op.equal]` with `const Op: OpTypes`: getContainersOfSymbol's firstVariableMatch over every value in
     scope); out_unique_symbol_name() only knows the global `XConstructor` pattern. Asking ty_type_of_symbol() of every
     value in scope from the printer risks circularity reports; annotated variables only would do for this test.
+  - tsc's serializedTypes cache across baseline lines (found on genericCallOnMemberReturningClosedOverObject, and the
+    likely cause of thisInPropertyBoundDeclarations above): visitAndTransformType caches each object type's printed
+    node per (enclosing declaration node, type id, flags) in NodeLinks.serializedTypes. The type writer's enclosing
+    declaration is node.parent, so `>x : X` prints F = `<T2>(t2: T2) => any` (X in a cycle) under the
+    VariableDeclaration, and the literal's line on the same declaration reuses that cached F instead of expanding X once
+    more: `{ foo: <T2>(t2: T2) => any; ... }`. The tsc API without the earlier line prints the expanded form, like
+    tttt. Needs the harness to pass each line's parent declaration and the printer to keep that cache (C's printer
+    area: ty_display.c only models the within-one-print case).
+  - functionOverloadErrors / overloadModifiersMustAgree: a namespace's local function symbol holds the exported
+    overloads too (tsc's declareModuleMember: the exported declaration's local has flags ExportValue, which
+    FunctionExcludes doesn't exclude), so the local's type lists every overload; tttt's local has only its own.
+  - genericClassesRedeclaration: in a second `declare module TypeScript` block, `StringHashTable` resolves to the
+    block's local whose exportSymbol is the duplicate (TS2300) class, printed qualified; tttt finds the first export.
+  - importEqualsError45874: tsc's mergeSymbol returns the source when the target is an alias resolving to
+    unknownSymbol, so a global `import Foo = globals.toString.Blah` and another file's `const Foo` stay separate
+    (no error); tttt merges them at declare time, before aliases resolve.
+  - expandoFunctionContextualTypesNoValue: `import Foo from "blah"` (unresolved) and `export function Foo` share the
+    local (Alias|ExportValue), and `Foo` references reach the export through getExportSymbolOfValueSymbolIfExported:
+    `typeof import("./x").Foo`; tttt's references resolve to the unresolved alias (any).
+  - exportAsNamespace_augment / exportAssignmentMembersVisibleInAugmentation: a UMD global merged with a `declare
+    global` namespace, and an `export =` namespace whose module exports grow by augmentations (getCommonJsExportEquals'
+    clone): tsc prints `typeof import("./a")` / `typeof import("foo")` / `typeof foo`, tttt any/error; the harness
+    helper namespace_export_equals_clone() covers only a module's own other exports.
+  - genericCallInferenceUsingThisTypeNoInvalidCacheReuseAfterMappedTypeApplication1: `inner.log(100)` is
+    `F<Effect<100, never, never>, this>` in tsc (a deferred conditional F over `this` that tttt resolves); not dug into.
   - moduleExportsAliasLoop1/2 (symbols): `exports.fn2 = Foo.min` names `Foo.min`'s symbol `fn2` (with min's
     declarations) in tsc: the alias-like CommonJS export; old failures.
 - interfaceMergeWithNonGenericTypeArguments: `class M extends B<any>` (B not generic, TS2315) merged with `interface M extends I`: tsc also reports TS2346 on `super()` (no base constructor for that many type arguments), but not without the interface merge; the mechanism (how the merge changes getBaseConstructorTypeOfClass) is unexplored (stage 3, agent A).
