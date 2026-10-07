@@ -1590,7 +1590,15 @@ static void report_no_property(Checker* me, Ty const* object, Ty const* index, u
         if (error && uniform && !synthetic && declared->decl->decl_span_count) {
             // (tsc's error span of the declaration: its name)
             Span name_span = ty_prop_decl_span(suggestion);
-            Span at = span_contains_span(declared->decl->decl_spans[0], name_span) ? name_span : declared->decl->decl_spans[0];
+            // (Its valueDeclaration: a class field declared after a JavaScript `this.x = v` that joined it is, tsc's
+            // setValueDeclaration prefers a declaration to an assignment)
+            Span at = declared->decl->decl_spans[0];
+            for (u32 k = 0; k < declared->decl->decl_span_count; k++) {
+                if (span_contains_span(declared->decl->decl_spans[k], name_span)) {
+                    at = name_span;
+                    break;
+                }
+            }
             declared_at = at;
         }
     } else if (ts_code == 2339 && !destructured && seems_empty_dom_element(me, object)) {
