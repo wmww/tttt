@@ -2530,15 +2530,6 @@ void ty_check_type_reference_constraints(Checker* me, Symbol const* symbol, VecS
         if (!constraint) continue;
         constraint = ty_instantiate(me, constraint, mapper);
         if (filled[i]->flags & TYF_ERROR) continue;
-        // HACK: a deferred conditional argument (or a union of them) isn't checked: its default constraint misses what
-        // tsc infers for its `infer` type parameters (inferConditionalConstraintMappedMember), and a union of 2000 of
-        // them against a 2000-member union runs out of relation budget where tsc doesn't
-        // (conditionalTypeDiscriminatingLargeUnionRegularTypeFetchingSpeedReasonable)
-        if (filled[i]->kind == TY_CONDITIONAL ||
-            (filled[i]->kind == TY_UNION && filled[i]->composite.types.len && filled[i]->composite.types.data[0]->kind == TY_CONDITIONAL)
-        ) {
-            continue;
-        }
         if (ty_is_related(me, filled[i], constraint, TY_RELATION_ASSIGNABLE)) continue;
         cstr source_str, target_str;
         ty_report_pair_cstr(me, ty_report_source(me, filled[i]), constraint, &source_str, &target_str);

@@ -3981,7 +3981,14 @@ static Ty const* inferred_true_branch(Checker* me, Ty const* conditional) {
     Ty const* stack_buf[16];
     Ty const** targets = infers.len <= c_arraylen(stack_buf) ? stack_buf : malloc(sizeof(Ty const*) * infers.len);
     panic_if(!targets, "out of memory");
+    // (What was inferred when the check type isn't deferred: tsc's combinedMapper)
+    TyMapper const* inferred = ty_conditional_inferred_mapper(me, conditional, infers);
     for (u32 i = 0; i < infers.len; i++) {
+        Ty const* found = inferred ? ty_instantiate(me, infers.data[i], inferred) : nullptr;
+        if (found && found != infers.data[i] && !(found->flags & TYF_UNKNOWN)) {
+            targets[i] = found;
+            continue;
+        }
         Ty const* constraint = ty_param_constraint(me, infers.data[i]);
         if (constraint && conditional->conditional.mapper) constraint = ty_instantiate(me, constraint, conditional->conditional.mapper);
         targets[i] = constraint && !(constraint->flags & (TYF_UNKNOWN | TYF_ANY)) ? constraint : ty_intrinsic(me, TY_UNKNOWN_);

@@ -417,6 +417,78 @@ bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target) {
     return definitely_memo(me, source, target, true);
 }
 
+// What the `infer` type parameters infer from the check type (tsc's getConditionalType: inferTypes, then the
+// combinedMapper getInferredType makes): what isn't inferred or doesn't satisfy its constraint is the constraint
+static TyMapper const* conditional_infer(Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyMapper const* outer) {
+    // Only its own `infer X`: one of an outer conditional type is a type variable like any other here, which keeps
+    // this one deferred until the outer one's true branch is instantiated with what it inferred
+    Inference inf;
+    inference_init(&inf, infers);
+    inf.always_strict = true;
+    infer_types(me, &inf, check_type, extends, INFER_PRIORITY_NORMAL);
+    Ty const** params = arena_new_n(&my arena, Ty const*, inf.len);
+    Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);
+    bool* none = arena_new_n(&my arena, bool, inf.len);
+    for (u32 i = 0; i < inf.len; i++) {
+        params[i] = inf.params[i].param;
+        results[i] = inference_conditional_result(me, &inf, i);
+        none[i] = !results[i];
+        if (!results[i]) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
+    }
+    // Nothing inferred, or what doesn't satisfy `infer X extends C` (or an implied constraint: `string` in a
+    // template), is the constraint (tsc's getInferredType), as instantiated with what instantiated the conditional
+    // type and what the `infer`s inferred (its nonFixingMapper): `infer K extends keyof T & string` with T = {} is
+    // never, so nothing matches
+    TyMapper const* constraint_mapper = nullptr;
+    Ty const** checked = arena_new_n(&my arena, Ty const*, inf.len);
+    for (u32 i = 0; i < inf.len; i++) {
+        checked[i] = results[i];
+        Ty const* constraint = ty_param_constraint(me, params[i]);
+        if (!constraint || constraint == params[i]) continue;
+        if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
+            if (!constraint_mapper) {
+                constraint_mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
+                for (u32 j = 0; outer && j < outer->len; j++) {
+                    // (The first mapping of a source is the one that counts)
+                    bool own = false;
+                    for (u32 k = 0; k < constraint_mapper->len; k++) own |= outer->sources[j] == constraint_mapper->sources[k];
+                    if (!own) constraint_mapper = ty_mapper_with(me, constraint_mapper, outer->sources[j], outer->targets[j]);
+                }
+            }
+            constraint = ty_instantiate(me, constraint, constraint_mapper);
+        }
+        // HACK: tsc also falls back to a constraint that stays generic (`T3<X> = "a.b" extends `${infer S extends
+        // keyof X & string}.${string}` ? S : 0` is 0 for T3<{}> in tsc, "a" here: it resolves while X is generic).
+        // Doing it made valibot's ValidPath<TInput, TPath> iterate to a type mentioning LazyPath's own TValue
+        // (probe test/probes/plan19/zod/ark_infer_constraint.ts has both)
+        if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) continue;
+        // (Nothing inferred is the constraint without asking: unknown is assignable to `{}` without
+        // strictNullChecks, tsc's getInferredType doesn't compare then)
+        if (none[i] || !ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)) checked[i] = constraint;
+    }
+    results = checked;
+    TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
+    inference_drop(&inf);
+    return mapper;
+}
+
+// tsc's isDeferredType of a check type: what waits for its type variables rather than inferring from them
+static bool check_type_deferred(Checker* me, Ty const* check_type, bool check_tuples) {
+    return ty_is_generic_index(check_type) || is_generic_mapped(me, check_type, 0) ||
+        (check_tuples && has_generic_element(me, check_type));
+}
+
+// The mapper a deferred conditional type's true branch is seen through (tsc's combinedMapper, which
+// getInferredTrueTypeFromConditionalType instantiates it with): its `infer` type parameters as inferred from its check
+// type, when that one isn't deferred itself (`((...args: A) => void) extends (...args: [A[0], ...infer R]) => void`
+// infers R from A). Null when nothing was inferred
+TyMapper const* ty_conditional_inferred_mapper(Checker* me, Ty const* conditional, TyList infers) {
+    Ty const* check_type = ty_actual_type_variable(me, conditional->conditional.check);
+    Ty const* extends = conditional->conditional.extends;
+    if (check_type_deferred(me, check_type, simple_tuples(check_type, extends))) return nullptr;
+    return conditional_infer(me, check_type, extends, infers, conditional->conditional.mapper);
+}
+
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
     TyCondBranch const* if_false, TyMapper const* outer, Ty const* constraint_root
@@ -428,64 +500,9 @@ Ty const* ty_conditional_resolve(
     if (check_type == error || extends == error) return error;
     // (tsc's isDeferredType of the check type: `Required<T> extends {}` waits for T)
     bool check_tuples = simple_tuples(check_type, extends);
-    if (ty_is_generic_index(check_type) || is_generic_mapped(me, check_type, 0) ||
-        (check_tuples && has_generic_element(me, check_type))
-    ) {
-        return nullptr;
-    }
+    if (check_type_deferred(me, check_type, check_tuples)) return nullptr;
 
-    TyMapper const* mapper = nullptr;
-    // Only its own `infer X`: one of an outer conditional type is a type variable like any other here, which keeps
-    // this one deferred until the outer one's true branch is instantiated with what it inferred
-    if (infers.len) {
-        Inference inf;
-        inference_init(&inf, infers);
-        inf.always_strict = true;
-        infer_types(me, &inf, check_type, extends, INFER_PRIORITY_NORMAL);
-        Ty const** params = arena_new_n(&my arena, Ty const*, inf.len);
-        Ty const** results = arena_new_n(&my arena, Ty const*, inf.len);
-        bool* none = arena_new_n(&my arena, bool, inf.len);
-        for (u32 i = 0; i < inf.len; i++) {
-            params[i] = inf.params[i].param;
-            results[i] = inference_conditional_result(me, &inf, i);
-            none[i] = !results[i];
-            if (!results[i]) results[i] = ty_intrinsic(me, TY_UNKNOWN_);
-        }
-        // Nothing inferred, or what doesn't satisfy `infer X extends C` (or an implied constraint: `string` in a
-        // template), is the constraint (tsc's getInferredType), as instantiated with what instantiated the conditional
-        // type and what the `infer`s inferred (its nonFixingMapper): `infer K extends keyof T & string` with T = {} is
-        // never, so nothing matches
-        TyMapper const* constraint_mapper = nullptr;
-        Ty const** checked = arena_new_n(&my arena, Ty const*, inf.len);
-        for (u32 i = 0; i < inf.len; i++) {
-            checked[i] = results[i];
-            Ty const* constraint = ty_param_constraint(me, params[i]);
-            if (!constraint || constraint == params[i]) continue;
-            if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) {
-                if (!constraint_mapper) {
-                    constraint_mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
-                    for (u32 j = 0; outer && j < outer->len; j++) {
-                        // (The first mapping of a source is the one that counts)
-                        bool own = false;
-                        for (u32 k = 0; k < constraint_mapper->len; k++) own |= outer->sources[j] == constraint_mapper->sources[k];
-                        if (!own) constraint_mapper = ty_mapper_with(me, constraint_mapper, outer->sources[j], outer->targets[j]);
-                    }
-                }
-                constraint = ty_instantiate(me, constraint, constraint_mapper);
-            }
-            // HACK: tsc also falls back to a constraint that stays generic (`T3<X> = "a.b" extends `${infer S extends
-            // keyof X & string}.${string}` ? S : 0` is 0 for T3<{}> in tsc, "a" here: it resolves while X is generic).
-            // Doing it made valibot's ValidPath<TInput, TPath> iterate to a type mentioning LazyPath's own TValue
-            // (probe test/probes/plan19/zod/ark_infer_constraint.ts has both)
-            if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) continue;
-            // (Nothing inferred is the constraint without asking: unknown is assignable to `{}` without
-            // strictNullChecks, tsc's getInferredType doesn't compare then)
-            if (none[i] || !ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)) checked[i] = constraint;
-        }
-        results = checked;
-        mapper = ty_mapper_new(me, (TyList){ .data = params, .len = inf.len }, (TyList){ .data = results, .len = inf.len });
-        inference_drop(&inf);
-    }
+    TyMapper const* mapper = infers.len ? conditional_infer(me, check_type, extends, infers, outer) : nullptr;
     Ty const* inferred_extends = ty_instantiate(me, extends, mapper);
     // (tsc's isDeferredType of the extends type: `{} extends Mapped<T>` waits for T too)
     if (ty_is_generic_index(inferred_extends) || is_generic_mapped(me, inferred_extends, 0) ||

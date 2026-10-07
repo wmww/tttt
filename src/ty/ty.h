@@ -1580,6 +1580,8 @@ Ty const* ty_conditional_resolve(
 );
 // Assignable whatever the type parameters in either side turn out to be (tsc's check on their restrictive instantiations)
 bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target);
+// What a deferred conditional type's `infer` type parameters infer from its check type, null if that one is deferred
+TyMapper const* ty_conditional_inferred_mapper(Checker* me, Ty const* conditional, TyList infers);
 // Not assignable even with every type parameter in either side the wildcard (tsc's check on their permissive
 // instantiations). False when unsure
 bool ty_definitely_unassignable(Checker* me, Ty const* source, Ty const* target);

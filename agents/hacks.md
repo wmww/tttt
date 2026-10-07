@@ -603,10 +603,6 @@ src` finds the code-side markers; every significant one has an entry here.
   reports what resolveMappedTypeMembers doesn't find) and unresolved bases; bracket access never reports; fires on
   modules too (wrong resolution shows as TS2339 next to TS2307). `ty_check_element_implicit_any` (TS7053, HACK) skips
   the same.
-- `ty_check_type_reference_constraints` (HACK): deferred conditional arguments aren't checked for TS2344 (default
-  constraint lacks inferConditionalConstraintMappedMember; big unions of them exhaust the relation budget).
-  `generic_check_default()` (generic.c, same HACK) skips a deferred conditional type parameter default against its
-  constraint.
 - `ty_check_index_constraints` on type literals only when syntactically needed (`type_literal_has_index_constraints()`):
   the others aren't lowered at their check, and an alias's literal body is made as the alias's type first (else it
   loses the alias name).
