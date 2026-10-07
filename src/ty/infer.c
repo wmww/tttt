@@ -1023,6 +1023,9 @@ static void infer_from_objects(Checker* me, Inference* inf, Ty const* source, Ty
         Ty const* element = ty_reference_args(me, target).data[0];
         if (ty_is_array(me, source)) {
             infer_from(me, inf, ty_reference_args(me, source).data[0], element);
+        } else if (types_definitely_unrelated(me, source, target)) {
+            // (A readonly tuple against a mutable array: the array's mutators aren't in the tuple, its elements aren't
+            // in the array, tsc's typesDefinitelyUnrelated before inferFromIndexTypes: nothing inferred)
         } else {
             // From the union of its elements, one candidate (tsc gets it from the tuple's number index type): `["a", 1]`
             // against `readonly T[]` infers `"a" | 1`, not two candidates of which the first wins
