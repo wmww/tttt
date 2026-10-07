@@ -1208,7 +1208,7 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
         props.default_export = false; // TODO: TS1319 and friends
     }
     SymbolTable* table;
-    csview name = props.name.sv;
+    csview name = props.symbol_name.buf ? props.symbol_name : props.name.sv;
     if (props.default_export) {
         symbol_ensure_exports(scope->container);
         table = scope->container->exports;

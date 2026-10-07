@@ -6039,8 +6039,6 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
         cstr string_name;
         Anchor name_anchor = anchor(&p);
         if ((*p.pos == '"' || *p.pos == '\'') && parse_string(&p, &string_name)) {
-            // The name is taken from the source, so escape sequences in it aren't processed
-            cstr_drop(&string_name);
             enum_case.full_name = span_from(name_anchor);
             enum_case.name = span_make(
                 enum_case.full_name.source,
@@ -6048,6 +6046,9 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
                 span_end_ptr(enum_case.full_name) - 1
             );
             enum_case.name_is_value = true;
+            // (The symbol's name is the cooked value, where an escape makes it differ)
+            if (!csview_equals_sv(cstr_sv(&string_name), enum_case.name.sv)) enum_case.canonical_name = string_name;
+            else cstr_drop(&string_name);
         } else if (parse_identifier_or_keyword(&p, &enum_case.name)) {
             enum_case.full_name = enum_case.name;
         } else if (isdigit((unsigned char)*p.pos) || (*p.pos == '.' && isdigit((unsigned char)p.pos[1]))) {
@@ -6056,9 +6057,16 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             if (parse_numeric_value(&p, &value)) {
                 // (A bigint name too: tsc 6.0's computeEnumMemberValue)
                 enum_case.numeric_name = (value.tag == VALUE_NUMBER && isfinite(value.number)) || value.tag == VALUE_BIGINT ? 1 : 2;
+                // (Named by the number's canonical text, `1.0` is "1"; a bigint has no property name, tsc's binder
+                // names it InternalSymbolName.Missing)
+                if (value.tag == VALUE_BIGINT) enum_case.canonical_name = cstr_lit("__missing");
+                else if (value.tag == VALUE_NUMBER) cstr_append_value_js(&enum_case.canonical_name, &value);
                 value_drop(&value);
             }
             enum_case.name = enum_case.full_name = span_from(name_anchor);
+            if (cstr_size(&enum_case.canonical_name) && csview_equals_sv(cstr_sv(&enum_case.canonical_name), enum_case.name.sv)) {
+                cstr_clear(&enum_case.canonical_name);
+            }
         } else if (*p.pos == '[') {
             // A computed name (tsc's parsePropertyName): `['a']` names the member `a`, anything else is TS1164
             p.pos++;
@@ -6069,6 +6077,7 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             Expr* kept_key = nullptr;
             if (expect_expr(&p, expr_ctx_null, &key)) {
                 if (key.tag == EXPR_LITERAL && (key.literal.tag == VALUE_STRING || key.literal.tag == VALUE_NUMBER)) literal = true;
+                if (literal) cstr_append_value_js(&enum_case.canonical_name, &key.literal);
                 if (literal) expr_drop(&key);
                 else kept_key = c_new(Expr, key);
             }
@@ -6082,9 +6091,13 @@ static bool parse_enum_decl(Parser* parent, EnumDecl* ret) {
             } else if (literal) {
                 enum_case.name = key_span;
             } else {
+                cstr_clear(&enum_case.canonical_name);
                 enum_case.name = enum_case.full_name;
                 enum_case.computed_name = true;
                 enum_case.computed_key = kept_key;
+            }
+            if (cstr_size(&enum_case.canonical_name) && csview_equals_sv(cstr_sv(&enum_case.canonical_name), enum_case.name.sv)) {
+                cstr_clear(&enum_case.canonical_name);
             }
         } else if (*p.pos == '#' && identifier_char_size(p.pos + 1, true)) {
             // A private name (tsc's parsePropertyName): TS18024 from the checker

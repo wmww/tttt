@@ -9,6 +9,7 @@
 
 void enum_case_drop(EnumCase* me) {
     expr_drop(&my value);
+    cstr_drop(&my canonical_name);
     if (my computed_key) {
         expr_drop(my computed_key);
         free(my computed_key);
@@ -41,6 +42,7 @@ void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclExported exported, bool
         i->parent = me;
         scope_init_declaration(my namespace, &i->symbol, (DeclProps) {
             .name = i->name,
+            .symbol_name = cstr_size(&i->canonical_name) ? cstr_sv(&i->canonical_name) : (csview){0},
             .exported = true,
             .full = i->full_name,
             .kind = SYMBOL_DECL_ENUM_MEMBER,

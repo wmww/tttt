@@ -18,6 +18,10 @@ typedef struct EnumCase {
     // A numeric literal name (`1`, `0x1`): 1 if it's a finite number (TS2452), 2 if not. The name is its source text,
     // not the number's canonical text like tsc's
     uint8_t numeric_name;
+    // The member's name where that isn't its source text (tsc's escapedName, getPropertyNameForPropertyNameNode): a
+    // string's cooked value (`'a\u0062'` is `ab`), a number's canonical text (`0xF00D` is `61453`), `__missing` for a
+    // bigint. Empty otherwise. The symbols baseline still names the member as written
+    cstr canonical_name;
     Expr value;
     Symbol* symbol;
 } EnumCase;

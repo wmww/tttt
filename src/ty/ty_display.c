@@ -3397,7 +3397,8 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                     out_lit(d, "(typeof ");
                     out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_VALUE);
                     out_lit(d, ")[");
-                    display_string_literal(d, member_name);
+                    // (A string literal node tsc's printer makes: non-ASCII escaped)
+                    display_quoted_string(d, member_name, false, true);
                     out_lit(d, "]");
                     break;
                 }

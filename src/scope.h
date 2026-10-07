@@ -398,6 +398,8 @@ SymbolEntry* symbol_collect_exports(Symbol const* me, u32* count);
 
 typedef struct DeclProps {
     Span name;
+    // What the symbol is named and keyed by when that isn't name's text (an enum member's canonical name)
+    csview symbol_name;
     Span full;
     bool exported;
     // `export default class A`: declared in the module's exports as `default` (merging with the other default exports
