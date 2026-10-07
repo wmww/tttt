@@ -1956,6 +1956,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
             if (!ty_is_evolving_array_operation_target(me, expr)) {
                 if (still_auto) {
                     *issue = flow_type == auto_any ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
+                    // tsc reports this whenever it checks the reference, also from inside a loop's control flow
+                    // analysis where the type is still incomplete (`x = [...x, 1]` in a loop): remember it for
+                    // ty_identifier_flow_issue(), which only sees the final type
+                    if (!issue_only) *intern_slot(me, &my links, (u64[]){ KEY_AUTO_FLOW_ISSUE, (u64)(uintptr_t)expr }, 2) = flow_type;
                     return flow_type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_array(me, ty_intrinsic(me, TY_ANY), false);
                 }
             } else if (!assume_initialized && includes_undefined(flow_type)) {
@@ -1997,7 +2001,12 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
 
 IdentifierFlowIssue ty_identifier_flow_issue(Checker* me, IdentifierExpr const* identifier) {
     IdentifierFlowIssue ret = IDENTIFIER_FLOW_OK;
-    identifier_flow_type(me, c_container_of(identifier, Expr, identifier), nullptr, &ret, true);
+    Expr const* expr = c_container_of(identifier, Expr, identifier);
+    identifier_flow_type(me, expr, nullptr, &ret, true);
+    if (ret == IDENTIFIER_FLOW_OK) {
+        Ty const* seen = intern_get(&my links, (u64[]){ KEY_AUTO_FLOW_ISSUE, (u64)(uintptr_t)expr }, 2);
+        if (seen) ret = seen == ty_intrinsic(me, TY_AUTO) ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
+    }
     return ret;
 }
 

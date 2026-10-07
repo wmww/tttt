@@ -59,7 +59,7 @@ static int cmp_u64(u64 a, u64 b) { return a < b ? -1 : a > b; }
 
 static int cmp_sv(csview a, csview b) {
     isize n = a.size < b.size ? a.size : b.size;
-    int c = n ? memcmp(a.buf, b.buf, (size_t)n) : 0;
+    int c = n > 0 ? memcmp(a.buf, b.buf, (size_t)n) : 0;
     if (c) return c < 0 ? -1 : 1;
     return cmp_u64((u64)a.size, (u64)b.size);
 }
@@ -67,18 +67,18 @@ static int cmp_sv(csview a, csview b) {
 // A declaration's place in the program: tsc's compareNodes (file order, then position)
 typedef struct OrderPos {
     u32 file;
-    char const* at;
+    u32 offset;
 } OrderPos;
 
 static bool span_pos(Span s, OrderPos* out) {
     if (!s.source || !s.sv.buf) return false;
-    *out = (OrderPos){ s.source->program_order, s.sv.buf };
+    *out = (OrderPos){ s.source->program_order, (u32)(s.sv.buf - cstr_str(&s.source->contents)) };
     return true;
 }
 
 static int cmp_pos(OrderPos a, OrderPos b) {
     if (a.file != b.file) return a.file < b.file ? -1 : 1;
-    return a.at < b.at ? -1 : a.at > b.at;
+    return a.offset < b.offset ? -1 : a.offset > b.offset;
 }
 
 // tsc's compareSymbols, minus symbol ids (0: tie)
@@ -86,7 +86,7 @@ static int cmp_symbols(Symbol const* a, Symbol const* b) {
     if (a == b) return 0;
     if (!a) return 1;
     if (!b) return -1;
-    OrderPos pa, pb;
+    OrderPos pa = {0}, pb = {0};
     bool ha = a->decl_count && span_pos(a->decls[0].full, &pa);
     bool hb = b->decl_count && span_pos(b->decls[0].full, &pb);
     if (ha && hb) {
@@ -276,10 +276,88 @@ static u32 origin_rank(Ty const* o) {
     return o->kind == TY_KEYOF ? RANK_INDEX : o->kind == TY_UNION ? RANK_UNION : RANK_INTERSECTION;
 }
 
+// A type's sort key: a prefix of what compare_slow() orders by, so that most comparisons are one integer compare.
+// Bits 63-59 the rank, bit 58 set if unnamed, 57-1 a 57 bit prefix of the next criterion (0 when there's none cheap:
+// then equal keys go to compare_slow()), bit 0 set (computed). Different keys must order like compare_slow()
+enum { KEY_RANK_SHIFT = 59, KEY_UNNAMED = 1ull << 58, KEY_MASK = (1ull << 57) - 1 };
+
+// The first 7 bytes, big-endian (memcmp order, a shorter string first as its padding is 0)
+static u64 sv_prefix(csview sv) {
+    u64 r = 0;
+    for (isize i = 0; i < 7; i++) r = r << 8 | (i < sv.size ? (unsigned char)sv.buf[i] : 0);
+    return r;
+}
+
+// cmp_object_symbols() order: positioned (by file, then offset), then with a symbol but no position, then none
+static u64 object_prefix(ObjectSym s) {
+    if (!s.has) return 2ull << 55;
+    if (!s.positioned) return 1ull << 55;
+    return 0;
+}
+
+static u64 compute_key(Ty const* t) {
+    u64 rank = ty_order_rank(t);
+    u64 key = rank << KEY_RANK_SHIFT | 1;
+    TypeName n = type_name(t);
+    u64 prefix = 0;
+    if (n.named) {
+        prefix = sv_prefix(n.name);
+    } else {
+        key |= KEY_UNNAMED;
+        switch ((TyKind)t->kind) {
+            case TY_LITERAL:
+                if (rank == RANK_ENUM) {
+                    ObjectSym s = sym_of_symbol(t->literal.enum_member);
+                    prefix = object_prefix(s);
+                    if (s.has && s.positioned && s.pos.file < (1u << 23)) prefix = (u64)s.pos.file << 32 | s.pos.offset;
+                } else if (rank == RANK_STRING_LITERAL) {
+                    prefix = sv_prefix(atom_sv(t->literal.string));
+                } else if (rank == RANK_NUMBER_LITERAL) {
+                    double x = t->literal.value.number;
+                    if (x == 0) x = 0; // (-0 == 0)
+                    u64 bits;
+                    memcpy(&bits, &x, sizeof bits);
+                    bits = bits >> 63 ? ~bits : bits | 1ull << 63;
+                    prefix = bits >> 8;
+                } else if (rank == RANK_BOOLEAN_LITERAL) {
+                    prefix = t->literal.value.boolean;
+                }
+                break;
+            case TY_DECLARED:
+            case TY_REFERENCE:
+            case TY_ANONYMOUS:
+            case TY_EVOLVING_ARRAY: {
+                ObjectSym s = object_symbol(t);
+                prefix = object_prefix(s);
+                if (s.has && s.positioned && s.pos.file < (1u << 23)) prefix = (u64)s.pos.file << 32 | s.pos.offset;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+    return key | (prefix & KEY_MASK) << 1;
+}
+
+static u64 order_key(Ty const* t) {
+    u64 k = t->order_key;
+    if (k) return k;
+    k = compute_key(t);
+    ((Ty*)t)->order_key = k; // (A cache: the checker that owns the type is the only one reading it)
+    return k;
+}
+
+static int compare_slow(Ty const* a, Ty const* b, u32 ra);
+
 int ty_compare(Ty const* a, Ty const* b) {
     if (a == b) return 0;
-    u32 ra = ty_order_rank(a), rb = ty_order_rank(b);
-    if (ra != rb) return ra < rb ? -1 : 1;
+    u64 ka = order_key(a), kb = order_key(b);
+    if (ka != kb) return ka < kb ? -1 : 1;
+    return compare_slow(a, b, (u32)(ka >> KEY_RANK_SHIFT));
+}
+
+// The whole of compareTypes, for types whose keys are equal (same rank)
+static int compare_slow(Ty const* a, Ty const* b, u32 ra) {
 
     // tsc's compareTypeNames
     TypeName na = type_name(a), nb = type_name(b);
@@ -306,7 +384,7 @@ int ty_compare(Ty const* a, Ty const* b) {
                 UniqueSymbolDecl const* ua = a->literal.unique;
                 UniqueSymbolDecl const* ub = b->literal.unique;
                 if (ua && ub) {
-                    OrderPos pa, pb;
+                    OrderPos pa = {0}, pb = {0};
                     bool ha = ua->member.sv.buf ? span_pos(ua->member, &pa) : (ua->owner && ua->owner->decl_count && span_pos(ua->owner->decls[0].full, &pa));
                     bool hb = ub->member.sv.buf ? span_pos(ub->member, &pb) : (ub->owner && ub->owner->decl_count && span_pos(ub->owner->decls[0].full, &pb));
                     if (ha && hb) {

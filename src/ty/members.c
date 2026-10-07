@@ -191,6 +191,18 @@ static void builder_sort_stable(MembersBuilder* builder) {
     }
 }
 
+// tsc's getNamedMembers lists a class's static members declared in the class first, then the others by declaration
+// (inherited ones, expandos), the synthetic `prototype`, which has no declaration, after them
+static void builder_prototype_last(MembersBuilder* builder) {
+    for (u32 i = 0; i < builder->props_count; i++) {
+        Prop* prop = builder->props[i];
+        if (!(prop->flags & PROP_PROTOTYPE)) continue;
+        memmove(builder->props + i, builder->props + i + 1, sizeof(Prop*) * (builder->props_count - i - 1));
+        builder->props[builder->props_count - 1] = prop;
+        return;
+    }
+}
+
 static Members const* builder_finish(Checker* me, MembersBuilder* builder) {
     Members* ret = arena_new(&my arena, Members);
     if (builder->props_count > 8) {
@@ -1514,8 +1526,7 @@ static void builder_add_class_static_side(Checker* me, MembersBuilder* builder, 
         prototype->type = instance;
     }
     prototype->type_state = LAZY_STATE_DONE;
-    // PROTOTYPE (stable ordering): tsc 6 lists `prototype` after the members declared in the class (getNamedMembers's
-    // contained/non-contained split); moving it here breaks a declared `static prototype` (first wins), not done
+    // (First, so that it wins over a declared `static prototype`; builder_prototype_last() moves it)
     builder_push(builder, props, prototype);
 
     builder_add_class_items(me, builder, class_decl, true, ctx, instance_decl);
@@ -2406,6 +2417,7 @@ static Members const* resolve_declared_members(Checker* me, Ty const* ty) {
                         if (!builder_find_prop(&builder, expandos->props[i]->name)) builder_push(&builder, props, expandos->props[i]);
                     }
                 }
+                builder_prototype_last(&builder);
             }
             break;
 

@@ -250,6 +250,8 @@ struct Ty {
     u32 kind; // TyKind
     u32 flags; // TyFlags
     u32 xflags; // TYX_*: flags that propagate like tsc's ObjectFlags.PropagatingFlags
+    // ty_compare()'s cached prefix (order.c's order_key()), 0 until first compared
+    u64 order_key;
     // How to print the type if it was made by a type alias (tsc's aliasSymbol/aliasTypeArguments)
     Symbol const* alias;
     TyList alias_args;
@@ -419,7 +421,7 @@ struct Ty {
 };
 
 // (Hundreds of thousands per checker; the union is as big as `declared`)
-static_assert(sizeof(Ty) == 136);
+static_assert(sizeof(Ty) == 144);
 
 // How many bytes of a Ty of the kind are there: ty_alloc() allocates only the header and the kind's variant, so a Ty
 // is never copied whole (ty_copy())
