@@ -3357,7 +3357,7 @@ Ty const* ty_destructured_narrowed_type(Checker* me, Binding const* binding, Flo
     FlowType result = type_at_flow_node(&q, flow);
     my flow_shared_count = q.shared_start;
     Ty const* narrowed = result.type;
-    if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER) || narrowed == parent) return nullptr;
+    if (narrowed == ty_intrinsic(me, TY_UNREACHABLE_NEVER)) return nullptr;
     if (narrowed->flags & TYF_NEVER) return ty_intrinsic(me, TY_NEVER);
     return ty_binding_element_type_from(me, binding, narrowed);
 }

@@ -1606,7 +1606,8 @@ Ty const* ty_destructured_narrowed_type(Checker* me, struct Binding const* bindi
 // rest parameter of a union of tuples: the union as control flow narrows it by the other parameters. Null if not
 Ty const* ty_parameter_narrowed_type(Checker* me, struct Binding const* binding, struct FlowNode const* flow);
 // An element of a pattern (no default, not `...`) read from `object` as its pattern's type: the property or element,
-// with the flow type of the destructured reference and the widening of an unannotated pattern. Null if it has none
+// with the flow type of the destructured reference, not widened (tsc's getBindingElementTypeFromParentType). Null (or
+// the error type) if it has none
 Ty const* ty_binding_element_type_from(Checker* me, struct Binding const* binding, Ty const* object);
 // tsc's getRestType: `source` without the properties the keys (literal types, computed names' types) name
 Ty const* ty_object_rest_type(Checker* me, Ty const* source, TyList keys);

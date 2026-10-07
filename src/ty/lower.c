@@ -2557,23 +2557,10 @@ static Ty const* destructured_flow_type(Checker* me, Binding const* binding, Ty 
     return access ? ty_flow_type(me, access, declared, declared, flow) : declared;
 }
 
+static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty const* object);
+
 Ty const* ty_binding_element_type_from(Checker* me, Binding const* binding, Ty const* object) {
-    Binding const* parent = binding->parent;
-    Ty const* key;
-    if (parent->tag == BINDING_ARRAY) {
-        Value index = value_number(binding->parent_index);
-        key = ty_literal(me, &index);
-    } else {
-        ObjectBindingItem const* item = binding->parent_item;
-        key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
-    }
-    Ty const* ret = ty_access_reading(me, object, key);
-    // (Past the end of tuples it is undefined: tsc's getTupleElementTypeOutOfStartCount; `[x, y]` narrowed to `[5]`)
-    if (!ret && parent->tag == BINDING_ARRAY && ty_tuple_shape(object)) ret = ty_indexed(me, object, key);
-    if (!ret) return nullptr;
-    if (!parent->has_explicit_type) ret = destructured_flow_type(me, binding, ret);
-    if (!parent->has_explicit_type && !binding_is_parameter(parent)) ret = ty_widened_for_declaration(me, ret, false);
-    return ret;
+    return binding_element_of(me, binding, object);
 }
 
 
@@ -3179,54 +3166,10 @@ Ty const* ty_binding_assigned_type(Checker* me, Binding const* binding) {
     return ty_array(me, ty_intrinsic(me, TY_ANY), false);
 }
 
-static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
+// The type of a pattern's element in the type `object` destructured, before the element is widened and its default
+// applied (tsc's getBindingElementTypeFromParentType)
+static Ty const* binding_element_of(Checker* me, Binding const* binding, Ty const* object) {
     Binding const* parent = binding->parent;
-    // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
-    if (!parent && !binding->source) {
-        return ty_intrinsic(me, compiler_options()->use_unknown_in_catch_variables ? TY_UNKNOWN_ : TY_ANY);
-    }
-    if (!parent) {
-        // (A for-of's pattern destructures the iterated type as it is, the variable is widened)
-        if (binding->tag != BINDING_IDENTIFIER && binding->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR) {
-            return for_each_loop_statement_pattern_source_type(
-                c_container_of(binding->source, ForEachLoopStatement, var_type));
-        }
-        // A JavaScript `var { a } = {}` destructures tsc's getJSContainerObjectType of the empty literal: an empty
-        // JS-literal object, not an object literal (a missing property with a default is TS2339 unless open-ended)
-        if (binding->tag != BINDING_IDENTIFIER && !binding->has_explicit_type && !binding_is_parameter(binding) &&
-            binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING && binding->content_span.source &&
-            binding->content_span.source->is_js
-        ) {
-            Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
-            if (value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object)) {
-                (void)lazy_type_get(binding->source); // (The initializer is still checked)
-                return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_JS);
-            }
-        }
-        return lazy_type_get(binding->source);
-    }
-    Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
-    // A rest element takes what the initializer is without the pattern as its contextual type (tsc's
-    // CheckMode.RestBindingElement)
-    if (binding->rest && !parent->parent && !parent->has_explicit_type && parent->source &&
-        parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING
-    ) {
-        InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
-        Ty const* rest_object = ty_rest_binding_initializer_type(me, initialized_binding_value(initialized));
-        if (rest_object) object = rest_object;
-    }
-    // Of any, any: the default isn't looked at (tsc's getBindingElementTypeFromParentType returns the parent type
-    // first, so `{ f = f } = x as any` isn't circular). Not of the any a `= null` initializer widens to, whose
-    // unwidened null tsc goes by
-    if ((object->flags & TYF_ANY) && !binding->rest) {
-        bool widened_null = false;
-        if (!parent->parent && parent->source && parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
-            InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
-            widened_null = initialized_binding_value(initialized)->tag != EXPR_IMPLICIT_ANY &&
-                (ty_expr_type(me, initialized_binding_value(initialized))->flags & TYF_NULLABLE);
-        }
-        if (!widened_null) return object;
-    }
     bool in_array = parent->tag == BINDING_ARRAY;
     // An array pattern takes elements of an array (or tuple) by index, of anything else what iterating it gives
     // (tsc's getTypeForBindingElement). What an element lacks is reported by binding_typecheck()
@@ -3315,11 +3258,65 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
         // reporting it): a later `var` of the same name doesn't have to agree with it
         if (!ret) ret = ty_intrinsic(me, TY_ERROR);
     }
+    return ret;
+}
+
+static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
+    Binding const* parent = binding->parent;
+    // A catch variable (the only root without a source) is any, or unknown under useUnknownInCatchVariables
+    if (!parent && !binding->source) {
+        return ty_intrinsic(me, compiler_options()->use_unknown_in_catch_variables ? TY_UNKNOWN_ : TY_ANY);
+    }
+    if (!parent) {
+        // (A for-of's pattern destructures the iterated type as it is, the variable is widened)
+        if (binding->tag != BINDING_IDENTIFIER && binding->source->tag == LAZY_TYPE_FOR_EACH_LOOP_VAR) {
+            return for_each_loop_statement_pattern_source_type(
+                c_container_of(binding->source, ForEachLoopStatement, var_type));
+        }
+        // A JavaScript `var { a } = {}` destructures tsc's getJSContainerObjectType of the empty literal: an empty
+        // JS-literal object, not an object literal (a missing property with a default is TS2339 unless open-ended)
+        if (binding->tag != BINDING_IDENTIFIER && !binding->has_explicit_type && !binding_is_parameter(binding) &&
+            binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING && binding->content_span.source &&
+            binding->content_span.source->is_js
+        ) {
+            Expr const* value = initialized_binding_value(c_container_of(binding->source, InitializedBinding, lazy_type));
+            if (value->tag == EXPR_OBJECT && !vec_object_expr_item_size(&value->object)) {
+                (void)lazy_type_get(binding->source); // (The initializer is still checked)
+                return ty_object_literal(me, nullptr, 0, nullptr, 0, OBJECT_SYNTHETIC | OBJECT_JS);
+            }
+        }
+        return lazy_type_get(binding->source);
+    }
+    Ty const* object = ty_binding_type(me, parent, (LowerCtx){ .generic = true });
+    // A rest element takes what the initializer is without the pattern as its contextual type (tsc's
+    // CheckMode.RestBindingElement)
+    if (binding->rest && !parent->parent && !parent->has_explicit_type && parent->source &&
+        parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING
+    ) {
+        InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+        Ty const* rest_object = ty_rest_binding_initializer_type(me, initialized_binding_value(initialized));
+        if (rest_object) object = rest_object;
+    }
+    // Of any, any: the default isn't looked at (tsc's getBindingElementTypeFromParentType returns the parent type
+    // first, so `{ f = f } = x as any` isn't circular). Not of the any a `= null` initializer widens to, whose
+    // unwidened null tsc goes by
+    if ((object->flags & TYF_ANY) && !binding->rest) {
+        bool widened_null = false;
+        if (!parent->parent && parent->source && parent->source->tag == LAZY_TYPE_INITIALIZED_BINDING) {
+            InitializedBinding const* initialized = c_container_of(parent->source, InitializedBinding, lazy_type);
+            widened_null = initialized_binding_value(initialized)->tag != EXPR_IMPLICIT_ANY &&
+                (ty_expr_type(me, initialized_binding_value(initialized))->flags & TYF_NULLABLE);
+        }
+        if (!widened_null) return object;
+    }
+    Ty const* ret = binding_element_of(me, binding, object);
     if (!ret) ret = ty_intrinsic(me, TY_ANY);
     // (An element of an unannotated pattern is widened itself: the pattern's source isn't, see initialized_binding's.
     // With a default, after undefined is replaced by it: `let [y = true] = [undefined]` is boolean without
     // strictNullChecks, not any)
-    bool widens = !parent->has_explicit_type && !binding_is_parameter(parent);
+    // (Only a variable is: a nested pattern destructures its element as it is, object literals and all, tsc's
+    // getTypeForBindingElementParent. `[{ flag } = {}]` reads `flag` of `{ flag: X } | {}` as an object literal's)
+    bool widens = !parent->has_explicit_type && !binding_is_parameter(parent) && binding->tag == BINDING_IDENTIFIER;
     Ty const* raw = ret;
     if (widens) ret = ty_widened_for_declaration(me, ret, false);
     if (widens && !binding->default_value && binding->tag == BINDING_IDENTIFIER && (raw->xflags & TYX_CONTAINS_WIDENING) &&
@@ -3358,7 +3355,9 @@ static Ty const* binding_assigned_type(Checker* me, Binding const* binding) {
             return types[0];
         }
         // (tsc's widenTypeInferredFromInitializer: a `const` keeps the literals)
-        types[1] = ty_widened_for_declaration(me, default_type, !binding_in_const_declaration(binding));
+        types[1] = binding->tag == BINDING_IDENTIFIER ?
+            ty_widened_for_declaration(me, default_type, !binding_in_const_declaration(binding)) :
+            binding_in_const_declaration(binding) ? default_type : ty_widened_literal(me, default_type);
         if (widens && binding->tag == BINDING_IDENTIFIER && !compiler_options()->strict_null_checks &&
             compiler_options()->no_implicit_any && ((raw->xflags | default_type->xflags) & TYX_CONTAINS_WIDENING)
         ) {

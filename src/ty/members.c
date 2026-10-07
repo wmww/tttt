@@ -4578,8 +4578,10 @@ static bool contains_spread(Checker* me, Ty const* literal) {
     return false;
 }
 
+// (Only an unwidened one: tsc's getWidenedTypeOfObjectLiteral drops ObjectFlags.ObjectLiteral, so a declared `let x = s ??
+// { b: 1 }` lacks `x.a`)
 bool ty_is_object_literal_without_spread(Checker* me, Ty const* ty) {
-    return is_object_literal_type(ty) && !contains_spread(me, ty);
+    return ty_is_unwidened_object_literal(ty) && !contains_spread(me, ty);
 }
 
 // tsc's getPropertiesOfContext
