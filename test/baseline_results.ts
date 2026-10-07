@@ -70723,7 +70723,7 @@ const baselines = {
     'partiallyAnnotatedFunctionInferenceWithTypeParameter': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'partiallyAnnotatedFunctionWitoutTypeParameter': {
         errors: true,
