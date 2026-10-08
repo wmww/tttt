@@ -1586,7 +1586,20 @@ static i32 check_args_until_unfit(
     u32 checked = 0;
     for (u32 i = 0; i < args->len; i++) {
         Arg const* arg = &args->data[i];
-        if (skipped_arg(arg, skip_sensitive, skip_generic_functions)) {
+        // A context-sensitive argument for a variadic rest parameter is in the tuple the rest is related to, its
+        // functions as anyFunctionType (tsc's getSpreadArgumentType under SkipContextSensitive): `[x => x.a]` where
+        // `...args: [...selectors: I, combiner: C]` wants a selector doesn't fit, so that overload doesn't type `x`
+        bool rest_tuple = false;
+        if (skipped_arg(arg, skip_sensitive, skip_generic_functions) && i >= shape->count && shape->rest_variadic &&
+            !shape->rest_element && skip_sensitive
+        ) {
+            rest_tuple = true;
+            for (u32 j = i; j < args->len && rest_tuple; j++) {
+                rest_tuple = !(skip_generic_functions && args->data[j].generic_function) && !args->data[j].spread &&
+                    !args->data[j].part_of_spread;
+            }
+        }
+        if (!rest_tuple && skipped_arg(arg, skip_sensitive, skip_generic_functions)) {
             if (i >= shape->count && shape->rest_variadic) break;
             Ty const* unfit = skip_sensitive ? skipped_function_unfit(me, shape, arg, i, relation) : nullptr;
             if (unfit) {
@@ -1609,9 +1622,10 @@ static i32 check_args_until_unfit(
                 check_arg(me, shape, args, checked);
             }
         }
-        Ty const* source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
+        Ty const* source;
         Ty const* target;
         if (!variadic) {
+            source = arg->type ? arg->type : ty_expr_type(me, arg->expr);
             target = i < shape->count ? shape->types[i] : shape->rest_element;
         } else {
             source = rest_args_tuple_ctx(me, args, i, false, false, skip_sensitive, shape);
