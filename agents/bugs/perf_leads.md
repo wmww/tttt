@@ -31,18 +31,9 @@ references, thousands of TS2307/TS7031: tsc does less work there, babel-traverse
 since paths and node_modules resolve from there; delete it after), and compare `--time`'s type count with tsc's
 `--extendedDiagnostics`. **Type counts are a signal here**: every pathology found had tttt making 5-12x tsc's types.
 Fixed that session: `typeof` of a top-level name made a literal generic (karakeep, 55 s), keyof of 70 unions
-quadratic (headlessui), top-level object literal types instantiated per mapper (mcp-sdk, 5.5x types). Open:
-- **Function expression types are keyed by the whole mapper** (docmost/apps/server: 2.27M types vs tsc's 185k, all
-  in `page-permission.repo.ts`; a probe of one kysely `.withRecursive(...)` method plus a private helper taking
-  `ExpressionBuilder<any, keyof DB>` reproduces it: 383k types vs 50k). The `qb => ...` arrow's type is
-  `free_params_unknown` (`ty_function_type`: not closed, being in a class method), so every composed mapper (19-23
-  entries) makes a new instance, and kysely's `{ [K in ExtractTableFromCommonTableExpressionName<CN>]: ... }` built
-  on each multiplies (70k instances). tsc keys it by getOuterTypeParameters: the class's `this` and the type parameters
-  in scope, plus the contextual signature's if it's context sensitive. The catch: tttt's contextually typed
-  parameters may carry a call's uninstantiated type parameters (push-down contextual typing, plan 51), which
-  instantiation must still replace, so a syntactic outer set isn't safe as is. Options: collect what the signature
-  mentions once it's resolved (`mentions_type_variables` collect mode, cached per target, unsure -> unknown), or key
-  by the syntactic set plus the inference contexts' type parameters. Worth a plan if kysely-style code is common.
+quadratic (headlessui), top-level object literal types instantiated per mapper (mcp-sdk, 5.5x types); later (agent ta) function expression
+types keyed by the whole mapper (docmost/apps/server 2.19M types -> 153k, typecheck 2.7 s -> 0.4 s: now by what the
+resolved signature mentions, `ty_function_type_mentions()`). Open:
 - **immutable-js/type-definitions**: 997k types vs tsc's 203k; ~600k anonymous instances spread over hundreds of
   member types (4-parameter mappers, ~8.9k instances each). Member types are lazy (`instantiate_members`), so
   something reads every member of many distinct instantiations: probably structural relations of `this`-returning

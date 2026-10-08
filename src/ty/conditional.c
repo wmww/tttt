@@ -14,6 +14,7 @@ typedef struct MentionWalk {
     u32 visited_len;
     Ty const* only; // Non-null: the one type parameter that counts
     TyBuf* collect; // Non-null: every free type parameter goes here and the walk goes on (true only when unsure)
+    Ty const* self; // The function expression type ty_function_type_mentions() is collecting for
 } MentionWalk;
 
 #define MENTION_MAX_VISITED 8192
@@ -46,6 +47,13 @@ static bool mention_visit(MentionWalk* walk, u32 id) {
     return true;
 }
 
+// The type ty_function_type() makes for a function expression, which ty_function_type_mentions() answers for
+static bool function_expression_type(Ty const* target) {
+    return target->kind == TY_ANONYMOUS && target->anonymous.function && !target->anonymous.target && !target->anonymous.node &&
+        target->anonymous.free_params_unknown && !target->anonymous.overload_count && !target->anonymous.merged_value &&
+        !target->anonymous.is_reverse && !target->anonymous.applies_type_args && target->anonymous.function->is_expression;
+}
+
 // Whether a type variable really occurs in the type: TYF_COULD_CONTAIN_TYPE_VARIABLES is only a hint (like tsc's
 // couldContainTypeVariables, it is set for every function type and object literal type). Walks the members of object
 // types; true when unsure (too deep, too big, a return type still being inferred)
@@ -74,6 +82,34 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             if (ty->anonymous.function && ty->anonymous.function->no_enclosing_type_params) return false;
             Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
             TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
+            // A function expression's type (or an instance of one) by what its signature mentions, without reading the
+            // members of instances (which instantiates them, level by level for a function returning a call of its own
+            // container: `deeper: <U>(c: U) => testRecFun<T & U>(...)`)
+            if (walk->self && (target != walk->self || depth > 0)) {
+                if (target == walk->self) {
+                    // (Itself, or an instance of itself: what it maps its own mentions to, and those, which the walk
+                    // collects anyway)
+                    for (u32 j = 0; mapper && j < mapper->len; j++) {
+                        if (mentions_type_variables(me, mapper->targets[j], walk, depth + 1)) return true;
+                    }
+                    return false;
+                }
+                if (function_expression_type(target) && !ty->anonymous.applies_type_args) {
+                    TyList params;
+                    if (!ty_function_type_mentions(me, target, &params)) return true;
+                    for (u32 i = 0; i < params.len; i++) {
+                        Ty const* param = params.data[i];
+                        for (u32 j = 0; mapper && j < mapper->len; j++) {
+                            if (mapper->sources[j] == param) {
+                                param = mapper->targets[j];
+                                break;
+                            }
+                        }
+                        if (mentions_type_variables(me, param, walk, depth + 1)) return true;
+                    }
+                    return false;
+                }
+            }
             // (So is a declared function's whose signature is all annotations: a method of a generic class read
             // through an instance, `table(): TableProp<TDexieSubClass>` of `Entity<TodoDB>`, mentions what its type
             // arguments do, without resolving its signature, whose types may be the mapped type being resolved)
@@ -169,6 +205,9 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
                         found = constraint && mentions_type_variables(me, constraint, walk, depth + 1);
                     }
                     found = found || mentions_type_variables(me, signature_return_type(me, sig), walk, depth + 1);
+                    // (A type predicate's type too: `(ast: AST): ast is Extract<AST, { _tag: T }>` mentions T)
+                    TyPredicate const* predicate = found ? nullptr : signature_predicate(me, sig);
+                    found = found || (predicate && predicate->type && mentions_type_variables(me, predicate->type, walk, depth + 1));
                     walk->bound_len = saved;
                     if (found) return true;
                 }
@@ -254,6 +293,46 @@ bool ty_mentions_any(Checker* me, Ty const* ty, Ty const* const* params, u32 cou
     }
     ty_buf_drop(&found);
     return ret;
+}
+
+typedef struct FunctionMentions { TyList params; bool known; bool in_flight; } FunctionMentions;
+
+// What instantiating a function expression's type can change: the type parameters its one signature mentions (its
+// parameters, `this`, the inferred return type). tsc keys these instantiations by the function's outer type parameters
+// (getObjectTypeInstantiation); tttt's contextually typed parameters may also carry a call's type parameters (plan 51),
+// so it goes by what the resolved signature really mentions instead. Asked before the signature is resolved or the
+// return type inferred, unknown (and not remembered: it is known later); found again while collecting (two functions
+// whose types mention each other's), unknown
+bool ty_function_type_mentions(Checker* me, Ty const* ty, TyList* out) {
+    *out = (TyList){0};
+    if (!function_expression_type(ty)) return false;
+    u64 key[2] = { KEY_FUNCTION_TYPE_MENTIONS, (u64)(uintptr_t)ty };
+    FunctionMentions* cached = (FunctionMentions*)intern_get(&my links, key, 2);
+    if (cached) {
+        *out = cached->params;
+        return cached->known && !cached->in_flight;
+    }
+    TyObjectState const* state = ty->anonymous.state;
+    if (!state || state->members_state != LAZY_STATE_DONE) return false;
+    Members const* members = state->members;
+    if (members->call_count != 1 || members->construct_count || members->prop_count || members->index_count || members->mapped) return false;
+    Signature const* sig = members->call[0];
+    if (sig->state != LAZY_STATE_DONE || sig->target || sig->function != ty->anonymous.function) return false;
+    FunctionImpl const* function = sig->function;
+    if (sig->ret_state != LAZY_STATE_DONE && !function->ret_explicit && function->has_body && !ty_function_return_known(me, function)) return false;
+    FunctionMentions* computed = arena_new(&my arena, FunctionMentions);
+    computed->in_flight = true;
+    *intern_slot(me, &my links, key, 2) = computed;
+    TyBuf found = {0};
+    MentionWalk walk = { .collect = &found, .self = ty };
+    bool unsure = mentions_type_variables(me, ty, &walk, 0);
+    free(walk.visited);
+    computed->in_flight = false;
+    computed->known = !unsure;
+    if (!unsure) computed->params = ty_list_copy(me, found.data, found.len);
+    ty_buf_drop(&found);
+    *out = computed->params;
+    return computed->known;
 }
 
 static Ty const* branch_type(Checker* me, TyCondBranch const* branch) {
