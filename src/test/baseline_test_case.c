@@ -777,6 +777,17 @@ static void format_error_tree(
     }
 }
 
+// The byte length of the JavaScript whitespace character (a regular expression's `\s`) at c, 0 if it isn't one
+static unsigned js_whitespace_length(const char* c, const char* end) {
+    if (*c == ' ' || *c == '\t' || *c == '\v' || *c == '\f') return 1;
+    const unsigned char* u = (const unsigned char*)c;
+    if (u[0] == 0xC2 && end - c >= 2 && u[1] == 0xA0) return 2;
+    if (end - c < 3 || (u[0] & 0xF0) != 0xE0) return 0;
+    u32 cp = ((u[0] & 0x0Fu) << 12) | ((u[1] & 0x3Fu) << 6) | (u[2] & 0x3Fu);
+    bool space = cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200A) || cp == 0x2028 || cp == 0x2029 || cp == 0x202F ||
+        cp == 0x205F || cp == 0x3000 || cp == 0xFEFF;
+    return space ? 3 : 0;
+}
 
 static void process_errors(BaselineTestCase* me) {
     if (error_ctx_empty(my error_ctx)) {
@@ -834,9 +845,16 @@ static void process_errors(BaselineTestCase* me) {
             LineNumberedStr item = { .line = line, .str = cstr_null };
             const char* squiggle_start = start > line_start ? start : line_start;
             cstr_append_lit(&item.str, "    ");
-            // (in UTF-16 code units, like tsc's harness)
+            // (in UTF-16 code units, like tsc's harness; its `.replace(/\S/g, " ")` keeps whitespace, a tab or a no-break
+            // space, as it is)
             for (const char* c = line_start; c < squiggle_start && c < line_end; c++) {
-                for (unsigned n = utf8_byte_utf16_units(c); n; n--) cstr_append_n(&item.str, *c == '\t' ? "\t" : " ", 1);
+                unsigned space = js_whitespace_length(c, line_end);
+                if (space) {
+                    cstr_append_n(&item.str, c, space);
+                    c += space - 1;
+                    continue;
+                }
+                for (unsigned n = utf8_byte_utf16_units(c); n; n--) cstr_append_lit(&item.str, " ");
             }
             const char* squiggle_end = end < line_end ? end : line_end;
             for (const char* c = squiggle_start; c < squiggle_end; c++) {
