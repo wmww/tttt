@@ -33,6 +33,9 @@ typedef struct Options {
     bool print_ast; // Dump the parsed AST of the (last) file before typechecking
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck and report everything even after syntactic or options diagnostics (tsc stops)
+    // --keep-going=options: only options diagnostics don't stop anything, syntactic ones do (what the source sweep's
+    // oracle reports: tsc's program diagnostics without emitFilesAndReportErrors' options gate)
+    bool keep_going_options;
     bool no_lib;  // Don't load the standard library, for checking the library files themselves
     const char* project; // -p: a tsconfig.json or the directory of one
     bool build; // -b: paths are projects, each checked with everything it references, in build order
@@ -428,11 +431,12 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     // noEmitOnError, emitting (handleNoEmitOptions) reports all of them anyway, ungated
     CompilerOptions const* options = program_options(program);
     bool ungated = opts->keep_going || (options->no_emit_on_error && !options->no_emit);
+    bool options_ungated = ungated || opts->keep_going_options;
     intptr_t kinds[DIAGNOSTIC_KIND_COUNT];
     count_diagnostic_kinds(errs, kinds);
     bool syntactic = kinds[DIAGNOSTIC_SYNTACTIC];
-    bool gated = !ungated && (syntactic || kinds[DIAGNOSTIC_OPTIONS]);
-    if (!ungated && kinds[DIAGNOSTIC_SYNTACTIC]) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
+    bool gated = (!ungated && syntactic) || (!options_ungated && kinds[DIAGNOSTIC_OPTIONS]);
+    if (!options_ungated && kinds[DIAGNOSTIC_SYNTACTIC]) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
     if (gated) drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
     const intptr_t parse_errors = report_errors(out, errs);
     if (parse_errors) ret = 1;
@@ -461,11 +465,11 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         count_diagnostic_kinds(&names, kinds);
         intptr_t type_kinds[DIAGNOSTIC_KIND_COUNT];
         count_diagnostic_kinds(errs, type_kinds);
-        if (gated || (!ungated && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS]))) {
+        if (gated || (!options_ungated && (kinds[DIAGNOSTIC_OPTIONS] || type_kinds[DIAGNOSTIC_OPTIONS]))) {
             drop_diagnostic_kind(&names, DIAGNOSTIC_SEMANTIC);
             drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
         }
-        if (gated && syntactic) {
+        if (gated && syntactic && !options_ungated) {
             drop_diagnostic_kind(&names, DIAGNOSTIC_OPTIONS);
             drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
         }
@@ -768,6 +772,8 @@ static int run(int argc, const char** argv) {
             opts.time = true;
         } else if (streq(argv[i], "--keep-going")) {
             opts.keep_going = true;
+        } else if (streq(argv[i], "--keep-going=options")) {
+            opts.keep_going_options = true;
         } else if (streq(argv[i], "--all-errors")) {
             print_error_ctx_max_display = INTPTR_MAX;
         } else if ((streq(argv[i], "-p") || streq(argv[i], "--project")) && i + 1 < argc) {

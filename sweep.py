@@ -72,11 +72,11 @@ def run_tsc(packages, jobs, extra=(), cwd=DT):
     return results
 
 
-def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT):
+def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT, keep_going='--keep-going'):
     limit = mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--all-errors', '--threads', '1',
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', keep_going, '--all-errors', '--threads', '1',
                                '--checkers', '1', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))

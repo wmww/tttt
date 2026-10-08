@@ -62,6 +62,9 @@ function check(dir) {
         if (syntactic.length === 0) {
             diags.push(...program.getSemanticDiagnostics());
             if (ts.getEmitDeclarations(parsed.options)) diags.push(...program.getDeclarationDiagnostics());
+        } else if (ts.getEmitDeclarations(parsed.options) && !parsed.options.noEmit && !parsed.options.noEmitOnError) {
+            // (The emit still happens, and says what the declaration transformer finds)
+            diags.push(...program.getDeclarationDiagnostics());
         }
     }
     const out = diags.map(d => {
