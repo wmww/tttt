@@ -3141,6 +3141,8 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
     }
     if (over_union && !literal_key) return members;
     Ty const** member_keys = nullptr;
+    // (`NoInfer<X>` goes by X's members: tsc's getPropertiesOfType reads a substitution type's apparent type)
+    if (keyed && ty_is_no_infer(keyed)) keyed = keyed->substitution.base;
     // (An intersection of object types that aren't generic: TYF_COULD_CONTAIN_TYPE_VARIABLES says too little, any type
     // literal with a `typeof` in it has it)
     bool keyed_intersection = keyed && keyed->kind == TY_INTERSECTION &&
