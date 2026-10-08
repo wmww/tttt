@@ -4797,7 +4797,8 @@ static Ty const* widen_object_literal(Checker* me, Ty const* ty, WideningCtx* ct
         Prop const* first = *cached;
         props[count++] = (ObjectLiteralProp){
             .name = prop->name,
-            .flags = PROP_OPTIONAL,
+            // (Readonly like that first property: tsc's createSymbolWithType keeps CheckFlags.Readonly)
+            .flags = PROP_OPTIONAL | (first->flags & PROP_READONLY),
             .type = ty_intrinsic(me, exact ? TY_NEVER : TY_UNDEFINED),
             .name_span = prop->decl->name_span,
             .name_form = ty_prop_name_form_of(prop),
