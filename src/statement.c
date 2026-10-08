@@ -589,7 +589,7 @@ void namespace_decl_resolve_names(NamespaceDecl* me, Scope* names, ErrorCtx* err
     // The scope was made when the namespace was declared
     my inner_scope->flow = names->flow;
     my inner_scope->self = my symbol;
-    block_lookup_names_container(&my contents, false, c_sv("namespace"), my name, my inner_scope, errs);
+    block_lookup_names_container(&my contents, c_sv("namespace"), my name, my inner_scope, errs);
     my inner_scope->flow = nullptr;
 }
 

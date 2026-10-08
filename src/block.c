@@ -51,7 +51,7 @@ bool block_has_export_declarations(Block const* me) {
     return false;
 }
 
-void block_lookup_names_as(Block const* me, bool is_block, Scope* names, ErrorCtx* errs) {
+void block_lookup_names_as(Block const* me, Scope* names, ErrorCtx* errs) {
     FlowBuilder* flow = names->flow;
     for_each (i, vec_statement, &my statements) {
         flow->statement_list = &my statements;
@@ -95,14 +95,14 @@ FlowNode const* block_lookup_names_inline_container(Block const* me, Scope* scop
     return flow.current;
 }
 
-void block_lookup_names_container(Block const* me, bool is_block, csview kind, Span name, Scope* scope, ErrorCtx* errs) {
+void block_lookup_names_container(Block const* me, csview kind, Span name, Scope* scope, ErrorCtx* errs) {
     FlowBuilder* outer = scope->flow;
     FlowBuilder flow;
     flow_builder_init(&flow, outer, scope, nullptr, errs);
     flow.current = flow_new_start(&flow, nullptr, false);
     flow.container = me;
     scope->flow = &flow;
-    block_lookup_names_as(me, is_block, scope, errs);
+    block_lookup_names_as(me, scope, errs);
     flow_builder_finish(&flow, kind, name);
     scope->flow = outer; // The scope may outlive the builder
 }
@@ -111,7 +111,7 @@ void block_resolve_names(Block const* me, Scope* names, ErrorCtx* errs) {
     ScopePendingMark pending_mark = scope_pending_mark(names->binder);
     Scope* scope = scope_new(names, SCOPE_BLOCK);
     block_add_names(me, scope);
-    block_lookup_names_as(me, true, scope, errs);
+    block_lookup_names_as(me, scope, errs);
     if (scope_release(scope, pending_mark) && me->scope == scope) ((Block*)me)->scope = nullptr;
 }
 

@@ -412,7 +412,7 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         }
     }
     saved_flow = type_flow_enter_statements();
-    if (!skip_body) block_lookup_names_as(&my body, true, function_scope, errs);
+    if (!skip_body) block_lookup_names_as(&my body, function_scope, errs);
     type_flow_restore(saved_flow);
 
     my end_flow = nullptr;

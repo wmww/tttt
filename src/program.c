@@ -2576,7 +2576,7 @@ static void program_order_stdlib_first(Program* me) {
 }
 
 static void resolve_file(SourceFile* source, ErrorCtx* errs) {
-    block_lookup_names_container(&source->ast, false, c_sv("file"), span_null, source->scope, errs);
+    block_lookup_names_container(&source->ast, c_sv("file"), span_null, source->scope, errs);
     if (!source->is_stdlib && !source->unchecked && !source->is_declaration) unused_mark_jsdoc_links(source);
 }
 
