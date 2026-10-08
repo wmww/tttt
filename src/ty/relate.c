@@ -4004,8 +4004,11 @@ static Ty const* distributive_constraint_uncached(Checker* me, Ty const* conditi
     Ty const* check_constraint = check->kind == TY_TYPE_PARAM ? ty_param_constraint(me, check) :
         immediate && check->kind == TY_INDEXED ? simplified_or_constraint(me, check) :
         // (A union or intersection's is its base constraint, tsc's getConstraintOfType: NonNullable<T[K]>'s `T[K] & {}`)
+        // (So is a generic tuple's, tsc's getBaseConstraintOfType of isGenericTupleType: `TE<[El, ...IA]>` with
+        // `IA extends unknown[]` is TE<[El, ...unknown[]]>)
         (check->flags & TYF_DEFERRED) || ((check->kind == TY_UNION || check->kind == TY_INTERSECTION) &&
-            (check->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ? base_constraint(me, check, depth + 1) : nullptr;
+            (check->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) || ty_is_generic_tuple(me, check) ?
+            base_constraint(me, check, depth + 1) : nullptr;
     if (!check_constraint || check_constraint == check) return nullptr;
     Ty const* root = conditional->conditional.root ? conditional->conditional.root : conditional;
     Ty const* root_check = root->conditional.check;
