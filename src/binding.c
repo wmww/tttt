@@ -328,7 +328,6 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     }
     Ty const* type = ty_type_of_symbol(checker, symbol);
     Ty const* declared = ty_binding_type(checker, me, (LowerCtx){ .generic = true });
-    Ty const* error = ty_intrinsic(checker, TY_ERROR);
     Ty const* circular = ty_intrinsic(checker, TY_CIRCULAR);
     // (A first declaration whose annotation references itself (TS2502) is the error type: tsc's reportCircularityError)
     Binding const* first_annotated = first->kind == SYMBOL_DECL_VARIABLE ? first->node : nullptr;
@@ -337,7 +336,8 @@ static void check_subsequent_declaration(Binding const* me, ErrorCtx* errs) {
     ) {
         return;
     }
-    if (type == error || declared == error || declared == circular ||
+    // (Any error type, an unresolved name's too: tsc's isErrorType; the identity relation has no shortcut for it)
+    if ((type->flags & TYF_ERROR) || (declared->flags & TYF_ERROR) || declared == circular ||
         ty_is_related(checker, type, declared, TY_RELATION_IDENTITY)
     ) {
         return;

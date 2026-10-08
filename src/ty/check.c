@@ -3495,9 +3495,8 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
 // TS2717: a property declared again (a duplicate class field, a property of a merged interface) has the type of the
 // first declaration of its name (tsc's checkVariableLikeDeclaration for a property's secondary declarations)
 static void check_subsequent_property(Checker* me, Span name, Ty const* first_type, Ty const* type, Span first_name, ErrorCtx* errs) {
-    Ty const* error = ty_intrinsic(me, TY_ERROR);
     Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
-    if (first_type == error || type == error || first_type == circular || type == circular ||
+    if ((first_type->flags & TYF_ERROR) || (type->flags & TYF_ERROR) || first_type == circular || type == circular ||
         ty_is_related(me, first_type, type, TY_RELATION_IDENTITY)
     ) {
         return;
@@ -3709,9 +3708,10 @@ void ty_check_parameter_property_redeclaration(Checker* me, Symbol const* class_
     if (!root || span_eq(root->decl->decl_spans[0], arg->span) || !prop_declared_by(root, arg->span)) return;
     Ty const* type = prop_type(me, root);
     Ty const* own = ty_binding_type(me, binding, (LowerCtx){ .generic = true });
-    Ty const* error = ty_intrinsic(me, TY_ERROR);
     Ty const* circular = ty_intrinsic(me, TY_CIRCULAR);
-    if (type == error || own == error || own == circular || type == circular || ty_is_related(me, type, own, TY_RELATION_IDENTITY)) {
+    if ((type->flags & TYF_ERROR) || (own->flags & TYF_ERROR) || own == circular || type == circular ||
+        ty_is_related(me, type, own, TY_RELATION_IDENTITY)
+    ) {
         return;
     }
     cstr type_str = ty_to_cstr(me, type);

@@ -7011,6 +7011,9 @@ static Ternary is_related_to(Checker* me, RelationState* st, Ty const* source, T
 // source of the subtype relations, where it is any, which is a subtype of nothing but any and unknown (tsc has no
 // shortcut, isSimpleTypeRelatedTo: an overload taking `any` wins over a generic one for an unresolved name's argument)
 static inline bool error_related(Ty const* source, Ty const* target, TyRelation relation) {
+    // (Not for identity: an intersection's signatures, deduplicated by it, keep `(v: Unresolved) => void` beside
+    // `(fn: F) => void`, tsc's appendSignatures with compareTypesIdentical)
+    if (relation == TY_RELATION_IDENTITY) return false;
     if (target->flags & TYF_ERROR) return true;
     // (Not to never either, which any isn't: `isNever(unresolved)` is TS2345 to tsc)
     return (source->flags & TYF_ERROR) && !(target->flags & TYF_NEVER) && relation != TY_RELATION_SUBTYPE &&
