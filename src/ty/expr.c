@@ -175,9 +175,12 @@ bool ty_is_const_context_kind(Expr const* expr) {
 
 // tsc's isConstContext: inside `as const`, or the contextual type is a `const` type parameter (an argument of
 // `f<const T>(t: T)`)
+// (The contextual type as given, before what the call inferring now knows replaces its type parameters: tsc's
+// isConstContext asks getContextualType, not the apparent type, so a return type inference doesn't hide `const T`)
 static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
-    return ctx.is_const || (ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
-        ty_is_const_context_kind(expr) && ty_is_const_type_variable(me, ctx.contextual, 0));
+    Ty const* contextual = ctx.raw_contextual ? ctx.raw_contextual : ctx.contextual;
+    return ctx.is_const || (contextual && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+        ty_is_const_context_kind(expr) && ty_is_const_type_variable(me, contextual, 0));
 }
 
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx);
