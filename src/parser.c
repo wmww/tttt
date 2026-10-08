@@ -8884,11 +8884,16 @@ static bool parse_left_unary_op(Parser* parent, UnaryOp* op) {
         hop_start_if_ends_on_word_break(parent, "yield")) {
         *op = UNARY_OP_YIELD;
         const char* after_yield = parent->pos;
+        // (The whitespace state too: the probe hops no line breaks, and a cached end there would hide them later)
+        __typeof__(parent->whitespace) whitespace = parent->whitespace;
+        const char* whitespace_end = parent->whitespace_end;
         hop_whitespace_full(parent, true, false);
         if (hop_char(parent, '*')) {
             *op = UNARY_OP_YIELD_STAR;
         } else {
             parent->pos = after_yield;
+            parent->whitespace = whitespace;
+            parent->whitespace_end = whitespace_end;
         }
     } else if (hop_start_if_ends_on_word_break(parent, "typeof")) {
         *op = UNARY_OP_TYPEOF;
