@@ -4635,12 +4635,16 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
             // (Type arguments that don't satisfy the constraints, TS2344, leave the signature as it is: tsc's
             // getInstantiatedSignatures, checkTypeArguments)
             Ty const* own[64];
-            for (u32 j = 0; j < params.len; j++) {
-                Ty const* target = j < args.len ? args.data[j] : ty_param_default(me, params.data[j]);
-                own[j] = target ? target : ty_intrinsic(me, TY_UNKNOWN_);
-            }
             if (params.len > c_arraylen(own)) continue;
+            // (A default is instantiated with the arguments before it, those not filled in yet the error type: tsc's
+            // fillMissingTypeArguments)
+            for (u32 j = 0; j < params.len; j++) own[j] = j < args.len ? args.data[j] : ty_intrinsic(me, TY_ERROR);
             TyMapper const* own_mapper = ty_mapper_new(me, params, (TyList){ .data = own, .len = params.len });
+            for (u32 j = args.len; j < params.len; j++) {
+                Ty const* fallback = ty_param_default(me, params.data[j]);
+                own[j] = fallback ? ty_instantiate(me, fallback, own_mapper) : ty_intrinsic(me, TY_UNKNOWN_);
+                own_mapper = ty_mapper_new(me, params, (TyList){ .data = own, .len = params.len });
+            }
             bool fits = true;
             for (u32 j = 0; j < params.len && fits; j++) {
                 Ty const* constraint = ty_param_constraint(me, params.data[j]);
