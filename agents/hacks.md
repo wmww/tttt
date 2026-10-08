@@ -256,7 +256,9 @@ src` finds the code-side markers; every significant one has an entry here.
   inferred. A union with literal keys (`"a" | Exclude<keyof T, X>`) still takes that path (tsc infers from the
   properties those keys give: complicatedIndexesOfIntersectionsAreInferencable). Pick's K gets the source's keys only
   outside return-type inference (with `return_inference_mapper()` K2 of twiceNestedKeyofIndexInference would be
-  `never`). `infer_to_mapped()` finding nothing returns (tsc goes per property; neutral).
+  `never`). `infer_to_mapped()` finding nothing returns (tsc goes per property; neutral). Deleting the shortcut
+  (tsc always builds the reverse mapped type, which is lazy in tttt too since plan 42 stage 1) cost those two tests in
+  plan 42's prototype (2026-10-05); both pass now with the shortcut, so re-measure before trying again.
 - Skip-sensitive rounds (`resolve_with_signatures`): tsc's SkipContextSensitive round checks every argument once, its
   context-sensitive functions as anyFunctionType; tttt leaves them out of `check_args_until_unfit`
   (`skipped_function_unfit()` relates anyFunctionType for bare functions) and relates the literal ones afterwards

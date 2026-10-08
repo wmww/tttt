@@ -80,8 +80,8 @@ before TypeScript 6) with its vitest tests, through our `corpora-locks/xstate.ov
 unknown-like unions, instantiation expressions of functions, nested generic calls skipped in the first pass, the
 target-side isDeeplyNestedType(10) bail-out for conditionals (a TS2589 blowup whose memoized error types poisoned the
 test files and made the output checker-count dependent), `extends any`, x! as NonNullable<T>, speculative memos...
-Plan 38 stage 1 took it to 43, stage 2 to 19; plan 38 "Stage 3" lists the 19 left. Before stage 1, by cause (sub-agent
-reports in the commit messages; repros in `plans/38_prototypes/xstate_*.ts`):
+Plan 38 stage 1 took it to 43, stage 2 to 19 (xstate is 0 since). Before stage 1, by cause (sub-agent
+reports in the commit messages; the `xstate_*.ts` repros were in plan 38's prototype directory, git history):
 - **Plan 38, most of it**: defaults leaking into the second pass's contextual type (setup.types 37-132, TS7006/7031),
   the return mapper applied to the whole parameter type (types 2006-2038), the contextual type instantiated whole
   instead of leaf-wise (`assign({ prop: ({ spawn }) => ... })`, 7 TS7031), fixing through the parameter walk

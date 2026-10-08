@@ -193,7 +193,7 @@ uncached comparator and an O(n^2) member sort. Checker arena +1% (`Ty.order_key`
 
 ## Retarget to TypeScript 4d4f005c (2026-10-07, eleventh window's todo entry 2, plan 48 stage 1)
 **Not comparable with the sections below** (new suite, libs, defaults). Suite **13683 / 14969** (errors 14588, symbols
-14858, types 13883). Corpora with their current (5.x-era) pins, tttt only (tsc's numbers under 6.0.3 are in plan 48):
+14858, types 13883). Corpora with their current (5.x-era) pins, tttt only (tsc's numbers under 6.0.3 are in the plan 48 file, git history):
 tsc, tsc-src, typescript-eslint, zod, xstate 0; type-fest, valibot, react, drizzle, vue, excalidraw 1 (the TS5101/5107
 deprecation); nest 4 (TS6500 x2 and real strict ones); effect 5 (TS2578 x3 + deprecations); tanstack-router 28 (TS2591
 x25: `types: []`); webpack 5297 (TS6203 / TS2300 / TS2451: @types/node twice) and vscode 533 (TS2882 x290, TS6203).
@@ -425,7 +425,7 @@ matches tsc's (file, line, code) set exactly on **7969**; spurious only 123, mis
 (react-relay, SIGSEGV), timeout 0. 114 s wall at -j4; tttt 456 s summed single-threaded vs tsc 5.8 5314 s (one warm
 process, libs parsed once). tttt's median package 41 ms (startup ~6 ms: libs aren't the cost). **Slower than tsc**:
 carbon-components-react 25.4 s vs 5.9 s, d3-geo 1.85 s vs 0.62 s (both fixed the same day: 2.1 s and 0.07 s). Before the session's symlink fix ~30% of the sample had thousands of
-duplicate-declaration errors (every file of a linked @types package loaded twice). Top causes in plan 44.
+duplicate-declaration errors (every file of a linked @types package loaded twice).
 
 ## Effect corpus pinned (2026-10-05, ninth window's todo entry 2)
 Effect 6300 -> 63 (plan 19 "effect"); suite 12758 -> 12759 (+1 component more), 0 lost; the other corpora unchanged
@@ -645,8 +645,8 @@ unchanged (tsc 5.052 -> 5.055 G, valibot 5.503 -> 5.499; the thread-local `compi
 measurable). `TTTT_LOAD_POOL_STATS=1`: every corpus 0 files parsed for nothing; the loader parses 55-800 files itself
 (nest the most); workers ~90% busy. Corpora unchanged: webpack 9, xstate 19, the rest 0.
 
-## Parallelism prototypes (2026-09-28, plan 36 planning, 0746971 + `plans/36_prototype.patch`)
+## Parallelism prototypes (2026-09-28, plan 36 planning, 0746971; the prototype patch is in git history)
 Parallel loading at 4 workers, whole run best of 5: tsc 661 -> 631 ms, webpack 564 -> 527, nest 201 -> 180, react
 243 -> 228, valibot 622 -> 599, zod 1315 -> 1260, type-fest 327 -> 321; output byte-identical. K checkers run one
 after another, typecheck ms K=1 -> K=4 sum / slowest checker: tsc 464 -> 505 / 243, webpack 337 -> 400 / 107, zod
-1147 -> 1266 / 717, valibot 515 -> 586 / 188, react 119 -> 245 / 73. Details and the load-phase split in plan 36.
+1147 -> 1266 / 717, valibot 515 -> 586 / 188, react 119 -> 245 / 73. Per-corpus peak RSS K=1 -> 4: tsc 360 -> 404 MB, webpack 382 -> 464, zod 1334 -> 1566, react 235 -> 335.

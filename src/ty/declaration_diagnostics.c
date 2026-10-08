@@ -25,8 +25,7 @@
 // back), building no type nodes. The builder's result is only "fell back" (tsc's `failed`, the caller reports) or not
 // (a type, or a fallback already reported or not reported at all: tsc's alreadyReported and notImplemented)
 //
-// Not yet (plan 40 stage 2): written types (isEntityNameVisible, TS9039 through trackExistingEntityName), late painted
-// statements (a non-exported declaration that a visible one names is visible too), JavaScript
+// Not done: JavaScript (no JS declaration emit); what is approximated is in agents/hacks.md "Declaration diagnostics"
 
 // What tsc's findNearestDeclaration finds for a node: the declaration the "Add a type annotation" related information
 // is about

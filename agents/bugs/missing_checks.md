@@ -49,8 +49,8 @@ spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
   undefined. `for (x in o)` with a non-declaration target: TS2322 here, TS2405 in tsc.
 - **Type predicates**: TS1228 (predicate in a constructor type, accessor, parameter type), TS2775/TS2776 (assertion
   callee without explicit types: assertionTypePredicates1), a predicate function returning non-boolean.
-- **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; plan 37 A stage 2: TS7010/7011/7025
-  on widened inferred returns, TS7008 class fields, TS7018 through a spread) and of generator yield/next types; TS7017
+- **Implicit any**: widening errors past `report_errors_from_widening` (binding.c; the tests plan 37 named for them
+  pass since, re-check with a probe: TS7008 class fields, TS7018 through a spread) and of generator yield/next types; TS7017
   (`typeof globalThis` has no index signature).
 - **Target-gated**: TS2705 comes only from an inferred return type's demand (tsc's createPromiseReturnType), and tttt
   infers more eagerly than tsc, so the two can disagree; TS1056 (accessors below ES5); `await` in a namespace body
@@ -190,9 +190,23 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   circular constraint" at (16,33) plus two TS2322 that follow from it; tttt reports none. Not investigated (likely
   circular constraint detection for a mapped type's key parameter, plan 39 area).
 
-## Circularity tsc finds and tttt doesn't (plan 39 stage 3)
-- TS2310/TS2313 for cycles found while resolving: circularBaseTypes (TS2313 for a mapped type's `K in keyof T` with T
-  the interface whose base is being resolved), circularConstraintYieldsAppropriateError (TS2310).
+## Circularity tsc finds and tttt doesn't (the resolution stack's leftovers, ex plan 39 stage 3)
+- **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
+  Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
+  ImmediateBaseConstraint plus getImmediateBaseConstraint's 5-deep identity check), TS2313 at the type node being
+  checked, default type arguments instantiated during base type resolution. None of the corpora show these shapes.
+  - circularBaseTypes: `type X<T> = { [K in keyof T]: string } & { b: string }; interface Y extends X<Y>`: tsc's
+    TS2313 lands on `K` (resolving Y's bases instantiates X<Y>, whose key constraint `keyof Y` needs Y's members while
+    its bases are in flight; getResolvedBaseConstraint has `(K, ImmediateBaseConstraint)` pushed, the error goes at
+    the current node). tttt has the TS2310 on Y but never meets K's constraint in flight.
+  - infiniteConstraints: spurious TS2321 "Excessive stack depth comparing '"val"' and 'keyof B[Exclude<keyof B,
+    K>]'" for `T1<B extends { [K in keyof B]: Extract<B[Exclude<keyof B, K>], { val: string }>["val"] }>`: tsc stops
+    at the identity stack (circularConstraintType) and hasNonCircularBaseConstraint in getConstraintOfIndexedAccess
+    drops it; relate.c's `base_constraint()` has only a depth argument, so it recurses to the relation depth limit.
+  - circularConstraintYieldsAppropriateError: `class Foo extends NextType<Foo>` with `NextType<C extends { someProp:
+    any }, T = C['someProp']> extends BaseType<T>`: tsc reports TS2415 and TS2339 'bar' (the base resolves circularly
+    to an error: the cycle is entered from the default's instantiation, reading Foo's `someProp` while Foo's bases
+    are in flight); tttt reports TS2310 and keeps `bar`.
 - A parameter's default reaching the parameter through a call's return type (`(n: number | undefined = [1].map(() =>
   n)[0])`: TS2502 and TS7024 in tsc, nothing here; the direct read is done in `parameter_initial_type()`).
 - limitDeepInstantiations (TS2589 at the reference, we say TS2502), circularInlineMappedGenericTupleTypeNoCrash
@@ -341,8 +355,15 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
   (reactDefaultPropsInferenceSuccess); literal creation order puts `1 | 4` where tsc says `4 | 1`
   (assignmentCompatWithDiscriminatedUnion).
 
-## Declaration emit (plan 40)
-arrayFakeFlatNoCrashInferenceDeclarations (TS5088), declarationEmitPrivatePromiseLikeInterface (TS7056).
+## Declaration emit (`ty/declaration_diagnostics.c`; approximations in hacks.md "Declaration diagnostics")
+- TS5088 (arrayFakeFlatNoCrashInferenceDeclarations): tsc's typeToTypeNodeOrCircularityElision tracks the unions it
+  is printing and reports a cyclic structure; tttt's printer has no such set in declaration mode.
+- TS7056 for deep recursive types: tsc elides a symbol nested more than 10 deep (visitAndTransformType), tttt's
+  printer elides at MAX_DISPLAY_DEPTH 8 overall, so deep types never reach the 1M characters
+  (declarationEmitPrivatePromiseLikeInterface passes anyway). Porting the per-symbol depth risks seconds per print on
+  big types and spurious TS7056 where tttt expands what tsc names.
+- TS9039 "Type containing private name '{0}' can't be used with --isolatedDeclarations" (tsc's
+  trackExistingEntityName, when the builder reuses a written type naming an inaccessible symbol) isn't reported.
 
 ## From the 2026-10-08 hacks audit (parser, flow)
 - The parser drops some syntax with its diagnostics: decorators before an import in `parse_decl_statement()`'s fallback

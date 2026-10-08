@@ -50,6 +50,31 @@ quadratic (headlessui), top-level object literal types instantiated per mapper (
   interface + namespace + function declarations): assignable cache 67.8k vs tsc's 23.8k, identity 28.9k vs 8.3k. Find
   the top-level relation queries that grow the caches most (the recipe above).
 
+## Parallelism (from the finished plans 36, 41, 44, 45; numbers in measurements.md)
+- **Parallel declare and link** (ex plan 45 stage 3, "maybe never"): vscode's resolve phase was declare 40 + link 28
+  ms against a walk of ~200 ms on 4 threads (510 serial; 2026-10-05). Declare writes `Binder.globals`, ambient
+  modules and namespace exports shared by files: per-file tables merged in program order (tsc's mergeSymbolTable
+  order). Making merged type parameters in declare (tsc makes them in its binder) would also let the files
+  `binder_mark_serial_resolves()` walks on the main thread go parallel (18 files / 0.9 MB of vscode). Measure the
+  serial remainder against the wall at vscode scale first: below ~10% isn't worth it.
+- **Lexical import pre-scan for the load pool** (tsc's preProcessFile: `import`/`export ... from`, `require(`,
+  `import(`, `/// <reference`) so a file's children are queued before its full parse. Discovery is a critical path
+  for deep `.d.ts` import chains (nest: 4 workers no faster than 2 in the 2026-09-28 prototype), but the landed pool
+  measured ~90% busy everywhere on a loaded machine (`TTTT_LOAD_POOL_STATS=1`). Re-measure nest on a quiet machine
+  (4 vs 2 workers, "parsed by the loader" count) before building it.
+- **Checker balance**: whole-file partitioning is bounded by the biggest file (tsc's checker.ts, zod's
+  deep-partial.test.ts). Dealing by content size was tried and reverted (bytes are a poor cost proxy: JS vs
+  declarations, and scattering a directory's files duplicates shared types); `deal_files()` cuts program order into 2
+  runs per checker. Next: a cost model (per-file check time of a previous run, or type counts). Sharing types
+  between checkers is not a lever (2026-10-08, measurements.md "Perf session").
+- **`-b` over many projects** (ex plan 41 stage 2): per-program name resolution of referenced projects' sources is
+  the biggest phase of `-b` on tsc-src and typescript-eslint (summed over programs). Not done: a cross-program file
+  cache (parsing is no longer the cost after `skip_typed_body()`), sharing resolved reference sources between
+  programs (resolve writes into the AST, so only with the lib program's freeze-and-overlay treatment).
+- **A lib cache** (parse the default libs once per process, or an mmapped pre-parsed lib, shared by `-b`'s
+  programs): measured not worth it on the sweep (2026-10-05: median package 41 ms, startup ~6 ms). Revisit only for a
+  watch/LSP mode or if `-b` profiles show lib loading.
+
 ## Leftovers of the 2026-10-05 perf session (todo entry 8)
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
   now (1.695 -> 1.682 G). The rest is first computations: ~120k instructions each through `ty_simplified` of nested

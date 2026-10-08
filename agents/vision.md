@@ -105,7 +105,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
 - **Threading**: checking is threaded (stage 3; nothing in the checker had to change once stage 2's audit fixes were
   in, which is evidence the "AST read-only while checking" contract holds). Any new checker-wide memo that *reports*
   must be tagged `Error.once_key`, and anything written to AST/binder state during checking is a race (the frozen
-  guards log it; TSan on the corpora is the net: `plans/36_parallelism.md` has the build line). Loading is
+  guards log it; TSan on the corpora is the net: documentation.md "Typecheck" has the build line). Loading is
   threaded too (a cache-warmer pool beside the unchanged sequential loader: `src/load_pool.c`; the shared state is the
   resolver's locked caches). Name resolution shards per file (plan 45 stages 1-2); declare/link are serial.
 
@@ -141,5 +141,5 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    tsgo 7~~ done.
 12. **Now**: contextual-check state (plan 51), a source-code breadth sweep (plan 52), a
    hacks audit, a perf session (check-phase sharing / load balance on vscode, AST bytes per line).
-13. Then: plan 45 stage 3 (declare/link), a token cache / node arenas in the parser, compact instantiated Props / the
+13. Then: parallel declare/link (bugs/perf_leads.md "Parallelism"), a token cache / node arenas in the parser, compact instantiated Props / the
    `Signature` split, whatever plan 52's sweep ranks first.

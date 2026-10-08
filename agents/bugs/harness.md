@@ -64,3 +64,9 @@
     in the program because: Matched by include pattern ..." chain (the program doesn't know which spec matched).
     Config diagnostics of references are only for the program's own config's direct references (tsc walks them
     transitively, reported on the parent config).
+- Widening the DefinitelyTyped oracles (ex plan 44 stage 3, not done): install more real npm dependencies for the
+  packages tsc rejects with TS2307/TS2688 (webpack 5, postcss, moment...: regenerate
+  `corpora-locks/DefinitelyTyped.package.json` and rerun `scripts/sweep.py --tsc -f` for the affected packages; tens
+  of packages each); beyond DT, the shipped `.d.ts` of the top-N npm packages with a generated test importing each.
+  `scripts/expecttypes.py` skips the ~600 assertions on declarations (`DECLARATION_KINDS`: type aliases, parameters,
+  binding elements...): comparing them needs getTypeAtLocation of a declaration on tttt's side (`src/expect_types.c`).

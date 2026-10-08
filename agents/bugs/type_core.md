@@ -64,6 +64,25 @@ fails types in both configurations.
   types, tttt collapses them to any) survives the intersection of contextual signatures. Depends on the named error
   types item (triage "Plan 48 stage 4 leftovers"); broken packages only.
 
+- **Call resolution leftovers of the inference-flow port (ex plan 38 "not done", each untried, no failing test
+  known)**: `ty_call_effects()` (call.c, flow.c's getEffectsSignature) resolves a call on its own, without contextual
+  type, where tsc takes getResolvedSignature (would need the chosen signature in `CallResolution`); JSX elements
+  (`ty_resolve_jsx_element()`) aren't remembered per node like calls (`KEY_CALL_RESOLUTION`), they resolve per
+  request; SkipGenericFunctions for generic functions nested in literal arguments (`Arg.nested_generic`) applies to
+  the applicability check only: leaving them out of the first inference round lost zod's `pick([z.object, ...])` and
+  xstate inferences, because tttt marks literals from syntax where tsc skips only where a contextual signature exists
+  (checkFunctionExpressionOrObjectLiteralMethod under SkipGenericFunctions): a port marks from the contextual type.
+- **Inference context by ancestry** (ex plan 51's optional item, kept: it prevents a class of latent bugs).
+  `my outer_inference` is dynamic state saved/cleared/restored at ~15 sites in call.c; tsc's getInferenceContext
+  finds the innermost inferring call by walking up from the node. A stack of (node, OuterInference) pushed per
+  argument check and looked up by span containment would replace the save/restore sites and stop the flow engine's
+  leak (`V_LOGAUD=1` in plan 51's prototype C, see git history: 121 entries where flow narrowing evaluates an
+  unrelated type-guard call while another call infers). No baseline change expected; plan 51 stage 3's latent bug
+  (`infer_rest_variadic()`'s first pass forgetting to set `my outer_inference`) is the kind it would prevent.
+- Eager predicate inference during instantiation (`inference_mapper` -> `signature_predicate` ->
+  `ty_infer_type_predicate` checks a body; tsc reads predicates lazily). Its test (recursiveGenericSignature
+  Instantiation) passes; do it if another shows up (ex plan 42 stage 4).
+
 ## Relations, instantiation, reduction
 - **Variance measurement order (vue, `--checkers 1` only, since stable type ordering 2026-10-07)**: a spurious TS2345
   at `runtime-dom/src/directives/vModel.ts:383` (`DirectiveBinding<any, string, any>` to `DirectiveBinding<any,
@@ -185,14 +204,14 @@ fails types in both configurations.
 - (2026-10-07) node (4 `$ExpectType`, all versions): `[value: number] | [value: number]` from two declarations: tsc's
   tuple targets are keyed by their labels' declarations (getTupleTargetType's namedMemberDeclarations), tttt's by the
   label names, so the two tuples are one type and the union collapses.
-## Circularity (plan 29 stage 3 leftovers; the outer-declaration cases are plan 39)
+## Circularity (plan 29 stage 3 leftovers; the resolution stack's are in missing_checks.md)
 - recursivelyExpandingUnionNoStackoverflow lacks the TS2589 tsc reaches first (tttt's interned instantiations find the
   TS2615 cycle at once), and tsc prints the mapped type with `containsError` in mapped syntax. (Re-checked
   2026-10-07: `type N<T, K> = T | { [P in K]: N<T, K> }[K]`: tsc doesn't cache an alias instantiation while it is
   being made, so it recurses with fresh types to the instantiation depth limit before the mapped symbol finds itself
   circular; tttt interns the instance and meets it at once. Matching it means not interning in-flight alias
   instantiations, not tuning a counter: leave it.)
-- circularBaseTypes, infiniteConstraints, circularConstraintYieldsAppropriateError: plan 39 stage 3 item 5.
+- circularBaseTypes, infiniteConstraints, circularConstraintYieldsAppropriateError: missing_checks.md "Circularity".
 - TS4109 missing where tttt catches the cycle elsewhere: circularTypeArgumentsLocalAndOuterNoCrash1,
   circularlyReferentialInterfaceAccessNoCrash. limitDeepInstantiations: `Foo<"true", {}>` never reaches the limit.
   In circularTypeArgumentsLocalAndOuterNoCrash1 (`type X = NumArray<X extends {} ? number : number>`, NumArray local
@@ -232,6 +251,17 @@ fails types in both configurations.
   *fresh* interface type with its own `this`, so `use(): this` fails structurally (TS2322 "could be instantiated with
   a different subtype"). Needs a synthetic merged symbol with its own declared type. Quirk, low value.
 ## Narrowing and flow
+- **Destructured references and widening** (ex plan 49; tsc's getNarrowedTypeOfSymbol re-reads a binding element of
+  a `const` (for-of/for-in `const` too) or never-assigned parameter pattern of >= 2 elements from the *unwidened*
+  parent type when the parent is a union, even when flow narrows nothing; widening drops object-literal-ness;
+  ContainsWideningType propagates from own properties only). tttt: `ty_destructured_narrowed_type()` (flow.c),
+  `binding_element_of()` (lower.c), `ty_is_unwidened_object_literal()`. **Rule: a binding element's declared type and
+  its reference type come from the same element function, differing only in widening** (reading the reference with
+  `ty_access_reading()` once gave +51 TS18048 under noUncheckedIndexedAccess on webpack). Open audits, no failing test
+  known: (1) the other users of `Symbol.is_const` now that for-of/for-in consts have it (closure narrowing of captured
+  consts, isConstantReference, TS2588, `abstract_literals`), `using`/`await using` in for-of; (2) destructured
+  never-assigned parameters, contextually typed `({ a, b }) => ...` against a union contextual type and with a
+  default, under nosnc and eopt; (3) `scripts/displaydiff.py` `we-any`/widening buckets on destructured references.
 - dependentDestructuredVariables (types only now): narrowing destructured variables by each other (tsc's
   getCandidateDiscriminantPropertyAccess on binding elements) still differs somewhere; re-diff before working on it.
 - The JSX attribute types (`KEY_JSX_ATTRIBUTE`) and an IIFE parameter's contextual type depend on check order (the
