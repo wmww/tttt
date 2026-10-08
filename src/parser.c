@@ -6211,7 +6211,12 @@ static bool parse_type_predicate(Parser* parent, FunctionImpl* ret) {
             return parse_fail(&p);
         }
         asserts = true;
-        hop_whitespace_full(&p, true, false);
+        // (An `is` may follow on the next line, tsc's parseOptional, but the line break stays a member separator when
+        // none does: `(v: unknown): asserts v` then a property on the next line)
+        Parser q = parser(&p);
+        hop_whitespace_full(&q, true, false);
+        if (starts_with_followed_by_word_break(&q, "is")) parse_success(&q);
+        else parse_fail(&q);
     }
     TypePredicateNode predicate = { .name = name, .is_this = span_equals(name, "this"), .asserts = asserts, .param_index = -1 };
     if (hop_start_if_ends_on_word_break(&p, "is")) {
@@ -6685,10 +6690,11 @@ static bool parse_arrow_function_inner(Parser* parent, ExprCtx ctx, bool committ
 
     if (parse_function_args(&p, false, false, true, committed, ret)) {
 
-        is_definitely_function = committed || (
-            !vec_function_arg_is_empty(&ret->args) &&
-            vec_function_arg_at(&ret->args, 0)->initializer.binding.has_explicit_type
-        );
+        // (A type annotation, not a JSDoc type before the parameter: `(/** @type {T} */ [...s].sort())` in JavaScript
+        // is a parenthesized expression)
+        Binding const* first = vec_function_arg_is_empty(&ret->args) ? nullptr : &vec_function_arg_at(&ret->args, 0)->initializer.binding;
+        is_definitely_function = committed || (first && first->has_explicit_type &&
+            span_start_ptr(binding_explicit_type_span(first)) > span_start_ptr(first->content_span));
 
         if (ret->ret_explicit) {
             is_definitely_function = true;
@@ -9437,14 +9443,14 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     if (left_and_ret->tag == EXPR_UNARY_OP && !expr_is_perenthisized(left_and_ret) &&
         (left_and_ret->unary_op->op == UNARY_OP_RIGHT_PLUS_PLUS || left_and_ret->unary_op->op == UNARY_OP_RIGHT_MINUS_MINUS)
     ) {
-        goto operators;
+        goto binary_rest;
     }
     // tsc's parseUpdateExpression: a JSX element is no left-hand side expression either (`<a />.b` is missing a `;`)
     if ((left_and_ret->tag == EXPR_JSX_ELEMENT || left_and_ret->tag == EXPR_JSX_FRAGMENT) && !expr_is_perenthisized(left_and_ret) &&
         (c == '(' || c == '[' || c == '.' || c == '`' || (c == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')) ||
             (c == '!' && p.pos[1] != '=') || (c == '+' && p.pos[1] == '+') || (c == '-' && p.pos[1] == '-'))
     ) {
-        goto operators;
+        goto binary_rest;
     }
     // tsc's parseBinaryExpressionRest: `x as T` is no left-hand side expression either, a call, member access or
     // template doesn't continue it (`(x as any(1))` is missing a `)`). Not a JSDoc assertion, whose type comes first
@@ -9637,6 +9643,13 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         return parse_fail(&p);
     }
 
+    // (What tsc's parseBinaryExpressionRest continues: `x as T` and `x satisfies T`, then the operators. An update
+    // expression or JSX element only takes these, `a++ as T`)
+    bool binary_rest_only = false;
+    if (false) {
+binary_rest:
+        binary_rest_only = true;
+    }
     Span as_type_span;
     bool is_satisfies = false;
     if ((c == 'a' || c == 's') && !ctx.reject_operators && as_type_precedence > ctx.min_precedence &&
@@ -9654,6 +9667,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         );
         return parse_success(&p);
     }
+    if (binary_rest_only) goto operators;
 
     if (left_and_ret->tag == EXPR_IDENTIFIER && *p.pos == '=' && *(p.pos + 1) == '>' && !ctx.entity_name) {
         Parser sub_p = parser(&p);

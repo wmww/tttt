@@ -13,10 +13,11 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
   ./sourcesweep.py -k=-TS6305       # (a missing-diagnostic key starts with '-': attach it with '=')
   ./sourcesweep.py --names spurious # the projects of a verdict (crash, timeout, spurious, missing, both, match)
   ./sourcesweep.py --last ...       # reuse the last run's results (-k, --names) without running tttt again
+  ./sourcesweep.py --sample 4       # a fixed quarter of the projects (by a hash of the name: ./oracles.py's)
   ./sourcesweep.py --tsc [-f ...]   # regenerate tsc's cached verdicts (all projects, or -f's)
   ./sourcesweep.py --tsc-new        # tsc on the projects without a cached verdict (repos added to the manifest)
 """
-import argparse, collections, concurrent.futures, gzip, json, os, re, signal, subprocess, sys, threading, time
+import argparse, collections, concurrent.futures, gzip, json, os, re, signal, subprocess, sys, threading, time, zlib
 
 import sweep
 
@@ -116,9 +117,14 @@ def main():
     ap.add_argument('--timeout', type=int, default=120)
     ap.add_argument('--mem-gb', type=int, default=8)
     ap.add_argument('--no-build', action='store_true')
+    ap.add_argument('--sample', type=int, help='only the projects whose name hashes to 0 modulo this')
     args = ap.parse_args()
 
     projects = list_projects(args.filter)
+    global LAST
+    if args.sample:
+        projects = [p for p in projects if zlib.crc32(p.encode()) % args.sample == 0]
+        LAST = LAST.replace('.json', f'-sample{args.sample}.json')  # (Not the full run's)
     if args.tsc or args.tsc_new:
         oracle = {}
         if os.path.exists(ORACLE) and (args.filter or args.tsc_new):

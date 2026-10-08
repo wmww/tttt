@@ -91,7 +91,7 @@ def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT):
         m = DIAG.match(line)
         if m:
             diags.append([m.group(1) or '', int(m.group(2) or 0), int(m.group(3)), m.group(4)])
-        elif status == 'ok' and ('panic' in line.lower() or re.search(r'\.c:\d+: error:', line)):
+        elif status == 'ok' and re.search(r'\.c:\d+: (error|panic):', line):  # (cleat's log format)
             status = 'log_error'
     tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''
     return {'package': package, 'status': status, 'wall': wall, 'diags': diags, 'tail': tail}

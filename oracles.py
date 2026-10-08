@@ -60,9 +60,10 @@ def flagflip():
     print('flagflip: ' + (m.group(0) if m else '?'), flush=True)
 
 def sources():
-    out = run(['./sourcesweep.py', '--no-build', '-n', '5'])
+    # (A fixed quarter: all of it is ~9 minutes)
+    out = run(['./sourcesweep.py', '--no-build', '-n', '5', '--sample', '4'])
     m = re.search(r'\d+ / \d+ projects match.*', out)
-    print('sourcesweep: ' + (m.group(0) if m else '?'), flush=True)
+    print('sourcesweep (sample 4): ' + (m.group(0) if m else '?'), flush=True)
 
 ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources}
 
