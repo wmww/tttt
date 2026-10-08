@@ -735,6 +735,9 @@ Ty const* for_each_loop_statement_pattern_source_type(ForEachLoopStatement const
 // What `for (k in x)` takes: object types and type parameters (every member of a union, some member of an
 // intersection: `T & object` is what `typeof t === "object"` makes of a T). Without strict null checks also null
 static bool for_in_accepts(Checker* checker, Ty const* ty) {
+    // (tsc's isTypeAssignableToKind(NonPrimitive | InstantiableNonPrimitive): type variables, conditionals and
+    // substitutions outright, not `keyof T`, template literals and string mappings, InstantiablePrimitive)
+    if (ty->kind == TY_KEYOF || ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_STRING_MAPPING) return false;
     if (ty->flags & (TYF_ANY | TYF_OBJECT | TYF_NON_PRIMITIVE | TYF_TYPE_PARAM | TYF_DEFERRED)) return true;
     if (ty->flags & TYF_NULLABLE) return !compiler_options()->strict_null_checks;
     if (ty->kind == TY_UNION) {
