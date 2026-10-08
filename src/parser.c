@@ -9706,9 +9706,12 @@ binary_rest:
             hop_whitespace(&next_expr_p);
             ExprCtx next_expr_ctx = ctx;
             next_expr_ctx.min_precedence = imax(ctx.min_precedence, binary_op_get_precedence(BINARY_OP_GREATER));
-            // (tsc's canFollowTypeArgumentsInExpression: a `(` or a template, even on the next line, takes them)
+            // (tsc's canFollowTypeArgumentsInExpression: a `(` or a template, even on the next line, takes them, and
+            // so does a binary operator, `as` and `satisfies` too, which would otherwise read as names)
             if (next_expr_p.whitespace != WHITESPACE_NEWLINE &&
                 *next_expr_p.pos != '(' && *next_expr_p.pos != '`' &&
+                !starts_with_followed_by_word_break(&next_expr_p, "as") &&
+                !starts_with_followed_by_word_break(&next_expr_p, "satisfies") &&
                 parse_expr(&next_expr_p, next_expr_ctx, &expr)
             ) {
                 expr_drop(&expr);
