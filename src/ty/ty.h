@@ -984,6 +984,10 @@ struct Checker {
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
+    // The mappers being instantiated with, outermost first, each with what types instantiated with it inside the
+    // outermost such call gave (tsc's activeTypeMappers and activeTypeMappersCaches): see ty_instantiate()
+    struct ActiveMapper* active_mappers;
+    u32 active_mapper_count, active_mapper_cap;
     struct JsxElement const* jsx_element; // The JSX element being checked (relation errors about its attributes)
     CurrentNode current_node; // See ty_enter_node()
     // What is being resolved, innermost last (tsc's resolutionTargets): see ty_resolving_push()
@@ -1460,6 +1464,7 @@ bool ty_param_has_default(Ty const* param); // Whether it declares a default (wi
 TyMapper const* ty_mapper_new(Checker* me, TyList sources, TyList targets);
 Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper);
 Ty const* ty_instantiate_tail(Checker* me, Ty const* ty, TyMapper const* mapper); // A conditional type's branch
+void ty_active_mappers_drop(Checker* me);
 // tsc's currentNode: the statement, type node or expression being checked (checkSourceElement, checkExpression), where
 // diagnostics about what went wrong deep inside the checker go. Entering one starts the instantiation count over.
 // Returns the previous one, to give back to ty_leave_node()

@@ -950,6 +950,73 @@ static Ty const* instantiate_inner(Checker* me, Ty const* ty, TyMapper const* ma
     impossible;
 }
 
+// What the types instantiated with a mapper gave while an instantiation with it is in progress (tsc's
+// activeTypeMappersCaches): `N<N<N<P>>>` mentions its argument several times at each level (`keyof X`, `X[K]`, the alias
+// argument), and instantiating it again for each would be exponential in the nesting
+typedef struct ActiveMapper {
+    TyMapper const* mapper;
+    u64* keys; // Type id and for_constraint_root id, 0 for an empty slot
+    Ty const** values;
+    u32* used; // The slots in use, to clear only those
+    u32 cap, len;
+} ActiveMapper;
+
+#define MAX_ACTIVE_MAPPERS 64
+
+void ty_active_mappers_drop(Checker* me) {
+    for (u32 i = 0; i < my active_mapper_cap; i++) {
+        free(my active_mappers[i].keys);
+        free(my active_mappers[i].values);
+        free(my active_mappers[i].used);
+    }
+    free(my active_mappers);
+}
+
+static inline u64 active_key(Checker* me, Ty const* ty) {
+    return ((u64)(my for_constraint_root ? my for_constraint_root->id : 0) << 32 | ty->id) + 1;
+}
+
+static Ty const** active_slot(ActiveMapper* am, u64 key, bool insert) {
+    if (!am->cap) {
+        if (!insert) return nullptr;
+        am->cap = 64;
+        am->keys = calloc(am->cap, sizeof(u64));
+        am->values = malloc(sizeof(Ty const*) * am->cap);
+        am->used = malloc(sizeof(u32) * am->cap);
+        panic_if(!am->keys || !am->values || !am->used, "out of memory");
+    } else if (insert && (am->len + 1) * 4 > am->cap * 3) {
+        u32 old_cap = am->cap;
+        u64* old_keys = am->keys;
+        Ty const** old_values = am->values;
+        am->cap *= 2;
+        am->keys = calloc(am->cap, sizeof(u64));
+        am->values = malloc(sizeof(Ty const*) * am->cap);
+        free(am->used);
+        am->used = malloc(sizeof(u32) * am->cap);
+        panic_if(!am->keys || !am->values || !am->used, "out of memory");
+        u32 n = 0;
+        for (u32 i = 0; i < old_cap; i++) {
+            if (!old_keys[i]) continue;
+            u32 j = (u32)(old_keys[i] * 0x9E3779B97F4A7C15ull >> 32) & (am->cap - 1);
+            while (am->keys[j]) j = (j + 1) & (am->cap - 1);
+            am->keys[j] = old_keys[i];
+            am->values[j] = old_values[i];
+            am->used[n++] = j;
+        }
+        free(old_keys);
+        free(old_values);
+    }
+    u32 j = (u32)(key * 0x9E3779B97F4A7C15ull >> 32) & (am->cap - 1);
+    while (am->keys[j]) {
+        if (am->keys[j] == key) return &am->values[j];
+        j = (j + 1) & (am->cap - 1);
+    }
+    if (!insert) return nullptr;
+    am->keys[j] = key;
+    am->used[am->len++] = j;
+    return &am->values[j];
+}
+
 Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
     bool tail = my instantiating_tail;
     my instantiating_tail = false;
@@ -972,14 +1039,59 @@ Ty const* ty_instantiate(Checker* me, Ty const* ty, TyMapper const* mapper) {
         ty_instantiation_limit_reached(me);
         return ty_intrinsic(me, TY_ERROR);
     }
+    // A mapper already being instantiated with further out: what this type gave with it before (tsc's
+    // instantiateTypeWithAlias). The outermost call itself isn't remembered, its cache goes when it returns
+    // (Not a type parameter: that's a lookup in the mapper, cheaper than the cache)
+    i32 active = -1;
+    for (u32 i = ty->kind == TY_TYPE_PARAM ? 0 : my active_mapper_count; i-- > 0;) {
+        if (my active_mappers[i].mapper == mapper) {
+            active = (i32)i;
+            break;
+        }
+    }
+    u64 key = 0;
+    bool pushed = false;
+    if (active >= 0) {
+        key = active_key(me, ty);
+        Ty const** slot = active_slot(&my active_mappers[active], key, false);
+        if (slot) return *slot;
+    } else if (ty->kind != TY_TYPE_PARAM && my active_mapper_count < MAX_ACTIVE_MAPPERS) {
+        if (my active_mapper_count == my active_mapper_cap) {
+            u32 cap = my active_mapper_cap ? my active_mapper_cap * 2 : 8;
+            my active_mappers = realloc(my active_mappers, sizeof(ActiveMapper) * cap);
+            panic_if(!my active_mappers, "out of memory");
+            memset(my active_mappers + my active_mapper_cap, 0, sizeof(ActiveMapper) * (cap - my active_mapper_cap));
+            my active_mapper_cap = cap;
+        }
+        my active_mappers[my active_mapper_count++].mapper = mapper;
+        pushed = true;
+    }
     my instantiation_depth++;
     my instantiation_count++;
     // Tail calls are counted per conditional type being resolved (tsc's tailCount is local to getConditionalType): what
     // one instantiates along the way starts over
     u32 tail_count = my instantiation_tail_count;
     my instantiation_tail_count = 0;
+    u32 limit_hits = my instantiation_limit_hits;
     Ty const* ret = instantiate_inner(me, ty, mapper);
     my instantiation_tail_count = tail_count;
     my instantiation_depth--;
+    if (pushed) {
+        ActiveMapper* am = &my active_mappers[--my active_mapper_count];
+        am->mapper = nullptr;
+        if (am->cap > 4096) { // (A big one isn't cleared at every outermost instantiation)
+            free(am->keys);
+            free(am->values);
+            free(am->used);
+            *am = (ActiveMapper){0};
+        } else {
+            for (u32 i = 0; i < am->len; i++) am->keys[am->used[i]] = 0;
+            am->len = 0;
+        }
+    } else if (active >= 0 && my instantiation_limit_hits == limit_hits) {
+        // (Not one cut short by the limits: whoever asks again runs into them too, and the conditional instances on
+        // the way know theirs aren't what they are, instantiate_conditional())
+        *active_slot(&my active_mappers[active], key, true) = ret;
+    }
     return ret;
 }

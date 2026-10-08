@@ -433,6 +433,7 @@ void checker_drop(Checker* me) {
     free(my links.entries);
     free(my intersection_props.entries);
     for (u32 i = 0; i < TY_RELATION_COUNT; i++) relation_cache_drop(&my relations[i]);
+    ty_active_mappers_drop(me);
     free(my flow_loops);
     free(my resolving);
     free(my flow_shared);
