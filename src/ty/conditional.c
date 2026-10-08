@@ -457,11 +457,8 @@ static TyMapper const* conditional_infer(Checker* me, Ty const* check_type, Ty c
             }
             constraint = ty_instantiate(me, constraint, constraint_mapper);
         }
-        // HACK: tsc also falls back to a constraint that stays generic (`T3<X> = "a.b" extends `${infer S extends
-        // keyof X & string}.${string}` ? S : 0` is 0 for T3<{}> in tsc, "a" here: it resolves while X is generic).
-        // Doing it made valibot's ValidPath<TInput, TPath> iterate to a type mentioning LazyPath's own TValue
-        // (probe test/probes/plan19/zod/ark_infer_constraint.ts has both)
-        if (constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) continue;
+        // (Also a constraint that stays generic, like tsc: `T3<X> = "a.b" extends `${infer S extends keyof X &
+        // string}.${string}` ? S : 0` is 0 for T3<{}>; test/probes/plan19/zod/ark_infer_constraint.ts)
         // (Nothing inferred is the constraint without asking: unknown is assignable to `{}` without
         // strictNullChecks, tsc's getInferredType doesn't compare then)
         if (none[i] || !ty_is_related(me, results[i], constraint, TY_RELATION_ASSIGNABLE)) checked[i] = constraint;
