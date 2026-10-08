@@ -767,6 +767,16 @@ void initialized_binding_lookup_names_parameter(InitializedBinding* me, Scope* n
     flow->parameter_function_scope = saved_scope;
 }
 
+// A reference doesn't ask for its contextual type (tsc's checkIdentifier and checkPropertyAccessExpression, but for
+// getNarrowableTypeForReference's hasContextualTypeWithNoGenericTypes when its type is generic): the type a pattern
+// implies isn't made then, nor are its defaults checked without a context (`const { f = (d) => d } = o` takes f's
+// contextual type from o's property, not from an any of the pattern's)
+static bool initializer_ignores_context(Checker* checker, Expr const* value) {
+    if (value->tag != EXPR_IDENTIFIER && value->tag != EXPR_PROPERTY) return false;
+    if (value->tag == EXPR_PROPERTY && value->property->form == PROPERTY_EXPR_BRACKET) return false;
+    return !(ty_expr_type(checker, (Expr*)value)->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+}
+
 // The initializer, checked with the type annotation (if any) as its contextual type
 static Ty const* initialized_binding_check_value(InitializedBinding* me) {
     Checker* checker = current_checker;
@@ -777,8 +787,9 @@ static Ty const* initialized_binding_check_value(InitializedBinding* me) {
         // A parameter's contextual type (an immediately invoked function's argument: tsc's
         // getContextuallyTypedParameterType), before what its pattern implies
         contextual = ty_contextual_parameter_type(checker, me);
-    } else if ((my binding.tag == BINDING_OBJECT && vec_object_binding_item_size(&my binding.object)) ||
-        (my binding.tag == BINDING_ARRAY && vec_binding_size(&my binding.array))
+    } else if (((my binding.tag == BINDING_OBJECT && vec_object_binding_item_size(&my binding.object)) ||
+        (my binding.tag == BINDING_ARRAY && vec_binding_size(&my binding.array))) &&
+        !initializer_ignores_context(checker, initialized_binding_value(me))
     ) {
         // Else what a pattern implies (tsc's getContextualTypeForInitializerExpression): `[1, "a"]` is a tuple there
         contextual = ty_binding_pattern_type(checker, &my binding, true);
