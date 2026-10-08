@@ -6456,20 +6456,22 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
         u32 best_count = 0;
         for (u32 i = 0; i < types.len; i++) {
             Ty const* t = types.data[i];
+            // (`keyof NoInfer<X>` is `NoInfer<keyof X>`, X's keys: tsc's getIndexType)
+            Ty const* keyed = ty_is_no_infer(t) ? t->substitution.base : t;
             // A generic member: the source's keys `&` its `keyof` is a union of intersections, none a unit type, when
             // the source has several keys (one is an intersection, no match): it matches with no overlap, if nothing
             // before overlapped
-            if (t->kind == TY_TYPE_PARAM || t->kind == TY_INDEXED || t->kind == TY_CONDITIONAL || t->kind == TY_SUBSTITUTION) {
+            if (keyed->kind == TY_TYPE_PARAM || keyed->kind == TY_INDEXED || keyed->kind == TY_CONDITIONAL || keyed->kind == TY_SUBSTITUTION) {
                 if ((prop_count >= 2 || index_keys) && !best_count) best = t;
                 continue;
             }
-            if (!(t->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
+            if (!(keyed->flags & (TYF_OBJECT | TYF_INTERSECTION))) continue;
             u32 count = 0;
             for (u32 p = 0; p < prop_count; p++) {
                 Atom const* name = props[p].prop->name;
                 // (Its own: `keyof` has no Object members)
-                count += find_prop_in(me, apparent_type(me, t), name, 0, true).found ||
-                    ty_applicable_index_info(me, t, ty_prop_name_literal(me, name));
+                count += find_prop_in(me, apparent_type(me, keyed), name, 0, true).found ||
+                    ty_applicable_index_info(me, keyed, ty_prop_name_literal(me, name));
             }
             if (count && count >= best_count) {
                 best = t;
