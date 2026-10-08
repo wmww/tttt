@@ -9335,7 +9335,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
     TemplateType template = { .texts = vec_cstr_init(), .types = vec_type_init(), .type_spans = vec_span_init() };
     cstr text = cstr_null;
     bool missing_tail = false; // As in parse_template()
-    while (*p.pos && *p.pos != '`') {
+    while ((*p.pos || nul_inside_file(&p)) && *p.pos != '`') {
         if (*p.pos == '\\' && !p.pos[1]) {
             p.pos++;
             parse_error(&p, span_from_pos(&p), 1126, "Unexpected end of text.");
@@ -9364,7 +9364,7 @@ static bool parse_template_type(Parser* parent, TypeNode* ret) {
         } else {
             const char* run = p.pos;
             p.pos++;
-            while (*p.pos && *p.pos != '`' && *p.pos != '\\' && *p.pos != '$' && *p.pos != '\r') p.pos++;
+            while ((*p.pos || nul_inside_file(&p)) && *p.pos != '`' && *p.pos != '\\' && *p.pos != '$' && *p.pos != '\r') p.pos++;
             cstr_append_n(&text, run, p.pos - run);
         }
     }
@@ -9858,8 +9858,8 @@ static bool parse_template(Parser* parent, VecExpr* ret, VecCStr* texts) {
     isize segment_errors = vec_error_size(&p.shared->errors);
     // A missing `}` ends the template (tsc's parseTemplateSpan: a missing template tail)
     bool missing_tail = false;
-    while (*p.pos && *p.pos != '`') {
-        if (*p.pos == '\\' && !p.pos[1]) {
+    while ((*p.pos || nul_inside_file(&p)) && *p.pos != '`') {
+        if (*p.pos == '\\' && !p.pos[1] && !nul_inside_file(&p)) {
             p.pos++;
             parse_error(&p, span_from_pos(&p), 1126, "Unexpected end of text.");
         } else if (*p.pos == '\\') {
