@@ -160,7 +160,7 @@ static i64 file_size_of(void* ctx, csview path) {
     return stat(buf, &info) ? 0 : (i64)info.st_size;
 }
 
-// The tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line
+// The tsconfig if there is one, then whatever was on the command line
 static_failable apply_compiler_options(Options const* opts, Output* out, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
     if (config.size) {
@@ -190,8 +190,6 @@ static_failable apply_compiler_options(Options const* opts, Output* out, csview 
         }
         tsconfig_diagnostics_drop(&diagnostics);
         c_drop(cstr, &absolute, &relative, &cwd);
-    } else {
-        ignore compiler_options_set(options, c_sv("strict"), c_sv("true"));
     }
     for (intptr_t i = 0; i < opts->option_count; i++) {
         csview name = csview_from(opts->option_names[i]);
