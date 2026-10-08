@@ -230,7 +230,6 @@ src` finds the code-side markers; every significant one has an entry here.
   `!symbol->is_assigned`; "outer variable assumed initialized" decided at the start node (`Symbol.flow_start`).
 - `ty_flow_expr_type()` loop results are cached per back-edge walk by generation in `Checker.links`: stale generations
   stay until the checker dies. `LazyMemo.hits`: 8 re-entrant evaluations, then the error type (runaway guard).
-- `prop_has_explicit_type()` (HACK): a mapped type's property counts as explicitly typed.
 - `ty_infer_type_predicate`: synthetic condition nodes and a reference `Expr` per unannotated signature.
 - Assertion signatures: a callee name without explicit type is silently not an assertion (no TS2775/TS2776).
 

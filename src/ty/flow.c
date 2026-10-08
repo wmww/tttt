@@ -1214,9 +1214,15 @@ static bool symbol_has_explicit_type(Symbol const* symbol) {
 }
 
 static bool prop_has_explicit_type(Prop const* prop) {
+    // A mapped type's property asks the property it was mapped from (tsc's syntheticOrigin), none: not explicit
+    for (Prop const* p = prop; p; p = p->target) {
+        if (!p->mapped) continue;
+        Prop const* origin = prop_decl_rare(p->decl)->mapped_from;
+        return origin && prop_has_explicit_type(origin);
+    }
     while (prop->target) prop = prop->target;
-    // HACK: the template of a mapped type (`Readonly<Services>`), where tsc asks the property it was mapped from
-    if (!prop->name) return true;
+    if (!prop->name) return false;
+    if (prop->flags & PROP_METHOD) return true; // (tsc: a method's type is always known)
     if (prop->decl->symbol) return symbol_has_explicit_type(prop->decl->symbol);
     if (prop->flags & (PROP_GETTER | PROP_SETTER)) return prop->decl->function->ret_explicit;
     return prop->decl->node || prop->decl->function || prop->decl->overload_count;
@@ -1302,6 +1308,8 @@ static Span dotted_name_declaration(Checker* me, Expr const* expr) {
     object = ty_apparent_type(me, object);
     if (!(object->flags & TYF_OBJECT) && object->kind != TY_INTERSECTION) return span_null;
     Prop const* prop = object->kind == TY_INTERSECTION ? ty_property_of_type(me, object, name) : ty_get_prop(me, object, name);
+    // (A mapped type's property has no value declaration in tsc: no related span)
+    for (Prop const* p = prop; p; p = p->target) if (p->mapped) return span_null;
     while (prop && prop->target && !span_valid(prop->decl->name_span)) prop = prop->target;
     return prop ? prop->decl->name_span : span_null;
 }
@@ -2052,7 +2060,6 @@ static Ty const* narrow_by_equality(FlowQuery* q, Ty const* type, BinaryOp op, E
     if (type->flags & TYF_ANY) return type;
     if (op == BINARY_OP_NOT_EQUAL || op == BINARY_OP_TRIPLE_NOT_EQUAL) assume_true = !assume_true;
     Ty const* value_type = ty_flow_expr_type(me, value);
-    // TODO: tsc narrows by the regular type of a literal here
     bool double_equals = op == BINARY_OP_DOUBLE_EQUAL || op == BINARY_OP_NOT_EQUAL;
     if (value_type->flags & TYF_NULLABLE && value_type->kind != TY_UNION) {
         if (!compiler_options()->strict_null_checks) return type;
