@@ -1473,6 +1473,16 @@ static Ty const* empty_object_from_string_literals(Checker* me, Ty const* ty) {
 
 // tsc's isDeeplyNestedType(type, stack, depth, 2) as inference's invokeOnce asks it: a type without a recursion identity
 // of its own (`any`) is its own identity there
+// A pair whose walk was cut short: seen again, it is circular too (tsc's invokeOnce visited status)
+static void record_circular(Inference* inf, Ty const* source, Ty const* target) {
+    if (inf->circular_len == inf->circular_cap) {
+        inf->circular_cap = inf->circular_cap ? inf->circular_cap * 2 : 8;
+        inf->circular = realloc(inf->circular, sizeof(u64) * inf->circular_cap);
+        panic_if(!inf->circular, "out of memory");
+    }
+    inf->circular[inf->circular_len++] = ((u64)source->id << 32) | target->id;
+}
+
 static bool infer_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth) {
     if (ty_is_deeply_nested(me, ty, stack, depth, 2)) return true;
     if (ty->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_DEFERRED)) return false;
@@ -1571,15 +1581,27 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
     } else if (target->kind == TY_CONDITIONAL) {
         // Once per pair, and not while both sides keep nesting (tsc's invokeOnce around inferToConditionalType): `any`
         // to a recursive conditional alias (`ElementsType<Tail, [...]>`) would walk every level of it
+        // (A pair seen before passes on whether its walk was cut short, tsc's invokeOnce visited status)
         if (!visited_add(inf, source, target) || inf->object_depth >= INFER_MAX_DEPTH) {
+            for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
+                inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
+            }
+            u64 key = ((u64)source->id << 32) | target->id;
+            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = inf->circular[i] == key;
             inf->depth--;
             return;
         }
+        bool outer_circularity = inf->circularity;
+        inf->circularity = false;
         unsigned saved_expanding = inf->expanding;
         if (!(inf->expanding & 1) && infer_deeply_nested(me, source, inf->object_sources, inf->object_depth)) inf->expanding |= 1;
         if (!(inf->expanding & 2) && infer_deeply_nested(me, target, inf->object_targets, inf->object_depth)) inf->expanding |= 2;
         if (inf->expanding == 3) {
+            // Cut short: a circularity (tsc's InferencePriority.Circularity), which keeps the sources that led here from
+            // counting as used up for a naked type parameter beside it
             inf->expanding = saved_expanding;
+            record_circular(inf, source, target);
+            inf->circularity = true;
             inf->depth--;
             return;
         }
@@ -1615,6 +1637,8 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
         }
         inf->object_depth--;
         inf->expanding = saved_expanding;
+        if (inf->circularity) record_circular(inf, source, target);
+        inf->circularity |= outer_circularity;
     } else if (target->kind == TY_UNION) {
         infer_to_union(me, inf, source, target);
     } else if (target->kind == TY_INTERSECTION) {
@@ -1735,14 +1759,7 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 inf->circularity = true;
             }
             inf->expanding = saved_expanding;
-            if (inf->circularity) {
-                if (inf->circular_len == inf->circular_cap) {
-                    inf->circular_cap = inf->circular_cap ? inf->circular_cap * 2 : 8;
-                    inf->circular = realloc(inf->circular, sizeof(u64) * inf->circular_cap);
-                    panic_if(!inf->circular, "out of memory");
-                }
-                inf->circular[inf->circular_len++] = ((u64)source->id << 32) | target->id;
-            }
+            if (inf->circularity) record_circular(inf, source, target);
             inf->circularity |= outer_circularity;
         }
     }
