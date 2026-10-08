@@ -348,6 +348,19 @@ bool program_report_no_inputs(Program* me) {
     } else if (!references) {
         cstr include = config_string_list(json_get(&my config_json, "include"), "[\"**/*\"]");
         cstr exclude = config_string_list(json_get(&my config_json, "exclude"), "[]");
+        if (!json_get(&my config_json, "exclude")) {
+            // (The outputs are excluded by default: tsc's getConfigFileSpecs)
+            cstr_assign(&exclude, "[");
+            csview dirs[] = { cstr_sv(&my options.out_dir), cstr_sv(&my options.declaration_dir) };
+            for (u32 i = 0; i < c_arraylen(dirs); i++) {
+                if (!dirs[i].size) continue;
+                cstr absolute = absolute_path_of(program_cwd(me), dirs[i]);
+                cstr item = cstr_d(cstr_size(&exclude) > 1 ? "," : "", "\"", absolute, "\"");
+                cstr_append_s(&exclude, item);
+                c_drop(cstr, &item, &absolute);
+            }
+            cstr_append_lit(&exclude, "]");
+        }
         error_ctx_global_error_d(my errs, 18003, "No inputs were found in config file '", config,
             "'. Specified 'include' paths were '", include, "' and 'exclude' paths were '", exclude, "'.");
         c_drop(cstr, &include, &exclude);
@@ -2070,6 +2083,9 @@ static cstr computed_common_dir(Program* me, csview cwd) {
         }
         cstr_drop(&absolute);
     }
+    // (Nothing emitted, all declaration files or no files at all: tsc's computeCommonSourceDirectoryOfFilenames
+    // says the current directory)
+    if (first) cstr_assign_sv(&common_dir, cwd);
     return common_dir;
 }
 
@@ -2671,14 +2687,18 @@ static void program_resolve_walk(Program* me) {
     free(shards);
 }
 
+void program_verify_options(Program* me) {
+    program_validate_options(me);
+    program_verify_module_kind(me);
+    program_verify_inferred_root_dir(me);
+}
+
 void program_resolve_names(Program* me) {
     CHANGE_PHASE(PROGRAM_PHASE_LOADING, PROGRAM_PHASE_RESOLVING_NAMES);
     // Loading is over: what the pool parsed for nothing goes
     load_pool_destroy(my pool);
     my pool = nullptr;
-    program_validate_options(me);
-    program_verify_module_kind(me);
-    program_verify_inferred_root_dir(me);
+    program_verify_options(me);
     program_verify_emit_paths(me);
     program_verify_project_files(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;

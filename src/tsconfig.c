@@ -661,6 +661,11 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         str_list_push(&patterns.exclude, cstr_sv(&pattern));
         cstr_drop(&pattern);
     }
+    // Without an `exclude`, the outputs are (tsc's getConfigFileSpecs: outDir and declarationDir)
+    if (!my exclude) {
+        if (cstr_size(&my options->out_dir)) str_list_push(&patterns.exclude, cstr_sv(&my options->out_dir));
+        if (cstr_size(&my options->declaration_dir)) str_list_push(&patterns.exclude, cstr_sv(&my options->declaration_dir));
+    }
 
     // One walk per distinct base directory, skipping bases inside one already walked
     StrList found = {0};

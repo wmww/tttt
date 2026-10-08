@@ -340,6 +340,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (!has_inputs) {
         if (config.size) verify_references(program, projects, project, false);
         bool no_inputs = config.size && program_report_no_inputs(program);
+        if (config.size) program_verify_options(program);
         // A solution config: only references (tsc says nothing, and builds nothing without -b)
         bool solution = config.size && project_set_at(projects, project)->reference_count;
         intptr_t config_errors = report_errors(out, errs);
