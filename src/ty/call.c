@@ -3354,6 +3354,20 @@ static bool has_predicate_or_declared_never(Checker* me, Signature const* sig) {
     return signature_predicate(me, sig) || signature_declared_never(sig);
 }
 
+// The effects of the signature a call resolved to, its predicate instantiated
+static CallEffects chosen_effects(Checker* me, Candidate const* chosen) {
+    CallEffects none = {0};
+    if (!chosen->sig || !has_predicate_or_declared_never(me, chosen->sig)) return none;
+    CallEffects ret = { .returns_never = signature_declared_never(chosen->sig) };
+    TyPredicate const* predicate = signature_predicate(me, chosen->sig);
+    if (predicate) {
+        ret.predicate = *predicate;
+        ret.has_predicate = true;
+        if (predicate->type && chosen->mapper) ret.predicate.type = ty_instantiate(me, predicate->type, chosen->mapper);
+    }
+    return ret;
+}
+
 // What control flow analysis wants to know about a call (tsc's getEffectsSignature()): the type predicate of the
 // signature it resolves to, and whether that is declared to return `never`. A callee with one signature that isn't
 // generic is that signature whatever the arguments are; anything else is resolved, which checks the arguments: the
@@ -3408,11 +3422,23 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
         // A method of a union of arrays is that of an array of their elements (getSignaturesOfType's
         // arrayFallbackSignatures): `(A[] | B[]).every(isA)` narrows by `this is S[]`
         u32 count = 0;
-        if (!ty_union_signatures(me, apparent->composite.types, false, &count)) {
+        Signature* const* union_sigs = ty_union_signatures(me, apparent->composite.types, false, &count);
+        if (!union_sigs) {
             Ty const* fallback = array_fallback_callee(me, call);
             if (fallback && fallback->kind != TY_UNION) return ty_call_effects(me, fallback, call);
+            return effects;
         }
-        return effects;
+        // Generic union signatures (members with one generic method each, `this is Map[K]`): the signature the call
+        // resolves to, its predicate instantiated (tsc's getEffectsSignature: getResolvedSignature)
+        bool generic_predicate = false;
+        for (u32 i = 0; i < count && !generic_predicate; i++) {
+            signature_resolve(me, union_sigs[i]);
+            generic_predicate = union_sigs[i]->type_params.len && has_predicate_or_declared_never(me, union_sigs[i]);
+        }
+        if (!generic_predicate) return effects;
+        Candidate chosen = {0};
+        resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen, nullptr);
+        return chosen_effects(me, &chosen);
     }
     // (getSignaturesOfType: an intersection's are its members')
     if ((apparent->flags & TYF_ANY) || !(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return none;
@@ -3428,15 +3454,7 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
         if (!some) return none;
         resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen, nullptr);
     }
-    if (!chosen.sig || !has_predicate_or_declared_never(me, chosen.sig)) return none;
-    CallEffects ret = { .returns_never = signature_declared_never(chosen.sig) };
-    TyPredicate const* predicate = signature_predicate(me, chosen.sig);
-    if (predicate) {
-        ret.predicate = *predicate;
-        ret.has_predicate = true;
-        if (predicate->type && chosen.mapper) ret.predicate.type = ty_instantiate(me, predicate->type, chosen.mapper);
-    }
-    return ret;
+    return chosen_effects(me, &chosen);
 }
 
 // `import("./a")`: a promise of the module (of what its `export =` names)
