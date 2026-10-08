@@ -35,3 +35,7 @@ to plan 19. The commit message has the numbers.
   +TS2344 are `expectTypeOf`-style assertion failures caused by other wrong types (react-navigation static.check.tsx,
   query *.test-d.ts): look at them per test after the other keys move. Not looked at: svelte's JS sources (JSDoc
   generics, `Value<unknown>` to `Source<V>`), dokploy's react-hook-form `Control<...>` mismatches.
+  discord.js root project `setInterval(...)` typed bun-types' `Timer` where @types/node's `Timeout` is expected (TS2322
+  REST.ts:100, TS2345 SpeakingMap.ts:57): which global overload comes first is the program's file order (libs, root
+  files and their imports, automatic types), a program-level question, not reduced. (The rest of this entry: agent tc,
+  see agents/bugs/sourcesweep_checker.md.)

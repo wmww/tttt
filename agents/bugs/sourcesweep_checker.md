@@ -51,3 +51,29 @@ parameter types are resolved when a call in the constructor first needs them, so
 "Did you mean 'TaskState'?" (TS2552) before line 48's names use up the budget. tttt resolves names in the binder, in
 source order (suggestion_count_order() approximates some of tsc's order), so line 55 is TS2304. Architectural; only
 worth it if more cases turn up.
+
+## Agent tc leftovers (2026-10-08, triage entry 10)
+Fixed this round: mikro-orm `{ ...where }` TS2698 (intersection base constraints in isValidSpreadType), the
+query/react-navigation `expectTypeOf` +TS2344 (void-optional rest tuples, arity before instantiation, instantiation
+expression defaults, union effects signatures), svelte's JSDoc-typed class field context and destructuring defaults.
+solid `component.type-tests.ts:100` already matched at this base. Left:
+- **svelte `clone.js:76/96/116` (+TS2345, 3 projects)**: `Map<T, Snapshot<T>>` not assignable to itself, where
+  `types.d.ts` has `export type Snapshot<T> = ReturnType<typeof $state.snapshot<T>>` and `$state.Snapshot` (ambient
+  namespace) is the big recursive conditional. Reduced to three files (only with the full conditional, every branch;
+  one file passes): `ambient.d.ts` with svelte's `declare namespace $state { Primitive, Cloneable, NonReactive,
+  Snapshot, function snapshot<T>(state: T): Snapshot<T> }`, `types.d.ts` as above, `q.ts`:
+  `import type { Snapshot } from './types'; function g<T>(value: T, cloned: Map<T, Snapshot<T>>) { g(value, cloned); }`.
+  The source prints as `import("types").Snapshot<T>` (so the ReturnType conditional stayed deferred: lower.c's
+  "deferred instance of the conditional type it declares" realias), the target as `$state.Snapshot<T>` (resolved
+  through the inference mapper). Suspect ty_conditional_resolve's definitely_related on `(state: T) => Snapshot<T>`
+  vs the inferred `(...args: any) => Snapshot<T>` failing/deferring on the first, uninstantiated evaluation (`mentions`
+  path), maybe a circularity guard while $state.Snapshot is still being lowered. tsc resolves it immediately (the
+  check type is a non-generic function type).
+- svelte `deriveds.js:352`, `runtime.js:672` (`unknown` to `T`/`V`), `sources.js:90` (`Value<unknown>` to
+  `Source<V>`), `Identifier.js:50` (`name += ...` string to the runes union), `builders.js:376` (`Value` to an
+  estree union): JS/JSDoc, not reduced.
+- react-navigation `Link.native.tsx:15` +TS2339 `'in' does not exist on type 'Props<ParamList, RouteName>'` (32
+  diags, 3 projects) and its +TS2578 unused `@ts-expect-error`, `Header.tsx:98` +TS7006: not looked at.
+- query `mutation.test.tsx:1264`, svelte-query `queryOptions.test-d.ts:90` (+TS2554 expected 1 argument, got 0): not
+  looked at; probably the void-parameter optionality on another path (getMinArgumentCount in call resolution).
+- dokploy's react-hook-form `Control<...>` mismatches: not looked at.
