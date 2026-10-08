@@ -2229,8 +2229,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
     }
     Ty const* declared_type = ty_identifier_reference_type(me, identifier);
     Ty const* type = narrowable_type(me, identifier->constraint_position, identifier_element_index(identifier), declared_type, contextual);
-    // (What is assigned along the way is narrowable the same way: tsc's getInitialOrAssignedType)
-    bool substituted = type != declared_type;
+    // What is assigned along the way is narrowable too (tsc's getInitialOrAssignedType), whether or not the declared type
+    // was: tsc asks getNarrowableTypeForReference there without the check mode, so not in an inference either
+    bool substituted = type != declared_type || identifier->constraint_position ||
+        (contextual && !is_generic_type(me, contextual));
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         if (issue_only) return nullptr;
