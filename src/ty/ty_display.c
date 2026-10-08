@@ -2262,7 +2262,6 @@ static bool maps_merged_type_param(Checker* me, Signature const* sig, Signature 
 }
 
 static void display_signature_inner(Checker* me, TyDisplay d, Signature const* sig, char const* separator, bool with_new) {
-    d.widen_literals = false;
     signature_resolve(me, sig);
     if (with_new) {
         // (Only a constructor type is: tsc's signatureToSignatureDeclarationHelper gives a construct signature member,
@@ -3333,18 +3332,11 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
         return;
     }
 
-    // Widening only reaches through the structure of expression types (temporaries lowered from the legacy checker)
-    // (JSX attributes are typed like tsc already: widened values, and `true` for an attribute without one)
-    if (d.widen_literals && !(ty->kind == TY_LITERAL || ty->kind == TY_UNION)) {
-        d.widen_literals = false;
-    }
-
     if (ty_is_enum_union(ty)) {
         out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         return;
     }
     if (shows_alias(d, ty)) {
-        d.widen_literals = false; // (A union shown by its alias: its type arguments are as written)
         out_symbol_name(me, d, ty->alias, SYMBOL_TYPE);
         if (ty->alias_args.len) {
             out_lit(d, "<");
@@ -3365,12 +3357,6 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             break;
 
         case TY_LITERAL:
-            if (d.widen_literals && !ty->literal.enum_decl) {
-                TyDisplay widened = d;
-                widened.widen_literals = false;
-                ty_display(me, widened, ty_base_type_of_literal(me, ty));
-                break;
-            }
             if (ty->flags & TYF_UNIQUE_ES_SYMBOL) {
                 // `unique symbol` (tsc's AllowUniqueESSymbolType, in typeToString's default flags) unless asked to name
                 // the symbol, as an annotation that is reused does (it says `typeof sym`: the one that says `unique

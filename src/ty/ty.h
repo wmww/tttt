@@ -2249,9 +2249,6 @@ typedef struct TyDisplay {
     u32 depth;
     TyDisplayVisit const* visiting; // The anonymous types being printed further up the stack
     TyDisplayReverse const* reverse_stack;
-    // Literal types inside object types that came from expressions print as their primitive: tsc widens the
-    // properties of an object literal when it types it, the legacy checker only when it reports. HACK
-    bool widen_literals;
     // Where the type is printed from (tsc's enclosingDeclaration): names are qualified as far as needed to be reachable
     // from there (`T` inside namespace N, `N.T` outside, an import's name, `import("a").T` when nothing names it).
     // Null: the bare name (tsc's lookupSymbolChainWorker without an enclosing declaration: what error messages show),

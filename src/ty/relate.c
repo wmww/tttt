@@ -387,7 +387,7 @@ static bool enums_related(Checker* me, Symbol const* source, Symbol const* targe
 
 static inline bool same_literal_value(Ty const* s, Ty const* t);
 [[gnu::cold]] static void report_line(RelationState* st, unsigned ts_code, cstr message);
-[[gnu::cold]] static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen);
+[[gnu::cold]] static cstr display_fully_qualified(Checker* me, Ty const* ty);
 
 // An enum member's value as a message shows it, `"a"` or `1`: the plain literal of the same value
 static cstr enum_value_display(Checker* me, Ty const* member) {
@@ -416,7 +416,7 @@ static void report_enums_unrelated(Checker* me, RelationState* st, Symbol const*
             if (!member || i->computed_name) continue;
             Symbol const* other = symbol_get_export(target, member->name);
             if (!other || !(other->flags & SYMBOL_ENUM_MEMBER)) {
-                cstr target_str = display_fully_qualified(me, ty_declared_type_of(me, target), false);
+                cstr target_str = display_fully_qualified(me, ty_declared_type_of(me, target));
                 report_line(st, 2324, cstr_d("Property '", member->name, "' is missing in type '", target_str, "'."));
                 cstr_drop(&target_str);
                 return;
@@ -617,16 +617,16 @@ static void report_truncate(RelationState* st, isize_t len) {
     while (vec_ty_report_line_size(&st->lines) > len) vec_ty_report_line_pop(&st->lines); // drops the line
 }
 
-[[gnu::cold]] static cstr display_for_report(Checker* me, Ty const* ty, bool widen) {
+[[gnu::cold]] static cstr display_for_report(Checker* me, Ty const* ty) {
     cstr ret = cstr_null;
     Scope const* enclosing = ty_report_enclosing(me, ty);
-    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .enclosing = enclosing, .reuse_nodes = enclosing != nullptr }, ty);
+    ty_display(me, (TyDisplay){ .target = &ret, .enclosing = enclosing, .reuse_nodes = enclosing != nullptr }, ty);
     return ret;
 }
 
-[[gnu::cold]] static cstr display_fully_qualified(Checker* me, Ty const* ty, bool widen) {
+[[gnu::cold]] static cstr display_fully_qualified(Checker* me, Ty const* ty) {
     cstr ret = cstr_null;
-    ty_display(me, (TyDisplay){ .target = &ret, .widen_literals = widen, .fully_qualified = true, .typeof_unique_symbols = true }, ty);
+    ty_display(me, (TyDisplay){ .target = &ret, .fully_qualified = true, .typeof_unique_symbols = true }, ty);
     return ret;
 }
 
@@ -710,13 +710,13 @@ static bool is_literal_type(Ty const* ty) {
     // A widened literal source is shown by tsc's getTypeNameForErrorDisplay (reportRelationError's generalizedSource):
     // fully qualified, a unique symbol as `typeof sym`
     // (Only a source made of literals is generalized: one with other members is shown as is)
-    *source_out = widen && is_literal_type(source) ? display_fully_qualified(me, source, widen) :
-        display_for_report(me, source, false);
-    *target_out = display_for_report(me, target, false);
+    *source_out = widen && is_literal_type(source) ? display_fully_qualified(me, source) :
+        display_for_report(me, source);
+    *target_out = display_for_report(me, target);
     if (!cstr_eq(source_out, target_out)) return;
     c_drop(cstr, source_out, target_out);
-    *source_out = display_fully_qualified(me, source, widen && is_literal_type(source));
-    *target_out = display_fully_qualified(me, target, false);
+    *source_out = display_fully_qualified(me, source);
+    *target_out = display_fully_qualified(me, target);
 }
 
 // Whether a literal source is shown widened: not against `never` (tsc wants `assertNever(x)` errors to show x as is)
@@ -935,8 +935,8 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
     bool wrapper_case = (source->flags & TYF_OBJECT) && ((target->flags & primitive) || ty_is_enum_union(target));
     for (u32 i = 0; i < c_arraylen(wrappers) && wrapper_case; i++) {
         if (source != global_type(me, wrappers[i].wrapper) || target != ty_intrinsic(me, wrappers[i].primitive)) continue;
-        cstr source_str = display_for_report(me, source, false);
-        cstr target_str = display_for_report(me, target, false);
+        cstr source_str = display_for_report(me, source);
+        cstr target_str = display_for_report(me, target);
         report_line(st, 2692, cstr_d("'", target_str, "' is a primitive, but '", source_str, "' is a wrapper object. Prefer using '",
             target_str, "' when possible."));
         c_drop(cstr, &source_str, &target_str);
@@ -956,8 +956,8 @@ static void report_relation_error(Checker* me, RelationState* st, Ty const* sour
         bool readonly = shape ? shape->readonly :
             source->kind == TY_REFERENCE && source->reference.target == my readonly_array_target;
         if (readonly) {
-            cstr source_str = display_for_report(me, source, false);
-            cstr target_str = display_for_report(me, target, false);
+            cstr source_str = display_for_report(me, source);
+            cstr target_str = display_for_report(me, target);
             report_line(st, 4104, cstr_d(
                 "The type '", source_str, "' is 'readonly' and cannot be assigned to the mutable type '", target_str, "'."
             ));
@@ -1096,8 +1096,8 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
         bool generalized_fits = constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
         bool original_fits = constraint && !generalized_fits && ty_is_related(me, source, constraint, TY_RELATION_ASSIGNABLE);
         if (generalized_fits || original_fits) {
-            cstr shown = original_fits ? display_for_report(me, source, false) : cstr_clone(source_str);
-            cstr constraint_str = display_for_report(me, constraint, false);
+            cstr shown = original_fits ? display_for_report(me, source) : cstr_clone(source_str);
+            cstr constraint_str = display_for_report(me, constraint);
             report_line(st, 5075, cstr_d(
                 "'", shown, "' is assignable to the constraint of type '", target_str, "', but '", target_str,
                 "' could be instantiated with a different subtype of constraint '", constraint_str, "'."
@@ -1149,7 +1149,7 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
             free(candidates);
         }
         if (suggested) {
-            cstr suggested_str = display_for_report(me, suggested, false);
+            cstr suggested_str = display_for_report(me, suggested);
             report_line(st, 2820, cstr_d("Type '", source_str, "' is not assignable to type '", target_str, "'. Did you mean '",
                 suggested_str, "'?"));
             cstr_drop(&suggested_str);
@@ -1970,8 +1970,8 @@ static Ternary compare_signatures(
     }
     if (!related) related = is_related_to(me, st, source_return, target_return, report);
     if (!related && report && return_code) {
-        cstr source_str = display_for_report(me, source_return, false);
-        cstr target_str = display_for_report(me, target_return, false);
+        cstr source_str = display_for_report(me, source_return);
+        cstr target_str = display_for_report(me, target_return);
         bool construct = return_code == 2203 || return_code == 2205;
         report_incompatible(st, return_code, cstr_d(construct ? "Construct" : "Call", " signature return types '", source_str,
             "' and '", target_str, "' are incompatible."));
@@ -2163,7 +2163,7 @@ static Ternary signatures_related(
                 continue;
             }
             if (elaborate) {
-                cstr source_str = display_for_report(me, source, false);
+                cstr source_str = display_for_report(me, source);
                 cstr sig_str = cstr_null;
                 ty_display_signature(me, (TyDisplay){ .target = &sig_str }, target_sigs[i]);
                 report_line(st, 2658, cstr_d("Type '", source_str, "' provides no match for the signature '", sig_str, "'."));
@@ -2275,8 +2275,8 @@ static bool modifiers_related(
         report_line(st, code, cstr_d("Types have separate declarations of a private property '", name, "'."));
     } else if (code == 2325) {
         bool source_private = source_flags & PROP_PRIVATE;
-        cstr private_str = display_for_report(me, source_private ? source : target, source_private);
-        cstr other_str = display_for_report(me, source_private ? target : source, !source_private);
+        cstr private_str = display_for_report(me, source_private ? source : target);
+        cstr other_str = display_for_report(me, source_private ? target : source);
         report_line(st, code, cstr_d("Property '", name, "' is private in type '", private_str, "' but not in type '",
             other_str, "'."));
         c_drop(cstr, &private_str, &other_str);
@@ -2285,14 +2285,14 @@ static bool modifiers_related(
         Prop const* const* parts = nullptr;
         bool synthetic = source_prop->prop && ty_synthetic_prop_parts(me, source_prop->prop, &parts);
         Ty const* source_class = source_prop->prop && !synthetic ? declaring_class(me, source_prop->prop) : nullptr;
-        cstr source_str = display_for_report(me, source_class ? source_class : source, true);
-        cstr target_str = display_for_report(me, declaring_class(me, target_prop), false);
+        cstr source_str = display_for_report(me, source_class ? source_class : source);
+        cstr target_str = display_for_report(me, declaring_class(me, target_prop));
         report_line(st, code, cstr_d("Property '", name, "' is protected but type '", source_str,
             "' is not a class derived from '", target_str, "'."));
         c_drop(cstr, &source_str, &target_str);
     } else {
-        cstr source_str = display_for_report(me, source, true);
-        cstr target_str = display_for_report(me, target, false);
+        cstr source_str = display_for_report(me, source);
+        cstr target_str = display_for_report(me, target);
         report_line(st, code, cstr_d("Property '", name, "' is protected in type '", source_str, "' but public in type '",
             target_str, "'."));
         c_drop(cstr, &source_str, &target_str);
@@ -2453,7 +2453,7 @@ static Ternary props_related_impl(
             if (undefined || ty_get_prop(me, target, props[i].prop->name)) continue;
             if (report) {
                 cstr name = ty_prop_written_name(me, props[i].prop);
-                cstr target_str = display_for_report(me, target, false);
+                cstr target_str = display_for_report(me, target);
                 report_line(st, 2339, cstr_d("Property '", name, "' does not exist on type '", target_str, "'."));
                 c_drop(cstr, &name, &target_str);
             }
@@ -2563,8 +2563,8 @@ static Ternary props_related_impl(
             target_is_class_member(target_prop)
         ) {
             if (report) {
-                cstr source_str = display_for_report(me, source, true);
-                cstr target_str = display_for_report(me, target, false);
+                cstr source_str = display_for_report(me, source);
+                cstr target_str = display_for_report(me, target);
                 cstr name = ty_prop_written_name(me, target_prop);
                 report_line(st, 2327, cstr_d(
                     "Property '", name, "' is optional in type '", source_str, "' but required in type '", target_str, "'."
@@ -2664,11 +2664,11 @@ static SourceProp* source_props(Checker* me, Ty const* source, Members const* so
 // `source_is_primitive`: `source` is a primitive's apparent type, which a string `any` index signature doesn't take as is
 // tsc's indexInfoRelatedTo: both keys when the source's signature is another key's
 [[gnu::noinline, gnu::cold]] static void report_index_incompatible(Checker* me, RelationState* st, IndexInfo const* source_info, IndexInfo const* target_info) {
-    cstr key_str = display_for_report(me, source_info->key, false);
+    cstr key_str = display_for_report(me, source_info->key);
     if (source_info->key == target_info->key) {
         report_line(st, 2634, cstr_d("'", key_str, "' index signatures are incompatible."));
     } else {
-        cstr target_key_str = display_for_report(me, target_info->key, false);
+        cstr target_key_str = display_for_report(me, target_info->key);
         report_line(st, 2330, cstr_d("'", key_str, "' and '", target_key_str, "' index signatures are incompatible."));
         cstr_drop(&target_key_str);
     }
@@ -2808,8 +2808,8 @@ static Ternary index_signatures_related(
             }
         } else {
             if (report) {
-                cstr key_str = display_for_report(me, target_info->key, false);
-                cstr source_str = display_for_report(me, source, true);
+                cstr key_str = display_for_report(me, target_info->key);
+                cstr source_str = display_for_report(me, source);
                 report_line(st, 2329, cstr_d("Index signature for type '", key_str, "' is missing in type '", source_str, "'."));
                 c_drop(cstr, &key_str, &source_str);
             }
@@ -5983,8 +5983,8 @@ static bool fails_common_properties(Checker* me, RelationState* st, Ty const* so
     if (!lacks_common_properties(me, st, source, target)) return false;
     {
         if (report) {
-            cstr source_str = display_for_report(me, source, false);
-            cstr target_str = display_for_report(me, target, false);
+            cstr source_str = display_for_report(me, source);
+            cstr target_str = display_for_report(me, target);
             // Something callable whose result would fit
             Ty const* apparent = ty_apparent_type(me, source);
             Members const* members = apparent->flags & (TYF_OBJECT | TYF_INTERSECTION) ? ty_members(me, apparent) : nullptr;
@@ -6598,7 +6598,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
                 // attribute's name is shown as written)
                 cstr name = cstr_from_sv(atom_sv(prop->name));
                 Ty const* error_target = filter_excess_check_targets(me, reduced);
-                cstr target_str = display_for_report(me, error_target, false);
+                cstr target_str = display_for_report(me, error_target);
                 csview suggestion = jsx_attribute_suggestion(me, error_target, prop->name);
                 cstr suggestion_str = suggestion.size ? ty_prop_name_cstr(me, checker_atom(me, suggestion)) : cstr_null;
                 cstr message = suggestion.size ?
@@ -6615,7 +6615,7 @@ static bool has_excess_properties(Checker* me, RelationState* st, Ty const* sour
             } else if (report) {
                 cstr name = ty_prop_written_name(me, prop);
                 Ty const* error_target = filter_excess_check_targets(me, reduced);
-                cstr target_str = display_for_report(me, error_target, false);
+                cstr target_str = display_for_report(me, error_target);
                 // A property written as an identifier gets a spelling suggestion (tsc: `isIdentifier(name)`)
                 csview written = prop->decl->name_span.sv;
                 bool identifier = span_valid(prop->decl->name_span) && written.size && written.buf[0] != '"' &&
