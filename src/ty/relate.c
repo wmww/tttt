@@ -1843,8 +1843,8 @@ static Ternary compare_signatures(
     bool strict = !callback && compiler_options()->strict_function_types &&
         !(target->flags & SIGNATURE_METHOD) &&
         // (A class's `constructor` declaration is bivariant, a construct signature type isn't: tsc's strictVariance
-        // goes by the target's declaration kind)
-        !((target->flags & SIGNATURE_CONSTRUCT) && is_constructor_declaration(target));
+        // goes by the target's declaration kind, also when an overload is compared as a call signature, TS2394)
+        !is_constructor_declaration(target);
     Ternary result = TERNARY_TRUE;
     // A source that says what `this` is needs a target that agrees (a `void` one is called any way)
     if (source->this_type && !(source->this_type->flags & TYF_VOID) && target->this_type) {
