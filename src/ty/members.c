@@ -990,7 +990,7 @@ static bool declaration_has_members(SymbolDecl const* node) {
     return false;
 }
 
-static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 depth);
+static bool has_base_type(Checker* me, Ty const* source, Ty const* target);
 
 static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
     Ty const* target = ty->kind == TY_REFERENCE ? ty->reference.target : ty;
@@ -1037,7 +1037,7 @@ static Ty const* non_augmenting_base_uncached(Checker* me, Ty const* ty) {
     if (maybe_any_base && !(base && (base->flags & TYF_ANY))) return nullptr;
     if (base && (base->flags & TYF_ANY)) return base;
     // (A circular base is none: tsc's resolveBaseTypesOfClass)
-    if (!base || base == target || has_base_type(me, base, target, 0)) return nullptr;
+    if (!base || base == target || has_base_type(me, base, target)) return nullptr;
     TyList params = target->declared.type_params;
     if (ty->kind == TY_REFERENCE && params.len) base = ty_instantiate(me, base, ty_mapper_new(me, params, ty_reference_args(me, ty)));
     if (target->declared.this_param) {
@@ -2013,14 +2013,21 @@ static void builder_add_enum_object(Checker* me, MembersBuilder* builder, EnumDe
 }
 
 // tsc's hasBaseType(): whether the class or interface `source` is, extends or (transitively) inherits from `target`.
-// Type arguments don't matter
-static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 depth) {
+// Type arguments don't matter. The declarations already walked are skipped: mixin chains whose interfaces each extend
+// the last several classes reach the same bases along exponentially many paths (tsgo's
+// intersectionConstructorReductionCrash), and a circular hierarchy ends there too
+typedef struct BaseTypeWalk {
+    Ty const* target;
+    Ty const** visited;
+    u32 len, cap;
+} BaseTypeWalk;
+
+static bool has_base_type_walk(Checker* me, BaseTypeWalk* walk, Ty const* source) {
     if (source->kind == TY_REFERENCE) source = source->reference.target;
-    if (source == target) return true;
-    if (depth > 32) return false;
+    if (source == walk->target) return true;
     if (source->kind == TY_INTERSECTION) {
         for (u32 i = 0; i < source->composite.types.len; i++) {
-            if (has_base_type(me, source->composite.types.data[i], target, depth + 1)) return true;
+            if (has_base_type_walk(me, walk, source->composite.types.data[i])) return true;
         }
         return false;
     }
@@ -2028,23 +2035,39 @@ static bool has_base_type(Checker* me, Ty const* source, Ty const* target, u32 d
     if (source->declared.kind != TY_DECLARED_INTERFACE && source->declared.kind != TY_DECLARED_CLASS_INSTANCE) return false;
     Symbol const* decl = source->declared.symbol;
     if (!decl) return false;
+    for (u32 i = 0; i < walk->len; i++) {
+        if (walk->visited[i] == source) return false;
+    }
+    if (walk->len == walk->cap) {
+        walk->cap = walk->cap ? walk->cap * 2 : 16;
+        walk->visited = realloc(walk->visited, sizeof(Ty const*) * walk->cap);
+        panic_if(!walk->visited, "out of memory");
+    }
+    walk->visited[walk->len++] = source;
     LowerCtx ctx = { .generic = source->declared.type_params.len > 0 };
     for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count; node++) {
         if (node->kind == SYMBOL_DECL_CLASS) {
             Ty const* base = nullptr;
             Symbol const* base_decl = nullptr;
-            if (class_base(me, node->node, ctx, &base, &base_decl) && base != source && has_base_type(me, base, target, depth + 1)) {
+            if (class_base(me, node->node, ctx, &base, &base_decl) && base != source && has_base_type_walk(me, walk, base)) {
                 return true;
             }
         } else if (node->kind == SYMBOL_DECL_INTERFACE) {
             InterfaceDecl const* interface_decl = node->node;
             for_each (extends, vec_spanned_type, &interface_decl->extends) {
                 Ty const* base = ty_from_node(me, &extends->type, ctx);
-                if (base != source && has_base_type(me, base, target, depth + 1)) return true;
+                if (base != source && has_base_type_walk(me, walk, base)) return true;
             }
         }
     }
     return false;
+}
+
+static bool has_base_type(Checker* me, Ty const* source, Ty const* target) {
+    BaseTypeWalk walk = { .target = target };
+    bool ret = has_base_type_walk(me, &walk, source);
+    free(walk.visited);
+    return ret;
 }
 
 // Whether a class or interface declares members of its own (tsc's getMembersOfSymbol(symbol).size: the instance side,
@@ -2141,7 +2164,7 @@ Ty const* ty_single_base_for_non_augmenting_subtype(Checker* me, Ty const* ty) {
 
 bool ty_has_base_type(Checker* me, Ty const* source, Ty const* target) {
     if (target->kind == TY_REFERENCE) target = target->reference.target;
-    return has_base_type(me, source, target, 0);
+    return has_base_type(me, source, target);
 }
 
 enum { BASE_CYCLE_KNOWN = 1, BASE_CYCLE_IN_CYCLE = 2 };
