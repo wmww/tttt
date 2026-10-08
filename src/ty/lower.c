@@ -505,8 +505,9 @@ static Ty const* lower_identifier(Checker* me, IdentifierType const* identifier,
         if (!decl) return ty_intrinsic(me, TY_ERROR);
     }
     if (span_valid(identifier_type_import_span(identifier))) {
-        // `import("./a").B`: an unresolved one was reported, or is any by design (shorthand ambient module)
-        if (!decl || decl->is_placeholder) return ty_intrinsic(me, TY_ANY);
+        // `import("./a").B`: an unresolved one was reported and is the error type (tsc's getTypeFromImportTypeNode), one
+        // of a shorthand ambient module is any by design
+        if (!decl || decl->is_placeholder) return ty_intrinsic(me, !decl || decl->is_unresolved ? TY_ERROR : TY_ANY);
         if (identifier_type_import_typeof(identifier) || identifier->rare->import_prop_start >= 0) {
             Ty const* ret = ty_type_of_symbol(me, decl);
             isize count = identifier_type_namespace_count(identifier) + 1;

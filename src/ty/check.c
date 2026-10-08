@@ -2288,7 +2288,8 @@ void ty_check_generic_element_access(Checker* me, PropertyExpr const* access, Ty
 
 void ty_check_indexed_access_type(Checker* me, Ty const* object, Ty const* index, Span index_span, Span span, ErrorCtx* errs) {
     index = ty_regular(me, index);
-    if (object->flags & TYF_ERROR) return;
+    // (An error object is any: indexing it with something that can't be a key is still TS2538, tsc's
+    // getPropertyTypeForIndexType, which check_indexed_access_part() follows)
     // (An error index of a generic object is deferred like any other, and any fits every key: nothing to say)
     if ((index->flags & TYF_ERROR) && ty_is_generic_object(me, object)) return;
     // (A union or intersection an instantiation may reduce is generic too: tsc's isGenericObjectType has
