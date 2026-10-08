@@ -1875,6 +1875,7 @@ Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function);
 // A call is inferring its type arguments from the argument being checked now
 bool ty_outer_inference_active(Checker* me);
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function);
+bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* out);
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function); // null if not inferred yet
 
 // tsc's pushTypeResolution/popTypeResolution: one stack of what is being resolved (a declaration's type, an inferred

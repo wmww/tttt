@@ -989,6 +989,44 @@ static void collect_free_params_of_function(Checker* me, FunctionImpl const* fun
     if (function->predicate && function->predicate->has_type) collect_free_params(me, &function->predicate->type, out);
 }
 
+// The type parameters from outside that the type of a declared function mentions, when its signature is all
+// annotations (every parameter typed, the return type written or nothing to infer it from): what instantiating it
+// can change, like Ty.anonymous.free_params of a node. False when they aren't known: an expression (contextually typed),
+// JavaScript, a constructor, an accessor or a type read off a body
+typedef struct TyFreeParams { TyList params; bool known; } TyFreeParams;
+
+bool ty_function_free_params(Checker* me, FunctionImpl const* function, TyList* out) {
+    u64 key[2] = { KEY_FUNCTION_FREE_PARAMS, (u64)(uintptr_t)function };
+    TyFreeParams const* cached = intern_get(&my links, key, 2);
+    if (!cached) {
+        TyFreeParams* computed = arena_new(&my arena, TyFreeParams);
+        bool eligible = !function->is_expression && !function->is_constructor && !function->accessor &&
+            !function->is_type && !function->jsdoc_type && !function->jsdoc_callback && !function->jsdoc_typed &&
+            function->full_span.source && !function->full_span.source->is_js && (function->ret_explicit || !function->has_body);
+        for_each (i, vec_function_arg, &function->args) {
+            if (!i->initializer.binding.has_explicit_type) eligible = false;
+        }
+        if (eligible) {
+            FreeParams found = {0};
+            collect_free_params_of_function(me, function, &found);
+            if (!found.unknown) {
+                u32 kept = 0;
+                for (u32 i = 0; i < found.len; i++) {
+                    bool bound = false;
+                    for (u32 j = 0; j < found.bound_len; j++) bound |= found.bound[j] == found.params[i];
+                    if (!bound) found.params[kept++] = found.params[i];
+                }
+                computed->params = ty_list_copy(me, found.params, kept);
+                computed->known = true;
+            }
+        }
+        *intern_slot(me, &my links, key, 2) = computed;
+        cached = computed;
+    }
+    *out = cached->params;
+    return cached->known;
+}
+
 // Whether `at` is in one of the declarations of a merged owner (LowerCtx.merged_owner): the walk of a declaration
 // (ty_of_node()) can lower nodes elsewhere, an annotation it needs the type of
 static bool span_in_merged_owner(Checker* me, uint16_t owner, Span at) {

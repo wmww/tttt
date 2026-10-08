@@ -74,10 +74,15 @@ static bool mentions_type_variables(Checker* me, Ty const* ty, MentionWalk* walk
             if (ty->anonymous.function && ty->anonymous.function->no_enclosing_type_params) return false;
             Ty const* target = ty->anonymous.target ? ty->anonymous.target : ty;
             TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
-            if (target->kind == TY_ANONYMOUS && target->anonymous.node && !target->anonymous.free_params_unknown &&
-                !ty->anonymous.applies_type_args
-            ) {
-                TyList params = target->anonymous.free_params;
+            // (So is a declared function's whose signature is all annotations: a method of a generic class read
+            // through an instance, `table(): TableProp<TDexieSubClass>` of `Entity<TodoDB>`, mentions what its type
+            // arguments do, without resolving its signature, whose types may be the mapped type being resolved)
+            TyList params = target->kind == TY_ANONYMOUS ? target->anonymous.free_params : (TyList){0};
+            bool known = target->kind == TY_ANONYMOUS && !ty->anonymous.applies_type_args && (
+                (target->anonymous.node && !target->anonymous.free_params_unknown) ||
+                (target->anonymous.function && !target->anonymous.node && !target->anonymous.overload_count &&
+                    !target->anonymous.is_reverse && !target->anonymous.merged_value && ty_function_free_params(me, target->anonymous.function, &params)));
+            if (known) {
                 for (u32 i = 0; i < params.len; i++) {
                     Ty const* param = params.data[i];
                     for (u32 j = 0; mapper && j < mapper->len; j++) {
