@@ -2797,7 +2797,7 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     // (A JavaScript object literal assigned to something of type any has that contextual type, so it isn't
     // open-ended: tsc's isJSObjectLiteral in checkObjectLiteral)
     if ((left->flags & TYF_ANY) && binary->right.tag == EXPR_OBJECT && binary->right.inner_span.source &&
-        binary->right.inner_span.source->is_js && binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_IDENTIFIER
+        binary->right.inner_span.source->is_js && binary->op == BINARY_OP_EQUAL
     ) {
         assigned_context = left;
     }
