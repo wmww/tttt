@@ -3862,7 +3862,7 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
 
         case TYPE_TYPEOF: {
             // Widened like tsc's getTypeFromTypeQueryNode: `typeof undefined` is any without strictNullChecks.
-            // TODO: `typeof x` of an identifier is its declared type, not the narrowed one (plan 03)
+            // (Narrowed where the query is, like any reference: tsc's checkIdentifier)
             Ty const* ret = ty_regular(me, ty_widened_for_declaration(me, ty_expr_type(me, node->typeof_->expr), false)); // (objects too)
             // `typeof f<T>`: the printer reuses the node for that very type (tsc's InstantiationExpressionType.node)
             // and each node has a type of its own (tsc's getInstantiationExpressionType caches per node)

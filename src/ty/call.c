@@ -2675,9 +2675,11 @@ static Resolution resolve_with_signatures_inner(
             free(shape.types);
             ret.ret = resolved_return_type(me, &(Candidate){ .sig = signatures[0] });
             ret.failure = (Candidate){ .sig = signatures[0] };
-        } else if (info->type_arg_nodes && !type_argument_arity_ok) {
-            // tsc's pickLongestCandidateSignature with getTypeArgumentsFromNodes: the first candidate that takes the
-            // arguments (else the one with the most parameters), its type arguments cut or filled in
+        } else {
+            // No candidate was checked (wrong argument counts): tsc's pickLongestCandidateSignature, the first candidate
+            // that takes the arguments (else the one with the most parameters), its type arguments cut or filled in
+            // (getTypeArgumentsFromNodes), else inferred from what doesn't depend on the candidate
+            // (inferSignatureInstantiationForOverloadFailure)
             u32 best = 0;
             u32 most = 0;
             for (u32 i = 0; i < count; i++) {
@@ -2688,49 +2690,17 @@ static Resolution resolve_with_signatures_inner(
                 }
                 if (i == 0 || params > most) most = params, best = i;
             }
-            Candidate candidate = { .sig = signatures[best], .mapper = explicit_type_arguments(me, signatures[best], info) };
-            // (The arguments are checked against it: an arrow's parameters get its types)
-            ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
-            check_args(me, &shape, args, false);
-            free(shape.types);
-            ret.ret = candidate_return_type(me, &candidate);
-            ret.failure = candidate;
-        } else if (!info->type_arg_nodes) {
-            // No candidate was checked (wrong argument counts): tsc's pickLongestCandidateSignature, inferred from
-            // what doesn't depend on the candidate (inferSignatureInstantiationForOverloadFailure)
-            u32 best = 0;
-            u32 most = 0;
-            for (u32 i = 0; i < count; i++) {
-                u32 params = ty_signature_param_count(signatures[i]);
-                if (ty_signature_has_rest(signatures[i]) || params >= args->len) {
-                    best = i;
-                    break;
-                }
-                if (i == 0 || params > most) most = params, best = i;
-            }
+            Signature const* sig = signatures[best];
+            Candidate candidate = info->type_arg_nodes ? (Candidate){ .sig = sig, .mapper = explicit_type_arguments(me, sig, info) } :
+                sig->type_params.len ? make_candidate(me, sig, args, info, true, true) : (Candidate){ .sig = sig };
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
-            Candidate candidate = signatures[best]->type_params.len ?
-                make_candidate(me, signatures[best], args, info, true, true) : (Candidate){ .sig = signatures[best] };
             ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
             check_args(me, &shape, args, false);
             free(shape.types);
-            ret.ret = signatures[best]->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, signatures[best]);
+            ret.ret = info->type_arg_nodes ? candidate_return_type(me, &candidate) :
+                sig->type_params.len ? resolved_return_type(me, &candidate) : signature_return_type(me, sig);
             ret.failure = candidate; // (What control flow goes by too: tsc's getEffectsSignature, a type predicate's)
-        } else {
-            Ty const** return_types = malloc(sizeof(Ty const*) * count);
-            u32 len = 0;
-            for (u32 i = 0; i < count; i++) {
-                signature_resolve(me, signatures[i]);
-                if (signatures[i]->type_params.len && has_correct_type_argument_arity(me, signatures[i], info)) {
-                    Candidate candidate = make_candidate(me, signatures[i], args, info, false, false);
-                    return_types[len++] = candidate_return_type(me, &candidate);
-                } else if (!signatures[i]->type_params.len) {
-                    return_types[len++] = signature_return_type(me, signatures[i]);
-                }
-            }
-            ret.ret = len ? ty_union(me, return_types, len, nullptr, (TyList){0}) : ty_intrinsic(me, TY_ANY);
-            free(return_types);
         }
     }
     free(unfit);
