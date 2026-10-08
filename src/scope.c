@@ -4579,26 +4579,22 @@ static u32* suggestion_count_order(ResolveShard const* me, u32* count_out) {
     free(children);
     free(child_start);
     free(queue);
-    // The counting events, stably by their body's rank
+    // The counting events, stably by their body's rank (a counting sort: a file can have thousands)
     u32 count = 0;
-    for (u32 i = 0; i < me->deferred_count; i++) count += counts_suggestion(me->deferred[i].kind);
+    u32* per_rank = calloc(bodies + 1, sizeof(u32));
+    panic_if(!per_rank, "out of memory");
+    for (u32 i = 0; i < me->deferred_count; i++) {
+        if (!counts_suggestion(me->deferred[i].kind)) continue;
+        count++;
+        per_rank[rank[me->deferred[i].body] + 1]++;
+    }
+    for (u32 r = 0; r < bodies; r++) per_rank[r + 1] += per_rank[r];
     u32* order = malloc(sizeof(u32) * (count ? count : 1));
     panic_if(!order, "out of memory");
-    count = 0;
     for (u32 i = 0; i < me->deferred_count; i++) {
-        if (counts_suggestion(me->deferred[i].kind)) order[count++] = i;
+        if (counts_suggestion(me->deferred[i].kind)) order[per_rank[rank[me->deferred[i].body]]++] = i;
     }
-    // (Insertion sort by rank: stable, and the events are mostly in order already)
-    for (u32 i = 1; i < count; i++) {
-        u32 e = order[i];
-        u32 r = rank[me->deferred[e].body];
-        u32 j = i;
-        while (j > 0 && rank[me->deferred[order[j - 1]].body] > r) {
-            order[j] = order[j - 1];
-            j--;
-        }
-        order[j] = e;
-    }
+    free(per_rank);
     free(rank);
     *count_out = count;
     return order;
