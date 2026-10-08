@@ -6,3 +6,5 @@ vgcore.*
 thirdparty/tsc
 thirdparty/corpora
 __pycache__
+thirdparty/sources
+thirdparty/node

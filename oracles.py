@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Every oracle in one go, one summary line each, for comparing a change against HEAD (plan 51's deletion census):
 the suite (saves test/baseline_results.ts like ./fasttest.sh -s, then the components lost/gained against git HEAD's),
-every pinned corpus, the DefinitelyTyped sweep, `$ExpectType` and flagflip.
+every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip and the source sweep.
 
   ./oracles.py                  # everything (~6 min)
   ./oracles.py --quick          # suite and corpora only (~1 min)
@@ -59,7 +59,12 @@ def flagflip():
     m = re.search(r'missing \d+, spurious \d+, other code \d+', out)
     print('flagflip: ' + (m.group(0) if m else '?'), flush=True)
 
-ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip}
+def sources():
+    out = run(['./sourcesweep.py', '--no-build', '-n', '5'])
+    m = re.search(r'\d+ / \d+ projects match.*', out)
+    print('sourcesweep: ' + (m.group(0) if m else '?'), flush=True)
+
+ORACLES = {'suite': suite, 'corpora': corpora, 'sweep': sweep, 'expect': expect, 'flagflip': flagflip, 'sources': sources}
 
 def main():
     ap = argparse.ArgumentParser()

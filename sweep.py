@@ -53,13 +53,13 @@ def list_packages(filter=None):
     return packages
 
 
-def run_tsc(packages, jobs, extra=()):
+def run_tsc(packages, jobs, extra=(), cwd=DT):
     """tsc on the packages, `jobs` node processes each checking a share in one process (test/sweep_tsc.js)"""
     procs = []
     for i in range(jobs):
         share = packages[i::jobs]
         p = subprocess.Popen(['node', '--max-old-space-size=4096', os.path.join(ROOT, 'test/sweep_tsc.js'), *extra],
-                             cwd=DT, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+                             cwd=cwd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         p.stdin.write('\n'.join(share) + '\n')
         p.stdin.close()
         procs.append(p)
@@ -72,12 +72,12 @@ def run_tsc(packages, jobs, extra=()):
     return results
 
 
-def run_tttt(package, timeout, mem_gb, flags=()):
+def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT):
     limit = mem_gb << 30
     start = time.time()
     try:
         proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--all-errors', '--threads', '1',
-                               '--checkers', '1', '-p', package, *flags], cwd=DT, stdout=subprocess.PIPE,
+                               '--checkers', '1', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
@@ -102,25 +102,25 @@ def shape(message):
     return re.sub(r"'[^']*'", "'…'", re.sub(r'"[^"]*"', '"…"', message))[:120]
 
 
-def lib_key(f, l):
+def lib_key(f, l, cwd=DT):
     """A default lib's diagnostic: tsc's lib.X.d.ts and tttt's own copy (thirdparty/lib/X.d.ts) number lines
     differently, so only the lib's name counts"""
     m = re.search(r'(?:/tsc/lib/lib\.|/tsc/built/local/lib\.|/thirdparty/lib/)([^/]+)\.d\.ts$', f)
     # (Relative to DefinitelyTyped in the main tree, where thirdparty/corpora isn't a symlink: ../../lib/dom.d.ts)
-    if not m and f.startswith('../') and os.path.realpath(os.path.join(DT, f)).startswith(os.path.join(ROOT, 'thirdparty/lib/')):
+    if not m and f.startswith('../') and os.path.realpath(os.path.join(cwd, f)).startswith(os.path.join(ROOT, 'thirdparty/lib/')):
         m = re.search(r'([^/]+)\.d\.ts$', f)
     return (f'lib.{m.group(1)}.d.ts', 0) if m else (f, l)
 
 
-def compare(package, tsc, tttt):
+def compare(package, tsc, tttt, cwd=DT):
     """The diagnostics tttt reports that tsc doesn't (spurious) and the other way round (missing), by (file, line,
     code) multiset"""
-    want = collections.Counter((*lib_key(f, l), c) for f, l, _, c in tsc['diags'])
-    got = collections.Counter((*lib_key(f, l), c) for f, l, c, _ in tttt['diags'])
+    want = collections.Counter((*lib_key(f, l, cwd), c) for f, l, _, c in tsc['diags'])
+    got = collections.Counter((*lib_key(f, l, cwd), c) for f, l, c, _ in tttt['diags'])
     spurious, missing = [], []
     remaining = want.copy()
     for f, l, c, msg in tttt['diags']:
-        f, l = lib_key(f, l)
+        f, l = lib_key(f, l, cwd)
         if remaining[(f, l, c)] > 0:
             remaining[(f, l, c)] -= 1
         else:
