@@ -1855,6 +1855,10 @@ Ty const* ty_element_before_widening(Checker* me, struct Binding const* element)
 // The return type of a function expression that is an argument of the generic call inferring now: the calls it returns
 // see what that call has inferred so far (tsc's getInferenceContext finds the call through the argument)
 Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function);
+// An immediately invoked function's return type, computed while the call inferring now (if any) stays visible
+Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function);
+// A call is inferring its type arguments from the argument being checked now
+bool ty_outer_inference_active(Checker* me);
 bool ty_function_return_in_flight(Checker* me, FunctionImpl const* function);
 Ty const* ty_function_return_known(Checker* me, FunctionImpl const* function); // null if not inferred yet
 

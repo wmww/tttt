@@ -363,6 +363,10 @@ Ty const* ty_argument_return_type(Checker* me, FunctionImpl const* function) {
     return ret;
 }
 
+Ty const* ty_iife_return_type(Checker* me, FunctionImpl const* function) {
+    return function_return_type(me, function, true);
+}
+
 static Ty const* function_return_type(Checker* me, FunctionImpl const* function, bool keep_outer) {
     if (function_impl_rare(function)->constructed_class) return ty_class_instance_type(me, function_impl_rare(function)->constructed_class);
     // (A getter without an annotation is its setter's parameter annotation, body or not: tsc's getTypeOfAccessors)

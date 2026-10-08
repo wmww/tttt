@@ -824,6 +824,10 @@ static TyMapper const* fixing_mapper(Checker* me, OuterInference* outer) {
     return inference_mapper(me, outer->sig, outer->inf, true);
 }
 
+bool ty_outer_inference_active(Checker* me) {
+    return my outer_inference != nullptr;
+}
+
 u64 ty_current_inference_serial(Checker* me) {
     return my outer_inference ? my outer_inference->serial : 0;
 }

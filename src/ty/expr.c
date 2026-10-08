@@ -4779,6 +4779,13 @@ static Ty const* check_call(Checker* me, CallExpr const* call, Span call_span, E
         if (!*slot) *slot = ctx.contextual;
     }
     ty_assign_iife_parameter_types(me, call);
+    // Inside an argument of a call inferring now, its body's return expressions are too: their contextual types see the
+    // call's inferences (tsc's getInferenceContext walks up through the immediately invoked function)
+    if (callee->tag == EXPR_FUNCTION && callee->function->is_iife && !call->uses_new && !callee->function->ret_explicit &&
+        ty_outer_inference_active(me) && !ty_function_return_in_flight(me, callee->function)
+    ) {
+        ty_iife_return_type(me, callee->function);
+    }
     bool optional = false;
     Ty const* callee_type = chain_object_type(me, callee, call->optional_chain, &optional);
     // An incomplete `never` of control flow calls to nothing (tsc's silentNeverSignature)
