@@ -77,3 +77,9 @@
   only (a lone `\r` stays inside a printed line) while its squiggles index computeLineStarts (every break), so lines
   and squiggles drift apart; tttt places squiggles by every break. No suite test has such a file (a file with only
   lone `\r` breaks is split on `\r` like tsc's, render_lines_woven_with_file).
+- Config diagnostics (2026-10-08 triage, after TS5023/TS5025 and the root-file chains): a diagnostic in a config that
+  is *extended* has no location (tsc reports it in that file: `base.json(1,24): error TS5025`); `-p /abs/dir` names
+  the config relative to the working directory in "Matched by include pattern '...' in '...'" where tsc keeps the
+  path as given (absolute). The CLI's unknown option exits before anything else (tsc too) but doesn't know tsc's
+  short names (`-p`, `-b`, `-w`... are tttt's own handling). tsc's TS5024 (an option given a value of the wrong type)
+  and watchOptions/typeAcquisition keys aren't checked.

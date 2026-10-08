@@ -1,4 +1,5 @@
 #include "program.h"
+#include "tsconfig.h"
 #include "string_helpers.h"
 #include "unused.h"
 #include "ty/declaration_diagnostics.h"
@@ -778,7 +779,10 @@ static bool path_has_extension(csview path) {
 
 // (tsc's getSourceFileFromReferenceWorker: a name with an extension is that file, one without gets the first group of
 // supported extensions)
-static SourceFile* program_load_reference_path(Program* me, Span path_span, csview path) {
+// directive (null for a lib's `/// <reference lib>`) learns of an unbuilt referenced project's output (TS6305)
+static SourceFile* program_load_reference_path(
+    Program* me, Span path_span, csview path, SourceDirectiveStatement* directive
+) {
     check(span_valid(path_span));
     csview dir = dirname_of(cstr_sv(&path_span.source->canonical_path));
     // (A drive root `c:/` is rooted too: one of the current directory, see path_is_drive_rooted())
@@ -791,10 +795,18 @@ static SourceFile* program_load_reference_path(Program* me, Span path_span, csvi
         cstr candidate = cstr_d(full, extensions[i]);
         csview source = program_source_of_output(me, cstr_sv(&candidate));
         if (!source.size && fs_is_reg_file(my fs, cstr_sv(&candidate))) source = cstr_sv(&candidate);
-        // Reading outputs, a referenced project's source is its output (when it hasn't been built tsc says TS6305
-        // rather than TS6053: TODO)
+        // Reading outputs, a referenced project's source is its output; when it hasn't been built that's TS6305
+        // (tsc's getSourceFileFromReferenceWorker through processSourceFile)
         csview output = source.size && my reference_outputs ? program_output_of_source(me, source) : c_sv("");
-        if (output.size) source = fs_is_reg_file(my fs, output) ? output : c_sv("");
+        if (output.size && !fs_is_reg_file(my fs, output)) {
+            if (directive) {
+                cstr_take(&directive->unbuilt_output, cstr_from_sv(output));
+                cstr_take(&directive->unbuilt_source, absolute_path_of(program_cwd(me), source));
+            }
+            cstr_drop(&candidate);
+            break;
+        }
+        if (output.size) source = output;
         if (source.size) {
             my include_site = path_span;
             ret = program_add_source_idempotent(me, source);
@@ -842,11 +854,12 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     SourceFile const* referenced = program_load_reference_path(
                         me,
                         statement->source_directive->path_span,
-                        cstr_sv(&statement->source_directive->path)
+                        cstr_sv(&statement->source_directive->path),
+                        statement->source_directive
                     );
                     // (tsc's getSourceFileFromReferenceWorker)
                     if (referenced == source) statement->source_directive->self_reference = true;
-                    if (!referenced) {
+                    if (!referenced && !cstr_size(&statement->source_directive->unbuilt_output)) {
                         // Reported when names are resolved (it is no reason not to typecheck), named after the file's
                         // name as messages have it by then
                         cstr_assign_sv(&statement->source_directive->not_found, cstr_sv(&statement->source_directive->path));
@@ -869,7 +882,7 @@ static inline void program_handle_statement(Program* me, SourceFile* source, Sta
                     // test's file can't add to (TODO)
                     cstr name = lib_reference_file_name(cstr_sv(&statement->source_directive->path));
                     if (my loading_stdlib) {
-                        program_load_reference_path(me, statement->source_directive->path_span, cstr_sv(&name));
+                        program_load_reference_path(me, statement->source_directive->path_span, cstr_sv(&name), nullptr);
                     } else if (my follow_lib_references && !my options.no_lib) {
                         cstr path = cstr_d(cstr_size(&my lib_dir) ? cstr_sv(&my lib_dir) : default_lib_dir, "/", name);
                         if (fs_is_reg_file(my fs, cstr_sv(&path))) {
@@ -1387,6 +1400,17 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     return source_file;
 }
 
+// tsc's chain under a diagnostic about a root file: "The file is in the program because:" and how the config (or the
+// command line) has it
+static void program_explain_root(Program* me, Error* error, csview path) {
+    cstr absolute = absolute_path_of(program_cwd(me), path);
+    csview config = my config_source ? cstr_sv(&my config_source->canonical_path) : c_sv("");
+    cstr reason = tsconfig_root_file_reason(&my options, cstr_sv(&absolute), config);
+    error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
+    error_sub_error_d(vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, reason);
+    c_drop(cstr, &reason, &absolute);
+}
+
 failable program_load(Program* me, csview path, returns SourceFile*) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
     // A referenced project's output is its source
@@ -1396,9 +1420,9 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
     csview output = my reference_outputs ? program_output_of_source(me, path) : c_sv("");
     if (output.size && !fs_is_reg_file(my fs, output)) {
         if (!fs_is_reg_file(my fs, path)) return err_d("File '", path, "' not found.");
-        // (TODO: tsc says why the file is in the program, like program_error_explaining_file())
-        error_ctx_global_error_d(my errs, 6305, "Output file '", output, "' has not been built from source file '",
-            path, "'.");
+        Error* error = error_ctx_global_error_d(my errs, 6305, "Output file '", output,
+            "' has not been built from source file '", path, "'.");
+        program_explain_root(me, error, path);
         return ok(nullptr);
     }
     if (output.size) path = output;
@@ -1426,10 +1450,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
             "' with the extensions: ", my options.allow_js ?
                 "'.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'." :
                 "'.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.");
-        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
-        error_sub_error_d(
-            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Root file specified for compilation"
-        );
+        program_explain_root(me, error, path);
         cstr_drop(&shown);
         return ok(nullptr);
     }
@@ -1440,10 +1461,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
             "only supported extensions are ", my options.allow_js ?
                 "'.ts', '.tsx', '.d.ts', '.js', '.jsx', '.cts', '.d.cts', '.cjs', '.mts', '.d.mts', '.mjs'." :
                 "'.ts', '.tsx', '.d.ts', '.cts', '.d.cts', '.mts', '.d.mts'.");
-        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
-        error_sub_error_d(
-            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Root file specified for compilation"
-        );
+        program_explain_root(me, error, path);
         cstr_drop(&shown);
         return ok(nullptr);
     }
@@ -1454,10 +1472,7 @@ failable program_load(Program* me, csview path, returns SourceFile*) {
         Error* error = error_ctx_global_error_d(
             my errs, 6504, "File '", shown, "' is a JavaScript file. Did you mean to enable the 'allowJs' option?"
         );
-        error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
-        error_sub_error_d(
-            vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Root file specified for compilation"
-        );
+        program_explain_root(me, error, path);
         cstr_drop(&shown);
         return ok(nullptr);
     }
@@ -2231,8 +2246,8 @@ static void program_error_explaining_file(Program* me, SourceFile const* file, u
         error_ctx_error_s(my errs, file->included_at, code, message);
         return;
     }
-    // (TODO: tsc says why it is: "The file is in the program because: Matched by default include pattern '**/*'")
-    error_ctx_global_error_s(my errs, code, message);
+    Error* error = error_ctx_global_error_s(my errs, code, message);
+    if (file->is_root) program_explain_root(me, error, cstr_sv(&file->canonical_path));
 }
 
 // tsc's verifyCompilerOptions on the files of the program: a composite project lists every file it emits (TS6307),

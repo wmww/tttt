@@ -784,6 +784,8 @@ void statement_drop(Statement* me) {
         case STATEMENT_SOURCE_DIRECTIVE:
             cstr_drop(&my source_directive->path);
             cstr_drop(&my source_directive->not_found);
+            cstr_drop(&my source_directive->unbuilt_output);
+            cstr_drop(&my source_directive->unbuilt_source);
             free(my source_directive);
             break;
 
@@ -1846,6 +1848,14 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
                 }
                 error_ctx_error_d(errs, span, 1006, "A file cannot have a reference to itself.");
+            }
+            if (cstr_size(&my source_directive->unbuilt_output)) {
+                Span span = my source_directive->path_span;
+                if (span.sv.size >= 2 && (*span.sv.buf == '"' || *span.sv.buf == '\'')) {
+                    span.sv = csview_slice(span.sv, 1, span.sv.size - 1);
+                }
+                error_ctx_error_d(errs, span, 6305, "Output file '", my source_directive->unbuilt_output,
+                    "' has not been built from source file '", my source_directive->unbuilt_source, "'.");
             }
             if (cstr_size(&my source_directive->not_found)) {
                 // Without the quotes

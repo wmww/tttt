@@ -796,6 +796,50 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
     str_list_drop(&patterns.exclude);
 }
 
+// tsc's configFileSpecs into the options (tsconfig_root_file_reason() reads them)
+static void record_config_specs(ConfigLoad* me) {
+    CompilerOptions* o = my options;
+    str_list_clear(&o->config_files);
+    str_list_clear(&o->config_include_specs);
+    str_list_clear(&o->config_include_patterns);
+    for (isize i = 0; my files && i < my files->count; i++) {
+        if (my files->items[i].tag != JSON_STRING) continue;
+        cstr path = config_path(me, cstr_sv(&my files_dir), cstr_sv(&my files->items[i].string));
+        str_list_push(&o->config_files, cstr_sv(&path));
+        cstr_drop(&path);
+    }
+    for (isize i = 0; my include && i < my include->count; i++) {
+        if (my include->items[i].tag != JSON_STRING) continue;
+        cstr pattern = include_pattern(me, cstr_sv(&my include_dir), cstr_sv(&my include->items[i].string));
+        str_list_push(&o->config_include_specs, cstr_sv(&my include->items[i].string));
+        str_list_push(&o->config_include_patterns, cstr_sv(&pattern));
+        cstr_drop(&pattern);
+    }
+    o->config_default_include = !my files && !my include;
+}
+
+cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csview config_name) {
+    if (!options->config_files.count && !options->config_include_specs.count && !options->config_default_include) {
+        return cstr_lit("Root file specified for compilation");
+    }
+    // getMatchedFileSpec, then getMatchedIncludeSpec (a JSON file only by a spec ending in .json)
+    for (isize i = 0; i < options->config_files.count; i++) {
+        if (csview_equals_sv(cstr_sv(&options->config_files.items[i]), path)) {
+            return cstr_lit("Part of 'files' list in tsconfig.json");
+        }
+    }
+    if (options->config_default_include) return cstr_lit("Matched by default include pattern '**/*'");
+    bool json = csview_ends_with(path, ".json");
+    for (isize i = 0; i < options->config_include_patterns.count; i++) {
+        csview pattern = cstr_sv(&options->config_include_patterns.items[i]);
+        if (json && !csview_ends_with(pattern, ".json")) continue;
+        if (glob_matches(pattern, path, false)) {
+            return cstr_d("Matched by include pattern '", options->config_include_specs.items[i], "' in '", config_name, "'");
+        }
+    }
+    return cstr_lit("Root file specified for compilation");
+}
+
 failable tsconfig_load(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files) {
     return tsconfig_load_diagnosed(fs, path, options, root_files, nullptr);
 }
@@ -812,6 +856,7 @@ failable tsconfig_load_diagnosed(Fs const* fs, csview path, CompilerOptions* opt
     FailableResult result = load_config(&load, cstr_sv(&absolute));
     if (!result.error) {
         cstr_assign_sv(&options->config_dir, cstr_sv(&load.config_dir));
+        record_config_specs(&load);
         if (root_files) collect_root_files(&load, root_files);
     }
     for (isize i = 0; i < load.document_count; i++) {

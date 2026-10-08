@@ -202,6 +202,10 @@ typedef struct CompilerOptions {
     StrList module_suffixes;
     StrList custom_conditions;
     StrList removed_options; // Options tsc no longer has that were given a value anyway (TS5102), in tsc's spelling
+    // tsc's configFileSpecs, for why a root file is in the program (tsconfig_root_file_reason()): the config's `files`
+    // (absolute), its `include` specs as written and as absolute patterns, and config_default_include: neither given
+    StrList config_files, config_include_specs, config_include_patterns;
+    bool config_default_include;
     bool base_url_set, paths_set, type_roots_set, types_set;
     // How deep into packages the program follows JavaScript imports (tsc's maxNodeModuleJsDepth, default 0)
     u32 max_node_module_js_depth;

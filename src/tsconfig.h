@@ -32,6 +32,11 @@ void tsconfig_diagnostics_drop(TsconfigDiagnostics* me);
 failable tsconfig_load_diagnosed(Fs const* fs, csview path, CompilerOptions* options, StrList* root_files,
     TsconfigDiagnostics* diagnostics);
 
+// tsc's fileIncludeReasonToDiagnostics for a root file (the line under "The file is in the program because:"): which
+// of the config's `files` or `include` specs (tsconfig_load() recorded them in options) has the file at path
+// (absolute); config_name is the config as messages name it
+cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csview config_name);
+
 // The nearest tsconfig.json in directory or above it, null if there is none
 cstr tsconfig_find(Fs const* fs, csview directory);
 

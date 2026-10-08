@@ -65,10 +65,8 @@ names, D the missing direction) on the checker keys, two rounds each. **2251 -> 
 - **Never run plain `tsc -p` in `thirdparty/sources`**: it emits into the shared checkouts (a probing run wrote ~1250
   files into astro/mockoon/headlessui/nest/apollo/knip, which then resolved imports into the new dist/). Use `--noEmit`.
 
-Left at the config level: TS5023 (unknown options in `compilerOptions`, tttt has no option table: unocss only),
-tsc's include-pattern order of root files (agents/bugs/include_order.md, blocked by an order-dependent union reduction
-in vue), the root-file TS6305's "file is in the program because" chain, a `/// <reference path>` to an unbuilt source
-(TS6053 instead of TS6305). Checker leftovers are in the agents' bug files (agents/bugs/sourcesweep_checker.md,
+Left at the config level: tsc's include-pattern order of root files (agents/bugs/include_order.md, blocked by an
+order-dependent union reduction in vue); the rest is in agents/bugs/harness.md (config diagnostics). Checker leftovers are in the agents' bug files (agents/bugs/sourcesweep_checker.md,
 conditional-walk-infers-returns.md, suggestion-count-check-order.md and others) and triage.md.
 
 Where a second drain would start (end of stage 2, by repos / projects / diagnostics): +TS2322 31/51/165, +TS2345

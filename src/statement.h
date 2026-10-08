@@ -292,6 +292,8 @@ typedef struct SourceDirectiveStatement {
     // Set by the program when what is named wasn't found: the path (TS6053) or name (TS2688) as written
     cstr not_found;
     bool not_found_extensionless; // A path without extension that no .ts/.tsx/.d.ts completes: TS6231
+    // A path to a referenced project's source whose output declaration file isn't built: TS6305 (absolute paths)
+    cstr unbuilt_output, unbuilt_source;
     bool self_reference; // A path to the file it is in: TS1006
 } SourceDirectiveStatement;
 
