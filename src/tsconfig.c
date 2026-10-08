@@ -247,6 +247,47 @@ static bool resolve_extends(ConfigLoad* me, csview dir, csview name, cstr* out) 
     }
     csview package_name = name_end == c_NPOS ? name : csview_slice(name, 0, name_end);
     cstr subpath = name_end == c_NPOS ? cstr_lit(".") : cstr_d(".", csview_slice(name, name_end, name.size));
+    // The package the config is in, by its own name (tsc's loadModuleFromSelfNameReference, before node_modules): the
+    // nearest package.json's exports, if its name is the one asked for
+    for (cstr scope = cstr_from_sv(dir);;) {
+        cstr scope_json_path = cstr_d(scope, "/package.json");
+        bool found = fs_is_reg_file(my fs, cstr_sv(&scope_json_path));
+        bool exported = false;
+        if (found) {
+            cstr text = cstr_null;
+            bool readable = true;
+            try (fs_read_file(my fs, cstr_sv(&scope_json_path), &text)) if_err (e) {
+                ignore e;
+                current_error_destroy();
+                readable = false;
+            }
+            JsonValue json = {0};
+            if (readable && json_parse(cstr_sv(&text), &json)) {
+                JsonValue const* own_name = json_get_tagged(&json, "name", JSON_STRING);
+                if (own_name && csview_equals_sv(cstr_sv(&own_name->string), package_name)) {
+                    exported = resolve_extends_exports(me, &json, cstr_sv(&scope), cstr_sv(&subpath), out);
+                }
+            }
+            json_drop(&json);
+            if (readable) cstr_drop(&text);
+        }
+        cstr_drop(&scope_json_path);
+        csview parent = parent_of(cstr_sv(&scope));
+        bool top = found || !parent.size || parent.size >= cstr_size(&scope);
+        if (!top) {
+            cstr next = cstr_from_sv(parent);
+            cstr_take(&scope, next);
+        }
+        if (exported) {
+            cstr_drop(&scope);
+            cstr_drop(&subpath);
+            return true;
+        }
+        if (top) {
+            cstr_drop(&scope);
+            break;
+        }
+    }
     cstr at = cstr_from_sv(dir);
     while (true) {
         // Through the package's exports first
