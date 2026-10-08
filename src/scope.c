@@ -2897,8 +2897,14 @@ void scope_report_non_exported_member(PortItem const* item, Symbol const* module
         Symbol const* resolved = symbol_resolve_alias(local);
         SymbolTable const* exports = symbol_exports_table(module);
         csview exported_as = {0};
+        // (tsc's getSymbolIfSameReference: whatever doesn't resolve is unknownSymbol, one symbol, so an unresolved import
+        // is "exported as" the first unresolved export)
+        bool unresolved = resolved && resolved->is_unresolved;
         for (u32 i = 0; exports && i < exports->count && !exported_as.size; i++) {
-            if (symbol_resolve_alias(exports->entries[i].symbol) == resolved) exported_as = symbol_entry_name(&exports->entries[i]);
+            Symbol const* other = symbol_resolve_alias(exports->entries[i].symbol);
+            if (other == resolved || (unresolved && other && other->is_unresolved)) {
+                exported_as = symbol_entry_name(&exports->entries[i]);
+            }
         }
         Error* error = exported_as.size ?
             error_ctx_error_d(errs, name, 2460, "Module '", module_name, "' declares '", name,
