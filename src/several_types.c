@@ -69,8 +69,8 @@ static cstr identifier_type_make_name_str(IdentifierType const* me) {
     return ret;
 }
 
-// `import("./a").A.B`, `typeof import("./a")`: the names are members of the module
-static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
+// `import("./a").A.B`, `typeof import("./a")`: the names are members of the module. False if there is no module
+static bool import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* errs) {
     IdentifierTypeRare* rare = identifier_type_rare(me);
     rare->import_prop_start = -1;
     if (rare->import_argument) {
@@ -78,7 +78,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         type_lookup_names(rare->import_argument, names, errs);
         error_ctx_error_d(errs, rare->import_argument_span, 1141, "String literal expected.");
     }
-    if (!rare->import_ref) return; // The parser complained
+    if (!rare->import_ref) return true; // The parser complained
     Symbol* module = binder_module_of_ref(names->binder, rare->import_ref);
     if (!module) {
         if (rare->import_ref->file) {
@@ -88,10 +88,10 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
         } else {
             module_ref_report_unresolved(rare->import_ref, errs);
         }
-        return;
+        return false;
     }
     module_ref_report_require_of_esm(rare->import_ref, rare->import_ref->span, errs); // (TS1542)
-    if (module->is_shorthand_module) return;
+    if (module->is_shorthand_module) return true;
     Symbol const* container = module_export_equals(module);
     if (!span_valid(my name)) {
         if (rare->import_typeof) {
@@ -110,7 +110,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
                 "Module '", rare->import_ref->path, "' does not refer to a type, but is used as a type here. Did you mean 'typeof import('",
                 rare->import_ref->path, "')'?");
         }
-        return;
+        return true;
     }
     if (rare->import_typeof) {
         // A value: exports as far as they go, properties from there on
@@ -120,7 +120,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             bool last = i == count - 1;
             Span name = last ? my name : *vec_span_at(&rare->namespaces, i);
             Symbol const* members = symbol_for_meaning(current, SYMBOL_NAMESPACE);
-            if (members && members->is_placeholder) return;
+            if (members && members->is_placeholder) return true;
             Symbol const* member = members ? symbol_get_export(members, name.sv) : nullptr;
             Symbol const* value = symbol_for_meaning(member, last ? SYMBOL_VALUE : SYMBOL_VALUE | SYMBOL_NAMESPACE);
             if (!value) {
@@ -132,7 +132,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
                     error_ctx_error_d(errs, name, 2694,
                         "Namespace '", container_name, "' has no exported member '", name, "'.");
                     cstr_drop(&container_name);
-                    return;
+                    return true;
                 }
                 rare->import_prop_start = (int)i;
                 break;
@@ -142,7 +142,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
             current = value;
         }
         my target = symbol_for_meaning(current, SYMBOL_VALUE);
-        return;
+        return true;
     }
 
     if (container != module) {
@@ -161,7 +161,7 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
                 rare->import_prop_start = 0;
                 my target = (Symbol*)container;
                 my symbol = container;
-                return;
+                return true;
             }
         }
     }
@@ -169,12 +169,13 @@ static void import_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx*
     for_each (i, vec_span, &rare->namespaces) {
         Symbol const* found;
         container = get_symbol_from_namespace(container, shown, *i, SYMBOL_NAMESPACE, false, &found, errs);
-        if (!container || container->is_placeholder) return;
+        if (!container || container->is_placeholder) return true;
         vec_symbol_cptr_push(&rare->namespace_symbols, found);
         shown = found;
     }
     my target = get_symbol_from_namespace(container, shown, my name, rare->import_typeof ? SYMBOL_VALUE : SYMBOL_TYPE, false,
         &my symbol, errs);
+    return true;
 }
 
 // tsc's resolveNameHelper at a class: a static member can't see the class's type parameters (TS2302)
@@ -288,10 +289,14 @@ void identifier_type_lookup_names(IdentifierType* me, Scope* names, ErrorCtx* er
     check(!my target);
 
     if (my rare && (my rare->import_ref || span_valid(my rare->import_span))) {
-        import_type_lookup_names(me, names, errs);
+        // (tsc's checkImportType doesn't check the type arguments: they are only evaluated when the module is there.
+        // Their names still resolve, silently, for whoever asks)
+        bool found = import_type_lookup_names(me, names, errs);
+        ErrorCtx silent = errs ? error_ctx_scratch(errs) : (ErrorCtx){0};
         for_each (i, vec_spanned_type, &my generic_params) {
-            type_lookup_names(&i->type, names, errs);
+            type_lookup_names(&i->type, names, found ? errs : &silent);
         }
+        error_ctx_drop(&silent);
         return;
     }
     if (!my keyword) scope_check_strict_identifier(names, identifier_type_namespace_count(me) ? *my rare->namespaces.data : my name, true);
