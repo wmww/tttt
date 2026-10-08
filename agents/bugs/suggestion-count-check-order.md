@@ -15,3 +15,10 @@ then, before the method at line 48 is checked: tsc suggests 'TaskState' at 33, 4
 order can't know that; it would need counting at the checker's first resolution of each name (tsc's actual model).
 Also not covered: arrow bodies whose return expressions inference checks early (getReturnTypeFromBody of a
 context-sensitive argument), and JavaScript files (resolved serially, counted in walk order).
+
+Since 4e156fbf: only the *body* is deferred (signatures count in place), and a syntactically contextual function
+expression without a return annotation counts its return expressions and call-statement callees early (tsc infers
+its return type on the spot). Contextual is a syntactic guess; arguments of a call to an unresolved name are not
+contextual. Still off: jest-reporters' GitHubActionsReporter.test.ts, where tsc's order mixes nested `describe`
+bodies in an order this model doesn't produce. `/tmp/ss-d-tsc` had a tsc copy logging `COUNT n name file:line` at
+the suggestion site in resolveNameHelper: the quickest way to see tsc's real order.
