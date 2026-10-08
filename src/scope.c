@@ -4877,7 +4877,15 @@ Symbol* scope_resolve(Scope const* me, csview name, u32 meaning) {
             ) {
                 found = nullptr;
             }
-            if (from_return_type && found && !found->is_parameter) found = nullptr;
+            // From the return type the function's own locals are visible but for its local types and its body's `var`s
+            // (tsc's resolveNameHelper with lastLocation the return type node): `(): typeof groups` names the body's
+            // `const groups`
+            if (from_return_type && found && !found->is_parameter &&
+                (((meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER)) ||
+                    (meaning & found->flags & SYMBOL_FUNCTION_SCOPED_VARIABLE))
+            ) {
+                found = nullptr;
+            }
             // (Nor are its local types in the parameter list: tsc's resolveNameHelper, "local types not visible outside
             // the function body")
             if (from_parameters && found && (meaning & found->flags & SYMBOL_TYPE) && !(found->flags & SYMBOL_TYPE_PARAMETER) &&
