@@ -14,7 +14,13 @@ to plan 19. The commit message has the numbers.
   source sweep shows more of it. vscode's AST bytes per line (~600) weren't looked at.
 
 - (2026-10-08, plan 51 prototype A) vue at `--checkers 1` reports one TS2345 (vModel.ts:446), also at a7003eac; 0 at
-  the default 4 checkers: a checker-order dependence (`./checkerdiff.py vue` should show it).
+  the default 4 checkers: a checker-order dependence (`./checkerdiff.py vue` should show it). The same TS2345 appears at every checker count once root
+  files are in tsc's include-pattern order (agents/bugs/include_order.md): fixing it unblocks that port.
+
+- (2026-10-08, plan 52 drain) Config level leftovers: no TS5023/TS5025 at all (unknown names inside `compilerOptions`,
+  tttt has no table of tsc's option names: only unocss/examples/astro in the source sweep, 7 diagnostics); a root
+  file's TS6305 lacks tsc's "The file is in the program because" chain (program_load()); a `/// <reference path>` to
+  a referenced project's unbuilt source says TS6053 where tsc says TS6305 (program_load_reference_path()).
 
 - Message from human: it seems you've bumped up the typescript version, but maybe not all the way? ideally I'd like this project to be a drop-in replacement for the latest tsc/tsgo (thus implement typescript 7). make sure it implementes and is tested against the latest features of the language.
 

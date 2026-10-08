@@ -65,11 +65,32 @@ were found while building the prototype (fixed in the same commit):
   `idx`'s declared type as a property name (`TTTT_DEBUG_CYCLE=1`), where tsc's tryGetNameFromEntityNameExpression takes
   getTypeOfExpression(initializer), which its flow-loop cache resolves.
 
-### Stage 2 (todo entry 8): drain, fan-out on root causes
-Config/program-level first (TS6305/TS6059/TS6307/TS2307 under `-p` with `references`, TS5xxx: see above, they hide
-most of the missing direction), then the checker keys by repositories. Four sub-agents in
-worktrees, disjoint key sets, 0 lost on every oracle at merge (`./oracles.py`). Fixes must be mechanisms; a key that
-needs a special case goes to bugs/.
+### Stage 2 (2026-10-08, first drain session): config level done, checker keys fanned out
+Main session on the config/program level, four sub-agents (A relations, B access/context/narrowing, C circularity and
+names, D the missing direction) on the checker keys, two rounds each. **2251 -> SEE_END / 3359**, repos fully matching
+49 -> SEE_END. What the config level turned out to be:
+- **`-p` reads referenced projects through their built outputs** (tsc's CLI: TS6305 when unbuilt, the module `any`),
+  `-b` keeps reading sources (plan 41's decision now only for `-b`). This alone: 2251 -> 2573 and tttt's total time
+  halved (no more checking referenced sources).
+- Files found searching node_modules are never emitted (tsc's sourceFilesFoundSearchingNodeModules, not a path
+  heuristic: workspace links leave node_modules); include patterns may name hidden directories (`.vitepress`); the
+  default `exclude` is outDir/declarationDir; include base paths sorted and deduplicated (tsc's getBasePaths); `extends`
+  through the package's own name; `"lib": []`; options diagnostics on configs without inputs; TS6059's location is the
+  file's first import (also for a root file); program diagnostics in unchecked files dropped.
+- Front end: NUL bytes inside templates and comments; `f<T> satisfies X`; grammar errors of unchecked files dropped
+  before the CLI prints parse errors; the TS2875 jsx-runtime error at the first element the checker asks about, and
+  function expression bodies deferred from their first check (tsc's checkNodeDeferred order).
+- **The oracle**: `sourcesweep.py` runs tttt with `--keep-going=options` (syntactic diagnostics gate semantic ones like
+  the oracle; options diagnostics don't, deliberately), and `sweep_tsc.js` adds declaration diagnostics when there are
+  syntactic errors and tsc would emit (90 projects regenerated).
+- **Never run plain `tsc -p` in `thirdparty/sources`**: it emits into the shared checkouts (a probing run wrote ~1250
+  files into astro/mockoon/headlessui/nest/apollo/knip, which then resolved imports into the new dist/). Use `--noEmit`.
+
+Left at the config level: TS5023 (unknown options in `compilerOptions`, tttt has no option table: unocss only),
+tsc's include-pattern order of root files (agents/bugs/include_order.md, blocked by an order-dependent union reduction
+in vue), the root-file TS6305's "file is in the program because" chain, a `/// <reference path>` to an unbuilt source
+(TS6053 instead of TS6305). Checker leftovers are in the agents' bug files (agents/bugs/sourcesweep_checker.md,
+conditional-walk-infers-returns.md, suggestion-count-check-order.md and others) and triage.md.
 
 ### Stage 3 (later): the missing direction and `-b`
 - Flag flips (plan 46 cells) on the projects that match: `--strict` where the tsconfig isn't, `noUncheckedIndexedAccess`,

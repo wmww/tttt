@@ -14,4 +14,5 @@ members survive (and so the parameter type of `getSSRProps` on the union) depend
 Variances of ObjectDirective / DirectiveBinding are tsc's ([4,4,1,4] modulo #0, and [1, invariant+unreliable, 1]),
 so the difference is in the reduction or the union call's signature. Reduce: vue's runtime-core directives.ts +
 runtime-dom vModel.ts in a project, roots ordered like the corpus, compare `modelToUse`'s type with tsc's
-(`tsctypeat.js`). Once fixed, push to `buckets[i]` and rerun every oracle (root order moves type creation order).
+(`tsctypeat.js`). triage.md has the same TS2345 at `--checkers 1` (plan 51 prototype A): it is a checker-order dependence
+that the root order also reaches. Once fixed, push to `buckets[i]` and rerun every oracle (root order moves type creation order).
