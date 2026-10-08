@@ -286,9 +286,14 @@ Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty) {
         if (ty->flags & TYF_BIGINT_LITERAL) return ty_intrinsic(me, TY_BIGINT);
         if (ty->flags & TYF_BOOLEAN_LITERAL) return ty_intrinsic(me, TY_BOOLEAN);
     }
+    // (A template literal or string mapping type is a string's too)
+    if (ty->kind == TY_TEMPLATE_LITERAL || ty->kind == TY_STRING_MAPPING) return ty_intrinsic(me, TY_STRING);
     if (ty->kind == TY_UNION && !(ty->flags & TYF_BOOLEAN)) {
         bool any_literal = false;
-        for (u32 i = 0; i < ty->composite.types.len; i++) any_literal |= ty->composite.types.data[i]->kind == TY_LITERAL;
+        for (u32 i = 0; i < ty->composite.types.len; i++) {
+            u32 kind = ty->composite.types.data[i]->kind;
+            any_literal |= kind == TY_LITERAL || kind == TY_TEMPLATE_LITERAL || kind == TY_STRING_MAPPING;
+        }
         if (any_literal) {
             u32 len = ty->composite.types.len;
             Ty const** widened = malloc(sizeof(Ty const*) * len);
