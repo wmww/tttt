@@ -2032,7 +2032,14 @@ static void check_access(
         Atom const* name = ty_literal_name(me, index);
         Symbol const* global = name ? symbol_get_export(object->declared.namespace_symbol, atom_sv(name)) : nullptr;
         if (global && (global->flags & GLOBAL_BLOCK_SCOPED)) {
-            report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
+            // (A plain error, no suggestion: tsc's `error(right, Diagnostics.Property_0_does_not_exist_on_type_1)`)
+            if (span_valid(object_span)) {
+                cstr prop_name = index_name(me, index), object_str = ty_to_cstr(me, object);
+                error_ctx_error_d(errs, index_span, 2339, "Property '", prop_name, "' does not exist on type '", object_str, "'.");
+                c_drop(cstr, &prop_name, &object_str);
+            } else {
+                report_no_property(me, object, index, 2339, index_span, true, errs);
+            }
         } else if (compiler_options()->no_implicit_any) {
             error_ctx_error_d(errs, index_span, 7017,
                 "Element implicitly has an 'any' type because type 'typeof globalThis' has no index signature.");
