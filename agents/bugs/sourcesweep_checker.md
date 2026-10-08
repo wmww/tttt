@@ -57,23 +57,25 @@ Fixed this round: mikro-orm `{ ...where }` TS2698 (intersection base constraints
 query/react-navigation `expectTypeOf` +TS2344 (void-optional rest tuples, arity before instantiation, instantiation
 expression defaults, union effects signatures), svelte's JSDoc-typed class field context and destructuring defaults.
 solid `component.type-tests.ts:100` already matched at this base. Left:
-- **svelte `clone.js:76/96/116` (+TS2345, 3 projects)**: `Map<T, Snapshot<T>>` not assignable to itself, where
-  `types.d.ts` has `export type Snapshot<T> = ReturnType<typeof $state.snapshot<T>>` and `$state.Snapshot` (ambient
-  namespace) is the big recursive conditional. Reduced to three files (only with the full conditional, every branch;
-  one file passes): `ambient.d.ts` with svelte's `declare namespace $state { Primitive, Cloneable, NonReactive,
-  Snapshot, function snapshot<T>(state: T): Snapshot<T> }`, `types.d.ts` as above, `q.ts`:
-  `import type { Snapshot } from './types'; function g<T>(value: T, cloned: Map<T, Snapshot<T>>) { g(value, cloned); }`.
-  The source prints as `import("types").Snapshot<T>` (so the ReturnType conditional stayed deferred: lower.c's
-  "deferred instance of the conditional type it declares" realias), the target as `$state.Snapshot<T>` (resolved
-  through the inference mapper). Suspect ty_conditional_resolve's definitely_related on `(state: T) => Snapshot<T>`
-  vs the inferred `(...args: any) => Snapshot<T>` failing/deferring on the first, uninstantiated evaluation (`mentions`
-  path), maybe a circularity guard while $state.Snapshot is still being lowered. tsc resolves it immediately (the
-  check type is a non-generic function type).
 - svelte `deriveds.js:352`, `runtime.js:672` (`unknown` to `T`/`V`), `sources.js:90` (`Value<unknown>` to
   `Source<V>`), `Identifier.js:50` (`name += ...` string to the runes union), `builders.js:376` (`Value` to an
   estree union): JS/JSDoc, not reduced.
 - react-navigation `Link.native.tsx:15` +TS2339 `'in' does not exist on type 'Props<ParamList, RouteName>'` (32
-  diags, 3 projects) and its +TS2578 unused `@ts-expect-error`, `Header.tsx:98` +TS7006: not looked at.
+  diags, 3 projects; its +TS2578 unused `@ts-expect-error` follows). Partly reduced (agent tc, second round): with
+  useLinkProps.tsx's types and core's `NavigatorScreenParams`/`ParamListForNavigator` imported,
+  `function L<PL extends {}>(p: (WithIn<NoInfer<PL>> | { in?: undefined }) & { style?: string }) { p.in }` errors in
+  tttt only (`WithIn` = useLinkProps' `LinkPropsWithIn`). tsc's apparent type of the member `WithIn<NoInfer<PL>> & {...}`
+  is never (getApparentTypeOfIntersectionType: the members' apparent types, WithIn's base constraint is never), so
+  createUnionOrIntersectionProperty skips it; tttt's is `{ style? }` because its apparent type of `WithIn<NoInfer<PL>>`
+  is unknown. Underneath: tsc's base constraint of `ForParams<Exclude<PL[keyof PL], undefined>>`
+  (`LinkPropsWithInForParams`) is never (C2 = `[Params] extends [NavigatorScreenParams<infer Navigator>] ? ...` is
+  deferred, its inferred true type takes Navigator = its implied constraint `{}`, and `ParamListForNavigator<{}>
+  extends infer NPL extends {} ? LST<NPL> | WithIn<NPL> : never` then resolves to never), while tttt's keeps
+  `{ in: Extract<keyof NestedParamList, string>; ... } | LST<NestedParamList>` with NestedParamList free:
+  inferred_true_branch() (relate.c) on the nested conditional doesn't resolve it. A self-contained copy of those
+  definitions (stub NavigatorLike/NSP) did not reproduce; the real core types are needed (probe dir layout: tsconfig
+  extending react-navigation's with `"types": []`, a p.ts importing by absolute path; /tmp/tc-probes/tools has
+  tsctype.js/tscbase.js, node scripts printing tsc's type and getBaseConstraintOfType at a span).
 - query `mutation.test.tsx:1264`, svelte-query `queryOptions.test-d.ts:90` (+TS2554 expected 1 argument, got 0): not
   looked at; probably the void-parameter optionality on another path (getMinArgumentCount in call resolution).
 - dokploy's react-hook-form `Control<...>` mismatches: not looked at.
