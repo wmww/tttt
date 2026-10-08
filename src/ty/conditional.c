@@ -488,8 +488,10 @@ static TyMapper const* conditional_infer(Checker* me, Ty const* check_type, Ty c
 }
 
 // tsc's isDeferredType of a check type: what waits for its type variables rather than inferring from them
+// (A tuple with a variadic element of a type variable is a generic object type too, tsc's isGenericTupleType:
+// `[...M] extends [infer H, ...infer T]` waits for M)
 static bool check_type_deferred(Checker* me, Ty const* check_type, bool check_tuples) {
-    return ty_is_generic_index(check_type) || is_generic_mapped(me, check_type, 0) ||
+    return ty_is_generic_index(check_type) || is_generic_mapped(me, check_type, 0) || ty_is_generic_tuple(me, check_type) ||
         (check_tuples && has_generic_element(me, check_type));
 }
 
@@ -520,7 +522,7 @@ Ty const* ty_conditional_resolve(
     Ty const* inferred_extends = ty_instantiate(me, extends, mapper);
     // (tsc's isDeferredType of the extends type: `{} extends Mapped<T>` waits for T too)
     if (ty_is_generic_index(inferred_extends) || is_generic_mapped(me, inferred_extends, 0) ||
-        (check_tuples && has_generic_element(me, inferred_extends))
+        ty_is_generic_tuple(me, inferred_extends) || (check_tuples && has_generic_element(me, inferred_extends))
     ) {
         return nullptr;
     }
