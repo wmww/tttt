@@ -3190,9 +3190,19 @@ typedef struct MemberEntry {
 } MemberEntry;
 
 typedef struct MemberTables {
-    MemberEntry entries[128];
+    MemberEntry* entries;
     u32 count;
+    u32 cap;
 } MemberTables;
+
+static MemberEntry* add_member_entry(MemberTables* me) {
+    if (my count == my cap) {
+        my cap = my cap ? my cap * 2 : 32;
+        my entries = realloc(my entries, sizeof(MemberEntry) * my cap);
+        panic_if(!my entries, "out of memory");
+    }
+    return &my entries[my count++];
+}
 
 static void report_duplicate(Span name, ErrorCtx* errs) {
     if (!span_valid(name) || !name.source || name.source->is_stdlib) return;
@@ -3215,8 +3225,7 @@ static void declare_symbol_flags(
 ) {
     MemberEntry* entry = find_member(me, name, table);
     if (!entry) {
-        if (my count == c_arraylen(my entries)) return;
-        entry = &my entries[my count++];
+        entry = add_member_entry(me);
         *entry = (MemberEntry){ .name = name, .table = table };
     } else if (entry->flags & symbol_excludes(includes)) {
         if (!entry->has_member && !is_member) return;
@@ -3265,8 +3274,7 @@ static void declare_prototype(Checker* me, MemberTables* tables, ErrorCtx* errs)
     MemberEntry* entry = find_member(tables, name, 1);
     if (entry && entry->decl_count) report_duplicate(entry->decls[0], errs);
     if (!entry) {
-        if (tables->count == c_arraylen(tables->entries)) return;
-        entry = &tables->entries[tables->count++];
+        entry = add_member_entry(tables);
     }
     *entry = (MemberEntry){ .name = name, .table = 1, .flags = SYMBOL_PROPERTY, .has_member = true };
 }
@@ -3389,9 +3397,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
             break;
         }
     }
-    MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
-    panic_if(!tables, "out of memory");
-    tables->count = 0;
+    MemberTables* tables = &(MemberTables){0};
     // The static members share a table with the exports of the namespaces the class merges with, declared in binding
     // order: those before the class, the class's `prototype`, its members, those after
     Symbol const* symbol = class_decl->is_expression ? nullptr : class_decl->symbol;
@@ -3402,7 +3408,13 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
     }
     declare_prototype(me, tables, errs);
-    MeaningEntry meanings[128];
+    // (At most one per member and parameter property)
+    u32 meaning_cap = (u32)vec_class_item_size(&class_decl->items);
+    for_each (i, vec_class_item, &class_decl->items) {
+        if (i->tag == CLASS_ITEM_CONSTRUCTOR) meaning_cap += (u32)vec_function_arg_size(&i->constructor.func.args);
+    }
+    MeaningEntry* meanings = malloc(sizeof(MeaningEntry) * (meaning_cap ? meaning_cap : 1));
+    panic_if(!meanings, "out of memory");
     u32 meaning_count = 0;
     for_each (i, vec_class_item, &class_decl->items) {
         if (i->tag == CLASS_ITEM_CONSTRUCTOR) {
@@ -3411,7 +3423,7 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
                 if (!arg->is_parameter_property || binding->tag != BINDING_IDENTIFIER) continue;
                 Atom const* name = checker_atom(me, binding->content_span.sv);
                 declare_member(tables, name, 0, MEMBER_PROPERTY, binding->content_span, errs);
-                add_meaning(meanings, &meaning_count, c_arraylen(meanings), name, 0, MEANING_GET_OR_SET, binding->content_span, errs);
+                add_meaning(meanings, &meaning_count, meaning_cap, name, 0, MEANING_GET_OR_SET, binding->content_span, errs);
             }
             continue;
         }
@@ -3447,14 +3459,15 @@ void ty_check_class_duplicate_members(Checker* me, ClassDecl* class_decl, ErrorC
         uint8_t meaning = is_field ? MEANING_GET_OR_SET : kind == MEMBER_GET ? MEANING_GET :
             kind == MEMBER_SET ? MEANING_SET : MEANING_METHOD;
         if (span_valid(private_name) && is_static) meaning |= MEANING_PRIVATE_STATIC;
-        add_meaning(meanings, &meaning_count, c_arraylen(meanings), name, span_valid(private_name) ? 2 : is_static,
+        add_meaning(meanings, &meaning_count, meaning_cap, name, span_valid(private_name) ? 2 : is_static,
             meaning, name_span, errs);
     }
     for (u32 d = class_index + 1; symbol && d < symbol->decl_count; d++) {
         if (symbol->decls[d].kind == SYMBOL_DECL_NAMESPACE) declare_namespace_exports(me, tables, symbol, &symbol->decls[d], errs);
     }
     if (symbol && symbol->flags & SYMBOL_INTERFACE) check_class_interface_members(me, symbol, tables, errs);
-    free(tables);
+    free(meanings);
+    free(tables->entries);
 }
 
 // TS2717: a property declared again (a duplicate class field, a property of a merged interface) has the type of the
@@ -3691,9 +3704,7 @@ void ty_check_parameter_property_redeclaration(Checker* me, Symbol const* class_
 }
 
 void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember const* const* lists, u32 list_count, ErrorCtx* errs) {
-    MemberTables* tables = malloc(sizeof(MemberTables)); // Big, and only read below count
-    panic_if(!tables, "out of memory");
-    tables->count = 0;
+    MemberTables* tables = &(MemberTables){0};
     // A property signature after another member of its name (in any declaration), computed names included
     for (u32 l = 0; l < list_count; l++) {
         for_each (i, vec_interface_member, lists[l]) {
@@ -3765,7 +3776,7 @@ void ty_check_object_type_duplicate_members(Checker* me, VecInterfaceMember cons
             }
         }
     }
-    free(tables);
+    free(tables->entries);
 }
 
 void ty_check_computed_name(Checker* me, Expr const* key, Span span, bool in_type, ErrorCtx* errs) {
