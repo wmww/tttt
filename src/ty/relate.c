@@ -5038,8 +5038,12 @@ static Ternary structured_related_members(
 
 // Whether two instantiations of one generic type alias relate by its variances first (see structured_related_impl)
 static bool alias_variance_applies(Checker* me, RelationState const* st, Ty const* source, Ty const* target, bool use_variances) {
-    return ((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias && source->alias_args.len &&
-        source->alias == target->alias && source->alias_args.len == target->alias_args.len &&
+    // (A generic alias with no arguments, an import's reference without any, goes by its defaults: tsc's
+    // aliasTypeArguments `[]` is set, and fillMissingTypeArguments pads both sides. See ty_alias_args_filled())
+    return ((source->flags & TYF_OBJECT) || source->kind == TY_CONDITIONAL) && source->alias &&
+        source->alias == target->alias &&
+        (source->alias_args.len == target->alias_args.len ? source->alias_args.len != 0 :
+            !source->alias_args.len || !target->alias_args.len) &&
         source->kind != TY_REFERENCE && target->kind != TY_REFERENCE &&
         !is_alias_marker(me, source) && !is_alias_marker(me, target) && use_variances &&
         !(st->alias_fallback_source == source && st->alias_fallback_target == target);
@@ -5128,7 +5132,10 @@ static Ternary structured_related_members(
             Variances const* variances = get_alias_variances(me, source->alias);
             bool unreliable;
             if (!variances) return TERNARY_MAYBE;
-            Ternary by_alias = type_args_related(me, st, variances, source->alias_args, target->alias_args, false, &unreliable);
+            Ty const* source_buf[MAX_TYPE_ARGS], *target_buf[MAX_TYPE_ARGS];
+            TyList source_args = ty_alias_args_filled(me, source, source_buf);
+            TyList target_args = ty_alias_args_filled(me, target, target_buf);
+            Ternary by_alias = type_args_related(me, st, variances, source_args, target_args, false, &unreliable);
             if (by_alias) {
                 report_truncate(st, saved);
                 return by_alias;
@@ -5236,13 +5243,16 @@ static Ternary structured_related_members(
     if (alias_variance_applies(me, st, source, target, use_variances)) {
         Variances const* variances = get_alias_variances(me, source->alias);
         if (!variances) return TERNARY_MAYBE;
+        Ty const* source_buf[MAX_TYPE_ARGS], *target_buf[MAX_TYPE_ARGS];
+        TyList source_args = ty_alias_args_filled(me, source, source_buf);
+        TyList target_args = ty_alias_args_filled(me, target, target_buf);
         bool unreliable;
         isize_t saved = vec_ty_report_line_size(&st->lines);
-        Ternary related = type_args_related(me, st, variances, source->alias_args, target->alias_args, false, &unreliable);
-        bool void_fallback = !related && !unreliable && covariant_void_argument(variances, target->alias_args);
+        Ternary related = type_args_related(me, st, variances, source_args, target_args, false, &unreliable);
+        bool void_fallback = !related && !unreliable && covariant_void_argument(variances, target_args);
         if (!related && report && !unreliable && !void_fallback) {
             report_truncate(st, saved);
-            related = type_args_related(me, st, variances, source->alias_args, target->alias_args, true, &unreliable);
+            related = type_args_related(me, st, variances, source_args, target_args, true, &unreliable);
             bool invariant = false;
             for (u32 i = 0; i < variances->len; i++) {
                 invariant |= (variances->data[i] & (VARIANCE_BIVARIANT | VARIANCE_INDEPENDENT)) == VARIANCE_INVARIANT;
@@ -5282,7 +5292,7 @@ static Ternary structured_related_members(
         if (related || (!unreliable && !void_fallback)) return related;
         report_truncate(st, saved);
         if (void_fallback && report) {
-            type_args_related(me, st, variances, source->alias_args, target->alias_args, true, &unreliable);
+            type_args_related(me, st, variances, source_args, target_args, true, &unreliable);
             report = false;
         }
     }
