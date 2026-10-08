@@ -548,7 +548,14 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                     }
                     TupleShape const* shape = ty_tuple_shape(type);
                     bool tuple_rest = false;
-                    for (u32 k = 0; shape && k < shape->arity && !tuple_rest; k++) tuple_rest = shape->flags[k] & TUPLE_ELEMENT_REST;
+                    // (A spread of a type variable is variadic, not rest: tsc's combinedFlags & ElementFlags.Rest,
+                    // `...[...I]` with I extends readonly X[] can be followed by an optional element)
+                    TyList shape_args = shape && type->kind == TY_REFERENCE ? ty_reference_args(current_checker, type) : (TyList){0};
+                    for (u32 k = 0; shape && k < shape->arity && !tuple_rest; k++) {
+                        Ty const* element = k < shape_args.len ? shape_args.data[k] : nullptr;
+                        tuple_rest = (shape->flags[k] & TUPLE_ELEMENT_REST) &&
+                            !(element && (element->kind == TY_TYPE_PARAM || (element->flags & TYF_DEFERRED)));
+                    }
                     is_rest = ty_is_array(current_checker, type) || tuple_rest;
                 }
                 if (is_rest) {
