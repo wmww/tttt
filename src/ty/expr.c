@@ -4355,6 +4355,11 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
                     .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !member_sig_context),
                     .skip_sensitive = ctx.skip_sensitive,
                 });
+                // (A context-sensitive attribute is an intra-expression inference site of the call inferring now, like
+                // an object literal's member: tsc's createJsxAttributesTypeFromAttributesProperty)
+                if (member_context && !ctx.skip_sensitive && ty_expr_is_context_sensitive(&i->value)) {
+                    ty_add_intra_expression_site(me, type, member_context);
+                }
                 break;
         }
         {

@@ -7276,9 +7276,9 @@ const baselines = {
         types: true,
     },
     'contextuallyTypedJsxChildren2': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'contextuallyTypedOptionalProperty(exactoptionalpropertytypes=false)': {
         errors: true,
@@ -74571,9 +74571,9 @@ const baselines = {
         types: true,
     },
     'intraExpressionInferencesJsx': {
-        errors: false,
-        symbols: false,
-        types: false,
+        errors: true,
+        symbols: true,
+        types: true,
     },
     'keyofInferenceIntersectsResults': {
         errors: true,
