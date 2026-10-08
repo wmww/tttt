@@ -648,10 +648,27 @@ typedef struct ResolveShard {
     u32 body_count;
     u32 body_cap;
     u32 current_body;
+    // Of a contextually typed function expression without a return type annotation, the body around it: tsc infers
+    // its return type when it checks the expression (getReturnTypeFromBody), which checks the return expressions and,
+    // asking whether the end is reachable, the callees of the call statements (getEffectsSignature). Those count
+    // there. UINT32_MAX if none
+    u32 early_body;
+    struct Expr const* early_call; // The call statement whose callee is being walked early
+    // Walking the arguments of a call whose callee is a name that resolves to nothing: an untyped call, no contextual
+    // signature for a function argument (tsc's resolveUntypedCall), whose body is then simply deferred
+    bool contextless_args;
 } ResolveShard;
-// Entering a body tsc defers (see ResolveShard.body_parent): returns what resolve_leave_deferred_body() restores
-u32 resolve_enter_deferred_body(void);
-void resolve_leave_deferred_body(u32 previous);
+// Entering the body of a function tsc defers (see ResolveShard.body_parent), `early`: whether its return expressions
+// and call statements' callees are checked where it is. Returns what resolve_leave_deferred_body() restores
+typedef struct DeferredBodySave {
+    u32 body;
+    u32 early;
+} DeferredBodySave;
+DeferredBodySave resolve_enter_deferred_body(bool early);
+void resolve_leave_deferred_body(DeferredBodySave previous);
+// Around a return expression or a call statement's callee: counted early if the function allows it
+u32 resolve_enter_early(void);
+void resolve_leave_early(u32 previous);
 extern thread_local ResolveShard* resolve_shard;
 // Where the binder's symbols, scopes and tables are allocated: the resolve thread's arena while one walks a file
 static inline Arena* binder_arena(Binder* me) {

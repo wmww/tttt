@@ -4538,17 +4538,32 @@ static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope 
     return ret;
 }
 
-u32 resolve_enter_deferred_body(void) {
+DeferredBodySave resolve_enter_deferred_body(bool early) {
     ResolveShard* shard = resolve_shard;
-    if (!shard) return 0;
-    u32 previous = shard->current_body;
-    *(u32*)list_push((void**)&shard->body_parent, &shard->body_count, &shard->body_cap, sizeof(u32)) = previous;
+    if (!shard) return (DeferredBodySave){0};
+    DeferredBodySave previous = { shard->current_body, shard->early_body };
+    *(u32*)list_push((void**)&shard->body_parent, &shard->body_count, &shard->body_cap, sizeof(u32)) = previous.body;
     shard->current_body = shard->body_count;
+    shard->early_body = early ? previous.body : UINT32_MAX;
     return previous;
 }
 
-void resolve_leave_deferred_body(u32 previous) {
-    if (resolve_shard) resolve_shard->current_body = previous;
+void resolve_leave_deferred_body(DeferredBodySave previous) {
+    if (!resolve_shard) return;
+    resolve_shard->current_body = previous.body;
+    resolve_shard->early_body = previous.early;
+}
+
+u32 resolve_enter_early(void) {
+    ResolveShard* shard = resolve_shard;
+    if (!shard) return UINT32_MAX;
+    u32 previous = shard->current_body;
+    if (shard->early_body != UINT32_MAX) shard->current_body = shard->early_body;
+    return previous;
+}
+
+void resolve_leave_early(u32 previous) {
+    if (resolve_shard && previous != UINT32_MAX) resolve_shard->current_body = previous;
 }
 
 static bool counts_suggestion(DeferredKind kind) {

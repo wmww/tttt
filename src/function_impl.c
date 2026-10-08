@@ -412,7 +412,20 @@ void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool
         }
     }
     saved_flow = type_flow_enter_statements();
+    // (A function expression's body is checked after the code around it: tsc's checkNodeDeferred. Its signature isn't)
+    DeferredBodySave enclosing_body = {0};
+    u32 enclosing_early = resolve_shard ? resolve_shard->early_body : UINT32_MAX;
+    bool enclosing_contextless = resolve_shard && resolve_shard->contextless_args;
+    if (kind == FUNCTION_IS_EXPRESSION) {
+        enclosing_body = resolve_enter_deferred_body(my syntactically_contextual && !my ret_explicit && !enclosing_contextless);
+    } else if (resolve_shard) {
+        resolve_shard->early_body = UINT32_MAX; // (A declaration's returns are its own)
+    }
+    if (resolve_shard) resolve_shard->contextless_args = false;
     if (!skip_body) block_lookup_names_as(&my body, function_scope, errs);
+    if (resolve_shard) resolve_shard->contextless_args = enclosing_contextless;
+    if (kind == FUNCTION_IS_EXPRESSION) resolve_leave_deferred_body(enclosing_body);
+    else if (resolve_shard) resolve_shard->early_body = enclosing_early;
     type_flow_restore(saved_flow);
 
     my end_flow = nullptr;
