@@ -1834,17 +1834,32 @@ static bool is_literal_of_same_base(Checker* me, TyList types) {
     return types.len > 0;
 }
 
+// tsc's getSingleCommonSupertype: the leftmost candidate for which no candidate to the right is a strict supertype, if it
+// is a strict supertype of all the others; else the leftmost one for which no candidate to the right is a supertype
+static Ty const* single_common_supertype(Checker* me, Ty const* const* types, u32 len) {
+    Ty const* candidate = types[0];
+    for (u32 i = 1; i < len; i++) {
+        if (candidate != types[i] && ty_is_related(me, candidate, types[i], TY_RELATION_STRICT_SUBTYPE)) candidate = types[i];
+    }
+    bool all = true;
+    for (u32 i = 0; i < len && all; i++) {
+        all = types[i] == candidate || ty_is_related(me, types[i], candidate, TY_RELATION_STRICT_SUBTYPE);
+    }
+    if (all) return candidate;
+    Ty const* ret = types[0];
+    for (u32 i = 1; i < len; i++) {
+        if (ret != types[i] && ty_is_related(me, ret, types[i], TY_RELATION_SUBTYPE)) ret = types[i];
+    }
+    return ret;
+}
+
 // tsc's getCommonSupertype: the leftmost candidate that every other one is a subtype of. Under strictNullChecks null and
 // undefined (whole candidates or members of union ones) stay out of the contest and are added back
 static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) {
     if (len == 1) return types[0];
     if (!compiler_options()->strict_null_checks) {
         if (is_literal_of_same_base(me, (TyList){ .data = types, .len = len })) return ty_union(me, types, len, nullptr, (TyList){0});
-        Ty const* ret = types[0];
-        for (u32 i = 1; i < len; i++) {
-            if (ret != types[i] && ty_is_related(me, ret, types[i], TY_RELATION_SUBTYPE)) ret = types[i];
-        }
-        return ret;
+        return single_common_supertype(me, types, len);
     }
     Ty const** primary = calloc(len, sizeof(Ty const*));
     panic_if(!primary, "out of memory");
@@ -1875,10 +1890,7 @@ static Ty const* common_supertype(Checker* me, Ty const* const* types, u32 len) 
     if (is_literal_of_same_base(me, (TyList){ .data = primary, .len = len })) {
         ret = ty_union(me, primary, len, nullptr, (TyList){0});
     } else {
-        ret = primary[0];
-        for (u32 i = 1; i < len; i++) {
-            if (ret != primary[i] && ty_is_related(me, ret, primary[i], TY_RELATION_SUBTYPE)) ret = primary[i];
-        }
+        ret = single_common_supertype(me, primary, len);
     }
     free(primary);
     // (tsc's getNullableType with the flags of all of them)
