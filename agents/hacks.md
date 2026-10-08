@@ -518,6 +518,13 @@ src` finds the code-side markers; every significant one has an entry here.
   the tsc corpus costs 1% more instructions in union_with_origin).
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
+- `checker_defer_function_body()` (ty/checker.c): a function expression's body is queued from its first check
+  only when it is in the file being checked. tsc's checkNodeDeferred also queues one checked from *another* file into
+  that file's set before the file is checked, so those come first: excalidraw's bounds.ts under
+  noUncheckedIndexedAccess (flagflip excalidraw/nuia) has getArrowheadPoints queued by an earlier file, and its once-per
+  type TS2488 lands at 818 in tsc, at 943 in tttt (getLinearElementRotatedBounds is queued first, from a call at 175).
+  Needs per-file pending queues per checker, and is only exact at `--checkers 1` (other checkers' evaluations aren't
+  seen): decide with checkerdiff in mind.
 - `source_file_check_verbatim_exports()` (TS1287) finds the `export` keyword by scanning the statement text
   (`export_keyword_of()`): statements don't keep their modifiers' spans.
 - `ty_check_static_heritage()` relates to a synthetic object literal (tsc's getTypeWithoutSignatures, which keeps the
