@@ -103,3 +103,8 @@ mergeSymbol, which resolves an alias target first.
 - mut1254 (moduleResolutionWithSymlinks_notInNodeModules): tsc writes no errors baseline at all; tttt writes one with
   only the tsconfig.json section and no diagnostics. Harness, symlinked files.
 - mut0360: tsc's baseline has the harness's TS-1 pre/post-emit count line: not matchable.
+
+## UMD globals merged from scripts (`merge_into_umd_globals()`)
+Declarations merged into a UMD global (`export as namespace X` plus a script declaring `X`) move into its module
+whatever the file order; tsc drops the UMD global when a script declared the name first. A conflicting target is
+skipped silently, where tsc reports it against the resolved target. (Moved from hacks.md, 2026-10-08.)

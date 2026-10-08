@@ -341,3 +341,10 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
 
 ## Declaration emit (plan 40)
 arrayFakeFlatNoCrashInferenceDeclarations (TS5088), declarationEmitPrivatePromiseLikeInterface (TS7056).
+
+## From the 2026-10-08 hacks audit (parser, flow)
+- The parser drops some syntax with its diagnostics: decorators before an import in `parse_decl_statement()`'s fallback
+  (TS1206 lost); decorators without a declaration (tsc's MissingDeclaration: TS1128 at `@` instead of TS1146); index
+  signature parameter initializers (`parse_index_signature()` has no `FunctionArg` list: TS2304 in `[a = b]` lost).
+- `let o: { x?: number } | number = 1; ({ ...o } = { x: 1 });`: tsc reports TS2698 at the rest target `o` (narrowed
+  to number), tttt nothing.
