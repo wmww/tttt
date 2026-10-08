@@ -367,6 +367,19 @@ static bool object_against_primitives(Ty const* check_type, Ty const* extends) {
     return true;
 }
 
+// A function or object type against a type that needs call or construct signatures it doesn't have is unrelated
+// whatever type variables it mentions inside (instantiating doesn't add signatures), without resolving its signatures:
+// `T[P] extends new () => any ? never : P` over a class whose static method takes `this: ModelStatic<M>`, an alias
+// of the mapped type being resolved, doesn't resolve that parameter (tsc instantiates signatures lazily, and
+// signaturesRelatedTo fails on the counts first)
+static bool object_lacks_signatures(Checker* me, Ty const* check_type, Ty const* extends) {
+    if (check_type->kind != TY_ANONYMOUS || extends->kind != TY_ANONYMOUS) return false;
+    Members const* source = ty_members(me, check_type);
+    Members const* target = ty_members(me, extends);
+    if (source->mapped || target->mapped) return false;
+    return (target->construct_count && !source->construct_count) || (target->call_count && !source->call_count);
+}
+
 // Whether the check type isn't assignable to the extends type whatever the type variables in them turn out to be: not
 // even with each of them the wildcard, which relates to everything (tsc's getPermissiveInstantiation). When the walk
 // can't tell which type variables there are, it doesn't know
@@ -374,7 +387,7 @@ static bool definitely_unrelated(Checker* me, Ty const* check_type, Ty const* ex
     if (!((check_type->flags | extends->flags) & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
         return !ty_is_related(me, check_type, extends, TY_RELATION_ASSIGNABLE);
     }
-    if (object_against_primitives(check_type, extends)) return true;
+    if (object_against_primitives(check_type, extends) || object_lacks_signatures(me, check_type, extends)) return true;
     TyBuf params = {0};
     MentionWalk walk = { .collect = &params };
     bool unsure = mentions_type_variables(me, check_type, &walk, 0) || mentions_type_variables(me, extends, &walk, 0);
