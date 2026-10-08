@@ -222,104 +222,88 @@ src` finds the code-side markers; every significant one has an entry here.
 
 ## Declarations and bindings (AST-side walk)
 - Plan 43 side structs (`InitializedBindingRare`, `FunctionImplRare`, `initialized_binding_value()`): absent ones read
-  as shared read-only statics (`initialized_binding_no_value` is an EXPR_IMPLICIT_ANY living in rodata, so a stray
-  write through it segfaults rather than corrupting); `*_rare_mut()` allocates on first write, also from the resolve
-  walk, which is only safe while one thread resolves a given AST. Packed spans (`FunctionSpan`, `Binding`'s
-  `explicit_type_*`/`element_*`) are offsets in one file and panic if set from another.
-- Old type world leftovers: `owned_symbol` + `symbol_ref` on `GenericItem`/`InferredType`/mapped keys,
-  `key.expr.owned` + `ref` on interface members; `LAZY_TYPE_FUNCTION` memoises the already interned
-  `ty_function_type()`.
+  as shared read-only statics (`initialized_binding_no_value` lives in rodata: a stray write segfaults); `*_rare_mut()`
+  allocates on first write, also from the resolve walk (safe while one thread resolves a given AST). Packed spans
+  (`FunctionSpan`, `Binding`'s `explicit_type_*`/`element_*`) are offsets in one file and panic if set from another.
+  (permanent: AST memory layout)
 - `ty_binding_assigned_type` (not memoised): tsc unions the undefined-stripped element with the default (subtype
-  reduction) and widens after; tttt widens the default first, then reduces, except that a fresh object literal default
-  is reduced fresh and widened in place (`[{ flag } = {}]`): other defaults whose freshness matters to the reduction
-  would still differ. `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop
-  `[x = x]`, see `ty_binding_type`); `binding_element_implied_type` runs defaults under `flow_uncached` (with
-  `include_pattern`). `binding_element_context` includes index signatures (tsc's getTypeOfPropertyOfType doesn't).
-- Array pattern rest (`ty_binding_type`): the parent type is widened, so "any parent is any" peeks at the root
-  initializer's expression type.
-- TS7031 from widening a parameter pattern's element (`parameter_element_before_widening`, binding.c): tttt widens
-  the parameter first, tsc reads its unwidened declared type unless something resolved the parameter already (order
-  dependent in tsc). Re-reads the element from the default's expression type, one level deep, only for that error.
-- `binding_add_padded_implicit_any_errors` (TS7031) only for unannotated parameters and nested defaults;
-  `binding_rest_elements` loses `readonly`; `binding_add_names` doesn't widen literals of exported bindings.
-- AST written by walks: `FunctionImpl.constructed_class` in `class_decl_lookup_names` (also TS1093),
-  `FunctionImpl.private_ambient` in `class_members_lookup_names`.
-- `field_type_from_assignments()`: the first real `this.x =` stands in for tsc's synthetic flow reference; `declare
-  x;` doesn't take the base property's type.
-- `expr_requires_scope_change()` (TS2373): hand-written expression walk without JSX; there's no generic visitor.
-- `generic_params_expr_typecheck`: constraints checked against the first signature whose arity fits, not all.
-- `lower` TYPE_TYPEOF: `typeof x` is the narrowed type, not the declared one (lower.c TODO; unverified that this
-  differs from tsc).
-- `ty_merged_value_type`: a second `Ty` next to the unmerged one (`ty_static_type_of`, what static `this` sees).
-- TS1254 (`expr_is_ambient_const_initializer()`): any identifier/property access counts as a literal enum reference.
+  reduction) and widens after; tttt widens the default first, then reduces (a fresh object literal default is reduced
+  fresh and widened in place, `[{ flag } = {}]`; other defaults whose freshness matters would still differ).
+  `ty_binding_default_type` bypasses its LazyType (a pattern's names on the resolution stack stop `[x = x]`);
+  `binding_element_implied_type` runs defaults under `flow_uncached` (with `include_pattern`).
+- Array pattern rest (`binding_element_of`): the parent type is widened, so "any parent is any" peeks at the root
+  initializer's expression type for a nullable. Real fix: keep the unwidened parent type (tsc's
+  getTypeForBindingElementParent).
+- `class_decl_lookup_names` drops a constructor's return annotation after TS1093 (tsc keeps and ignores it).
+- `field_type_from_assignments()`: the first real `this.x =` stands in for tsc's synthetic flow reference of the
+  property (getFlowTypeInConstructor).
+- `ty_merged_value_type`: a second `Ty` next to the unmerged one (`ty_static_type_of`, what static `this` sees). Real
+  fix: one type per merged symbol (tsc's getTypeOfFuncClassEnumModule).
 - Optional parameters: `T` in the signature, `| undefined` added at use (`value_entry_type()`,
-  `ty_optional_param_type()`); tsc shows it in the signature too.
-
-- `ty_report_pattern_iterable()` (`ty/lower.c`, called from `initialized_binding_evaluate_assigned_type` in
-  `binding.c`): TS2318 'Iterable' for an empty or rest-only array pattern goes where tsc makes createIterableType, but
-  tttt computes an initializer's pattern contextual type eagerly, so the report is gated on the initializer being an
-  array or object literal (what certainly asks for its contextual type). A lazily computed contextual type would decide
-  it the way tsc does.
+  `ty_optional_param_type()`); tsc's parameter symbol type has it (addOptionality).
+- `ty_report_pattern_iterable()` (`ty/lower.c`, from `initialized_binding_evaluate_assigned_type`): TS2318 'Iterable'
+  for an empty or rest-only array pattern goes where tsc makes createIterableType, but tttt computes an initializer's
+  pattern contextual type eagerly, so it's gated on the initializer being an array or object literal. A lazily
+  computed contextual type would decide it the way tsc does.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
-- TS7011/TS7018 reportability (`ty_function_widening_reportable`): from the contextual signature before
-  `ty_fix_contextual_signature()` (`KEY_CONTEXT_UNFIXED`: tsc's getContextualSignature, a real concept under a
-  misleading name) and `KEY_CONTEXT_WIDENING_ABSENT` (a first check under inference with no signature view: stands in
-  for tsc computing the return type under resolvingSignature). Plan 51 stage 3 decides it where the return type is
-  computed. `ty_function_context_is_self` (TS7024) reads `KEY_CONTEXT_RETURN_SELF`, written by `infer_return_type()`
-  when the anchored contextual signature was its own (or a composite with its own) while it was inferred, but still
-  needs `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (tsc: no return type decided at the first contextual check).
+- TS7011/TS7018 reportability (`ty_function_widening_reportable`) reads the contextual signature before
+  `ty_fix_contextual_signature()` (`KEY_CONTEXT_UNFIXED`, tsc's getContextualSignature: rename is plan 51 stage 3 item
+  4) and `KEY_CONTEXT_WIDENING_ABSENT` (a first check under inference without a signature view, standing in for tsc
+  computing the return type under resolvingSignature): plan 51 stage 3 item 1 decides it where the return type is
+  computed. `ty_function_context_is_self` (TS7024) reads `KEY_CONTEXT_RETURN_SELF` (written by `infer_return_type()`)
+  but still needs `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (stage 3 item 2).
 - `infer_from_objects()`, a generic mapped target `{ [P in C]: T[P] }` (the homomorphic `T[K]` shortcut, standing in
   for reverse mapping): the source goes to T as if homomorphic unless C is a conditional (Omit's
   `Exclude<keyof T, X>`, where tsc infers nothing), intersection-limited or a deferred `keyof X` whose X isn't
-  inferred. A union with literal keys (`"a" | Exclude<keyof T, X>`) still takes that path, standing in for tsc's
-  inference from the properties those keys give (complicatedIndexesOfIntersectionsAreInferencable). Pick's K gets the
-  source's keys only outside return-type inference: there tttt's `return_inference_mapper()` would make K2 of
-  twiceNestedKeyofIndexInference `never` (tsc's return mapper evidently differs). `infer_to_mapped()` finding nothing
-  returns (tsc goes per property; neutral).
+  inferred. A union with literal keys (`"a" | Exclude<keyof T, X>`) still takes that path (tsc infers from the
+  properties those keys give: complicatedIndexesOfIntersectionsAreInferencable). Pick's K gets the source's keys only
+  outside return-type inference (with `return_inference_mapper()` K2 of twiceNestedKeyofIndexInference would be
+  `never`). `infer_to_mapped()` finding nothing returns (tsc goes per property; neutral).
 - Skip-sensitive rounds (`resolve_with_signatures`): tsc's SkipContextSensitive round checks every argument once, its
-  context-sensitive functions as anyFunctionType; tttt leaves context-sensitive arguments out of
-  `check_args_until_unfit` (`skipped_function_unfit()` relates anyFunctionType for bare functions) and relates the
-  literal ones afterwards (`first_unfit_skipped_literal()`, regularised, nested generic calls skipped), so a literal is
-  related after the arguments behind it. `return_only_type()` gives generators anyFunctionType;
-  `first_unfit_argument` skips such arguments in the first overload round.
-- Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): with explicit type
-  arguments, fitting arity and no candidate checked, the result is the union of every candidate's inferred return
-  (not tsc's).
-- `ExprCtx.sig_contextual` only where `may_want_signature()`.
+  context-sensitive functions as anyFunctionType; tttt leaves them out of `check_args_until_unfit`
+  (`skipped_function_unfit()` relates anyFunctionType for bare functions) and relates the literal ones afterwards
+  (`first_unfit_skipped_literal()`, regularised, nested generic calls skipped), so a literal is related after the
+  arguments behind it. `return_only_type()` gives generators anyFunctionType; `first_unfit_argument` skips such
+  arguments in the first overload round.
+- `ExprCtx.sig_contextual` instantiated only where `may_want_signature()` (permanent: perf, instantiating it for every
+  expression changes no baseline but costs +2.7% instructions on xstate, +1.7% valibot)
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`): a failed
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
 - Return mapper (`infer_type_arguments`, call.c HACKs): the contextual inference through the outer return mapper fills
   only type parameters without candidates (tsc's always-separate returnContext loses
   contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference, gains
-  inferFromGenericFunctionReturnTypes3: something else about the nested call's contextual type differs; valibot +9%).
-  `literal_arg_context()` pre-instantiates with the return mapper (higher-order needs it). A pattern's
-  return mapper drops inferred `any` (tsc's nonInferrableAnyType) and rest patterns give none; `ty_pattern_unclone`
-  copies the pattern type per call. Nested literals instantiate context only in `check_for_mutable_location()`.
-- `Inference.circularity`: `visited` records no priorities, so a pair is circular only while still on the stack.
-- Reverse mapped types of arrays/tuples are eager like tsc's, but still cut at depth 4 (`Checker.reverse_mapped_depth`,
-  HACK: tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42
-  stage 1). Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's
-  instantiateReverseMappedType. Inference priorities lack SpeculativeTuple, NoConstraints, AlwaysStrict.
-  `inference_call_result()`: combined covariant candidates literal-reduced (tsc: subtype-reduced).
+  inferFromGenericFunctionReturnTypes3; valibot +9%). `literal_arg_context()` pre-instantiates with the return mapper
+  (higher-order needs it). A pattern's return mapper drops inferred `any` (tsc's nonInferrableAnyType), rest patterns
+  give none; `ty_pattern_unclone` copies the pattern type per call. Nested literals instantiate context only in
+  `check_for_mutable_location()`. Plan 51 keeps these until someone explains the four tests under tsc's exact
+  returnMapper (a plan 37 lead).
+- `Inference.circularity`: `visited` records no priorities, so a pair is circular only while still on the stack. Real
+  fix: store the circularity with the visited pair, as tsc's invokeOnce stores the inference priority.
+- Reverse mapped types of arrays/tuples are eager like tsc's, but cut at depth 4 (`Checker.reverse_mapped_depth`, HACK:
+  tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42 stage 1).
+  Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's instantiateReverseMappedType.
+  Inference priorities lack SpeculativeTuple, NoConstraints, AlwaysStrict. `inference_call_result()`: combined
+  covariant candidates literal-reduced (tsc: subtype-reduced).
 - Intra-expression sites (`ty_add_intra_expression_site()`): not for JSX attributes; `context_is_tuple_like()` misses
   call spreads.
 - JSDoc type parameters (`meets_jsdoc_node_in()` in `assignment_mentions()`): fixing only, "in scope" by source
   position; tsc instantiates every JSDoc node for its outer type parameters (triage).
 - `const` type parameters: nested array literals found by syntax (`add_nested_array_literals`) plus
   `Inference.array_literals` (ty_internal.h HACK) because interned tuples can't carry ObjectFlags.ArrayLiteral.
-- `clone_type_params`: fresh type parameters only when bounded or the mapper brings type variables; else shared.
-- `ty_union_signatures` not cached; `resolve_call` still falls back per member for `super`, tagged templates,
-  decorators and JSX when one has no signatures.
-- `super(...)` (`resolve_into`): heritage type arguments passed as explicit, inferred when unwritten (tsc: defaults).
-  `resolve_super` walks scopes; `check_before_super` only when the nearest function scope is the constructor.
+- `clone_type_params`: fresh type parameters only when bounded or the mapper brings type variables, else shared with
+  the target (permanent: perf, indistinguishable)
+- `ty_union_signatures` isn't cached (tsc: the union's resolved members). `resolve_call` falls back per member for
+  `super`, decorators and JSX when a union member has no signatures; tsc errors for decorators, takes the union
+  signatures for `super` (getSignaturesOfType) and has getUninstantiatedJsxSignaturesOfType's own union rule for JSX.
+- `super(...)` of a TypeScript base whose type parameter has no default and no written type argument (TS2314 on the
+  clause): inferred (`super_filled_type_arguments()` returns null); tsc's getConstructorsForTypeArguments drops the
+  constructor.
 - `tagged_template_call()` (HACK): a stand-in CallExpr with a shallow copy of the tag as callee
   (`CallInfo.tagged_template`); a TaggedTemplate node or argument-list abstraction would avoid it.
 - `signature_resolve`: function expressions take the contextual signature's type parameters only if resolved after
   the context was assigned.
-- `ty_check_decorator`: signature rebuilt per check (each decorator is checked once, so harmless so far).
-- Generators: no next type from `yield` use; `ty_generator_context` filters only unions.
 - Printing while resolving, to imitate tsc's eager error messages: `missing_property_type()` (ty/expr.c HACK,
   `Checker.print_probe`): tsc prints the object type of a TS2339 while checking, which can find an inferred return
   type in progress (`this.x` in an object literal method). tttt reports it later (ty/check.c), so evaluation prints the
@@ -332,53 +316,50 @@ src` finds the code-side markers; every significant one has an entry here.
   another global file" by the object name's file). tsc: errorType exactly when it reports.
 - Async: `ty_awaited()` wraps generics in `Awaited<T>`, but generators use `ty_awaited_no_alias()` and async returns
   `ty_awaited_returned()` (call.c HACKs) because tttt can't relate `Awaited<T>` to T through the conditional's default
-  constraint; once it can, use ty_awaited() everywhere.
+  constraint (with the alias in generators: 8 suite tests lost, asyncImportedPromise_es6, unknownControlFlow...).
 - Contextual `this` (`ty_contextual_this_type`): a literal's context through its anchor once the call is resolved,
-  else remembered at check (`KEY_LITERAL_CONTEXT`, last wins: tsc's pushed contextual type while the call infers);
-  `KEY_LITERAL_PARENT` is a parent side table; `ThisType<T>` by name, instantiated with `ty_instantiate_fixing()`.
-- `implementation_signature()` (src/ty/call.c, tsc's getImplementationSignature): clones a generic signature for a call
-  inside the function that declares its type parameters by span containment of `sig->function`; skips construct
-  signatures (tsc goes by the class declaration for `new C()` inside class C, tttt doesn't track where class type
-  parameters are declared).
+  else remembered at check (`KEY_LITERAL_CONTEXT`, last wins: tsc's pushed contextual type while the call infers; a
+  push/pop stack is plan 51 stage 3 item 3); `ThisType<T>` by name, instantiated with `ty_instantiate_fixing()`.
+  `KEY_LITERAL_PARENT` is a parent side table (permanent: ThisType markers of outer literals, plan 51).
+- `implementation_signature()` (tsc's getImplementationSignature): clones a generic signature for a call inside the
+  function that declares its type parameters, by span containment of `sig->function`; skips construct signatures
+  (tsc goes by the class declaration for `new C()` inside C; tttt doesn't track where class type parameters live).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
 - `access()` any-key case (`ACCESS_ELEMENT`, HACK): only an element access *expression* reads an intersection's index
   signatures for an `any` key; an `X[any]` *type* on an intersection still gives any. tsc reads them there too, but
-  doing so makes jquery's `NamespacedTypeToTriggeredEventMap<...>[any]` the intersection of every event (tsc's too),
-  and tttt then fails to relate those intersections of generic event instantiations during JQuery's variance
-  measurement (a nested pair relates one member's `relatedTarget` alone against `null | undefined`): JQuery<T> comes
-  out invariant, 13 DT sweep packages regress. The real bug is the intersection-source relation. Repro: `declare const
-  a: JQuery<HTMLElement>; const b: JQuery<Node> = a;` with jquery's and sizzle's index.d.ts, `TTTT_DEBUG_RELATE_NESTED=1`.
+  then jquery's `NamespacedTypeToTriggeredEventMap<...>[any]` becomes the intersection of every event and tttt fails
+  to relate those intersections during JQuery's variance measurement (JQuery<T> invariant, 13 DT sweep packages
+  regress). The real bug is the intersection-source relation. Repro: `declare const a: JQuery<HTMLElement>; const b:
+  JQuery<Node> = a;` with jquery's and sizzle's index.d.ts, `TTTT_DEBUG_RELATE_NESTED=1`.
 - `ty_deferred_reference()`: TYF_COULD_CONTAIN_TYPE_VARIABLES only when a type parameter the node mentions is unmapped
   or mapped to something generic (tsc's couldContainTypeVariables says yes for any reference with a node). Precise
   where conditional.c's "infer constraint that stays generic" HACK needs it (react-relay); drizzle -24%, valibot +2%.
-- `apply_type_arguments_part` (instantiation expressions): signatures whose type arguments violate the constraints
-  are dropped when some other signature was dropped by arity (tsc keeps them uninstantiated); only the "nothing fits,
-  nothing dropped: the type unchanged" case is tsc's.
-- Expression memo (`check_with`, `LazyMemo.context`): an `Expr`'s memo is the last contextual check's;
-  `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
-  `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and
-  destructuring defaults don't.
-- Context anchors (expr.c `ContextAnchor`, plan 51 stage 2): once a call is resolved, the contextual return type of
-  its function arguments and the contextual type of its literal arguments (for `this`) are derived through its resolved
-  signature (tsc's getContextualType walking up to links.resolvedSignature), along a path recorded syntactically after
-  resolution (arguments, literal members, array elements, ternary branches, return expressions; not through calls,
-  first call wins). Unresolved (during inference) the reader falls back to the push-down value: `KEY_CONTEXT_RETURN`
-  (the first contextual signature, tsc's ContextChecked) and `KEY_LITERAL_CONTEXT`. Not derived for a non-generic call
-  of one signature (`CallResolution.exact`: the push-down was the resolved context; deriving it again built
-  normalizedIntersectionTooComplex's TS2590 union outside its report). The ARG step reuses the parameter types the
-  final check used (`CallOutcome.param_types`), else instantiates. Derivations are cached per anchor unless they went
-  through a return type that isn't known yet (`AnchorRead.transient`). Generators' return expressions aren't anchored.
+- Instantiation expressions (`apply_type_arguments_part`, HACK): signatures whose type arguments violate their
+  constraints are dropped when some other signature was dropped by arity; tsc keeps them uninstantiated. The mapper
+  can't say "kept as is": mapping their type parameters to themselves breaks `collectValues<A>` inside collectValues
+  (effect). Needs a kept-signature list on the instantiation (`ty_apply_type_arguments_mapper`, `instantiate_members`).
+- Expression memo (`check_with`, `LazyMemo.context`): an `Expr`'s memo is the last contextual check's (permanent: tsc's
+  final Normal-mode check writes the node type, first-wins loses 19 tests, plan 51). `kind_uses_context` decides
+  rechecks; `initial_or_assigned_type()` re-derives the context for `x = e` and annotated declarations, compound /
+  logical assignments and destructuring defaults don't.
+- Context anchors (`ContextAnchor`, `ty_record_call_anchors()`, plan 51 stage 2): after a call resolves, its function
+  arguments' contextual return and its literal arguments' contextual type (for `this`) are derived through the
+  resolved signature along a syntactic path (arguments, literal members, array elements, ternary branches, returns;
+  not through calls, first call wins), tsc's getContextualType up to links.resolvedSignature. Before resolution the
+  push-down values stand in (`KEY_CONTEXT_RETURN`, `KEY_LITERAL_CONTEXT`). Not recorded for a non-generic call of one
+  signature (`CallResolution.exact`). Derivations cached per anchor unless transient (`AnchorRead.transient`).
+  Generators' returns aren't anchored.
 - `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (expr.c): "the first check had no contextual signature / type", so
   the return type wasn't decided then (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod only computes it
-  with a signature). NONE only under a call's resolution, FIRST_ABSENT also for anchored functions checked after it
-  (`getColorTheme: () => ({ getColor: () => undefined })` in `Object.assign`'s argument: the inner one's first check
-  is while the outer's return is in flight). Plan 51 stage 3 tries expressing both through anchors. (ContextChecked
-  itself is tsc's rule since plan 51 stage 1: `KEY_CONTEXT_DONE` with a signature, `KEY_CONTEXT_BLOCKED` without; a
-  blocked function still takes `this` from the last contextual signature, which tsc asks lazily.)
+  with a signature). NONE only under a call's resolution, FIRST_ABSENT also for anchored functions checked after it.
+  Three slices (with `KEY_CONTEXT_BLOCKED`) of tsc's one rule: plan 51 stage 3 item 2 (each alone still loses: NONE 2
+  tests + effect 2, FIRST_ABSENT flagflip -22 TS7023); merging `KEY_CONTEXT_DONE`/`BLOCKED` is item 4. A blocked
+  function still takes `this` from the last contextual signature, which tsc asks lazily.
 - `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_DONE`), from the first usable context; generic
   contextual signatures aren't instantiated. `KEY_CONTEXT_PARAM_PATTERN` marks pattern fallbacks for the symbols
-  traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check; an earlier return type misses it.
+  traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check, an earlier return type misses it
+  (permanent: tsc's getContextualType(iife) is fixed at the first check too, plan 51).
 - Apparent contextual types: `intersection_prop_context` intersects per-member answers (tsc: the intersection's
   apparent type once, distributing over union constraints; only union/intersection constraints go through
   `context_map`); `get_prop_context`/`contextual_signature` take apparent types at use. `context_map` drops `unknown`
@@ -391,8 +372,6 @@ src` finds the code-side markers; every significant one has an entry here.
   tuples.
 - Expandos on functions are checked against existing members; `is_container_declaration()` approximates
   isAssignmentDeclaration for `ns.a = {}`.
-- `check_array`: tuples only from tuple-like context, patterns or `as const`.
-- `ty_apply_type_arguments` (instantiation expressions): the display is the expanded object.
 - `ty_access` skips nullish union members silently (TS18047/18048 come from `check_access`). `member_refs()` (check.c)
   duplicates `access()`'s walk to get `Prop`s without creating types.
 - `PropertyExpr` keeps four pointer-sized resolve-walk fields (`flow`, `context`, `declares`, a
@@ -402,9 +381,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - `assignment_value_context` (HACK): `TYF_BINDING_PATTERN` is both tsc's object literal `pattern` and
   isFromBindingPattern, so an object assignment pattern only marks its context when the value isn't a call (else
   `({ p: this.p } = f())` would infer nothing from it). A flag for "from a binding pattern" would separate them.
-- `contains_spread` (members.c HACK, ObjectFlags.ContainsSpread): `{ ...{} }` doesn't count.
-- `TY_RELATION_ASSIGNABLE_STRICT_NULLS` (ty.h HACK): the operator checks' "extends number" never takes nullables.
-- `ty_unresolved`: unresolved type names are intrinsics with `TYF_ANY | TYF_ERROR` interned by name.
+- `contains_spread` (members.c HACK, ObjectFlags.ContainsSpread): read off the properties (one not the literal's own),
+  so `{ ...{} }` doesn't count.
 
 ## Relations (`ty/relate.c`)
 - `find_prop()` of an intersection: tttt keeps optional properties' types without undefined and has readers add it,

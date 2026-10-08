@@ -283,3 +283,11 @@ fails types in both configurations.
 - Perf lead, not looked at: 9751c955 (TS2344 on deferred conditional arguments) costs valibot ~0.75%, mostly one
   relation (`TSchema extends ... ? IssueDotPath<TSchema> : string` against keyof any, flatten.ts:41, ~13 ms): tttt's
   relation through IssueDotPath's constraint may be slower than tsc's.
+
+## Moved from hacks.md by the hacks audit (2026-10-08)
+- A `declare x;` field without type or initializer in a class without a constructor doesn't take the base class
+  property's type (tsc's getWidenedTypeForVariableLikeDeclaration: getTypeOfPropertyInBaseClass under noImplicitAny):
+  `class B { x: string = "" } class D extends B { declare x; } const s: number = new D().x;` is TS7008 at `x` and
+  `any` in tttt, TS2322 in tsc. Belongs next to `field_type_from_assignments()` (class_decl.c), which needs the class.
+- Generators: no next type inferred from how `yield` results are used (tsc's getReturnTypeFromBody collects
+  contextual types of yield expressions); `ty_generator_context` filters only unions.
