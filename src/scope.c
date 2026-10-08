@@ -3802,7 +3802,10 @@ static void merge_augmentations(Binder* me) {
         if (ref->failure != MODULE_REF_IS_JS) {
             // (tsc's mergeModuleAugmentation: not for one in an ambient context, a declaration file's)
             Scope const* outer = decl->inner_scope->parent;
-            if (outer && !outer->ambient) {
+            if (outer && !outer->ambient && ref->failure == MODULE_REF_NOT_BUILT) {
+                // (tsc's resolveExternalModule says what a referenced project's unbuilt output is first)
+                module_ref_report_unresolved(ref, decl->inner_scope->binder->errs);
+            } else if (outer && !outer->ambient) {
                 error_ctx_error_d(decl->inner_scope->binder->errs, ref->span, 2664, "Invalid module name in augmentation, module '",
                     ref->path, "' cannot be found.");
             }
@@ -3931,7 +3934,9 @@ void binder_resolve_remaining_aliases(Binder* me) {
 }
 
 bool symbol_const_enum_is_ambient(Symbol const* me) {
-    return my is_ambient || (my name_span.source && my name_span.source->reference_const_enums_ambient);
+    SourceFile const* source = my name_span.source;
+    if (source && source->reference_preserves_const_enums) return false;
+    return my is_ambient || (source && source->reference_const_enums_ambient);
 }
 
 // tsc's checkAliasSymbol under verbatimModuleSyntax: an import or export (not type-only, not ambient) of an ambient

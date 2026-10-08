@@ -10,8 +10,8 @@ the (file, line, code) of the diagnostics are compared with tsc's.
     ./scenarios.py -v            show the commands and tttt's output of failing ones
     ./scenarios.py --keep DIR    write the trees under DIR (and keep them) to poke at them
 
-Known divergences are listed in SKIP with why (plan 41: tttt reads referenced projects' sources, never outputs: no
-TS6305; no emit nor incremental state. TypeScript 6 deprecates outFile/AMD: those configs are checked like any other). tsc's tiny fake lib is replaced by tttt's real libraries.
+Known divergences are listed in SKIP with why (plan 41: under -b tttt reads referenced projects' sources, never
+outputs; no emit nor incremental state. TypeScript 6 deprecates outFile/AMD: those configs are checked like any other). tsc's tiny fake lib is replaced by tttt's real libraries.
 """
 import argparse, os, re, shutil, subprocess, sys, tempfile
 from collections import Counter
@@ -30,10 +30,6 @@ SKIP = {
         "builder API, not a command",
     r"synthesized-module-specifiers-resolve-correctly|loads-js-based-projects-and-emits-them-correctly$":
         "tsc's fake lib declares Symbol.species, tttt's default libs don't",
-    r"^tsc/projectReferencesConfig/issues-a-nice-error-when-the-input-file-is-missing":
-        "TS6305 (-p reads referenced sources, never outputs)",
-    r"^tsc/projectReferencesConfig/redirects-to-the-output-dts-file|importing-const-enum-from-referenced-project-with-preserveConstEnums-and-verbatimModuleSyntax":
-        "a stale prebuilt output (tttt reads sources)",
     r"^tsbuild/projectReferenceWithRootDirInParent/reports-error-for-same-tsbuildinfo-file":
         "TS6377 (two projects writing one .tsbuildinfo; tttt writes no build info)",
 }

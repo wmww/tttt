@@ -7,7 +7,8 @@
 #include <cleat/filesystem.h>
 
 // Project references (tsc's `references`, `tsc -b`): the only code that knows about more than one tsconfig. A program
-// checks one project; the projects it references (transitively) are read as sources, never as built `.d.ts` outputs
+// checks one project. Under -p the projects it references (transitively) are read through their built outputs like
+// tsc's command line (program_set_references()); under -b as sources, never as built `.d.ts` outputs
 // (tsc's useSourceOfProjectReferenceRedirect, what its language service does): an import that resolves to a referenced
 // project's output declaration file gets the project's source file instead, and the files of a referenced project
 // are part of the program but neither checked nor reported (documentation.md, "Project references")

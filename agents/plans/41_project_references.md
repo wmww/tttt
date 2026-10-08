@@ -95,7 +95,8 @@ language service (and tsgo's LSP) instead uses **useSourceOfProjectReferenceRedi
 referenced project's output `.d.ts` (or to its source directly) gets the *source file*, which is part of the program
 but never checked or reported (it's the referenced project's to report). For a project that is clean under tsc -b this
 gives the same answer (editors show exactly this), and it needs no build order for correctness. Adopt it for both
-`-p` and `-b`.
+`-p` and `-b`. (2026-10-08, plan 52: `-p` now does what tsc's command line does instead, outputs and TS6305; the
+source sweep showed the unbuilt-output cascade in ~25 repositories.)
 
 Confirmed in `program.ts` (updateHostForUseSourceOfProjectReferenceRedirect, findSourceFileWorker,
 getRedirectReferenceForResolution, getCompilerOptionsForFile):

@@ -25,6 +25,9 @@ typedef enum ModuleRefFailure {
     MODULE_REF_ARBITRARY_EXTENSION, // Resolved to a .d.*.ts file without allowArbitraryExtensions: TS6263
     MODULE_REF_JSX_NOT_SET, // Resolved to a .tsx/.jsx file without `jsx`: TS6142
     MODULE_REF_NEEDS_EXTENSION, // TS2834 / TS2835 (with `suggestion`)
+    // Resolved to a referenced project's source whose output declaration file (unbuilt_output) doesn't exist, under -p:
+    // TS6305, the module is `any`
+    MODULE_REF_NOT_BUILT,
 } ModuleRefFailure;
 
 typedef struct ModuleRef {
@@ -62,7 +65,8 @@ typedef struct ModuleRef {
     cstr package_name;
     // tsc's alternateResult, as messages name it: the declarations another resolution would find (TS2307, TS7016)
     cstr alternate_result;
-    cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any
+    cstr resolved_path; // MODULE_REF_IS_JS, MODULE_REF_ARBITRARY_EXTENSION: the file, as messages name it. MODULE_REF_NEEDS_EXTENSION: the specifier tsc suggests, if any. MODULE_REF_NOT_BUILT: the source, absolute
+    cstr unbuilt_output; // MODULE_REF_NOT_BUILT: the output declaration file, absolute
     Symbol* module; // Memo of binder_module_of_ref()
     Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
     bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: what there is to say about it was said (once per file, like tsc)
@@ -153,15 +157,21 @@ typedef struct SourceFile {
     // 1 + the index of the referenced project (project.h) the file is a root file of, 0 for the program's own files.
     // Unchecked, and none of its diagnostics are reported (not even parse errors): that project reports them
     u32 from_reference;
+    // 1 + the index of the referenced project whose options resolve the file's module names (tsc's
+    // getRedirectReferenceForResolution): from_reference's, or the project a built output declaration file is of
+    u32 resolution_project;
     // A referenced project's TypeScript (not TSX) file: the bodies of functions with a written return type are skipped
     // rather than parsed where that's safe (parser.c's skip_typed_body()), and never resolved
     bool skip_typed_bodies;
     // A referenced project's file whose project doesn't preserve const enums: tsc -b reads its `.d.ts`, where they're
     // ambient (TS2748 under isolatedModules, tsc's shouldPreserveConstEnums of the redirect)
     bool reference_const_enums_ambient;
-    // A referenced project's file whose project emits ES modules (`module` es2015..esnext): an ES module's import of it
+    // A referenced project's file (or built output) whose project emits ES modules (`module` es2015..esnext): an ES module's import of it
     // has no synthetic default (tsc's canHaveSyntheticDefault, getRedirectFromSourceFile)
     bool reference_emits_esm;
+    // A referenced project's built output declaration file whose project preserves const enums: they aren't ambient
+    // (tsc's shouldPreserveConstEnums of getRedirectFromOutput, TS2748)
+    bool reference_preserves_const_enums;
     // Unchecked, but checked anyway for a few errors (tsc's isPlainJsFile: JavaScript without a `@ts-check`/`@ts-nocheck`
     // and with checkJs not set at all): only the ones on tsc's plainJSErrors list are reported
     bool plain_js;

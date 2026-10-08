@@ -134,6 +134,7 @@ void source_file_drop(SourceFile* me) {
         cstr_drop(&my module_refs[i]->resolved_path);
         cstr_drop(&my module_refs[i]->package_name);
         cstr_drop(&my module_refs[i]->alternate_result);
+        cstr_drop(&my module_refs[i]->unbuilt_output);
         cstr_drop(&my module_refs[i]->augmented_path);
         free(my module_refs[i]);
     }
@@ -342,6 +343,10 @@ static void report_unresolved(ModuleRef const* me, ErrorCtx* errs, bool side_eff
                     "Relative import paths need explicit file extensions in ECMAScript imports when "
                     "'--moduleResolution' is 'node16' or 'nodenext'. Consider adding an extension to the import path.");
             }
+            return;
+        case MODULE_REF_NOT_BUILT:
+            error_ctx_error_d(errs, my span, 6305, "Output file '", my unbuilt_output,
+                "' has not been built from source file '", my resolved_path, "'.");
             return;
         case MODULE_REF_NOT_FOUND:
             break;

@@ -331,7 +331,9 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         StrList const* listed = project_set_root_files(projects, project);
         for (isize i = 0; i < listed->count; i++) str_list_push(&root_files, cstr_sv(&listed->items[i]));
     }
-    if (project_redirects_count(redirects)) program_set_references(program, redirects);
+    // (-p reads a referenced project's built outputs like tsc's command line, -b its sources: they stand for the
+    // outputs its build would have written)
+    if (project_redirects_count(redirects)) program_set_references(program, redirects, !opts->build);
     program_set_threads(program, opts->threads);
     // (Libraries' errors are dropped once they're loaded: these come after)
     bool has_inputs = opts->path_count + root_files.count > 0;

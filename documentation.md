@@ -252,8 +252,14 @@ through `extends`), each once by absolute path; a project's root files are liste
 (`project_set_root_files()`, which the CLI also takes its roots from, so each include walk runs once).
 `project_set_build_order()` is tsc's `-b` order (depth-first, references first, TS6202 on a cycle unless `circular`).
 
-A program checks one project. The projects it references, transitively, are read **as sources, never as built
-outputs**: tsc's `useSourceOfProjectReferenceRedirect`, what its language service and tsgo's LSP do. `ProjectRedirects`
+A program checks one project. Under **`-p`** the projects it references, transitively, are read like tsc's command
+line does (`program_set_references(..., outputs)`, `Program.reference_outputs`): a resolution (or root file) that lands
+on a referenced project's source is swapped for its output declaration file, read like any `.d.ts` of the program if it
+was built (its module names resolve with its project's options, `SourceFile.resolution_project`; its const enums aren't
+ambient if that project preserves them), else a TS6305 at the import (`MODULE_REF_NOT_BUILT`, the module is `any`) or a
+global one for a root file. The resolver sees only the real file system. Under **`-b`** they are read **as sources,
+never as built outputs**: tsc's `useSourceOfProjectReferenceRedirect`, what its language service and tsgo's LSP do, and
+what tsc -b's freshly built outputs would say. `ProjectRedirects`
 (per program) holds every referenced project's root files and the output declaration path of each
 (getOutputDeclarationFileName: `declarationDir`, else `outDir`, below `rootDir`, composite's config directory or the
 common source directory; next to the source without either), mapped back to the source, and the declaration
@@ -271,9 +277,8 @@ either, and they were most of the cost of `-b` (TypeScript's `compiler/`, isolat
 default (`source_file_reads_as_declaration()`), and its const enums are ambient for TS2748 unless its project preserves
 them (`SourceFile.reference_const_enums_ambient`).
 
-Divergences by design: no TS6305 ("output file has not been built"), never stale outputs (`scenarios.py` skips the
-scenarios that test either), a referenced project's declarations typed under the referencing program's strictness,
-and no `/// <reference types="node" />` leaking from a built `.d.ts`.
+Divergences of `-b` by design: never stale outputs, a referenced project's declarations typed under the referencing
+program's strictness, and no `/// <reference types="node" />` leaking from a built `.d.ts`.
 
 The CLI: `-p` on a config with references checks that project with the redirects; on a solution config (no files,
 only references) it says nothing and exits 0. `-b [PROJECT...]` checks each project in build order as its own program,
