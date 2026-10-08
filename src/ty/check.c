@@ -1311,7 +1311,10 @@ bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Spa
 
 // tsc's isValidSpreadType
 static Ty const* spread_base_constraint(Checker* me, Ty const* ty) {
-    if (!(ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return nullptr;
+    // (An intersection with type variables has one too: `C<E> & {}` is at least `{}` when C<E> is at least unknown,
+    // tsc's getBaseConstraintOrType of a UnionOrIntersection)
+    bool generic_intersection = ty->kind == TY_INTERSECTION && (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES);
+    if (!(ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) && !generic_intersection) return nullptr;
     return ty_base_constraint(me, ty);
 }
 

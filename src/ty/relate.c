@@ -4094,7 +4094,8 @@ static Ty const* composite_base_constraint(Checker* me, Ty const* ty, u32 depth,
         if (base != part) different = true;
         if (base) ty_buf_push(&bases, base);
     }
-    Ty const* ret = !different ? nullptr : ty->kind == TY_UNION ?
+    // (An intersection none of whose members has a base constraint has none either: tsc's computeBaseConstraint)
+    Ty const* ret = !different || !bases.len ? nullptr : ty->kind == TY_UNION ?
         ty_union(me, bases.data, bases.len, nullptr, (TyList){0}) :
         ty_intersection(me, bases.data, bases.len, nullptr, (TyList){0});
     ty_buf_drop(&bases);
