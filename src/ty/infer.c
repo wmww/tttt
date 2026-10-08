@@ -2209,6 +2209,13 @@ static TyMapper const* inference_mapper_impl(Checker* me, Signature const* sig, 
                 if (!constraint || constraint == params.data[j]) continue;
                 // (Whether or not nothing would satisfy it: tsc's getInferredType takes the constraint when there's
                 // no inferred type at all, `<R extends AnyAction, T = R["payload"]>` with AnyAction unresolved)
+                // (Not one that mentions this type parameter or a later one: tsc's getInferredType of that one asks
+                // for the earlier one again, whose inferred type is unknown by then: `<N extends P, P = N>` is unknown)
+                if ((constraint->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) &&
+                    ty_mentions_any(me, constraint, params.data + i, params.len - i)
+                ) {
+                    continue;
+                }
                 Ty const* instantiated = ty_instantiate(me, constraint, mapper);
                 if (instantiated == nothing) continue;
                 results[j] = instantiated;
