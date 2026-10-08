@@ -561,8 +561,7 @@ src` finds the code-side markers; every significant one has an entry here.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `source_file_check_verbatim_exports()` (TS1287) finds the `export` keyword by scanning the statement text
-  (`export_keyword_of()`): statements don't keep their modifiers' spans. `check_alias_isolated_modules()` puts a
-  default import's error on its name where tsc spans the whole import clause (`A, { b }`).
+  (`export_keyword_of()`): statements don't keep their modifiers' spans.
 - `ty_check_static_heritage()` relates to a synthetic object literal (tsc's getTypeWithoutSignatures, which keeps the
   class symbol and so prints `typeof Base`); `Checker.display_of`/`display_as` make messages print the named static
   side for it while explaining. A synthetic anonymous type that remembers the symbol it prints as would replace it.
@@ -580,26 +579,23 @@ src` finds the code-side markers; every significant one has an entry here.
   (`initialized_in_static_blocks`, HACK: top-level `this.x =` instead of flow), member kinds in
   `class_check_member_overrides()` (`class_instance_member()`, not symbol flags; TS2612 skips what
   isPropertyInitializedInConstructor decides), `check_property_modifiers` (TS2687, HACK) skips methods and accessors.
-- `ty_check_object_type_duplicate_members`: `MemberTables` is a fixed 128-entry linear array; later members unchecked.
 - `ty_check_class_duplicate_members()` (HACK): a late-bound member name (`[k]`, `[Symbol.x]`) conflicts with what the
   member table has (the static `prototype`, tsc's source of that TS2300 unknown) without joining it; tsc also reports
-  an early `a` against a later `get [k]` (k = "a") at both.
-- `ty_check_heritage`: TS2320 for interfaces only (`inherited_props_identical`).
+  an early `a` against a later `get [k]` (k = "a") at both. `MemberTables` lookup is a linear scan.
 - Emit helpers (`ty_check_emit_helpers`): spans by hand (`decorator_span()`, `function_error_span()`); "ambient"
   approximated per site (`ClassDecl.is_ambient`, `Binding.ambient`, `BlockTypecheckCtx.ambient`; want
-  NodeFlags.Ambient); `for await` unchecked.
+  NodeFlags.Ambient).
 - `unused_mark_jsdoc_links()` (HACK): `{@link X}` is a use by text scan, looked up from the file's scope (real fix:
   resolve them from parsed tags). Member reads are a table keyed by declaration span start
   (`ty_mark_member_referenced`).
-- `for_in_accepts`: type parameters and deferred types accepted outright (TS2407 missed).
 - `program_apply_comment_directives`: suppression by tttt's error *phase*, not tsc's diagnostic kind; `\n` and ASCII
   `\s` only; relies on every comment going through `hop_comment`.
-- `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the JS/skipLibCheck gate filters after checking. Plain JS is
-  checked in full and filtered to plainJSErrors (as tsc).
+- `SourceFile.unchecked` + `error_ctx_remove_unchecked`: the skipLibCheck / noCheck / JS gate filters after checking,
+  so skipLibCheck'd declaration files are checked in full for nothing (tsc's skipTypeChecking doesn't check them: a
+  perf lead, as long as checking them first doesn't change what the checked files see). Plain JS is checked in full
+  and filtered to plainJSErrors (as tsc).
 - `error_ctx_global_error_s`: file-less diagnostics have a null span, sorted first; `error_ctx_error_s` drops invalid
-  spans.
-- `port_statement_typecheck()`: TS2837/TS2858 (non-string import attribute values) don't stop the import clause checks
-  that tsc's checkExternalImportOrExportDeclaration returning false skips.
+  spans (permanent: tttt's diagnostic representation)
 - `ty_check_destructured_member` (check.c HACK, `from_this`): `({ m } = this)` inside method m isn't a read of private m
   (tsc's markPropertyAsReferenced with rightIsThis); "inside" is by position, so a function nested in m counts as m.
 
