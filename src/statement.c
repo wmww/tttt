@@ -1615,7 +1615,9 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             FlowNode* post = flow_new_branch_label(flow);
             statement_resolve_names(&loop->initialization, loop_scope, errs);
             flow_add_antecedent(flow, pre_loop, flow->current);
-            flow_set_current(flow, pre_loop);
+            // An initializer that ends the flow (a throwing IIFE): the rest stays unreachable. Entering the loop
+            // label would leave it only the back edge, a cycle with no way in (tsgo's bindForStatement bails out)
+            if (!flow_is_unreachable(flow->current)) flow_set_current(flow, pre_loop);
             expr_lookup_names_condition(&loop->condition, loop_scope, errs, pre_body, post);
             flow_set_current(flow, flow_finish_label(pre_body));
             statement_resolve_names_body(&loop->body, loop_scope, errs, post, pre_incrementor);
@@ -1646,7 +1648,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             expr_lookup_names(&loop->iterable, loop_scope, for_of_checks_iterable(loop) ? errs : nullptr);
             flow->initializing = outer_initializing;
             flow_add_antecedent(flow, pre_loop, flow->current);
-            flow_set_current(flow, pre_loop);
+            // (An iterable that ends the flow: unreachable from here, as in the `for` loop above)
+            if (!flow_is_unreachable(flow->current)) flow_set_current(flow, pre_loop);
             flow_add_antecedent(flow, post, flow->current);
             if (is_declaration) {
                 unused_register(loop_scope, UNUSED_FOR_IN_OF_VARIABLES, &loop->variable.statement, loop->variable.statement.span);

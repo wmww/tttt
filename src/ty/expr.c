@@ -2307,7 +2307,9 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
             *issue = type == auto_any ? IDENTIFIER_FLOW_IMPLICIT_ANY : IDENTIFIER_FLOW_IMPLICIT_ANY_ARRAY;
             return type == auto_any ? ty_intrinsic(me, TY_ANY) : ty_array(me, ty_intrinsic(me, TY_ANY), false);
         }
-        return type;
+        // (Unreachable code has no flow nodes either: tsc's flow type is the declared type there, then an assignment
+        // target's literals are widened like anywhere else, `v++` of `v: 0 | 1` is a number)
+        return identifier->assignment_target ? base_type_of_literal(me, type) : type;
     }
     Binding const* binding = symbol_find_node(symbol, SYMBOL_DECL_VARIABLE);
     if (type == auto_any || (type == my auto_array && type)) {
