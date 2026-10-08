@@ -427,12 +427,15 @@ static void binding_report_rest_trailing_comma(Binding const* element, ErrorCtx*
     }
 }
 
-static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, ErrorCtx* errs);
-
-_Thread_local bool binding_check_bodiless;
+static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, bool bodiless,
+    ErrorCtx* errs);
 
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs) {
-    binding_typecheck_at(me, initializer, span_null, true, false, errs);
+    binding_typecheck_at(me, initializer, span_null, true, false, false, errs);
+}
+
+void binding_typecheck_bodiless(Binding* me, ErrorCtx* errs) {
+    binding_typecheck_at(me, nullptr, span_null, true, false, true, errs);
 }
 
 // A JavaScript `/** @type {T} */ const x = {}` whose members are expandos (`x.a = 1`) isn't checked against T (tsc's
@@ -446,7 +449,9 @@ static bool is_js_expando_object_initializer(Binding const* me, Expr const* init
 // `span`: where the initializer's check reports (a parameter's is the whole parameter, tsc's getErrorSpanForNode).
 // `assigned`: whether the root is assigned anything (not a variable or parameter without initializer)
 // `type_checked`: the annotation was walked already
-static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, ErrorCtx* errs) {
+// `bodiless`: a parameter of a signature without a body, whose elements' initializers are only TS2371
+static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span, bool assigned, bool type_checked, bool bodiless,
+    ErrorCtx* errs) {
     if (my has_explicit_type && !type_checked) type_typecheck(&my explicit_type, errs);
     // A pattern without elements is checked for null and undefined instead: the initializer's type, and the pattern's
     // (tsc's checkVariableLikeDeclaration: checkNonNullNonVoidType, both are one diagnostic if they say the same)
@@ -492,11 +497,11 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
 
     // (tsc's checkVariableLikeDeclaration: an element's initializer in a signature without a body is TS2371, after its
     // own elements were checked, and then it returns)
-    if (my default_value && my parent && binding_check_bodiless) {
+    if (my default_value && my parent && bodiless) {
         if (my tag == BINDING_ARRAY) {
-            for_each (i, vec_binding, &my array) binding_typecheck(i, nullptr, errs);
+            for_each (i, vec_binding, &my array) binding_typecheck_at(i, nullptr, span_null, true, false, true, errs);
         } else if (my tag == BINDING_OBJECT) {
-            for_each (i, vec_object_binding_item, &my object) binding_typecheck(&i->target, nullptr, errs);
+            for_each (i, vec_object_binding_item, &my object) binding_typecheck_at(&i->target, nullptr, span_null, true, false, true, errs);
         }
         return;
     }
@@ -578,7 +583,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                     ty_check_property_access(current_checker, parent, ty_literal(current_checker, &index), span_null,
                         i->content_span, false, false, errs);
                 }
-                binding_typecheck(i, nullptr, errs);
+                binding_typecheck_at(i, nullptr, span_null, true, false, bodiless, errs);
             }
             break;
 
@@ -639,7 +644,7 @@ static void binding_typecheck_at(Binding* me, Expr const* initializer, Span span
                 if (i->target.rest && compiler_options()->target < SCRIPT_TARGET_ES2018 && !my ambient) {
                     ty_check_emit_helpers(current_checker, i->target.content_span, EMIT_HELPER_REST, errs);
                 }
-                binding_typecheck(&i->target, nullptr, errs);
+                binding_typecheck_at(&i->target, nullptr, span_null, true, false, bodiless, errs);
             }
             break;
         }
@@ -1002,19 +1007,19 @@ void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs) {
     if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
     Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
-    binding_typecheck_at(&my binding, initializer, span_null, initializer, true, errs);
+    binding_typecheck_at(&my binding, initializer, span_null, initializer, true, false, errs);
     report_errors_from_widening(me, span_null, errs);
     ty_leave_node(checker, saved);
 }
 
-void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs) {
+void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs) {
     if (my binding.has_explicit_type) type_typecheck(&my binding.explicit_type, errs);
     initialized_binding_check_value(me);
     // (Only when the initializer types the declaration: an annotated one never asks for its quick type)
     if (!my binding.has_explicit_type) check_quick_callee(initialized_binding_value(me), errs);
     expr_typecheck(initialized_binding_value(me), errs);
     Expr const* initializer = initialized_binding_value(me)->tag == EXPR_IMPLICIT_ANY ? nullptr : initialized_binding_value(me);
-    binding_typecheck_at(&my binding, initializer, span, initializer, true, errs);
+    binding_typecheck_at(&my binding, initializer, span, initializer, true, bodiless, errs);
     report_errors_from_widening(me, span, errs);
     if (!initializer || my binding.has_explicit_type) return;
     // An unannotated parameter typed by its contextual signature: the initializer is assigned to that type, unless it

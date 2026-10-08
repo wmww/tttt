@@ -838,10 +838,7 @@ void function_impl_typecheck_signature(FunctionImpl const* me, bool is_type, Err
         // (A type's signature has no other check of its parameters: the elements of a pattern have to exist too, tsc's
         // checkParameter -> checkBindingElement)
         if (is_type && is_pattern) {
-            bool saved = binding_check_bodiless;
-            binding_check_bodiless = true;
-            binding_typecheck((Binding*)&i->initializer.binding, nullptr, errs);
-            binding_check_bodiless = saved;
+            binding_typecheck_bodiless((Binding*)&i->initializer.binding, errs);
         }
 
         if (i->rest) {
@@ -1182,10 +1179,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
             if (i->initializer.binding.has_explicit_type) type_typecheck(&i->initializer.binding.explicit_type, errs);
             continue;
         }
-        bool saved_bodiless = binding_check_bodiless;
-        binding_check_bodiless = !my has_body;
-        initialized_binding_typecheck_parameter(&i->initializer, i->span, errs);
-        binding_check_bodiless = saved_bodiless;
+        initialized_binding_typecheck_parameter(&i->initializer, i->span, !my has_body, errs);
         if (i->initializer.binding.tag == BINDING_ARRAY && initialized_binding_value(&i->initializer)->tag != EXPR_IMPLICIT_ANY &&
             !i->initializer.binding.has_explicit_type
         ) {

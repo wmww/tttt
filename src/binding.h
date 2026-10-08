@@ -95,9 +95,9 @@ void binding_report_iterated_widening(Binding const* me, struct Ty const* elemen
 void binding_collect_names(Binding const* me, VecSpan* out);
 /// `initializer`: what the binding is initialized with, if anything (a failed check is elaborated into it)
 void binding_typecheck(Binding* me, Expr const* initializer, ErrorCtx* errs);
-// Set while checking a parameter of a signature without a body (a type's, an overload's): an element's default is
-// TS2371 (reported by the signature) and nothing else of that element is checked
-extern _Thread_local bool binding_check_bodiless;
+// A parameter of a signature without a body (a type's, an overload's): an element's default is TS2371 (reported by
+// the signature) and nothing else of that element is checked
+void binding_typecheck_bodiless(Binding* me, ErrorCtx* errs);
 
 void object_binding_item_drop(ObjectBindingItem* me);
 
@@ -162,7 +162,7 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me);
 bool initialized_binding_js_empty_array(InitializedBinding const* me, Ty const* init);
 void initialized_binding_typecheck(InitializedBinding* me, ErrorCtx* errs);
 // A parameter (`span`: all of it)
-void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, ErrorCtx* errs);
+void initialized_binding_typecheck_parameter(InitializedBinding* me, Span span, bool bodiless, ErrorCtx* errs);
 
 #define g_class_key InitializedBinding, initialized_binding
 #define g_no_clone
