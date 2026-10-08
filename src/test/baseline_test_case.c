@@ -1258,6 +1258,18 @@ static void render_lines_woven_with_file(
         return;
     }
 
+    // tsc's harness (iterateErrorBaseline) splits the source on \n, and only a file without any on \r: then a lone \r
+    // is the line break
+    cstr lone_cr_lines = cstr_null;
+    if (is_errors && !memchr(source_contents.buf, '\n', (size_t)source_contents.size) &&
+        memchr(source_contents.buf, '\r', (size_t)source_contents.size)
+    ) {
+        lone_cr_lines = cstr_from_sv(source_contents);
+        char* c = cstr_data(&lone_cr_lines);
+        for (isize i = 0; i < source_contents.size; i++) if (c[i] == '\r') c[i] = '\n';
+        source_contents = cstr_sv(&lone_cr_lines);
+    }
+
     intptr_t newlines_at_end_of_source = 0;
     const char* end_of_content_lines = csview_end_ptr(source_contents);
     while (end_of_content_lines > source_contents.buf) {
@@ -1324,6 +1336,7 @@ static void render_lines_woven_with_file(
         cstr_append(target, "\r\n");
         cstr_append_s(target, vec_line_numbered_str_at(lines, index)->str);
     }
+    cstr_drop(&lone_cr_lines);
 }
 
 void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me) {

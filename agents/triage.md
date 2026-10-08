@@ -25,8 +25,6 @@ to plan 19. The commit message has the numbers.
 - Message from human: it seems you've bumped up the typescript version, but maybe not all the way? ideally I'd like this project to be a drop-in replacement for the latest tsc/tsgo (thus implement typescript 7). make sure it implementes and is tested against the latest features of the language.
 
 - Message from human: minor cleanup, please organize all your scripts into a toplevel scripts/ directory instead of keeping them at the repo top level
-- Errors baseline of a file with lone-`\r` line endings prints its source lines joined (the diagnostics match since
-  the hacks audit's conflict-marker fix; the harness's line splitting doesn't treat `\r` as a break).
 
 - (2026-10-08, plan 52 stage 2 agent ss-a, spurious relation keys, second round) Left after the drain:
   discord.js root project `setInterval(...)` typed bun-types' `Timer` where @types/node's `Timeout` is expected (TS2322
