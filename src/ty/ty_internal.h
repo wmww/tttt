@@ -107,7 +107,6 @@ enum {
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_NONE,   // FunctionImpl -> the call being resolved when its first check had a contextual type without signature
-    KEY_CONTEXT_FIRST_ABSENT, // FunctionImpl -> itself once its first check, under a call or in an argument, had no contextual type at all
     KEY_CONTEXT_BLOCKED, // FunctionImpl -> non-null once its first check decided it has no contextual signature (context sensitive)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())

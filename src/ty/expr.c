@@ -2053,9 +2053,6 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
 }
 
 bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
-    // (Only when its first check had no contextual signature: one it had then decided its return type, no circularity)
-    if (!intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) &&
-        !intern_get(&my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)function }, 2)) return false;
     // (Its return type was inferred with its own signature as the context)
     ty_function_return_type(me, function);
     return intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) != nullptr;
@@ -5385,17 +5382,6 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                  !contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0))
             ) {
                 *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) = expr->function;
-            }
-            // (A first check without any contextual type leaves its return type undecided too: `id({ d: () => null })`,
-            // whose `d` the object literal's contextual type U has nothing for until U is inferred as the literal itself,
-            // see ty_function_context_is_self())
-            if (!ctx.contextual && !ctx.sig_contextual && !expr->function->ret_explicit &&
-                (my resolving_call || intern_get(&my links, (u64[]){ KEY_FUNCTION_ANCHOR, (u64)(uintptr_t)expr->function }, 2)) &&
-                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
-                !intern_get(&my links, none_key, 2)
-            ) {
-                Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)expr->function }, 2);
-                if (!*slot) *slot = (Ty const*)expr->function;
             }
             CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
             // (Not from an overload failure's fallback inference, which checks the arguments against the constraints:
