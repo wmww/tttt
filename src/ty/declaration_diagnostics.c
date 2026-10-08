@@ -1336,6 +1336,15 @@ static void type_of_object(Walk* me, Expr const* expr, Place place, bool const_c
                 bool both = pair.getter && pair.getter->ret_explicit && setter_type(pair.setter);
                 if (both) {
                     check_parameters(me, fn, inner, true);
+                    // The setter's parameter is emitted with the property's type (typeFromParameter ->
+                    // serializeTypeOfAccessor), which reuses its annotation only if that is the getter's type
+                    // (canReuseTypeNodeAnnotation): a setter taking another type falls back
+                    if (i->tag == OBJECT_ITEM_SETTER &&
+                        ty_from_node(my checker, setter_type(pair.setter), (LowerCtx){0}) !=
+                            ty_from_node(my checker, &pair.getter->ret, (LowerCtx){0})
+                    ) {
+                        report_accessor(me, pair, true, inner);
+                    }
                 } else if (first && !accessors_annotated(pair)) {
                     // inferAccessorType
                     if (i->tag == OBJECT_ITEM_GETTER) {
