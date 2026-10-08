@@ -2095,11 +2095,14 @@ static Ty const* normalized_tuple(Checker* me, Ty const* target, TyList args) {
         panic_if(!replaced, "out of memory");
         memcpy(replaced, args.data, sizeof(Ty const*) * args.len);
         TyBuf results = {0};
+        bool changed = false;
         for (u32 m = 0; m < arg->composite.types.len; m++) {
             replaced[i] = arg->composite.types.data[m];
             ty_buf_push(&results, ty_reference(me, target, (TyList){ .data = replaced, .len = args.len }));
+            changed |= results.data[m] != arg->composite.types.data[m];
         }
-        Ty const* ret = ty_union(me, results.data, results.len, nullptr, (TyList){0});
+        // (A union each of whose members is the tuple it makes is itself, alias and all: tsc's mapType)
+        Ty const* ret = changed ? ty_union(me, results.data, results.len, nullptr, (TyList){0}) : arg;
         ty_buf_drop(&results);
         free(replaced);
         return ret;
