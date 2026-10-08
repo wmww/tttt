@@ -2832,8 +2832,9 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
     }
     // (An any target is a context too, which a `yield` records as what its generator is sent, and in which a reference
     // of a generic type with a union constraint is its constraint: tsc's hasContextualTypeWithNoGenericTypes)
+    // (And `this` in an object literal's methods is that any: tsc's getContextualThisParameterType)
     if (!assigned_context && ((binary->right.tag == EXPR_UNARY_OP && binary->right.unary_op->op == UNARY_OP_YIELD) ||
-        binary->right.tag == EXPR_IDENTIFIER || binary->right.tag == EXPR_PROPERTY)
+        binary->right.tag == EXPR_IDENTIFIER || binary->right.tag == EXPR_PROPERTY || binary->right.tag == EXPR_OBJECT)
     ) {
         assigned_context = left;
     }
