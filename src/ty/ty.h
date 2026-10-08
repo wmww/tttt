@@ -985,6 +985,9 @@ struct Checker {
     u32 flow_inline_level; // Aliased conditions being narrowed by (ty/flow.c), across nested flow queries like tsc's inlineLevel
     u32 reverse_mapped_depth; // HACK: bounds the eager reverse mapped types of infer.c (tsc's are lazy)
     u32 instantiation_count;
+    // The next ty_flow_type() is of a reference whose declared type had its constraints substituted (tsc's
+    // getNarrowableTypeForReference): what is assigned to it is substituted too. Read and cleared by ty_flow_type()
+    bool flow_substitutes_constraints;
     // The mappers being instantiated with, outermost first, each with what types instantiated with it inside the
     // outermost such call gave (tsc's activeTypeMappers and activeTypeMappersCaches): see ty_instantiate()
     struct ActiveMapper* active_mappers;
@@ -1948,6 +1951,7 @@ Ty const* ty_non_nullish_part(Checker* me, Ty const* ty);
 Ty const* ty_non_nullable_if_needed(Checker* me, Ty const* ty);
 Ty const* ty_remove_definitely_falsy(Checker* me, Ty const* ty); // Without the members that are always falsy
 Ty const* ty_base_type_of_literal(Checker* me, Ty const* ty); // `"a"` -> string, `true` -> boolean
+Ty const* ty_substitute_constraints(Checker* me, Ty const* type); // expr.c, see narrowable_type()
 bool ty_can_be_truthy(Checker* me, Ty const* ty);
 bool ty_can_be_falsy(Checker* me, Ty const* ty);
 bool ty_can_be_nullish(Checker* me, Ty const* ty);

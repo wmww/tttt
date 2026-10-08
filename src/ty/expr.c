@@ -2133,6 +2133,20 @@ static bool has_generic_without_nullable_constraint(Checker* me, Ty const* type)
     return false;
 }
 
+// A generic type with a union constraint as its constraint, every member of a union (the substitution of tsc's
+// getNarrowableTypeForReference)
+Ty const* ty_substitute_constraints(Checker* me, Ty const* type) {
+    if (!has_generic_with_union_constraint(me, type)) return type;
+    if (type->kind != TY_UNION) return base_constraint_or_type(me, type);
+    u32 count = type->composite.types.len;
+    Ty const** mapped = malloc(sizeof(Ty const*) * count);
+    panic_if(!mapped, "out of memory");
+    for (u32 i = 0; i < count; i++) mapped[i] = base_constraint_or_type(me, type->composite.types.data[i]);
+    Ty const* ret = ty_union(me, mapped, count, nullptr, (TyList){0});
+    free(mapped);
+    return ret;
+}
+
 // `element_index`: the index of `x[i]` that the reference is the object of (null for any other constraint position)
 static Ty const* narrowable_type(Checker* me, bool constraint_position, Expr const* element_index, Ty const* type, Ty const* contextual) {
     if (ty_is_no_infer(type)) type = type->substitution.base;
@@ -2146,19 +2160,7 @@ static Ty const* narrowable_type(Checker* me, bool constraint_position, Expr con
     bool substitute = constraint_position ||
         (contextual && !my inferential_depth && !is_generic_type(me, contextual));
     if (!substitute) return type;
-    Ty const* const* members = &type;
-    u32 count = 1;
-    if (type->kind == TY_UNION) {
-        members = type->composite.types.data;
-        count = type->composite.types.len;
-    }
-    if (count == 1) return base_constraint_or_type(me, type);
-    Ty const** mapped = malloc(sizeof(Ty const*) * count);
-    panic_if(!mapped, "out of memory");
-    for (u32 i = 0; i < count; i++) mapped[i] = base_constraint_or_type(me, members[i]);
-    Ty const* ret = ty_union(me, mapped, count, nullptr, (TyList){0});
-    free(mapped);
-    return ret;
+    return ty_substitute_constraints(me, type);
 }
 
 // `(o: T | undefined = {})` (or an optional parameter typed by the context or a JSDoc `@type` tag) is a T in the body
@@ -2225,7 +2227,10 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
             }
         }
     }
-    Ty const* type = narrowable_type(me, identifier->constraint_position, identifier_element_index(identifier), ty_identifier_reference_type(me, identifier), contextual);
+    Ty const* declared_type = ty_identifier_reference_type(me, identifier);
+    Ty const* type = narrowable_type(me, identifier->constraint_position, identifier_element_index(identifier), declared_type, contextual);
+    // (What is assigned along the way is narrowable the same way: tsc's getInitialOrAssignedType)
+    bool substituted = type != declared_type;
     Symbol const* symbol = identifier->target;
     if (identifier->keyword == KEYWORD_IDENTIFIER_THIS) {
         if (issue_only) return nullptr;
@@ -2255,6 +2260,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         bool non_null = identifier->non_null_operand;
         bool assume_initialized = non_null || (identifier->outer_reference && (symbol->is_assigned || type != auto_any));
         Ty const* initial = assume_initialized && !non_null ? type : ty_intrinsic(me, TY_UNDEFINED);
+        my flow_substitutes_constraints = substituted;
         Ty const* flow_type = non_null_flow_type(me, expr, type, initial);
         // (tsc's getNonNullableType makes an intersection of any, which is the plain any)
         if (non_null && compiler_options()->strict_null_checks) {
@@ -2312,6 +2318,7 @@ static Ty const* identifier_flow_type(Checker* me, Expr const* expr, Ty const* c
         Ty const* types[2] = { type, ty_intrinsic(me, TY_UNDEFINED) };
         initial = ty_union(me, types, 2, nullptr, (TyList){0});
     }
+    my flow_substitutes_constraints = substituted;
     Ty const* flow_type = non_null_flow_type(me, expr, type, initial);
     if (!assume_initialized && includes_undefined(flow_type)) {
         *issue = IDENTIFIER_FLOW_UNASSIGNED;
@@ -2390,8 +2397,10 @@ static Ty const* access_flow_type(Checker* me, Expr const* expr, Ty const* type,
         // (What it is depends on the contextual type and on whether an inference is running, see check_with())
         *intern_slot(me, &my links, (u64[]){ KEY_ACCESS_USES_CONTEXT, (u64)(uintptr_t)expr }, 2) = expr;
     }
+    Ty const* declared_type = type;
     type = narrowable_type(me, access->constraint_position, nullptr, type, contextual);
     if (!narrowable) return type;
+    my flow_substitutes_constraints = type != declared_type;
     Ty const* flow_type = ty_flow_type(me, expr, type, type, access->flow);
     // tsc's getFlowTypeOfReference: the operand of a non-null assertion is never nullish (see non_null_flow_type())
     if (access->non_null_operand && !(flow_type->flags & TYF_NEVER) && (ty_non_nullable(me, flow_type)->flags & TYF_NEVER)) {

@@ -128,6 +128,7 @@ typedef struct FlowQuery {
     u32 depth;
     bool left_container; // The walk continued outside of the function the reference is in
     FlowLabelOverride const* overrides;
+    bool substitutes_constraints; // See Checker.flow_substitutes_constraints
 } FlowQuery;
 
 static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow);
@@ -1059,7 +1060,17 @@ static Ty const* initial_binding_type(FlowQuery* q, Binding const* binding) {
     return ret;
 }
 
+static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* assign);
+
+// tsc's getInitialOrAssignedType: narrowable like the reference (getNarrowableTypeForReference), so `let cur = row` with
+// `row: T` of a union constraint, read as that constraint where the context isn't generic, is assigned the constraint,
+// which is the declared type then: nothing to reduce
 static Ty const* initial_or_assigned_type(FlowQuery* q, FlowAssign const* assign) {
+    Ty const* ret = initial_or_assigned_type_raw(q, assign);
+    return q->substitutes_constraints ? ty_substitute_constraints(q->me, ret) : ret;
+}
+
+static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* assign) {
     Checker* me = q->me;
     switch (assign->kind) {
         case FLOW_ASSIGN_DECLARATION:
@@ -3350,10 +3361,13 @@ static FlowType type_at_flow_node(FlowQuery* q, FlowNode const* flow) {
 }
 
 Ty const* ty_flow_type(Checker* me, Expr const* reference, Ty const* declared, Ty const* initial, FlowNode const* flow) {
+    bool substitutes = my flow_substitutes_constraints;
+    my flow_substitutes_constraints = false;
     if (my flow_analysis_disabled) return ty_intrinsic(me, TY_ERROR);
     if (!flow) return declared;
     Expr const* inner = skip_reference_wrappers(reference);
     FlowQuery q = {
+        .substitutes_constraints = substitutes,
         .me = me,
         .reference = reference,
         .symbol = inner->tag == EXPR_IDENTIFIER && !inner->identifier.keyword ? inner->identifier.target : nullptr,
