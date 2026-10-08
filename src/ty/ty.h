@@ -1390,6 +1390,7 @@ Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl cons
 Ty const* ty_quick_expr_type(Checker* me, Expr const* expr, bool in_flow); // tsc's getQuickTypeOfExpression, null if none // The array a tuple also is
 Ty const* ty_optional_param_type(Checker* me, Ty const* type); // infer.c
 Ty const* ty_signature_params_tuple(Checker* me, Signature const* sig, u32 from, TyMapper const* mapper); // infer.c
+u32 ty_min_argument_count(Checker* me, Signature const* sig); // relate.c: tsc's getMinArgumentCount, less trailing void
 Signature const* ty_combine_intersection_signatures(Checker* me, Signature const* left, Signature const* right);
 bool ty_signatures_identical(Checker* me, Signature const* source, Signature const* target, bool partial, bool ignore_return);
 // tsc's isImplementationCompatibleWithOverload (TS2394): the returns relate either way (or the overload's is void) and,

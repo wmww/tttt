@@ -1653,6 +1653,8 @@ static u32 min_argument_count(Checker* me, Signature const* sig) {
     return min_argument_count_from(me, sig, sig->min_args);
 }
 
+u32 ty_min_argument_count(Checker* me, Signature const* sig) { return min_argument_count(me, sig); }
+
 // tsc's getMinArgumentCount with the required elements of a rest tuple (`(...args: [a: A]) => R` takes one)
 static u32 tuple_min_argument_count(Checker* me, Signature const* sig) {
     u32 min = min_argument_count(me, sig);
@@ -1809,17 +1811,6 @@ static Ternary compare_signatures(
     bool target_top = is_top_signature(me, target);
     if (!source_top && target_top) return TERNARY_TRUE;
     if (source_top && !target_top) return TERNARY_FALSE;
-    // A generic source is instantiated in the context of the target (whose type parameters, if any, are canonical
-    // already: instantiations share them)
-    if (source->type_params.len && source->type_params.data != target->type_params.data) {
-        source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
-    }
-
-    // A rest parameter that isn't an array relates by its elements, not by what it's instantiated with
-    Ty const* non_array_rest = non_array_rest_type(me, source);
-    if (!non_array_rest) non_array_rest = non_array_rest_type(me, target);
-    if (non_array_rest) report_variance(me, non_array_rest, VARIANCE_UNRELIABLE);
-
     u32 target_count = ty_signature_param_count(target);
     // (The required elements of a rest tuple count: `(...args: [string]) => R` isn't a `() => R`, tsc's
     // getMinArgumentCount)
@@ -1839,6 +1830,18 @@ static Ternary compare_signatures(
         }
         return TERNARY_FALSE;
     }
+
+    // A generic source is instantiated in the context of the target (whose type parameters, if any, are canonical
+    // already: instantiations share them), after the arity check, which goes by the declared parameters (a conditional
+    // rest type takes any count, tsc's compareSignaturesRelated)
+    if (source->type_params.len && source->type_params.data != target->type_params.data) {
+        source = ty_instantiate_signature_in_context_of(me, source, target, nullptr);
+    }
+
+    // A rest parameter that isn't an array relates by its elements, not by what it's instantiated with
+    Ty const* non_array_rest = non_array_rest_type(me, source);
+    if (!non_array_rest) non_array_rest = non_array_rest_type(me, target);
+    if (non_array_rest) report_variance(me, non_array_rest, VARIANCE_UNRELIABLE);
 
     bool strict = !callback && compiler_options()->strict_function_types &&
         !(target->flags & SIGNATURE_METHOD) &&

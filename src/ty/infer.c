@@ -185,16 +185,23 @@ static Ty const* signature_params_tuple(Checker* me, Signature const* sig, u32 f
     Atom const** names = (Atom const**)name_block;
     void const** labels = name_block + (arity ? arity : 1);
     Ty const** elements = calloc(arity ? arity : 1, sizeof(Ty const*));
+    // (tsc's getMinArgumentCount: trailing parameters that accept void can be left out, `(_: void) => void` takes
+    // `[_?: void | undefined]`)
+    u32 min_args = fixed ? ty_min_argument_count(me, sig) : 0;
     for (u32 j = 0; j < fixed; j++) {
         SigParam const* param = &sig->params[from + j];
         // Optional past the minimum argument count (an untyped JS function's parameters all are); labelled by
         // parameter declarations with a plain name (getNameableDeclarationAtPosition: not a JS function's
         // synthetic `args`, nor a destructuring)
-        bool optional = param->optional || from + j >= sig->min_args;
+        bool optional = param->optional || from + j >= min_args;
         flags[j] = param->rest ? TUPLE_ELEMENT_REST : optional ? TUPLE_ELEMENT_OPTIONAL : 0;
         names[j] = param->decl && param->decl->initializer.binding.tag == BINDING_IDENTIFIER ? param->name : nullptr;
         labels[j] = names[j] ? param->decl : nullptr;
+        // (An optional element includes undefined: tsc's createNormalizedTupleType addOptionality)
         elements[j] = ty_instantiate(me, param->optional ? ty_optional_param_type(me, param->type) : param->type, mapper);
+        if (optional && !param->optional && !param->rest) {
+            elements[j] = ty_optional_param_type(me, elements[j]);
+        }
     }
     if (rest_count) {
         TyList rest_args = ty_reference_args(me, rest_tuple);
