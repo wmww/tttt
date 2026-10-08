@@ -76,7 +76,7 @@ def classify():
     rows = []
     for name in names:
         ours = [e[:4] for e in fs.parse_errors(fs.read(f'{fs.DUMP}/{name}.errors.txt')) if e[3] in pcodes]
-        exp = [e[:4] for e in fs.parse_errors(fs.read(f'{fs.REF}/{name}.errors.txt')) if e[3] in pcodes]
+        exp = [e[:4] for e in fs.parse_errors(fs.read(fs.ref(name, '.errors.txt'))) if e[3] in pcodes]
         if collections.Counter(ours) == collections.Counter(exp):
             continue
         spurious = list((collections.Counter(ours) - collections.Counter(exp)).elements())

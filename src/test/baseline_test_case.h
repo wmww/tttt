@@ -62,6 +62,9 @@ void baseline_test_file_drop(BaselineTestFile* me);
 typedef struct BaselineTestCase {
     csview source_path; // Not owned, path to real file on disk that may describe several virtual files
     bool did_run;
+    // A configuration tsgo's harness doesn't run (SkipUnsupportedCompilerOptions: an option 7.0 removed), so it has no
+    // baselines: not checked, and not a test at all
+    bool skipped;
     ErrorCtx* error_ctx;
     bool noisy;
     MockFs* fs;
@@ -94,10 +97,10 @@ typedef struct BaselineTestCase {
     struct Ty const* const* class_params;
     u32 class_params_len;
     u32 class_params_outside;
-    // Set by the traversal right before adding a node whose `any` keeps its underline even without errors (tsc's
-    // harness exempts children of property accesses and qualified names, binding elements, labels and import/export
+    // Set by the traversal right before adding a node whose `any` prints as the node builder has it even without errors
+    // (tsc's harness exempts children of property accesses and qualified names, binding elements, labels and import/export
     // names). The next types line consumes it
-    bool any_keeps_underline;
+    bool any_keeps_rendering;
     // The name of a value exported by `export = x` / `export default x`: not an expression to tsc's type writer, it
     // shows the symbol's type, without narrowing (getTypeOfNode, isInRightSideOfImportOrExportAssignment)
     struct Expr const* export_name;
@@ -193,8 +196,8 @@ void baseline_test_case_drop(BaselineTestCase* me);
 // These are used to get the data into string form, so it can be compared with known correct results or serialized
 void baseline_test_case_render_errors(cstr* target, BaselineTestCase const* me);
 void baseline_test_case_render_symbols(cstr* target, BaselineTestCase const* me);
-// had_errors: whether tsc reported anything for the test, which decides whether an `any` has an underline (see
-// LineNumberedStr.any_underline_at). The expected baseline's say rather than ours, so that a missing error doesn't
+// had_errors: whether tsc reported anything for the test, which decides whether an `any` prints its intrinsic name (see
+// LineNumberedStr.intrinsic_at). The expected baseline's say rather than ours, so that a missing error doesn't
 // fail the types component too
 void baseline_test_case_render_types(cstr* target, BaselineTestCase const* me, bool had_errors);
 bool baseline_test_case_has_errors(BaselineTestCase const* me);

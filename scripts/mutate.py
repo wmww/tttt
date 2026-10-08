@@ -196,6 +196,11 @@ def run_tttt(work):
     shutil.rmtree(dump, ignore_errors=True)
     os.makedirs(dump)
     names = sorted(f[:-3] for f in os.listdir(f'{work}/t/tests/cases/conformance'))
+    # (The harness reads tsgo's layout, baselines/reference/conformance beside tests. TODO(plan 54 stage 2): these are
+    # still tsc 6.0's baselines, with `^^^` lines tttt no longer prints)
+    os.makedirs(f'{work}/t/baselines/reference', exist_ok=True)
+    if not os.path.lexists(f'{work}/t/baselines/reference/conformance'):
+        os.symlink(f'{work}/t/tests/baselines/reference', f'{work}/t/baselines/reference/conformance')
     results = f'{work}/results.ts'
     crashed = []
     todo = names

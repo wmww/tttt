@@ -29,3 +29,13 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   vitest/packages/browser, resolved through its own exports) lacks tsc's TS7058 chain line ("If the '@vitest/browser'
   package actually exposes this module, try adding..."): the self-name resolution leaves `ModuleRef.package_name`
   empty, so `program.c`'s package hint pass skips it (vitest/test/e2e/dts/browser-playwright).
+- `function h(v: 0|1|2) { v++; v += 1; }`: tsc reports nothing, tttt TS2322 on `v += 1` (the compound assignment's
+  result checked against the declared literal union; tsc assigns `number` to a narrowed-by-assignment reference?).
+  Found by the plan 54 stage 1 crash fixes, reachable code too.
+- failstats.py counts "pass: all" over its own notion of ran tests (12128 / 13835 on the native suite at plan 54 stage
+  1) while the harness says 11860 / 13571: the errors-only tests without any baseline and skipped configurations are
+  counted differently. Make failstats read the harness's saved results for its totals.
+- `scripts/sourcesweep.py` counts tttt's exit code 2 as a crash: 36 "crashes" in `--sample 4` (astro fixtures with
+  TS18003/TS5090, dyad/floating-ui with TS5101) since plan 53 stage 1 made the CLI exit like tsc 7 (2 = config errors
+  only / no inputs). Same at 4ff04051, so not plan 54's. The sweep should treat 2 as a normal exit (stage 2 rewrites
+  its oracle anyway).

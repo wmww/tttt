@@ -29,7 +29,7 @@ ap.add_argument('-f')
 ap.add_argument('--names', action='store_true')
 ap.add_argument('--coarse', action='store_true')
 args = ap.parse_args()
-REF = 'thirdparty/tsc/tests/baselines/reference/'
+from suite import ref
 DUMP = 'build/failstats/dump/'
 SQUIGGLE = re.compile(r'^\s*~+[\s~]*$')
 ERROR = re.compile(r'^!!! error (TS\d+): (.*)$')
@@ -125,7 +125,7 @@ total = 0
 for r in rows:
     name = r['name']
     if r['errors'] == '1' or r['missing'] or r['spurious'] or (args.f and not re.fullmatch(args.f, name)): continue
-    exp, got = REF + name + '.errors.txt', DUMP + name + '.errors.txt'
+    exp, got = ref(name, '.errors.txt'), DUMP + name + '.errors.txt'
     if not (os.path.exists(exp) and os.path.exists(got)): continue
     total += 1
     T, O = diagnostics(exp), diagnostics(got)

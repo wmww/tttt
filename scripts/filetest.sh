@@ -26,8 +26,12 @@ cp "$TEST_FILE" "$TEST_DIR/tests/cases/conformance/"
 echo "Getting baselines from tsc..."
 NODE_PATH=$PWD/thirdparty/tsc/node_modules/ node ./test/diffapp/tsc_custom_baseline.js "$TEST_DIR" </dev/null >/dev/null
 
-# Put the output files where the tttt runner expects them
-mv "$TEST_DIR/tests/baselines/local" "$TEST_DIR/tests/baselines/reference"
+# Put the output files where the tttt runner expects them (tsgo's layout: baselines/reference/SUITE beside tests)
+# TODO(plan 54 stage 2): the baselines are still tsc 6.0's (4d4f005c), tsgo's probe replaces them
+mkdir -p "$TEST_DIR/baselines/reference"
+mv "$TEST_DIR/tests/baselines/local" "$TEST_DIR/baselines/reference/conformance"
+# (6.0's `.types` have `^^^` underline lines, tsgo's don't)
+find "$TEST_DIR/baselines/reference/conformance" -name '*.types' -exec perl -i -ne 'print unless /^> *: [\^ ]*\r?$/' {} +
 
 # Run the test (FAST=1: release build without valgrind, much quicker to iterate with)
 RUNNER=scripts/test.sh

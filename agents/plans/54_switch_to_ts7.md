@@ -90,7 +90,8 @@ today's 11 s, almost all in that one test. `agents/bugs/ts7_new_tests.md` has th
 until these are fixed (stage 1).
 
 ## Stages
-### Stage 1: the switch (1 session)
+### Stage 1: the switch (1 session) — done 2026-10-08
+Result: 11860 / 13571 (87.4%), 10 s. Done as written below; module `none` is skipped too (no tsgo baselines).
 - `thirdparty/ensure-tsc.sh`'s callers (fasttest.sh, test.sh, ...) call `ensure-typescript.sh`; `baseline_tests`'
   default tests dir is the native tree (items 1-3 above). `refresh.sh` copies the libs from the new tree, the lib
   tables are generated (item 4), es2026 target.

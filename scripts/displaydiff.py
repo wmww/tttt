@@ -24,9 +24,8 @@ ap.add_argument('--fine', action='store_true')
 ap.add_argument('--shape', action='store_true')
 ap.add_argument('--first-tsv', help='write test<TAB>kind of its first differing line<TAB>js to this file')
 args = ap.parse_args()
-REF = 'thirdparty/tsc/tests/baselines/reference/'
+from suite import ref, CASES
 DUMP = 'build/failstats/dump/'
-UNDERLINE = re.compile(r'^>\s*:\s*[\^\s]*$')
 EXT = '.symbols' if args.symbols else '.types'
 COMPONENT = 'symbols' if args.symbols else 'types'
 
@@ -34,14 +33,14 @@ def lines(path, sources=None):
     out, source = [], ''
     for l in open(path, errors='replace').read().split('\n'):
         if not l.startswith('>'): source = l
-        elif not UNDERLINE.match(l):
+        else:
             out.append(l)
             if sources is not None: sources.setdefault(l, source)
     return out
 
 def source_of(name):
     base = name.split('(')[0]
-    for root, _, files in os.walk('thirdparty/tsc/tests/cases'):
+    for root, _, files in os.walk(CASES):
         for ext in ('.ts', '.tsx'):
             if base + ext in files: return os.path.join(root, base + ext)
     return None
@@ -87,7 +86,7 @@ js_tests = 0
 for r in rows:
     name = r['name']
     if r[COMPONENT] == '1' or r['errors'] != '1' or (args.f and not re.fullmatch(args.f, name)): continue
-    exp, got = REF + name + EXT, DUMP + name + EXT
+    exp, got = ref(name, EXT), DUMP + name + EXT
     if not (os.path.exists(exp) and os.path.exists(got)): continue
     src = {}
     E, O = collections.Counter(lines(exp, src)), collections.Counter(lines(got, src))

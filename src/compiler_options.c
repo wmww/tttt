@@ -1,5 +1,6 @@
 #include "compiler_options.h"
 #include "string_helpers.h"
+#include "lib_names.h"
 
 // (scope.h's, which this can't include: it has another name_equals)
 isize spelling_suggestion(csview name, csview const* names, isize count);
@@ -15,7 +16,7 @@ static const EnumValue target_values[] = {
     {"es2015", SCRIPT_TARGET_ES2015}, {"es2016", SCRIPT_TARGET_ES2016}, {"es2017", SCRIPT_TARGET_ES2017},
     {"es2018", SCRIPT_TARGET_ES2018}, {"es2019", SCRIPT_TARGET_ES2019}, {"es2020", SCRIPT_TARGET_ES2020},
     {"es2021", SCRIPT_TARGET_ES2021}, {"es2022", SCRIPT_TARGET_ES2022}, {"es2023", SCRIPT_TARGET_ES2023},
-    {"es2024", SCRIPT_TARGET_ES2024}, {"es2025", SCRIPT_TARGET_ES2025}, {"esnext", SCRIPT_TARGET_ESNEXT}, {},
+    {"es2024", SCRIPT_TARGET_ES2024}, {"es2025", SCRIPT_TARGET_ES2025}, {"es2026", SCRIPT_TARGET_ES2026}, {"esnext", SCRIPT_TARGET_ESNEXT}, {},
 };
 
 static const EnumValue module_values[] = {
@@ -294,10 +295,10 @@ void compiler_options_resolve(CompilerOptions* me) {
 #define DEFAULT(field, value) if (!my is_set[COMPILER_OPTION_##field]) my field = (value)
     DEFAULT(always_strict, true);
 
-    // (tsc 6.0's computed target: ES3 counts as unset, the default is the latest standard)
+    // (tsc's computed target: ES3 counts as unset, the default is the latest standard)
     if (my target_set && my target == SCRIPT_TARGET_ES3) my target_es3 = true;
     if (!my target_set || my target == SCRIPT_TARGET_ES3) {
-        my target = SCRIPT_TARGET_ES2025;
+        my target = SCRIPT_TARGET_ES2026;
     }
     if (!my module_set) {
         my module = my target == SCRIPT_TARGET_ESNEXT ? MODULE_KIND_ESNEXT :
@@ -346,119 +347,8 @@ void compiler_options_enable_strict(CompilerOptions* me) {
     compiler_options_resolve(me);
 }
 
-// The names `lib` takes (tsc's libs, from commandLineParser's libEntries, in that order)
-static char const* const lib_names[] = {
-    "es5",
-    "es6",
-    "es2015",
-    "es7",
-    "es2016",
-    "es2017",
-    "es2018",
-    "es2019",
-    "es2020",
-    "es2021",
-    "es2022",
-    "es2023",
-    "es2024",
-    "es2025",
-    "esnext",
-    "dom",
-    "dom.iterable",
-    "dom.asynciterable",
-    "webworker",
-    "webworker.importscripts",
-    "webworker.iterable",
-    "webworker.asynciterable",
-    "scripthost",
-    "es2015.core",
-    "es2015.collection",
-    "es2015.generator",
-    "es2015.iterable",
-    "es2015.promise",
-    "es2015.proxy",
-    "es2015.reflect",
-    "es2015.symbol",
-    "es2015.symbol.wellknown",
-    "es2016.array.include",
-    "es2016.intl",
-    "es2017.arraybuffer",
-    "es2017.date",
-    "es2017.object",
-    "es2017.sharedmemory",
-    "es2017.string",
-    "es2017.intl",
-    "es2017.typedarrays",
-    "es2018.asyncgenerator",
-    "es2018.asynciterable",
-    "es2018.intl",
-    "es2018.promise",
-    "es2018.regexp",
-    "es2019.array",
-    "es2019.object",
-    "es2019.string",
-    "es2019.symbol",
-    "es2019.intl",
-    "es2020.bigint",
-    "es2020.date",
-    "es2020.promise",
-    "es2020.sharedmemory",
-    "es2020.string",
-    "es2020.symbol.wellknown",
-    "es2020.intl",
-    "es2020.number",
-    "es2021.promise",
-    "es2021.string",
-    "es2021.weakref",
-    "es2021.intl",
-    "es2022.array",
-    "es2022.error",
-    "es2022.intl",
-    "es2022.object",
-    "es2022.string",
-    "es2022.regexp",
-    "es2023.array",
-    "es2023.collection",
-    "es2023.intl",
-    "es2024.arraybuffer",
-    "es2024.collection",
-    "es2024.object",
-    "es2024.promise",
-    "es2024.regexp",
-    "es2024.sharedmemory",
-    "es2024.string",
-    "es2025.collection",
-    "es2025.float16",
-    "es2025.intl",
-    "es2025.iterator",
-    "es2025.promise",
-    "es2025.regexp",
-    "esnext.asynciterable",
-    "esnext.symbol",
-    "esnext.bigint",
-    "esnext.weakref",
-    "esnext.object",
-    "esnext.regexp",
-    "esnext.string",
-    "esnext.float16",
-    "esnext.iterator",
-    "esnext.promise",
-    "esnext.array",
-    "esnext.collection",
-    "esnext.date",
-    "esnext.decorators",
-    "esnext.disposable",
-    "esnext.error",
-    "esnext.intl",
-    "esnext.sharedmemory",
-    "esnext.temporal",
-    "esnext.typedarrays",
-    "decorators",
-    "decorators.legacy",
-};
-
 bool compiler_options_lib_name_valid(csview name) {
-    for (u32 i = 0; i < c_arraylen(lib_names); i++) {
+    for (u32 i = 0; i < lib_name_count; i++) {
         if (name_equals(name, lib_names[i])) return true;
     }
     return false;
@@ -466,7 +356,7 @@ bool compiler_options_lib_name_valid(csview name) {
 
 cstr compiler_options_lib_names_message(void) {
     cstr ret = cstr_lit("Argument for '--lib' option must be: ");
-    for (u32 i = 0; i < c_arraylen(lib_names); i++) {
+    for (u32 i = 0; i < lib_name_count; i++) {
         cstr_append(&ret, i ? ", '" : "'");
         cstr_append(&ret, lib_names[i]);
         cstr_append(&ret, "'");
@@ -475,26 +365,11 @@ cstr compiler_options_lib_names_message(void) {
     return ret;
 }
 
-// The names that aren't the file's name (tsc's libMap, built from libEntries: where a name is there twice, the later
-// entry wins): lib.es6.d.ts and lib.es7.d.ts are default libraries of a target, and the esnext features that made it
-// into a year. For `lib` and `/// <reference lib>` alike
+// The names that aren't the file's name (lib_aliases: es6 and es7, and the esnext features that made it into a year).
+// For `lib` and `/// <reference lib>` alike
 csview compiler_options_lib_file_name(csview name) {
-    static char const* const aliases[][2] = {
-        { "es6", "es2015" },
-        { "es7", "es2016" },
-        { "esnext.asynciterable", "es2018.asynciterable" },
-        { "esnext.symbol", "es2019.symbol" },
-        { "esnext.bigint", "es2020.bigint" },
-        { "esnext.weakref", "es2021.weakref" },
-        { "esnext.object", "es2024.object" },
-        { "esnext.regexp", "es2024.regexp" },
-        { "esnext.string", "es2024.string" },
-        { "esnext.float16", "es2025.float16" },
-        { "esnext.iterator", "es2025.iterator" },
-        { "esnext.promise", "es2025.promise" },
-    };
-    for (u32 i = 0; i < c_arraylen(aliases); i++) {
-        if (csview_iequals(name, aliases[i][0])) return csview_from(aliases[i][1]);
+    for (u32 i = 0; i < lib_alias_count; i++) {
+        if (csview_iequals(name, lib_aliases[i][0])) return csview_from(lib_aliases[i][1]);
     }
     return name;
 }

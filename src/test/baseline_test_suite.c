@@ -33,6 +33,36 @@ static void show_collected_test_counts(BaselineTestSuite* me) {
     print("\rCollected ", color_good, vec_baseline_test_result_size(&my results), color_normal, " tests      ");
 }
 
+// tsgo's skippedTests (internal/testrunner/compiler_runner.go): tests of the API built from the JS compiler, and tests
+// of options 7.0 removed outright (they fail to parse)
+static char const* const tsgo_skipped_tests[] = {
+    "APILibCheck.ts", "APISample_Watch.ts", "APISample_WatchWithDefaults.ts", "APISample_WatchWithOwnWatchHost.ts",
+    "APISample_compile.ts", "APISample_jsdoc.ts", "APISample_linter.ts", "APISample_parseConfig.ts",
+    "APISample_transform.ts", "APISample_watcher.ts",
+    "preserveUnusedImports.ts", "noCrashWithVerbatimModuleSyntaxAndImportsNotUsedAsValues.ts",
+    "verbatimModuleSyntaxCompat.ts", "verbatimModuleSyntaxCompat2.ts", "verbatimModuleSyntaxCompat3.ts",
+    "verbatimModuleSyntaxCompat4.ts", "preserveValueImports.ts", "preserveValueImports_importsNotUsedAsValues.ts",
+    "preserveValueImports_errors.ts", "preserveValueImports_mixedImports.ts", "preserveValueImports_module.ts",
+    "importsNotUsedAsValues_error.ts", "alwaysStrictNoImplicitUseStrict.ts", "nonPrimitiveIndexingWithForInSupressError.ts",
+    "parameterInitializerBeforeDestructuringEmit.ts", "mappedTypeUnionConstraintInferences.ts",
+    "lateBoundConstraintTypeChecksCorrectly.ts", "keyofDoesntContainSymbols.ts", "noStrictGenericChecks.ts",
+    "noImplicitUseStrict_umd.ts", "noImplicitUseStrict_system.ts", "noImplicitUseStrict_es6.ts",
+    "noImplicitUseStrict_commonjs.ts", "noImplicitAnyIndexingSuppressed.ts", "excessPropertyErrorsSuppressed.ts",
+    "moduleNoneDynamicImport.ts", "moduleNoneErrors.ts",
+    "noErrorUsingImportExportModuleAugmentationInDeclarationFile1.ts",
+    "noErrorUsingImportExportModuleAugmentationInDeclarationFile2.ts",
+    "noErrorUsingImportExportModuleAugmentationInDeclarationFile3.ts",
+    "requireOfJsonFileWithModuleEmitNone.ts", "requireOfJsonFileWithModuleNodeResolutionEmitNone.ts",
+};
+
+static bool tsgo_skips_test(csview path) {
+    csview base = basename_of(path);
+    for (u32 i = 0; i < c_arraylen(tsgo_skipped_tests); i++) {
+        if (csview_equals(base, tsgo_skipped_tests[i])) return true;
+    }
+    return false;
+}
+
 // Recursively collects every .ts and .tsx file below the given directory. Directories that can't be listed are silently
 // skipped, as was the case before (listdir has no way to report an error anyway)
 static void load_dir(BaselineTestSuite* me, csview dir_path) {
@@ -40,7 +70,8 @@ static void load_dir(BaselineTestSuite* me, csview dir_path) {
         if (fs_is_directory(fs, item.path)) {
             load_dir(me, item.path);
         } else if (fs_is_reg_file(fs, item.path) &&
-                   (csview_ends_with(item.path, ".ts") || csview_ends_with(item.path, ".tsx"))) {
+                   (csview_ends_with(item.path, ".ts") || csview_ends_with(item.path, ".tsx")) &&
+                   !tsgo_skips_test(item.path)) {
             // One test per configuration ("@target: es5,es2015" is two). Most files have exactly one
             cstr contents = cstr_null;
             VecCStr configs = {0};
@@ -123,7 +154,7 @@ static void append_test_result_to_cstr(cstr* target, BaselineTestResult const* t
 
 void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show_errs, bool show_syms, bool show_typs) {
     intptr_t test_count = vec_baseline_test_result_size(&my results);
-    int passed = 0, failed = 0, new_passed = 0, new_failed = 0;
+    int passed = 0, failed = 0, new_passed = 0, new_failed = 0, skipped = 0;
     cstr display = cstr_null;
     VecBaselineTestResultCPtr newly_failed = vec_baseline_test_result_c_ptr_init();
     VecBaselineTestResultCPtr newly_passed = vec_baseline_test_result_c_ptr_init();
@@ -178,6 +209,11 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
 #endif
 
         result_drop(&prev_result);
+        if (i->skipped) {
+            skipped++;
+            if (!summary_only) print("\r\x1b[2K");
+            continue;
+        }
 
         bool is_pass = baseline_test_result_is_pass(i);
         bool is_change = is_pass != baseline_test_result_was_pass(i);
@@ -207,8 +243,9 @@ void baseline_test_suite_run(BaselineTestSuite* me, bool summary_only, bool show
     println(
         "\n  ", color_good, passed, color_normal, " passed, ",
         color_error, failed, color_normal, " failed, ",
-        vec_baseline_test_result_size(&my results), " total\n"
+        vec_baseline_test_result_size(&my results) - skipped, " total\n"
     );
+    if (skipped) println("  (", skipped, " configurations skipped: tsgo doesn't run them, an option 7.0 removed)\n");
     if (my has_filter && passed + failed == 0) {
         // STC's cregex silently matches nothing once a pattern gets long (a few hundred alternatives)
         println(color_error, "The filter matched no tests", color_normal,
@@ -295,6 +332,7 @@ void baseline_test_suite_save_results(BaselineTestSuite* me, csview results_path
     cstr_append_d(&results, DEFAULT_DISPLAY, "const tsCommit = \"", my typescript_commit, "\"\nconst baselines = {\n");
 
     for_each (i, vec_baseline_test_result, &my results) {
+        if (i->skipped) continue;
         csview name = cstr_sv(&i->name);
         check(!csview_contains(name, "\\") && !csview_contains(name, "'"));
         cstr_append_d(

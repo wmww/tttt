@@ -736,9 +736,9 @@ src` finds the code-side markers; every significant one has an entry here.
   parameters visible even nested; no shadowing check since `TyDisplay.enclosing` misses enclosing parameters).
 - `ty_elides_default_type_args` (iterate.c): tsc's `Iterable<T>` elision, minus its exception for a reference written
   with all its type arguments (tsc's `type.node`; tttt types don't keep their node).
-- The `any` underline rule reads whether tsc's `.errors.txt` exists, not whether tttt reported errors (permanent: the
-  baseline's underlines follow tsc's errors; using tttt's would fail types components for errors already counted).
-  `BaselineTestCase.any_keeps_underline` leaks to the next line if no types line follows.
+- The `any` intrinsic-name rule reads whether tsc's `.errors.txt` exists, not whether tttt reported errors (permanent:
+  the baseline's `any` lines follow tsc's errors; using tttt's would fail types components for errors already counted).
+  `BaselineTestCase.any_keeps_rendering` leaks to the next line if no types line follows.
 - Symbols lines: container from the traversal or `Prop.parent`; `collect_prop_symbol()` counts a non-object union
   member as lacking the property only for binding patterns: the object of a property access is sometimes not narrowed
   as far as tsc's (doing it everywhere loses 70 symbols components: optional chains, logicalAssignment*, nonPrimitive*).

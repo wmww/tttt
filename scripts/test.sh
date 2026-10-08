@@ -13,7 +13,7 @@ if test ! -e debug; then
 fi
 ninja -C debug
 
-# We need a copy of the TypeScript repo to run tests
-thirdparty/ensure-tsc.sh
+# The test suite is TypeScript 7.1's native tree (thirdparty/typescript/tsc/testdata)
+thirdparty/ensure-typescript.sh
 
 valgrind --leak-check=full --show-leak-kinds=all --exit-on-first-error=yes --error-exitcode=1 --quiet debug/baseline_tests "$@"

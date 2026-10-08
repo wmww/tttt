@@ -22,39 +22,6 @@ void baseline_test_result_drop(BaselineTestResult* me) {
     cstr_drop(&my name);
 }
 
-static bool is_underline_line(csview line) {
-    csview t = csview_trim_whitespace(line);
-    if (t.size < 2 || t.buf[0] != '>') return false;
-    isize colon = csview_find_sv(t, c_sv(" : "));
-    if (colon == c_NPOS) return false;
-    for (isize i = 1; i < colon; i++) if (t.buf[i] != ' ') return false;
-    for (isize i = colon + 3; i < t.size; i++) if (t.buf[i] != '^' && t.buf[i] != ' ') return false;
-    return true;
-}
-
-static cstr without_underlines(csview text) {
-    cstr ret = cstr_null;
-    for_each (i, lines_sv, text) {
-        if (is_underline_line(i)) continue;
-        cstr_append_sv(&ret, i);
-        cstr_append_lit(&ret, "\n");
-    }
-    return ret;
-}
-
-// tsc's harness puts some of its checker's counters (relation cache sizes, type and instantiation counts, rounded) at
-// the top of a types baseline when they're big (harnessIO.ts generateBaseLine). They measure tsc's implementation, not
-// the types, so they aren't compared: the block goes from the expected baseline
-static csview perf_stats_block(csview expected) {
-    csview marker = c_sv("=== Performance Stats ===\n");
-    isize_t start = csview_find_sv(expected, marker);
-    if (start == c_NPOS) return (csview){0};
-    csview rest = csview_slice(expected, start, expected.size);
-    isize_t end = csview_find_sv(rest, c_sv("\n\n"));
-    if (end == c_NPOS) return (csview){0};
-    return csview_slice(expected, start, start + end + 2);
-}
-
 static bool compare_outputs(
     csview test_name,
     const char* output_name,
@@ -76,26 +43,6 @@ static bool compare_outputs(
     }
 
     csview expected_sv = cstr_sv(&expected);
-    csview stats = strcmp(output_name, "types") == 0 ? perf_stats_block(expected_sv) : (csview){0};
-    if (stats.size) {
-        cstr without = cstr_from_sv(csview_slice(expected_sv, 0, stats.buf - expected_sv.buf));
-        cstr_append_sv(&without, csview_slice(expected_sv, stats.buf + stats.size - expected_sv.buf, expected_sv.size));
-        cstr_drop(&expected);
-        expected = without;
-        expected_sv = cstr_sv(&expected);
-    }
-    if (getenv("TTTT_IGNORE_UNDERLINES")) {
-        // Measurement: how the types component would do if the `^^^` underline lines (tsc's declaration emitter
-        // marking which parts of a printed type it synthesised, see agents/plans/07_underlines.md) were right
-        cstr ours = without_underlines(our_result);
-        cstr theirs = without_underlines(expected_sv);
-        bool eq = cstr_eq(&ours, &theirs);
-        c_drop(cstr, &ours, &theirs);
-        if (eq) {
-            cstr_drop(&expected);
-            return true;
-        }
-    }
     if (csview_cmp(&our_result, &expected_sv) == 0) {
         cstr_drop(&expected);
         return true;
@@ -143,9 +90,11 @@ void baseline_test_result_run(
 
     bool noisy = show_errs || show_syms || show_typs;
     csview name = cstr_sv(&my name);
-    cstr errors_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".errors.txt");
-    cstr symbols_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".symbols");
-    cstr types_path = cstr_d(suite->tests_dir, "/baselines/reference/", name, ".types");
+    // tsgo's layout: testdata/tests/cases/compiler/x.ts has its baselines in testdata/baselines/reference/compiler
+    csview kind = csview_contains(cstr_sv(&my source_path), "/cases/compiler/") ? c_sv("compiler") : c_sv("conformance");
+    cstr errors_path = cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/", name, ".errors.txt");
+    cstr symbols_path = cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/", name, ".symbols");
+    cstr types_path = cstr_d(suite->tests_dir, "/../baselines/reference/", kind, "/", name, ".types");
 
     // It's ok if errors file doesn't exist, and with @noTypesAndSymbols the other two don't either. Whether a test
     // has that is only known after loading it, so a test without baselines runs and is then dropped if it turns out
@@ -160,6 +109,7 @@ void baseline_test_result_run(
 
     BaselineTestCase test_case = run_baseline_test_case(
         &suite->cache, cstr_sv(&my source_path), cstr_sv(&my config), noisy, dumping);
+    my skipped = test_case.skipped;
     my errors_only = test_case.no_types_and_symbols;
     my did_run = test_case.did_run && (has_baselines || my errors_only);
     if (test_case.did_run && !my did_run && noisy) {

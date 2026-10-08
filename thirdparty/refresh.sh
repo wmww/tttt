@@ -13,6 +13,7 @@ function download_all {
 
   rm -rf tsc
   ./ensure-tsc.sh
+  ./ensure-typescript.sh
 }
 
 NORMAL="\x1b[0m"
@@ -75,23 +76,18 @@ function download_javascript_package {
   wget "https://unpkg.com/${PACKAGE}@${VERSION}/${LICENSE_PATH}" -O "javascript/LICENSE-${PACKAGE}"
 }
 
-function copy_libs_from_tsc {
-  printf "${BLUE}Copying tsc libs from tsc...$EOL"
+function copy_libs_from_typescript {
+  # tsgo's bundled libs (lib.NAME.d.ts): tttt calls them NAME.d.ts, and lib.d.ts default.d.ts
+  printf "${BLUE}Copying the libs from TypeScript...$EOL"
   rm -rf lib
-  cp -r tsc/src/lib lib
-  cp -r tsc/LICENSE.txt lib
-  cat lib/libs.json \
-    | grep -Pv '\w*//' \
-    | jq -c '.paths | to_entries[]' | \
-  while read MOVE; do
-    SRC="lib/$(jq -r .key <<<"$MOVE").d.ts"
-    DST="lib/$(jq -r .value <<<"$MOVE" | sed 's/^lib.//')"
-    mv "$SRC" "$DST"
+  mkdir lib
+  for SRC in typescript/tsc/internal/bundled/libs/lib.*.d.ts; do
+    cp "$SRC" "lib/$(basename "$SRC" | sed 's/^lib\.//')"
   done
-  mv 'lib/d.ts' 'lib/default.d.ts'
-  printf '/// <reference lib="es2016" />\n' >lib/es7.d.ts # Why???
-  eval "$(cat ensure-tsc.sh | grep -E '^TSC_(COMMIT|VERSION)=')"
-  echo "These libraries come from upstream TypeScript $TSC_VERSION" >lib/README.txt
+  cp typescript/tsc/internal/bundled/libs/lib.d.ts lib/default.d.ts
+  cp typescript/LICENSE.txt lib
+  eval "$(cat ensure-typescript.sh | grep -E '^TS_(COMMIT|VERSION)=')"
+  echo "These libraries come from upstream TypeScript $TS_VERSION (tsc/internal/bundled/libs)" >lib/README.txt
 }
 
 function write_meson_build {
@@ -123,7 +119,7 @@ printf "${BLUE}Downloading thirdparty libraries into %s...$EOL" "$PWD"
 rm -rf javascript && mkdir -p javascript
 
 download_all
-copy_libs_from_tsc
+copy_libs_from_typescript
 write_meson_build
 apply_patches
 

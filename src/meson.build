@@ -36,6 +36,7 @@ core_files = files(
     'scope.c',
     'symbol_chain.c',
     'lib_features.c',
+    'lib_names.c',
     'unicode_identifiers.c',
     'regex_check.c',
     'regex_tables.c',

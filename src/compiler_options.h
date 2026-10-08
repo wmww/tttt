@@ -17,6 +17,7 @@ typedef enum ScriptTarget {
     SCRIPT_TARGET_ES2023,
     SCRIPT_TARGET_ES2024,
     SCRIPT_TARGET_ES2025,
+    SCRIPT_TARGET_ES2026,
     SCRIPT_TARGET_ESNEXT,
 } ScriptTarget;
 

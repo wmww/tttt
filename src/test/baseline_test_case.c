@@ -21,26 +21,21 @@
 typedef struct LineNumberedStr {
     unsigned line;
     cstr str;
-    // A types line of `any`: where its underline starts. tsc's harness leaves it out when the test has no errors (a
-    // TypeWriterWalker without hadErrorBaseline prints the intrinsic name instead of a type node). 0: always kept
-    isize_t any_underline_at;
-    // ... and it's the error type: then it prints its intrinsic name, `error`
+    // A types line of `any`: where its type starts. When the test has no errors tsc's harness prints the intrinsic name
+    // there instead of a type node (TypeWriterWalker without hadErrorBaseline). 0: always printed as it is
+    isize_t intrinsic_at;
+    // ... and it's the error type: its intrinsic name is `error` (it prints `any` or an unresolved name otherwise)
     bool error_type;
-    u32 error_text_len; // The length of what it prints otherwise: `any`, an unresolved name
 } LineNumberedStr;
 
 static void line_numbered_str_drop(LineNumberedStr* me) {
     cstr_drop(&my str);
 }
 
-// A types line of `any` as tsc's harness prints it without errors: the intrinsic name, no underline
-static void append_without_any_underline(cstr* target, LineNumberedStr const* line) {
-    if (line->error_type) {
-        cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at - line->error_text_len));
-        cstr_append_lit(target, "error");
-    } else {
-        cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->any_underline_at));
-    }
+// A types line of `any` as tsc's harness prints it without errors: the intrinsic name
+static void append_intrinsic_any(cstr* target, LineNumberedStr const* line) {
+    cstr_append_sv(target, csview_from_n(cstr_str(&line->str), line->intrinsic_at));
+    cstr_append(target, line->error_type ? "error" : "any");
 }
 
 #define g_class_key LineNumberedStr, line_numbered_str
@@ -439,6 +434,22 @@ static void mount_test_lib_folder(BaselineTestCase* me, csview from, csview to) 
     }
 }
 
+
+// tsgo's SkipUnsupportedCompilerOptions (and the Fatalf of failOnUnsupportedCompilerOptions): configurations that give
+// an option 7.0 removed, as written (before compiler_options_resolve()'s defaults). `module: none` too, a removed value
+// tsgo's harness has no baselines for
+static bool tsgo_skips_configuration(CompilerOptions const* options) {
+    return (options->module_set && (options->module == MODULE_KIND_UMD || options->module == MODULE_KIND_SYSTEM ||
+                                    options->module == MODULE_KIND_AMD || options->module == MODULE_KIND_NONE)) ||
+        (options->module_resolution_set && (options->module_resolution == MODULE_RESOLUTION_NODE10 ||
+                                            options->module_resolution == MODULE_RESOLUTION_CLASSIC)) ||
+        (options->is_set[COMPILER_OPTION_es_module_interop] && !options->es_module_interop) ||
+        (options->is_set[COMPILER_OPTION_allow_synthetic_default_imports] && !options->allow_synthetic_default_imports) ||
+        (options->is_set[COMPILER_OPTION_always_strict] && !options->always_strict) ||
+        options->base_url_set || cstr_size(&options->out_file) ||
+        (options->target_set && options->target == SCRIPT_TARGET_ES5);
+}
+
 static_failable load_test_source(BaselineTestCase* me, csview config) {
     cstr unparsed_contents = cstr_null;
     cstr source_contents = cstr_null;
@@ -539,28 +550,6 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
         }
     }
 
-    // tsc's harness has its built compiler at /.ts (vfs.ts builtFolder), which the API samples import through a
-    // package.json. That build's API is tests/baselines/reference/api/typescript.d.ts, the other declaration files are
-    // in built/local
-    static char const* const built_files[] = {
-        "typescript.d.ts", "typescript.internal.d.ts", "tsserverlibrary.d.ts", "tsserverlibrary.internal.d.ts",
-    };
-    isize cases_at = csview_find_sv(my source_path, c_sv("/tests/cases/"));
-    for (u32 i = 0; i < c_arraylen(built_files) && cases_at != c_NPOS; i++) {
-        cstr mounted = cstr_d("/.ts/", built_files[i]);
-        if (csview_find_sv(contents_sv, cstr_sv(&mounted)) != c_NPOS) {
-            csview root = csview_slice(my source_path, 0, cases_at);
-            cstr from = i == 0 ? cstr_d(root, "/tests/baselines/reference/api/typescript.d.ts") :
-                cstr_d(root, "/built/local/", built_files[i]);
-            cstr contents = cstr_null;
-            try (fs_mkdir(mock_fs_get_fs(my fs), c_sv("/.ts"))) or_log(info);
-            try (fs_read_file(fs, cstr_sv(&from), &contents)) or_log(info);
-            try (mock_fs_create_file(my fs, cstr_sv(&mounted), contents)) or_log(info);
-            cstr_drop(&from);
-        }
-        cstr_drop(&mounted);
-    }
-
     // A file that says `/// <reference no-default-lib="true"/>` is the default library (tsc's hasNoDefaultLib)
     bool no_default_lib = csview_find_sv(contents_sv, c_sv("no-default-lib=\"true\"")) != c_NPOS;
     for (csview list = cstr_sv(&my lib_files); list.size && !no_default_lib;) {
@@ -649,6 +638,7 @@ static_failable load_test_source(BaselineTestCase* me, csview config) {
     if (!program_options(my program)->is_set[COMPILER_OPTION_skip_default_lib_check]) {
         ignore compiler_options_set(program_options(my program), c_sv("skipdefaultlibcheck"), c_sv("true"));
     }
+    my skipped = tsgo_skips_configuration(program_options(my program));
     compiler_options_resolve(program_options(my program));
     cstr_take(&my lib_list, no_default_lib ? cstr_null : compiler_options_lib_files(program_options(my program)));
     for (csview rest = cstr_sv(&referenced_libs); rest.size && cstr_size(&my lib_list);) {
@@ -941,6 +931,10 @@ BaselineTestCase run_baseline_test_case(
     try (load_test_source(&ret, config)) if_err (e) {
         if (noisy) error_base_eprintln(e);
     }
+    if (ret.skipped) {
+        logger_config.threshold = prev_threshold;
+        return ret;
+    }
 
     Program* lib_program = baseline_test_cache_get_program_with_libs(cache, cstr_sv(&ret.lib_list));
     program_copy_globals_from(program, lib_program);
@@ -1207,7 +1201,7 @@ static CodeLines split_code_lines(csview contents) {
 // an empty line before a run of code lines that don't follow the last result's line directly (unless the first of them
 // is blank or a lone brace), the file's rest, a final line break
 static void render_types_or_symbols_file(
-    cstr* target, const char* source_path, csview source_contents, VecLineNumberedStr const* lines, bool drop_any_underlines
+    cstr* target, const char* source_path, csview source_contents, VecLineNumberedStr const* lines, bool intrinsic_anys
 ) {
     cstr_append_d(target, DEFAULT_DISPLAY, "=== ", source_path, " ===\r\n");
     CodeLines code = split_code_lines(source_contents);
@@ -1227,8 +1221,8 @@ static void render_types_or_symbols_file(
             }
         }
         last = line;
-        if (drop_any_underlines && i->any_underline_at) {
-            append_without_any_underline(target, i);
+        if (intrinsic_anys && i->intrinsic_at) {
+            append_intrinsic_any(target, i);
         } else {
             cstr_append_s(target, i->str);
         }
@@ -1253,7 +1247,7 @@ static void render_lines_woven_with_file(
     csview source_contents,
     VecLineNumberedStr const* lines,
     bool is_last_file,
-    bool drop_any_underlines
+    bool intrinsic_anys
 ) {
     const char* line_indent = is_errors ? "    " : "";
     unsigned line = 0;
@@ -1324,8 +1318,8 @@ static void render_lines_woven_with_file(
                 cstr_append(target, "\r\n");
             }
             LineNumberedStr const* added = vec_line_numbered_str_at(lines, index);
-            if (drop_any_underlines && added->any_underline_at) {
-                append_without_any_underline(target, added);
+            if (intrinsic_anys && added->intrinsic_at) {
+                append_intrinsic_any(target, added);
             } else {
                 cstr_append_s(target, added->str);
             }
@@ -1809,12 +1803,11 @@ void baseline_test_case_add_symbol(BaselineTestCase* me, BaselineSym data) {
     cstr_drop(&data.text);
 }
 
-// One `>text : type` line plus its underline per parenthesization level of the expression
-// `underline` null: all of it synthetic (`^`)
-static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered, cstr const* underline_of_type) {
+// One `>text : type` line per parenthesization level of the expression
+static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_span, csview rendered) {
     for (u32 i = 0; i < my hidden_type_span_count; i++) {
         if (my hidden_type_spans[i].sv.buf == inner_span.sv.buf && my hidden_type_spans[i].sv.size == inner_span.sv.size) {
-            my any_keeps_underline = false;
+            my any_keeps_rendering = false;
             return;
         }
     }
@@ -1839,41 +1832,22 @@ static void add_type_rendered(BaselineTestCase* me, Span outer_span, Span inner_
     intptr_t line = placement_line(outer_span);
     cstr target = cstr_lit(">");
     append_span_contents_without_newlines(&target, outer_span);
-    // As wide as the text in UTF-16 code units, which is what the harness counts
-    isize_t width = 0;
-    for (isize_t i = 0; i < cstr_size(&target); i++) {
-        unsigned char c = (unsigned char)cstr_str(&target)[i];
-        if ((c & 0xC0) != 0x80) width += c >= 0xF0 ? 2 : 1;
-    }
-    cstr underline = cstr_null;
-    cstr_resize(&underline, width, ' ');
-    *cstr_data(&underline) = '>';
     cstr_append_lit(&target, " : ");
-    cstr_append_lit(&underline, " : ");
+    bool intrinsic = !my any_keeps_rendering && (csview_equals(rendered, "any") || my unresolved_type);
+    isize_t intrinsic_at = intrinsic ? cstr_size(&target) : 0;
     cstr_append_sv(&target, rendered);
-    if (underline_of_type) {
-        cstr_append_s(&underline, *underline_of_type);
-    } else {
-        cstr_resize(&underline, cstr_size(&underline) + rendered.size, '^');
-    }
-    isize_t any_underline_at = my any_keeps_underline || (!csview_equals(rendered, "any") && !my unresolved_type) ? 0 : cstr_size(&target);
-    bool error_type = my error_type && any_underline_at;
-    my any_keeps_underline = false; // Only the node itself, not what's parenthesized in it
-    cstr_append_lit(&target, "\r\n");
-    cstr_append_s(&target, underline);
-    cstr_drop(&underline);
+    my any_keeps_rendering = false; // Only the node itself, not what's parenthesized in it
     BaselineTestFile* test_file = find_file(me, outer_span.source);
     vec_line_numbered_str_push(&test_file->types, (LineNumberedStr){
         .line = line,
         .str = target,
-        .any_underline_at = any_underline_at,
-        .error_type = error_type,
-        .error_text_len = (u32)rendered.size,
+        .intrinsic_at = intrinsic_at,
+        .error_type = my error_type && intrinsic,
     });
     if (!base_case) {
         outer_span.sv.buf++;
         outer_span.sv.size -= unclosed ? 1 : 2;
-        add_type_rendered(me, outer_span, inner_span, rendered, underline_of_type);
+        add_type_rendered(me, outer_span, inner_span, rendered);
     }
 }
 
@@ -1897,19 +1871,18 @@ void baseline_test_case_add_type_recursive(BaselineTestCase* me, Span outer_span
     }
     if (my in_with) type = ty_intrinsic(current_checker, TY_ERROR);
     cstr rendered = cstr_null;
-    cstr underline = cstr_null;
     TyParamNames param_names = { .in_scope = { .data = my scope_params, .len = my scope_params_len } };
     ty_display(current_checker, (TyDisplay){
-        .target = &rendered, .enclosing = my enclosing, .underline = &underline,
+        .target = &rendered, .enclosing = my enclosing, .types_baseline = true,
         .param_names = &param_names, .at = inner_span, .usage_ref = my usage_ref,
     }, type);
     ty_param_names_drop(&param_names);
     my error_type = (type->flags & TYF_ERROR) != 0;
     my unresolved_type = my error_type && type->kind == TY_INTRINSIC && type != ty_intrinsic(current_checker, TY_ERROR);
-    add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered), &underline);
+    add_type_rendered(me, outer_span, inner_span, cstr_sv(&rendered));
     my error_type = false;
     my unresolved_type = false;
-    c_drop(cstr, &rendered, &underline);
+    cstr_drop(&rendered);
 }
 
 void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview text) {
@@ -1917,10 +1890,7 @@ void baseline_test_case_add_type_text(BaselineTestCase* me, Span span, csview te
         baseline_test_case_add_type(me, span, nullptr);
         return;
     }
-    cstr underline = cstr_null;
-    for (isize i = 0; i < text.size; i++) cstr_push(&underline, "^");
-    add_type_rendered(me, span, span, text, &underline);
-    cstr_drop(&underline);
+    add_type_rendered(me, span, span, text);
 }
 
 u32 baseline_test_case_enter_generic(BaselineTestCase* me, Generic const* generic) {
@@ -2069,7 +2039,7 @@ void baseline_test_case_add_declaration(BaselineTestCase* me, Span span, Symbol 
 void baseline_test_case_add_symbol_value(BaselineTestCase* me, Span span, Symbol const* symbol) {
     Symbol const* value = symbol_for_meaning(symbol, SYMBOL_VALUE);
     if (!value || (value->is_placeholder && !(value->is_unresolved && csview_equals(value->name, "undefined")))) {
-        // (tsc's getTypeOfAlias: errorType, which shows as `error` where the harness doesn't keep any's underline. What
+        // (tsc's getTypeOfAlias: errorType, which shows as `error` where the harness prints its intrinsic name. What
         // a shorthand ambient module gives is any)
         bool shorthand = value && value->is_placeholder && !value->is_unresolved;
         baseline_test_case_add_type(me, span, ty_intrinsic(current_checker, shorthand ? TY_ANY : TY_ERROR));

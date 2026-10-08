@@ -9,6 +9,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 54 stage 1: the switch to the 7.1 suite (2026-10-08, thirteenth window's todo entry 3)
+Suite (tsgo's native tree, fed0bf24): **11860 / 13571** (errors 12597, symbols 12909, types 12585; 1721 skipped
+configurations), 10.3 s wall (intersectionConstructorReductionCrash 63 s -> 0.2 s). Libs are 7.1's. Corpora unchanged
+(zod-root 53, effect 3, the rest 0), `$ExpectType` 68631, flagflip 17 / 11 / 4, DT sweep 8594 -> 8586 (8 spurious:
+7.1's `lib.dom` CloseWatcher/Serial vs DT packages, against 6.0's cache), sourcesweep sample 699 / 822 (36 "crashes"
+are exit code 2 since plan 53, triage.md). Instructions: tsc 4.717, type-fest 19.648, valibot 3.875, react 1.519,
+nest 1.154, webpack 10.486, zod 5.048, xstate 2.989, drizzle 7.129, vue 6.552, effect 10.174, vscode 91.246,
+excalidraw 7.935, tanstack-router 5.453 G (flat).
+
 ## Plan 53 stage 1: CLI parity (2026-10-08, thirteenth window's todo entry 1)
 `scripts/clidiff.py` (stdout byte for byte, exit codes): against tsc 6 (4d4f005c, `--sample 12 --max-ms 10000`) 243 /
 261 source sweep projects identical, 175 of them with diagnostics; the 18 others are 12 checker differences and 6

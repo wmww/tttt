@@ -1,1 +1,1 @@
-These libraries come from upstream TypeScript 6.0.3+stableTypeOrdering (4d4f005c)
+These libraries come from upstream TypeScript 7.1.0-dev.20261008.1 (fed0bf24) (tsc/internal/bundled/libs)

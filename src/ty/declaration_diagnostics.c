@@ -409,16 +409,16 @@ static void emit_leave(Walk* me, Emitting saved) { my emitting = saved; }
 static void print_inferred(Walk* me, Ty const* type) {
     if (!type || my emitting.kind == EMIT_NONE) return;
     my tracker.truncated = false;
-    // (With the types baseline's node reuse, which an underline turns on: tsc's declaration emit reuses annotations the
-    // same way, naming what a reused name refers to anew where it means something else here)
-    cstr text = cstr_init(), underline = cstr_init();
+    // (With the types baseline's node reuse: tsc's declaration emit reuses annotations the same way, naming what a
+    // reused name refers to anew where it means something else here)
+    cstr text = cstr_init();
     ty_display(my checker, (TyDisplay){
-        .target = &text, .underline = &underline, .enclosing = my scope, .tracker = &my tracker,
+        .target = &text, .types_baseline = true, .enclosing = my scope, .tracker = &my tracker,
     }, type);
     if (getenv("TTTT_DEBUG_DECLARATION_TYPES")) {
         fprintf(stderr, "%.*s: %s\n", (int)my emitting.name.sv.size, my emitting.name.sv.buf, cstr_str(&text));
     }
-    c_drop(cstr, &text, &underline);
+    cstr_drop(&text);
 }
 
 // A declaration whose type the syntactic builder may fall back from: starts tracking that

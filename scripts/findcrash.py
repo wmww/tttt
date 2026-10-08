@@ -2,10 +2,11 @@
 """Finds the tests that crash (or hang, or run away with memory) the release test runner, by bisecting on test name
 prefixes. Usage: scripts/findcrash.py [prefix-regex-start]. Build first (scripts/fasttest.sh does)."""
 import subprocess, sys, os, glob, string
+import suite
 
 def names():
     out = set()
-    for path in glob.glob('thirdparty/tsc/tests/cases/**/*.ts*', recursive=True):
+    for path in suite.test_files():
         out.add(os.path.splitext(os.path.basename(path))[0])
     return sorted(out, key=str.lower)
 

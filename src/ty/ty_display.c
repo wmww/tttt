@@ -28,27 +28,12 @@ static bool truncating(TyDisplay d) {
     return !d.enclosing && !compiler_options()->no_error_truncation;
 }
 
-// One underline character per UTF-16 code unit of what was printed since `start`, like the harness' underlineFor()
-static void underline_since(TyDisplay d, isize_t start) {
-    if (!d.underline) return;
-    char const* text = cstr_str(d.target);
-    isize_t size = cstr_size(d.target);
-    for (isize_t i = start; i < size; i++) {
-        unsigned char c = (unsigned char)text[i];
-        if ((c & 0xC0) == 0x80) continue;
-        u32 units = c >= 0xF0 ? 2 : 1;
-        for (u32 j = 0; j < units; j++) cstr_push(d.underline, d.reused ? " " : "^");
-    }
-}
-
 // The length past which declaration emit doesn't serialize a type (tsc's noTruncationMaximumTruncationLength)
 #define DECLARATION_MAX_LENGTH 1000000
 
 static void out(TyDisplay d, csview sv) {
     if (d.tracker && d.tracker->truncated) return;
-    isize_t start = cstr_size(d.target);
     cstr_append_sv(d.target, sv);
-    underline_since(d, start);
     if (d.tracker && cstr_size(d.target) > DECLARATION_MAX_LENGTH) {
         d.tracker->truncated = true;
         d.tracker->report(d.tracker, DECL_REPORT_TRUNCATION, c_sv(""));
@@ -57,14 +42,13 @@ static void out(TyDisplay d, csview sv) {
 #define out_lit(d, s) out(d, c_sv(s))
 
 typedef struct PrintedRange {
-    isize_t start, end, underline_start, underline_end;
+    isize_t start, end;
 } PrintedRange;
 static PrintedRange printed_range_start(TyDisplay d) {
-    return (PrintedRange){ .start = cstr_size(d.target), .underline_start = d.underline ? cstr_size(d.underline) : 0 };
+    return (PrintedRange){ .start = cstr_size(d.target) };
 }
 static void printed_range_end(TyDisplay d, PrintedRange* range) {
     range->end = cstr_size(d.target);
-    range->underline_end = d.underline ? cstr_size(d.underline) : 0;
 }
 // Prints again what was printed in `range` (tsc's serializedTypes cache: the same type printed twice is the same node,
 // type parameter names and all, and isn't worked out twice)
@@ -73,11 +57,6 @@ static void reprint_range(TyDisplay d, PrintedRange range) {
     cstr text = cstr_from_sv(csview_slice(cstr_sv(d.target), range.start, range.end));
     cstr_append_sv(d.target, cstr_sv(&text));
     cstr_drop(&text);
-    if (d.underline) {
-        cstr underline = cstr_from_sv(csview_slice(cstr_sv(d.underline), range.underline_start, range.underline_end));
-        cstr_append_sv(d.underline, cstr_sv(&underline));
-        cstr_drop(&underline);
-    }
 }
 
 
@@ -127,8 +106,8 @@ static bool shows_alias(TyDisplay d, Ty const* ty) {
     // typeToString adds: an alias that isn't accessible from where it's printed prints its structure. A message's type
     // printed from its expression is typeToString's: the local alias shows)
     TypeDecl const* type_decl = symbol_find_node(ty->alias, SYMBOL_DECL_TYPE_ALIAS);
-    if (type_decl && type_decl->local && !d.tracker && d.underline) return false;
-    if (!d.tracker && !d.underline) return true;
+    if (type_decl && type_decl->local && !d.tracker && d.types_baseline) return false;
+    if (!d.tracker && !d.types_baseline) return true;
     return symbol_type_accessible_at(d.enclosing, ty->alias);
 }
 
@@ -326,7 +305,7 @@ static void out_symbol_name(Checker* me, TyDisplay d, Symbol const* symbol, u32 
     // tsc's symbolToTypeNode: the chain accessible from here, `import("m")` when it starts at a module. Not in a
     // message (typeToString's UseAliasDefinedOutsideCurrentScope: no module symbol is yielded, what nothing reaches is
     // its bare name)
-    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.underline || d.tracker);
+    SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.types_baseline || d.tracker);
     u32 start = 0;
     // (What an augmented `export =` assigns is a module to tsc's printer, not named by its own local, see
     // is_external_module_symbol() in symbol_chain.c, and not as the module it is assigned to either)
@@ -503,7 +482,7 @@ static void out_declared_name(Checker* me, TyDisplay d, Ty const* declared, u32 
     // A module's object, also through `import * as ns` (whose symbol stands for the module): named from here like tsc
     if (d.enclosing && symbol && symbol != symbol_members(symbol) && namespace_import_is_clone(symbol)) {
         // The clone `import * as ns` makes is named by the import where that reaches it, else as the module
-        SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.underline || d.tracker);
+        SymbolChain chain = symbol_chain_at(d.enclosing, symbol, meaning, d.types_baseline || d.tracker);
         out_symbol_name(me, d, chain.len ? symbol : symbol_members(symbol), meaning);
         return;
     }
@@ -846,9 +825,8 @@ static void display_prop_name(Checker* me, TyDisplay d, Atom const* name) {
 
 // Node reuse. tsc prints a type for a declaration by reusing the declaration's own annotation where it can
 // (serializeTypeForDeclaration -> tryReuseExistingTypeNode): when the annotation's type is the type being printed, it
-// prints *the node*, as written (`Array<string>`, `typeof a`, `(() => S)[]`, `Omit<O, "p">`). Only for the types
-// baseline (TyDisplay.underline), where the reused parts are the spaces of the `^^^` line. A name in the annotation that
-// doesn't mean the same from where the type is printed isn't reused: that part prints its type instead (tsc's
+// prints *the node*, as written (`Array<string>`, `typeof a`, `(() => S)[]`, `Omit<O, "p">`). For the types
+// baseline (TyDisplay.types_baseline), declaration emit and `reuse_nodes`. A name in the annotation that doesn't mean the same from where the type is printed isn't reused: that part prints its type instead (tsc's
 // visitExistingNodeTreeSymbols recovers per node)
 
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node);
@@ -1219,32 +1197,14 @@ static void display_node_identifier(Checker* me, TyDisplay d, TypeNode const* no
     Symbol const* symbol = identifier->symbol;
     IdentifierReuse reuse = identifier_reuse(me, d, node);
     if (reuse != IDENTIFIER_REUSED) {
-        isize_t start = cstr_size(d.target);
-        isize_t underline_start = d.underline ? cstr_size(d.underline) : 0;
         // tsc names what it refers to anew (serializeTypeName) and keeps the type arguments, unless no accessible
         // name reaches it (then the reference prints its type)
         Symbol const* target = identifier->target;
-        bool mapped = reuse == IDENTIFIER_MAPPED;
         if (reuse == IDENTIFIER_RENAMED) {
             out_symbol_name(me, reused_if(d, false), target, SYMBOL_TYPE);
             display_node_args(me, d, &identifier->generic_params);
         } else {
             display_node_fallback(me, d, node);
-        }
-        // tsc names it anew (serializeTypeName) in a node it marks as reused: of an `import("m").A` it made, the
-        // `import(` and `).` are reused and the rest isn't (of an `import("m")`, the `import(` and `)`)
-        char const* text = cstr_str(d.target) + start;
-        if (!mapped && d.underline && strncmp(text, "import(\"", 8) == 0) {
-            char const* close = strstr(text, "\").");
-            char* underline = (char*)cstr_str(d.underline) + underline_start;
-            char const* quote = strchr(text + 8, '"');
-            if (close) {
-                memset(underline, ' ', strlen("import("));
-                memset(underline + (close + 1 - text), ' ', 2);
-            } else if (quote && quote[1] == ')' && !quote[2]) {
-                memset(underline, ' ', strlen("import("));
-                underline[quote + 1 - text] = ' ';
-            }
         }
         return;
     }
@@ -1303,19 +1263,10 @@ static void display_node_typeof(Checker* me, TyDisplay d, TypeNode const* node) 
         Symbol const* symbol = leftmost == node->typeof_->expr ? leftmost->identifier.symbol : nullptr;
         if (symbol && symbol->flags & SYMBOL_ALIAS) symbol = symbol_resolve_alias((Symbol*)symbol);
         if (symbol && !symbol->is_local && !symbol->is_parameter && !symbol->is_placeholder && symbol->parent &&
-            d.enclosing && d.underline && symbol_value_accessible_at(d.enclosing, symbol)
+            d.enclosing && d.types_baseline && symbol_value_accessible_at(d.enclosing, symbol)
         ) {
             out_lit(d, "typeof ");
-            isize_t start = cstr_size(d.target);
-            isize_t underline_start = cstr_size(d.underline);
             out_symbol_name(me, reused_if(d, false), symbol, SYMBOL_VALUE);
-            char const* text = cstr_str(d.target) + start;
-            char const* close = strncmp(text, "import(\"", 8) == 0 ? strstr(text, "\").") : nullptr;
-            if (close && d.reused) {
-                char* underline = (char*)cstr_str(d.underline) + underline_start;
-                memset(underline, ' ', strlen("import("));
-                memset(underline + (close + 1 - text), ' ', 2);
-            }
             return;
         }
         display_node_fallback(me, d, node);
@@ -1430,9 +1381,7 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
             // updateComputedPropertyName; a positive one replaces the node, range and all)
             bool negative = key->literal.value.number < 0;
             if (negative) out_lit(d, "[");
-            isize_t start = cstr_size(d.target);
             cstr_append_value_js(d.target, &key->literal.value);
-            underline_since(negative ? reused_if(d, false) : d, start);
             if (negative) out_lit(d, "]");
             return;
         }
@@ -1449,7 +1398,7 @@ static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* memb
     if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr) return true;
     Ty const* key = ty_expr_type(me, member->key.expr);
     return key->kind == TY_LITERAL ||
-        ((d.underline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr));
+        ((d.types_baseline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr));
 }
 
 // A JSDoc type literal the way tsc's printer reprints it, one member per line, which the types baseline flattens:
@@ -1843,9 +1792,9 @@ static void display_node_plus_undefined(Checker* me, TyDisplay d, TypeNode const
 }
 
 // Whether the printer reprints annotations (tsc's node reuse, which needs an enclosing declaration): the types
-// baseline, which marks them in the underline, and a message's type with `reuse_nodes`
+// baseline and a message's type with `reuse_nodes`
 static bool reuses_nodes(TyDisplay d) {
-    return (d.underline || d.reuse_nodes) && d.enclosing;
+    return (d.types_baseline || d.reuse_nodes) && d.enclosing;
 }
 
 static void display_annotated(Checker* me, TyDisplay d, TypeNode const* annotation, Ty const* ty, bool optional) {
@@ -2045,7 +1994,7 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
         // (A function printed syntactically reuses its type parameter declarations whole)
         Ty const* declared_param = params.data[i];
         GenericItem const* own = syntactic && declared_param->kind == TY_TYPE_PARAM ? declared_param->param.state->item : nullptr;
-        if (own && !declared_param->param.state->clone_of && d.underline) {
+        if (own && !declared_param->param.state->clone_of && d.types_baseline) {
             TyDisplay whole = reused_if(d, true);
             if (own->is_const) out_lit(whole, "const ");
             if (own->is_in) out_lit(whole, "in ");
@@ -2079,7 +2028,7 @@ static void display_type_params(Checker* me, TyDisplay d, TyList params, bool re
             out_lit(d, " extends ");
             if (d.reused) {
                 ty_display(me, d, constraint);
-            } else if (!d.underline && item && item->extends_explicit && annotation_is(me, &item->extends, constraint, false)) {
+            } else if (!d.types_baseline && item && item->extends_explicit && annotation_is(me, &item->extends, constraint, false)) {
                 // (tsc's typeParameterToDeclaration reuses the constraint as written in messages too:
                 // typeToTypeNodeHelperWithPossibleReusableTypeNode)
                 display_node(me, d, &item->extends);
@@ -2315,7 +2264,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     FunctionImpl const* function = root->function && root->class_instance && !root->function->is_constructor ? nullptr : root->function;
     // (A JSDoc `@this` makes a parameter of its own, which isn't reused)
     bool jsdoc_this = function && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this;
-    bool reusable = (d.underline || d.reuse_nodes) && function;
+    bool reusable = (d.types_baseline || d.reuse_nodes) && function;
     bool syntactic = function && d.syntactic_function == function; // (Its parameter declarations are reused whole)
     d.syntactic_function = nullptr;
     // (An instantiated signature's parameters that could contain type variables are copies: one named like a type
@@ -2345,7 +2294,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     SigParam const* params = expanded_params(me, sig, &param_count);
     if (!params) params = sig->params;
     TyDisplayParams printed = { .params = params, .count = param_count, .function = function, .outer = d.printed_params };
-    if (d.underline || d.reuse_nodes) d.printed_params = &printed;
+    if (d.types_baseline || d.reuse_nodes) d.printed_params = &printed;
     if (sig->this_type) {
         // (A `this` from a contextual signature whose own is a JSDoc `@this` has no declaration: tsc's
         // getSignatureFromDeclaration makes the symbol, assignContextualParameterTypes copies it)
@@ -2493,7 +2442,7 @@ static void display_signature_inner(Checker* me, TyDisplay d, Signature const* s
     }
     // tsc's serializeReturnTypeForSignature reuses `return x as T` whether or not there is an enclosing declaration:
     // a message's type printed from nowhere (a method's) reuses such a T when it names nothing
-    if (!reusable && !d.underline && function && !function->ret_explicit && !root->class_instance && !instantiated &&
+    if (!reusable && !d.types_baseline && function && !function->ret_explicit && !root->class_instance && !instantiated &&
         !function_impl_rare(function)->jsdoc_tag_ret
     ) {
         TypeNode const* node = single_return_assertion(me, function, ret);
@@ -2588,10 +2537,8 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
     if (wrapper) {
         // (Written after the mapped type, but named before it)
         cstr inner = cstr_null;
-        cstr inner_underline = cstr_null;
         TyDisplay inner_d = d;
         inner_d.target = &inner;
-        inner_d.underline = d.underline ? &inner_underline : nullptr;
         display_mapped_body(me, inner_d, mapped, wrapper, homomorphic_lost);
         if (homomorphic_lost) ty_display(me, d, mapped->modifiers_type);
         else ty_display(me, d, mapped->constraint);
@@ -2611,9 +2558,8 @@ static void display_mapped(Checker* me, TyDisplay d, MappedInfo const* mapped) {
         }
         out(fresh, c_sv(" ? "));
         cstr_append_sv(d.target, cstr_sv(&inner));
-        if (d.underline) cstr_append_sv(d.underline, cstr_sv(&inner_underline));
         out(fresh, c_sv(" : never"));
-        c_drop(cstr, &inner, &inner_underline);
+        cstr_drop(&inner);
         return;
     }
     display_mapped_body(me, d, mapped, nullptr, false);
@@ -2813,7 +2759,7 @@ static void display_structure(Checker* me, TyDisplay d, Ty const* ty) {
     out_lit(d, "{ ");
     d.in_object_literal = true;
     TyDisplay sig_d = d;
-    for (u32 i = 0; i < members->call_count && members->call_count > 1 && (d.underline || d.reuse_nodes) && !sig_d.sibling_mentions_mapped; i++) {
+    for (u32 i = 0; i < members->call_count && members->call_count > 1 && (d.types_baseline || d.reuse_nodes) && !sig_d.sibling_mentions_mapped; i++) {
         Signature const* root = members->call[i];
         while (root->target) root = root->target;
         sig_d.sibling_mentions_mapped = root != members->call[i] && mentions_mapped(me, members->call[i], root);
@@ -3410,9 +3356,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
             } else if (ty->flags & TYF_BOOLEAN_LITERAL) {
                 out(d, ty->literal.value.boolean ? c_sv("true") : c_sv("false"));
             } else {
-                isize_t start = cstr_size(d.target);
                 cstr_append_value_js(d.target, &ty->literal.value);
-                underline_since(d, start);
                 if (ty->flags & TYF_BIGINT_LITERAL) out_lit(d, "n");
             }
             break;

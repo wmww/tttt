@@ -10,6 +10,7 @@ typedef struct BaselineTestResult {
     cstr config; // One of baseline_test_configurations(), usually empty
     cstr name;   // What the baselines are called: the file's name, plus "(config)" if there is one
     bool did_run;
+    bool skipped; // A configuration tsgo's harness skips (BaselineTestCase.skipped): not counted, not saved
     bool errors_only; // @noTypesAndSymbols: only the errors are compared, the other two count as passed
     bool has_prev;
     bool errors_prev;

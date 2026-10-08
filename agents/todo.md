@@ -20,9 +20,11 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
    (`thirdparty/ensure-typescript.sh`: checkout, Go 1.27.2, tsgo's CLI built from it); tools decided (Go + `go build
    -overlay`: tsgo's own test runner gives any file's baselines in 45 ms, an overlay main can call the checker);
    native suite through tttt's harness: **11842 / 13572 (87.3%)**, failures bucketed. **Plan 54** has it all.
-3. **Plan 54 stage 1: the switch.** Harness on the native tree (subfolder baselines, tsgo's skip rules, no `^^^`:
-   delete the types underline machinery), 7.1 libs with generated lib tables and es2026, the 7 crashing and the 63 s
-   new tests (bugs/ts7_new_tests.md), suite scripts on the new layout, saved results regenerated (~87%).
+3. ~~Plan 54 stage 1: the switch~~ **done**: the native suite is the suite (**11860 / 13571**, 10 s; 1721 skipped
+   configurations), 7.1 libs + generated lib tables + es2026, the `^^^` machinery deleted, the 7 crashes and 2 slow
+   tests fixed, suite scripts on `scripts/suite.py`. Corpora, `$ExpectType`, flagflip unchanged; DT sweep 8586 (8 new
+   spurious: 7.1 `lib.dom` vs 6.0's caches, stage 3). filetest.sh/mutate.py still use 6.0's baselines (underlines
+   stripped) until entry 4.
 4. **Plan 54 stage 2: oracle tools on tsgo.** `test/oracle/` Go overlay: the probe (`tscbaseline.sh`,
    `filetest.sh`, diffapp, `mutate.py`) and `tttt-oracle` (per-project diagnostics with CLI semantics,
    `$ExpectType`), replacing `test/sweep_tsc.js`; `--as-emitting` goes.

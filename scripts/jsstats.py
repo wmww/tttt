@@ -12,11 +12,12 @@ Regex-based: in a 40-test sample the primary category was right ~85% of the time
 bounds (incidental bugs cut them by a third or so)."""
 import csv, os, re, sys, collections
 os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-REF='thirdparty/tsc/tests/baselines/reference'
+sys.path.insert(0, 'scripts')
+from suite import ref, CASES
 DUMP='build/failstats/dump'
 JSDETECT = re.compile(r'@(allowjs|checkjs)\s*:\s*true|@filename:\s*\S+\.(js|jsx|cjs|mjs)\b', re.I)
 src={}
-for root in ['thirdparty/tsc/tests/cases/compiler','thirdparty/tsc/tests/cases/conformance']:
+for root in [f'{CASES}/compiler', f'{CASES}/conformance']:
     for d,_,fs in os.walk(root):
         for f in fs:
             b,ext=os.path.splitext(f)
@@ -104,14 +105,14 @@ for name,r in rows.items():
     if casts: tags['cast']+=casts
     if re.search(r'@(class|constructor)\b',jstext): feats.add('ctor_tag')
     # diffs
-    ref_e=errs(read(f'{REF}/{name}.errors.txt')); got_e=errs(read(f'{DUMP}/{name}.errors.txt'))
+    ref_e=errs(read(ref(name, '.errors.txt'))); got_e=errs(read(f'{DUMP}/{name}.errors.txt'))
     ce=collections.Counter(x[2] for x in ref_e); cg=collections.Counter(x[2] for x in got_e)
     missing=[l for l in (ce-cg).elements()]; spurious=[l for l in (cg-ce).elements()]
     def fileof(l):
         m=ERRLINE.match(l); return m.group(1) or '' if m else ''
     errfiles=set(fileof(l) for l in missing+spurious)
-    symfiles=secdiff(read(f'{REF}/{name}.symbols'),read(f'{DUMP}/{name}.symbols')) if r['symbols']=='0' else set()
-    typfiles=secdiff(read(f'{REF}/{name}.types'),read(f'{DUMP}/{name}.types')) if r['types']=='0' else set()
+    symfiles=secdiff(read(ref(name, '.symbols')),read(f'{DUMP}/{name}.symbols')) if r['symbols']=='0' else set()
+    typfiles=secdiff(read(ref(name, '.types')),read(f'{DUMP}/{name}.types')) if r['types']=='0' else set()
     allf=errfiles|symfiles|typfiles
     tsbad=[f for f in allf if f and not isjs(f)]
     jsbad=[f for f in allf if f and isjs(f)]

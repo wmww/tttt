@@ -671,7 +671,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             break; // An omitted element, `[, x]`: tsc 6's typeWriter skips OmittedExpression
 
         case BINDING_IDENTIFIER:
-            if (my parent) ctx->any_keeps_underline = true; // A binding element
+            if (my parent) ctx->any_keeps_rendering = true; // A binding element
             if (!my parent && span_valid(ctx->parameter_property_class) && my symbol) {
                 // A parameter property's name declares the property (tsc's parameter.symbol is the property's)
                 // (One symbol with a field of its name: the class's)
@@ -741,11 +741,11 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
                     }
                     vec_span_drop(&info.declarations);
                     // (Its type is any: tsc's getTypeOfNode of a property name that isn't an expression)
-                    ctx->any_keeps_underline = true;
+                    ctx->any_keeps_rendering = true;
                     baseline_test_case_add_type_node(ctx, i->source_span, &type_any);
                 } else if (i->target.rest_property_name) {
                     // `...a: b` (TS2566): the property name is any too
-                    ctx->any_keeps_underline = true;
+                    ctx->any_keeps_rendering = true;
                     baseline_test_case_add_type_node(ctx, i->source_span, &type_any);
                 }
                 binding_content_compile_test_info(&i->target, ctx);
@@ -753,7 +753,7 @@ void binding_content_compile_test_info(Binding const* me, BaselineTestCase* ctx)
             break;
     }
     if (my default_value) {
-        if (my parent) ctx->any_keeps_underline = true; // (A binding element's initializer: its parent is one too)
+        if (my parent) ctx->any_keeps_rendering = true; // (A binding element's initializer: its parent is one too)
         expr_compile_test_info(my default_value, ctx);
     }
 }
@@ -1183,7 +1183,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                             .text = symbol_text(ctx, decl),
                         });
                     }
-                    ctx->any_keeps_underline = true;
+                    ctx->any_keeps_rendering = true;
                     if (decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
                         !symbol_type_only_declaration(decl)) {
                         baseline_test_case_add_symbol_value(ctx, prefix, decl);
@@ -1199,7 +1199,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
                 Symbol const* decl = index < vec_symbol_cptr_size(identifier_type_namespace_symbols(my identifier)) ?
                     *vec_symbol_cptr_at(identifier_type_namespace_symbols(my identifier), index) :
                     nullptr;
-                ctx->any_keeps_underline = true; // Part of a qualified name
+                ctx->any_keeps_rendering = true; // Part of a qualified name
                 if (heritage && decl && !decl->is_placeholder && symbol_for_meaning(decl, SYMBOL_VALUE) &&
                     (i_index == 0 || !symbol_type_only_declaration(decl))) {
                     // A heritage clause's name is an expression to tsc's writer (ExpressionWithTypeArguments)
@@ -1286,7 +1286,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             // a qualified name
             if (identifier_type_import_typeof(my identifier)) {
                 if (identifier_type_namespace_count(my identifier)) {
-                    ctx->any_keeps_underline = true;
+                    ctx->any_keeps_rendering = true;
                     baseline_test_case_add_type_node(ctx, my identifier->name, &type_any);
                 } else {
                     baseline_test_case_add_type(ctx, my identifier->name, ty_intrinsic(current_checker, TY_ERROR));
@@ -1487,7 +1487,7 @@ static void port_item_add_alias_inner(PortItem const* me, BaselineTestCase* ctx,
     // tsc shows aliases of pure types as any
     // An import/export name (the harness's isImportStatementName, isExportStatementName: not `* as ns`, whose errorType
     // is `error`)
-    ctx->any_keeps_underline = !((my tag == PORT_IMPORT_GATHER && !my is_require) || my tag == PORT_REEXPORT_GATHER);
+    ctx->any_keeps_rendering = !((my tag == PORT_IMPORT_GATHER && !my is_require) || my tag == PORT_REEXPORT_GATHER);
     // (Only an identifier name: a string one, `export type { foo as "a b" }`, isn't a type declaration name to tsc's
     // getTypeOfNode, and is the alias's value)
     bool string_name = my decl_name.sv.size && (my decl_name.sv.buf[0] == '"' || my decl_name.sv.buf[0] == '\'');
@@ -1505,7 +1505,7 @@ static void port_item_add_alias_inner(PortItem const* me, BaselineTestCase* ctx,
     Symbol const* value = symbol_for_meaning(my symbol, SYMBOL_VALUE);
     if (my tag == PORT_EXPORT_AS_NAMESPACE && (!value || value->is_placeholder)) {
         // Not an import or export statement name to tsc's writer: an alias of no value is errorType (getTypeOfAlias)
-        ctx->any_keeps_underline = false;
+        ctx->any_keeps_rendering = false;
         baseline_test_case_add_type(ctx, my decl_name, ty_intrinsic(current_checker, TY_ERROR));
         return;
     }
@@ -1546,14 +1546,14 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
 
         case PORT_IMPORT_ALIAS:
             if (!my main.symbol) {
-                ctx->any_keeps_underline = true;
+                ctx->any_keeps_rendering = true;
                 baseline_test_case_add_type_node(ctx, my main.decl_name, &type_any);
             } else {
                 port_item_add_alias(&my main, ctx, false);
             }
             for_each (i, vec_span, &my main.alias_path) {
                 // Part of a qualified name: any is written like any other type, else it's the intrinsic name
-                ctx->any_keeps_underline = vec_span_size(&my main.alias_path) > 1;
+                ctx->any_keeps_rendering = vec_span_size(&my main.alias_path) > 1;
                 if (i_index >= vec_symbol_cptr_size(&my main.alias_path_symbols)) {
                     // (After an import of an unresolved module: tsc's unknownSymbol, no declarations)
                     bool next = i_index && i_index == vec_symbol_cptr_size(&my main.alias_path_symbols);
@@ -1647,9 +1647,9 @@ void port_statement_compile_test_info(PortStatement const* me, BaselineTestCase*
                     .text = aliased ? cstr_from_sv(ctx->shorthand_alias.sv) : symbol_text(ctx, shorthand),
                 });
             }
-            ctx->any_keeps_underline = true;
+            ctx->any_keeps_rendering = true;
             if (!quoted) baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
-            else ctx->any_keeps_underline = false;
+            else ctx->any_keeps_rendering = false;
         }
         port_item_add_alias(i, ctx, my main.type_only);
     }
@@ -2315,7 +2315,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         if (namespace_decl_is_instantiated(me)) {
             baseline_test_case_add_type_text(ctx, my name, c_sv("typeof global"));
         } else {
-            ctx->any_keeps_underline = true;
+            ctx->any_keeps_rendering = true;
             baseline_test_case_add_type_node(ctx, my name, &type_any);
         }
     }
@@ -2377,7 +2377,7 @@ void namespace_decl_compile_test_info(NamespaceDecl const* me, BaselineTestCase*
         // (Only if this declaration is a value: tsc's type writer asks getMeaningFromDeclaration)
         if (my is_invalid_global && my is_shorthand) {
             // (`global x`: a shorthand ambient module to tsc, any)
-            ctx->any_keeps_underline = true;
+            ctx->any_keeps_rendering = true;
             baseline_test_case_add_type_node(ctx, my name, &type_any);
         } else if (my is_augmentation && my module_ref && !binder_module_of_ref(my symbol->binder, my module_ref) &&
             !namespace_decl_is_instantiated(me)
@@ -2849,7 +2849,7 @@ static void jsx_tag_compile_test_info(JsxElement const* element, Expr* name, Bas
     }
     // tsc checks the name as an expression: what it is as a value here (see jsx_lookup_names()), else any
     Symbol const* value = name->tag == EXPR_IDENTIFIER ? name->identifier.target : nullptr;
-    ctx->any_keeps_underline = true; // (tsc's harness keeps it for JSX tag names)
+    ctx->any_keeps_rendering = true; // (tsc's harness keeps it for JSX tag names)
     baseline_test_case_add_type(ctx, name->inner_span, value ? ty_type_of_symbol(checker, value) : ty_intrinsic(checker, TY_ANY));
 }
 
@@ -2875,7 +2875,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
             .allow_declaration_empty = true,
             .text = cstr_lit("ImportMetaExpression.meta"),
         });
-        ctx->any_keeps_underline = true;
+        ctx->any_keeps_rendering = true;
         baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), type);
         return;
     }
@@ -2941,7 +2941,7 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
         if (my property->form == PROPERTY_EXPR_DOT && has_symbol_override(ctx, my inner_span)) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = my inner_span, .allow_declaration_empty = true });
         }
-        ctx->any_keeps_underline = my property->form == PROPERTY_EXPR_DOT; // The object of a property access
+        ctx->any_keeps_rendering = my property->form == PROPERTY_EXPR_DOT; // The object of a property access
         expr_compile_test_info(&my property->expr, ctx);
         has_compiled_expr_info = true;
         baseline_test_case_add_symbol(ctx, (BaselineSym){ .span = expr_outer_span(&my property->prop), .allow_declaration_empty = true });
@@ -2978,14 +2978,14 @@ static void property_compile_test_info(Expr* me, BaselineTestCase* ctx) {
 
     bool dot = my property->form != PROPERTY_EXPR_BRACKET;
     if (!has_compiled_expr_info) {
-        ctx->any_keeps_underline = dot; // The object of a property access
+        ctx->any_keeps_rendering = dot; // The object of a property access
         expr_compile_test_info(&my property->expr, ctx);
     }
 
     if (!dot) {
         expr_compile_test_info(&my property->prop, ctx);
     } else if (!csview_starts_with(expr_outer_span(&my property->prop).sv, "#")) {
-        ctx->any_keeps_underline = true;
+        ctx->any_keeps_rendering = true;
         baseline_test_case_add_type(ctx, expr_outer_span(&my property->prop), ty_regular(current_checker, expr_get_type((Expr*)me)));
     }
 }
@@ -3442,7 +3442,7 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
         // (tsc's isExpressionNode: a private name is an expression only as the left operand of `in`. Parenthesized,
         // `(#x) in v` (an error), the parentheses are one, of type any)
         if (!span_eq(expr_outer_span(me), my inner_span)) {
-            ctx->any_keeps_underline = true;
+            ctx->any_keeps_rendering = true;
             baseline_test_case_add_type(ctx, expr_outer_span(me), ty_intrinsic(current_checker, TY_ANY));
         }
     } else if (my tag == EXPR_GENERIC_PARAMS && my generic_params->heritage) {
@@ -3455,7 +3455,7 @@ static bool expr_compile_test_info_head(Expr* me, BaselineTestCase* ctx) {
         if (my identifier.import_defer && my inner_span.sv.size >= 5) {
             Span name = my inner_span;
             name.sv = csview_from_range(span_end_ptr(name) - 5, span_end_ptr(name));
-            ctx->any_keeps_underline = true;
+            ctx->any_keeps_rendering = true;
             baseline_test_case_add_type(ctx, name, ty_intrinsic(current_checker, TY_ANY));
         }
     } else if (me == ctx->export_name && my identifier.target && (my identifier.target->flags & SYMBOL_VARIABLE)) {
@@ -3485,12 +3485,12 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
     }
     if ((my tag == STATEMENT_BREAK || my tag == STATEMENT_CONTINUE) && span_valid(my jump_label)) {
         // Both labels and the targets of break and continue are shown as any
-        ctx->any_keeps_underline = true;
+        ctx->any_keeps_rendering = true;
         baseline_test_case_add_type_node(ctx, my jump_label, &type_any);
     }
     switch (my tag) {
         case STATEMENT_LABELED:
-            ctx->any_keeps_underline = true;
+            ctx->any_keeps_rendering = true;
             baseline_test_case_add_type_node(ctx, my labeled.name, &type_any);
             statement_compile_test_info(my labeled.body, ctx);
             break;
@@ -3528,7 +3528,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
                         .span = my expr.inner_span,
                         .name = shown_declaration(my expr.identifier.symbol, shown)->name_span,
                     });
-                    ctx->any_keeps_underline = true;
+                    ctx->any_keeps_rendering = true;
                     baseline_test_case_add_type(ctx, my expr.inner_span, ty_declared_type_of(current_checker, type_symbol));
                     break;
                 }
@@ -3564,7 +3564,7 @@ void statement_compile_test_info(Statement* me, BaselineTestCase* ctx) {
             if (my expr.tag != EXPR_LITERAL || my expr.literal.tag != VALUE_UNDEFINED ||
                 csview_equals(my expr.inner_span.sv, "undefined")
             ) {
-                ctx->any_keeps_underline = my tag == STATEMENT_EXPORT_DEFAULT_EXPR; // Of an export assignment
+                ctx->any_keeps_rendering = my tag == STATEMENT_EXPORT_DEFAULT_EXPR; // Of an export assignment
                 ctx->export_name = my tag == STATEMENT_EXPORT_DEFAULT_EXPR && my expr.tag == EXPR_IDENTIFIER ? &my expr : nullptr;
                 expr_compile_test_info(&my expr, ctx);
                 ctx->export_name = nullptr;

@@ -17,7 +17,7 @@ import argparse, collections, os, re, shutil, subprocess, sys
 from concurrent.futures import ProcessPoolExecutor
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REF = os.path.join(ROOT, 'thirdparty/tsc/tests/baselines/reference')
+from suite import ref, CASES
 OUT = os.path.join(ROOT, 'build/failstats')
 DUMP = os.path.join(OUT, 'dump')
 
@@ -61,7 +61,7 @@ def strip_perf_stats(expected):
 def analyse(name):
     """Runs in a worker. Returns a dict describing one test that ran"""
     r = {'name': name}
-    ours_err, exp_err = read(f'{DUMP}/{name}.errors.txt') or '', read(f'{REF}/{name}.errors.txt') or ''
+    ours_err, exp_err = read(f'{DUMP}/{name}.errors.txt') or '', read(ref(name, '.errors.txt')) or ''
     r['errors'] = ours_err == exp_err
     ours, exp = collections.Counter(parse_errors(ours_err)), collections.Counter(parse_errors(exp_err))
     ours_pos = collections.Counter(e[:4] for e in ours.elements())
@@ -76,7 +76,7 @@ def analyse(name):
         collections.Counter((e[0], e[1], e[3]) for e in ours.elements()) == \
         collections.Counter((e[0], e[1], e[3]) for e in exp.elements())
     for comp in ('symbols', 'types'):
-        o, e = read(f'{DUMP}/{name}.{comp}') or '', read(f'{REF}/{name}.{comp}') or ''
+        o, e = read(f'{DUMP}/{name}.{comp}') or '', read(ref(name, '.' + comp)) or ''
         if comp == 'types':
             e = strip_perf_stats(e)
         r[comp] = o == e
@@ -98,7 +98,7 @@ def syntax_gaps(n):
         if not f.endswith('.errors.txt'):
             continue
         name = f[:-len('.errors.txt')]
-        expected = {e[:4] for e in parse_errors(read(f'{REF}/{f}'))}
+        expected = {e[:4] for e in parse_errors(read(ref(name, '.errors.txt')))}
         text = read(f'{DUMP}/{f}')
         first = next((e for e in parse_errors(text) if e[3].startswith('TS1') and e[:4] not in expected), None)
         if not first:
@@ -170,7 +170,7 @@ def table(title, counter, n, tests_by_key=None, width=100):
 def jsx_filter():
     unit = re.compile(r'@filename:\s*\S+\.(tsx|jsx)\b|@jsx:', re.I)
     names = []
-    for root, _, files in os.walk('thirdparty/tsc/tests/cases'):
+    for root, _, files in os.walk(CASES):
         if 'fourslash' in root: continue
         for f in files:
             if f.endswith('.tsx') or (f.endswith('.ts') and unit.search(open(os.path.join(root, f), errors='replace').read())):

@@ -2212,8 +2212,6 @@ Ty const* ty_promise_of(Checker* me, struct FunctionImpl const* function, Ty con
 Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
 
 // ty_display.c
-// The old display's `underline` mode underlines a type's whole rendering, so the `.types` traversal can do that from
-// the string length when it switches over (stage 4); no display mode needed here.
 typedef struct TyDisplayVisit {
     Ty const* ty;
     struct TyDisplayVisit const* outer;
@@ -2293,12 +2291,12 @@ typedef struct TyDisplay {
     // tryGetModuleSpecifierFromDeclaration of the enclosing declaration): its usage mode picks the specifier ending
     struct ModuleRef const* usage_ref;
     bool fully_qualified;
-    // The types baseline's `^^^` line: every character printed gets a `^`, or a space where tsc's declaration
-    // emitter would have reused a node from the source (`reused`, see display_signature()). Null: not wanted
-    cstr* underline;
-    bool reused;
-    // Reprint annotations where tsc's node builder reuses them, without an underline (a message's type printed from
-    // its expression: tsc's getTypeNamesForErrorDisplay). Only with `enclosing`
+    // Printing for the types baseline or declaration emit: tsc's typeToTypeNode, which reuses annotation nodes from the
+    // source (see display_signature()) and can't name a local alias
+    bool types_baseline;
+    bool reused; // Inside a node reused from the source
+    // Reprint annotations where tsc's node builder reuses them (a message's type printed from its expression: tsc's
+    // getTypeNamesForErrorDisplay). Only with `enclosing`
     bool reuse_nodes;
     // The type parameters of an instantiated generic signature being printed: tsc gives it fresh ones, so nothing that
     // mentions them is reused inside of it
