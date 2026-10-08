@@ -17,3 +17,7 @@ to plan 19. The commit message has the numbers.
 
 - (2026-10-08, plan 51 prototype A) vue at `--checkers 1` reports one TS2345 (vModel.ts:446), also at a7003eac; 0 at
   the default 4 checkers: a checker-order dependence (`./checkerdiff.py vue` should show it).
+
+- Message from human: it seems you've bumped up the typescript version, but maybe not all the way? ideally I'd like this project to be a drop-in replacement for the latest tsc/tsgo (thus implement typescript 7). make sure it implementes and is tested against the latest features of the language.
+
+- Message from human: minor cleanup, please organize all your scripts into a toplevel scripts/ directory instead of keeping them at the repo top level
