@@ -96,7 +96,7 @@ static long resident_mb() {
 
 // Reports the time since *last under the given name and resets *last. Reading and parsing can't be told apart, since
 // program_load() does both (and chases imports) in one go
-// ./memtrack.sh's LD_PRELOADed live-heap tracker (bench/memtrack/memtrack.c), absent otherwise
+// scripts/memtrack.sh's LD_PRELOADed live-heap tracker (bench/memtrack/memtrack.c), absent otherwise
 void memtrack_dump(char const* name) __attribute__((weak));
 void memtrack_scan(char const* name) __attribute__((weak));
 static void phase_done(Options const* opts, Output* out, const char* name, double* last) {

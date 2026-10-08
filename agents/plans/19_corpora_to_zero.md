@@ -26,18 +26,18 @@ modifiers, const type parameters, skip-sensitive inference, the permissive insta
 type-fest items is in git (this file before the corpus sessions) and in the commits.
 
 ## The loop
-`./realworld.py` (tsc's `src/compiler`, must stay 0) and `./realworld.py --corpus X` for valibot, type-fest, react,
+`scripts/realworld.py` (tsc's `src/compiler`, must stay 0) and `scripts/realworld.py --corpus X` for valibot, type-fest, react,
 nest, webpack, zod, xstate, drizzle, vue, effect, vscode, excalidraw, tanstack-router (`thirdparty/ensure-corpora.sh` pins them; all are clean under tsc 5.8). Every diagnostic is a
 tttt bug. Rank by root cause, not by code: sample the biggest groups, reduce each to a probe in
 `test/probes/plan19/<corpus>/`, fix the tsc rule behind it. Record the counts in the commit message and
 `measurements.md`; the suite and the other corpora are the regression checks.
 
 Corpus notes worth keeping:
-- `./tsctypeat.js TSCONFIG FILE LINE|* NAME` prints what tsc says an identifier's type is inside the corpus, where a
+- `scripts/tsctypeat.js TSCONFIG FILE LINE|* NAME` prints what tsc says an identifier's type is inside the corpus, where a
   reduction doesn't reproduce (webpack's `any`s from JSDoc fixing were found that way).
-- Grep `./filetest.sh` output for diffs only with `-d` (`FAST=1 ./filetest.sh f.ts -d`): without it no diff is
+- Grep `scripts/filetest.sh` output for diffs only with `-d` (`FAST=1 scripts/filetest.sh f.ts -d`): without it no diff is
   printed and "no `^[-+]` lines" means nothing.
-- `./tscinstcount.js TSCONFIG FILE` prints what tsc's TS2589 counter (instantiationCount, reset per checked node)
+- `scripts/tscinstcount.js TSCONFIG FILE` prints what tsc's TS2589 counter (instantiationCount, reset per checked node)
   reaches per node of a file, and `VARIANCES=1` each variance measurement's cost: the budget a TS2589 runaway in tttt
   should be measured against. A probe project for a corpus: a tsconfig outside it that `extends` the corpus's with
   absolute `baseUrl`/`paths` (plus `"*": ["node_modules/*"]`) and `typeRoots`, `files: [p.ts]`: tttt doesn't type check
@@ -129,7 +129,7 @@ so TS2589 x59 and 257 G -> 15 G instructions. Then an inferred type argument che
 itself as `this`, and an instantiable type's apparent type with itself as its class constraint's `this`
 (`qb.leftJoin(a).leftJoin(b)` on `T extends PgSelect`). Left in type-tests (8, after the src pass's alias fix
 below took the 16 of mysql/singlestore select.ts + set-operators.ts, whose `$dynamic()` builders measured
-`MySqlSelectBase` invariant through `MySqlSelectPrepare<this>`; `VARIANCES=1 ./tscinstcount.js` and
+`MySqlSelectBase` invariant through `MySqlSelectPrepare<this>`; `VARIANCES=1 scripts/tscinstcount.js` and
 `TTTT_DUMP_VARIANCES=1` compare variance measurements if that comes back):
 - mysql/generated-columns.ts 102/122 (TS2345): `drizzle(pool, { schema: { users }, mode })` with an `any` client.
 - pg/with.ts 215-230 (6): `WithSubqueryWithSelection` of a `$with(...).as(select ... innerJoin)` selection, the mapped
@@ -179,7 +179,7 @@ type variables spread into tuples stay variadic; literals with generic functions
 first check. Also `readonly ಠ_ಠ` (a modifier before a non-ASCII name).
 
 **Determinism**: 7 of the 63 differed between `--checkers 1` and 4 at one point; gone by 2026-10-05 (13 left, K=2/3/4/7
-identical modulo quoted text, `./checkerdiff.py`): the inference fixes since removed whatever was order-dependent.
+identical modulo quoted text, `scripts/checkerdiff.py`): the inference fixes since removed whatever was order-dependent.
 
 2026-10-05, second pass (63 -> 31, probes in `test/probes/plan19/effect/`, one commit each): a generic call as an
 argument infers from the raw parameter type, not one instantiated with the outer call's return mapper (Cause.test 8,
@@ -313,7 +313,7 @@ through Function's `name`, and the immediate distributive constraint (reactive.t
   recursive-types.test.ts:474 TS2589. Two hacks.md entries (skip-round literals, distributive constraints).
 
 ### zod-root (tsc 55, tttt 55: the same set)
-`./realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
+`scripts/realworld.py --corpus zod-root` is zod's root tsconfig (all packages, noUnusedLocals, customConditions). It is
 **not clean under tsc**: 55 diagnostics of its own (26 TS2307 for bench deps the workspace doesn't install, 14 TS6133,
 8 TS6196, ...), so compare, don't count: `node thirdparty/tsc/lib/tsc.js --noEmit --pretty false -p
 thirdparty/corpora/zod` and diff `file:line code` sets with `comm`. tttt's set now equals tsc's. The arktype (bench)

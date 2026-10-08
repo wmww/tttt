@@ -21,7 +21,7 @@ struct ArenaChunk {
 };
 
 #ifdef TTTT_ARENA_SITES
-// Arena bytes and types by the code that allocates them, for ./arenasites.sh (a build with -DTTTT_ARENA_SITES; one
+// Arena bytes and types by the code that allocates them, for scripts/arenasites.sh (a build with -DTTTT_ARENA_SITES; one
 // table for the process, so run it with --threads 1). Sites are printed relative to arena_alloc()
 #define ARENA_SITES 8192
 static void* arena_sites[2][ARENA_SITES];

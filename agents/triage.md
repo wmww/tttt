@@ -14,7 +14,7 @@ to plan 19. The commit message has the numbers.
   source sweep shows more of it. vscode's AST bytes per line (~600) weren't looked at.
 
 - (2026-10-08, plan 51 prototype A) vue at `--checkers 1` reports one TS2345 (vModel.ts:446), also at a7003eac; 0 at
-  the default 4 checkers: a checker-order dependence (`./checkerdiff.py vue` should show it). The same TS2345 appears at every checker count once root
+  the default 4 checkers: a checker-order dependence (`scripts/checkerdiff.py vue` should show it). The same TS2345 appears at every checker count once root
   files are in tsc's include-pattern order (agents/bugs/include_order.md): fixing it unblocks that port.
 
 - (2026-10-08, plan 52 drain) Config level leftovers: no TS5023/TS5025 at all (unknown names inside `compilerOptions`,

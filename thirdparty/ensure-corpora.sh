@@ -2,7 +2,7 @@
 # Fetches the second-oracle corpora (plan 17) into thirdparty/corpora/ (not committed, like thirdparty/tsc): modern,
 # type-heavy TypeScript projects that are clean under tsc 5.8 with their own tsconfig. Each is a pinned commit plus
 # its devDependencies from the lockfile committed in corpora-locks/ (only their .d.ts files matter; install scripts
-# are skipped). `./realworld.py --corpus NAME` and `./bench.sh` use them.
+# are skipped). `scripts/realworld.py --corpus NAME` and `scripts/bench.sh` use them.
 #
 #   thirdparty/ensure-corpora.sh            # fetch whatever is missing
 #   thirdparty/ensure-corpora.sh --relock   # regenerate the lockfiles from package.json (then commit them)
@@ -149,7 +149,7 @@ CORPORA=(
     # the type dependencies of react-router, router-core and the root at pnpm-lock.yaml's versions, from
     # corpora-locks/tanstack-router.package.json
     "tanstack-router https://github.com/TanStack/router.git 30fc108a5ebbc4eadd48439282bf1c27d55fbb94 . workspace:packages/*"
-    # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (./sweep.py), every types/NAME with its own
+    # DefinitelyTyped (Oct 2026, plan 44): the breadth sweep's packages (scripts/sweep.py), every types/NAME with its own
     # tsconfig and tests. DT's pnpm workspace links each @types/X to types/X: node_modules/@types -> ../types does the
     # same for the latest version of each. The npm dependencies are the few non-@types ones that many packages need
     # (undici-types for node, csstype for react...), from corpora-locks/DefinitelyTyped.package.json; packages that

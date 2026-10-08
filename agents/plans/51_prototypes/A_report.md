@@ -91,7 +91,7 @@ methods in a generic call's inference round: 7), vue 21, effect 4, all `this`-on
 once `this` is fixed. Corpora blocks: tsc 2, webpack 42, excalidraw 82, effect 92, vue 258, drizzle 7, others ~0.
 
 ## Cost
-`./instrcount.sh` (callgrind; HEAD binary vs V5-without-debug, `rvar` build):
+`scripts/instrcount.sh` (callgrind; HEAD binary vs V5-without-debug, `rvar` build):
 tsc 4.771 -> 4.773 G (+0.04%), valibot 4.236 -> 4.237 (+0.02%), xstate 3.183 -> 3.185 (+0.06%), effect 10.048 ->
 10.060 (+0.12%). The extra `contextual_signature()` call at each sensitive function's first check is the cost.
 

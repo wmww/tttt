@@ -1,5 +1,5 @@
 # Display bugs (types/symbols baselines)
-What tttt prints differently from tsc, where the underlying type is right (or nearly). `./displaydiff.py` ranks the
+What tttt prints differently from tsc, where the underlying type is right (or nearly). `scripts/displaydiff.py` ranks the
 mechanisms across the suite (`other` is mostly type-core bugs the types baseline shows first); these are the known
 rules. Plan 21 (closed) did the bulk. Named tests were checked failing on 2026-10-05 (suite 13098); probe files
 (`*.ts` without a test name) weren't re-run.
@@ -172,7 +172,7 @@ conditional keeps its root alias; a resolved one is whatever its branch is. Both
   unresolved key sources (`[N in Node as N["type"]]` with `export import Node = t.Node`, and `[K in keyof t.Aliases]`),
   both string index signatures, and the method's contextual signature comes from the intersection of their value
   types (`VisitNode<S, A> & VisitNode<S, B>`, each a function | object union). A self-made imitation matches tsc;
-  reduce with `./expectprobe.py` (a cut-down project: tsconfig with idx.d.ts = babel__traverse's index.d.ts and the
+  reduce with `scripts/expectprobe.py` (a cut-down project: tsconfig with idx.d.ts = babel__traverse's index.d.ts and the
   test's first 18 lines; the reducer drifts, keep the `"./idx"` import and `t.Aliases` text).
 - variadicTuples1, last line: `function c2<T extends unknown[]>() { return (...args: [...T]) => 1; }` prints the
   returned arrow's rest parameter `T` (tsc `[...T]`); through a local variable it's right. The signature's rest

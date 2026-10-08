@@ -62,7 +62,7 @@ tsc corpus' instructions and 113 of react's 310 ms (dependency `.d.ts` files, wh
 time goes is the perf session's question (todo entry 9: profile parsing on react), and the answer is more likely a
 hot helper (`hop_whitespace`, keyword checks, fail-cache hits) than tokens.
 
-## The numbers (`./syntaxstats.py`, written for this plan; run `./failstats.py` first)
+## The numbers (`scripts/syntaxstats.py`, written for this plan; run `scripts/failstats.py` first)
 687 tests' parser diagnostics differ from tsc's (only codes tsc's parser.ts/scanner.ts report are counted, so this is a
 bit wider than failstats' "613 with a spurious TS1xxx"). 48 are JS (plan 26 stage 4). The 639 TS tests:
 
@@ -75,7 +75,7 @@ bit wider than failstats' "613 with a spurious TS1xxx"). 48 are JS (plan 26 stag
 | E | 78 | first errors agree, recovery diverges later |
 | M | 97 | tsc reports parse errors, tttt none |
 
-By mechanism (a heuristic on the first differing error's code and source line; `./syntaxstats.py --list <cluster>`):
+By mechanism (a heuristic on the first differing error's code and source line; `scripts/syntaxstats.py --list <cluster>`):
 
 | cluster | tests | stage | examples |
 |---|---|---|---|
@@ -131,7 +131,7 @@ In tttt:
 3. Make `parse_error()` drop an error at the start of the previous one by default (today only `parse_error_once()` does;
    check the JSX code still gets what it needs, and that errors dropped by a failed speculative parse don't leave a
    stale "previous error").
-4. Convert the lists, highest count first, re-running `./syntaxstats.py` and `./fasttest.sh --summary` after each:
+4. Convert the lists, highest count first, re-running `scripts/syntaxstats.py` and `scripts/fasttest.sh --summary` after each:
    class members (`parse_class_decl`'s loop: today it returns at the first bad member and the statement level
    reports the rest), statements (`parse_append_statement_sequence`: add the abort rule and TS1005 `'export'
    expected` for a leading `default`), object literal members, interface/type literal members, enum members,
@@ -148,9 +148,9 @@ In tttt:
    statements, and that the binder/checker are quiet about them like tsc is about missing identifiers (tsc's checker
    never reports on a node with an empty/missing name).
 
-Done when: `recovery:*` and most of `other:B/D/E` are gone from `./syntaxstats.py`; no test lost in `./fasttest.sh
---summary`; `./realworld.py` and the three corpora still have zero parse errors; react parse time within noise
-(`./bench.sh`).
+Done when: `recovery:*` and most of `other:B/D/E` are gone from `scripts/syntaxstats.py`; no test lost in `scripts/fasttest.sh
+--summary`; `scripts/realworld.py` and the three corpora still have zero parse errors; react parse time within noise
+(`scripts/bench.sh`).
 
 ## Stage 2: permissive grammar
 tsc's parser accepts more than the language and reports from the checker (`checkGrammar*`) or from a parser path that
@@ -187,7 +187,7 @@ has parse errors: `hasParseDiagnostics`, see how `SourceFile.has_parse_errors` i
 - `other:M` parser checks: TS2754/TS1034 (super) done; superWithTypeArgument{,2,3} still get a spurious TS2348 (tsc's
   `super<T>()` callee is an ExpressionWithTypeArguments and reports nothing else). Done at the stage 3 session:
   postfix updates, templates as property names, TS1477, reserved words as bindings/class/enum names, `new <T>F()`,
-  bodyless accessors, `throw` + line break. Left (`./syntaxstats.py --list other:M`, 30): TS1433 (decorators/modifiers
+  bodyless accessors, `throw` + line break. Left (`scripts/syntaxstats.py --list other:M`, 30): TS1433 (decorators/modifiers
   on `this` parameters), TS1453 (`resolution-mode` in triple-slash references), TS2819 (`declare module debugger`),
   TS1146, TS1005 for `function* gen {`, `a = () => { } || a`, `a / finally`, `class C { public constructor; }`.
 
@@ -219,14 +219,14 @@ on invalid code matters less to users than checker correctness, so each stage is
 it's paying off unusually well.
 
 ## Validation, overall
-- `./syntaxstats.py` per cluster before/after each stage, recorded in `measurements.md`.
-- `./fasttest.sh --summary`: no losses; `./resultdiff.py --lost` empty.
-- `./realworld.py` and `--corpus type-fest|valibot|react`: still zero parse diagnostics, counts not worse.
-- `./bench.sh`: parse time on react and the tsc corpus within noise (the list predicates run on every element).
+- `scripts/syntaxstats.py` per cluster before/after each stage, recorded in `measurements.md`.
+- `scripts/fasttest.sh --summary`: no losses; `scripts/resultdiff.py --lost` empty.
+- `scripts/realworld.py` and `--corpus type-fest|valibot|react`: still zero parse diagnostics, counts not worse.
+- `scripts/bench.sh`: parse time on react and the tsc corpus within noise (the list predicates run on every element).
 - binderBinaryExpressionStress still passes at the default stack (don't add frames per list element).
 
 ## Leftovers (2026-09-29, after the parser session)
-`./syntaxstats.py --list A` (etc.) for the current state. By cause:
+`scripts/syntaxstats.py --list A` (etc.) for the current state. By cause:
 - Not the parser: duplicatePackage(_withErrors) (tsc redirects a duplicate package's file and never parses it: program
   level); parseErrorIncorrectReturnToken and templateInsideCallback expect the harness's "TS-1 Pre-emit/post-emit"
   line (an excess emit-resolver diagnostic), which the harness can't produce; objectCreationOfElementAccessExpression.

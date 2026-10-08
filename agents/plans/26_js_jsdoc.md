@@ -46,8 +46,8 @@ start (tsc's getAssignmentDeclarationKind), extend it rather than adding a secon
 
 ## Why
 1049 of the suite's tests are JS tests (a `.js`/`.jsx`/`.cjs`/`.mjs` unit, `@allowJs` or `@checkJs`); 160 pass,
-889 fail (17% of all failing tests; 784 of the JS tests use `@checkJs`). `./jsstats.py` (written for this plan, run
-`./failstats.py` first) classifies the failing ones by the features they need, from their sources and tsc's baselines:
+889 fail (17% of all failing tests; 784 of the JS tests use `@checkJs`). `scripts/jsstats.py` (written for this plan, run
+`scripts/failstats.py` first) classifies the failing ones by the features they need, from their sources and tsc's baselines:
 
 | category | only this | involved | notes |
 |---|---|---|---|
@@ -215,7 +215,7 @@ Small, each a known tsc rule, gated on `SourceFile.is_js` of the declaration (no
 
 ## Stages
 One session each; the todo has two execution sessions for this plan before the next insights, the rest is for
-the insights session to schedule. Record `./jsstats.py`'s totals and the JS pass count in `measurements.md` after
+the insights session to schedule. Record `scripts/jsstats.py`'s totals and the JS pass count in `measurements.md` after
 each.
 
 ### Stage 1: JSDoc core + CommonJS
@@ -262,19 +262,19 @@ plus webpack's residue):
 ### Stage 4: the rest of the tags and JS syntax diagnostics
 `@this`, `@extends`/`@augments` (type arguments for a JS class's base), `@implements`, `@overload`, `@satisfies`,
 `@private`/`@protected`/`@public`/`@readonly`/`@override`; the TS8xxx syntactic walk (design 4, last item) and the
-JS-only grammar errors (TS1xxx that only apply to JS, e.g. TS18030 private names). Then `./jsstats.py`'s `0other`
+JS-only grammar errors (TS1xxx that only apply to JS, e.g. TS18030 private names). Then `scripts/jsstats.py`'s `0other`
 bucket gets sampled into triage.md. webpack uses `@overload` 29, `@extends` 17, `@this` 9, `@import` 22 (`@import`
 is done).
 
 ## Validation
-- Per stage: `./fasttest.sh --summary` shows no lost tests (a lost TS test is a bug in the shared paths: JSDoc must
-  not change anything in TS files except expandos), the stage's target counts below, `./realworld.py` still 0 on tsc
-  and no new diagnostics on the other corpora (they're TS: a change there means the JS gating leaked), `./bench.sh`
+- Per stage: `scripts/fasttest.sh --summary` shows no lost tests (a lost TS test is a bug in the shared paths: JSDoc must
+  not change anything in TS files except expandos), the stage's target counts below, `scripts/realworld.py` still 0 on tsc
+  and no new diagnostics on the other corpora (they're TS: a change there means the JS gating leaked), `scripts/bench.sh`
   within noise on the TS corpora.
-- JS-only accounting, with the classifier ``./jsstats.py``: JS tests passing (158 at the start), JS tests failing on
+- JS-only accounting, with the classifier ``scripts/jsstats.py``: JS tests passing (158 at the start), JS tests failing on
   spurious TS2580/TS2304/TS2306/TS7009/TS2683/TS2554, and the count of tests per missing feature.
 - Every JS gate listed in "What tttt does today" is removed or has a hacks.md entry saying why it stays.
-- Keep a probe per construct in `test/probes/plan26/` (`./filetest.sh` + `./tscbaseline.sh` on it).
+- Keep a probe per construct in `test/probes/plan26/` (`scripts/filetest.sh` + `scripts/tscbaseline.sh` on it).
 
 ## Baseline shapes (what the symbols/types baselines print; the binder must produce exactly these)
 - `this.x =` in a JS class or constructor function (`inferringClassMembersFromAssignments`): the property is

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Fetches the source sweep's repositories (plan 52, ./sourcesweep.py) into thirdparty/sources/ (not committed, like
+# Fetches the source sweep's repositories (plan 52, scripts/sourcesweep.py) into thirdparty/sources/ (not committed, like
 # thirdparty/corpora): each repo of test/sourcesweep/repos.txt at its pinned commit, its dependencies installed with
 # its own package manager and lockfile (scripts off), then node_modules pruned to what a type checker reads and
 # hardlinked to identical files of the other repos (sources/.dedupe.db, content hashes). Idempotent:

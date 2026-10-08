@@ -62,7 +62,7 @@ types components) are the oracle, not the goal; real projects that are clean und
 ## Decisions still in force (from earlier course corrections; details in git history of this file)
 - **Fan-out sessions** (four Opus sub-agents in worktrees, one failstats/displaydiff/jsstats bucket each, disjoint
   test lists, 0 lost enforced at merge) are the engine for the long tail: one or two per window. **Instruction counts
-  at every session end** (`./instrcount.sh`): creep is silent otherwise.
+  at every session end** (`scripts/instrcount.sh`): creep is silent otherwise.
 - **Whole features before per-test bugs** now that the tail is thin: a planning session prototypes and may say no
   (plan 47: prototype the deletion of a hack before designing the mechanism to replace it).
 - **Oracles must test both directions**: clean corpora only show spurious diagnostics; flag flips and mutations (plan
@@ -79,7 +79,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   missing checks are found by the suite. Pick corpora for the front ends and features they exercise.
 - **A relation that is too lenient hides inference bugs**: when relations get stricter, expect a cluster of latent
   inference bugs (plan 19 R1, the callback-parameter rule). Budget for them.
-- **Prefer fixes that move whole categories** (`./failstats.py`, `./displaydiff.py`, the corpora); 13k exact-match
+- **Prefer fixes that move whole categories** (`scripts/failstats.py`, `scripts/displaydiff.py`, the corpora); 13k exact-match
   tests invite special-casing message text.
 - **Staging in place works** (the type core migration: 8 sessions, suite runnable throughout, scaffolding deleted).
   The expensive part each time is what the correct rule stops forgiving in the remaining approximations. Don't

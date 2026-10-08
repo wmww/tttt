@@ -1,7 +1,7 @@
 # Missing and wrong checks (the suite's long tail)
 The work queue for "suite checker bugs" sessions: diagnostics tttt doesn't report, or reports under another code, and
-the failing tests behind them. Find fresh buckets with `./failstats.py` (single-code tests: errors fail on one code
-alone in `build/failstats/tests.tsv`) and `./unimplemented_codes.sh` (codes `src/` never mentions). Every test named
+the failing tests behind them. Find fresh buckets with `scripts/failstats.py` (single-code tests: errors fail on one code
+alone in `build/failstats/tests.tsv`) and `scripts/unimplemented_codes.sh` (codes `src/` never mentions). Every test named
 here was failing on 2026-10-06 (suite 13299; harness-only causes are in `harness.md`, type-core causes in
 `type_core.md`).
 
@@ -88,7 +88,7 @@ spurious TS2321 2, missing/misplaced TS2304 2+2, then single tests.
   `typeof alias` in the parameter type is TS2304. Needs the setter's parameter as a parameter.
 - `while (a) const x = 1;` still scopes x to the loop (tsc: the enclosing block).
 
-## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... ./mutate.py -n 8000 --seed 2`: 32 -> 13)
+## Mutation seed 2 leftovers (2026-10-07, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed 2`: 32 -> 13)
 Known elsewhere: spreadUnion (TS2403 text), indexedAccessNormalization, cyclicGenericTypeInstantiationInference,
 recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage's seeds 11/13/14 list; TS4109
 (recursiveArrayNotCircular extends-object) is the TS4109/TS4110 item above. New ones, each one mutant:
@@ -176,7 +176,7 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   the default libs resolve `@typescript/lib-dom` from node_modules) isn't implemented at all; the harness's shared lib
   program would also have to be replaced per test. The option defaults off in 6.0; low value.
 
-## Mutation seed 17 leftovers (2026-10-07, `./mutate.py --seed 17 -n 4000`: 13 -> 7)
+## Mutation seed 17 leftovers (2026-10-07, `scripts/mutate.py --seed 17 -n 4000`: 13 -> 7)
 - Known families: typeGuardsAsAssertions null-arg and arrayFrom null-arg (tsc's errors from loop-flow / early
   binding-element evaluation, see seed 2 above), noCircularitySelfReferentialGetter4 (circularity only an elaboration
   finds, TS7022/TS7023), derivedTypeDoesNotRequireExtendsClause (diagnostic order at one position),
@@ -240,7 +240,7 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   homomorphic mapped type over `Omit<...> & {...}`. Three reductions all match tsc (which reports TS2375 there too).
   Lead: tsc's elaborateElementwise (getBestMatchIndexedAccessTypeOrUndefined, then getBestMatchingType for a union
   target member lacking the property may skip it). Next step: instrument tsc's elaborateElementwise on the real file.
-- Seed-5 mutation leftovers (triage 2026-10-07, `MUTATE_DIR=/tmp/tb-mutate ./mutate.py -n 8000 --seed 5`; 25 left):
+- Seed-5 mutation leftovers (triage 2026-10-07, `MUTATE_DIR=/tmp/tb-mutate scripts/mutate.py -n 8000 --seed 5`; 25 left):
   `if (true) type s = string;` (TS1156) is bound into the enclosing block-scope container in tsc, so an earlier `"" as
   s` resolves (tttt: spurious TS2304; interfaces work); `[...x = a] = a` never checks a rest element's initializer
   (TS1186 only), tttt resolves `a` at bind time (TS2304), `export default v` in a block likewise; `interface C1 extends
@@ -248,7 +248,7 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   merged accessor's type); `({ key }) => {}` under a `[testD()]` computed key with testD unresolved is TS7031 in tsc
   (reason not found); `Object<Initable> & Initable` constraint (TS2315) then a mixin: tsc says TS2507 on `{...} & K`;
   missing TS2313 (mut4105/mut3177, plan 39); 9 text/elaboration ones.
-- Seed-4 mutation leftovers (`MUTATE_DIR=/tmp/tc-mutate4 ./mutate.py --last`, 21 left, lib DOM union order WONTFIX):
+- Seed-4 mutation leftovers (`MUTATE_DIR=/tmp/tc-mutate4 scripts/mutate.py --last`, 21 left, lib DOM union order WONTFIX):
   missing TS2339 x3, spurious TS2304 x3, TS2420, TS1109, TS2347, TS2741, TS2403, TS2355, TS2359, TS2551->TS2339,
   spurious TS2322 (mut2988); elaboration paths mut4551/mut7482 (plan 34). Not looked at.
 ## Inference

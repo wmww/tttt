@@ -29,7 +29,7 @@ static void show_help(FILE* target) {
         "  --results-path [PATH]     path to file where test results are loaded/saved\n"
         "                            (default = ", default_results_path, ")\n\n"
         "  --dump [DIR]              write tttt's rendered errors/symbols/types for every test into DIR and\n"
-        "                            leave checker log output on (used by ./failstats.py)\n\n"
+        "                            leave checker log output on (used by scripts/failstats.py)\n\n"
         "  --checkers [K]            check every test with K checkers (files dealt round robin; tsc's\n"
         "                            baselines are one checker's, the default)\n\n"
         "  --threads [N]             run those checkers on N threads (default 1; the results must not change)\n\n"

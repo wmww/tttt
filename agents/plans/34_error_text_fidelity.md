@@ -4,7 +4,7 @@ Written 2026-09-27 by the insights session; stages 1-2 executed the same day (to
 for later "error text" sessions, not a blocker for anything.
 
 ## Status
-`./errtextdiff.py` (stage 1, after `./failstats.py`) buckets the tests whose errors.txt differs with the same codes at
+`scripts/errtextdiff.py` (stage 1, after `scripts/failstats.py`) buckets the tests whose errors.txt differs with the same codes at
 the same positions by the first differing part of each diagnostic: `header:<code> <mechanism>`, `chain:<tsc line> /
 <our line>` (or `missing:`/`extra:`/`deeper:`/`shallower:`), `related:<what> <code>`, `underline:<code> <how>`;
 `--coarse` for the parts only, "tests fixed by one kind" ranks them. Type-printing heuristics are shared with
@@ -36,7 +36,7 @@ up are in `triage.md`.
   bigintWithLib (tsc repeats one line three times: a relation through the Symbol.toStringTag overloads?).
 
 ## Left (2026-10-06, agent D: 19 tests)
-`./errtextdiff.py` after `./failstats.py`: 21 tests, one fixed (destructuringUnspreadableIntoRest: the Omit keys' union
+`scripts/errtextdiff.py` after `scripts/failstats.py`: 21 tests, one fixed (destructuringUnspreadableIntoRest: the Omit keys' union
 order, which the stable type ordering decides now). What remains is relation-path or
 identity work, no message rules:
 - Elaboration paths that take another route through the relation (chain:text/shallower/deeper): indexedAccessRelation,
@@ -62,6 +62,6 @@ identity work, no message rules:
 - `outside diagnostics` (3) and `count` (1): see the earlier note (lib diagnostics, emit counts).
 
 ## Validation
-Each fix: `./fasttest.sh -s` with no lost components (`./resultdiff.py --lost`), the corpora unchanged (a message
+Each fix: `scripts/fasttest.sh -s` with no lost components (`scripts/resultdiff.py --lost`), the corpora unchanged (a message
 change can crash, see the `ty_prop_written_name` mapped-property bug the suite didn't catch but type-fest did), and
-the bucket count from `./failstats.py` into `measurements.md`.
+the bucket count from `scripts/failstats.py` into `measurements.md`.

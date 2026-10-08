@@ -11,7 +11,7 @@ missing checks too.
   dependencies many packages need (undici-types for node, csstype for react, form-data, tapable...) come from
   `corpora-locks/DefinitelyTyped.package.json`.
 - **Oracle**: `test/sweep_tsc.js` runs tsc 5.8's API on many projects in one node process (lib source files shared;
-  otherwise what `tsc -p` reports). `./sweep.py --tsc [-f regex]` regenerates `test/sweep/DefinitelyTyped.tsc.jsonl`
+  otherwise what `tsc -p` reports). `scripts/sweep.py --tsc [-f regex]` regenerates `test/sweep/DefinitelyTyped.tsc.jsonl`
   (committed: per package, tsc's ms and its diagnostics as (file, line, col, code)). ~60 minutes on 4 cores for all
   packages; rerun only after changing the pin or the dependencies.
 - **Decision: compare against tsc's diagnostics, don't drop the packages tsc rejects.** Under tsc 5.8 ~15-25% of the
@@ -19,7 +19,7 @@ missing checks too.
   npm deps not installed). Their tsc diagnostics are the expected set, as in the suite: the comparison is by (file,
   line, code) multiset, like scenarios.py, so those packages still check everything else. A **missing check** under a
   `@ts-expect-error` (DT has 10.4k of them) shows up as a spurious TS2578.
-- **Tool**: `./sweep.py` runs tttt (`--threads 1 --checkers 1`, `ulimit -v` 4 GB, 60 s timeout) on every package at
+- **Tool**: `scripts/sweep.py` runs tttt (`--threads 1 --checkers 1`, `ulimit -v` 4 GB, 60 s timeout) on every package at
   `-j nproc`, lists crashes/timeouts/log_errors first, then ranks mismatching diagnostics by **root cause across
   packages**: `+TSxxxx` spurious / `-TSxxxx` missing, the message shape (quoted parts elided), and for a diagnostic
   outside the package's own directory the dependency it is in (`in types/three`): one wrong declaration seen by 50
@@ -41,35 +41,35 @@ versioned packages): **8575 / 8595 match**, spurious-only 18, missing-only 1, bo
 ## Stage 2: drain the ranking (corpus sessions)
 Work the table top-down like plan 19 does for the corpora: a root cause that spans packages first, single-package
 causes by how many packages they're the only mismatch of. Per root cause: a small repro under `test/probes` or a
-filetest, the fix, `./sweep.py` before/after (0 newly mismatching packages), the usual suite/corpus gates. Track the
+filetest, the fix, `scripts/sweep.py` before/after (0 newly mismatching packages), the usual suite/corpus gates. Track the
 open causes in plan 19's style in this file's "Open root causes" below (or bugs/ for big ones).
 
 ## Stage 3: widen the oracle (one session each, in order of value)
 1. **Versioned dependencies**: done (test/sweep_links.py, run by sweep.py; 1241 links, 387 versioned packages of
-   their own, oracle regenerated for the 584 affected with `./sweep.py --tsc -f` on `test/sweep_links.py --affected`).
+   their own, oracle regenerated for the 584 affected with `scripts/sweep.py --tsc -f` on `test/sweep_links.py --affected`).
    After a DT pin change: rerun the links (sweep.py does) and `--tsc` for everything.
-2. **`$ExpectType`**: done 2026-10-06 (`./expecttypes.py`, see "`$ExpectType` ranking" below).
+2. **`$ExpectType`**: done 2026-10-06 (`scripts/expecttypes.py`, see "`$ExpectType` ranking" below).
 3. **More real npm dependencies** for the packages tsc rejects for TS2307/TS2688 (webpack 5, postcss, moment...):
    cheap, each widens coverage by tens of packages; regenerate the lock and rerun `--tsc` for the affected packages.
 4. Beyond DT: the `.d.ts` of the top-N npm packages (types shipped in the package) with a generated test importing
    each, if DT runs dry.
 
 ## Perf side-product
-`./sweep.py` prints tttt's summed single-threaded wall next to tsc's summed ms (tsc warm, libs parsed once: generous
+`scripts/sweep.py` prints tttt's summed single-threaded wall next to tsc's summed ms (tsc warm, libs parsed once: generous
 to tsc). Many small programs stress startup and lib loading, which the big corpora don't: if tttt's per-package cost
 is dominated by lib loading, a lib cache (parse the default libs once per process, or an mmapped pre-parsed lib) is
 the lever, and `tttt -b` over many projects would share it.
 
 ## Validation
-`./sweep.py` runs in about 5 minutes and is in CLAUDE.md's script list; measurements.md has the numbers; the top root
+`scripts/sweep.py` runs in about 5 minutes and is in CLAUDE.md's script list; measurements.md has the numbers; the top root
 causes have repros in triage.md / bugs/ / the list below. Every later session that changes checker behaviour runs it
 next to the corpora (0 packages newly mismatching).
 
 ## Open root causes
 Diagnosed 2026-10-05 by four sub-agents (diagnosis only, no fix tried unless said). Repros in `test/probes/sweep/{A,B,C,D}/`
-(single files: `FAST=1 ./filetest.sh FILE -d`; directories: `release/tttt -p DIR` vs `node thirdparty/tsc/lib/tsc.js
+(single files: `FAST=1 scripts/filetest.sh FILE -d`; directories: `release/tttt -p DIR` vs `node thirdparty/tsc/lib/tsc.js
 -p DIR`). Packages = sweep packages affected. Ordered by value for effort within each group; **do the small ones first**,
-one commit each, `./sweep.py` before/after.
+one commit each, `scripts/sweep.py` before/after.
 
 ### From the versioned packages (2026-10-05; updated 2026-10-06 agent B)
 node, node/v22, v24, v25 all match now (fixed: the inference constraint pass, the typeof-operand `as` parse, optional
@@ -115,7 +115,7 @@ order, i.e. creation order. Same in latest chai at 1418, 1428).
   costs valibot +5% instructions (more constraints substituted), and react-relay still fails after it: then
   `ComponentClass<EntryPointProps<.., { onClick }, ..>>` vs `ComponentClass<EntryPointProps<.., {}, ..>>` fails on
   `getDerivedStateFromProps` (strict contravariance), which tsc must avoid through EntryPointComponent's alias
-  variances (TTTT_DUMP_VARIANCES: #2/#3 reliable invariant in tttt; tsc's not dumped yet, use ./tscinstcount.js
+  variances (TTTT_DUMP_VARIANCES: #2/#3 reliable invariant in tttt; tsc's not dumped yet, use scripts/tscinstcount.js
   VARIANCES=1). Repro: /tmp-style dir with a tsconfig `paths` to DT's react/relay-runtime, importing
   react-relay/relay-hooks/EntryPointTypes (see this commit's message).
 - **loadable__component** (TS18046 `props` unknown): `loadable(loader, { cacheKey: props => props.foo })` against
@@ -124,10 +124,10 @@ order, i.e. creation order. Same in latest chai at 1418, 1428).
   two overloads `lf<P, M>(fn: (p: P) => Promise<M>, o: { resolveComponent; cacheKey?(p: P) })` and
   `lf<P>(fn: (p: P) => Promise<{ default: P }>, o?: { cacheKey?(p: P) })`. Same family as the bullet above (plan 38).
 - Not investigated: google-apps-script (property named `''`), fabric's second `Image`, kefir; d3-tip and dynmap as
-  above. `./sweep.py --last -k ...` lists each.
+  above. `scripts/sweep.py --last -k ...` lists each.
 
 ## `$ExpectType` ranking (stage 3 item 2, built 2026-10-06)
-`./expecttypes.py` (~30 s): DT's 69.2k `// $ExpectType` assertions in 2737 packages. tsc's side (`test/sweep_tsc.js
+`scripts/expecttypes.py` (~30 s): DT's 69.2k `// $ExpectType` assertions in 2737 packages. tsc's side (`test/sweep_tsc.js
 --expect`, 108 s, cached gzipped in `test/sweep/DefinitelyTyped.expect.jsonl.gz`; rerun `--tsc` after a pin change)
 picks the node DT's `expect` rule checks (first node in forEachChild pre-order starting on the asserted line; an
 expression statement unwrapped, a lone initialized variable statement's initializer) and records its span, kind and
@@ -143,7 +143,7 @@ arguments `[]` for unions (ty_realias), an alias of an alias of a homomorphic ma
 distribution that changes nothing is the union itself (underscore's `keyof X`), assertions through a property of an
 intersection (assert.strict.equal), `${Enum}` property annotations made at the interface check (chrome, partly).
 
-### Open after the 2026-10-06 fan-out (68610 / 68640 match); `./expecttypes.py --last -k KIND` lists each, `./expectprobe.py` reduces one
+### Open after the 2026-10-06 fan-out (68610 / 68640 match); `scripts/expecttypes.py --last -k KIND` lists each, `scripts/expectprobe.py` reduces one
 - **Union order, 12 assertions / 9 packages left** (`union order`): creation order. Was 135: the oracle asked
   getTypeAtLocation lazily without checking (test/sweep_tsc.js --expect now checks every non-lib file first, like
   tttt). Fixed 2026-10-06 (agent A): the check walk makes references, unions (memoized per node), tuples and

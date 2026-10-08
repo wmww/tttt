@@ -1,6 +1,6 @@
 # Source sweep checker leftovers (plan 52 stage 2, agent ss-c, 2026-10-08)
-Keys +TS2589, +TS7022/7023 and friends, what was left after the fixes of that session. `./sourcesweep.py -f '^REPO/'`
-re-checks one repo; `./tscinstcount.js TSCONFIG FILE` gives tsc's per-node TS2589 counter (the budget tttt has to
+Keys +TS2589, +TS7022/7023 and friends, what was left after the fixes of that session. `scripts/sourcesweep.py -f '^REPO/'`
+re-checks one repo; `scripts/tscinstcount.js TSCONFIG FILE` gives tsc's per-node TS2589 counter (the budget tttt has to
 stay under). A gdb breakpoint on `ty_instantiation_limit_reached` in `debug/tttt` (`TTTT_NO_REEXEC=1`, `--checkers 1
 --threads 1`) prints `me->instantiation_depth` / `instantiation_count`: depth 100 is a runaway recursion, count 5M an
 exponential (or missing cache) blow-up.

@@ -6,10 +6,10 @@ Missing checks are found by the suite (thin now: ~150 failing errors components)
 `@ts-expect-error`s. A real user replacing tsc with tttt needs both directions to hold.
 
 ## Stage 1: flag flips — built and mostly drained (todo entry 1 of the tenth window, 2026-10-06)
-`./flagflip.py` (docstring has the usage): the 12 corpora tsc checks with `-p` (not tsc-src / typescript-eslint, which
+`scripts/flagflip.py` (docstring has the usage): the 12 corpora tsc checks with `-p` (not tsc-src / typescript-eslint, which
 are `-b`: `tsc -b` takes no compiler options; not zod-root, which isn't clean) x 13 flag sets (`FLAGS` in the script),
 tttt against tsc 5.8 by (file, line, code) multiset. tsc's output is cached gzipped in `test/flagflip/CORPUS/FLAG.json.gz`
-(1.1 MB) keyed by the corpus pin: `./flagflip.py --tsc` regenerates stale or missing cells (~15 min on 4 cores for all
+(1.1 MB) keyed by the corpus pin: `scripts/flagflip.py --tsc` regenerates stale or missing cells (~15 min on 4 cores for all
 156; vscode ~90 s and 4 GB per cell). tttt's own diagnostics at default flags are subtracted (effect's 7). A missing
 code with a spurious one on the same line is reported as `TSa->TSb`. A full run of tttt is ~80 s.
 
@@ -71,7 +71,7 @@ Looked at, not fixed:
 - excalidraw bounds.ts 821 vs 883 (nuia TS2488): tsc caches a union's noIterationTypes also from a lookup that
   reports nothing, so its first report is elsewhere; order artefact.
 
-### Open causes (ranked; the drain's queue). `./flagflip.py -k KEY` lists the instances
+### Open causes (ranked; the drain's queue). `scripts/flagflip.py -k KEY` lists the instances
 1. **TS2589 fidelity, valibot sloppy/nosnc (~60 diagnostics, ~30% of what's left): investigated 2026-10-06, judged
    plan-sized, not attempted.** tttt already counts like tsc: `ty_instantiate()` checks depth 100 / count 5M,
    `ty_enter_node()` resets the count where checkSourceElement/checkExpression do, and the limit hit gives the error
@@ -128,7 +128,7 @@ Looked at, not fixed:
    `context.ts:303` +TS2532 (generic variadic tuple element access stays deferred in tsc).
 
 ### The sweep with flips (todo entry 6 of the tenth window, 2026-10-06)
-`./sweep.py --flags nuia|eopt` rechecks every DefinitelyTyped package with the flag on top of its tsconfig, against
+`scripts/sweep.py --flags nuia|eopt` rechecks every DefinitelyTyped package with the flag on top of its tsconfig, against
 its own tsc oracle (`test/sweep/DefinitelyTyped.FLAG.tsc.jsonl.gz`, ~40 min of tsc on 4 cores each; DT packages set
 their own strict flags, so only these two are new). nuia: tsc reports in ~1800 more packages than at default flags;
 8585 -> **8588 / 8595** match after three fixes (an any index into a nullable union, the quick-type callee check on
@@ -137,7 +137,7 @@ first run. The mismatches left are the default run's own plus react-relay under 
 done at breadth; rerun after big changes to optional/undefined handling.
 
 ## Stage 2: mutation testing — built (todo entry 2 of the tenth window, 2026-10-06)
-`./mutate.py` (docstring has the usage): 27 operators (24 regex ones plus delete-stmt, swap-stmts, delete-member) on
+`scripts/mutate.py` (docstring has the usage): 27 operators (24 regex ones plus delete-stmt, swap-stmts, delete-member) on
 single-file suite tests that pass all three components; tsc baselines by one warm harness process per core (8000
 mutants in ~70 s), cached in `/tmp/mutate/HASH` keyed by the mutants' contents and the tsc commit; `--recheck` reruns
 only tttt on the last set. Mutants whose tsc baseline gains a TS1xxx code are separated (parser recovery, `--syntax`).
@@ -145,7 +145,7 @@ The report counts, per operator, the mutants that change tsc's codes at all ("pr
 bool-literal-type rarely are, member-typo / never-const / add-arg / drop-type-arg almost always).
 
 ### Drained the same session (five Opus sub-agents, ~70 commits)
-Seed 2: 94 -> **6** mismatches. Seeds 3, 4, 5 (8000 each, `MUTATE_DIR=... ./mutate.py -n 8000 --seed N` reproduces):
+Seed 2: 94 -> **6** mismatches. Seeds 3, 4, 5 (8000 each, `MUTATE_DIR=... scripts/mutate.py -n 8000 --seed N` reproduces):
 67 -> 29, 50 -> 31, 43 -> 40 (seed 5 only got 30 minutes). Yield per fresh seed is ~1.2% of productive mutants and
 falling; what's left is mostly one-mutant causes of type text / elaboration (union order, reduced annotations as
 written, `as const` display), tsc evaluation-order artifacts (loop passes reporting twice, class-expression checks
@@ -161,7 +161,7 @@ including tsc); the per-seed yield no longer justifies a fan-out on its own. Wid
 (needs per-project tsc runs; flagflip's machinery could host it).
 
 ### Widened to multi-file and JS tests (todo entry 6 of the tenth window, 2026-10-06)
-`./mutate.py --tests multi,js` mutates the passing `@filename` (1436) and `@allowJs` (750) tests; diagnostics compare
+`scripts/mutate.py --tests multi,js` mutates the passing `@filename` (1436) and `@allowJs` (750) tests; diagnostics compare
 by (file, line, code). Yield ~6.5% of productive mutants (seed 1: 92 of 1429, seed 2: 177 of 2371), against ~1% for
 fresh single-file seeds: JS/JSDoc semantics, module resolution and the harness are less drilled than single-file TS.
 Seed 2 found a hang (a function whose `@type` names itself). Drained by three sub-agents (modules / JS / text, 42
@@ -169,7 +169,7 @@ commits): seed 1 92 -> 12, seed 2 177 -> 40; a fresh seed 3 then had 46 of 2325 
 What's left is in triage.md (mostly tsc binder/resolution quirks of broken CommonJS, and printing).
 
 ### Fresh seeds after the suite-errors window (agent B, 2026-10-06)
-`MUTATE_DIR=... ./mutate.py -n 5000 --seed 7`: 21 mismatches of 2323 productive mutants (0.9%, the single-file yield
+`MUTATE_DIR=... scripts/mutate.py -n 5000 --seed 7`: 21 mismatches of 2323 productive mutants (0.9%, the single-file yield
 keeps falling) -> 12. `--tests multi,js -n 3000 --seed 5`: 33 of 1407 (2.3%) -> 27. Fixed (8 commits): a returned
 anonymous class expression's error span (`class`), TS1141 for a non-string module specifier only in the right context
 (it also dropped the file's grammar errors as a parse error), `extends` a union without common construct signatures
@@ -184,7 +184,7 @@ substitution intersection (tsc names its constraint), TS2574 through an error-ty
 JS `new C0()` arity against a .d.ts generic constructor, the JS-lane TS2303, CommonJS export quirks.
 
 ### The first run (seed 2, 8000 mutants of 4739 tests): 94 mismatches of 3744 productive mutants (2.5%), +53 syntax
-Root causes, by count (`./mutate.py -k KEY` after a run of the same seed):
+Root causes, by count (`scripts/mutate.py -k KEY` after a run of the same seed):
 - **Crash** (2, fixed in the same session): `(function () {` or `(() => {` unterminated at EOF panicked in
   `expr_set_outer_span` (the parenthesized expression's whitespace trim walked into the inner expression).
 - **TS2355 missing** (12): an accessor/function with a declared return type whose `return` was deleted.

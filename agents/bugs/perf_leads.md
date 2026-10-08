@@ -4,8 +4,8 @@ Numbers are in `measurements.md`; this is what to try next. Profile with callgri
 has no debug info: for line-level annotation (`callgrind_annotate --auto=yes`) build a copy with
 `meson setup /tmp/relg --buildtype release -Dc_args=-g` (same code, same instruction counts). Compare
 instruction counts across sessions, not wall times. `--time` prints the resident set after each phase and the
-checker's arena size and type count. Memory: `./memtrack.sh -p DIR` for the malloc heap (live blocks per phase by
-allocating function; massif's extra-heap estimate is wrong for glibc), `./arenasites.sh -p DIR` for the mmapped binder
+checker's arena size and type count. Memory: `scripts/memtrack.sh -p DIR` for the malloc heap (live blocks per phase by
+allocating function; massif's extra-heap estimate is wrong for glibc), `scripts/arenasites.sh -p DIR` for the mmapped binder
 and checker arenas by call site.
 
 ## Compare relation counts with tsc first (2026-10-06 perf session)
@@ -24,7 +24,7 @@ well below tsc (fine). On the pinned corpora tttt makes fewer types than tsc; on
 tsc's is how this session's pathologies showed (next section).
 
 ## The source sweep finds pathologies (2026-10-08 perf session)
-Rank `./sourcesweep.py` projects by tttt/tsc time (median 0.075; read /tmp/sourcesweep-tttt.json against
+Rank `scripts/sourcesweep.py` projects by tttt/tsc time (median 0.075; read /tmp/sourcesweep-tttt.json against
 test/sourcesweep/tsc.jsonl.gz, only projects tsc takes >= 2 s on), skip the ones tsc checks degraded (TS6305 unbuilt
 references, thousands of TS2307/TS7031: tsc does less work there, babel-traverse, rxjs, better-auth), then
 `TTTT_FILE_TIMES=1` for the file, a single-file `-p` probe (a temporary tsconfig with `files` next to the project's,
@@ -71,14 +71,14 @@ quadratic (headlessui), top-level object literal types instantiated per mapper (
   cost depend on what was measured before; finding which could make measurements cheaper in every order.
 
 ## Where the time goes now (perf session 2026-09-29, after the fixes of that session)
-Measure with `./instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
+Measure with `scripts/instrcount.sh` (all corpora, or `--bin` another build); bisect regressions by building old commits in
 a worktree (`git worktree add /tmp/wt-perf <commit>`, symlink `thirdparty/tsc` and `thirdparty/corpora`, `meson setup`
-once, then `git checkout -f X && ninja`) and running `./instrcount.sh --bin`. Keyed caches in `my links`
+once, then `git checkout -f X && ninja`) and running `scripts/instrcount.sh --bin`. Keyed caches in `my links`
 (`intern_get`/`intern_slot` with a `KEY_*`) are the cheap fix for "the same computation again": the session's wins
 were mostly tsc caches tttt lacked (two-member unions, intersections by members, assignment-reduced types).
 - **drizzle** (15.7 G): variance measurements are 40% (207 of them, ~30 M instructions each, nested:
   `*SelectBuilder` -> `Create*SelectFromBuilderMode` -> `*SelectBase`). Compared with tsc (`VARIANCES=1
-  ./tscinstcount.js`): the same flags, and tsc spends 100k-470k instantiations on the same ones. Not a tttt bug; making
+  scripts/tscinstcount.js`): the same flags, and tsc spends 100k-470k instantiations on the same ones. Not a tttt bug; making
   each measurement cheaper is instantiation speed in general (`instantiate_inner` 19% self, `intern_get` 10%).
 - **vue** (8.2 G): `first_unfit_argument_skipping` (call.c) 13%: the conditional skipTrue hack (todo entry 5's
   plan-sized hacks). `ty_union_subtype_reduced` 3.5%.
@@ -96,7 +96,7 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   CommonJS, JSDoc), not one regression.
 
 ## Memory (measurements.md "AST and binder memory" has the table: below tsgo everywhere at one checker)
-- **Arena by call site and interned keys by kind**: `./arenasites.sh -p <corpus>`. drizzle at one checker (10-05, 495
+- **Arena by call site and interned keys by kind**: `scripts/arenasites.sh -p <corpus>`. drizzle at one checker (10-05, 495
   MB arena): types 88 MB (136 bytes each), interned keys ~60 MB (KEY_ANONYMOUS_INSTANCE 15, KEY_CONDITIONAL 13 (node
   pointers and mapper pairs per branch), KEY_CONDITIONAL_INSTANCE 9), instantiated `Prop`s 68 MB (56 bytes),
   `ty_list_copy` 65 MB (union/intersection/reference member lists: the key holds the same ids again), scopes/symbols
@@ -110,8 +110,8 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   balances worse with bytes as the cost proxy. A better cost model (type counts or times of a previous run) or shared
   lib/global types between checkers would take the rest.
 - **AST and binder diet done** (plan 43, 2026-10-05; numbers in measurements.md): every corpus is below tsgo's peak
-  RSS at one checker now. Tools: `./memtrack.sh -p DIR` (live malloc heap per phase by allocating function, with the
-  share of all-zero words and Spans: 66% zero before, 45% after) and `./arenasites.sh`. The pattern that worked: rare
+  RSS at one checker now. Tools: `scripts/memtrack.sh -p DIR` (live malloc heap per phase by allocating function, with the
+  share of all-zero words and Spans: 66% zero before, 45% after) and `scripts/arenasites.sh`. The pattern that worked: rare
   fields behind one owned side struct (`*_rare()` reads a shared all-null static, `*_rare_mut()` allocates on first
   write), absent optional children as null pointers, spans of one file packed as u32 offsets, bools as bit fields,
   walk-only scopes popped off the binder arena (hacks.md has the rules each relies on). Levers left, each a few MB:

@@ -34,7 +34,7 @@ let triggerTestRerun; // Set by code we inject into the evaled code
   }
 
   console.log('[tttt runner] Loading test runner script...');
-  // RUNJS: a patched copy of run.js (console.error in checker functions: what tsc does on a test, through ./tscbaseline.sh's steps)
+  // RUNJS: a patched copy of run.js (console.error in checker functions: what tsc does on a test, through scripts/tscbaseline.sh's steps)
   const runJsPath = process.env.RUNJS || path.join(tsDir, 'built', 'local', 'run.js');
   testRunnerJsContent = fs.readFileSync(runJsPath) + '';
 

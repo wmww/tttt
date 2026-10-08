@@ -3,9 +3,9 @@ Written by the insights of 2026-10-07 (after the eleventh window); `vision.md` "
 sessions, then insights.** Delete entries as they complete (leave a one-line "done" note with the numbers). A plan
 that overruns its entry takes its extra sessions out of this budget: when 10 sessions have run (count the commits
 since this file was written), the next session is insights, whatever is left here. New work goes into plans or
-triage.md, not ahead of the insights entry. Every entry ends with `./fasttest.sh -s`, the corpus numbers
-(`./realworld.py --corpus X` for every pinned corpus), `./sweep.py`, `./expecttypes.py` and `./flagflip.py` after
-checker changes, `./instrcount.sh` and a commit.
+triage.md, not ahead of the insights entry. Every entry ends with `scripts/fasttest.sh -s`, the corpus numbers
+(`scripts/realworld.py --corpus X` for every pinned corpus), `scripts/sweep.py`, `scripts/expecttypes.py` and `scripts/flagflip.py` after
+checker changes, `scripts/instrcount.sh` and a commit.
 
 Starting point: suite **14829 / 14969**, every corpus 0 but effect 3, sweep 8594 / 8595, `$ExpectType` 68628 / 68640,
 flagflip 18 / 10 / 4. **No per-test suite drains this window** (vision.md): a fix that needs a new special case goes
@@ -22,7 +22,7 @@ to bugs/, not into the code.
 4. Done (2026-10-08): plan 51 stage 2, context anchors (the ember regression was already gone after stage 1). Every
    oracle 0 lost, `$ExpectType` +3; late/sig-context/overload-failure channels deleted; instructions +0.1-0.5%,
    xstate +0.7% (anchor bookkeeping).
-5. Done (2026-10-08): plan 52 stage 1. 174 repos / 3359 projects, tsc cached (~1 h), `./sourcesweep.py` (~5 min,
+5. Done (2026-10-08): plan 52 stage 1. 174 repos / 3359 projects, tsc cached (~1 h), `scripts/sourcesweep.py` (~5 min,
    `--sample 4` in oracles.py): **2241 match (746 clean under tsc), 47 / 174 repos**, 0 crash after fixing 10; nine
    mechanism fixes on the way, every other oracle flat. Most of the missing direction is one config cascade (plan 52).
 6. Done (2026-10-08): perf session. Checker sharing isn't a lever (plan 36: 4 checkers cost ~2% more CPU than one;

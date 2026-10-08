@@ -108,8 +108,8 @@ is the weak number" compared 4-checker tttt with 1-thread tsgo.
   plan.
 
 ## Validation (every stage)
-`./fasttest.sh --summary` 0 lost; every corpus unchanged or better (`./realworld.py --corpus X`, xstate/webpack/
+`scripts/fasttest.sh --summary` 0 lost; every corpus unchanged or better (`scripts/realworld.py --corpus X`, xstate/webpack/
 drizzle by file:line set; zod-root diffed against the previous build: `./release/tttt -q --keep-going -p
-thirdparty/corpora/zod | sort`); `./threadcheck.sh` and `./checkerdiff.py` identical; `./instrcount.sh` within ~1% per
+thirdparty/corpora/zod | sort`); `scripts/threadcheck.sh` and `scripts/checkerdiff.py` identical; `scripts/instrcount.sh` within ~1% per
 corpus (stage 2's vue +1.1% is the ceiling: look for it before accepting more). Each stage removes its hacks.md
 entries and adds what it keeps.

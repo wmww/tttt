@@ -134,7 +134,7 @@ Remaining losses:
 - genericCallWithGenericSignatureArguments3 still fails as at HEAD: the inner arrow's return type is computed
   during inference (eagerly), before the resolved signature exists; laziness of return types is the missing half.
 
-Cost (measured before the final TS7024 correction, which only adds a key write per self-context return; callgrind, `./instrcount.sh --bin`, HEAD -> prototype): tsc 4.772 -> 4.781 G (+0.19%), valibot 4.236 -> 4.272
+Cost (measured before the final TS7024 correction, which only adds a key write per self-context return; callgrind, `scripts/instrcount.sh --bin`, HEAD -> prototype): tsc 4.772 -> 4.781 G (+0.19%), valibot 4.236 -> 4.272
 (+0.85%), xstate 3.186 -> 3.223 (+1.16%), effect 10.054 -> 10.128 (+0.74%). Unoptimised: anchors are walked and
 allocated for every call's literal arguments, generic or not; derivations are not cached. Memory: no new AST field;
 one arena anchor (48 bytes) per function/object literal/property under a call argument, plus an intern entry each.

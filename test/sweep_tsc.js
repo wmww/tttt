@@ -1,9 +1,9 @@
-// tsc's diagnostics for many projects in one process (./sweep.py's oracle, plan 44): reads project directories
+// tsc's diagnostics for many projects in one process (scripts/sweep.py's oracle, plan 44): reads project directories
 // (each with a tsconfig.json) from stdin, one per line, and prints one JSON line per project:
 // {"project", "ms", "diags": [[file, line, col, code], ...]} with paths relative to the working directory, line and
 // col 1-based. The lib files' source files are shared between projects (parsing lib.dom.d.ts for every project
 // would be most of the time); everything else is parsed per project, like `tsc -p DIR` would.
-// With `--expect` (./expecttypes.py's oracle, plan 44 stage 3 item 2) it prints the `$ExpectType` assertions instead:
+// With `--expect` (scripts/expecttypes.py's oracle, plan 44 stage 3 item 2) it prints the `$ExpectType` assertions instead:
 // {"project", "ms", "asserts": [[file, line, col, endLine, endCol, kind, actual, expected], ...]}, each the node
 // DefinitelyTyped's `expect` lint rule checks (its start and end, 1-based, columns in UTF-16 units like tsc's), its
 // SyntaxKind's name, and what that rule compares: typeToString(getTypeAtLocation(node), undefined, NoTruncation).
@@ -12,7 +12,7 @@ const path = require('path');
 const readline = require('readline');
 
 const expectMode = process.argv.includes('--expect');
-// Other `--flag` arguments are boolean compiler options set on top of every tsconfig (./sweep.py --flags)
+// Other `--flag` arguments are boolean compiler options set on top of every tsconfig (scripts/sweep.py --flags)
 const extraOptions = Object.fromEntries(process.argv.slice(2).filter(a => a.startsWith('--') && a !== '--expect')
     .map(a => [a.slice(2), true]));
 const libDir = path.dirname(ts.getDefaultLibFilePath({}));

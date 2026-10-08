@@ -87,9 +87,9 @@ With K checkers, printed union order depends on which checker saw what first. Op
 Note tsc itself prints unions in an order that depends on what else is in the program; nobody can rely on it.
 
 ## Stages
-Each stage: suite unchanged (`./fasttest.sh --summary`), corpus numbers unchanged, `--all-errors` output
-byte-identical for threads 1..4 on every corpus (add a script: `./threadcheck.sh` running each corpus with
-`--threads 1` and `--threads 4` three times and `cmp`ing), a TSan run on webpack + nest + tsc clean, `./bench.sh`
+Each stage: suite unchanged (`scripts/fasttest.sh --summary`), corpus numbers unchanged, `--all-errors` output
+byte-identical for threads 1..4 on every corpus (add a script: `scripts/threadcheck.sh` running each corpus with
+`--threads 1` and `--threads 4` three times and `cmp`ing), a TSan run on webpack + nest + tsc clean, `scripts/bench.sh`
 numbers in `measurements.md`.
 
 ### Stage 1: parallel loading: **done** (2026-09-28, todo entry 6)
@@ -110,10 +110,10 @@ children, `program_load_ahead()` queues libs, roots and automatic types up front
   machine was at load 8-10 from other jobs all session, which hides a discovery-bound pool. Re-measure nest on a quiet
   machine (4 vs 2 workers, "parsed by the loader" count) before building it.
 Validation: suite 10830 unchanged; `baseline_tests --threads 4 --dump` byte-identical to `--threads 1`;
-`./threadcheck.sh` identical; TSan clean on all 9 corpora at `--threads 4`; single-threaded instructions unchanged.
+`scripts/threadcheck.sh` identical; TSan clean on all 9 corpora at `--threads 4`; single-threaded instructions unchanged.
 Numbers (load phase = libs + files, ms, best of 7 interleaved with the previous binary, 4 threads, machine at load ~8):
 tsc 189 -> 100, nest 195 -> 125, webpack 243 -> 153, react 134 -> 78, zod 138 -> 86, xstate 106 -> 58, valibot 102 -> 66,
-type-fest 29 -> 22. Walls were too noisy under that load to quote (`measurements.md`); `./bench.sh` on a quiet machine
+type-fest 29 -> 22. Walls were too noisy under that load to quote (`measurements.md`); `scripts/bench.sh` on a quiet machine
 is owed.
 
 ### Stage 2: check-phase readiness: **done** (2026-09-28)
@@ -128,7 +128,7 @@ phase, `ClassDecl.has_typechecked` became a checker link (`ty_first_check()`), g
 (`debug_env`), cleat's `return ok;` sink is thread-local (`thirdparty/cleat-failable-patch.txt`), threads linked.
 Runtime guards (`log_error`): reports into the frozen program ctx, new binder symbols, first alias resolutions while
 checking; none fire on the suite or the corpora.
-Validation tools: `./checkerdiff.py [-k K] [corpora]` (K vs 1, modulo quoted text, and K twice byte-identical), and
+Validation tools: `scripts/checkerdiff.py [-k K] [corpora]` (K vs 1, modulo quoted text, and K twice byte-identical), and
 `baseline_tests --checkers K --dump DIR` against a K=1 dump. State at the end of stage 2: every corpus identical
 modulo quoted text at K=2/4 (webpack 2 and zod-root 12 diagnostics differ in union order); the suite's errors at
 K=2/4 differ from K=1 in one test (reactDefaultPropsInferenceSuccess, and only inside quotes: a K=1 order dependence
@@ -139,7 +139,7 @@ balances well (webpack 4 x ~100 ms vs 345 at K=1, zod 137-193 ms vs 572), so "by
 `--threads N` (tttt: default the core count up to 4; `baseline_tests --threads N`, default 1) runs the K checkers on
 N threads (`program_set_threads()`; the main thread works too, workers take checker indices from an atomic counter,
 worker stacks get the main thread's `RLIMIT_STACK`, at least 8 MB). tttt's `--checkers` now defaults to 4, the
-harness's stays 1. Validation: `./threadcheck.sh` (every corpus, `--threads 1` vs 4 three times, `cmp`) identical;
+harness's stays 1. Validation: `scripts/threadcheck.sh` (every corpus, `--threads 1` vs 4 three times, `cmp`) identical;
 `baseline_tests --checkers 4 --threads 1/4 --dump` identical; a TSan build (`meson setup /tmp/tsan --buildtype
 release -Db_sanitize=thread -Dc_args=-g`, `TTTT_NO_REEXEC=1`) reports nothing on all 8 corpora at K=4 on 4 threads.
 Nothing had to change in the checker: stage 2's audit was complete for everything the corpora reach.

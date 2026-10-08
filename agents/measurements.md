@@ -33,7 +33,7 @@ and the SMT siblings ~1.3x more: sharing types between checkers isn't a lever (p
 karakeep/apps/web 55.3 -> 1.7 s (tsc 12 / 34 s; `typeof` in a top-level literal made it generic, the 5M instantiation
 limit hit: spurious TS2589s), remix/demos/bookstore 8.8 -> 0.38 s, headlessui-react 16.1 -> 1.18 s (tsc 11.4; keyof of
 70 unions quadratic), mcp-sdk/packages/server 1.13 -> 0.37 s and 1.16M -> 178k types (tsc 209k; top-level object
-literal types instantiated per mapper), babel-traverse 1.60 -> 1.34 s (union property reads memoized). `./sourcesweep.py`
+literal types instantiated per mapper), babel-traverse 1.60 -> 1.34 s (union property reads memoized). `scripts/sourcesweep.py`
 2241 -> **2244 / 3359** match, 47 -> 48 repos, tttt 1112 -> 834 s single-threaded in total; median tttt/tsc time 0.075
 over projects tsc takes >= 2 s on. Open: docmost 2.27M types vs tsc's 185k, immutable-js 997k vs 203k
 (bugs/perf_leads.md). Suite 14832 -> 14833, every other oracle flat.
@@ -43,7 +43,7 @@ Instructions (callgrind, vs plan 52 stage 1's): tsc 4.782 -> 4.682 (-2.1%), type
 91.206 (-1.8%), excalidraw 7.982 -> 7.827 (-1.9%), tanstack-router 5.895 -> 5.887 G.
 
 ## Source sweep (2026-10-08, plan 52 stage 2 drain, twelfth window's todo entry 8)
-`./sourcesweep.py` (174 repos, 3359 projects compared; tttt now with `--keep-going=options`): **2997 / 3359 match (746
+`scripts/sourcesweep.py` (174 repos, 3359 projects compared; tttt now with `--keep-going=options`): **2997 / 3359 match (746
 clean under tsc), 71 / 174 repos fully match**; spurious 277, missing 33, both 52, crash 0, timeout 0 (stage 1: 2241,
 47 repos, 520 / 367 / 231). tttt 811 s single-threaded in total (1112 s at stage 1: `-p` no longer checks referenced
 projects' sources), ~200-480 s wall depending on what else runs; tsc 11045 s of CPU. `--sample 4`: 737 / 822 (554).
@@ -71,7 +71,7 @@ effect 3, zod-root 53), sweep 8594 / 8595, `$ExpectType` 68628 / 68640, flagflip
 3.184, drizzle 8.055, vue 7.039, effect 10.041, vscode 92.469, excalidraw 7.968, tanstack-router 5.877 G: flat.
 
 ## Plan 51 stage 1 (2026-10-08, twelfth window's todo entry 1)
-Every oracle identical to 55458150 (`./oracles.py`): suite 14829 / 14969, corpora 0 but effect 3 and zod-root 53,
+Every oracle identical to 55458150 (`scripts/oracles.py`): suite 14829 / 14969, corpora 0 but effect 3 and zod-root 53,
 sweep 8594 / 8595, `$ExpectType` 68628 / 68640, flagflip 18 / 10 / 4. Instructions (callgrind, 81aa712b): tsc 4.770,
 type-fest 19.766, valibot 4.240 (+0.14%), react 1.542, nest 1.149, webpack 10.611, zod 5.092, xstate 3.184, drizzle
 8.062, vue 7.037, effect 10.046, vscode 92.435, excalidraw 7.967, tanstack-router 5.879 G: flat.
@@ -90,7 +90,7 @@ No code changes; bench.sh now runs every corpus (effect added) on the same confi
 and its obsolete synthetic corpus is gone. Instructions (callgrind, `--checkers 1`, 6650c15e) **identical to entry 8's
 end**, vscode measured for the first time since its re-pin: tsc 4.786, type-fest 19.552, valibot 4.217, react 1.540,
 nest 1.148, webpack 10.682, zod 5.069, xstate 3.178, drizzle 8.053, vue 7.021, effect 9.998, **vscode 92.151**,
-excalidraw 7.956, tanstack-router 5.878 G. `./bench.sh --runs 3` (quiet machine but for one idle agent session), best
+excalidraw 7.956, tanstack-router 5.878 G. `scripts/bench.sh --runs 3` (quiet machine but for one idle agent session), best
 wall / peak RSS, tttt at its defaults (4 checkers, 4 threads on 2 cores x 2 SMT):
 | corpus | tttt | tsc 4d4f005c | tsgo 7.0.2 | tsgo 1 thread | tsgo / tttt |
 |---|---|---|---|---|---|
@@ -121,7 +121,7 @@ profile is flat (top self cost `type_at_flow_node` 3.2%). Strict-by-default cost
 config sets `strict` explicitly (nest: false).
 
 ## Corpora drained (2026-10-07, eleventh window's todo entry 8, 4 sub-agents)
-`./realworld.py` (4 checkers): every corpus **0** except effect 3 (known TS2578, plan 19), vscode **1** (8 -> 1),
+`scripts/realworld.py` (4 checkers): every corpus **0** except effect 3 (known TS2578, plan 19), vscode **1** (8 -> 1),
 zod-root 53 (= tsc); webpack 64 -> 0, type-fest 6 -> 0, valibot 4 -> 0, excalidraw 1 -> 0. Flagflip (182 cells,
 116954 tsc diagnostics) missing 260 -> **42**, spurious 90 -> **12**, other code 10 -> **5**. `$ExpectType` 68620 ->
 **68621 / 68640**, sweep **8594 / 8595**, scenarios **240 / 0**, suite 14804 -> **14805 / 14969** (0 components lost).
@@ -135,7 +135,7 @@ the TS2344 check was fixed by giving non-generic classes/interfaces a recursion 
 
 ## Corpora re-pinned (2026-10-07, eleventh window's todo entry 7, plan 48 stage 5)
 **New baselines: corpus numbers before this entry aren't comparable** (new pins and configs; vscode is now 3.41M
-lines). `./realworld.py` (4 checkers): tsc, tsc-src, react, nest, zod, xstate, drizzle, vue, tanstack-router,
+lines). `scripts/realworld.py` (4 checkers): tsc, tsc-src, react, nest, zod, xstate, drizzle, vue, tanstack-router,
 typescript-eslint 0; excalidraw 1; effect 3; valibot 4; type-fest 6 (3 with `--checkers 1`); vscode 8; webpack 64;
 zod-root 53 (= tsc). Flagflip regenerated: 182 cells, tsc 116954 diagnostics, tttt missing **260**, spurious **90**,
 other code 10. Sweep 8594 / 8595, `$ExpectType` 68620 / 68640, suite 14804 / 14969: unchanged. Instructions
@@ -145,11 +145,11 @@ valibot 4.176, react 1.542, nest 1.150, webpack 10.708, zod 5.040, xstate 3.177,
 type-fest's IntRange needs ~16 MB).
 
 ## Oracles on tsc 4d4f005c (2026-10-07, eleventh window's todo entry 6, plan 48 stage 4)
-New caches: `./sweep.py` (DefinitelyTyped 2026-10-02 pin) 8585 on the fresh oracle -> **8594 / 8595** match, 0 crash
-(5.8's last: 8589); `./expecttypes.py` 68574 -> **68620 / 68640** (5.8's last: 68619); `./scenarios.py` 200 / 16 / 90
-skipped -> **240 / 0 / 66**; `./mutate.py` seed 1 (2000) **4** of 1030 that change tsc's codes, seed 2 (8000) **34** of
+New caches: `scripts/sweep.py` (DefinitelyTyped 2026-10-02 pin) 8585 on the fresh oracle -> **8594 / 8595** match, 0 crash
+(5.8's last: 8589); `scripts/expecttypes.py` 68574 -> **68620 / 68640** (5.8's last: 68619); `scripts/scenarios.py` 200 / 16 / 90
+skipped -> **240 / 0 / 66**; `scripts/mutate.py` seed 1 (2000) **4** of 1030 that change tsc's codes, seed 2 (8000) **34** of
 4051 (5.8: drained to 6). Flagflip not regenerated (waits for the re-pin, plan 48 stage 5). Suite **14804 / 14969**
-unchanged, corpora unchanged (`./realworld.py`: tsc, tsc-src, zod 0; type-fest, react, drizzle, vue, excalidraw,
+unchanged, corpora unchanged (`scripts/realworld.py`: tsc, tsc-src, zod 0; type-fest, react, drizzle, vue, excalidraw,
 typescript-eslint 1; nest 4; effect 5; tanstack-router 28; xstate 30; valibot 31; vscode 543; webpack 5297; vscode and
 typescript-eslint identical to the session start's build). Instructions (callgrind, fa904e94 -> end) flat: tsc 4.816
 -> 4.815, type-fest 3.139, valibot 4.522 -> 4.523, react 1.546 -> 1.545, nest 1.157, webpack 5.136 -> 5.135, zod
@@ -158,7 +158,7 @@ typescript-eslint identical to the session start's build). Instructions (callgri
 
 ## Plan 48 stage 2 session B (2026-10-07, eleventh window's todo entry 5)
 Creation-order deletion, then a 4-agent fan-out: suite 14712 -> **14804 / 14969** (errors 14890, symbols 14917,
-types 14855; lost only `stableTypeOrdering(stabletypeordering=false)`, accepted). Corpora unchanged (`./realworld.py`:
+types 14855; lost only `stableTypeOrdering(stabletypeordering=false)`, accepted). Corpora unchanged (`scripts/realworld.py`:
 tsc, zod 0; type-fest, react, drizzle, vue, excalidraw 1; nest 4; effect 5; tanstack-router 28; xstate 30; valibot
 31; webpack 5297). checkerdiff as before (vue's `--checkers 1` TS2345, webpack 4 inside quotes). Instructions
 (callgrind, e1ff62a5 -> after the deletion -> end): tsc 4.804 -> 4.796 -> 4.816, type-fest 3.143 -> 3.132 -> 3.139,
@@ -168,7 +168,7 @@ valibot 4.500 -> 4.496 -> 4.522, react 1.544 -> 1.546, nest 1.155 -> 1.157, webp
 +0.2-0.6%, spread over ~75 picks; a +1.6% drizzle from one pick was fixed by its author).
 
 ## Plan 48 stage 3 fan-out (2026-10-07, eleventh window's todo entry 4)
-Suite 14269 -> **14712 / 14969** (errors 14846, symbols 14905, types 14782; 0 lost). Corpora (`./realworld.py`, 4
+Suite 14269 -> **14712 / 14969** (errors 14846, symbols 14905, types 14782; 0 lost). Corpora (`scripts/realworld.py`, 4
 checkers): tsc, zod 0; type-fest, react, drizzle, vue, excalidraw 1; nest 4; effect 5; tanstack-router 28; webpack
 5297; **xstate 0 -> 30 and valibot 5 -> 31, both now identical to the commit's tsc** (file, line, code; valibot's
 extra one is TS5107, which `--ignoreDeprecations 6.0` hides on tsc's side). Instructions (callgrind, 25024b22 ->
@@ -236,7 +236,7 @@ instance's mapper. Fixed that (871fdb11), moved two per-instantiation hash looku
 now) and ported three tsc shortcuts that the outlier, vue, lacked: same-index members of union pairs (c49283fb), an
 intersection's key property in subtype reduction and object-to-primitive decided simply (the commit after). Plan 45
 stage 2 by a sub-agent (6e216e42): webpack resolve names 63 -> 37 ms.
-Callgrind (`./instrcount.sh`), dd69f2c7 -> end: tsc 4.625 -> 4.619, type-fest 3.142 -> 3.097 (-1.4%), valibot 4.273
+Callgrind (`scripts/instrcount.sh`), dd69f2c7 -> end: tsc 4.625 -> 4.619, type-fest 3.142 -> 3.097 (-1.4%), valibot 4.273
 -> 4.215 (-1.4%), react 1.545 -> 1.489 (-3.6%), nest 1.261 -> 1.259, webpack 3.866 -> 3.861, zod 4.596 -> **4.709
 (+2.5%**: same-index pairs order variance measurements like tsc: zod's variances differing from tsc's 19 -> 9),
 xstate 3.003 -> 2.920 (-2.8%), drizzle 13.090 -> **10.800 (-17.5%)**, vue 8.071 -> **6.981 (-13.5%)**, effect 9.850 ->
@@ -262,8 +262,8 @@ effect 9.846 -> 9.850, vscode 32.428 -> 32.485; new: excalidraw 5.040, tanstack-
 +25% (distributed conditionals named by their root's alias) was caught by the end-of-session instrcount and reverted.
 
 ## Flag sweeps and multi-file/JS mutants (2026-10-06, tenth window's todo entry 6; plan 46)
-`./sweep.py --flags nuia` 8585 -> **8588** / 8595, `--flags eopt` **8588** (both equal to the default sweep's 8588 /
-6 / 1 but react-relay under nuia). `./mutate.py --tests multi,js`: seed 1 (3000) 92 -> **12**, seed 2 (5000) 177 ->
+`scripts/sweep.py --flags nuia` 8585 -> **8588** / 8595, `--flags eopt` **8588** (both equal to the default sweep's 8588 /
+6 / 1 but react-relay under nuia). `scripts/mutate.py --tests multi,js`: seed 1 (3000) 92 -> **12**, seed 2 (5000) 177 ->
 **40**, fresh seed 3 (5000) 46 of 2325 productive. Suite 13228 -> **13229** (+ typeFromPropertyAssignment18's errors),
 flagflip 65 / 63 / 12, `$ExpectType` 68610, scenarios 214 / 0, corpora (effect 7, the rest 0) all flat.
 Instructions (callgrind, 8641e758 -> end): tsc 4.613 -> 4.622, type-fest 3.135 -> 3.139, valibot 4.270 -> 4.275,
@@ -280,11 +280,11 @@ e48bd25d -> this commit): tsc 4.614 -> 4.613, type-fest 3.135, valibot 4.270, re
 9.785 -> 9.802, vscode 32.348 -> 32.363.
 
 ## `$ExpectType` fan-out (2026-10-06, tenth window's todo entry 4; oracle: plan 44 stage 3 item 2)
-`./expecttypes.py`: 68640 compared assertions in 2703 DefinitelyTyped packages, tttt ~27 s at -j4. The oracle now
+`scripts/expecttypes.py`: 68640 compared assertions in 2703 DefinitelyTyped packages, tttt ~27 s at -j4. The oracle now
 checks every non-lib file before reading types (agent A; ~90 assertions had differed only by tsc's lazy creation
 order). 68416 -> **68610 match**, 2637 -> 2683 packages all match. Five sub-agents, 0 tests lost: suite 13104 ->
 **13227**, corpora unchanged (effect 7, the rest 0, vscode/typescript-eslint/tsc-src 0), sweep 8580 / 14 / 1 -> **8584
-/ 10 / 1**, flagflip 81 / 63 / 12 -> **79 / 63 / 12**. Instructions (callgrind, `./instrcount.sh`), 30f379db -> end:
+/ 10 / 1**, flagflip 81 / 63 / 12 -> **79 / 63 / 12**. Instructions (callgrind, `scripts/instrcount.sh`), 30f379db -> end:
 tsc 4.638 -> 4.614, type-fest 3.114 -> 3.135 (+0.7%), valibot 4.120 -> 4.270 (+3.6%: +2.7% is 1e72625d, tsc's
 forConstraint permissive check in distributive constraints, accepted as a cost tsc pays), react 1.596 -> 1.543,
 nest 1.254 -> 1.258, webpack 3.842 -> 3.836, zod 4.533 -> 4.572 (+0.9%), xstate 2.897 -> 2.932 (+1.2%), drizzle
@@ -293,9 +293,9 @@ regressions caught mid-session and fixed by their authors: +30% drizzle (ab972a4
 xstate/vue +1.2% are many small commits in the first half (not bisected; todo entry 8).
 
 ## Mutation drain (2026-10-06, tenth window's todo entry 2, plan 46 stage 2, five sub-agents)
-`./mutate.py`: seed 2 (8000 mutants) 94 -> 6 mismatches, seeds 3/4/5 67 -> 29, 50 -> 31, 43 -> 40. `./flagflip.py`
+`scripts/mutate.py`: seed 2 (8000 mutants) 94 -> 6 mismatches, seeds 3/4/5 67 -> 29, 50 -> 31, 43 -> 40. `scripts/flagflip.py`
 103 / 68 / 17 -> **81 / 63 / 12**. Suite 13099 -> **13103** (0 lost), corpora unchanged (effect 7, the rest 0), sweep
-8580 / 8595 flat. Instructions (callgrind, `./instrcount.sh`), b05e2950 -> end: tsc 4.621 -> 4.639 (+0.4%), type-fest
+8580 / 8595 flat. Instructions (callgrind, `scripts/instrcount.sh`), b05e2950 -> end: tsc 4.621 -> 4.639 (+0.4%), type-fest
 3.110 -> 3.115, valibot 3.905 -> **4.097 (+4.9%**: template literal placeholders now checked; nearly all of it is one
 `${IssueDotPath<TSchema>}` relation that tsc pays proportionally too, accepted), react 1.620 -> 1.597 (-1.4%, the
 inferred true branch cached), nest 1.255 flat, webpack 3.845 -> 3.842, zod 4.489 -> 4.523 (+0.75%), xstate 2.893 ->
@@ -305,18 +305,18 @@ lookup in is_related_to, now gated on `report`, which only won 0.1%: probably GC
 the other +0.5% vue and zod's +0.75% not bisected: todo entry 8.
 
 ## Flag flips (2026-10-06, tenth window's todo entry 1, plan 46 stage 1, four sub-agents)
-`./flagflip.py` (12 corpora x 13 flag sets, tsc 5.8 cached): 47455 tsc diagnostics; tttt missing / spurious / other
+`scripts/flagflip.py` (12 corpora x 13 flag sets, tsc 5.8 cached): 47455 tsc diagnostics; tttt missing / spurious / other
 code 603 / 1460 / 1029 -> **103 / 68 / 17** (per flag: plan 46). Suite 13099 -> 13099 (0 lost), corpora at default
 flags unchanged (effect 7, zod-root the same 55, the rest 0), sweep 8579 -> **8580** / 8595, vscode with
 noUncheckedIndexedAccess / exactOptionalPropertyTypes / non-strict identical at `--checkers 1` and 4. Instructions
-(callgrind, `./instrcount.sh`), b66bb745 -> end: tsc 4.607 -> 4.621, type-fest 3.110 flat, valibot 3.869 -> 3.905
+(callgrind, `scripts/instrcount.sh`), b66bb745 -> end: tsc 4.607 -> 4.621, type-fest 3.110 flat, valibot 3.869 -> 3.905
 (+0.9%), react 1.618 -> 1.620, nest 1.254 -> 1.255, webpack 3.834 -> 3.845, zod 4.475 -> 4.489, xstate 2.880 ->
 2.893, drizzle 13.280 -> 13.278, vue 7.692 -> 7.713, effect 9.719 -> 9.749, vscode 31.926 -> 32.081 (+0.5%): ~+0.3%
 for ~25 checks tsc does too, not bisected per fix.
 
 ## Triage (2026-10-05, ninth window's todo entry 10, four sub-agents)
 Suite 13097 -> **13099** (0 lost). Corpora unchanged (effect 7, the rest 0), scenarios 214 / 0 failing. Instructions
-(callgrind, `./instrcount.sh`), 6f877de4 -> end: tsc 4.606 -> 4.607, type-fest 3.106 -> 3.110, valibot 3.861 -> 3.868,
+(callgrind, `scripts/instrcount.sh`), 6f877de4 -> end: tsc 4.606 -> 4.607, type-fest 3.106 -> 3.110, valibot 3.861 -> 3.868,
 react 1.699 -> **1.618 (-4.8%**: deferred JSX checks change variance measurement order, perf_leads.md; -0.24% from
 guarding ty_string_index_only_key), nest 1.254 flat, webpack 3.829 -> 3.834, zod 4.467 -> 4.475, xstate 2.873 ->
 2.880, drizzle 13.291 -> 13.280, vue 7.674 -> 7.692 (+0.23%, lazy contextual name literals' second lookup), effect
@@ -327,7 +327,7 @@ types.d.ts): ~60 s -> 1.5 s.
 ## Types/symbols tail fan-out (2026-10-05, todo entry 9, four sub-agents)
 Suite 12933 -> **13097** (0 lost); types component failing 488 -> 345, symbols 178 -> 131, errors 150 -> 147. Corpora
 unchanged (effect 7, the rest 0). Sweep 8575 -> 8579 / 8595 match (ember v3 x4, immediate, macrotask fixed; 0 crash,
-0 timeout). Instructions (callgrind, `./instrcount.sh`), d33bf103 -> end: tsc 4.615 -> 4.606, type-fest 3.109 ->
+0 timeout). Instructions (callgrind, `scripts/instrcount.sh`), d33bf103 -> end: tsc 4.615 -> 4.606, type-fest 3.109 ->
 3.106, valibot 3.867 -> 3.861, react 1.685 -> 1.699 (+0.83%: a29ce0b2 named union after subtype reduction +0.3%,
 84b12f2b generic string-key index access +0.35%, 8619aacb and 5b06210a +0.2% each, possibly layout). Rechecked by reverting each on the next triage: 84b12f2b was real (+0.4%: ty_string_index_only_key called for
 every deferred `T[K]`, 238k calls; an inline guard took back 0.24%), a29ce0b2 only 0.06%, nest 1.253 ->
@@ -339,14 +339,14 @@ parameters by name, recomputed per type reference) was bisected and fixed by cac
 Sweep 8072 / 8208 -> **8575 / 8595** match (versioned dependencies added 387 packages: `test/sweep_links.py`, run by
 `sweep.py`), 0 crash, 0 timeout, nothing slower than tsc (carbon-components-react 25 s -> ~2 s, d3-geo 1.8 -> 0.07 s).
 Effect 31 -> 7, xstate 2 -> 0, the rest 0. Suite 12932 -> 12933, 0 lost. Every corpus identical at `--checkers` 1, 2,
-3, 4, 7 (`./checkerdiff.py`). Instructions (callgrind, `./instrcount.sh`), 223f3d18 -> f2870a70: tsc 4.642 -> 4.616,
+3, 4, 7 (`scripts/checkerdiff.py`). Instructions (callgrind, `scripts/instrcount.sh`), 223f3d18 -> f2870a70: tsc 4.642 -> 4.616,
 type-fest 3.239 -> 3.109, valibot 5.072 -> **3.866 (-23.8%)**, react 1.667 -> 1.685 (+1.1%: de52c3b4 +0.65%, the
 intersection relation skipping the source's own property; 2b57049a +0.36%, a conditional's object-vs-primitives
 shortcut; both tsc behaviour), nest 1.249 -> 1.254, webpack 3.872 -> 3.834, zod 4.488 -> 4.475, xstate 2.900 ->
 2.869, drizzle 13.441 -> 13.256, vue 8.206 -> 7.671, effect 11.056 -> **9.740 (-11.9%)**, vscode 33.305 -> 32.042.
 
 ## Inference invokeOnce for conditional targets (2026-10-05, todo entry 8, effect agent)
-Callgrind K1 (`./instrcount.sh`), 0979dc97 -> the fix: effect 11.520 -> 9.728 G (-15.6%), type-fest 3.232 -> 3.111
+Callgrind K1 (`scripts/instrcount.sh`), 0979dc97 -> the fix: effect 11.520 -> 9.728 G (-15.6%), type-fest 3.232 -> 3.111
 (-3.7%), vue 7.828 -> 7.665 (-2.1%), valibot 3.884 -> 3.870, zod 4.488 -> 4.476, xstate 2.856 -> 2.864 (+0.3%),
 the rest within 0.1%. The +4.3% effect regression of 3ec34a9e (inference restarting from a non-object apparent type)
 was `any`/unions walked into recursive conditional aliases (Schema's `ElementsType<Tail, [...]>`: 112k infer_from
@@ -360,14 +360,14 @@ within +0.24% everywhere (nest; webpack +0.18%, vscode +0.12%); the numbers are 
 `--time` resolve names, best of 3, default threads (4 = 2 cores x SMT), load ~3: vscode 593 -> 283 ms (the walk 510
 -> ~200; declare 40 and link 28 stay serial), tsc `src/compiler` 77 -> 39, webpack 72 -> 63 (JavaScript walks
 serially). Walls, best of 3: vscode 2.47 -> 2.23 s, tsc 0.338 -> 0.307 s, `-b` tsc `src` 1.10 -> 1.08 s (its programs
-already ran on --build-jobs threads). Callgrind K1 (`./instrcount.sh`) 1507bfb8 -> end: tsc 4.632 -> 4.642 G
+already ran on --build-jobs threads). Callgrind K1 (`scripts/instrcount.sh`) 1507bfb8 -> end: tsc 4.632 -> 4.642 G
 (+0.22%), type-fest 3.236 -> 3.239 (+0.09%), valibot 5.067 -> 5.072 (+0.10%), react 1.664 -> 1.667 (+0.18%), nest
 1.241 -> 1.249 (+0.64%), webpack 3.865 -> 3.872 (+0.18%), zod 4.479 -> 4.488 (+0.20%), xstate 2.894 -> 2.900
 (+0.21%), drizzle 13.368 -> 13.441 (+0.55%), vue 8.200 -> 8.206 (+0.07%), effect 11.038 -> 11.056 (+0.16%), vscode
 33.241 -> 33.305 G (+0.19%): the shard bookkeeping (a shard per file, a TLS check per binder allocation), spread thin.
 
 ## Errors-tail fan-out (2026-10-05, tenth window's todo entry 6, f93bac3f)
-Callgrind K1 (`./instrcount.sh`), session start dfde5fbc -> end: tsc 4.602 -> 4.632 G (+0.65%), type-fest 3.226 ->
+Callgrind K1 (`scripts/instrcount.sh`), session start dfde5fbc -> end: tsc 4.602 -> 4.632 G (+0.65%), type-fest 3.226 ->
 3.236 (+0.31%), valibot 5.043 -> 5.067 (+0.48%), react 1.648 -> 1.664 (+0.97%), nest 1.230 -> 1.241 (+0.89%), webpack
 3.820 -> 3.865 (+1.18%), zod 4.447 -> 4.479 (+0.72%), xstate 2.880 -> 2.894 (+0.49%), drizzle 13.343 -> 13.368
 (+0.19%), vue 8.107 -> 8.200 (+1.15%, of which +0.45% is 65fe6860: tsc's inference from annotated parameters of nested
@@ -395,7 +395,7 @@ by mid-session instrcount + bisect and fixed by their authors (47f83d6a, 955b5c2
 ## AST and binder memory (2026-10-05, plan 43, ninth window's todo entry 4)
 Four Opus sub-agents (declaration structs, expressions/statements, binder, then the checker's tables) plus exact-size
 parser lists. Suite 12759 -> 12759, 0 lost; every corpus byte-identical at K=1 and K=4 (threadcheck identical,
-checkerdiff as before: effect's 7 known), `./scenarios.py` 215/3 as before, the sweep unchanged (7969 match, 1 crash)
+checkerdiff as before: effect's 7 known), `scripts/scenarios.py` 215/3 as before, the sweep unchanged (7969 match, 1 crash)
 and 456 -> 376 s of tttt time. **Peak RSS** (MB, best of 3, `/usr/bin/time`; K1 = `--checkers 1 --threads 1` vs tsgo
 `--singleThreaded`, K4 = tttt's default vs multi-threaded tsgo; tsgo from the 10-05 bench below):
 | corpus | tttt K1 start -> end | tsgo 1 thread | tttt K4 start -> end | tsgo |
@@ -411,15 +411,15 @@ and 456 -> 376 s of tttt time. **Peak RSS** (MB, best of 3, `/usr/bin/time`; K1 
 | drizzle | 830 -> 657 | 1073 | 1242 -> 1026 | 1881 |
 | vue | 573 -> 416 | 670 | 643 -> 474 | 866 |
 | effect | 1058 -> 736 | - | 1167 -> 831 | - |
-Callgrind (`./instrcount.sh`) c6572d83 -> end: tsc 4.736 -> 4.695, type-fest 3.227 -> 3.219, valibot 5.002 -> 4.983,
+Callgrind (`scripts/instrcount.sh`) c6572d83 -> end: tsc 4.736 -> 4.695, type-fest 3.227 -> 3.219, valibot 5.002 -> 4.983,
 react 1.685 -> 1.639, nest 1.274 -> 1.231, webpack 3.899 -> 3.846, zod 4.478 -> 4.421, xstate 2.879 -> 2.851, drizzle
 13.330 -> 13.288, vue 8.120 -> 8.058, effect 11.064 -> 10.988 G. The exact-size lists alone cost +0.7% on nest (+0.2%
 webpack); the smaller nodes paid it back (fewer bytes moved). nest's live malloc heap after name resolution 172 ->
-88 MB, all-zero words 66% -> 45% (`./memtrack.sh`). Biggest single wins: `InterfaceMember` 584 -> 176 bytes,
+88 MB, all-zero words 66% -> 45% (`scripts/memtrack.sh`). Biggest single wins: `InterfaceMember` 584 -> 176 bytes,
 `FunctionImpl` 744 -> 296, `Expr` 144 -> 88, `Scope` 296 -> 136, `PropertyExpr` 400 -> 216, intern entries 24 -> 16
 (drizzle -30 MB), a `Ty` allocated by its kind's variant (type-fest -39 MB).
 
-## Breadth sweep (2026-10-05, plan 44 stage 1; `./sweep.py`)
+## Breadth sweep (2026-10-05, plan 44 stage 1; `scripts/sweep.py`)
 DefinitelyTyped ac3977d8, 8208 packages (8665 minus the generated gapi.client.*), 6968 clean under tsc 5.8. tttt
 matches tsc's (file, line, code) set exactly on **7969**; spurious only 123, missing only 105, both 10, **crash 1**
 (react-relay, SIGSEGV), timeout 0. 114 s wall at -j4; tttt 456 s summed single-threaded vs tsc 5.8 5314 s (one warm
@@ -429,7 +429,7 @@ duplicate-declaration errors (every file of a linked @types package loaded twice
 
 ## Effect corpus pinned (2026-10-05, ninth window's todo entry 2)
 Effect 6300 -> 63 (plan 19 "effect"); suite 12758 -> 12759 (+1 component more), 0 lost; the other corpora unchanged
-(webpack 6, xstate 8, drizzle 6, rest 0). Callgrind (`./instrcount.sh`, now with effect) c21bcd49 -> end: tsc 4.736 ->
+(webpack 6, xstate 8, drizzle 6, rest 0). Callgrind (`scripts/instrcount.sh`, now with effect) c21bcd49 -> end: tsc 4.736 ->
 4.736, type-fest 3.226 -> 3.227, valibot 5.003 -> 5.002, react 1.685 -> 1.685, nest 1.273 -> 1.274, webpack 3.898 ->
 3.898, zod 4.477 -> 4.478, **xstate 2.772 -> 2.879 (+3.9%)**, drizzle 13.332 -> 13.328, vue 8.120 -> 8.120, effect
 11.405 -> 11.064 G. xstate's cost is 7ea58a30 (a literal with a generic function in it is skipped in a candidate's
@@ -439,7 +439,7 @@ like-for-like number).
 
 ## Plan 42 (2026-10-05): stages 1-2 (todo entry 9), stages 3-4 (next window's entry 1)
 Suite 12728 -> 12731 (stages 1-2) -> 12758 (3-4), 0 lost. Every corpus byte-identical throughout (webpack 6, drizzle
-6, xstate 8, zod-root 58 lines, rest 0; tsc-src/typescript-eslint 0). Callgrind (`./instrcount.sh`) f0fba718 -> stage
+6, xstate 8, zod-root 58 lines, rest 0; tsc-src/typescript-eslint 0). Callgrind (`scripts/instrcount.sh`) f0fba718 -> stage
 2 -> b8d36c64 -> stage 4: tsc 4.699 -> 4.727 -> 4.734 -> 4.736, type-fest 3.214 -> 3.225 -> 3.227 -> 3.226, valibot
 4.991 -> 5.008 -> 4.995 -> 5.003, react 1.687 -> 1.681 -> 1.684 -> 1.685, nest 1.275 -> 1.269 -> 1.273 -> 1.273,
 webpack 3.909 -> 3.890 -> 3.896 -> 3.898, zod 4.471 -> 4.463 -> 4.467 -> 4.477, xstate 2.747 -> 2.768 -> 2.768 ->
@@ -460,7 +460,7 @@ per checker instead of round robin (drizzle K=4 -25%), `Prop` 80 -> 56 bytes, `S
 ## Todo entry 6: plan 40 stage 3, plan 41 stage 3 (2026-10-04)
 Suite 12712 -> 12728, 0 lost (TS2742 +14, tsc-src fixes +2). Corpora: **tsc-src 12 -> 0**, new corpus
 **typescript-eslint** (`-b` at its root solution, 38 projects) 66 -> **0**; webpack 6, xstate 8, drizzle 6, zod-root
-55, rest 0. `./scenarios.py` 199 -> **208** pass / 10 fail / 83 skipped. typescript-eslint: tttt -b 3.03 s / 650-705
+55, rest 0. `scripts/scenarios.py` 199 -> **208** pass / 10 fail / 83 skipped. typescript-eslint: tttt -b 3.03 s / 650-705
 MB (machine loaded by other agents; `--build-jobs 1` 3.4-3.8 s / 400 MB); **tsc 5.8 -b 20.7-22.9 s / 1.5-2.3 GB** (from
 scratch on a /tmp copy); tsgo 7.0.2 -b fails it (TS 7 differences). tsc-src `-b` 1.34 s. Threads 1/4 byte-identical
 (`threadcheck.sh` now runs the `-b` corpora with `-b`). Callgrind c0da8315 -> end: tsc 4.712 -> 4.712, type-fest 3.222
@@ -473,7 +473,7 @@ tsc; unions that reduced before stay wider; perf_leads).
 
 ## Plan 41 stage 2: `-b` perf (2026-10-04, todo entry 4)
 Suite 12377 -> 12377, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, tsc-src 12, rest 0);
-`./scenarios.py` 199 / 19 / 83 skipped. **`-b thirdparty/tsc/src`** (best of 3, quiet machine): tttt **1.32 s / 785
+`scripts/scenarios.py` 199 / 19 / 83 skipped. **`-b thirdparty/tsc/src`** (best of 3, quiet machine): tttt **1.32 s / 785
 MB** (was 3.65 s / 755 MB; `--build-jobs 1` 1.74 s / 540 MB, 4 jobs 1.19 s / 1.2 GB); tsgo 7.0.2 -b 2.34 s /
 577-876 MB, `--singleThreaded` 3.45 s / 584 MB; tsc 5.8 -b 13.6 s / 710-760 MB (both emit on a /tmp copy: a referenced
 project can't be noEmit; `bench.sh` now has this section). `--time` summed over the 13 programs at J=1: resolve names
@@ -485,7 +485,7 @@ project can't be noEmit; `bench.sh` now has this section). `--time` summed over 
 Suite 12376 -> 12377, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, rest 0). New corpus
 **tsc-src** (`-b thirdparty/tsc/src`, 13 projects): 12 diagnostics (plan 41's 11 checker bugs + one 4-checker-only),
 3.65 s wall, 755 MB peak, threads 1/4 byte-identical; tsc -b on a /tmp copy was 15.6 s (plan 41's measurement, not
-rerun). `--time` summed over the programs: resolve names 1.48 s, load+parse 0.78 s, typecheck 0.55 s. `./scenarios.py`
+rerun). `--time` summed over the programs: resolve names 1.48 s, load+parse 0.78 s, typecheck 0.55 s. `scripts/scenarios.py`
 199 pass / 19 fail / 82 skipped. Callgrind, 06d921ad -> end: tsc 4.705 -> 4.704, type-fest 3.223 -> 3.217, valibot
 5.054 -> 5.043, react 1.628 -> 1.631, nest 1.263 -> 1.266, webpack 3.889 -> 3.891, zod 4.448 -> 4.446, xstate 2.779
 -> 2.780, drizzle 13.307 -> 13.308, vue 7.891 -> 7.895 G (flat; a first version globbed each config twice, webpack
@@ -512,45 +512,45 @@ Suite 12354 -> 12366, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6
 4.692 -> 4.693, type-fest 3.215 -> 3.214, valibot 5.034 -> 5.041 (+0.14%: the walk), react 1.629 -> 1.628, nest 1.256
 -> 1.256, webpack 3.889 -> 3.889, zod 4.447 -> 4.446, xstate 2.779 -> 2.778, drizzle 13.161 -> 13.174 (+0.1%, the walk
 doesn't run there: code layout), vue 7.894 -> 7.891 G. The accessibility half (stage 2) is what nest and drizzle will
-pay for; `./bench.sh` against tsc is still not like-for-like on the declaration corpora until then.
+pay for; `scripts/bench.sh` against tsc is still not like-for-like on the declaration corpora until then.
 
 ## Triage (2026-09-29, todo entry 10)
 Suite 12318 -> 12354, 0 lost. Corpora unchanged (webpack 6, xstate 12, drizzle 6, zod-root 55, rest 0). Instructions
-(`./instrcount.sh`) 651a3281 -> end: tsc 4.519 -> 4.532, type-fest 3.178 -> 3.183, valibot 4.904 -> 4.911, react 1.527
+(`scripts/instrcount.sh`) 651a3281 -> end: tsc 4.519 -> 4.532, type-fest 3.178 -> 3.183, valibot 4.904 -> 4.911, react 1.527
 -> 1.530, nest 1.148 -> 1.150, webpack 3.714 -> 3.727, zod 4.288 -> 4.299, xstate 2.651 -> 2.673 (+0.8%: tuple `this`
 members +0.26%, reverse mapped properties keeping their declarations +0.3%), drizzle 12.936 -> 12.930, vue 7.684 ->
 7.677 G.
 
 ## Plan 38 stage 3: resolve once (2026-09-29, todo entry 8)
 Suite 12316 -> 12318, 0 lost. Corpora: xstate 14 -> 12 (emit.test 49/52), others unchanged (webpack 6, drizzle 6,
-zod-root byte-identical, rest 0). Instructions (`./instrcount.sh`) 5062bc88 -> end: tsc 4.621 -> 4.520 (-2.2%),
+zod-root byte-identical, rest 0). Instructions (`scripts/instrcount.sh`) 5062bc88 -> end: tsc 4.621 -> 4.520 (-2.2%),
 type-fest 3.180 -> 3.176, valibot 5.419 -> 4.911 (-9.4%), react 1.552 -> 1.528, nest 1.150 -> 1.147, webpack 3.722 ->
 3.714, zod 4.441 -> 4.292 (-3.4%), xstate 2.799 -> 2.652 (-5.3%), drizzle 13.461 -> 12.929 (-4.0%), vue 8.007 -> 7.689
 G (-4.0%).
 
 ## Suite checker bugs 7 (2026-09-29, todo entry 7)
 Suite 12058 -> 12316 (errors 12750 -> 13078, symbols 13005 -> 13020, types 12775 -> 12819), 0 lost; ~190 fixes by
-four Opus sub-agents. `./errtextdiff.py` bucket (right codes at the right positions, other text) 236 -> 45. Corpora:
-xstate 18 -> 14, others unchanged (webpack 6, drizzle 6, zod-root 55, rest 0). Instructions (`./instrcount.sh`)
+four Opus sub-agents. `scripts/errtextdiff.py` bucket (right codes at the right positions, other text) 236 -> 45. Corpora:
+xstate 18 -> 14, others unchanged (webpack 6, drizzle 6, zod-root 55, rest 0). Instructions (`scripts/instrcount.sh`)
 7004dca6 -> end: tsc 4.599 -> 4.620, type-fest 3.170 -> 3.181, valibot 5.398 -> 5.423, react 1.563 -> 1.553, nest
 1.148 -> 1.150, webpack 3.725 -> 3.723, zod 4.428 -> 4.440, xstate 2.780 -> 2.799, drizzle 15.696 -> 13.485 (-14%:
 relations skip a class's `prototype` as a target property, tsc's propertiesRelatedTo), vue 7.948 -> 8.009 G (+0.8%,
 spread thinly over many commits; +0.2% is intersection discriminants explaining arguments, see triage).
 
 ## Plan-sized hacks (2026-09-29, todo entry 5)
-Instructions (`./instrcount.sh`) 1984c4f4 -> end: tsc 4.633 -> 4.598, type-fest 3.175 -> 3.168, valibot 5.403 -> 5.414,
+Instructions (`scripts/instrcount.sh`) 1984c4f4 -> end: tsc 4.633 -> 4.598, type-fest 3.175 -> 3.168, valibot 5.403 -> 5.414,
 react 1.563 -> 1.561, nest 1.148 -> 1.144, webpack 3.765 -> 3.720, zod 4.422 -> 4.427, xstate 2.784 -> 2.778, drizzle
 15.755 -> 15.717, vue 7.994 -> 7.948 G. Corpora: xstate 19 -> 18, drizzle 8 -> 6 (skipTrue), webpack 6, others 0.
 
 ## Plan 39 stages 1-2 (2026-09-29)
-Instructions (`./instrcount.sh`) 45c4b056 -> stage 1 (8504fc44) -> stage 2: tsc 4.607 -> 4.612 -> 4.631, type-fest
+Instructions (`scripts/instrcount.sh`) 45c4b056 -> stage 1 (8504fc44) -> stage 2: tsc 4.607 -> 4.612 -> 4.631, type-fest
 3.168 -> 3.170 -> 3.171, valibot 5.389 -> 5.394 -> 5.403, react 1.557 -> 1.558 -> 1.561, nest 1.143 -> 1.144 -> 1.145,
 webpack 3.741 -> 3.746 -> 3.758, zod 4.401 -> 4.406 -> 4.421, xstate 2.776 -> 2.778 -> 2.783, drizzle 15.709 -> 15.732
 -> 15.727, vue 7.964 -> 7.967 -> 7.993 G (stage 2 +0.0..0.4%: annotated bindings and pattern names push on every
 read, `ty_binding_type` has no memo; skipping the stack scan when no binding is on it saved nothing).
 
 ## Perf session (2026-09-29, todo entry 2, d9bea66d)
-Instructions (`./instrcount.sh`: `perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q
+Instructions (`scripts/instrcount.sh`: `perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q
 --keep-going`), f0dd10eb (the 09-28 perf session) / session start (454a2333) / end:
 | corpus | f0dd10eb | start | end |
 |---|---|---|---|
@@ -584,10 +584,10 @@ two deep-nesting ports, hacks.md "Relations", already cut down from +29%), nest 
 4.044, zod 4.651 -> 4.669, xstate 2.981 -> 2.958 (-0.8%), vue 9.640 -> 9.630, **drizzle 264.8 -> 16.3 G** (TS2589
 runaways fixed: object literal instances). Walls under load (agents running, not bench.sh): drizzle tttt 1.4 s / 1.8
 GB (at K=4), tsc 5.8 12.7 s (quiet), tsgo 7.2 s / 1.9 GB; vue tttt 0.7 s / 680 MB, tsc 11.6 s, tsgo 5.2 s / 865 MB (tsgo
-through bench.sh's tsconfig.tsgo.json, 16 / 8 TS 7 errors of its own). The quiet `./bench.sh` run is owed.
+through bench.sh's tsconfig.tsgo.json, 16 / 8 TS 7 errors of its own). The quiet `scripts/bench.sh` run is owed.
 
 ## Triage (2026-09-29, todo entry 10, 82c3cac9)
-Suite **12040 / 13540** (errors 12730, symbols 13003, types 12768; 0 lost), JS 898 / 1049, `./failstats.py` errors
+Suite **12040 / 13540** (errors 12730, symbols 13003, types 12768; 0 lost), JS 898 / 1049, `scripts/failstats.py` errors
 component fails in 810 tests, checker log_error output empty. Corpora unchanged (webpack 6, xstate 19, the rest 0).
 Instructions (same setup as below) types session end -> triage end: tsc 5.181 -> 5.212 G (+0.6%), type-fest 3.467,
 valibot 5.615, react 2.089, nest 1.259 (+1.0%), webpack 4.025 (+1.0%), zod 4.635 (+0.8%), xstate 2.970 (+0.6%), after
@@ -595,13 +595,13 @@ gating the escaped-name cooking and the JS TS2565 check (they had cost +1.9% on 
 
 ## Suite (2026-10-04, types/symbols fan-out, todo entry 5)
 **12712 / 13540** full pass (errors 13143, symbols 13323, types 12980; session start 12377, 0 components lost). Types
-component fails in 560 tests (703 at the start), symbols in 217 (506). `./displaydiff.py --fine --first-tsv`, tests
+component fails in 560 tests (703 at the start), symbols in 217 (506). `scripts/displaydiff.py --fine --first-tsv`, tests
 whose errors pass: types 422 (67 JS; 508 at the start), by first differing line: line-missing 56, shape-other 48,
 underlines 38, signature-differs 35, tsc-any 32, we-any 26, union-differs 21, typeof-other-name 19; symbols 174 (56 JS;
 402), by first line: name 58, line-missing 32, decls-missing 30, decls-differ 18, other 11, decls-extra 11.
-`./failstats.py`: errors component fails in 397. `./jsstats.py`: **931** of 1049 JS tests pass. Corpora unchanged
+`scripts/failstats.py`: errors component fails in 397. `scripts/jsstats.py`: **931** of 1049 JS tests pass. Corpora unchanged
 (webpack 6, xstate 12 -> **8** (fan-a: an outer mapper no longer overwrites a generic signature's own type
-parameters), drizzle 6, zod-root 55, tsc-src 12, rest 0); threadcheck identical; `./scenarios.py` 199/19/83.
+parameters), drizzle 6, zod-root 55, tsc-src 12, rest 0); threadcheck identical; `scripts/scenarios.py` 199/19/83.
 Callgrind 7aca543c -> end: tsc 4.705 -> 4.712, type-fest 3.216 -> 3.222, valibot 5.042 -> 5.051, react 1.631 ->
 1.634, nest 1.266 -> 1.265, webpack 3.892 -> 3.913 (+0.5%), zod 4.449 -> 4.466 (+0.4%), xstate 2.782 -> 2.788, drizzle
 13.311 -> 13.257, vue 7.895 -> 7.840 G (a bigint commit cost react +0.85% until literal_type() lost its inlined
@@ -609,9 +609,9 @@ intern_slot(): bisected and fixed in the session).
 
 ## Corpora (2026-09-29, types session, bc2752f2)
 Diagnostics (all are 0 under tsc 5.8): tsc `src/compiler` **0**, valibot **0**, react **0**, nest **0**, type-fest
-**0**, zod **0**, webpack **6**, **xstate 19** (plan 19 "xstate"; `./threadcheck.sh` counts 23 there, also at the
+**0**, zod **0**, webpack **6**, **xstate 19** (plan 19 "xstate"; `scripts/threadcheck.sh` counts 23 there, also at the
 session start), all unchanged this session. **zod-root** reports 58. Output identical at 1 and 4 threads
-(`./threadcheck.sh`). Instructions (`perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q
+(`scripts/threadcheck.sh`). Instructions (`perf stat -e instructions:u`, `TTTT_NO_REEXEC=1 --checkers 1 --threads 1 -q
 --keep-going`), parser session end (e8f2e22c) -> types session end: tsc 5.132 -> 5.181 G (+1.0%), type-fest 3.446 ->
 3.455, valibot 5.554 -> 5.608 (+1.0%), react 2.074 -> 2.087, nest 1.234 -> 1.247 (+1.1%), webpack 3.962 -> 3.985,
 zod 4.544 -> 4.598 (+1.2%), xstate 2.933 -> 2.951. Not profiled: 150 small commits, no single suspect. Still owed to
@@ -636,7 +636,7 @@ Peak RSS at the defaults (4 checkers, 4 threads), before (Perf table below) -> a
 
 ## Parallel loading (2026-09-28, plan 36 stage 1, todo entry 6)
 **Measured on a loaded machine** (load average 8-10 all session from other users' jobs on the 4 hardware threads):
-walls are unreliable, `./bench.sh` wasn't run; redo on a quiet machine. Load phase (`--time` libs + files, ms), best of
+walls are unreliable, `scripts/bench.sh` wasn't run; redo on a quiet machine. Load phase (`--time` libs + files, ms), best of
 7, runs interleaved with the previous binary, 4 threads: tsc 189 -> 100, nest 195 -> 125, webpack 243 -> 153, react
 134 -> 78, zod 138 -> 86, xstate 106 -> 58, valibot 102 -> 66, type-fest 29 -> 22. Whole-run walls of the same runs
 (noise dominated by the check phase): tsc 887 -> 891, nest 330 -> 282, webpack 372 -> 307, react 419 -> 364, zod 817 ->

@@ -383,7 +383,7 @@ src` finds the code-side markers; every significant one has an entry here.
   Real fix: optional property types that carry their undefined.
 - relate.c sits at GCC's `inline-unit-growth` limit (permanent: a build constraint): code added anywhere can cost a
   hot inlining elsewhere (`find_prop` into `props_related_impl`). Reporting helpers are `[[gnu::cold]]`, rare paths
-  `[[gnu::noinline, gnu::cold]]`; check `-fopt-info-inline-missed` when an innocent change shows in `./instrcount.sh`.
+  `[[gnu::noinline, gnu::cold]]`; check `-fopt-info-inline-missed` when an innocent change shows in `scripts/instrcount.sh`.
 - **Constraint functions are approximations** (real fix: tsc's getConstraintOfType and getBaseConstraintOfType as two
   cached, circularity-aware functions):
   - `base_constraint()` cuts off at depth 8 instead of tsc's circularity stack, so its memo (KEY_BASE_CONSTRAINT) only

@@ -93,7 +93,7 @@ repo (may be gone: `git clone --depth 1 --branch v5.8.2`).
 4. The cheap buckets: the reworded/new messages (diff diagnosticMessages.json between v5.8.2 and the commit, update
    every changed text tttt emits), `import("./x")` module specifiers under bundler resolution, omitted array elements
    in the harness's `.types` printing.
-5. **Saved results and "lost"**: `./fasttest.sh -s` regenerates `test/baseline_results.ts` under the new names. Before
+5. **Saved results and "lost"**: `scripts/fasttest.sh -s` regenerates `test/baseline_results.ts` under the new names. Before
    that, write the list of tests that passed under 5.8 (old saved results) and fail now, split into (a) test file and
    all three baselines byte-identical between v5.8.2 and the commit (a true regression: must be 0 or explained in the
    commit) and (b) re-baselined: `agents/plans/48_lost.txt`, the queue for stages 3-4 (delete it when drained). The
@@ -146,8 +146,8 @@ old id order behind it only if it's free, otherwise leave that test failing and 
 tests (`selfReferencingSpreadInLoop`, `yieldExpressionInControlFlow`: `ty_array()` relied on the auto array having
 the lowest id among arrays). `getNamedMembers` ordering for every member kind (class static side's `prototype` after
 own members: the prototype's attempt broke a declared `static prototype`, 7 tests; mapped type properties,
-namespaces). Validation: union-order buckets in displaydiff/expecttypes gone, `./threadcheck.sh` and
-`./checkerdiff.py` identical (and remove checkerdiff's "inside quotes / union order" allowance if output is
+namespaces). Validation: union-order buckets in displaydiff/expecttypes gone, `scripts/threadcheck.sh` and
+`scripts/checkerdiff.py` identical (and remove checkerdiff's "inside quotes / union order" allowance if output is
 byte-identical now).
 **Session B done 2026-10-07** (deletion part): the check walk no longer makes types early (references, type literals,
 tuples, unions, alias bodies, function-type parameters, type parameters, class value types, field annotations without
@@ -192,7 +192,7 @@ are pinned for 5.x, so a rising count can be a fix: compare with tsc before reve
 is empty; ~25 rebaselined tests left, all in triage.md. Leftovers (triage.md, "Plan 48 stage 3 agent ..."): mostly
 pre-5.8 failures, parser recovery (plan 27), elaboration order, TS2589/TS2590/TS2563 limits, enum member canonical
 names, T_1 renames from mapped-type key cloning, libReplacement in the harness.
-Four Opus sub-agents per session in worktrees, disjoint test lists cut from `48_lost.txt` and `./failstats.py`
+Four Opus sub-agents per session in worktrees, disjoint test lists cut from `48_lost.txt` and `scripts/failstats.py`
 buckets, 0 true losses enforced at merge (vision.md's fan-out recipe). Candidate buckets from the prototype: other
 printing differences; strict-by-default exposure (TS2454, TS2564, TS7006, TS2322: these are latent checker bugs the
 5.8 suite's non-strict default hid, so expect real fixes, not 6.0 specifics); new 6.0 checks (TS2880, TS2883,
@@ -222,7 +222,7 @@ nest, drizzle, effect's v3 branch; Effect 4 is TypeScript 7 only), each 0 under 
 config or a minimal overlay (`"baseUrl": null` and other deprecated options unset, valibot minus 7 tests 6.0 changed,
 vscode minus 3 tests tsc 6 and tsgo 7 disagree on). tsgo 7.0.2 isn't clean on webpack (JS), vue, drizzle, effect:
 recorded in ensure-corpora.sh. Flagflip regenerated. The drain (entry 8) has triage.md's "Corpora re-pin" sections.
-After re-pinning, regenerate flagflip (`./flagflip.py --tsc --force`, see stage 4 for the deprecated flags). Every corpus at a current upstream commit, checked by the commit's tsc and by tsgo 7.0.2 (both must be clean: effect
+After re-pinning, regenerate flagflip (`scripts/flagflip.py --tsc --force`, see stage 4 for the deprecated flags). Every corpus at a current upstream commit, checked by the commit's tsc and by tsgo 7.0.2 (both must be clean: effect
 uses 7.0, most others 6.0 now). Upstreams still on 5.x (zod, drizzle, type-fest, valibot, excalidraw) re-pin at
 their current commit with an overlay adding `"ignoreDeprecations": "6.0"` where tsc 6 reports only deprecations
 (their CI hasn't moved; record that in ensure-corpora.sh). Drop the 5.9 lib shims (grep corpora-locks and the
@@ -235,7 +235,7 @@ above (tsc 6 finds 30 that tttt doesn't: strict-by-default `@ts-expect-error`/TS
 flat, tttt 3.0-13.9x faster than tsgo 7.0.2 with less memory on every corpus, vscode's and type-fest's work volume
 (types, relation caches) within ~15% of tsc's, the ordering comparator ~1-3% of the tsc corpus profile,
 strict-by-default inert on the corpora (every config sets `strict`). The brief, for reference:
-New instruction-count baselines on the re-pinned corpora (`./instrcount.sh`), `./bench.sh` against tsgo 7.0.2 on
+New instruction-count baselines on the re-pinned corpora (`scripts/instrcount.sh`), `scripts/bench.sh` against tsgo 7.0.2 on
 every corpus (now that no config is rejected for baseUrl), the stable-ordering comparator's cost in the profile,
 anything strict-by-default made slower (strict checks run on corpora that didn't set strict before).
 
@@ -250,4 +250,4 @@ A second suite fan-out (after insights), `import defer` / node20 if stage 3 didn
 - Every corpus re-pinned and at 0 against the commit's tsc (and tsgo 7.0.2 clean on the same configs).
 - Sweep and `$ExpectType` at or above the last 5.8 match rates against the new caches; flagflip and mutation
   re-measured.
-- `./bench.sh` against tsgo 7.0.2 on every corpus.
+- `scripts/bench.sh` against tsgo 7.0.2 on every corpus.

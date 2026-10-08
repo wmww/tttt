@@ -56,10 +56,10 @@ Output must not depend on the thread count, so the order is the same at `--threa
   discarded ctx are made before the pool starts.
 
 ## Stages
-Each stage: `./fasttest.sh --summary` 0 lost; `baseline_tests --threads 4 --dump` byte-identical to `--threads 1`;
-`./threadcheck.sh` and `./checkerdiff.py` identical; every corpus unchanged; a TSan build
+Each stage: `scripts/fasttest.sh --summary` 0 lost; `baseline_tests --threads 4 --dump` byte-identical to `--threads 1`;
+`scripts/threadcheck.sh` and `scripts/checkerdiff.py` identical; every corpus unchanged; a TSan build
 (`meson setup /tmp/tsan --buildtype release -Db_sanitize=thread -Dc_args=-g`, `TTTT_NO_REEXEC=1`) clean on the
-corpora at 4 threads; `./instrcount.sh` (single-threaded must not regress beyond ~0.5%); `--time` resolve numbers.
+corpora at 4 threads; `scripts/instrcount.sh` (single-threaded must not regress beyond ~0.5%); `--time` resolve numbers.
 
 ### Stage 1: the TypeScript walk on threads: **done** (2026-10-05, todo entry 7)
 As designed above, plus what the audit missed and TSan/the suite found:
@@ -77,7 +77,7 @@ As designed above, plus what the audit missed and TSan/the suite found:
 - Deferred reports into the walk's two scratch `ErrorCtx`s (dropped ones) go to the shard's discarded context.
 Validation: suite 12932 unchanged; `baseline_tests --dump` byte-identical old vs new and, with
 `TTTT_PARALLEL_RESOLVE=1 --threads 4`, vs one thread; every corpus's `--all-errors` byte-identical to the old binary,
-`./threadcheck.sh` identical; TSan 0 warnings on every corpus but drizzle and effect (not run: slow) and on the whole
+`scripts/threadcheck.sh` identical; TSan 0 warnings on every corpus but drizzle and effect (not run: slow) and on the whole
 suite forced parallel; sweep 8072 match, 0 crash (unchanged). Numbers (best of 3, `--time` resolve names, 4 threads,
 2 cores x SMT): **vscode 593 -> 283 ms** (walk 510 -> ~200; wall 2.47 -> 2.23 s), tsc 77 -> 39, webpack 72 -> 63
 (its JS is serial). Single-threaded callgrind: tsc +0.2%, nest +0.6%, react +0.2%, vscode +0.2% (shard bookkeeping;
@@ -108,12 +108,12 @@ symbol is a function's local (`is_local && function`, which the file's walk made
   members) where the serial walk did after them. Nothing in the suite or the corpora read them (`hacks.md`).
 Validation: suite 13232 unchanged; `baseline_tests --dump` byte-identical old binary vs new and new
 `TTTT_PARALLEL_RESOLVE=1 --threads 4` vs one thread; `--all-errors` of webpack (695 lines, unchecked JS), react,
-vscode, tsc-src byte-identical to the old binary; every corpus 0 diagnostics (effect its 7); `./threadcheck.sh`
+vscode, tsc-src byte-identical to the old binary; every corpus 0 diagnostics (effect its 7); `scripts/threadcheck.sh`
 identical on webpack, react, vue, excalidraw; TSan 0 warnings on webpack at 4 threads and on the 1051 JS suite tests
 forced parallel; sweep 8588 match / 6 spurious / 1 missing / 0 crash. Numbers: webpack `--time` resolve names, best of
 5, default threads (4 on 2 cores x SMT, the machine shared): **63.3 -> 36.1 ms** (the walk ~22 ms on 4 threads, the
 replay and merge ~3 ms; walking JS in parallel without any deferral measured 34.4, so deferral costs ~2 ms), wall
-0.30 -> 0.27-0.28 s. Callgrind K1 (`./instrcount.sh`) HEAD -> end: tsc 4.628 -> 4.629 G, type-fest 3.104 -> 3.104,
+0.30 -> 0.27-0.28 s. Callgrind K1 (`scripts/instrcount.sh`) HEAD -> end: tsc 4.628 -> 4.629 G, type-fest 3.104 -> 3.104,
 valibot 4.221 -> 4.219, react 1.518 -> 1.520, nest 1.260 -> 1.263 (+0.24%), webpack 3.866 -> 3.873 (+0.18%), zod 4.565
 -> 4.569, xstate 2.961 -> 2.962, drizzle 10.783 -> 10.783, vue 7.956 -> 7.958, effect 9.812 -> 9.808, vscode 32.447 ->
 32.485 (+0.12%), excalidraw 5.040 -> 5.041, tanstack-router 4.627 -> 4.627.

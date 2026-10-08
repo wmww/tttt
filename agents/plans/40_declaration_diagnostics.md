@@ -19,7 +19,7 @@ other error (watch.ts emitFilesAndReportErrors), so the corpora that enable decl
 too and must stay at 0: **tsc's `src/compiler` (declaration + composite + isolatedDeclarations: 193k lines where every
 exported thing must be recognised as syntactically typeable)**, valibot (declaration + isolatedDeclarations),
 nestjs-boilerplate and drizzle (declaration; drizzle's inferred types are huge). Vue's corpus turns them off. So on
-four of ten corpora tsc does work tttt skips today (`./bench.sh` passes `--declaration false` to tsc for the compiler
+four of ten corpora tsc does work tttt skips today (`scripts/bench.sh` passes `--declaration false` to tsc for the compiler
 corpus only): the perf numbers there flatter tttt until this lands. The suite has ~1490 test files with
 `declaration`/`composite`/`isolatedDeclarations`; the ones that pass now are the false-positive oracle.
 
@@ -68,7 +68,7 @@ corpus only): the perf numbers there flatter tttt until this lands. The suite ha
 ## Design
 - **One new file, `src/ty/declaration_diagnostics.c`** (header in `ty/`): `check_declaration_diagnostics(checker,
   file)`, run by the checker that checks the file, after it (so the parallel checkers stay deterministic: same file,
-  same checker, `./threadcheck.sh` / `./checkerdiff.py` must stay byte-identical). It walks the file's AST the way
+  same checker, `scripts/threadcheck.sh` / `scripts/checkerdiff.py` must stay byte-identical). It walks the file's AST the way
   transformDeclarations does (visible statements, emitted members, where types are written or missing) and dispatches
   to the three checks below. Gate: getEmitDeclarations and the file is emitted (see above). The CLI: with `noEmit` and
   any earlier error, don't run it at all (tsc doesn't report them then; it also saves the time); the test harness
@@ -86,7 +86,7 @@ corpus only): the perf numbers there flatter tttt until this lands. The suite ha
   printer's alias/typeof/structure decisions would drift from it; don't. Declaration mode may need the builder flags
   the types baseline doesn't use (NoTruncation: MAX_DISPLAY_DEPTH and `...` must not hide symbols; deep types only
   lose diagnostics, not add them). If a printer decision differs from tsc's, that's a types-baseline bug too
-  (`./displaydiff.py`).
+  (`scripts/displaydiff.py`).
 - **Written types**: walk the type nodes of visible declarations and check each entity name with isEntityNameVisible;
   typeof queries and heritage clauses included. This part is syntactic plus name resolution: low risk, do it first
   in stage 2.
@@ -137,10 +137,10 @@ realpaths, the node16/nodenext mode swap retry), TS2742 when it contains `/node_
 so do it when plan 41's specifier needs are known. If both need specifier generation, build it once.
 
 ## Validation (every stage)
-`./fasttest.sh --summary`: the stage's tests pass, 0 lost (the declaration tests that pass now are the false-positive
-oracle). `./realworld.py` for every pinned corpus: unchanged, tsc/valibot/nest/drizzle at their current counts with no
-TS4xxx/TS9xxx/TS2742/TS2527 among them. `./threadcheck.sh` and `./checkerdiff.py` byte-identical. `./instrcount.sh` on
-the four declaration corpora before and after, in `agents/measurements.md`; when stage 2 lands, `./bench.sh` compares
+`scripts/fasttest.sh --summary`: the stage's tests pass, 0 lost (the declaration tests that pass now are the false-positive
+oracle). `scripts/realworld.py` for every pinned corpus: unchanged, tsc/valibot/nest/drizzle at their current counts with no
+TS4xxx/TS9xxx/TS2742/TS2527 among them. `scripts/threadcheck.sh` and `scripts/checkerdiff.py` byte-identical. `scripts/instrcount.sh` on
+the four declaration corpora before and after, in `agents/measurements.md`; when stage 2 lands, `scripts/bench.sh` compares
 like with like on nest/drizzle/valibot for the first time (say so in measurements.md).
 
 ## Risks

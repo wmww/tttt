@@ -128,7 +128,7 @@ fails types in both configurations.
   fine). Possibly a constraint computed while an alias or the type parameter's constraint is in flight and memoized.
 
 - **`awaitedTypeStrictNull` overflows the stack** in `instantiate_mapped_over_list` under the debug build + valgrind
-  (8MB main stack; the release build passes; reproduced 2026-10-05 with `./test.sh -f awaitedTypeStrictNull`). Deep
+  (8MB main stack; the release build passes; reproduced 2026-10-05 with `scripts/test.sh -f awaitedTypeStrictNull`). Deep
   but maybe not infinite recursion; worth checking whether the recursion is bounded.
 
 - **No general property list for intersections** (tsc's getPropertiesOfType): `ty_has_exact_optional_unassignable`

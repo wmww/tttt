@@ -115,7 +115,7 @@ returnOnlyType part (the bugs/type_core.md entry it also deleted is gone already
 ## Order and validation
 A, then B (they touch the same `intern_composite`: A ORs flags there, B adds the origin key; whichever lands second
 rebases), then C + D (independent, one session could take both if C's stage 1 is quick), E, F as filler. Every stage:
-`./fasttest.sh --summary` gains at least the listed tests with 0 lost, every corpus unchanged (E: zod-root +1),
-`./threadcheck.sh` + `./checkerdiff.py` clean, `perf stat -e instructions:u ./release/tttt --checkers 1 --threads 1`
+`scripts/fasttest.sh --summary` gains at least the listed tests with 0 lost, every corpus unchanged (E: zod-root +1),
+`scripts/threadcheck.sh` + `scripts/checkerdiff.py` clean, `perf stat -e instructions:u ./release/tttt --checkers 1 --threads 1`
 on zod/valibot (and nest for C, tsc/webpack for D) within the column above. The patches are against 3337e91: expect
 small conflicts later, apply with `git apply -3` or by hand. Delete `37_prototypes/` entries as they land.

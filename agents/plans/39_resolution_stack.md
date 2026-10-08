@@ -10,8 +10,8 @@ Worth it, and cheap. tsc detects circularity with one stack (`pushTypeResolution
 The stack sits *beside* the memos: each keeps its layout and its in-flight state (which still decides what a re-entry
 returns), and additionally pushes `(kind, key)` on `Checker.resolving`. A re-entry calls `ty_resolving_cycle()`, which
 marks the entry it finds and everything above it; each marked entry finds out at its pop and becomes circular.
-Cost: +0.06..0.22% instructions (`./instrcount.sh`, push/pop are inline); per-checker, so `--checkers 1` vs 4 and the
-thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
+Cost: +0.06..0.22% instructions (`scripts/instrcount.sh`, push/pop are inline); per-checker, so `--checkers 1` vs 4 and the
+thread count are unaffected (`scripts/threadcheck.sh`, `scripts/checkerdiff.py` identical).
 
 ## Stage 1 (done, 2026-09-29): suite 12047 -> 12052, 0 lost, every corpus unchanged (zod-root byte-identical)
 - `Checker.resolving` / `ty_resolving_push/pop/cycle` (ty.h, checker.c). Pushers: declaration LazyTypes
@@ -97,7 +97,7 @@ thread count are unaffected (`./threadcheck.sh`, `./checkerdiff.py` identical).
    corpora (none of the corpora show these shapes).
 
 ## Validation (every stage)
-The tests above; `./fasttest.sh --summary` 0 lost; `./realworld.py` on every corpus unchanged (tsc, type-fest,
+The tests above; `scripts/fasttest.sh --summary` 0 lost; `scripts/realworld.py` on every corpus unchanged (tsc, type-fest,
 valibot, react, nest, zod, vue 0; webpack 6; xstate 19; drizzle 8) **and zod-root byte-identical to the previous build**
 (`tttt -q --keep-going -p thirdparty/corpora/zod | sort`, diffed: that is where stage 1's regression showed and the
-pinned corpora didn't); `./threadcheck.sh`, `./checkerdiff.py`; `./instrcount.sh` within ~0.3%.
+pinned corpora didn't); `scripts/threadcheck.sh`, `scripts/checkerdiff.py`; `scripts/instrcount.sh` within ~0.3%.

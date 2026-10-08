@@ -11,8 +11,8 @@ own `src/compiler` (193k lines) typechecks end to end in 0.7 s with ~1750 spurio
 Internal documentation: [documentation.md](documentation.md). Standard library: [cleat](https://codeberg.org/sphi/cleat).
 
 Dependencies: a C23 compiler (GCC 13+), meson, ninja, valgrind (debug scripts), python3, node 22 + npm (the test
-scripts clone and build TypeScript 5.8.2 into `thirdparty/tsc`, `thirdparty/ensure-corpora.sh` fetches the realworld
-corpora), and optionally TypeScript 7 (tsgo) on PATH as `tsc` for `./bench.sh`.
+scripts clone and build TypeScript commit 4d4f005c, 6.0.3 plus stable type ordering, into `thirdparty/tsc`, `thirdparty/ensure-corpora.sh` fetches the realworld
+corpora), and optionally TypeScript 7 (tsgo) on PATH as `tsc` for `scripts/bench.sh`.
 
 To compile and run:
 ```bash
@@ -23,14 +23,14 @@ release/tttt path/to/source.ts        # or: release/tttt -p path/to/project (tsc
 
 Scripts useful for development (all rebuild first; `CLAUDE.md` has the full list):
 ```bash
-./run.sh path/to/source.ts            # Build and run in Valgrind
-./fasttest.sh --summary               # Release build, whole tsc test suite, what changed vs test/baseline_results.ts
-./fasttest.sh -s                      # Save the results as the new baseline
-./test.sh -f castingTuple -d          # One test under Valgrind, with the diff against tsc's baselines
-./test.sh -f castingTuple --sym --typ # Only the symbols and types diffs; -f takes a whole-name regex
-./filetest.sh foo/bar.ts -d           # Compare tttt and tsc on any file (FAST=1 for the release build)
-./failstats.py                        # Why tests fail, in aggregate
-./realworld.py                        # tttt on tsc's own compiler sources, diagnostics grouped by code
-./bench.sh                            # Wall time and memory against tsc and tsgo
-./diffapp.sh [testName]               # Web app to compare results with tsc
+scripts/run.sh path/to/source.ts            # Build and run in Valgrind
+scripts/fasttest.sh --summary               # Release build, whole tsc test suite, what changed vs test/baseline_results.ts
+scripts/fasttest.sh -s                      # Save the results as the new baseline
+scripts/test.sh -f castingTuple -d          # One test under Valgrind, with the diff against tsc's baselines
+scripts/test.sh -f castingTuple --sym --typ # Only the symbols and types diffs; -f takes a whole-name regex
+scripts/filetest.sh foo/bar.ts -d           # Compare tttt and tsc on any file (FAST=1 for the release build)
+scripts/failstats.py                        # Why tests fail, in aggregate
+scripts/realworld.py                        # tttt on tsc's own compiler sources, diagnostics grouped by code
+scripts/bench.sh                            # Wall time and memory against tsc and tsgo
+scripts/diffapp.sh [testName]               # Web app to compare results with tsc
 ```

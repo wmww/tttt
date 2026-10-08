@@ -3,18 +3,18 @@ Planned 2026-09-29 (todo entry 9 of the seventh window). Three stages, stage 1 i
 
 ## Status (2026-10-04)
 **All three stages done** (todo entry 6 of the eighth window): tsc-src and typescript-eslint at 0 under `-b`;
-`./scenarios.py` 213 pass / 5 fail (TS6377 out of scope, TS2613/TS1192, TS1479: triage.md; the CLI's phase gating,
+`scripts/scenarios.py` 213 pass / 5 fail (TS6377 out of scope, TS2613/TS1192, TS1479: triage.md; the CLI's phase gating,
 config syntax errors and a missing `extends` were fixed 2026-10-05: `diagnostic_kind()` in main.c,
 `program_set_config_file()`, `tsconfig_load_diagnosed()`; leftovers in hacks.md "Config syntax"). What remains is perf (parallel name resolution of referenced sources, the
 biggest phase of `-b` on both corpora). The stage notes below are as they were written.
 
 **Stage 1 done** in one session (todo entry 3 of the eighth window): `src/project.{h,c}`, the redirects, `-p`/`-b`,
 `scenarios.py`, corpus `tsc-src`. documentation.md "Project references" describes what was built. Numbers:
-- `./realworld.py --corpus tsc-src` (`-b thirdparty/tsc/src`): 12 diagnostics, the 11 checker bugs below plus
+- `scripts/realworld.py --corpus tsc-src` (`-b thirdparty/tsc/src`): 12 diagnostics, the 11 checker bugs below plus
   services.ts:2434 (TS2345 `boolean | UserPreferences`), which only shows with 4 checkers: `preferences ?? emptyOptions`
   subtype-reduces `{}` against the weak `UserPreferences` by type id order (tsc's strictSubtype tie break; triage).
   3.65 s wall, 755 MB peak (tsc -b 15.6 s); threads 1 and 4 byte-identical.
-- `./scenarios.py`: 199 pass, 19 fail, 82 skipped with reasons. The 19: TS1005 in tsconfig (tttt's JSON reader
+- `scripts/scenarios.py`: 199 pass, 19 fail, 82 skipped with reasons. The 19: TS1005 in tsconfig (tttt's JSON reader
   doesn't report syntax errors), TS4023/TS4094 (plan 40: a declaration walk gap, and none at all with `--noCheck`),
   TS6377 (tsbuildinfo, out of scope), extends of a missing file (tsc: TS5083 and goes on; tttt fails the config), the
   CLI's phase gating, TS2613/TS1192 and an ESM-to-ESM synthetic default under bundler, TS1479 on a JSX runtime import,
@@ -46,7 +46,7 @@ a cross-program file cache (parsing is no longer the cost), parallel name resolu
 typecheck 441, load+parse 316, free 217, libs 74 ms.
 
 **Stage 3, typescript-eslint done** (2026-10-04, one session; the 11 tsc-src checker bugs are another agent's): corpus
-**`typescript-eslint`** pinned (v8.57.2, 1bf86c9f, the last commit before TypeScript 6; `./realworld.py --corpus
+**`typescript-eslint`** pinned (v8.57.2, 1bf86c9f, the last commit before TypeScript 6; `scripts/realworld.py --corpus
 typescript-eslint` runs `tttt -b` at its root solution: 38 composite projects, nested per-package solutions,
 `${configDir}`, NodeNext, workspace packages through node_modules symlinks into `dist/*.d.ts`). ensure-corpora.sh's LINK
 field takes `workspace:GLOB`; the overlay has the two generated files (types' ast-spec.ts, the website's
@@ -166,21 +166,21 @@ or conflict. Sharing parsed/bound files between the per-project programs is the 
   today, but with `-b` each program must be freed (or its arenas reused) before the next: measure the teardown (the
   AST free was a tenth of a run) and fix it if it shows.
 - **Test harness**: stays single-program; a `tsconfig.json` unit with `references` gets the redirects (tsc's
-  compilerRunner doesn't pass project references, so nothing in the suite changes: check `./fasttest.sh` shows 0
+  compilerRunner doesn't pass project references, so nothing in the suite changes: check `scripts/fasttest.sh` shows 0
   lost).
 
 ## Stages
 ### Stage 1: semantics (1-2 sessions)
 tsconfig `references`, `project.c`, the redirects in the loader and resolver, per-file resolution options, unchecked
 reference sources, `-p` and `-b`, the config diagnostics the scenarios need. Pin TypeScript's `src/tsconfig.json` as
-corpus **`tsc-src`** (`./realworld.py --corpus tsc-src` runs `tttt -b thirdparty/tsc/src`; the checkout already has
+corpus **`tsc-src`** (`scripts/realworld.py --corpus tsc-src` runs `tttt -b thirdparty/tsc/src`; the checkout already has
 `scripts/failed-tests.cjs`; don't run tsc -b in place, it writes `built/local`). Target: the 66 mechanism errors gone,
 the 11 checker bugs left (listed above), every project checked once. Scenario tests (see Validation) wired up.
 ### Stage 2: perf of `-b` (1 session, measured first) — done, see Status
 Each program re-reads, parses and binds every referenced file it reaches: compiler's 56 ms parse + 101 ms resolve
 names (4 threads, `--time`) is paid in 11 of the 13 programs; checking only a project's own files is already the big
 cut (compiler's 290 ms check happens once). Measure `-b src` against `tsc -b` (15.6 s) and tsgo `-b` if available in
-`./bench.sh` (tsc -b needs a /tmp copy: it writes outputs). Then pick by the profile, cheapest first:
+`scripts/bench.sh` (tsc -b needs a /tmp copy: it writes outputs). Then pick by the profile, cheapest first:
 1. Parallel name resolution (vision's step 8, useful everywhere) shrinks the repeated resolve.
 2. Independent projects in parallel: with source redirects no program needs another's result, so `-b` may run
    programs concurrently within the thread budget (tsgo -b builds independent projects in parallel). Memory is the
@@ -215,11 +215,11 @@ template (xstate's `templates/react-ts`) is a cheap smoke test of the common cas
   oracle); the ones with codes cover TS6306 (69 occurrences), TS6307, TS6053, TS6202, TS6304, TS6059, TS2307 across
   projects, plus TS4094/TS2322/TS2551/TS2396 in referencing projects' own code. Record the pass count in
   `agents/measurements.md`.
-- `./realworld.py --corpus tsc-src`: stage 1 leaves exactly the 11 checker bugs, stage 3 reaches 0. Every other corpus
+- `scripts/realworld.py --corpus tsc-src`: stage 1 leaves exactly the 11 checker bugs, stage 3 reaches 0. Every other corpus
   unchanged (none of them has references in the config it's checked through).
-- `./fasttest.sh --summary`: 0 lost. `./threadcheck.sh tsc-src` (if it takes corpora names; else the options) and
-  `./checkerdiff.py` byte-identical: the order of projects and their diagnostics must not depend on threads.
-- Perf: `./instrcount.sh` unchanged for the existing corpora (the single-project path must not get slower);
+- `scripts/fasttest.sh --summary`: 0 lost. `scripts/threadcheck.sh tsc-src` (if it takes corpora names; else the options) and
+  `scripts/checkerdiff.py` byte-identical: the order of projects and their diagnostics must not depend on threads.
+- Perf: `scripts/instrcount.sh` unchanged for the existing corpora (the single-project path must not get slower);
   `-b src` time and peak RSS in `measurements.md`, next to `tsc -b`.
 
 ## Risks

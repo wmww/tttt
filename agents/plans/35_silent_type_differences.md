@@ -3,7 +3,7 @@ Written by the insights of 2026-09-27 (third of the day). Short on purpose: stag
 this plan's "Queue" with what it finds.
 
 ## Why
-The types component is the one that fails most (2797 tests, against 2372 for errors). `./displaydiff.py` names the
+The types component is the one that fails most (2797 tests, against 2372 for errors). `scripts/displaydiff.py` names the
 display mechanisms (union order, `typeof`, `import()`...), and plan 21 worked those. What remains in the tests that
 pass errors is mostly **not display**: tttt computes a different type and no diagnostic shows it. Fixed by one kind
 (TS + JS): `other` 394 + 35, `we-any` 127 + 39 (tttt says `any` where tsc has a type), `tsc-any` 101 + 14 (tsc says
@@ -26,7 +26,7 @@ worked once a tool names its mechanisms).
 - Record the numbers in `measurements.md` (replace the displaydiff line).
 
 ## Stage 1 (done, 2026-09-27): suite 9427 -> 9666
-`./displaydiff.py --fine` names each catch-all line `<shape>/<annotated node>` (`displaykinds.fine_kind`: shape =
+`scripts/displaydiff.py --fine` names each catch-all line `<shape>/<annotated node>` (`displaykinds.fine_kind`: shape =
 we-any, tsc-any, union-fewer/more-members, type-args-differ, signature-differs, object-differs, nested-we-any...;
 node = declaration, identifier, call, literal, property-access...), and ranks the tests by the kind of their **first**
 differing line (a wrong root type spreads over lines of other kinds, so "fixed alone" undercounts). `--shape` drops
@@ -53,11 +53,11 @@ The queue below from stage 1, worked top to bottom, and what the buckets showed 
   **class field initializers are contextually typed by their annotation** (a real bug: spurious TS7006 on
   `f: (a: number) => number = (a) => a`), missing destructured properties with defaults are undefined.
 - we-any/declaration (first differing line) 95 -> 50; line-missing 73 -> 72 (the heritage/null/catch fixes moved tests
-  into other buckets as much as out); `./displaydiff.py` fixed-by-one: other 383 + 54, we-any 65 + 41.
+  into other buckets as much as out); `scripts/displaydiff.py` fixed-by-one: other 383 + 54, we-any 65 + 41.
 
 ## Stage 3 (done, 2026-09-29, todo entry 9): suite 11472 -> 11962
 Four Opus sub-agents, each owning the failing tests whose **first** differing line was in one family
-(`./displaydiff.py --fine --first-tsv`): A any/error recovery, B inference/signatures, C objects/unions/literals, D
+(`scripts/displaydiff.py --fine --first-tsv`): A any/error recovery, B inference/signatures, C objects/unions/literals, D
 display/type writer. ~150 commits, 0 lost, corpora unchanged, instructions +0.3-1.2%. Tests with errors passing and
 types failing 968 -> 467. Mostly tsc error-recovery rules (errorType for unresolved names, element accesses, bad
 spreads), binder-style member symbol merging (`ClassItem.symbol_first`, duplicate interface properties), index
@@ -313,5 +313,5 @@ are gone. `..t`/`.S.` = the component failing (types, symbols). Roughly by size 
     namespace whatever its value (no expando type for a defineProperty value).
 
 ## Validation
-`./displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
+`scripts/displaydiff.py` fixed-by-one counts for the worked buckets go down, suite up, no corpus regressions. A fix to an
 inference rule that shows up here should be checked on zod and valibot (inference-heavy) for instruction counts too.

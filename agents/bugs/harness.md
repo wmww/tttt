@@ -29,7 +29,7 @@
   typescript.internal.d.ts and tsserverlibrary, which only a tsc build has.
 - Module resolution leftovers: resolution-mode attributes (~20 tests), `tryLoadInputFileForPath` (outDir mapping back
   to the input `.ts`, 8), Windows rooted paths, tsconfig `references`/`watchOptions`.
-- The stdlib checks clean: a cheap regression check for lib-related changes (`./bench.sh`'s `lib_closure` lists the
+- The stdlib checks clean: a cheap regression check for lib-related changes (`scripts/bench.sh`'s `lib_closure` lists the
   84 files to pass as roots; `--no-lib esnext.full.d.ts` alone ignores `/// <reference lib>`).
 - Dead-ish code: `display.c`'s syntax printer is only needed for `--print-ast` and written type names
   (`brief_d()` has no callers but is a print-debugging helper: keep). The old type world's double pointers are in
@@ -39,10 +39,10 @@
 - `baseline_test_traversal.c` `port_item_add_alias`: the `import type`/`export type` declared-type rule checks the
   resolved symbol for class/interface/enum/alias only; tsc's getDeclaredTypeOfSymbol also takes type parameters and
   enum members. Unverified whether any test reaches that.
-- `./tscbaseline.sh` writes no `.symbols` for a file with an interface member named `[-1]` (tsc's symbol writer
-  throws), so `./filetest.sh` reports "did not run" without saying why.
+- `scripts/tscbaseline.sh` writes no `.symbols` for a file with an interface member named `[-1]` (tsc's symbol writer
+  throws), so `scripts/filetest.sh` reports "did not run" without saying why.
 - A corpus's output can depend on the checker count (4 by default): a file can look fine alone and fail in the corpus.
-  Reproduce with `--checkers 1` and the suspect file first in `files`; `./checkerdiff.py` flags it.
+  Reproduce with `--checkers 1` and the suspect file first in `files`; `scripts/checkerdiff.py` flags it.
 - tsconfig.c reads package.json leniently for `extends`; `json_parse_strict()` matches parseJsonText's syntax errors
   by hand (escapes, odd numbers unchecked). Not investigated.
 - The suite's programs share a cached library program (program_copy_globals_from); since 2026-10-07 a Program's

@@ -83,8 +83,8 @@ only in widening.**
    Parameter`), with the parent the parameter's (possibly contextual) type. `ty_destructured_narrowed_type()`
    handles `parameter`; check a contextually typed arrow `({ a, b }) => ...` against a union contextual type and a
    default-valued parameter, under nosnc (unwidened null) and eopt.
-4. Display: the reference types are now unwidened where tsc's are; run `./displaydiff.py` after a full
-   `./failstats.py` and look for `we-any`/widening buckets on destructured references, and `./expecttypes.py`.
+4. Display: the reference types are now unwidened where tsc's are; run `scripts/displaydiff.py` after a full
+   `scripts/failstats.py` and look for `we-any`/widening buckets on destructured references, and `scripts/expecttypes.py`.
 5. Known remainder (not this mechanism, triage): vscode/nonia resultCodeEditorView.ts TS2339 x5 (`m.left` of a
    generator `join` with TLeft inferred unknown; tsc reports at every use after `if (x === active)`, tttt only at
    the last), and stateToProgressAdapter.test.ts:1956 (the last vscode diagnostic).
@@ -92,7 +92,7 @@ only in widening.**
 ## Risks
 
 - Performance: the destructured re-read runs a flow query per reference to a const element of a union parent; it
-  already did before when narrowing applied. Watch `./instrcount.sh` on vscode/effect (many destructured consts in
+  already did before when narrowing applied. Watch `scripts/instrcount.sh` on vscode/effect (many destructured consts in
   loops now that for-of consts qualify).
 - Circularity: re-reading the parent type from a reference inside the initializer's own closures (for-of bodies
   referencing the iterated expression) can re-enter; `ty_binding_type()` has a resolving stack. The vscode

@@ -1,7 +1,7 @@
 # Plan 52: the source sweep (real TypeScript repositories at breadth)
 The source-code analogue of plan 44: tttt on 174 real TypeScript repositories, every `tsconfig.json` in each checked
 with `-p`, against tsc 4d4f005c's cached diagnostics, mismatches ranked by root cause across repositories. Planned on
-2026-10-08 from a 22-repository prototype; **stage 1 done the same day** (`./sourcesweep.py`, CLAUDE.md has the usage).
+2026-10-08 from a 22-repository prototype; **stage 1 done the same day** (`scripts/sourcesweep.py`, CLAUDE.md has the usage).
 
 ## Why
 The pinned corpora are at 0 and go quiet once drained, and DefinitelyTyped covers declarations plus small tests. Every
@@ -30,7 +30,7 @@ were found while building the prototype (fixed in the same commit):
 - **tsc oracle** `test/sourcesweep/tsc.jsonl.gz` (3.3 MB): `test/sweep_tsc.js`, projects handed to 3-4 node processes
   one at a time; **~58 min** wall for all (tsc's CPU total 10088 s). `--tsc-new` adds the projects of new repos.
 - **tttt**: ~5 min wall on 4 cores (1112 s single-threaded in total), `--sample 4` (a fixed quarter, ~1 min) is
-  `./oracles.py`'s.
+  `scripts/oracles.py`'s.
 - **Fixed on the way** (each a mechanism, 0 lost everywhere): 10 crashes (an instantiation expression's target read as
   an anonymous type: lexical, discord.js, folo, karakeep); module augmentation merged through an export specifier
   (vitest's `Assertion`/`File`, ~40 repos) and the TS2440 that fix first caused; parser: `a++ as T`, `asserts v` before
@@ -80,7 +80,7 @@ with stage 3's flag flips, or one agent alongside other work.
 
 ### Stage 3 (later): the missing direction and `-b`
 - Flag flips (plan 46 cells) on the projects that match: `--strict` where the tsconfig isn't, `noUncheckedIndexedAccess`,
-  `exactOptionalPropertyTypes`, cached per flag like `./sweep.py --flags`.
+  `exactOptionalPropertyTypes`, cached per flag like `scripts/sweep.py --flags`.
 - Solution configs (`files: []` + `references`) checked with `-b`: tsc's oracle then needs `tsc -b` to emit into a
   scratch copy of the tree (hardlinked copy, outputs are new files). Only if stage 2 shows `-p` on each leaf misses
   what `-b` would find.
@@ -89,6 +89,6 @@ with stage 3's flag flips, or one agent alongside other work.
 ## Risks
 - Disk: ~40 GB used, ~54 GB free after stage 1. Keep checkouts under `thirdparty/sources`, not /tmp.
 - Upstream drift doesn't matter (pinned commits), but a dependency registry outage does: the first fetch needs the
-  network; after that only the checkouts are read. Don't re-fetch in `./sourcesweep.py`'s normal run.
+  network; after that only the checkouts are read. Don't re-fetch in `scripts/sourcesweep.py`'s normal run.
 - Noise from broken projects (shadcn-ui's root alone: 74k TS17004, jsx not set): fine for comparison, but a project
   with > ~5000 tsc diagnostics costs time and can dominate a key's diag count; rank by repos/projects, not diags.

@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""The source sweep (plan 52): tttt on ~150 real TypeScript repositories (test/sourcesweep/repos.txt, fetched and
+installed by thirdparty/ensure-sources.sh), every tsconfig.json in each checked with `-p`, compared with what tsc
+reports for it. tsc's verdicts are cached in test/sourcesweep/tsc.jsonl.gz (regenerate with --tsc, ~1 hour on 4
+cores, after changing the manifest). Most projects aren't clean under tsc (test configs without the runner's types,
+unbuilt references, fixtures): the oracle is tsc's output, not cleanliness. A crash, hang or memory runaway is listed
+first, then the diagnostics tttt gets wrong ranked by root cause across *repositories*, then projects: code and message
+shape (quoted parts elided), and for a diagnostic in node_modules the dependency it is in.
+
+  scripts/sourcesweep.py                  # every project (a few minutes on 4 cores)
+  scripts/sourcesweep.py -f '^hono/'      # the projects (REPO/path/to/dir) matching a regex
+  scripts/sourcesweep.py -k '+TS2322'     # list the projects and diagnostics whose root-cause key contains this
+  scripts/sourcesweep.py -k=-TS6305       # (a missing-diagnostic key starts with '-': attach it with '=')
+  scripts/sourcesweep.py --names spurious # the projects of a verdict (crash, timeout, spurious, missing, both, match)
+  scripts/sourcesweep.py --last ...       # reuse the last run's results (-k, --names) without running tttt again
+  scripts/sourcesweep.py --sample 4       # a fixed quarter of the projects (by a hash of the name: scripts/oracles.py's)
+  scripts/sourcesweep.py --tsc [-f ...]   # regenerate tsc's cached verdicts (all projects, or -f's)
+  scripts/sourcesweep.py --tsc-new        # tsc on the projects without a cached verdict (repos added to the manifest)
+"""
+import argparse, collections, concurrent.futures, gzip, json, os, re, signal, subprocess, sys, threading, time, zlib
+
+import sweep
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SOURCES = os.path.join(ROOT, 'thirdparty/sources')
+MANIFEST = os.path.join(ROOT, 'test/sourcesweep/repos.txt')
+ORACLE = os.path.join(ROOT, 'test/sourcesweep/tsc.jsonl.gz')
+LAST = f'/tmp/sourcesweep-{os.path.basename(ROOT)}.json'
+# Directories that hold no project of the repo's own: outputs, dependencies, tooling state
+SKIP_DIRS = {'node_modules', 'dist', 'build'}
+
+
+def list_repos():
+    return [line.split()[0] for line in open(MANIFEST) if line.strip() and not line.startswith('#')]
+
+
+def list_projects(filter=None):
+    """Every directory with a tsconfig.json in every installed repo, as REPO/path (outside node_modules, outputs and
+    dot-directories)"""
+    projects = []
+    for repo in list_repos():
+        base = os.path.join(SOURCES, repo)
+        if not os.path.exists(os.path.join(base, '.tttt-installed')):
+            continue
+        for root, dirs, files in os.walk(base):
+            dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS and not d.startswith('.'))
+            if 'tsconfig.json' in files:
+                projects.append(os.path.relpath(root, SOURCES))
+    if filter:
+        projects = [p for p in projects if re.search(filter, p)]
+    return projects
+
+
+def run_tsc(projects, jobs):
+    """tsc on the projects (test/sweep_tsc.js), `jobs` node processes each handed the next project when it finishes
+    one: a few projects take minutes, a static share would leave the others idle"""
+    queue = sorted(projects, key=lambda p: p.split('/')[0])
+    lock = threading.Lock()
+    results = {}
+    start = time.time()
+
+    def worker():
+        p = subprocess.Popen(['node', '--max-old-space-size=8192', os.path.join(ROOT, 'test/sweep_tsc.js')], cwd=SOURCES,
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+        while True:
+            with lock:
+                if not queue:
+                    break
+                project = queue.pop(0)
+            p.stdin.write(project + '\n')
+            p.stdin.flush()
+            line = p.stdout.readline()
+            if not line:
+                # node died (out of memory): this project crashes tsc, the others go to a new process
+                with lock:
+                    results[project] = {'project': project, 'ms': 0, 'crash': 'tsc process died', 'diags': []}
+                p.wait()
+                p = subprocess.Popen(['node', '--max-old-space-size=8192', os.path.join(ROOT, 'test/sweep_tsc.js')],
+                                     cwd=SOURCES, stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
+                continue
+            r = json.loads(line)
+            with lock:
+                results[project] = r
+                if len(results) % 50 == 0:
+                    print(f'  tsc: {len(results)} / {len(projects)} projects, {time.time() - start:.0f}s', flush=True)
+        p.stdin.close()
+        p.wait()
+    threads = [threading.Thread(target=worker) for _ in range(jobs)]
+    [t.start() for t in threads]
+    [t.join() for t in threads]
+    return results
+
+
+def root_cause(project, diag, spurious):
+    """The key a mismatching diagnostic is ranked under: its code, for a spurious one its message shape, and for a
+    file in node_modules the dependency (the same declaration read wrong in 40 projects is one bug)"""
+    # (The innermost node_modules: pnpm's are node_modules/.pnpm/NAME@VERSION/node_modules/NAME)
+    parts = diag[0].split('/')
+    dep = ''
+    if 'node_modules' in parts:
+        i = len(parts) - 1 - parts[::-1].index('node_modules')
+        dep = '/'.join(parts[i:i + (3 if parts[i + 1:i + 2] and parts[i + 1].startswith('@') else 2)])
+    where = f' in {dep}' if dep else ''
+    return f'+TS{diag[2]}{where} {sweep.shape(diag[3])}' if spurious else f'-TS{diag[2]}{where}'
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument('-f', '--filter', help='regex the project (REPO/path) must match (re.search)')
+    ap.add_argument('-j', '--jobs', type=int, default=os.cpu_count())
+    ap.add_argument('-n', type=int, default=40, help='rows per table')
+    ap.add_argument('-k', '--key', help='list the diagnostics whose root-cause key contains this')
+    ap.add_argument('--names', help='list the projects with this verdict')
+    ap.add_argument('--last', action='store_true', help="reuse the last run's results")
+    ap.add_argument('--tsc', action='store_true', help="regenerate tsc's cached verdicts (all projects, or -f's)")
+    ap.add_argument('--tsc-new', action='store_true', help='tsc on the projects without a cached verdict')
+    ap.add_argument('--timeout', type=int, default=120)
+    ap.add_argument('--mem-gb', type=int, default=8)
+    ap.add_argument('--no-build', action='store_true')
+    ap.add_argument('--sample', type=int, help='only the projects whose name hashes to 0 modulo this')
+    args = ap.parse_args()
+
+    projects = list_projects(args.filter)
+    global LAST
+    if args.sample:
+        projects = [p for p in projects if zlib.crc32(p.encode()) % args.sample == 0]
+        LAST = LAST.replace('.json', f'-sample{args.sample}.json')  # (Not the full run's)
+    if args.tsc or args.tsc_new:
+        oracle = {}
+        if os.path.exists(ORACLE) and (args.filter or args.tsc_new):
+            oracle = {r['project']: r for r in map(json.loads, gzip.open(ORACLE, 'rt'))}
+        if args.tsc_new:
+            projects = [p for p in projects if p not in oracle]
+        start = time.time()
+        oracle.update(run_tsc(projects, args.jobs))
+        with gzip.open(ORACLE, 'wt') as f:
+            for p in sorted(oracle):
+                f.write(json.dumps(oracle[p], separators=(',', ':')) + '\n')
+        print(f'tsc on {len(projects)} projects in {time.time() - start:.0f}s, written to {ORACLE}')
+        return
+
+    oracle = {r['project']: r for r in map(json.loads, gzip.open(ORACLE, 'rt'))}
+    missing_oracle = [p for p in projects if p not in oracle]
+    if missing_oracle:
+        print(f'{len(missing_oracle)} projects have no tsc verdict (run --tsc): {" ".join(missing_oracle[:5])}...',
+              file=sys.stderr)
+    missing_repos = [r for r in list_repos() if not os.path.exists(os.path.join(SOURCES, r, '.tttt-installed'))]
+    if missing_repos:
+        print(f'{len(missing_repos)} repos not installed (thirdparty/ensure-sources.sh): {" ".join(missing_repos[:5])}...',
+              file=sys.stderr)
+    projects = [p for p in projects if p in oracle and 'crash' not in oracle[p]]
+
+    if args.last:
+        results = json.load(open(LAST))
+        results = [r for r in results if r['package'] in set(projects)]
+    else:
+        if not args.no_build:
+            subprocess.run(['ninja', '-C', os.path.join(ROOT, 'release'), 'tttt'], check=True, stdout=subprocess.DEVNULL)
+        start = time.time()
+        # The slowest projects first, so they don't end up alone at the end
+        order = sorted(projects, key=lambda p: -oracle[p]['ms'])
+        with concurrent.futures.ThreadPoolExecutor(args.jobs) as pool:
+            results = list(pool.map(lambda p: sweep.run_tttt(p, args.timeout, args.mem_gb, cwd=SOURCES,
+                                                                keep_going='--keep-going=options'), order))
+        results.sort(key=lambda r: r['package'])
+        elapsed = time.time() - start
+        with open(LAST, 'w') as f:
+            json.dump(results, f)
+
+    verdicts = collections.defaultdict(list)
+    causes = collections.defaultdict(lambda: {'projects': set(), 'repos': set(), 'diags': 0, 'example': None})
+    for r in results:
+        p = r['package']
+        if r['status'] != 'ok':
+            verdicts['timeout' if r['status'] == 'timeout' else 'crash'].append(p)
+            continue
+        spurious, missing = sweep.compare(p, oracle[p], r, SOURCES)
+        verdicts['both' if spurious and missing else 'spurious' if spurious else 'missing' if missing else 'match'].append(p)
+        for d, sp in [(d, True) for d in spurious] + [(d, False) for d in missing]:
+            k = root_cause(p, d, sp)
+            c = causes[k]
+            c['projects'].add(p)
+            c['repos'].add(p.split('/')[0])
+            c['diags'] += 1
+            if c['example'] is None:
+                c['example'] = f'{d[0]}:{d[1]}' + (f'  {d[3][:100]}' if sp else '')
+            if args.key and args.key in k:
+                print(f'{p}  {d[0]}:{d[1]} TS{d[2]}' + (f' {d[3][:200]}' if sp else ' (missing)'))
+    if args.key:
+        return
+    if args.names:
+        print('\n'.join(verdicts.get(args.names, [])))
+        return
+
+    total = len(results)
+    tsc_clean = sum(1 for r in results if not oracle[r['package']]['diags'])
+    repos = collections.defaultdict(list)
+    for r in results:
+        repos[r['package'].split('/')[0]].append(r['package'])
+    matching = set(verdicts['match'])
+    repos_matching = sum(1 for ps in repos.values() if all(p in matching for p in ps))
+    print(f'{len(matching)} / {total} projects match ({tsc_clean} clean under tsc), '
+          f'{repos_matching} / {len(repos)} repos fully match: ' +
+          ', '.join(f'{k} {len(verdicts[k])}' for k in ('spurious', 'missing', 'both', 'crash', 'timeout')))
+    tttt_wall = sum(r['wall'] for r in results)
+    tsc_ms = sum(oracle[r['package']]['ms'] for r in results)
+    print(f'tttt {tttt_wall:.0f}s single-threaded in total' + (f' ({elapsed:.0f}s wall)' if not args.last else '') +
+          f', tsc {tsc_ms / 1000:.0f}s (in one warm process, libs parsed once)')
+    for v in ('crash', 'timeout'):
+        for p in verdicts[v][:args.n]:
+            r = next(r for r in results if r['package'] == p)
+            print(f'\n{v.upper()} {p} ({r["status"]}):\n    ' + r['tail'].replace('\n', '\n    ')[-400:])
+    slow = sorted((r for r in results if r['wall'] > 1 and r['wall'] > oracle[r['package']]['ms'] / 1000),
+                  key=lambda r: -r['wall'])
+    if slow:
+        print('\nslower than tsc (perf bugs):\n' + '\n'.join(
+            f'  {r["package"]:50} tttt {r["wall"]:6.2f}s  tsc {oracle[r["package"]]["ms"] / 1000:6.2f}s' for r in slow[:args.n]))
+    print(f'\nroot causes by repos, then projects (+ spurious, - missing):')
+    print(f'  {"repos":>5} {"projs":>5} {"diags":>6}  key / example')
+    for k, c in sorted(causes.items(), key=lambda kc: (-len(kc[1]['repos']), -len(kc[1]['projects']), -kc[1]['diags']))[:args.n]:
+        print(f'  {len(c["repos"]):5} {len(c["projects"]):5} {c["diags"]:6}  {k[:110]}\n{"":22}{c["example"][:130]}')
+    print(f'\nresults saved for --last in {LAST}')
+
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    sys.exit(main())

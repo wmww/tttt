@@ -108,6 +108,6 @@ genericCallWithGenericSignatureArguments3, DT map-to-obj, bugs/type_core.md's la
 diagnostic order depend on when return types are inferred); revisit after stage 3 with numbers.
 
 ## Validation
-Each stage: `./oracles.py` 0 lost on every oracle against its start, `./instrcount.sh` within ~0.5% (or explained),
+Each stage: `scripts/oracles.py` 0 lost on every oracle against its start, `scripts/instrcount.sh` within ~0.5% (or explained),
 hacks.md's "Calls and inference" / "Expressions and contextual typing" entries for every deleted channel removed and
 the survivors rewritten as justified. Plan done when stages 2-3 are landed or written off here with numbers.

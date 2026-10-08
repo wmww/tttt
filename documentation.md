@@ -6,7 +6,7 @@ The repository contains three programs.
 ### tttt
 The actual typechecker, drop-in replacement for tsc. See `build/tttt --help` for usage.
 
-Can be compiled and run with `./run.sh`. This makes a debug build and runs it under Valgrind, so won't be fast.
+Can be compiled and run with `scripts/run.sh`. This makes a debug build and runs it under Valgrind, so won't be fast.
 
 What the CLI reports follows tsc's `emitFilesAndReportErrors` (`check_files()`, `diagnostic_kind()` in main.c): the
 config's parsing diagnostics (its JSON syntax, a missing `extends`) always; parse errors hide everything else; options
@@ -19,7 +19,7 @@ Completely written in C. Code lives in [src](src/). The only dependency is [clea
 ### baseline_tests
 Runs tttt against TypeScript's official test suite. See `build/baseline_tests --help` for usage.
 
-Can be compiled and run with `./test.sh` (debug build, under Valgrind, takes minutes) or `./fasttest.sh` (release build, not under Valgrind, takes seconds). Features like regex filtering and displaying diffs are supported, see `./test.sh --help` for details.
+Can be compiled and run with `scripts/test.sh` (debug build, under Valgrind, takes minutes) or `scripts/fasttest.sh` (release build, not under Valgrind, takes seconds). Features like regex filtering and displaying diffs are supported, see `scripts/test.sh --help` for details.
 
 Like tsc's harness, a multi-file test whose last file mentions `require(` or `reference path` (or that sets `@noImplicitReferences`) has that file as its only root: the others are part of the program only if something refers to them, and the root comes first in the baselines.
 
@@ -30,7 +30,7 @@ The tests target includes most `tttt` code, as well as additional C code in [src
 ### diffapp
 A graphical app that allows you to edit TypeScript code and see tsc's and tttt's test output for that code in real time. It watches for changes to tttt's source code, and recompiles and re-runs tttt on save.
 
-Generally run via `./diffapp.sh`. A test name or source file can be specified. If there's already a running instance the script will send the given test to that instance.
+Generally run via `scripts/diffapp.sh`. A test name or source file can be specified. If there's already a running instance the script will send the given test to that instance.
 
 It's a nodejs web app with an html/css/js frontend in [test/diffapp](test/diffapp/). It's intended to run locally (basically uses the browser as a GUI toolkit only). The tttt integration lives in [src/test/diffapp_runner.c](src/test/diffapp_runner.c).
 
@@ -288,8 +288,8 @@ program's threads), going on past errors (tsc 5.6+; `--stopBuildOnErrors`). No p
 `Output` buffer that the main thread prints in build order: the output doesn't depend on J. The project set's root
 files and every program's `ProjectRedirects` are made before the build threads start, which only read them. The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
 own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_files()`) go at the import that brought
-the file in (`SourceFile.included_at`). `./scenarios.py` replays the first command of tsc's own tsbuild/tsc project
-reference baselines against tttt; `./realworld.py --corpus tsc-src` is `-b` on TypeScript's `src`.
+the file in (`SourceFile.included_at`). `scripts/scenarios.py` replays the first command of tsc's own tsbuild/tsc project
+reference baselines against tttt; `scripts/realworld.py --corpus tsc-src` is `-b` on TypeScript's `src`.
 
 ### Typecheck
 The AST is now in it's finished state, so we can traverse it looking for type errors. This is the phase when the `*_evaluate_type()` functions are called (via `ty_from_node()` / `ty_expr_type()` -> `lazy_type_get()` -> `lazy_type_evaluate()` -> `*_evaluate_type()`), each returning a `Ty const*`. Before the walk, `ty_init_global_types()` creates the global types tsc's
@@ -336,7 +336,7 @@ allocates on first write (only from the parser or the single-threaded resolve wa
 null pointers rather than empty inline nodes; spans that must lie in the node's own file are packed as u32 offsets
 (`expr_outer_span()`, `FunctionSpan`, `Binding`'s type and element spans), and an `IdentifierExpr`'s name is its `Expr`'s
 `inner_span`. A `Ty` is allocated with only its kind's variant (`ty_size_of_kind()`). Parser lists are built with
-`list_push()` and finished at their exact size by `shrink_list()`. `./memtrack.sh` and `./arenasites.sh` show where the
+`list_push()` and finished at their exact size by `shrink_list()`. `scripts/memtrack.sh` and `scripts/arenasites.sh` show where the
 bytes go.
 
 ### Types
