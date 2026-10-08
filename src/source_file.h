@@ -54,6 +54,7 @@ typedef struct ModuleRef {
     SourceFile* redirected_from;
     ModuleRefFailure failure; // Without a file
     bool used_ts_extension; // The name ends in .ts/.tsx/.mts/.cts and that is the file: TS5097 without the option
+    bool external_library; // Found by a node_modules lookup (tsc's isExternalLibraryImport)
     // MODULE_REF_IS_JS in a package (tsc's packageId): what TS7016 suggests (createModuleNotFoundChain), set once the
     // program is loaded
     enum {
@@ -104,6 +105,10 @@ typedef struct SourceFile {
     // A JavaScript file of a package the program followed imports into (maxNodeModuleJsDepth): how many such files deep
     // (tsc's currentNodeModulesDepth), 0 for the project's own. Such a file is never checked (isSourceFileFromExternalLibrary)
     u32 node_modules_js_depth;
+    // First reached through a node_modules lookup (an import of a package, also one that links to a workspace's
+    // sources), or from such a file, and never from the program's own files: tsc's sourceFilesFoundSearchingNodeModules,
+    // isSourceFileFromExternalLibrary. Never emitted (no rootDir or composite file list checks)
+    bool found_searching_node_modules;
     u32 program_order; // Its index in the program's files (tsc's host.getSourceFiles()), set once loaded
     bool is_module;
     // The first statement that makes this file a module (tsc's externalModuleIndicator, as getErrorSpanForNode spans it:

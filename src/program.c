@@ -90,6 +90,7 @@ typedef struct Program {
     // program_set_references(): the referenced projects, and a resolver with each one's options for its files
     ProjectRedirects const* redirects;
     bool reference_outputs; // A referenced project's sources are read as their outputs (tsc's command line)
+    u32 node_modules_depth; // How many node_modules lookups the file being loaded was reached through (tsc's currentNodeModulesDepth)
     ModuleResolver** reference_resolvers;
     u32 reference_count;
     RealpathFn realpath; // program_set_realpath()
@@ -665,7 +666,10 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     if (cstr_size(&resolved.alternate_result)) {
         cstr_take(&ref->alternate_result, program_path_for_message(me, cstr_sv(&resolved.alternate_result)));
     }
+    ref->external_library = resolved.is_external_library;
+    if (resolved.is_external_library) my node_modules_depth++;
     program_load_resolved(me, source, ref, &resolved);
+    if (resolved.is_external_library) my node_modules_depth--;
     if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
     if (is_new && ref->file && !span_valid(ref->file->included_at)) ref->file->included_at = ref->span;
     resolved_module_drop(&resolved);
@@ -803,8 +807,10 @@ static SourceFile* program_load_type_reference(
     );
     program_learn_symlink(me, &resolved);
     program_redirect_resolved(me, &resolved);
+    if (resolved.is_external_library) my node_modules_depth++;
     SourceFile* ret = resolved.kind == RESOLVED_NONE ? nullptr :
         program_add_source_idempotent(me, cstr_sv(&resolved.path));
+    if (resolved.is_external_library) my node_modules_depth--;
     resolved_module_drop(&resolved);
     return ret;
 }
@@ -1234,6 +1240,18 @@ static LoadPool* program_pool(Program* me) {
     return my pool;
 }
 
+// A file first found searching node_modules is also one of the program's own: so is what it imports, other than
+// through node_modules (tsc's findSourceFileWorker processes its imports again at depth 0)
+static void program_found_outside_node_modules(SourceFile* file) {
+    file->found_searching_node_modules = false;
+    for (u32 i = 0; i < file->module_ref_count; i++) {
+        ModuleRef const* ref = file->module_refs[i];
+        if (ref->file && !ref->external_library && ref->file->found_searching_node_modules) {
+            program_found_outside_node_modules(ref->file);
+        }
+    }
+}
+
 static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     ASSERT_PHASE(PROGRAM_PHASE_LOADING);
 
@@ -1243,7 +1261,9 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (cached_source) {
         // A source file is already created for this path
         cstr_drop(&canonical_path);
-        return cached_source->second.get;
+        SourceFile* found = cached_source->second.get;
+        if (found->found_searching_node_modules && !my node_modules_depth) program_found_outside_node_modules(found);
+        return found;
     }
 
     // No source file is created for this path: a load pool worker may have parsed it, else parse it here
@@ -1262,6 +1282,7 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
     if (source_file->is_json) source_file->is_module = true;
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
+    source_file->found_searching_node_modules = my node_modules_depth > 0;
 
     // `/// <reference path>`s first, then the rest (`types`, `lib`): tsc's processReferencedFiles comes before
     // processTypeReferenceDirectives, and the order files load in is the program's
@@ -1941,8 +1962,7 @@ static cstr emit_output_path(Program const* me, csview path, csview out_dir, csv
 // tsc's sourceFileMayBeEmitted
 static bool emit_source_may_be_emitted(Program const* me, SourceFile const* source) {
     if (source->is_declaration || source->is_stdlib || source->from_reference) return false;
-    csview path = cstr_sv(&source->canonical_path);
-    if (csview_starts_with(path, "node_modules/") || csview_contains(path, "/node_modules/")) return false;
+    if (source->found_searching_node_modules) return false;
     if (!source->is_json) return true;
     if (cstr_size(&my options.out_file)) return true;
     if (!cstr_size(&my options.out_dir)) return false;
