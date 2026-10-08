@@ -4233,6 +4233,12 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
                 } else if (t->flags & (TYF_TEMPLATE_LITERAL | TYF_STRING_MAPPING)) {
                     Ty const* constraint = base_constraint(me, t, depth + 1);
                     constraints[i] = constraint ? constraint : t;
+                } else if ((t->kind == TY_UNION || t->kind == TY_INTERSECTION) && (t->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+                    // (`${keyof O & string}` is at least `${string}`: tsc's getBaseConstraint of each part)
+                    bool lacks;
+                    Ty const* constraint = composite_base_constraint(me, t, depth + 1, &lacks);
+                    if (lacks) ret = ty_intrinsic(me, TY_STRING);
+                    constraints[i] = constraint ? constraint : t;
                 } else {
                     constraints[i] = t;
                 }
