@@ -5875,6 +5875,14 @@ static Ternary structured_related_members(
             return is_related_to(me, st, element, ty_reference_args(me, target).data[0], report);
         }
     }
+    // A homomorphic mapped type over an array type parameter is an array once apparent, related to an array by its type
+    // arguments (tsc's structuredTypeRelatedToWorker goes on with source = getApparentType(source), whose reference case
+    // relates the element types: no line about the array, nor the array methods)
+    if (apparent != source && source->kind == TY_ANONYMOUS && apparent->kind == TY_REFERENCE &&
+        target->kind == TY_REFERENCE && apparent->reference.target == target->reference.target && !is_tuple(apparent)
+    ) {
+        return structured_related_impl(me, st, apparent, target, report, true);
+    }
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return TERNARY_FALSE;
     if (apparent->kind == TY_INTERSECTION) {
         // As a whole: its signatures and index infos are those of its members together (resolve_intersection_members())
