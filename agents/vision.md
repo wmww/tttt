@@ -45,8 +45,9 @@ types components) are the oracle, not the goal; real projects that are clean und
   its "contextual type of the last check" (KEY_CONTEXT_*). Two triage agents in a row patched it again. Plan 51
   prototypes tsc's model (ContextChecked, instantiateContextualType, the resolved-signature lookup) and deletes the
   side channels, plan-47 style: prototype the deletion first, measure what breaks (2026-10-08: the push-down turned out
-  to be tsc's instantiation evaluated eagerly, ContextChecked landed; stage 2's anchors landed the lazy reads, 0 lost). A second session audits every
-  hacks.md entry for hacks whose reason is gone (many predate plans 38, 39, 42, 48).
+  to be tsc's instantiation evaluated eagerly, ContextChecked landed; stage 2's anchors landed the lazy reads, 0 lost). A second session audited every
+  hacks.md entry (2026-10-08: 895 -> 784 lines, ~20 hacks deleted for tsc's rule, 0 lost; what remains is mostly
+  permanent perf/harness choices or needs a mechanism port named in its entry).
 - **The next oracle is real source code at breadth** (plan 52). The pinned corpora go quiet once drained, and every
   new project found tens to hundreds of bugs; the DefinitelyTyped sweep is declarations plus small tests. A sweep of
   ~100+ real TypeScript repositories (their own tsconfigs, installed dependencies, tsc 4d4f005c's diagnostics cached,

@@ -29,9 +29,10 @@ to bugs/, not into the code.
    the vscode wall is SMT-bound). Found pathologies through the source sweep instead (karakeep 55 s -> 0.6 s,
    headlessui 16 -> 1.2 s, mcp-sdk 5.5x tsc's types -> below tsc's); instructions vscode -1.8%, vue -4.5%, tsc -2.1%. Two open leads
    in bugs/perf_leads.md (docmost's function types keyed by the whole mapper, immutable-js). `TTTT_FILE_TIMES`.
-7. **Hacks audit** (fan-out, one sub-agent per hacks.md section group): for every entry, try deleting the hack
-   (many predate plans 38, 39, 42, 48); keep deletions that are 0 lost on every oracle, rewrite stale entries,
-   mark the permanent ones with their reason. Goal: hacks.md shorter, not longer.
+7. Done (2026-10-08): hacks audit, 4 sub-agents. hacks.md 895 -> 784 lines, 249 -> 209 entries (`HACK` markers 61 ->
+   51): ~20 hacks deleted for tsc's rule (several entries described code already gone), permanent ones marked with
+   their measured cost, missing checks moved to bugs/. Suite 14833 (0 lost), flagflip missing 18 -> 16, sourcesweep
+   sample 555 -> 556, every other oracle flat. Near-misses (what each deletion loses) are written into the entries.
 8. **Execution: plan 52 drain** (fan-out on the source sweep's root causes; the references-under-`-p` cascade first,
    plan 52 says why).
 9. **Execution: plan 51 stage 3** (widening where the return type is computed, NONE/FIRST_ABSENT through anchors,

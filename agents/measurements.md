@@ -9,6 +9,14 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Hacks audit (2026-10-08, twelfth window's todo entry 7, 4 sub-agents)
+hacks.md 895 -> 784 lines (249 -> 209 entries), ~20 hacks deleted: suite 14833 / 14969 (0 lost), corpora 0 but effect 3
+and zod-root 53, sweep 8594 / 8595, `$ExpectType` 68631, flagflip 18 -> 16 / 10 / 4, sourcesweep sample 4 555 -> 556
+/ 822. Instructions (callgrind, vs the perf session's): tsc 4.689 (+0.15%), type-fest 19.548, valibot 4.163 (+0.19%),
+react 1.557 (+0.84%: `base_constraint()` of an invalid indexed access is none like tsc's, react-hook-form paths),
+nest 1.150, webpack 10.455, zod 4.996, xstate 3.199, drizzle 8.077, vue 6.752, effect 10.088, vscode 91.291 (+0.09%),
+excalidraw 7.833, tanstack-router 5.889 G.
+
 ## Perf session (2026-10-08, twelfth window's todo entry 6)
 **vscode's check phase**: four checkers at `--threads 1` take 10.28 s in total against one checker's 10.06 s (3.28M vs
 2.66M types: the redone work costs ~2%), balance is even (3.7-4.2 s per checker at 4 threads), 2 threads give 1.88x
