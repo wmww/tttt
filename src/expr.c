@@ -741,7 +741,9 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
             }
         }
     } else if (names->flow && names->flow->type_only_alias_ok &&
-        (my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING))
+        (my symbol = scope_resolve(names, identifier_expr_name(me).sv, SYMBOL_ANY_MEANING)) &&
+        // (`export = string`: a type keyword names nothing, TS2693 below)
+        (!symbol_is_builtin_type(my symbol) || ((my symbol = nullptr), false))
     ) {
         // `export = N`, `export default N`: a name exports whatever it means (tsc's checkExportAssignment resolves it
         // with every meaning), a namespace or a type is fine. No target: it has no value type

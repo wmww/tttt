@@ -411,6 +411,8 @@ static void report_class_members(Reporter const* r, ClassDecl const* me) {
                 Span name = i->tag == CLASS_ITEM_METHOD ? i->method.name_span : i->field.name_span;
                 bool private_name = span_valid(class_item_private_name(i));
                 if (i->access != ACCESS_MODIFIER_PRIVATE && !private_name) break;
+                // (Not a `declare` member: tsc's parser gives it NodeFlags.Ambient, which checkUnusedClassMembers skips)
+                if (i->tag == CLASS_ITEM_METHOD ? i->method.is_declare : i->field.is_declare) break;
                 // An accessor pair is reported on the getter
                 if (i->tag == CLASS_ITEM_METHOD && i->method.accessor == CLASS_ACCESSOR_SET && i->method.accessor_getter) break;
                 if (ty_member_is_referenced(checker, i->span)) break;

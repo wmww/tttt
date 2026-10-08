@@ -910,7 +910,7 @@ u32 symbol_excludes(u32 includes) {
 }
 
 // `number`, `any`... (program_add_builtins())
-static bool symbol_is_builtin_type(Symbol const* symbol) {
+bool symbol_is_builtin_type(Symbol const* symbol) {
     return symbol && symbol->decl_count && symbol->decls[0].kind == SYMBOL_DECL_BUILTIN && symbol->flags & SYMBOL_TYPE_ALIAS;
 }
 
@@ -3149,6 +3149,9 @@ static Symbol* resolve_alias_target(Symbol* me) {
     if (!item) {
         // `export default x`, TS2304 comes from the expression
         Symbol* found = scope_resolve(my alias->scope, my alias->name.sv, SYMBOL_ANY_MEANING);
+        // (A predefined type keyword isn't a symbol to tsc's resolveEntityName: `export = string` names nothing, the
+        // unknown symbol, which has every meaning)
+        if (symbol_is_builtin_type(found)) found = nullptr;
         // (`exports` of a CommonJS module is the module itself before any global, like identifier_expr_lookup_names())
         SourceFile const* file = my alias->scope->file;
         if (file && file->is_js && file->is_commonjs && csview_equals(my alias->name.sv, "exports") &&
