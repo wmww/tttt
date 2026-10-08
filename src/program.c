@@ -1536,8 +1536,9 @@ void program_load_automatic_types(Program* me) {
     }
     str_list_drop(&names);
     clear_compiler_options();
-    // (The parse errors of referenced projects' files, before anyone reports them)
-    if (my reference_count) error_ctx_remove_unchecked(my errs);
+    // (The parse errors of referenced projects' files, and the parser's grammar errors in unchecked files (tsc's
+    // checker's, a skipLibCheck declaration file's), before anyone reports them)
+    error_ctx_remove_unchecked(my errs);
 }
 
 void program_copy_globals_from(Program* me, Program const* other) {
