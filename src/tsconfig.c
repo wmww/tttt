@@ -625,8 +625,8 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
             for (isize i = 0; i < patterns->include.count; i++) {
                 if (glob_matches(cstr_sv(&patterns->include.items[i]), cstr_sv(&path), false)) {
-                    // HACK: one bucket, walk order (agents/bugs/include_order.md: tsc's include order exposes an
-                    // order-dependent union reduction in vue)
+                    // HACK: one bucket, walk order (agents/bugs/include_order.md: with tsc's include order vue's
+                    // checker-local variance measurements diverge from one checker's at --checkers 2..4)
                     str_list_push(&buckets[0], cstr_sv(&path));
                     break;
                 }

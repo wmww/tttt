@@ -572,8 +572,10 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
     my inner_scope->export_context = my inner_scope->ambient && !block_has_export_declarations(&my contents);
     if (my is_ambient_module && my is_augmentation && !block_has_export_declarations(&my contents)) my inner_scope->export_context = true;
 
-    // (A module's `declare global` merges into the globals after every file's own: tsc's initializeTypeChecker)
-    if (my is_global && scope->kind == SCOPE_MODULE) {
+    // (A module's `declare global`, and a `global` block directly in an ambient module of a script, merge into the
+    // globals after every file's own: both are module augmentations to tsc's collectModuleReferences, merged by
+    // initializeTypeChecker after the files' locals. @types/node's `declare module "timers" { global { ... } }`)
+    if (my is_global) {
         binder_defer_global_augmentation(scope->binder, me);
         return;
     }

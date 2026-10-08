@@ -1,18 +1,31 @@
-# Root files in include-pattern order expose an order-dependent union reduction (vue)
+# Root files in include-pattern order expose a per-checker variance order dependence (vue)
 
 tsc's matchFiles puts each file into the bucket of the first include pattern that matches it and returns the buckets
 in include order (utilities.ts matchFiles, `results[includeIndex]`); tttt's collect_files() keeps walk order. The port
-is written (`collect_files()`'s buckets) but pushes everything into bucket 0 (a HACK marker there), because with tsc's
-order (verified identical to tsc's `fileNames` for vue's tsconfig.corpus.json, 464 roots) vue gets a spurious
+is one line (`collect_files()` pushes to `buckets[0]`, the HACK marker there: push to `buckets[i]` instead; verified
+identical to tsc's `fileNames` for vue's tsconfig.corpus.json, 464 roots). With it vue is clean at `--checkers 1` but
+reports one TS2345 at 2..4 checkers (the default):
 
     packages/runtime-dom/src/directives/vModel.ts:446 TS2345 Argument of type 'DirectiveBinding<any, string, any>'
     is not assignable to parameter of type 'DirectiveBinding<any, "number", any>'.
 
-`modelToUse` is `resolveDynamicModel(...)`'s inferred return type, a union of ModelDirective<..., 'number'>,
-ModelDirective<..., 'trim'|'number'|'lazy'>, ModelDirective<HTMLInputElement> and so on, subtype-reduced; which
-members survive (and so the parameter type of `getSSRProps` on the union) depends on what was created first.
-Variances of ObjectDirective / DirectiveBinding are tsc's ([4,4,1,4] modulo #0, and [1, invariant+unreliable, 1]),
-so the difference is in the reduction or the union call's signature. Reduce: vue's runtime-core directives.ts +
-runtime-dom vModel.ts in a project, roots ordered like the corpus, compare `modelToUse`'s type with tsc's
-(`tsctypeat.js`). triage.md has the same TS2345 at `--checkers 1` (plan 51 prototype A): it is a checker-order dependence
-that the root order also reaches. Once fixed, push to `buckets[i]` and rerun every oracle (root order moves type creation order).
+Mechanism (2026-10-08, agent ta): tsc itself is order dependent here. `resolveDynamicModel`'s inferred return type is
+subtype-reduced; whether `ModelDirective<HTMLSelectElement, 'number'>` is a strict subtype of
+`ModelDirective<HTMLInputElement, string>` depends on ObjectDirective's HostElement variance, which is circular with
+DirectiveHook/DirectiveBinding/SSRDirectiveHook. In tsc's full check the first measurement is DirectiveHook's
+(runtime-core directives.ts:184, `binding.dir[name] as DirectiveHook | ...` related to the imported bare
+`DirectiveHook`): ObjectDirective is measured while DirectiveHook's variances are in flight (Ternary.Unknown), so its
+HostElement comes out independent (4), Select is reduced away, the union call takes the `string` signature, no error.
+Measured from elsewhere first (tsc's language service on vModel.ts alone: `scripts/tsctypeat.js` shows two members)
+HostElement is contravariant (2) and the error appears in tsc too.
+
+tttt now measures in tsc's order at one checker (the bare-alias fix, alias_variance_applies() /
+ty_alias_args_filled()). With K checkers the checker that gets vModel.ts never checked directives.ts, so it measures
+from vModel.ts and gets tsc's language-service answer. Each checker measures variances on its own (hacks.md, "Each
+checker measures variances"), so no file order fixes this at K > 1. Options: keep the HACK (walk order happens to put
+directives.ts in vModel.ts's checker), or make variances a program-level, checker-independent result (a sequential
+pre-pass in program order, or sharing measured variances between checkers deterministically): a plan of its own, worth
+it only if more such cases show up (`scripts/checkerdiff.py` finds them).
+
+Reduction: `/tmp`-style tsconfig extending vue's tsconfig.corpus.json with `"types": []`, `files`: packages/global.d.ts
+and runtime-dom/src/directives/vModel.ts: tsc clean, tttt clean at `--checkers 1`, TS2345 at 2..4.
