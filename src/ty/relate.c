@@ -2481,7 +2481,11 @@ static Ternary props_related_impl(
         FoundProp source_prop = {0};
         if (object_source) {
             Prop const* prop = ty_get_object_prop(me, source, target_prop->name);
-            if (prop && prop->type_state != LAZY_STATE_DONE && !unmatched_checked) {
+            // (The target property's type too: TypeBox's `TSchema extends TTransform<infer I, infer O>` asks for
+            // TTransform's `static`, itself that conditional type, before failing on the missing [TransformKind])
+            if (prop && !unmatched_checked &&
+                (prop->type_state != LAZY_STATE_DONE || target_prop->type_state != LAZY_STATE_DONE)
+            ) {
                 unmatched_checked = true;
                 if (has_unmatched_target_prop(me, source, target_members, i + 1, require_optional)) {
                     result = TERNARY_FALSE;
