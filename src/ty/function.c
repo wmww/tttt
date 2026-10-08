@@ -305,6 +305,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
         }
     }
+    ty_function_decide_widening_reportable(me, function);
     if (function->is_async && !function->is_generator && !returned.len && function_impl_rare(function)->promise_decl &&
         !program_get_global(my program, c_sv("Promise"), SYMBOL_VALUE)
     ) {

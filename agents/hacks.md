@@ -246,12 +246,11 @@ src` finds the code-side markers; every significant one has an entry here.
   computed contextual type would decide it the way tsc does.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
-- TS7011/TS7018 reportability (`ty_function_widening_reportable`) reads the contextual signature before
-  `ty_fix_contextual_signature()` (`KEY_CONTEXT_UNFIXED`, tsc's getContextualSignature: rename is plan 51 stage 3 item
-  4) and `KEY_CONTEXT_WIDENING_ABSENT` (a first check under inference without a signature view, standing in for tsc
-  computing the return type under resolvingSignature): plan 51 stage 3 item 1 decides it where the return type is
-  computed. `ty_function_context_is_self` (TS7024) reads `KEY_CONTEXT_RETURN_SELF` (written by `infer_return_type()`)
-  but still needs `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (stage 3 item 2).
+- `ty_function_context_is_self` (TS7024) reads `KEY_CONTEXT_RETURN_SELF` (written by `infer_return_type()`) but still
+  needs `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (plan 51 stage 3 item 2). TS7011/TS7018 reportability is
+  decided where the return type is inferred (`ty_function_decide_widening_reportable()`, tsc's getReturnTypeFromBody):
+  through the anchor once the call is resolved, else the first contextual signature (`KEY_CONTEXT_RETURN`), not the
+  one the check of the moment has.
 - `infer_from_objects()`, a generic mapped target `{ [P in C]: T[P] }` (the homomorphic `T[K]` shortcut, standing in
   for reverse mapping): the source goes to T as if homomorphic unless C is a conditional (Omit's
   `Exclude<keyof T, X>`, where tsc infers nothing), intersection-limited or a deferred `keyof X` whose X isn't

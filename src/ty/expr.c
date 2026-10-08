@@ -1712,7 +1712,6 @@ static void assign_contextual_signature_as(
     Signature const* unfixed = sig;
     sig = ty_fix_contextual_signature(me, sig, function);
     *intern_slot(me, &my links, done_key, 2) = sig;
-    if (sig != unfixed) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2) = unfixed;
     if (sig->this_type) {
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
         *intern_slot(me, &my links, this_key, 2) = sig->this_type;
@@ -2065,12 +2064,7 @@ bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
 // tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn (GeneratorYield with
 // `yield`): a function expression's contextual signature, if it has one, has a generic return type (a generator's: the
 // return or yield type it iterates with)
-bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield) {
-    // (The first contextual signature, which tsc's getReturnTypeFromBody reports with: while a call infers, its type
-    // parameters are still there)
-    if (intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return true;
-    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
-    if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
+static bool widening_reportable_with(Checker* me, FunctionImpl const* function, Signature const* sig, bool yield) {
     if (!sig) return true;
     Ty const* ret = signature_return_type(me, sig);
     if (function->is_generator) {
@@ -2082,6 +2076,36 @@ bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, 
         if (awaited) ret = awaited;
     }
     return is_generic_type(me, ret);
+}
+
+// The contextual signature a function expression has now (tsc's getContextualSignatureForFunctionLikeDeclaration):
+// through the resolved call, else the one its first contextual check had (while a call infers, its type parameters
+// are still there)
+static Signature const* contextual_signature_now(Checker* me, FunctionImpl const* function) {
+    AnchorRead read = {0};
+    bool composite_own = false;
+    Signature const* sig = anchored_signature(me, function, &read, 0, &composite_own);
+    if (read.anchored) return sig;
+    return intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN, (u64)(uintptr_t)function }, 2);
+}
+
+// Decided when the return type is inferred, with the contextual signature it has then (tsc's getReturnTypeFromBody
+// reports widening there): 1 | reportable return << 1 | reportable yield << 2 (KEY_RETURN_REPORTABLE)
+void ty_function_decide_widening_reportable(Checker* me, FunctionImpl const* function) {
+    if (!function->is_expression || function->ret_explicit) return;
+    if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any) return;
+    Signature const* sig = contextual_signature_now(me, function);
+    // (Its own signature: that is TS7023/TS7024's circularity, ty_function_context_is_self())
+    if (sig && sig->function == function && !sig->target) return;
+    uintptr_t bits = 1 | (widening_reportable_with(me, function, sig, false) ? 2 : 0) |
+        (function->is_generator && widening_reportable_with(me, function, sig, true) ? 4 : 0);
+    *intern_slot(me, &my links, (u64[]){ KEY_RETURN_REPORTABLE, (u64)(uintptr_t)function }, 2) = (void const*)bits;
+}
+
+bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield) {
+    uintptr_t bits = (uintptr_t)intern_get(&my links, (u64[]){ KEY_RETURN_REPORTABLE, (u64)(uintptr_t)function }, 2);
+    if (bits) return bits & (yield ? 4 : 2);
+    return widening_reportable_with(me, function, contextual_signature_now(me, function), yield);
 }
 
 static Ty const* base_constraint_or_type(Checker* me, Ty const* ty) {
@@ -5361,16 +5385,6 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                  !contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0))
             ) {
                 *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) = expr->function;
-            }
-            // A first check while a call infers whose contextual type, instantiated with what it knows so far, has no
-            // signature for it (`<TP extends Partial<T> = {}>(p?: TP)`: the default `{}`) decides its return type
-            // without one (tsc's getReturnTypeFromBody then reports widening, TS7011, whatever comes later)
-            if (ctx.sig_absent && my outer_inference && !expr->function->ret_explicit && !compiler_options()->strict_null_checks &&
-                compiler_options()->no_implicit_any && !ty_function_is_context_sensitive(expr->function) &&
-                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2)
-            ) {
-                Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)expr->function }, 2);
-                if (!*slot) *slot = (Ty const*)expr->function;
             }
             // (A first check without any contextual type leaves its return type undecided too: `id({ d: () => null })`,
             // whose `d` the object literal's contextual type U has nothing for until U is inferred as the literal itself,
