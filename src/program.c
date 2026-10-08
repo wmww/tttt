@@ -2807,6 +2807,14 @@ static void check_deferred(DeferredCheck deferred, ErrorCtx* errs) {
     }
 }
 
+// TTTT_FILE_TIMES
+static void print_file_time(char const* what, struct timespec start, SourceFile const* source) {
+    struct timespec end;
+    timespec_get(&end, TIME_UTC);
+    double ms = (double)(end.tv_sec - start.tv_sec) * 1e3 + (double)(end.tv_nsec - start.tv_nsec) / 1e6;
+    fprintf(stderr, "file time: %10.1f ms %s %s\n", ms, what, cstr_str(&source->canonical_path));
+}
+
 static void check_share(Program* me, u32 c, u32 count) {
     struct timespec start, end;
     timespec_get(&start, TIME_UTC);
@@ -2831,20 +2839,18 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
         checker->deferred_count = 0;
         checker->defer_checks = false;
-        if (debug_env.file_times) {
-            struct timespec file_end;
-            timespec_get(&file_end, TIME_UTC);
-            double ms = (double)(file_end.tv_sec - file_start.tv_sec) * 1e3 + (double)(file_end.tv_nsec - file_start.tv_nsec) / 1e6;
-            fprintf(stderr, "file time: %10.1f ms %s\n", ms, cstr_str(&source->canonical_path));
-        }
+        if (debug_env.file_times) print_file_time("check", file_start, source);
     }
     // After its files are checked: the checker marks members it reads
     index = 0;
     for_each (i, vec_source_file_ptr, &my source_files_ordered) {
         SourceFile* source = *i;
         if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
+        struct timespec file_start;
+        if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (!source->is_declaration && !source->unchecked) unused_report(source, checker->errs);
         if (my declaration_errs) declaration_diagnostics_check(source, &my declaration_errs[c]);
+        if (debug_env.file_times) print_file_time("unused and declaration", file_start, source);
     }
     // Declaration emit's diagnostics don't depend on skipTypeChecking: also for files noCheck or `@ts-nocheck` leave
     // unchecked (not a referenced project's, which that project reports)

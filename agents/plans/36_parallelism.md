@@ -164,6 +164,11 @@ Numbers: `measurements.md` "Perf". Memory: peak RSS +2..+47% at K=4 (react worst
   **Done differently (2026-10-05)**: `deal_files()` cuts program order into 2 runs of equal bytes per checker, dealt
   round robin: neighbours share a checker (drizzle 1688 -> 1337 MB at K=4) at round robin's walls or better. One run
   each saves more (1277 MB; valibot's total checker time -28%) but balances worse; a cost model is still the next step.
+- **Sharing types between checkers: not a lever** (2026-10-08 perf session, vscode). The four checkers make 3.28M types
+  against one checker's 2.66M, but at `--threads 1` four checkers take 10.28 s in total against one checker's 10.06 s
+  (smaller caches make up for the redone work). Balance is fine too (checkers 3.7-4.2 s at 4 threads). What the 4-thread
+  wall (4.2 s) pays for is the hardware: 2 threads take 5.47 s (1.88x of one), the two SMT siblings add only ~1.3x more.
+  Single-threaded checker speed is what moves vscode's wall.
 
 ## Audit of shared state in the check phase (2026-09-28, subagent)
 - Races: the shared `ErrorCtx` (sorted `vec_error_insert_n` in `error_ctx_append_error`, also read by

@@ -20,7 +20,34 @@ after that session: tanstack-router's assignable 236k vs tsc's 174k (looked at b
 variance probes of zod's classes from link.test.tsx, `Omit<UseLinkPropsOptions...>` against React's anchor props, and
 expect-type's `KeyType` against a ~300-literal key union per assertion in link.test-d.tsx, all of which tsc relates
 the same way as far as its code says; not compared with a patched tsc), vue's identity 18k vs 28k and type-fest/react
-well below tsc (fine). Ratios of types created are no signal (tttt makes fewer everywhere).
+well below tsc (fine). On the pinned corpora tttt makes fewer types than tsc; on the source sweep a multiple of
+tsc's is how this session's pathologies showed (next section).
+
+## The source sweep finds pathologies (2026-10-08 perf session)
+Rank `./sourcesweep.py` projects by tttt/tsc time (median 0.075; read /tmp/sourcesweep-tttt.json against
+test/sourcesweep/tsc.jsonl.gz, only projects tsc takes >= 2 s on), skip the ones tsc checks degraded (TS6305 unbuilt
+references, thousands of TS2307/TS7031: tsc does less work there, babel-traverse, rxjs, better-auth), then
+`TTTT_FILE_TIMES=1` for the file, a single-file `-p` probe (a temporary tsconfig with `files` next to the project's,
+since paths and node_modules resolve from there; delete it after), and compare `--time`'s type count with tsc's
+`--extendedDiagnostics`. **Type counts are a signal here**: every pathology found had tttt making 5-12x tsc's types.
+Fixed that session: `typeof` of a top-level name made a literal generic (karakeep, 55 s), keyof of 70 unions
+quadratic (headlessui), top-level object literal types instantiated per mapper (mcp-sdk, 5.5x types). Open:
+- **Function expression types are keyed by the whole mapper** (docmost/apps/server: 2.27M types vs tsc's 185k, all
+  in `page-permission.repo.ts`; a probe of one kysely `.withRecursive(...)` method plus a private helper taking
+  `ExpressionBuilder<any, keyof DB>` reproduces it: 383k types vs 50k). The `qb => ...` arrow's type is
+  `free_params_unknown` (`ty_function_type`: not closed, being in a class method), so every composed mapper (19-23
+  entries) makes a new instance, and kysely's `{ [K in ExtractTableFromCommonTableExpressionName<CN>]: ... }` built
+  on each multiplies (70k instances). tsc keys it by getOuterTypeParameters: the class's `this` and the type parameters
+  in scope, plus the contextual signature's if it's context sensitive. The catch: tttt's contextually typed
+  parameters may carry a call's uninstantiated type parameters (push-down contextual typing, plan 51), which
+  instantiation must still replace, so a syntactic outer set isn't safe as is. Options: collect what the signature
+  mentions once it's resolved (`mentions_type_variables` collect mode, cached per target, unsure -> unknown), or key
+  by the syntactic set plus the inference contexts' type parameters. Worth a plan if kysely-style code is common.
+- **immutable-js/type-definitions**: 997k types vs tsc's 203k; ~600k anonymous instances spread over hundreds of
+  member types (4-parameter mappers, ~8.9k instances each). Member types are lazy (`instantiate_members`), so
+  something reads every member of many distinct instantiations: probably structural relations of `this`-returning
+  interface instantiations where tsc goes by variance. Find the top-level relation queries that grow the caches most
+  (the recipe above).
 
 ## Leftovers of the 2026-10-05 perf session (todo entry 8)
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
@@ -94,8 +121,8 @@ were mostly tsc caches tttt lacked (two-member unions, intersections by members,
   `LazyMemo` 24 bytes per AST node slot (~10 MB on webpack, dense pages). Node arenas (lever 7) stay a parser *time*
   lever: malloc/free/realloc are ~12% of nest's instructions, and `list_push`/`shrink_list` cost ~0.7% that lists
   built in a scratch stack and copied out exact would take back.
-- Type counts are not the problem: tsc makes 718k types on type-fest (tttt 578k), 589k on zod (tttt 361k), 332k on
-  valibot (tttt 385k).
+- Type counts on the pinned corpora are not the problem: tsc makes 718k types on type-fest (tttt 578k), 589k on zod
+  (tttt 361k), 332k on valibot (tttt 385k). On sweep projects they were (section above).
 
 ## Time
 - **Variance measurements** match tsc's reporting now (09-28: only where the marker occurs in the source, at tsc's
