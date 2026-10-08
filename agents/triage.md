@@ -21,3 +21,12 @@ to plan 19. The commit message has the numbers.
 - Message from human: minor cleanup, please organize all your scripts into a toplevel scripts/ directory instead of keeping them at the repo top level
 - Errors baseline of a file with lone-`\r` line endings prints its source lines joined (the diagnostics match since
   the hacks audit's conflict-marker fix; the harness's line splitting doesn't treat `\r` as a break).
+
+- (2026-10-08, plan 52 stage 2 agent ss-a, spurious relation keys) Left unreduced after the drain (`./sourcesweep.py
+  --last -k +TS2322` / `+TS2345` / `+TS2353`): tanstack-table's adapter tests `externalSelection.set({ 1: true })`
+  reported TS2353 against the first overload `(fn: (prevVal: T) => T) => void` of an intersection-of-functions `set`
+  (a standalone probe with the same declarations is clean; it co-occurs with a TS7006 on createTable's `getRowId: (row)
+  => ...`, so likely a cascade of that call's failed inference); apollo-client ObservableQuery.ts:1869
+  `InternalDiffResultWithDataState<TData | null>` to `<TData>`; arktype fast-check `string | number | Date` to number
+  (narrowing?); svelte's JS sources (JSDoc generics, `Value<unknown>` to `Source<V>`); discord.js `Timer` vs `Timeout`
+  (bun-types next to @types/node); solid component.type-tests.ts:100 (`"a"` to `("a" & M4Type[T]["prop"]) | ...`).
