@@ -147,10 +147,22 @@ static bool expr_requires_scope_change(Expr const* me) {
         case EXPR_REGEX:
         case EXPR_PRIVATE_NAME:
         case EXPR_FUNCTION:
-        // TODO: JSX isn't looked into
+            return false;
         case EXPR_JSX_ELEMENT:
         case EXPR_JSX_FRAGMENT:
+            if (expr_requires_scope_change(&my jsx->tag_name) || expr_requires_scope_change(&my jsx->attributes)) return true;
+            for_each (i, vec_jsx_child, &my jsx->children) {
+                if ((i->tag == JSX_CHILD_EXPR || i->tag == JSX_CHILD_ELEMENT) && expr_requires_scope_change(&i->expr)) return true;
+            }
+            return false;
         case EXPR_JSX_ATTRIBUTES:
+            for_each (i, vec_jsx_attribute, &my jsx_attributes) {
+                if ((i->tag == JSX_ATTRIBUTE_EXPR || i->tag == JSX_ATTRIBUTE_ELEMENT || i->tag == JSX_ATTRIBUTE_SPREAD) &&
+                    expr_requires_scope_change(&i->value)
+                ) {
+                    return true;
+                }
+            }
             return false;
         case EXPR_BINARY_OP:
             if (my binary_op->op == BINARY_OP_EH_EH && below_es2020) return true;
