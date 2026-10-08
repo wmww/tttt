@@ -6217,22 +6217,6 @@ static bool has_index_for_name(Checker* me, Members const* members, Atom const* 
     return false;
 }
 
-// tsc's getLowerBoundOfKeyType: `keyof T` is the keys of T's apparent type, a type parameter stays (and names nothing)
-static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
-    if (depth > 8) return ty;
-    if (ty->kind == TY_KEYOF) return ty_keyof(me, apparent_type(me, ty->keyof.operand));
-    if (ty->kind == TY_UNION) {
-        TyBuf parts = {0};
-        for (u32 i = 0; i < ty->composite.types.len; i++) {
-            ty_buf_push(&parts, lower_bound_of_key_type(me, ty->composite.types.data[i], depth + 1));
-        }
-        Ty const* ret = ty_union(me, parts.data, parts.len, nullptr, (TyList){0});
-        ty_buf_drop(&parts);
-        return ret;
-    }
-    return ty;
-}
-
 // Whether a key type of a mapped type makes a member that admits `name` (tsc's addMemberForKeyTypeWorker: a property for
 // a literal or unique symbol, an index signature for string, number, symbol, any or a pattern)
 static bool key_admits_name(Checker* me, Ty const* key, Atom const* name) {
@@ -6257,7 +6241,7 @@ static bool key_admits_name(Checker* me, Ty const* key, Atom const* name) {
 // of its constraint (a homomorphic one's are its modifiers type's apparent keys), each through the `as` clause.
 // `Pick<S, keyof S>` with S unconstrained knows nothing, `Partial<S>` with `S extends { b: number }` knows b
 static bool generic_mapped_knows(Checker* me, MappedInfo const* mapped, Atom const* name) {
-    Ty const* keys = lower_bound_of_key_type(me, mapped->constraint, 0);
+    Ty const* keys = ty_lower_bound_of_key_type(me, mapped->constraint);
     if (!mapped->name_type) return key_admits_name(me, keys, name);
     TyList parts = keys->kind == TY_UNION ? keys->composite.types : (TyList){ .data = &keys, .len = 1 };
     for (u32 i = 0; i < parts.len; i++) {

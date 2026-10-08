@@ -3032,6 +3032,10 @@ static Ty const* lower_bound_of_key_type(Checker* me, Ty const* ty, u32 depth) {
     return ty;
 }
 
+Ty const* ty_lower_bound_of_key_type(Checker* me, Ty const* ty) {
+    return lower_bound_of_key_type(me, ty, 0);
+}
+
 // An intersection member that is a type variable or a still generic mapped type (tsc's isGenericObjectType)
 static bool intersection_has_generic_part(Checker* me, Ty const* intersection) {
     for (u32 i = 0; i < intersection->composite.types.len; i++) {
@@ -3134,7 +3138,7 @@ static Members const* expand_mapped(Checker* me, Ty const* ty, Members const* me
         }
     }
     if (ty_is_generic_index(constraint) && !generic) {
-        Ty const* lower = lower_bound_of_key_type(me, constraint, 0);
+        Ty const* lower = ty_lower_bound_of_key_type(me, constraint);
         // (A union's literal members are keys even when its other members stay generic: `"x" | (T extends U ? "y" :
         // never)` has x, tsc's forEachType over the lower bound)
         if (lower == constraint && constraint->kind != TY_UNION) return members;
