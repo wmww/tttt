@@ -346,7 +346,11 @@ static bool is_tuple_like(Checker* me, Ty const* ty) {
     return ty_is_tuple(ty) || target_prop_of(me, ty, checker_atom(me, c_sv("0")));
 }
 
-static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* source, Ty const* target, ErrorCtx* errs) {
+// target as written decides which elements are elaborated (tsc's generateLimitedTupleElements: not one a tuple target
+// has no property for, which is every one from a generic spread on), each element against the target as relations see it
+// (normalized, tsc's isRelatedTo in elaborateElementwise)
+static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* source, Ty const* declared, ErrorCtx* errs) {
+    Ty const* target = ty_normalized_generic_tuple(me, declared, true);
     if (!(target->flags & (TYF_OBJECT | TYF_UNION | TYF_INTERSECTION | TYF_TYPE_PARAM | TYF_DEFERRED | TYF_UNKNOWN |
         TYF_ANY | TYF_NON_PRIMITIVE))) {
         return false;
@@ -356,11 +360,11 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
         source = ty_array_literal_as_tuple(me, expr, target);
         if (!source || !is_tuple_like(me, source)) return false;
     }
-    bool target_tuple_like = is_tuple_like(me, target);
+    bool target_tuple_like = is_tuple_like(me, declared);
     // A tuple's properties are its elements before the first rest one (tsc's createTupleTargetType)
     u32 fixed = 0;
-    if (ty_is_tuple(target)) {
-        TupleShape const* shape = target->reference.target->declared.tuple;
+    if (ty_is_tuple(declared)) {
+        TupleShape const* shape = declared->reference.target->declared.tuple;
         while (fixed < shape->arity && !(shape->flags[fixed] & TUPLE_ELEMENT_REST)) fixed++;
     }
     bool reported = false;
@@ -369,7 +373,7 @@ static bool elaborate_array_literal(Checker* me, Expr const* expr, Ty const* sou
         char digits[16];
         snprintf(digits, sizeof(digits), "%u", (unsigned)i_index);
         Atom const* name = checker_atom(me, csview_from(digits));
-        if (target_tuple_like && !target_prop_of(me, target, name) && !(ty_is_tuple(target) && i_index < (isize_t)fixed)) {
+        if (target_tuple_like && !target_prop_of(me, declared, name) && !(ty_is_tuple(declared) && i_index < (isize_t)fixed)) {
             continue;
         }
         if (!expr_outer_span(i).sv.size) continue; // omitted
@@ -742,7 +746,7 @@ static bool elaborate_error(
             return elaborate_error(me, head, &expr->binary_op->right, source, target, errs);
         case EXPR_OBJECT: return elaborate_object_literal(me, expr, source, target, errs);
         // (Against the target as relations see it: a generic tuple normalized, tsc's isRelatedTo in elaborateElementwise)
-        case EXPR_ARRAY: return elaborate_array_literal(me, expr, source, ty_normalized_generic_tuple(me, target, true), errs);
+        case EXPR_ARRAY: return elaborate_array_literal(me, expr, source, target, errs);
         case EXPR_JSX_ATTRIBUTES: return elaborate_jsx_attributes(me, expr, source, target, errs);
         case EXPR_FUNCTION: return elaborate_arrow_function(me, expr, source, target, errs);
         default: return false;
