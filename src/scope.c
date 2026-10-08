@@ -1272,7 +1272,8 @@ void scope_init_declaration(Scope* me, Symbol** ret, DeclProps props) {
     }
     SymbolDecl decl = {
         .kind = props.kind, .flags = includes, .node = props.node, .name = props.name, .full = props.full, .block = scope,
-        .hoisted = scope->hoisting,
+        .hoisted = scope->hoisting, .written_export = props.exported || props.default_export,
+        .written_declare = props.declare_keyword,
     };
     // A function of a module or namespace block declared both exported and not: tsc's declareModuleMember gives the
     // exported declarations a local too (ExportValue, which FunctionExcludes doesn't exclude), so the block's local
@@ -1491,11 +1492,6 @@ static void check_export_merge(Scope* me, Span block, Symbol* local, bool resolv
 // A declaration file without `export {}` or `export =` exports everything (tsc's ExportContext), so its exported and
 // local declarations of a name are one symbol here. tsc's getEffectiveDeclarationFlags still takes one with `declare`
 // and no `export` as local: checkExportsOnMergedDeclarations' TS2395 when both kinds share a declaration space
-static bool starts_with_word(csview text, char const* word) {
-    isize n = (isize)strlen(word);
-    return text.size > n && !memcmp(text.buf, word, (size_t)n) && (text.buf[n] == ' ' || text.buf[n] == '\t' || text.buf[n] == '\n');
-}
-
 static void check_export_context_merges(Scope* me, Span block) {
     for (u32 i = 0; i < my container->exports->count; i++) {
         Symbol* symbol = my container->exports->entries[i].symbol;
@@ -1510,7 +1506,7 @@ static void check_export_context_merges(Scope* me, Span block) {
                 continue;
             }
             checked |= decl->kind != SYMBOL_DECL_FUNCTION;
-            bool exported = starts_with_word(decl->full.sv, "export") || !starts_with_word(decl->full.sv, "declare");
+            bool exported = decl->written_export || !decl->written_declare;
             *(exported ? &exported_spaces : &local_spaces) |= declaration_spaces(symbol, decl, false);
         }
         u32 common = exported_spaces & local_spaces;
@@ -1864,7 +1860,7 @@ bool scope_export_default_expr(Scope* me, Expr* expr, TypeNode const* jsdoc_type
             ClassDecl* class_decl = expr->class_decl;
             if (!class_decl->name_scope) {
                 class_decl->name_scope = scope_new(me, SCOPE_BLOCK);
-                class_decl_add_names(class_decl, class_decl->name_scope, DECL_EXPORTED_NO, false);
+                class_decl_add_names(class_decl, class_decl->name_scope, (DeclStatementProps){0});
             }
             symbol->alias->class_expr = class_decl;
             class_decl->export_assigned = true;
@@ -1940,7 +1936,7 @@ static void declare_commonjs_export(
             ClassDecl* class_decl = value->class_decl;
             if (!class_decl->name_scope) {
                 class_decl->name_scope = scope_new(me, SCOPE_BLOCK);
-                class_decl_add_names(class_decl, class_decl->name_scope, DECL_EXPORTED_NO, false);
+                class_decl_add_names(class_decl, class_decl->name_scope, (DeclStatementProps){0});
             }
             symbol->alias->class_expr = class_decl;
             class_decl->commonjs_module = my container;

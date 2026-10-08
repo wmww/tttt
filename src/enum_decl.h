@@ -42,6 +42,6 @@ struct EnumDecl {
 };
 
 void enum_decl_drop(EnumDecl* me);
-void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclExported exported, bool declared);
+void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclStatementProps props);
 void enum_decl_lookup_names(EnumDecl* me, Scope* names, ErrorCtx* errs);
 void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs);

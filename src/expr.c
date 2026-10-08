@@ -2217,7 +2217,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (span_valid(my function->name)) {
                 name_scope = scope_new(names, SCOPE_BLOCK);
                 scope_rare_mut(name_scope)->expression_name_of = my function;
-                function_impl_add_names(my function, name_scope, DECL_EXPORTED_NO, false, false);
+                function_impl_add_names(my function, name_scope, (DeclStatementProps){0}, false);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;
             function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !function_impl_is_arrow(me->function), name_scope, errs);
@@ -2307,7 +2307,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
             if (class_name_scope) scope_reparent(class_name_scope, names);
             if (!class_name_scope) {
                 class_name_scope = scope_new(names, SCOPE_BLOCK);
-                class_decl_add_names(my class_decl, class_name_scope, DECL_EXPORTED_NO, false);
+                class_decl_add_names(my class_decl, class_name_scope, (DeclStatementProps){0});
             }
             class_decl_lookup_names(my class_decl, class_name_scope, errs);
         }   break;

@@ -339,14 +339,15 @@ Span class_decl_display_name(ClassDecl const* me) {
     return sv_make_span(!my symbol || my symbol->is_default_export ? c_sv("default") : c_sv("__missing"));
 }
 
-void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bool declared) {
-    my is_ambient = declared || scope->ambient;
+void class_decl_add_names(ClassDecl* me, Scope* scope, DeclStatementProps props) {
+    my is_ambient = props.declared || scope->ambient;
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = exported == DECL_EXPORTED_YES,
-        .default_export = exported == DECL_EXPORTED_YES_DEFAULT,
-        .is_ambient = declared,
+        .exported = props.exported == DECL_EXPORTED_YES,
+        .default_export = props.exported == DECL_EXPORTED_YES_DEFAULT,
+        .declare_keyword = span_valid(props.declare_keyword),
+        .is_ambient = props.declared,
         .kind = SYMBOL_DECL_CLASS,
         .node = me,
     });

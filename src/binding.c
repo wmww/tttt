@@ -72,6 +72,7 @@ void binding_add_names(Binding* me, LazyType* source, Scope* scope, BindingAddNa
                 .function_scoped = props.function_scoped,
                 .is_const = props.is_const,
                 .is_ambient = props.is_ambient,
+                .declare_keyword = props.declare_keyword,
             });
             break;
 

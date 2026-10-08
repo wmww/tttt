@@ -67,16 +67,17 @@ FunctionImplRare* function_impl_rare_mut(FunctionImpl* me) {
     return my rare;
 }
 
-void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared) {
+void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclStatementProps props, bool hoisted) {
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = exported == DECL_EXPORTED_YES,
-        .default_export = exported == DECL_EXPORTED_YES_DEFAULT,
+        .exported = props.exported == DECL_EXPORTED_YES,
+        .default_export = props.exported == DECL_EXPORTED_YES_DEFAULT,
+        .declare_keyword = span_valid(props.declare_keyword),
         .kind = SYMBOL_DECL_FUNCTION,
         .node = me,
         .function_scoped = hoisted,
-        .is_ambient = declared,
+        .is_ambient = props.declared,
     });
     if (scope->file && scope->file->is_js) scope_mark_jsdoc_class(scope->binder, my symbol, me);
 }

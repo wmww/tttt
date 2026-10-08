@@ -177,6 +177,9 @@ typedef struct SymbolDecl {
     // A `var` (or sloppy mode function) hoisted out of the nested statement it is written in: `block` is where it was
     // hoisted to, not the statement list it is in
     bool hoisted;
+    // Written with `export` / `declare` (a declaration file's export context: tsc's getEffectiveDeclarationFlags)
+    bool written_export : 1;
+    bool written_declare : 1;
     u32 flags; // What this declaration added to the symbol's flags
     void const* node;
     // Every SYMBOL_DECL_ASSIGNMENT has one, other kinds only with a JSDoc type (symbol_decl_js()). Null otherwise
@@ -407,7 +410,8 @@ typedef struct DeclProps {
     bool function_scoped; // `var`
     bool is_parameter;
     bool is_const; // `const` variable
-    bool is_ambient; // `declare`
+    bool is_ambient; // `declare`, or in a declaration file
+    bool declare_keyword; // An explicit `declare`
     bool is_const_enum;
     bool is_instantiated; // Namespaces: has a value
 } DeclProps;

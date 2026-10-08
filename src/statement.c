@@ -23,14 +23,15 @@ void variable_statement_drop(VariableStatement* me) {
     vec_initialized_binding_drop(&my initializers);
 }
 
-void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared) {
+void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclStatementProps props) {
     for_each (i, vec_initialized_binding, &my initializers) {
         initialized_binding_add_names(i, scope, (BindingAddNamesProps){
             .abstract_literals = !variable_statement_is_const(me),
-            .exported = exported,
+            .exported = props.exported != DECL_EXPORTED_NO,
             .function_scoped = my keyword == VAR_INIT_VAR,
             .is_const = variable_statement_is_const(me),
-            .is_ambient = declared,
+            .is_ambient = props.declared,
+            .declare_keyword = span_valid(props.declare_keyword),
         });
     }
 }
@@ -277,6 +278,7 @@ void type_decl_add_names(TypeDecl* me, Scope* scope, DeclStatementProps props) {
         .exported = my jsdoc && !my jsdoc_enum && scope->kind == SCOPE_MODULE ? DECL_EXPORTED_YES : props.exported,
         .kind = SYMBOL_DECL_TYPE_ALIAS,
         .node = me,
+        .declare_keyword = span_valid(props.declare_keyword),
     });
 }
 
@@ -545,6 +547,7 @@ void namespace_decl_add_names(NamespaceDecl* me, Scope* scope, DeclStatementProp
                 .node = me,
                 .is_instantiated = has_value,
                 .is_ambient = props.declared,
+                .declare_keyword = span_valid(props.declare_keyword),
             });
             // (`global x`, recovery's global without a body: a shorthand ambient module, any, tsc's
             // isShorthandAmbientModuleSymbol)
@@ -969,8 +972,9 @@ void statement_hoist_names(Statement* me, Scope* scope) {
             // (`export function` in a block of a namespace is exported: tsc's declareSymbolAndAddToSymbolTable goes by the
             // container, declareModuleMember)
             if (!scope->strict) {
-                function_impl_add_names(my decl.function.impl, scope,
-                    my decl.props.exported == DECL_EXPORTED_YES ? DECL_EXPORTED_YES : DECL_EXPORTED_NO, true, my decl.props.declared);
+                DeclStatementProps props = my decl.props;
+                if (props.exported != DECL_EXPORTED_YES) props.exported = DECL_EXPORTED_NO;
+                function_impl_add_names(my decl.function.impl, scope, props, true);
             }
             break;
 
@@ -1022,7 +1026,7 @@ void statement_hoist_names(Statement* me, Scope* scope) {
 
         case STATEMENT_DECL_VARIABLE:
             if (my decl.variable.keyword == VAR_INIT_VAR) {
-                variable_statement_add_names(&my decl.variable, scope, my decl.props.exported, my decl.props.declared);
+                variable_statement_add_names(&my decl.variable, scope, my decl.props);
             }
             break;
 
@@ -1129,21 +1133,20 @@ void statement_add_names(Statement* me, Scope* scope) {
         case STATEMENT_DECL_VARIABLE:
             // The `var`s of nested blocks were declared by statement_hoist_names()
             if (my decl.variable.keyword == VAR_INIT_VAR && !scope_is_var_container(scope)) break;
-            variable_statement_add_names(&my decl.variable, scope, my decl.props.exported, my decl.props.declared);
+            variable_statement_add_names(&my decl.variable, scope, my decl.props);
             break;
 
         case STATEMENT_DECL_FUNCTION:
             scope_check_strict_block_function(scope, my decl.function.impl->name);
-            function_impl_add_names(my decl.function.impl, scope, my decl.props.exported,
-                scope->kind == SCOPE_BLOCK && !scope->strict, my decl.props.declared);
+            function_impl_add_names(my decl.function.impl, scope, my decl.props, scope->kind == SCOPE_BLOCK && !scope->strict);
             break;
 
         case STATEMENT_DECL_ENUM:
-            enum_decl_add_names(my decl.enum_, scope, my decl.props.exported, my decl.props.declared);
+            enum_decl_add_names(my decl.enum_, scope, my decl.props);
             break;
 
         case STATEMENT_DECL_CLASS:
-            class_decl_add_names(my decl.class, scope, my decl.props.exported, my decl.props.declared);
+            class_decl_add_names(my decl.class, scope, my decl.props);
             break;
 
         case STATEMENT_DECL_TYPE:
@@ -1151,7 +1154,7 @@ void statement_add_names(Statement* me, Scope* scope) {
             break;
 
         case STATEMENT_DECL_INTERFACE:
-            interface_decl_add_names(my decl.interface, scope, my decl.props.exported);
+            interface_decl_add_names(my decl.interface, scope, my decl.props);
             break;
 
         case STATEMENT_DECL_NAMESPACE:

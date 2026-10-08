@@ -350,3 +350,5 @@ arrayFakeFlatNoCrashInferenceDeclarations (TS5088), declarationEmitPrivatePromis
   signature parameter initializers (`parse_index_signature()` has no `FunctionArg` list: TS2304 in `[a = b]` lost).
 - `let o: { x?: number } | number = 1; ({ ...o } = { x: 1 });`: tsc reports TS2698 at the rest target `o` (narrowed
   to number), tttt nothing.
+- A declaration file in an export context (`declare function f(): void; export function f(x: number): void;`): tsc
+  reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing.

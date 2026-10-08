@@ -20,14 +20,15 @@ void enum_decl_drop(EnumDecl* me) {
     vec_enum_case_drop(&my cases);
 }
 
-void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclExported exported, bool declared) {
-    my ambient = declared || scope->ambient || (my name.source && my name.source->is_declaration);
+void enum_decl_add_names(EnumDecl* me, Scope* scope, DeclStatementProps props) {
+    my ambient = props.declared || scope->ambient || (my name.source && my name.source->is_declaration);
     scope_init_declaration(scope, &my symbol, (DeclProps){
         .name = my name,
         .full = my full_span,
-        .exported = exported == DECL_EXPORTED_YES,
-        .default_export = exported == DECL_EXPORTED_YES_DEFAULT,
-        .is_ambient = declared,
+        .exported = props.exported == DECL_EXPORTED_YES,
+        .default_export = props.exported == DECL_EXPORTED_YES_DEFAULT,
+        .declare_keyword = span_valid(props.declare_keyword),
+        .is_ambient = props.declared,
         .kind = SYMBOL_DECL_ENUM,
         .node = me,
         .is_const_enum = my is_const,

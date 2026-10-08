@@ -69,6 +69,7 @@ typedef struct BindingAddNamesProps {
     bool function_scoped; // `var`
     bool is_const;
     bool is_ambient; // `declare`
+    bool declare_keyword; // An explicit `declare`
     Span full;
 } BindingAddNamesProps;
 

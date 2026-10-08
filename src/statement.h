@@ -18,15 +18,6 @@ typedef struct SwitchStatement SwitchStatement;
 typedef struct PortStatement PortStatement;
 typedef struct WithStatement WithStatement;
 
-typedef struct DeclStatementProps {
-    DeclExported exported;
-    bool declared;
-    Span declare_keyword; // An explicit `declare` (declared is also true in declaration files and some ambient contexts)
-    // Decorators on a declaration that can't have them (`@dec var x`, TS1206): owned, null if none. Only resolved
-    // (silently) and typed for the baselines, like tsc's decorators of such a node
-    struct vec_expr* invalid_decorators;
-} DeclStatementProps;
-
 // Variable initialization
 
 typedef struct VariableStatement {
@@ -60,7 +51,7 @@ static inline char const* variable_statement_keyword_str(VariableStatement const
     }
     return "";
 }
-void variable_statement_add_names(VariableStatement* me, Scope* scope, bool exported, bool declared);
+void variable_statement_add_names(VariableStatement* me, Scope* scope, DeclStatementProps props);
 void variable_statement_resolve_names(VariableStatement* me, Scope* names, ErrorCtx* errs);
 void variable_statement_typecheck(VariableStatement* me, bool declared, bool exported, bool case_clause, bool ambient_using, ErrorCtx* errs);
 // `/** @enum {T} */`: the members of the object literal `object` that initializes `symbol` checked against T

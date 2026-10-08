@@ -23,6 +23,16 @@ typedef enum DeclExported : uint8_t {
     DECL_EXPORTED_YES_DEFAULT,
 } DeclExported;
 
+// What the modifiers of a declaration statement say
+typedef struct DeclStatementProps {
+    DeclExported exported;
+    bool declared;
+    Span declare_keyword; // An explicit `declare` (declared is also true in declaration files and some ambient contexts)
+    // Decorators on a declaration that can't have them (`@dec var x`, TS1206): owned, null if none. Only resolved
+    // (silently) and typed for the baselines, like tsc's decorators of such a node
+    struct vec_expr* invalid_decorators;
+} DeclStatementProps;
+
 typedef struct Generic Generic;
 typedef struct OuterGenerics OuterGenerics; // generic.h
 typedef struct CallExpr CallExpr;

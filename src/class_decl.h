@@ -180,7 +180,7 @@ Span class_decl_display_name(ClassDecl const* me);
 ClassItem const* class_decl_find_private_name(ClassDecl const* me, csview name);
 /// The field, method or accessor the class body declares by this name (not computed), null if none
 ClassItem* class_decl_find_member(ClassDecl const* me, csview name, bool is_static);
-void class_decl_add_names(ClassDecl* me, Scope* scope, DeclExported exported, bool declared);
+void class_decl_add_names(ClassDecl* me, Scope* scope, DeclStatementProps props);
 void class_decl_lookup_names(ClassDecl* me, Scope* names, ErrorCtx* errs);
 void class_decl_typecheck(ClassDecl* me, ErrorCtx* errs);
 // The part of class_decl_typecheck() about the members, deferred for a class expression (Checker.defer_checks)

@@ -311,7 +311,7 @@ void function_impl_check_implicit_any_parameters(FunctionImpl const* me, ErrorCt
 // hoisted: a function declaration of a nested block in non-strict code, which is declared in the enclosing function (or
 // file) like a `var` (tsc's declareSymbolAndAddToSymbolTable outside of strict mode)
 // declared: `declare function`
-void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclExported exported, bool hoisted, bool declared);
+void function_impl_add_names(FunctionImpl* me, Scope* scope, DeclStatementProps props, bool hoisted);
 typedef enum FunctionFlowKind {
     FUNCTION_IS_DECLARATION, // Function declarations, class members, signatures: a control flow graph of their own
     // Function expressions, arrow functions, object literal methods: narrowings of the flow they're made in can
