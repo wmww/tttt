@@ -240,18 +240,6 @@ static bool is_non_local_function(Symbol const* symbol) {
     return false;
 }
 
-// The function a module's `export =` assigns while the module has other exports (then tsc's getCommonJsExportEquals
-// clones it into a ValueModule), else null
-static Symbol const* export_equals_clone_of(Symbol const* function) {
-    if (!function || !(function->flags & SYMBOL_FUNCTION) || !function->decl_count) return nullptr;
-    Symbol* module = function->parent && function->parent->is_module ? function->parent : nullptr;
-    Scope const* block = function->decls[0].block;
-    if (!module && block && block->kind == SCOPE_MODULE) module = block->container;
-    if (!module || !module->is_module || !module->exports || !symbol_table_get(module->exports, c_sv("export="))) return nullptr;
-    Symbol const* assigned = module_export_equals(module);
-    return assigned && symbol_rare(assigned)->merged_export_equals_of == function ? function : nullptr;
-}
-
 // A function with expando properties none of which is assigned at the top level of a file: tsc's binder makes a
 // function a ValueModule (bindPotentiallyMissingNamespaces) only for a top-level `f.x = v` (isTopLevelNamespaceAssignment),
 // which is what prints it as `typeof f`; otherwise it is a function like any other, whose type prints structurally
@@ -260,6 +248,8 @@ static bool is_nested_expando_function(Ty const* ty) {
     Symbol const* symbol = ty->declared.kind == TY_DECLARED_NAMESPACE ? ty->declared.namespace_symbol : nullptr;
     if (!symbol) symbol = ty->declared.symbol;
     if (!symbol || !(symbol->flags & SYMBOL_FUNCTION)) return false;
+    // (Nor one a module's `export =` assigns while it has other exports: getCommonJsExportEquals' ValueModule)
+    if (symbol_rare(symbol)->export_equals_module) return false;
     bool expando = false, top_level = false;
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
@@ -3615,16 +3605,6 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 if (ty_js_assigned_class_name(js_class, &js_name)) out(d, js_name);
                 else if (js_class->flags & SYMBOL_FUNCTION) out_symbol_name(me, d, js_class, SYMBOL_VALUE);
                 else out(d, js_class->name);
-                break;
-            }
-            // A function a CommonJS module exports with the module's other exports merged in (tsc's
-            // getCommonJsExportEquals clone, a ValueModule too)
-            Symbol const* exported = ty->anonymous.merged_value && !ty->anonymous.is_reverse ? symbol_rare(ty->anonymous.merged_value)->merged_export_equals_of : nullptr;
-            // (the function's own type too: tsc's clone is its merged symbol, recordMergedSymbol)
-            if (!exported && ty->anonymous.function && !ty->anonymous.target) exported = export_equals_clone_of(ty->anonymous.function->symbol);
-            if (exported && (exported->flags & SYMBOL_FUNCTION) && span_valid(exported->name_span)) {
-                out_lit(d, "typeof ");
-                out(d, exported->name_span.sv);
                 break;
             }
             // An instantiation expression made by `typeof f<T>` reprints that node (tsc's createAnonymousTypeNode with an

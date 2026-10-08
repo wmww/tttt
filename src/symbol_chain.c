@@ -242,9 +242,6 @@ static bool is_accessible(
 ) {
     if (!from_table) return false;
     Symbol const* named = resolved ? resolved : from_table;
-    // (A CommonJS module's export= clone with its other exports, merged_export_equals(), is what it clones: tsc's
-    // getCommonJsExportEquals records it as that symbol's merged symbol)
-    if (resolved && resolved != symbol && symbol_rare(resolved)->merged_export_equals_of) named = symbol_rare(resolved)->merged_export_equals_of;
     if (named != symbol && identity(me, named) != identity(me, symbol)) return false;
     if (symbol->is_module && named != symbol && namespace_import_is_clone(merged(me, named))) return false;
     // (and nothing but itself names the clone)

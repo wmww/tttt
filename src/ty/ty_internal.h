@@ -45,6 +45,7 @@ enum {
     KEY_TYPE_ONLY_EXPORT, // (namespace Symbol, export Symbol) -> Prop, see ty_namespace_type_only_prop()
     KEY_COMMONJS_EXPORTS, // Module symbol -> its namespace object as `module.exports`
     KEY_MERGED_VALUE,   // Symbol -> Ty, see ty_merged_value_type()
+    KEY_MERGED_EXPORT_EQUALS, // Symbol -> Ty, see merged_export_equals_type()
     KEY_MERGED_EXPORT_EQUALS_INSTANCE, // Symbol -> Ty, see merged_export_equals_type()
     KEY_LITERAL_METHOD_OVERLOADS, // Last FunctionImpl of an object literal's methods of one name -> Ty, see check_object_literal()
     KEY_DEFERRED_OUTER, // TypeNode of a deferred reference -> TyConditionalOuter

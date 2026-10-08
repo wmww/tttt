@@ -240,8 +240,6 @@ typedef struct SymbolModule {
     SymbolTable* type_only_exports;
     PortItem const** type_only_stars;
     u32 type_only_star_cap;
-    // What `export =` assigns merged with the module's other exports, see module_export_equals()
-    struct Symbol* merged_export_equals;
     // Every export's alias chain was resolved, as tsc does when it resolves the members of the module's type (see
     // resolve_module_type_members()): later visits see the members as resolved, not in flight
     bool type_members_resolved;
@@ -261,10 +259,9 @@ typedef struct SymbolRare {
     // The local `A` of `export default class A`, which has no meaning of its own: the default export (tsc's
     // exportSymbol of a local symbol)
     struct Symbol* export_symbol;
-    // A clone of what a module's `export =` assigns, with the module's other exports added to its exports (tsc's
-    // getCommonJsExportEquals: `module.exports = C; module.exports.x = 1`): the original. The checker sees the clone
-    // as the original except for its value (ty_type_of_symbol()) and what is looked up in it
-    struct Symbol* merged_export_equals_of;
+    // What a module's `export =` assigns while the module has other exports: the module, whose other exports binder_link()
+    // added to this symbol's (tsc's getCommonJsExportEquals: `module.exports = C; module.exports.x = 1`)
+    struct Symbol* export_equals_module;
     // JavaScript members `this.x = v` declares in a class constructor: the first such `this.x` and the constructor,
     // where the flow query of tsc's getFlowTypeInConstructor goes (lower.c's assignment_symbol_type)
     struct Expr const* constructor_assigned;
@@ -696,6 +693,9 @@ Symbol* binder_module_of_ref(Binder const* me, ModuleRef* ref);
 // What importing the module gives: the target of its `export =` if it has one (merged with the module's other
 // exports), else itself
 Symbol* module_export_equals(Symbol* module);
+// What a module's `export =` assigns that is a value only by the module's other exports (an uninstantiated namespace
+// merge_commonjs_export_equals() gave the module's values)
+bool symbol_is_commonjs_merged_value_only(Symbol const* me);
 // How tsc names a module in a message: an ambient module by its declared name, a file by the specifier it was
 // imported with (TS2305, ref may be null otherwise) or by its path without the extension. With the quotes
 cstr module_name_for_error(Symbol const* module, ModuleRef const* ref, bool by_specifier);
@@ -753,11 +753,9 @@ static inline bool scope_is_var_container(Scope const* me) {
     return my kind != SCOPE_BLOCK && my kind != SCOPE_ENUM;
 }
 
-// The program's version of a symbol: the overlay if it added to a symbol of the shared lib program. The clone
-// module_export_equals() makes is its original
+// The program's version of a symbol: the overlay if it added to a symbol of the shared lib program
 Symbol const* binder_redirect_slow(Binder const* me, Symbol const* symbol);
 static inline Symbol const* binder_redirect(Binder const* me, Symbol const* symbol) {
-    if (symbol && symbol_rare(symbol)->merged_export_equals_of) symbol = symbol_rare(symbol)->merged_export_equals_of;
     // Nothing is ever written to a symbol of the parent, so there's no flag to test: programs that add to lib
     // symbols are rare, and only those pay for the lookup
     if (!symbol || symbol->binder == me) return symbol;
