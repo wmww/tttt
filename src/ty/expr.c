@@ -1875,6 +1875,24 @@ static bool merged_interface_extends(Symbol const* symbol) {
     return false;
 }
 
+// The first base an interface merged into a class extends that isn't the error type (tsc's
+// resolveBaseTypesOfInterface, after a class base that is none). Null if none
+static Ty const* merged_interface_base(Checker* me, Symbol const* symbol) {
+    Ty const* declared = symbol ? ty_declared_type_of(me, symbol) : nullptr;
+    LowerCtx ctx = { .generic = declared && declared->kind == TY_DECLARED &&
+        (declared->declared.type_params.len || declared->declared.this_param) };
+    for (u32 d = 0; symbol && d < symbol->decl_count; d++) {
+        if (symbol->decls[d].kind != SYMBOL_DECL_INTERFACE) continue;
+        InterfaceDecl const* interface = symbol->decls[d].node;
+        for_each (extends, vec_spanned_type, &interface->extends) {
+            Ty const* base = ty_reduced(me, ty_from_node(me, &extends->type, ctx));
+            if (base->flags & TYF_ERROR) continue;
+            if (base->flags & (TYF_OBJECT | TYF_INTERSECTION | TYF_ANY)) return base;
+        }
+    }
+    return nullptr;
+}
+
 // tsc's checkSuperExpression: for a property access the base class instance with `this` as this-argument, in a static
 // member the base constructor; the callee of `super(...)` is the base constructor
 static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
@@ -1917,6 +1935,16 @@ static Ty const* super_type(Checker* me, IdentifierExpr const* identifier) {
         Expr const* extends = &class_decl->extends;
         if (extends->tag == EXPR_GENERIC_PARAMS) extends = &extends->generic_params->expr;
         Ty const* constructor = ty_expr_type(me, extends);
+        // (A base constructor of the error type is no base, but an interface merged into the class may extend
+        // something: the first valid one of those is getBaseTypes()[0], what tsc's checkSuperExpression reads)
+        if (constructor->flags & TYF_ERROR) {
+            Ty const* merged = merged_interface_base(me, identifier->target);
+            if (merged) {
+                Ty const* declared = ty_declared_type_of(me, identifier->target);
+                Ty const* this_param = declared->kind == TY_DECLARED ? declared->declared.this_param : nullptr;
+                return this_param ? ty_with_this_arg(me, merged, this_param) : merged;
+            }
+        }
         if (constructor->flags & TYF_ANY) return constructor;
         // (No construct signature takes the type arguments, TS2508, or none at all: no base, the error type)
         return ty_class_base_constructor_unfit(me, class_decl) ? ty_intrinsic(me, TY_ERROR) : any_type(me);
