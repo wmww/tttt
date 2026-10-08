@@ -246,8 +246,7 @@ src` finds the code-side markers; every significant one has an entry here.
   computed contextual type would decide it the way tsc does.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
-- `ty_function_context_is_self` (TS7024) reads `KEY_CONTEXT_RETURN_SELF` (written by `infer_return_type()`) but still
-  needs `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (plan 51 stage 3 item 2). TS7011/TS7018 reportability is
+- TS7023/TS7024's own-context circularity (`ty_function_context_is_self`) and TS7011/TS7018 reportability are
   decided where the return type is inferred (`ty_function_decide_widening_reportable()`, tsc's getReturnTypeFromBody):
   through the anchor once the call is resolved, else the first contextual signature (`KEY_CONTEXT_RETURN`), not the
   one the check of the moment has.
@@ -346,13 +345,10 @@ src` finds the code-side markers; every significant one has an entry here.
   push-down values stand in (`KEY_CONTEXT_RETURN`, `KEY_LITERAL_CONTEXT`). Not recorded for a non-generic call of one
   signature (`CallResolution.exact`). Derivations cached per anchor unless transient (`AnchorRead.transient`).
   Generators' returns aren't anchored.
-- `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (expr.c): "the first check had no contextual signature / type", so
-  the return type wasn't decided then (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod only computes it
-  with a signature). NONE only under a call's resolution, FIRST_ABSENT also for anchored functions checked after it.
-  Three slices (with `KEY_CONTEXT_BLOCKED`) of tsc's one rule: plan 51 stage 3 item 2 (each alone still loses: NONE 2
-  tests + effect 2, FIRST_ABSENT flagflip -22 TS7023); merging `KEY_CONTEXT_DONE`/`BLOCKED` is item 4. A blocked
-  function still takes `this` from the last contextual signature, which tsc asks lazily.
-- `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_DONE`), from the first usable context; generic
+- `KEY_CONTEXT_CHECKED` (expr.c, tsc's ContextChecked): the first check that doesn't skip a function decides its
+  contextual signature for good (`context_checked_none` without one); a function without one still takes `this` from
+  the last contextual signature, which tsc asks lazily.
+- `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_CHECKED`), at its first check; generic
   contextual signatures aren't instantiated. `KEY_CONTEXT_PARAM_PATTERN` marks pattern fallbacks for the symbols
   traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check, an earlier return type misses it
   (permanent: tsc's getContextualType(iife) is fixed at the first check too, plan 51).

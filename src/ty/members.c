@@ -4254,8 +4254,7 @@ void signature_resolve(Checker* me, Signature const* const_sig) {
         if (!sig->type_params.len && function->is_expression && ty_function_is_context_sensitive(function)) {
             // A function expression typed by a generic contextual signature is generic in its type parameters, which
             // its parameters were typed with (tsc's assignContextualParameterTypes): `x => x` for `<S>(x: S) => T`
-            u64 key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
-            Signature const* contextual = intern_get(&my links, key, 2);
+            Signature const* contextual = ty_function_assigned_contextual_signature(me, function);
             if (contextual) sig->type_params = contextual->type_params;
         }
         LowerCtx ctx = sig->ctx;

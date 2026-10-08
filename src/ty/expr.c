@@ -1328,6 +1328,9 @@ static Ty const* apparent_contextual_type(Checker* me, Ty const* ty) {
     return ty;
 }
 
+// KEY_CONTEXT_CHECKED of a function whose first check had no contextual signature
+static Signature const context_checked_none;
+
 Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     // A JavaScript `@type {F}` gives its signature's `this` (tsc's getThisTypeOfDeclaration of a type tag's signature)
     if (function_impl_rare(function)->jsdoc_signature_type) ty_function_apply_jsdoc_type(me, function, nullptr);
@@ -1431,8 +1434,8 @@ Signature const* ty_function_contextual_signature(Checker* me, FunctionImpl cons
 }
 
 Signature const* ty_function_assigned_contextual_signature(Checker* me, FunctionImpl const* function) {
-    u64 key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
-    return intern_get(&my links, key, 2);
+    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_CHECKED, (u64)(uintptr_t)function }, 2);
+    return sig == &context_checked_none ? nullptr : sig;
 }
 
 // What a JavaScript function's synthetic `args` rest parameter (it uses `arguments`) is contextually typed as: the rest
@@ -1695,9 +1698,9 @@ static void assign_contextual_signature_as(
     Checker* me, FunctionImpl const* function, Ty const* contextual, Signature const* given, InitializedBinding const* evaluating,
     Ty const* raw_contextual
 ) {
-    u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
-    if (intern_get(&my links, done_key, 2)) return;
-    if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)function }, 2)) {
+    u64 checked_key[2] = { KEY_CONTEXT_CHECKED, (u64)(uintptr_t)function };
+    Signature const* checked = intern_get(&my links, checked_key, 2);
+    if (checked == &context_checked_none) {
         // Its parameters have no contextual types for good, but its `this` is whatever the contextual signature says when
         // it is looked at (tsc's getContextualThisParameterType asks getContextualSignature each time): the last one, of
         // the overload a call settles on after a candidate that gave none checked it first
@@ -1705,13 +1708,14 @@ static void assign_contextual_signature_as(
         if (late && late->this_type) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_THIS, (u64)(uintptr_t)function }, 2) = late->this_type;
         return;
     }
+    if (checked) return;
     Signature const* sig = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
     if (!sig) return;
     // The type parameters of the generic call this is an argument of are fixed now (a contextual type that left them
     // generic because nothing was inferred for them: `unknown`)
     Signature const* unfixed = sig;
     sig = ty_fix_contextual_signature(me, sig, function);
-    *intern_slot(me, &my links, done_key, 2) = sig;
+    *intern_slot(me, &my links, checked_key, 2) = sig;
     if (sig->this_type) {
         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
         *intern_slot(me, &my links, this_key, 2) = sig->this_type;
@@ -1781,8 +1785,7 @@ void ty_function_apply_jsdoc_type(Checker* me, FunctionImpl const* function, Ini
     // through getSignatureOfTypeTag, not a contextual signature)
     Ty const* type = ty_of_node(function_impl_rare(function)->jsdoc_signature_type);
     assign_contextual_signature_as(me, function, type, nullptr, evaluating, nullptr);
-    u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
-    if (intern_get(&my links, done_key, 2) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
+    if (ty_function_assigned_contextual_signature(me, function) || function->is_expression || !(type->flags & TYF_OBJECT)) return;
     // (One the arity rules out as a contextual signature: more parameters than it has)
     Members const* members = ty_members(me, type);
     if (members->call_count == 1 && !members->construct_count && !members->call[0]->type_params.len) {
@@ -4762,8 +4765,7 @@ u32 ty_iife_effective_arg_count(Checker* me, FunctionImpl const* function) {
 // are the widened types of the (effective) arguments, a rest parameter the tuple of those left (getSpreadArgumentType),
 // a missing argument undefined (widening to any without strictNullChecks) unless the parameter has an initializer
 static void assign_iife_parameter_types(Checker* me, FunctionImpl const* function, CallExpr const* call) {
-    u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
-    if (intern_get(&my links, done_key, 2)) return;
+    if (ty_function_assigned_contextual_signature(me, function)) return;
     u32 arg_count = 0;
     EffectiveArg* args = effective_call_args(me, call, &arg_count);
     if (!args) return;
@@ -5367,43 +5369,25 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             if (my defer_checks && expr->function->full_span.source == my checking_file && expr->function->has_body) {
                 checker_defer_function_body(me, expr->function);
             }
-            // A first check, under a call's resolution, with a contextual type that has no signature for it decides
-            // that it has none (tsc's ContextChecked is set either way): `m(() => 1, (z) => () => 2)` with `zero: Z`
+            // Its first check that doesn't skip it decides its contextual signature for good (tsc's ContextChecked, set
+            // whatever that check finds): without one then, it has none, `m(() => 1, (z) => () => 2)` with `zero: Z`
             // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its
-            // return type only sees the context once the call is resolved (ty_contextual_return_type_self())
-            u64 none_key[2] = { KEY_CONTEXT_NONE, (u64)(uintptr_t)expr->function };
-            // A context-sensitive function's first full check without a contextual signature decides it has none (tsc's
-            // ContextChecked, set by the first check that doesn't skip it whatever it finds). Not one typed by a JSDoc
-            // `@type`, which takes its parameter types from that (tsc's getParameterTypeOfTypeTag)
-            if (ty_function_is_context_sensitive(expr->function) && !function_impl_rare(expr->function)->jsdoc_signature_type &&
-                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
-                !intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) &&
-                (ctx.sig_absent || !(ctx.contextual || ctx.sig_contextual) ||
-                 !contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0))
+            // return type only sees the context when it is asked for (ty_contextual_return_type_self()). Not one typed
+            // by a JSDoc `@type`, which takes its parameter types from that (tsc's getParameterTypeOfTypeTag)
+            bool has_context = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent;
+            Ty const* context = ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
+            u64 checked_key[2] = { KEY_CONTEXT_CHECKED, (u64)(uintptr_t)expr->function };
+            Signature const* checked = intern_get(&my links, checked_key, 2);
+            if (!checked && !function_impl_rare(expr->function)->jsdoc_signature_type &&
+                (!has_context || !contextual_signature(me, ty_instantiate_contextual_type_for(me, context, true), expr->function, 0))
             ) {
-                *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) = expr->function;
+                *intern_slot(me, &my links, checked_key, 2) = &context_checked_none;
             }
-            CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
-            // (Not from an overload failure's fallback inference, which checks the arguments against the constraints:
-            // tsc's contextual signature goes through the resolved failure signature, and the checks against that
-            // one are memoized with the contextual type they had before, `T2({ b: function () { return 123 } },
-            // false)` with `const TConfig extends { b?: any }` keeps `() => 123`)
-            if (none_call) {
-                // (A blocked one still takes its `this` from it, see assign_contextual_signature_as())
-                if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2)) {
-                    assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr,
-                        ctx.raw_contextual);
-                }
-            } else if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
-                u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
-                bool assigned = intern_get(&my links, done_key, 2) != nullptr;
-                assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr,
-                    ctx.raw_contextual);
-                if (!assigned && my resolving_call && !intern_get(&my links, done_key, 2)) {
-                    *intern_slot(me, &my links, none_key, 2) = my resolving_call;
-                }
-                if (assigned) {
-                    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0);
+            if (has_context) {
+                // (A function checked without one still takes its `this` from it, see assign_contextual_signature_as())
+                assign_contextual_signature_as(me, expr->function, context, nullptr, nullptr, ctx.raw_contextual);
+                if (checked && checked != &context_checked_none) {
+                    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, context, true), expr->function, 0);
                     if (sig) set_contextual_return(me, expr->function, sig);
                 }
                 // Its return type is decided at its first check with a contextual signature, which may be now, while the
@@ -5412,7 +5396,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
                 // re-entered from its own body, `wrap()` returning `new Proxy(t, { get() { return wrap(...) } })`,
                 // doesn't make it circular)
                 if (my outer_inference && !expr->function->ret_explicit &&
-                    intern_get(&my links, done_key, 2) && !ty_function_return_in_flight(me, expr->function)) {
+                    ty_function_assigned_contextual_signature(me, expr->function) && !ty_function_return_in_flight(me, expr->function)) {
                     ty_argument_return_type(me, expr->function);
                 }
             }

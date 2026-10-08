@@ -1176,8 +1176,12 @@ static void infer_rest_variadic(
             } else if (arg->context_sensitive && arg->expr->tag == EXPR_FUNCTION) {
                 arg->type = ty_any_function_type(me);
             } else if (arg->context_sensitive) {
-                // (A literal with such functions in it: they are left out the same way)
+                // (A literal with such functions in it: they are left out the same way, the rest seeing what the call
+                // has inferred so far, like the other arguments' first pass)
+                OuterInference* saved = my outer_inference;
+                my outer_inference = self;
                 arg->type = ty_check_expr_skipping_sensitive(me, arg->expr, rest_arg_contextual(me, shape, args, i, from), is_const);
+                my outer_inference = saved;
             } else {
                 check_rest_arg(me, shape, args, i, from, is_const, self);
             }

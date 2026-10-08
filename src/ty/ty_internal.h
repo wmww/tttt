@@ -106,9 +106,7 @@ enum {
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
-    KEY_CONTEXT_NONE,   // FunctionImpl -> the call being resolved when its first check had a contextual type without signature
-    KEY_CONTEXT_BLOCKED, // FunctionImpl -> non-null once its first check decided it has no contextual signature (context sensitive)
-    KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
+    KEY_CONTEXT_CHECKED, // FunctionImpl -> its contextual signature, decided by its first check (tsc's ContextChecked; expr.c's context_checked_none: it has none)
     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())
     KEY_RETURN_REPORTABLE, // FunctionImpl -> widening reportability bits decided with its return type (ty_function_decide_widening_reportable())
     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
