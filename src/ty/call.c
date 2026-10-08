@@ -3446,15 +3446,21 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
             if (fallback && fallback->kind != TY_UNION) return ty_call_effects(me, fallback, call);
             return effects;
         }
-        // Generic union signatures (members with one generic method each, `this is Map[K]`): the signature the call
-        // resolves to, its predicate instantiated (tsc's getEffectsSignature: getResolvedSignature)
-        bool generic_predicate = false;
-        for (u32 i = 0; i < count && !generic_predicate; i++) {
-            signature_resolve(me, union_sigs[i]);
-            generic_predicate = union_sigs[i]->type_params.len && has_predicate_or_declared_never(me, union_sigs[i]);
-        }
-        if (!generic_predicate) return effects;
+        // Generic union signatures (members with one generic method each, `this is Map[K]`), or several (members
+        // whose callee is an intersection of a predicate and other signatures): the signature the call resolves to,
+        // its predicate instantiated (tsc's getEffectsSignature: getResolvedSignature)
         Candidate chosen = {0};
+        signature_resolve(me, union_sigs[0]);
+        if (count == 1 && !union_sigs[0]->type_params.len) {
+            chosen.sig = union_sigs[0];
+            return chosen_effects(me, &chosen);
+        }
+        bool resolve = false;
+        for (u32 i = 0; i < count && !resolve; i++) {
+            signature_resolve(me, union_sigs[i]);
+            resolve = has_predicate_or_declared_never(me, union_sigs[i]);
+        }
+        if (!resolve) return effects;
         resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen, nullptr);
         return chosen_effects(me, &chosen);
     }
