@@ -35,7 +35,8 @@ static i32 to_int32(double number) {
 
 // The value of another enum member, if it's known already (a member that comes later, or whose enum is being
 // resolved further up the stack, isn't)
-static EnumValue member_value(Checker* me, Symbol const* decl) {
+static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth);
+static EnumValue member_value(Checker* me, Symbol const* decl, u32 depth) {
     if (!decl || !(decl->flags & SYMBOL_ENUM_MEMBER)) return enum_value_unknown;
     // A member declared later in the file (TS2651) evaluates to 0 (tsc's evaluateEnumMember)
     EnumCase const* at = my enum_evaluating;
@@ -46,10 +47,20 @@ static EnumValue member_value(Checker* me, Symbol const* decl) {
     }
     Ty const* type = ty_declared_type_of(me, decl);
     if (type->kind != TY_LITERAL || !type->literal.enum_decl) return enum_value_unknown;
-    // (A string member was either written as one or reported, TS18055: counted as written. HACK)
     if (type->flags & TYF_STRING_LITERAL) {
+        // (Syntactically a string if its own initializer is: tsc's getEnumMemberValue keeps isSyntacticallyString)
+        SymbolDecl const* member = symbol_find_decl(decl, SYMBOL_DECL_ENUM_MEMBER);
+        bool syntactic = true;
+        if (member) {
+            EnumCase const* outer = my enum_evaluating;
+            my enum_evaluating = member->node;
+            EnumValue own = evaluate(me, &((EnumCase const*)member->node)->value, depth);
+            my enum_evaluating = outer;
+            syntactic = !own.known || own.syntactic_string;
+            cstr_drop(&own.string);
+        }
         return (EnumValue){ .known = true, .is_string = true, .string = cstr_from_sv(atom_sv(type->literal.string)),
-            .syntactic_string = true };
+            .syntactic_string = syntactic };
     }
     if (type->flags & TYF_NUMBER_LITERAL) return enum_value_number(type->literal.value.number);
     return enum_value_unknown;
@@ -167,7 +178,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
                 if (global && csview_equals(name, "Infinity")) return enum_value_number(INFINITY);
                 return const_variable_value(me, expr->identifier.target, expr->inner_span, depth);
             }
-            return member_value(me, expr->identifier.target);
+            return member_value(me, expr->identifier.target, depth);
 
         case EXPR_TEMPLATE: {
             TemplateExpr const* template = expr->template_;
@@ -200,7 +211,7 @@ static EnumValue evaluate(Checker* me, Expr const* expr, u32 depth) {
             }
             if (!enum_decl) return enum_value_unknown;
             if (property->prop.tag != EXPR_LITERAL || property->prop.literal.tag != VALUE_STRING) return enum_value_unknown;
-            return member_value(me, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)));
+            return member_value(me, symbol_get_export(enum_decl, cstr_sv(&property->prop.literal.string)), depth);
         }
 
         default:
