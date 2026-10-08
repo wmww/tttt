@@ -2882,7 +2882,7 @@ static Ternary tuple_shapes_related(
     u32 source_arity = source_shape->arity, target_arity = target_shape->arity;
     // (A rest element of an array type is tsc's Rest, of anything else (a type variable) its Variadic)
     u32 source_min = 0, target_min = 0;
-    bool source_rest = false, target_variable = false;
+    bool source_rest = false, target_variable = false, target_rest = false;
     for (u32 i = 0; i < source_arity; i++) {
         if (!(source_shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) source_min += !(source_shape->flags[i] & TUPLE_ELEMENT_REST) || !is_rest_array(me, source_args.data[i]);
         source_rest |= (source_shape->flags[i] & TUPLE_ELEMENT_REST) && is_rest_array(me, source_args.data[i]);
@@ -2890,6 +2890,7 @@ static Ternary tuple_shapes_related(
     for (u32 i = 0; i < target_arity; i++) {
         if (!(target_shape->flags[i] & TUPLE_ELEMENT_OPTIONAL)) target_min += !(target_shape->flags[i] & TUPLE_ELEMENT_REST) || !is_rest_array(me, target_args.data[i]);
         target_variable |= (target_shape->flags[i] & TUPLE_ELEMENT_REST) != 0;
+        target_rest |= (target_shape->flags[i] & TUPLE_ELEMENT_REST) && is_rest_array(me, target_args.data[i]);
     }
     if (!source_rest && source_arity < target_min) {
         if (report) report_line(st, 2618, cstr_d("Source has ", source_arity, " element(s) but target requires ", target_min, "."));
@@ -2922,7 +2923,14 @@ static Ternary tuple_shapes_related(
     bool can_exclude = excluded_len > 0;
     for (u32 i = 0; i < source_arity; i++) {
         u32 from_end = source_arity - 1 - i;
-        u32 target_index = target_variable && i >= target_start ? target_arity - 1 - (from_end < target_end ? from_end : target_end) : i;
+        // Only an array rest element in the target takes the source's middle elements: past a target with variadic
+        // ones only (`[...A, number]`), the source has more elements than it allows (tsgo's propertiesRelatedTo:
+        // tsc 6 indexed before the target's first element there)
+        if (!(target_rest && i >= target_start) && i >= target_arity) {
+            if (report) report_line(st, 2621, cstr_d("Target allows only ", target_arity, " element(s) but source may have more."));
+            return TERNARY_FALSE;
+        }
+        u32 target_index = target_rest && i >= target_start ? target_arity - 1 - (from_end < target_end ? from_end : target_end) : i;
         unsigned char source_flags = source_shape->flags[i], target_flags = target_shape->flags[target_index];
         bool source_variadic = (source_flags & TUPLE_ELEMENT_REST) && !is_rest_array(me, source_args.data[i]);
         bool target_variadic = (target_flags & TUPLE_ELEMENT_REST) && !is_rest_array(me, target_args.data[target_index]);
@@ -2963,7 +2971,7 @@ static Ternary tuple_shapes_related(
         Ternary related = is_related_to(me, st, source_type, target_type, report);
         if (!related) {
             if (report && (target_arity > 1 || source_arity > 1)) {
-                if (target_variable && i >= target_start && from_end >= target_end && target_start != source_arity - target_end - 1) {
+                if (target_rest && i >= target_start && from_end >= target_end && target_start != source_arity - target_end - 1) {
                     report_incompatible(st, 2627, cstr_d("Type at positions ", target_start, " through ", source_arity - target_end - 1,
                         " in source is not compatible with type at position ", target_index, " in target."));
                 } else {
