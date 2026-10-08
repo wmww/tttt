@@ -1235,10 +1235,23 @@ static bool is_identical_or_base(Checker* me, Ty const* source, Ty const* target
         ((target->flags & TYF_NUMBER) && (source->flags & TYF_NUMBER_LITERAL));
 }
 
+// The declaration an anonymous object type (or an instantiation of one) is the type of: a type literal, mapped type or
+// function type node, or a function (tsc's type.symbol), null if none
+static void const* anonymous_declaration(Ty const* ty) {
+    if (ty->kind != TY_ANONYMOUS || ty->anonymous.applies_type_args) return nullptr;
+    Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    if (root->kind != TY_ANONYMOUS || root->anonymous.applies_type_args) return nullptr;
+    if (root->anonymous.node) return root->anonymous.node;
+    return root->anonymous.function;
+}
+
 static bool is_closely_matched(Ty const* source, Ty const* target) {
     if (source->kind == TY_REFERENCE && target->kind == TY_REFERENCE && source->reference.target == target->reference.target) {
         return true;
     }
+    // (Instantiations of one type literal: tsc's isTypeCloselyMatchedBy, s.symbol === t.symbol)
+    void const* declaration = anonymous_declaration(source);
+    if (declaration && declaration == anonymous_declaration(target)) return true;
     return source->alias && target->alias_args.len && source->alias == target->alias;
 }
 
