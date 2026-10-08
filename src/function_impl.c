@@ -29,7 +29,6 @@ void function_impl_drop(FunctionImpl* me) {
         type_drop(&my predicate->type);
         free(my predicate);
     }
-    lazy_type_drop(&my lazy_type);
     block_drop(&my body);
     FunctionImplRare* rare = my rare;
     if (!rare) return;
@@ -215,7 +214,6 @@ bool function_arg_decoratable(FunctionImpl const* me, isize index, bool in_class
 }
 
 void function_impl_lookup_names_as(FunctionImpl* me, FunctionFlowKind kind, bool this_is_any, Scope* names, ErrorCtx* errs) {
-    lazy_type_bind(&my lazy_type, LAZY_TYPE_FUNCTION);
     // (a declaration or method too: what it returns is in the same context)
     if (names->flow && names->flow->contextual_depth) my syntactically_contextual = true;
     my ambient = names->ambient;
@@ -478,10 +476,6 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         checker->return_context = ty_return_expressions_context(checker, me);
     }
     return outer;
-}
-
-Ty const* function_impl_evaluate_type(FunctionImpl* me) {
-    return ty_function_type(current_checker, me);
 }
 
 // tsc's getAccessorThisParameter

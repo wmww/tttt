@@ -188,7 +188,6 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
                 .kind = SYMBOL_DECL_INFER,
                 .node = my inferred,
             });
-            my inferred->symbol_ref = my inferred->owned_symbol;
             if (!infer_unchecked_depth) unused_register(scope, UNUSED_INFER, my inferred, span_null);
             my inferred->position = position;
             my inferred->reference = reference;
@@ -352,7 +351,7 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             if (vec_interface_member_size(&my interface.members) == 1) {
                 InterfaceMember const* only = my interface.members.data;
                 if (only->key.tag == INTERFACE_KEY_EXPR && !only->is_method && !only->computed_accessor) {
-                    scope_rare_mut(literal_scope)->lone_computed_key = only->key.expr.ref;
+                    scope_rare_mut(literal_scope)->lone_computed_key = only->key.expr;
                 }
             }
             for_each (i, vec_interface_member, &my interface.members) {
@@ -494,8 +493,8 @@ void type_typecheck(TypeNode const* me, ErrorCtx* errs) {
                 Checker* checker = current_checker;
                 Ty const* all[3] = { ty_intrinsic(checker, TY_STRING), ty_intrinsic(checker, TY_NUMBER), ty_intrinsic(checker, TY_ES_SYMBOL) };
                 // (A circular key constraint is the error type: tsc's getConstraintTypeFromMappedType)
-                if (as || !mapped->key.mapped->symbol_ref ||
-                    !ty_param_constraint_is_circular(checker, ty_type_param(checker, mapped->key.mapped->symbol_ref))) {
+                if (as || !mapped->key.mapped->owned_symbol ||
+                    !ty_param_constraint_is_circular(checker, ty_type_param(checker, mapped->key.mapped->owned_symbol))) {
                     ty_check_assignable(checker, keys, ty_union(checker, all, 3, nullptr, (TyList){0}),
                         as ? mapped->key.mapped->as_type_span : mapped->key.mapped->in_type_span, errs);
                 }

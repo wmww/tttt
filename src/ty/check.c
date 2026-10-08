@@ -2141,7 +2141,7 @@ Ty const* ty_instance_type_of_class(Checker* me, Symbol const* class_symbol) {
 // tsc's checkInferType: an `infer X` declared more than once in an extends type has the same constraint everywhere
 // it has one (TS2838 at every declaration)
 void ty_check_infer_constraints(Checker* me, InferredType const* inferred, ErrorCtx* errs) {
-    Symbol const* symbol = inferred->symbol_ref;
+    Symbol const* symbol = inferred->owned_symbol;
     if (!symbol || symbol->decl_count < 2) return;
     Ty const* constraint = ty_param_constraint(me, ty_type_param(me, symbol));
     if (!constraint) return;
@@ -3600,8 +3600,8 @@ void ty_check_property_modifiers(Checker* me, Symbol const* symbol, ClassDecl co
 // The name a type member binds: written, or what a computed key's type names (late bound, an entity name). Null if none
 static Atom const* type_member_name(Checker* me, InterfaceMember const* member) {
     if (member->key.tag == INTERFACE_KEY_NAME) return checker_atom(me, cstr_sv(&member->key.name_string));
-    if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref) return nullptr;
-    Expr const* key = member->key.expr.ref;
+    if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr) return nullptr;
+    Expr const* key = member->key.expr;
     if (key->tag != EXPR_LITERAL && !expr_is_entity_name(key)) return nullptr;
     return ty_literal_name(me, ty_expr_type(me, key));
 }

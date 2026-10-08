@@ -202,7 +202,6 @@ typedef struct FunctionImpl {
     TypeNode ret;
     TypePredicateNode* predicate; // Usually null
     FunctionImplRare* rare; // Owned, null if none of its fields is set
-    LazyType lazy_type;
     Symbol* symbol;
     Block body; // Initialized to empty block if has_body is false
     // Control flow (flow.h), set by the resolve walk
@@ -324,7 +323,6 @@ static inline void function_impl_lookup_names(FunctionImpl* me, bool this_is_any
     function_impl_lookup_names_as(me, FUNCTION_IS_DECLARATION, this_is_any, names, errs);
 }
 TypeNode function_impl_into_type(FunctionImpl me);
-Ty const* function_impl_evaluate_type(FunctionImpl* me);
 // What return expressions are contextually typed by. Returns the enclosing function's, to be put back
 Ty const* function_impl_enter_return_context(FunctionImpl const* me);
 // The checks on a parameter list. `is_type`: a function type or signature, which can't have initializers

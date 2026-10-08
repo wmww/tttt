@@ -83,9 +83,6 @@ static void cycle_trace_print(LazyType* lazy) {
             Span span = c_container_of(lazy, InitializedBinding, lazy_type)->binding.content_span;
             log_warn("  binding, line ", span_line_index(span) + 1, ": ", span);
         }   break;
-        case LAZY_TYPE_FUNCTION:
-            log_warn("  function, line ", span_line_index(c_container_of(lazy, FunctionImpl, lazy_type)->full_span) + 1);
-            break;
         default:
             log_warn("  LazyType tag ", (i32)lazy->tag);
             break;
@@ -131,7 +128,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         // In flight only below the barrier of a call being resolved (tsc's findResolutionCycleStartIndex from
         // resolutionStart), it isn't a cycle: it's evaluated again, once, and the inner evaluation's result is the one
         // remembered (tsc's getTypeOfVariableOrParameterOrProperty)
-        bool below_barrier = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION && !lazy_type_pattern_root(me) &&
+        bool below_barrier = my tag != LAZY_TYPE_EXPR && !lazy_type_pattern_root(me) &&
             !ty_resolving_find(current_checker, RESOLVING_DECLARATION, me);
         if (below_barrier) {
             if (state->reevaluating) goto circular;
@@ -139,7 +136,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
             goto evaluate;
         }
         circular:
-        if (my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION) {
+        if (my tag != LAZY_TYPE_EXPR) {
             Binding const* pattern = lazy_type_pattern_root(me);
             if (pattern) ty_resolving_pattern_cycle(current_checker, me, pattern);
             else ty_resolving_cycle(current_checker, RESOLVING_DECLARATION, me);
@@ -147,7 +144,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
         }
         // An expression on the way only has to stop a runaway: which of the two is hit first depends on who asks
         // first, and the answer shouldn't (control flow analysis of a loop re-enters the expressions of the loop body
-        // through declarations). A function's type doesn't depend on its body (tsc's getTypeOfFuncClassEnumModule)
+        // through declarations)
         if (my tag == LAZY_TYPE_EXPR && state->hits < 8) {
             state->hits++;
         } else if (!state->is_self_referential) {
@@ -169,7 +166,7 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     FlowIsolation isolation = {0};
     if (isolate) isolation = ty_flow_isolate(current_checker);
 
-    bool resolving = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_FUNCTION;
+    bool resolving = my tag != LAZY_TYPE_EXPR;
     if (resolving) ty_resolving_push(current_checker, lazy_type_pattern_root(me) ? RESOLVING_PATTERN : RESOLVING_DECLARATION, me);
     Ty const* result = nullptr;
     switch (my tag) {
@@ -186,10 +183,6 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
 
         case LAZY_TYPE_FOR_EACH_LOOP_VAR:
             result = for_each_loop_statement_evaluate_var_type(c_container_of(me, ForEachLoopStatement, var_type));
-            break;
-
-        case LAZY_TYPE_FUNCTION:
-            result = function_impl_evaluate_type(c_container_of(me, FunctionImpl, lazy_type));
             break;
 
         case LAZY_TYPE_CLASS_ITEM_FIELD:

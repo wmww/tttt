@@ -28,7 +28,6 @@ typedef struct LazyType {
         LAZY_TYPE_EXPR,
         LAZY_TYPE_INITIALIZED_BINDING,
         LAZY_TYPE_FOR_EACH_LOOP_VAR,
-        LAZY_TYPE_FUNCTION,
         LAZY_TYPE_CLASS_ITEM_FIELD,
         LAZY_TYPE_CLASS_ITEM_ACCESSOR,
     } tag;

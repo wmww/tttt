@@ -993,7 +993,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             if (ctx->member_owner) {
                 Checker* checker = current_checker;
                 bool is_number = false;
-                Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, my key.expr.ref), &is_number);
+                Atom const* name = ty_property_name_of_key(checker, ty_expr_type(checker, my key.expr), &is_number);
                 Prop const* prop = name ? ty_get_prop(checker, ctx->member_owner, name) : nullptr;
                 bool mine = false;
                 Span own = span_valid(my declaration) ? my declaration : my key.span;
@@ -1010,11 +1010,11 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                 .declarations = declarations,
                 .span = my key.span,
                 .text = member_text(ctx, ctx->member_container, scope, my key.span.sv, false),
-            }, my key.expr.ref);
+            }, my key.expr);
             // (Overloads: optional if any of them is, the symbol's flags)
             baseline_test_case_add_type(ctx, my key.span, overloads ? optional_member_type(prop_type(current_checker, overloads), overloads->flags & PROP_OPTIONAL) :
                 accessor_pair ? prop_type(current_checker, accessor_pair) : optional_member_type(ty_of_node(&my type), my optional));
-            computed_member_name_compile_test_info(my key.expr.ref, ctx);
+            computed_member_name_compile_test_info(my key.expr, ctx);
             // (A lone setter `set [k](v: T)` declares its parameter)
             Span setter_param = interface_member_setter_param(me);
             if (span_valid(setter_param) && my computed_accessor == 2) {
@@ -1301,7 +1301,7 @@ void type_compile_test_info(TypeNode const* me, BaselineTestCase* ctx) {
             baseline_test_case_add_symbol(ctx, (BaselineSym){
                 // (An `infer X` outside a conditional's extends clause, TS1338, is an anonymous type parameter
                 // declared by itself: tsc's bindAnonymousDeclaration)
-                .declarations = my inferred->symbol_ref ? declaration_get_spans(my inferred->symbol_ref) :
+                .declarations = my inferred->owned_symbol ? declaration_get_spans(my inferred->owned_symbol) :
                     vec_span_single(inferred_type_parameter_span(my inferred)),
                 .allow_declaration_empty = true,
                 .span = my inferred->name,

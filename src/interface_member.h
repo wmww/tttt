@@ -31,7 +31,6 @@ typedef struct InterfaceMappedKey {
     TypeNode as_type;
     Span as_type_span;
     Symbol* owned_symbol;
-    Symbol const* symbol_ref;
     TypeFlow template_flow[2]; // What the template's nodes have as TypeNode.flow, as TernaryType.true_flow
     bool has_as_type;
     signed char readonly; // -1 for remove, +1 for add
@@ -64,11 +63,7 @@ typedef struct InterfaceMember {
         union {
             cstr name_string; // INTERFACE_KEY_NAME
             InterfaceIndexKey* index; // Owned
-            struct {
-                Expr* ref;
-                // Only the initial interface parsed into the AST will own an expr
-                Expr* owned;
-            } expr;
+            Expr* expr; // Owned
             InterfaceMappedKey* mapped; // Owned
         };
         enum {

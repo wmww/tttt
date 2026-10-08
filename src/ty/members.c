@@ -421,8 +421,8 @@ static void builder_add_interface_member(
                     name = checker_atom(me, cstr_sv(&i->key.name_string));
                 } else {
                     // (Late bound: not among the early members, see early_declared_members())
-                    if (builder->skip_computed && i->key.expr.ref && expr_is_entity_name(i->key.expr.ref)) break;
-                    key = ty_expr_type(me, i->key.expr.ref);
+                    if (builder->skip_computed && i->key.expr && expr_is_entity_name(i->key.expr)) break;
+                    key = ty_expr_type(me, i->key.expr);
                     name = ty_literal_name(me, key);
                     if (!name) break;
                 }
@@ -498,7 +498,7 @@ static void builder_add_interface_member(
                 if (is_method) prop->flags |= PROP_METHOD;
                 prop->decl->name_span = i->key.span;
                 prop->decl->name_is_value = i->key.tag == INTERFACE_KEY_NAME && i->key.name_is_value;
-                if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr.ref, key, false);
+                if (key) prop->decl->name_form = ty_prop_name_form(i->key.span.sv, i->key.expr, key, false);
                 // (A computed number name is a number to keyof: `{ [0]: X }` has keyof 0, tsc's getLiteralTypeFromProperty)
                 if (key && (key->flags & TYF_NUMBER_LITERAL)) prop->decl->name_type = ty_regular(me, key);
                 { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, prop, d, n); }
@@ -535,8 +535,8 @@ static void builder_add_interface_member(
                 LowerCtx mapped_ctx = ctx;
                 mapped_ctx.generic = true;
                 MappedInfo* mapped = arena_new(&my arena, MappedInfo);
-                mapped->type_param = i->key.mapped->symbol_ref ?
-                    ty_type_param(me, i->key.mapped->symbol_ref) :
+                mapped->type_param = i->key.mapped->owned_symbol ?
+                    ty_type_param(me, i->key.mapped->owned_symbol) :
                     ty_synthetic_type_param(me, i->key.mapped->type_name.sv);
                 mapped->constraint = ty_from_node(me, &i->key.mapped->in_type, mapped_ctx);
                 // `[P in any]` is over tsc's keyofConstraintType (getConstraintFromTypeParameter)
@@ -580,8 +580,8 @@ static void builder_add_interface_member(
 
 // Like computed_index_kind() for a member of an interface or type literal
 static u32 interface_computed_index_kind(Checker* me, InterfaceMember const* i) {
-    if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr.ref || !expr_is_entity_name(i->key.expr.ref)) return 0;
-    Ty const* key_type = ty_regular(me, ty_expr_type(me, i->key.expr.ref));
+    if (i->key.tag != INTERFACE_KEY_EXPR || !i->key.expr || !expr_is_entity_name(i->key.expr)) return 0;
+    Ty const* key_type = ty_regular(me, ty_expr_type(me, i->key.expr));
     if (key_type->flags & (TYF_LITERAL | TYF_UNIQUE_ES_SYMBOL | TYF_ENUM)) return 0;
     Ty const* keys[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
     if (!ty_is_related(me, key_type, ty_union(me, keys, 3, nullptr, (TyList){0}), TY_RELATION_ASSIGNABLE)) return 0;
@@ -2399,7 +2399,7 @@ static void early_declared_members(Checker* me, Ty const* ty) {
     for (SymbolDecl const* node = decl->decls; node < decl->decls + decl->decl_count && !late; node++) {
         if (node->kind == SYMBOL_DECL_INTERFACE) {
             for_each (i, vec_interface_member, &((InterfaceDecl const*)node->node)->type.interface.members) {
-                late |= i->key.tag == INTERFACE_KEY_EXPR && i->key.expr.ref && expr_is_entity_name(i->key.expr.ref);
+                late |= i->key.tag == INTERFACE_KEY_EXPR && i->key.expr && expr_is_entity_name(i->key.expr);
             }
         } else if (node->kind == SYMBOL_DECL_CLASS) {
             for_each (i, vec_class_item, &((ClassDecl const*)node->node)->items) {

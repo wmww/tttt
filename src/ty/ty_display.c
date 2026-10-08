@@ -1446,10 +1446,10 @@ static void display_node_computed_name(Checker* me, TyDisplay d, Expr const* exp
 // unresolved entity name (`[Symbol.match]` without the lib that has it: the types baseline allows unresolved names,
 // a message's typeToString doesn't)
 static bool member_printed(Checker* me, TyDisplay d, InterfaceMember const* member) {
-    if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr.ref) return true;
-    Ty const* key = ty_expr_type(me, member->key.expr.ref);
+    if (member->key.tag != INTERFACE_KEY_EXPR || !member->key.expr) return true;
+    Ty const* key = ty_expr_type(me, member->key.expr);
     return key->kind == TY_LITERAL ||
-        ((d.underline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr.ref));
+        ((d.underline || d.tracker) && (key->flags & TYF_ANY) && expr_is_entity_name(member->key.expr));
 }
 
 // A JSDoc type literal the way tsc's printer reprints it, one member per line, which the types baseline flattens:
@@ -1510,8 +1510,8 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
                 u32 saved = param_names_enter(d); // (A mapped type is a scope)
                 if (i->key.mapped->readonly) out(d, i->key.mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
                 out_lit(d, "[");
-                if (d.param_names && i->key.mapped->symbol_ref) {
-                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped->symbol_ref), true);
+                if (d.param_names && i->key.mapped->owned_symbol) {
+                    out_type_param_name(me, d, ty_type_param(me, i->key.mapped->owned_symbol), true);
                 } else {
                     out(d, i->key.mapped->type_name.sv);
                 }
@@ -1544,7 +1544,7 @@ static void display_node_interface(Checker* me, TyDisplay d, Interface const* in
             case INTERFACE_KEY_NAME:
                 if (i->readonly) out_lit(d, "readonly ");
                 if (i->key.tag == INTERFACE_KEY_EXPR) {
-                    display_node_computed_name(me, d, i->key.expr.ref);
+                    display_node_computed_name(me, d, i->key.expr);
                 } else {
                     out(d, i->key.span.sv);
                 }
@@ -1696,8 +1696,8 @@ static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
         }   break;
         case TYPE_INFERRED:
             out_lit(d, "infer ");
-            if (d.param_names && node->inferred->symbol_ref) {
-                out_type_param_name(me, d, ty_type_param(me, node->inferred->symbol_ref), true);
+            if (d.param_names && node->inferred->owned_symbol) {
+                out_type_param_name(me, d, ty_type_param(me, node->inferred->owned_symbol), true);
             } else {
                 out(d, node->inferred->name.sv);
             }

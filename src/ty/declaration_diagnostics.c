@@ -1878,8 +1878,8 @@ static void check_type_members(Walk* me, VecInterfaceMember const* members, Symb
             continue;
         }
         bool callable = i->type.tag == TYPE_CALLABLE && i->type.callable && i->type.callable->function;
-        if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr.ref) {
-            Expr const* key = i->key.expr.ref;
+        if (i->key.tag == INTERFACE_KEY_EXPR && i->key.expr) {
+            Expr const* key = i->key.expr;
             if (is_dynamic_name(key) && !is_global_symbol_reference(me, key) && !is_entity_name_expression(key)) {
                 report(me, at, 9014, "Computed properties must be number or string literals, variables or dotted "
                     "expressions with --isolatedDeclarations.");

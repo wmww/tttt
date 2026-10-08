@@ -29,9 +29,9 @@ void interface_member_drop(InterfaceMember* me) {
             free(my key.index);
             break;
         case INTERFACE_KEY_EXPR:
-            if (my key.expr.owned) {
-                expr_drop(my key.expr.owned);
-                free(my key.expr.owned);
+            if (my key.expr) {
+                expr_drop(my key.expr);
+                free(my key.expr);
             }
             break;
         case INTERFACE_KEY_MAPPED:
@@ -56,7 +56,7 @@ void interface_member_drop(InterfaceMember* me) {
 
 bool interface_member_is_misplaced_mapped(InterfaceMember const* me) {
     if (my key.tag != INTERFACE_KEY_EXPR || my is_method || my computed_accessor) return false; // (A property only)
-    Expr const* key = my key.expr.ref;
+    Expr const* key = my key.expr;
     return key->tag == EXPR_BINARY_OP && key->binary_op->op == BINARY_OP_IN && !expr_is_perenthisized(key);
 }
 
@@ -87,7 +87,7 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
                 scope_rare_mut(key_names)->computed_name_of = &scope_rare(names)->this_ref.interface->generic;
             }
             // (A mapped type's member elsewhere, `[K in T]`: resolved silently, TS7061 said it all)
-            expr_lookup_names(my key.expr.ref, key_names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
+            expr_lookup_names(my key.expr, key_names, interface_member_is_misplaced_mapped(me) ? nullptr : errs);
         }   break;
 
         case INTERFACE_KEY_MAPPED:
@@ -99,7 +99,6 @@ void interface_member_lookup_names(InterfaceMember* me, Scope* names, ErrorCtx* 
                 .kind = SYMBOL_DECL_MAPPED_KEY,
                 .node = me,
             });
-            my key.mapped->symbol_ref = my key.mapped->owned_symbol;
             type_lookup_names(&my key.mapped->in_type, names, errs);
             // The `as` clause sees the key parameter
             type_lookup_names(&my key.mapped->as_type, names, errs);
@@ -197,8 +196,8 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
         case INTERFACE_KEY_EXPR:
             if (interface_member_is_misplaced_mapped(me)) break;
             // (An accessor's `[k in T]` is no mapped type's member but a name, and no TS1169: tsc's checkAccessorDeclaration)
-            ty_check_computed_name(current_checker, my key.expr.ref, my key.span, !my computed_accessor, errs);
-            if (!my computed_accessor && expr_is_non_bindable_dynamic_name(my key.expr.ref)) {
+            ty_check_computed_name(current_checker, my key.expr, my key.span, !my computed_accessor, errs);
+            if (!my computed_accessor && expr_is_non_bindable_dynamic_name(my key.expr)) {
                 if (is_in_class) {
                     if (my is_method &&
                         my type.tag == TYPE_CALLABLE &&
@@ -220,14 +219,14 @@ void interface_member_typecheck(InterfaceMember* me, bool is_in_class, bool in_t
                         "A computed property name in an interface must refer to an expression whose type is a literal type or a 'unique symbol' type.");
                 }
             }
-            expr_typecheck_type_only_site(my key.expr.ref, errs);
+            expr_typecheck_type_only_site(my key.expr, errs);
             if (!is_in_class) interface_member_check_implicit_any(me, errs);
             break;
 
         case INTERFACE_KEY_MAPPED:
             type_typecheck(&my key.mapped->in_type, errs);
-            if (span_valid(my key.mapped->in_type_span) && my key.mapped->symbol_ref &&
-                ty_param_constraint_is_circular(current_checker, ty_type_param(current_checker, my key.mapped->symbol_ref))
+            if (span_valid(my key.mapped->in_type_span) && my key.mapped->owned_symbol &&
+                ty_param_constraint_is_circular(current_checker, ty_type_param(current_checker, my key.mapped->owned_symbol))
             ) {
                 error_ctx_error_d(errs, my key.mapped->in_type_span, 2313, "Type parameter '", my key.mapped->type_name, "' has a circular constraint.");
             }

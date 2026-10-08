@@ -177,9 +177,9 @@ Ty const* class_item_accessor_evaluate_type(ClassItem* me) {
 
 Ty const* class_item_get_type(ClassItem* me) {
     switch (my tag) {
-        case CLASS_ITEM_CONSTRUCTOR: return lazy_type_get(&my constructor.func.lazy_type);
+        case CLASS_ITEM_CONSTRUCTOR: return ty_function_type(current_checker, &my constructor.func);
         case CLASS_ITEM_METHOD:
-            return lazy_type_get(my method.accessor ? &my method.accessor_type : &my method.func.lazy_type);
+            return my method.accessor ? lazy_type_get(&my method.accessor_type) : ty_function_type(current_checker, &my method.func);
         case CLASS_ITEM_FIELD: return lazy_type_get(&my field.lazy_type);
         case CLASS_ITEM_INTERFACE_MEMBER: return ty_of_node(&my interface_memeber.type);
         case CLASS_ITEM_STATIC_BLOCK: return ty_intrinsic(current_checker, TY_NEVER);

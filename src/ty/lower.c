@@ -711,9 +711,9 @@ Ty const* ty_implied_infer_constraint(Checker* me, Ty const* param) {
                 // The check type's template with its key's constraint (string | number | symbol without one) for
                 // the key
                 InterfaceMember const* check = inferred->check_mapped;
-                if (!check->key.mapped->symbol_ref) break;
+                if (!check->key.mapped->owned_symbol) break;
                 LowerCtx ctx = { .generic = true };
-                Ty const* key = ty_type_param(me, check->key.mapped->symbol_ref);
+                Ty const* key = ty_type_param(me, check->key.mapped->owned_symbol);
                 Ty const* key_constraint = check->key.mapped->in_type.parsed ? ty_from_node(me, &check->key.mapped->in_type, ctx) : nullptr;
                 if (!key_constraint) {
                     Ty const* parts[3] = { ty_intrinsic(me, TY_STRING), ty_intrinsic(me, TY_NUMBER), ty_intrinsic(me, TY_ES_SYMBOL) };
@@ -881,8 +881,8 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
         }   break;
 
         case TYPE_INFERRED:
-            if (node->inferred->symbol_ref) {
-                Ty const* param = ty_type_param(me, node->inferred->symbol_ref);
+            if (node->inferred->owned_symbol) {
+                Ty const* param = ty_type_param(me, node->inferred->owned_symbol);
                 if (out->in_extends) {
                     free_params_bind(out, param);
                 } else {
@@ -909,8 +909,8 @@ static void collect_free_params(Checker* me, TypeNode const* node, FreeParams* o
                         collect_free_params(me, &i->key.index->type, out);
                         break;
                     case INTERFACE_KEY_MAPPED:
-                        if (i->key.mapped->symbol_ref) {
-                            free_params_bind(out, ty_type_param(me, i->key.mapped->symbol_ref));
+                        if (i->key.mapped->owned_symbol) {
+                            free_params_bind(out, ty_type_param(me, i->key.mapped->owned_symbol));
                         }
                         collect_free_params(me, &i->key.mapped->in_type, out);
                         if (i->key.mapped->has_as_type) collect_free_params(me, &i->key.mapped->as_type, out);
@@ -1541,7 +1541,7 @@ static Ty const* value_entry_type(Checker* me, Symbol const* symbol, SymbolDecl 
                 return undefined_alias ? type : ty_widened_nullable(me, type);
             }
         case SYMBOL_DECL_COMMONJS_MODULE: return ty_commonjs_module_object(me, decl->node);
-        case SYMBOL_DECL_FUNCTION: return lazy_type_get((LazyType*)&((FunctionImpl const*)decl->node)->lazy_type);
+        case SYMBOL_DECL_FUNCTION: return ty_function_type(me, decl->node);
         case SYMBOL_DECL_CLASS: {
             // A local class in a generic scope: applied to the outer type parameters, so that instantiating it with
             // the function's mapper instantiates its statics
@@ -3498,7 +3498,7 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
             for_each (i, vec_spanned_type, &node->identifier->generic_params) collect_declared_infers(me, &i->type, out);
             break;
         case TYPE_INFERRED:
-            if (node->inferred->symbol_ref) ty_buf_push(out, ty_type_param(me, node->inferred->symbol_ref));
+            if (node->inferred->owned_symbol) ty_buf_push(out, ty_type_param(me, node->inferred->owned_symbol));
             break;
         case TYPE_CALLABLE:
             for_each (i, vec_function_arg, &node->callable->function->args) {
@@ -3615,11 +3615,11 @@ static ImpliedConstraint* implied_constraint(Checker* me, TernaryType const* ter
 // In the template of a homomorphic mapped type `{ [K in keyof T]: ... }` over a T constrained to arrays and tuples, K
 // is also `number | `${number}`` (the other half of tsc's getConditionalFlowTypeOfType). Null if `ty` isn't that K
 static Ty const* mapped_key_flow_constraint(Checker* me, InterfaceMember const* mapped, Ty const* ty, Ty const** actual) {
-    if (ty->kind != TY_TYPE_PARAM || !mapped->key.mapped->symbol_ref || mapped->key.mapped->in_type.tag != TYPE_KEYOF) {
+    if (ty->kind != TY_TYPE_PARAM || !mapped->key.mapped->owned_symbol || mapped->key.mapped->in_type.tag != TYPE_KEYOF) {
         return nullptr;
     }
     if (!*actual) *actual = ty_actual_type_variable(me, ty);
-    if (*actual != ty_type_param(me, mapped->key.mapped->symbol_ref)) return nullptr;
+    if (*actual != ty_type_param(me, mapped->key.mapped->owned_symbol)) return nullptr;
     // (getHomomorphicTypeVariable: the constraint is `keyof T` for a type parameter T)
     Ty const* keys = ty_from_node(me, &mapped->key.mapped->in_type, (LowerCtx){ .generic = true });
     if (keys->kind != TY_KEYOF) return nullptr;
@@ -3792,8 +3792,8 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
         case TYPE_INFERRED: {
             // (Outside a conditional's extends clause, TS1338: an anonymous type parameter, tsc's
             // bindAnonymousDeclaration)
-            if (!node->inferred->symbol_ref) return ty_synthetic_type_param(me, node->inferred->name.sv);
-            Ty const* param = ty_type_param(me, node->inferred->symbol_ref);
+            if (!node->inferred->owned_symbol) return ty_synthetic_type_param(me, node->inferred->name.sv);
+            Ty const* param = ty_type_param(me, node->inferred->owned_symbol);
             param->param.state->is_infer = true;
             return param;
         }
@@ -3807,9 +3807,9 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             // whatever is being resolved, an alias's declaration for one)
             if (vec_interface_member_size(&node->interface.members) == 1) {
                 InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);
-                if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped->symbol_ref) {
+                if (member->key.tag == INTERFACE_KEY_MAPPED && member->key.mapped->owned_symbol) {
                     Ty const* ret = ty_anonymous_from_node(me, node, ctx, alias, alias_args);
-                    ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped->symbol_ref));
+                    ty_param_constraint_is_circular(me, ty_type_param(me, member->key.mapped->owned_symbol));
                     return ret;
                 }
             }

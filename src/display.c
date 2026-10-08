@@ -305,7 +305,7 @@ static void display_inferred_type(Display d, InferredType* me) {
     display_colored_span(d, color_type, my name);
 
     if (d.debug) {
-        if (!my symbol_ref) {
+        if (!my owned_symbol) {
             display_colored(d, color_error, " /* unresolved */");
         }
     }
@@ -370,7 +370,7 @@ void display_interface_member(Display d, InterfaceMember const* me) {
 
         case INTERFACE_KEY_EXPR:
             display_lit(d, "[");
-            display_colored_span(d, color_type, expr_outer_span(my key.expr.ref));
+            display_colored_span(d, color_type, expr_outer_span(my key.expr));
             display_lit(d, "]");
             break;
 

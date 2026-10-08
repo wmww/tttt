@@ -158,7 +158,6 @@ typedef struct InferredType {
     Span full_span;
     TypeNode extends;
     Symbol* owned_symbol;
-    Symbol const* symbol_ref;
     InferPosition position;
     IdentifierType const* reference; // INFER_POSITION_TYPE_ARG: the reference it is type argument `arg_index` of
     u32 arg_index;

@@ -7791,8 +7791,7 @@ static bool parse_expr_interface_member(Parser* parent, bool is_type, FunctionFl
     if (!parse_expr(&p, expr_ctx_null, &expr)) {
         return parse_fail(&p);
     }
-    ret->key.expr.owned = c_new(Expr, expr);
-    ret->key.expr.ref = ret->key.expr.owned;
+    ret->key.expr = c_new(Expr, expr);
     hop_whitespace(&p);
 
     expect_char(&p, ']');
