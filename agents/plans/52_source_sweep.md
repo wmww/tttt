@@ -31,8 +31,9 @@ were found while building the prototype (fixed in the same commit):
 - **Disk**: 17 GB for 22 repos as installed. Pruning node_modules to `.ts/.tsx/.mts/.cts/.js/.jsx/.mjs/.cjs/.json`
   (`52_prototypes/prune.sh`; deletes `.map`, `.node`, `.wasm`, docs, binaries) took it to 9.4 GB, and **tsc's
   diagnostics were identical on all 655 projects after pruning** (tsc is deterministic run to run too). `hardlink -c`
-  across repos dedupes npm/yarn copies further (pnpm's are store hardlinks already; delete the store after installing,
-  or prune it too). Expect ~300 MB a repo pruned: budget ~40 GB for 150 repos, select by GitHub `size` to stay in it.
+  across the repos then took it to **6.6 GB (~300 MB a repo)**, but took 24 min (millions of small files): run it
+  per newly installed repo against the rest, or only once at the end (pnpm's files are store hardlinks already; delete
+  the store after installing, or prune it too). Budget ~40 GB for 150 repos, select by GitHub `size` to stay in it.
 - **Projects**: every directory with a `tsconfig.json` outside `node_modules`, `.git`, `dist`, `build`, dot-dirs (655
   in 22 repos: jest's e2e fixtures alone are 130, query 102, nest 95). Only 78 are clean under tsc: solution configs,
   test configs without the test runner's types, unbuilt project references (TS6305), deliberately broken fixtures. That
