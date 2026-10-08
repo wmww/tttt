@@ -25,10 +25,10 @@ to bugs/, not into the code.
 5. Done (2026-10-08): plan 52 stage 1. 174 repos / 3359 projects, tsc cached (~1 h), `./sourcesweep.py` (~5 min,
    `--sample 4` in oracles.py): **2241 match (746 clean under tsc), 47 / 174 repos**, 0 crash after fixing 10; nine
    mechanism fixes on the way, every other oracle flat. Most of the missing direction is one config cascade (plan 52).
-6. **Perf session**: vscode (tttt's weakest ratio, 3.0x tsgo); also the source sweep's outliers (karakeep/packages/api
-   7x tsc, karakeep/apps/web, headlessui-react: `./sourcesweep.py` "slower than tsc"). The check phase (four checkers redo ~24% of the type
-   work: measure sharing vs file-to-checker affinity vs load balance, plan 36's open question) and AST bytes per line
-   (~600). Pick by measurement; write plan 53 if it's bigger than a session.
+6. Done (2026-10-08): perf session. Checker sharing isn't a lever (plan 36: 4 checkers cost ~2% more CPU than one;
+   the vscode wall is SMT-bound). Found pathologies through the source sweep instead (karakeep 55 s -> 0.6 s,
+   headlessui 16 -> 1.2 s, mcp-sdk 5.5x tsc's types -> below tsc's); instructions vscode -1.8%, vue -4.5%, tsc -2.1%. Two open leads
+   in bugs/perf_leads.md (docmost's function types keyed by the whole mapper, immutable-js). `TTTT_FILE_TIMES`.
 7. **Hacks audit** (fan-out, one sub-agent per hacks.md section group): for every entry, try deleting the hack
    (many predate plans 38, 39, 42, 48); keep deletions that are 0 lost on every oracle, rewrite stale entries,
    mark the permanent ones with their reason. Goal: hacks.md shorter, not longer.

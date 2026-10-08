@@ -9,6 +9,24 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Perf session (2026-10-08, twelfth window's todo entry 6)
+**vscode's check phase**: four checkers at `--threads 1` take 10.28 s in total against one checker's 10.06 s (3.28M vs
+2.66M types: the redone work costs ~2%), balance is even (3.7-4.2 s per checker at 4 threads), 2 threads give 1.88x
+and the SMT siblings ~1.3x more: sharing types between checkers isn't a lever (plan 36). Wall 6.1 s before and after
+(load+parse 1.0, resolve 0.7, typecheck 4.2), 6.0 GB peak.
+**Source sweep pathologies** (single-threaded, tsc's time from the oracle): karakeep/packages/api 54.7 -> 0.57 s and
+karakeep/apps/web 55.3 -> 1.7 s (tsc 12 / 34 s; `typeof` in a top-level literal made it generic, the 5M instantiation
+limit hit: spurious TS2589s), remix/demos/bookstore 8.8 -> 0.38 s, headlessui-react 16.1 -> 1.18 s (tsc 11.4; keyof of
+70 unions quadratic), mcp-sdk/packages/server 1.13 -> 0.37 s and 1.16M -> 178k types (tsc 209k; top-level object
+literal types instantiated per mapper), babel-traverse 1.60 -> 1.34 s (union property reads memoized). `./sourcesweep.py`
+2241 -> **2244 / 3359** match, 47 -> 48 repos, tttt 1112 -> 834 s single-threaded in total; median tttt/tsc time 0.075
+over projects tsc takes >= 2 s on. Open: docmost 2.27M types vs tsc's 185k, immutable-js 997k vs 203k
+(bugs/perf_leads.md). Suite 14832 -> 14833, every other oracle flat.
+Instructions (callgrind, vs plan 52 stage 1's): tsc 4.782 -> 4.682 (-2.1%), type-fest 19.756 -> 19.561 (-1.0%), valibot
+4.249 -> 4.155 (-2.2%), react 1.544, nest 1.151, webpack 10.631 -> 10.452 (-1.7%), zod 5.108 -> 4.996 (-2.2%), xstate
+3.206 -> 3.199, drizzle 8.063 -> 8.077 (+0.2%), vue 7.070 -> 6.751 (-4.5%), effect 10.093 -> 10.085, vscode 92.895 ->
+91.206 (-1.8%), excalidraw 7.982 -> 7.827 (-1.9%), tanstack-router 5.895 -> 5.887 G.
+
 ## Source sweep (2026-10-08, plan 52 stage 1, twelfth window's todo entry 5)
 `./sourcesweep.py`: 174 repos, 3363 projects (3359 compared, tsc crashes on 4): **2241 / 3359 match (746 clean under
 tsc), 47 / 174 repos fully match**; spurious 520, missing 367, both 231, crash 0 (10 fixed), timeout 0. tttt 1112 s

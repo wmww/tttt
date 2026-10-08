@@ -9,11 +9,9 @@ bugs/type_core.md, binder_modules.md (new), display.md, harness.md, missing_chec
 plans 26/27/39 Leftovers and plan 50 (done 2026-10-08); the corpus re-pin configs moved
 to plan 19. The commit message has the numbers.
 
-- Perf (plan 48 stage 6, 2026-10-07; todo entry 6 of the twelfth window takes it): vscode is tttt's weakest
-  ratio against tsgo (3.0x; 6.2 s = load+parse 1.0 + resolve 0.7 + typecheck 4.3). Two structural levers, both known:
-  the four checkers redo ~24% of the type work (3.19M types vs 2.57M with one checker; plan 36's sharing question),
-  and the AST is ~2 GB resident for 3.41M lines + 350k of .d.ts (~600 bytes a line; plan 43 was the last pass).
-  `-b` on tsc's src is 2.2x tsgo, with 182 ms of `free` summed over the projects at `--build-jobs 1`.
+- Perf (2026-10-08 perf session): kysely-style code makes 5-12x tsc's types (function expression types keyed by the
+  whole mapper; bugs/perf_leads.md "The source sweep finds pathologies" has both open leads). Worth a plan if the
+  source sweep shows more of it. vscode's AST bytes per line (~600) weren't looked at.
 
 - (2026-10-08, plan 51 prototype A) vue at `--checkers 1` reports one TS2345 (vModel.ts:446), also at a7003eac; 0 at
   the default 4 checkers: a checker-order dependence (`./checkerdiff.py vue` should show it).

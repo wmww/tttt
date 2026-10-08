@@ -46,8 +46,9 @@ quadratic (headlessui), top-level object literal types instantiated per mapper (
 - **immutable-js/type-definitions**: 997k types vs tsc's 203k; ~600k anonymous instances spread over hundreds of
   member types (4-parameter mappers, ~8.9k instances each). Member types are lazy (`instantiate_members`), so
   something reads every member of many distinct instantiations: probably structural relations of `this`-returning
-  interface instantiations where tsc goes by variance. Find the top-level relation queries that grow the caches most
-  (the recipe above).
+  interface instantiations where tsc goes by variance. It's all the check of the one `immutable.d.ts` (merged
+  interface + namespace + function declarations): assignable cache 67.8k vs tsc's 23.8k, identity 28.9k vs 8.3k. Find
+  the top-level relation queries that grow the caches most (the recipe above).
 
 ## Leftovers of the 2026-10-05 perf session (todo entry 8)
 - **react** (+3.7% from a4aa6c6b's distributive constraints of `T & {}`): `base_constraint()` is memoized at depth 0
