@@ -115,18 +115,5 @@ void ty_check_emit_helpers(Checker* me, Span at, u32 helpers, ErrorCtx* errs) {
 }
 
 bool ty_emits_commonjs_like(SourceFile const* file) {
-    CompilerOptions const* options = compiler_options();
-    switch (options->module) {
-        case MODULE_KIND_NODE16:
-        case MODULE_KIND_NODE18:
-        case MODULE_KIND_NODE20:
-        case MODULE_KIND_NODENEXT:
-            return !file->is_esm;
-        case MODULE_KIND_PRESERVE: {
-            csview path = cstr_sv(&file->canonical_path);
-            return csview_ends_with(path, ".cts") || csview_ends_with(path, ".cjs");
-        }
-        default:
-            return options->module < MODULE_KIND_SYSTEM;
-    }
+    return source_file_emit_module_kind(file) < MODULE_KIND_SYSTEM;
 }

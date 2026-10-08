@@ -175,7 +175,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - Exported and local declarations of a name are two unlinked tables (tsc: `exportSymbol`; `SymbolRare.export_symbol`
   only for `export default` locals): TS2440 special-cased in `binder_link`, TS2395 a separate pass. TS2441, TS1203,
   TS2308, TS2661, TS2669 come from binder/link (tsc: checker); TS2308 re-walks `export *` apart from
-  `module_resolved_exports()`. `ty_emits_commonjs_like()` could use `source_file_emit_module_kind()`.
+  `module_resolved_exports()`.
   `check_export_context_merges()` reads a declaration's explicit `export`/`declare` from the start of its `full` span's
   text (SymbolDecl has no bits for them).
 - `block_is_instantiated`: syntactic; a nested namespace is judged with its parent's `outer` scope.
