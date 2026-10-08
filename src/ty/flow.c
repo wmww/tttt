@@ -1268,7 +1268,20 @@ static bool prop_has_explicit_type(Prop const* prop) {
 // tsc's getTypeOfDottedName(): the type of the callee of a call statement from declarations alone, without control
 // flow analysis (which is in the middle of asking). Null: some name on the way has no explicit type, and the call is
 // taken to have no effect (tsc reports TS2775/TS2776 for an assertion like that)
+// `resolving`: the for-of loops whose variable is being typed further up, a loop iterating its own variable (`for
+// (const a of a)`, or `var`s iterating each other) has no explicit type (tsc's resolvingExplicitTypeOfSymbol)
+typedef struct ResolvingLoop {
+    ForEachLoopStatement const* loop;
+    struct ResolvingLoop const* next;
+} ResolvingLoop;
+
+static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, ResolvingLoop const* resolving);
+
 static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
+    return type_of_dotted_name_resolving(me, expr, nullptr);
+}
+
+static Ty const* type_of_dotted_name_resolving(Checker* me, Expr const* expr, ResolvingLoop const* resolving) {
     expr = skip_reference_wrappers(expr);
     if (expr->tag == EXPR_IDENTIFIER) {
         u32 keyword = expr->identifier.keyword;
@@ -1298,7 +1311,11 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
             }
             ForEachLoopStatement const* loop = c_container_of(binding->source, ForEachLoopStatement, var_type);
             if (loop->keyword != FOR_EACH_LOOP_OF) return nullptr;
-            Ty const* iterable = type_of_dotted_name(me, &loop->iterable);
+            for (ResolvingLoop const* r = resolving; r; r = r->next) {
+                if (r->loop == loop) return nullptr;
+            }
+            ResolvingLoop link = { loop, resolving };
+            Ty const* iterable = type_of_dotted_name_resolving(me, &loop->iterable, &link);
             if (!iterable) return nullptr;
             return ty_iterated_type(me, loop->is_await ? ITERATION_FOR_AWAIT_OF : ITERATION_FOR_OF, iterable, span_null, nullptr);
         }
@@ -1306,7 +1323,7 @@ static Ty const* type_of_dotted_name(Checker* me, Expr const* expr) {
     }
     if (expr->tag != EXPR_PROPERTY) return nullptr;
     if (ty_is_import_meta(expr)) return ty_import_meta_expr_type(me, expr);
-    Ty const* object = type_of_dotted_name(me, &expr->property->expr);
+    Ty const* object = type_of_dotted_name_resolving(me, &expr->property->expr, resolving);
     Atom const* name = object ? access_name(me, expr->property) : nullptr;
     if (!name) return nullptr;
     object = ty_apparent_type(me, object);
