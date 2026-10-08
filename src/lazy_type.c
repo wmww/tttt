@@ -161,8 +161,10 @@ static Ty const* lazy_type_evaluate_inner(LazyType* me) {
     state->evaluation_started = true;
     evaluate:;
 
-    // Declarations evaluate self-contained, see ty_flow_isolate()
-    bool isolate = my tag != LAZY_TYPE_EXPR;
+    // Declarations evaluate self-contained, see ty_flow_isolate(). (A variable's initializer only around its full check,
+    // initialized_binding_evaluate_assigned_type(): tsc's getQuickTypeOfExpression comes first, outside
+    // checkExpressionCached, and sees the loops in progress)
+    bool isolate = my tag != LAZY_TYPE_EXPR && my tag != LAZY_TYPE_INITIALIZED_BINDING;
     FlowIsolation isolation = {0};
     if (isolate) isolation = ty_flow_isolate(current_checker);
 

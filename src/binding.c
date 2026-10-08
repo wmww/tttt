@@ -850,8 +850,14 @@ Ty const* initialized_binding_evaluate_assigned_type(InitializedBinding* me) {
     if (auto_typed) return auto_typed;
     // A call of a single non-generic signature has its type without its arguments being checked (tsc's
     // checkDeclarationInitializer): `const r = f(x)` doesn't depend on x, which may depend on r through a loop
+    // (Which sees the loops in progress: `const last = route.history.at(-1)` in a loop that assigns `route = { ...route,
+    // last }` is narrowed by the loop's incomplete type, not walked through the assignment back to `last`)
     Ty const* ret = ty_quick_expr_type(checker, initialized_binding_value(me), false);
-    if (!ret) ret = initialized_binding_check_value(me);
+    if (!ret) {
+        FlowIsolation isolation = ty_flow_isolate(checker); // (tsc's checkExpressionCached)
+        ret = initialized_binding_check_value(me);
+        ty_flow_restore(checker, isolation);
+    }
     if (my binding.tag == BINDING_OBJECT || my binding.tag == BINDING_ARRAY) ret = ty_pad_initializer_type(checker, ret, &my binding);
     Symbol const* symbol = my binding.tag == BINDING_IDENTIFIER ? my binding.symbol : nullptr;
     // A pattern's elements are widened one by one (ty_binding_assigned_type()), the object they come from isn't (tsc's
