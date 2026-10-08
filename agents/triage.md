@@ -28,11 +28,15 @@ to plan 19. The commit message has the numbers.
 - Errors baseline of a file with lone-`\r` line endings prints its source lines joined (the diagnostics match since
   the hacks audit's conflict-marker fix; the harness's line splitting doesn't treat `\r` as a break).
 
-- (2026-10-08, plan 52 stage 2 agent ss-a, spurious relation keys) Left unreduced after the drain (`./sourcesweep.py
-  --last -k +TS2322` / `+TS2345` / `+TS2353`): tanstack-table's adapter tests `externalSelection.set({ 1: true })`
-  reported TS2353 against the first overload `(fn: (prevVal: T) => T) => void` of an intersection-of-functions `set`
-  (a standalone probe with the same declarations is clean; it co-occurs with a TS7006 on createTable's `getRowId: (row)
-  => ...`, so likely a cascade of that call's failed inference); apollo-client ObservableQuery.ts:1869
-  `InternalDiffResultWithDataState<TData | null>` to `<TData>`; arktype fast-check `string | number | Date` to number
-  (narrowing?); svelte's JS sources (JSDoc generics, `Value<unknown>` to `Source<V>`); discord.js `Timer` vs `Timeout`
-  (bun-types next to @types/node); solid component.type-tests.ts:100 (`"a"` to `("a" & M4Type[T]["prop"]) | ...`).
+- (2026-10-08, plan 52 stage 2 agent ss-a, spurious relation keys, second round) Left after the drain:
+  discord.js root project `setInterval(...)` typed bun-types' `Timer` where @types/node's `Timeout` is expected (TS2322
+  REST.ts:100, TS2345 SpeakingMap.ts:57): which global overload comes first is the program's file order (libs, root
+  files and their imports, automatic types), a program-level question, not reduced. solid component.type-tests.ts:100
+  (`test1.prop = "a"` through mergeProps' Override/Simplify mapped types, write type `("a" & M4Type[T]["prop"]) | ...`).
+  mikro-orm EntityManager.ts:287 `{ ...where }` with where: FilterQuery<Entity> (TS2698): tsc's base constraint of
+  `NonNullable<ExpandScalar<Primary<E>>>` is `{}`; probe /tmp-style: `type ES<T> = null | (T extends string ? T | RegExp
+  : T)`, `f<E>(w: NonNullable<ES<E>>, v: ES<E> & {}, u: NonNullable<E extends string ? 1 : 2>)` spreading each: tsc
+  errors on v only, tttt on u only (constraints of conditional types inside intersections with {}). Many remaining
+  +TS2344 are `expectTypeOf`-style assertion failures caused by other wrong types (react-navigation static.check.tsx,
+  query *.test-d.ts): look at them per test after the other keys move. Not looked at: svelte's JS sources (JSDoc
+  generics, `Value<unknown>` to `Source<V>`), dokploy's react-hook-form `Control<...>` mismatches.
