@@ -514,6 +514,8 @@ src` finds the code-side markers; every significant one has an entry here.
 - Instantiation limit: what an exhausted budget produced is memoized like tsc's (`test/probes/instantiation_limit/`),
   but tttt instantiates more eagerly than tsc, so a tttt-only TS2589 (variance measurement, eager members) poisons what
   tsc would still compute. A cut-short conditional instance is re-reported only within its epoch.
+- `lower_node()` TYPE_VALUE makes a literal's fresh twin, which nothing needs (permanent: perf, unexplained; without it
+  the tsc corpus costs 1% more instructions in union_with_origin).
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `source_file_check_verbatim_exports()` (TS1287) finds the `export` keyword by scanning the statement text
