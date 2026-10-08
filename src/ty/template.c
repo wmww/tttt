@@ -9,6 +9,10 @@
 
 // Too many members in a cross product of unions (tsc's checkCrossProductUnion)
 enum { MAX_CROSS_PRODUCT = 100000 };
+// A template literal type longer than this (all its texts) or with more placeholders is an error (TS2589), not a
+// type: a recursive alias doubling a string otherwise runs until memory runs out (tsgo's maxTemplateLiteralTypeLength
+// and maxTemplateLiteralTypeSpans)
+enum { MAX_TEMPLATE_LITERAL_LENGTH = 50000000, MAX_TEMPLATE_LITERAL_SPANS = 100000 };
 
 bool ty_is_generic_index(Ty const* ty) {
     if (ty->kind == TY_SUBSTITUTION) return ty_is_generic_index(ty->substitution.base) || ty_is_generic_index(ty->substitution.constraint);
@@ -73,6 +77,8 @@ typedef struct TemplateBuilder {
     Ty const** types;
     u32 len; // of types
     u32 cap;
+    u64 texts_length; // Of the texts already in `texts`
+    bool too_large;
 } TemplateBuilder;
 
 static void builder_push(Checker* me, TemplateBuilder* b, Ty const* type) {
@@ -82,6 +88,7 @@ static void builder_push(Checker* me, TemplateBuilder* b, Ty const* type) {
         b->types = realloc(b->types, sizeof(Ty const*) * b->cap);
         panic_if(!b->texts || !b->types, "out of memory");
     }
+    b->texts_length += cstr_size(&b->text);
     b->texts[b->len] = checker_atom(me, cstr_sv(&b->text));
     b->types[b->len++] = type;
     cstr_clear(&b->text);
@@ -103,6 +110,10 @@ static bool add_spans(Checker* me, TemplateBuilder* b, Atom const* const* texts,
             return false;
         }
         cstr_append_sv(&b->text, atom_sv(texts[i + 1]));
+        if (b->texts_length + cstr_size(&b->text) > MAX_TEMPLATE_LITERAL_LENGTH || b->len > MAX_TEMPLATE_LITERAL_SPANS) {
+            b->too_large = true;
+            return false;
+        }
     }
     return true;
 }
@@ -167,7 +178,12 @@ Ty const* ty_template_literal(Checker* me, Atom const* const* texts, Ty const* c
     cstr_append_sv(&b.text, atom_sv(texts[0]));
     Ty const* ret = nullptr;
     if (!add_spans(me, &b, texts, types, len)) {
-        ret = ty_intrinsic(me, TY_STRING);
+        if (b.too_large) {
+            ty_instantiation_limit_reached(me);
+            ret = ty_intrinsic(me, TY_ERROR);
+        } else {
+            ret = ty_intrinsic(me, TY_STRING);
+        }
     } else if (!b.len) {
         ret = ty_string_literal(me, cstr_sv(&b.text));
     } else {
