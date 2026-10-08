@@ -48,8 +48,9 @@ Error* program_config_error(Program* me, u32 start, u32 end, unsigned code, cstr
 // For a config that gave no root files: tsc's TS18002 (an empty `files` without references) or TS18003 (no inputs, no
 // `files` nor `references`). Whether it reported one
 bool program_report_no_inputs(Program* me);
-// tsc's verifyCompilerOptions on its own, for a program without any files (no inputs, a solution config): tsc still
-// makes the program and reports its options diagnostics. program_resolve_names() does it otherwise
+// tsc's verifyCompilerOptions (and the emit path checks) on their own: for a program without any files (no inputs, a
+// solution config: tsc still makes the program and reports its options diagnostics), or whose names aren't resolved
+// (syntactic errors). program_resolve_names() does it otherwise
 void program_verify_options(Program* me);
 
 // Where the program's diagnostics go (the checker reports tsc's `error(currentNode, ...)` diagnostics straight into it)

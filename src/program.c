@@ -2705,6 +2705,8 @@ void program_verify_options(Program* me) {
     program_validate_options(me);
     program_verify_module_kind(me);
     program_verify_inferred_root_dir(me);
+    program_verify_emit_paths(me);
+    program_verify_project_files(me);
 }
 
 void program_resolve_names(Program* me) {
@@ -2713,8 +2715,6 @@ void program_resolve_names(Program* me) {
     load_pool_destroy(my pool);
     my pool = nullptr;
     program_verify_options(me);
-    program_verify_emit_paths(me);
-    program_verify_project_files(me);
     my errs->phase = ERROR_PHASE_RESOLVE_NAMES;
     set_compiler_options(&my options);
     program_order_stdlib_first(me);

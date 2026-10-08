@@ -507,6 +507,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         }
     }
 
+    if (!(typecheck || !syntactic) && options_ungated) {
+        // (Names aren't resolved after syntactic errors, but the options diagnostics are still asked for)
+        program_verify_options(program);
+        name_errors = report_errors(out, errs);
+        if (name_errors) ret = 1;
+    }
+
     if (parse_errors || name_errors || type_errors) {
         out_println(out,
             "Checked ", program_get_file_count(program), " files, found ",
