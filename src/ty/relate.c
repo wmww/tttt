@@ -5782,9 +5782,9 @@ static Ternary structured_related_members(
                 }
             }
         } else if (is_array_target(me, source_target) && is_array_target(me, target_target)) {
-            // HACK: Array<S> and ReadonlyArray<T> relate like their element types. It's what comparing the two
-            // interfaces member by member comes to, without depending on how well generic methods compare yet
-            // (TS4104 is report_relation_error()'s)
+            // Array<S> to ReadonlyArray<T> relates the element types (tsc's structuredTypeRelatedToWorker: a readonly
+            // array target and an array or tuple source compare number index types). ReadonlyArray to Array fails
+            // (tsc: member by member, on the mutating methods; TS4104 is report_relation_error()'s)
             if (source_target == my readonly_array_target) return TERNARY_FALSE;
             return is_related_to(me, st, ty_reference_args(me, source).data[0], ty_reference_args(me, target).data[0], report);
         }
