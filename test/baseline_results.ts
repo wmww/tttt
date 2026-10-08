@@ -58193,7 +58193,7 @@ const baselines = {
     'jsdocTypeReferenceToImportOfFunctionExpression': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocTypeReferenceToMergedClass': {
         errors: true,
@@ -58467,7 +58467,7 @@ const baselines = {
     },
     'typedefCrossModule3': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'typedefCrossModule4': {
@@ -67148,7 +67148,7 @@ const baselines = {
     'moduleExportPropertyAssignmentDefault': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportWithExportPropertyAssignment': {
         errors: true,

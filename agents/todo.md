@@ -16,7 +16,9 @@ to bugs/, not into the code.
 2. Done (2026-10-08): plan 52 planned from a 22-repo prototype (655 projects: 344 match tsc, 45 s tttt, 9 min tsc,
    all installed with node 24 + corepack, pruned node_modules leave tsc's output identical). Two bugs fixed on the way
    (no-target default lib, sweep.py's file-less diagnostics).
-3. **Execution: plan 50** (tsc's export= / CommonJS symbol clones). The sweep is the real oracle here.
+3. Done (2026-10-08): plan 50, in place rather than clone + redirect (getCommonJsExportEquals merged into the
+   export= target at link time; four clone special cases deleted). Suite 14832 (+3), every other oracle flat;
+   stages 3-5 left as single-test quirks in bugs/binder_modules.md.
 4. **Execution: plan 51 stage 2** (context anchors, the lazy contextual return; bisect the ember regression first).
 5. **Execution: plan 52 stage 1**: manifest of ~150 repos, `thirdparty/ensure-sources.sh`, `./sourcesweep.py`, cache
    tsc (~1 h: commit first), first numbers; fix crashes.

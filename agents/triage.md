@@ -6,7 +6,7 @@ Last drained 2026-10-07 (triage session, todo entry 10 of the eleventh window): 
 binder/modules, display/text, parser/missing checks) took every item, then second tasks (fresh mutation seeds 16
 multi/js and 17, the last vscode error, flagflip leftovers, errtextdiff). ~70 fixes; the rest written up in
 bugs/type_core.md, binder_modules.md (new), display.md, harness.md, missing_checks.md, tsgo_divergences.md (new),
-plans 26/27/39 Leftovers and the new plan 50 (tsc's export= / CommonJS symbol clones); the corpus re-pin configs moved
+plans 26/27/39 Leftovers and plan 50 (done 2026-10-08); the corpus re-pin configs moved
 to plan 19. The commit message has the numbers.
 
 - Perf (plan 48 stage 6, 2026-10-07; todo entry 6 of the twelfth window takes it): vscode is tttt's weakest

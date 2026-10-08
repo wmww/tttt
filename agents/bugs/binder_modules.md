@@ -4,8 +4,12 @@ Leftovers of the 2026-10-07 triage (binder/modules share). Each entry: the test,
 and what a fix needs. JS/JSDoc-specific items are in plans/26_js_jsdoc.md's Leftovers.
 
 ## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
-Plan 50 (plans/50_export_equals_clones.md) did getCommonJsExportEquals in place at link time (2026-10-08); the
-entries below are what is left of it (its stages 3-5).
+Plan 50 (2026-10-08, deleted once done; its write-up is commit 319c0951) did getCommonJsExportEquals in place at
+link time: `merge_commonjs_export_equals()` merges a module's other exports into what its `export =` assigns, no
+clone (tttt's binder merges in place, so a clone recorded as the merged symbol is the same thing). Stage 0 found
+tsc clones whenever the module's own file is checked, not only on import. The entries below are what is left
+(single-test ordering quirks of tsc): an augmentation into a cloneTypeAsModuleType clone, JS `module.exports = {...}`
+as an augmentable export=, mergeSymbol's alias rules across files.
 tttt merges augmentations straight into what `export =` assigns (merge_augmentations()); tsc clones it and records
 the clone as the merged symbol, which everything that resolves names sees. That is equivalent except where tsc's
 clone is a *different* symbol than the one a later lookup finds:
@@ -43,7 +47,7 @@ clone is a *different* symbol than the one a later lookup finds:
   cross-file TS2300 in the export= type, and the module/augmentation display (`Symbol("./test", ...)`).
 
 ## Merges tsc decides after aliases resolve
-(Plan 50 stage 5.) tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
+tttt declares every file's globals into one table at bind time; tsc's initializeTypeChecker merges per file with
 mergeSymbol, which resolves an alias target first.
 - importEqualsError45874: a global `import Foo = globals.toString.Blah` (resolves to unknownSymbol) and another
   file's `const Foo`: mergeSymbol returns the source, so the const replaces the alias in globals and they stay two

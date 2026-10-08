@@ -27,7 +27,7 @@ types components) are the oracle, not the goal; real projects that are clean und
 - **Absent or approximated tsc mechanisms**: the lazy reads of a function's contextual signature (its return type and
   `this` read "the contextual type of the last check", where tsc goes through the call's resolved signature: plan 51
   stages 2-3; the push-down contextual typing itself is tsc's two contextual chains evaluated eagerly, and
-  ContextChecked is tsc's rule since plan 51 stage 1); tsc's symbol clones for `export =` / CommonJS (plan 50); permissive
+  ContextChecked is tsc's rule since plan 51 stage 1); tsc's namespace-import clones (cloneTypeAsModuleType: predicates, hacks.md) and a few clone-ordering quirks (bugs/binder_modules.md; the CommonJS export= merge is done in place, plan 50); permissive
   instantiation; TS7056 and TS5088; member identity (members aren't Symbols; the symbols *harness* rebuilds tsc's
   merges for display, decided acceptable). Out of scope: emit (JS and `.d.ts` text), watch mode, the language
   service, 7.0's removal of deprecated options (until 7.x has a JS-free test oracle).
@@ -135,7 +135,7 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    checks (47: not needed), two new corpora (excalidraw, tanstack-router), a perf session~~ done.
 11. ~~Retarget to TypeScript 6.0 + stable ordering (plan 48): suite, oracle caches, re-pinned corpora, perf against
    tsgo 7~~ done.
-12. **Now**: contextual-check state (plan 51), export= clones (plan 50), a source-code breadth sweep (plan 52), a
+12. **Now**: contextual-check state (plan 51), a source-code breadth sweep (plan 52), a
    hacks audit, a perf session (check-phase sharing / load balance on vscode, AST bytes per line).
 13. Then: plan 45 stage 3 (declare/link), a token cache / node arenas in the parser, compact instantiated Props / the
    `Signature` split, whatever plan 52's sweep ranks first.
