@@ -2788,9 +2788,7 @@ static bool index_symbol_compile_test_info(BaselineTestCase* ctx, Ty const* obje
             if (!is_string && !ty_specific_index_applies(checker, info, key)) continue;
             if (is_string && !(ty_key_flags(key) & (TYF_STRING_LIKE | TYF_NUMBER | TYF_NUMBER_LITERAL))) continue;
             any = true;
-            // (Never one of a lib: no baseline of tsc's has such an `__index`, useRegexpGroups has none where a
-            // local copy of the same declarations does. Unexplained, hacks.md)
-            if (span_valid(info->decl_span) && !(info->decl_span.source && info->decl_span.source->is_stdlib && !undeclared_is_type)) {
+            if (span_valid(info->decl_span)) {
                 vec_span_push(&declarations, info->decl_span);
             }
         }
