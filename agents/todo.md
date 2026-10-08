@@ -33,8 +33,10 @@ to bugs/, not into the code.
    51): ~20 hacks deleted for tsc's rule (several entries described code already gone), permanent ones marked with
    their measured cost, missing checks moved to bugs/. Suite 14833 (0 lost), flagflip missing 18 -> 16, sourcesweep
    sample 555 -> 556, every other oracle flat. Near-misses (what each deletion loses) are written into the entries.
-8. **Execution: plan 52 drain** (fan-out on the source sweep's root causes; the references-under-`-p` cascade first,
-   plan 52 says why).
+8. Done (2026-10-08): plan 52 drain, main on the config level + 4 sub-agents x 2 rounds on the checker keys. Source
+   sweep **2251 -> 2997 / 3359, repos 49 -> 71** (`-p` reads referenced projects' built outputs: TS6305 like tsc's
+   CLI); suite 14833 -> 14835, every other oracle flat but flagflip 16/10/4 -> 17/11/4 (one TS2488 position,
+   hacks.md `checker_defer_function_body`). Leftovers in plan 52 and the agents' bugs/ files.
 9. **Execution: plan 51 stage 3** (widening where the return type is computed, NONE/FIRST_ABSENT through anchors,
    KEY_LITERAL_CONTEXT as a stack).
 10. **Triage**: drain triage.md; also consolidate finished plans (36-42, 44, 45, 48: move live leftovers to bugs/ or

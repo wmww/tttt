@@ -35,15 +35,18 @@ Instructions (callgrind, vs plan 52 stage 1's): tsc 4.782 -> 4.682 (-2.1%), type
 3.206 -> 3.199, drizzle 8.063 -> 8.077 (+0.2%), vue 7.070 -> 6.751 (-4.5%), effect 10.093 -> 10.085, vscode 92.895 ->
 91.206 (-1.8%), excalidraw 7.982 -> 7.827 (-1.9%), tanstack-router 5.895 -> 5.887 G.
 
-## Source sweep (2026-10-08, plan 52 stage 1, twelfth window's todo entry 5)
-`./sourcesweep.py`: 174 repos, 3363 projects (3359 compared, tsc crashes on 4): **2241 / 3359 match (746 clean under
-tsc), 47 / 174 repos fully match**; spurious 520, missing 367, both 231, crash 0 (10 fixed), timeout 0. tttt 1112 s
-single-threaded in total, ~280 s wall on 4 cores (522 s while the machine was busy); tsc 10088 s of CPU (~58 min wall
-for the oracle on 3-4 node processes). `--sample 4` (oracles.py): 554 / 822, ~1 min. Disk ~40 GB for the checkouts.
-Every other oracle flat with the session's fixes: suite 14832 / 14969 (0 lost), corpora 0 but effect 3 and zod-root
-53, sweep 8594 / 8595, `$ExpectType` 68631 / 68640, flagflip 18 / 10 / 4. Instructions (callgrind, vs plan 51 stage
-2's): tsc 4.782, type-fest 19.756, valibot 4.249, react 1.545, nest 1.150, webpack 10.631, zod 5.108, xstate 3.206,
-drizzle 8.063, vue 7.070, effect 10.093, vscode 92.895, excalidraw 7.982, tanstack-router 5.895 G: flat.
+## Source sweep (2026-10-08, plan 52 stage 2 drain, twelfth window's todo entry 8)
+`./sourcesweep.py` (174 repos, 3359 projects compared; tttt now with `--keep-going=options`): **2997 / 3359 match (746
+clean under tsc), 71 / 174 repos fully match**; spurious 277, missing 33, both 52, crash 0, timeout 0 (stage 1: 2241,
+47 repos, 520 / 367 / 231). tttt 811 s single-threaded in total (1112 s at stage 1: `-p` no longer checks referenced
+projects' sources), ~200-480 s wall depending on what else runs; tsc 11045 s of CPU. `--sample 4`: 737 / 822 (554).
+Suite 14833 -> 14835 / 14969 (0 lost), corpora 0 but effect 3 and zod-root 53, sweep 8594 / 8595, `$ExpectType`
+68631 / 68640, flagflip 16 / 10 / 4 -> 17 / 11 / 4 (one TS2488 moved, hacks.md `checker_defer_function_body`),
+scenarios 240 -> 244 / 0 failing. Instructions (callgrind, vs the hacks audit's): tsc 4.715 (+0.6%), type-fest 19.645
+(+0.5%), valibot 3.874 (-6.9%), react 1.516 (-2.6%), nest 1.153, webpack 10.485 (+0.3%), zod 5.050 (+1.1%), xstate
+2.990 (-6.5%), drizzle 7.172 (-11.2%), vue 6.559 (-2.9%), effect 10.217 (+1.3%), vscode 91.523 (+0.3%), excalidraw
+7.931 (+1.3%), tanstack-router 5.614 G (-4.7%). The drops are mostly ss-c's per-mapper instantiation caches (tsc's
+activeTypeMappersCaches); the +1% ones weren't bisected.
 
 ## Plan 51 stage 2 (2026-10-08, twelfth window's todo entry 4)
 Context anchors: suite 14832 / 14969 (0 lost), corpora unchanged (0 but effect 3, zod-root 53), sweep 8594 / 8595,

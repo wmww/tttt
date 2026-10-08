@@ -39,42 +39,21 @@ were found while building the prototype (fixed in the same commit):
 - **First numbers**: 2154 -> **2241 / 3359 projects match (746 clean under tsc), 47 / 174 repos fully match**; spurious
   520, missing 367, both 231, crash 0, timeout 0.
 
-#### What stage 1 learned about the ranking (read before draining)
-- **The missing direction is mostly a cascade of the config level.** Of the projects with `-TS7006` 255 / 267 also
-  have a config-level key (`-TS6305`, `+TS6059`, `+TS6307`, `-TS2307`); `-TS2578` 117 / 118, `-TS7031` 74 / 79,
-  `-TS2339` 61 / 78. The cause is one behaviour: under `-p`, tsc resolves an import of a referenced project to its
-  (unbuilt) output `.d.ts` and reports TS6305/TS2307, the import is `any`, callbacks become implicitly any; tttt reads
-  the referenced project's sources instead (and then checks them against rootDir: the 33k TS6059). Fix this first
-  (plan 41's reference handling under `-p` vs `-b`): it is also the biggest perf outlier class (atproto/services/ozone:
-  tttt 12 s checks the referenced sources, tsc 0.4 s).
-- **The spurious checker keys are mostly not cascades** (`+TS2322` 24 / 146 projects with a config key, `+TS2345` 31 /
-  144, `+TS2339` 25 / 126, `+TS7006` 17 / 91): real checker bugs, ranked by repos. Top examples: angular's signal
-  queries (`Signal<unknown>` for `viewChildren(...)`, angular-components), `+TS18048`/`+TS18047` narrowing,
-  `+TS2589` (arktype, typebox in 7 repos), `+TS7022`/`+TS7023` circularity (arktype; gemini-cli's reduced below).
-- **Perf**: karakeep/packages/api tttt 84 s vs tsc 12 s, karakeep/apps/web 86 vs 34, headlessui-react 28 vs 11: real
-  outliers for the perf session.
-- Known reduced repro, not fixed: TS7022 from flow analysis across a loop back-edge. tsc is clean on
-  ```ts
-  class S { cached: { messages: { id: string; content: string }[] } | null = null;
-    run(history: { id: string }[], parts: string) { if (!this.cached) return;
-      for (const turn of history) { if (turn.id) {
-        const idx = this.cached.messages.findIndex((m) => m.id === turn.id);
-        if (idx !== -1) this.cached.messages[idx] = { ...this.cached.messages[idx], content: parts }; } } } }
-  ```
-  tttt reports TS7022 on `idx`: narrowing `this.cached` crosses the assignment `this.cached.messages[idx] = ...` and asks
-  `idx`'s declared type as a property name (`TTTT_DEBUG_CYCLE=1`), where tsc's tryGetNameFromEntityNameExpression takes
-  getTypeOfExpression(initializer), which its flow-loop cache resolves.
+#### What stage 1 learned about the ranking
+- The missing direction was mostly one config cascade (tsc reading referenced projects' unbuilt outputs under `-p`):
+  fixed in stage 2. The spurious checker keys are real checker bugs, ranked by repos.
+- Rank by repos/projects, not diagnostics: one broken project can carry thousands.
 
 ### Stage 2 (2026-10-08, first drain session): config level done, checker keys fanned out
 Main session on the config/program level, four sub-agents (A relations, B access/context/narrowing, C circularity and
-names, D the missing direction) on the checker keys, two rounds each. **2251 -> SEE_END / 3359**, repos fully matching
-49 -> SEE_END. What the config level turned out to be:
+names, D the missing direction) on the checker keys, two rounds each. **2251 -> 2997 / 3359**, repos fully matching
+49 -> 71, tttt's total time 1677 -> 811 s single-threaded; spurious 512 -> 277, missing 367 -> 33, both 229 -> 52. What the config level turned out to be:
 - **`-p` reads referenced projects through their built outputs** (tsc's CLI: TS6305 when unbuilt, the module `any`),
   `-b` keeps reading sources (plan 41's decision now only for `-b`). This alone: 2251 -> 2573 and tttt's total time
   halved (no more checking referenced sources).
 - Files found searching node_modules are never emitted (tsc's sourceFilesFoundSearchingNodeModules, not a path
   heuristic: workspace links leave node_modules); include patterns may name hidden directories (`.vitepress`); the
-  default `exclude` is outDir/declarationDir; include base paths sorted and deduplicated (tsc's getBasePaths); `extends`
+  default `exclude` is outDir/declarationDir; nested include base paths walked once (tsc's getBasePaths); `extends`
   through the package's own name; `"lib": []`; options diagnostics on configs without inputs; TS6059's location is the
   file's first import (also for a root file); program diagnostics in unchecked files dropped.
 - Front end: NUL bytes inside templates and comments; `f<T> satisfies X`; grammar errors of unchecked files dropped
@@ -91,6 +70,13 @@ tsc's include-pattern order of root files (agents/bugs/include_order.md, blocked
 in vue), the root-file TS6305's "file is in the program because" chain, a `/// <reference path>` to an unbuilt source
 (TS6053 instead of TS6305). Checker leftovers are in the agents' bug files (agents/bugs/sourcesweep_checker.md,
 conditional-walk-infers-returns.md, suggestion-count-check-order.md and others) and triage.md.
+
+Where a second drain would start (end of stage 2, by repos / projects / diagnostics): +TS2322 31/51/165, +TS2345
+27/74/277, +TS7006 26/52/215, +TS2339 21/39/196, +TS2578 15/24/52, +TS2769 11/17/21, +TS2344 10/13/54 (many are
+`expectTypeOf` assertions failing on other wrong types), +TS2352 7/52/53, +TS2589 6/10/20; missing -TS2339 5/11/43,
+-TS2552 5/10/16 (suggestion order, bugs/suggestion-count-check-order.md). The per-key returns are falling (a round of
+four agents moved ~70 projects in its second round against ~200 in the first): worth another fan-out only together
+with stage 3's flag flips, or one agent alongside other work.
 
 ### Stage 3 (later): the missing direction and `-b`
 - Flag flips (plan 46 cells) on the projects that match: `--strict` where the tsconfig isn't, `noUncheckedIndexedAccess`,
