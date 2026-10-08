@@ -1791,6 +1791,20 @@ static Ty const* union_apparent_members(Checker* me, Ty const* object) {
     return ty_union(me, buf, len, nullptr, (TyList){0});
 }
 
+// TS18047/TS18048/TS18049 about a named object, TS2531/TS2532/TS2533 about another
+static void report_possibly_nullish(Span object_span, bool object_is_named, bool has_null, bool has_undefined, ErrorCtx* errs) {
+    const char* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
+    if (object_is_named) {
+        cstr name = entity_name_text(object_span);
+        error_ctx_error_d(errs, object_span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
+            "'", name, "' is possibly '", what, "'.");
+        cstr_drop(&name);
+    } else {
+        error_ctx_error_d(errs, object_span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
+            "Object is possibly '", what, "'.");
+    }
+}
+
 static void check_access(
     Checker* me, Ty const* object, Ty const* index, Span object_span, Span index_span, bool object_is_named,
     bool error_if_not_found, u32 depth, ErrorCtx* errs
@@ -1852,6 +1866,20 @@ static void check_access(
         report_no_property(me, object, index, 2339, index_span, !span_valid(object_span), errs);
         return;
     }
+    // An intersection that may be null or undefined, `T & ({} | null)` from narrowing an unconstrained T, is said to
+    // be so (tsc's checkNonNullType goes by type facts, those of the base constraint `{} | null`), then the rest is
+    // looked into
+    if (object->kind == TY_INTERSECTION && compiler_options()->strict_null_checks && span_valid(object_span)) {
+        bool has_null = ty_can_be_null(me, object), has_undefined = ty_can_be_undefined(me, object);
+        if (has_null || has_undefined) {
+            report_possibly_nullish(object_span, object_is_named, has_null, has_undefined, errs);
+            Ty const* rest = ty_non_nullable(me, object);
+            if (rest != object && !(rest->flags & (TYF_NEVER | TYF_NULLABLE))) {
+                check_access(me, rest, index, object_span, index_span, object_is_named, error_if_not_found, depth + 1, errs);
+            }
+            return;
+        }
+    }
     if (object->kind == TY_UNION && !(object->flags & TYF_BOOLEAN)) {
         // Possibly null/undefined is said once about the whole object, a missing property about the whole union
         bool has_null = false, has_undefined = false, opaque = false;
@@ -1859,6 +1887,11 @@ static void check_access(
             Ty const* member = object->composite.types.data[i];
             has_null |= (member->flags & TYF_NULL) != 0;
             has_undefined |= (member->flags & TYF_UNDEFINED) != 0;
+            // (`T & null` from narrowing: by its type facts)
+            if (member->kind == TY_INTERSECTION && compiler_options()->strict_null_checks) {
+                has_null |= ty_can_be_null(me, member);
+                has_undefined |= ty_can_be_undefined(me, member);
+            }
             opaque |= (member->flags & (TYF_ANY | TYF_TYPE_PARAM | TYF_DEFERRED)) != 0;
         }
         // A destructured property (no object expression) is looked up in the union as it is, undefined included
@@ -1869,20 +1902,7 @@ static void check_access(
             return;
         }
         if ((has_null || has_undefined) && compiler_options()->strict_null_checks) {
-            const char* what = has_null && has_undefined ? "null' or 'undefined" : has_null ? "null" : "undefined";
-            if (object_is_named) {
-                cstr name = entity_name_text(object_span);
-                error_ctx_error_d(
-                    errs, object_span, has_null && has_undefined ? 18049 : has_null ? 18047 : 18048,
-                    "'", name, "' is possibly '", what, "'."
-                );
-                cstr_drop(&name);
-            } else {
-                error_ctx_error_d(
-                    errs, object_span, has_null && has_undefined ? 2533 : has_null ? 2531 : 2532,
-                    "Object is possibly '", what, "'."
-                );
-            }
+            report_possibly_nullish(object_span, object_is_named, has_null, has_undefined, errs);
             // (Then the rest is looked into: tsc's checkNonNullExpression gives the non-nullable type, which may lack
             // the property too)
             Ty const* rest = ty_non_nullable(me, object);
