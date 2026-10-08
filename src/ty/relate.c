@@ -5521,7 +5521,7 @@ static Ternary structured_related_members(
         // Two mapped types whose keys aren't known yet: by constraint and template (tsc's mappedTypeRelatedTo)
         return mapped_related(me, st, ty_members(me, source)->mapped, target_mapped, report);
     }
-    if (target_mapped && !my variance_depth) {
+    if (target_mapped) {
         isize_t saved = vec_ty_report_line_size(&st->lines);
         Ternary related = generic_mapped_target_related(me, st, source, target_mapped, report);
         // (Why S[K] isn't the template says nothing: tsc resets the error info, resetErrorInfo(saveErrorInfo))
