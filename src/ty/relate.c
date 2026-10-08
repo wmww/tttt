@@ -7168,7 +7168,8 @@ static Ternary signatures_identical_in(
     if (source == target) return TERNARY_TRUE;
     signature_resolve(me, source);
     signature_resolve(me, target);
-    u32 source_min = signature_min_args(source), target_min = signature_min_args(target);
+    // (tsc's isMatchingSignature counts by getMinArgumentCount: trailing parameters that accept void are optional)
+    u32 source_min = tuple_min_argument_count(me, source), target_min = tuple_min_argument_count(me, target);
     bool same_shape = ty_signature_param_count(source) == ty_signature_param_count(target) && source_min == target_min &&
         ty_signature_has_rest(source) == ty_signature_has_rest(target);
     if (!same_shape && !(partial && source_min <= target_min)) return TERNARY_FALSE;
