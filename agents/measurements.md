@@ -9,6 +9,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Source sweep (2026-10-08, plan 52 stage 1, twelfth window's todo entry 5)
+`./sourcesweep.py`: 174 repos, 3363 projects (3359 compared, tsc crashes on 4): **2241 / 3359 match (746 clean under
+tsc), 47 / 174 repos fully match**; spurious 520, missing 367, both 231, crash 0 (10 fixed), timeout 0. tttt 1112 s
+single-threaded in total, ~280 s wall on 4 cores (522 s while the machine was busy); tsc 10088 s of CPU (~58 min wall
+for the oracle on 3-4 node processes). `--sample 4` (oracles.py): 554 / 822, ~1 min. Disk ~40 GB for the checkouts.
+Every other oracle flat with the session's fixes: suite 14832 / 14969 (0 lost), corpora 0 but effect 3 and zod-root
+53, sweep 8594 / 8595, `$ExpectType` 68631 / 68640, flagflip 18 / 10 / 4. Instructions (callgrind, vs plan 51 stage
+2's): tsc 4.782, type-fest 19.756, valibot 4.249, react 1.545, nest 1.150, webpack 10.631, zod 5.108, xstate 3.206,
+drizzle 8.063, vue 7.070, effect 10.093, vscode 92.895, excalidraw 7.982, tanstack-router 5.895 G: flat.
+
 ## Plan 51 stage 2 (2026-10-08, twelfth window's todo entry 4)
 Context anchors: suite 14832 / 14969 (0 lost), corpora unchanged (0 but effect 3, zod-root 53), sweep 8594 / 8595,
 `$ExpectType` 68628 -> 68631 / 68640, flagflip 18 / 10 / 4. Instructions (callgrind, vs plan 50's): tsc 4.780

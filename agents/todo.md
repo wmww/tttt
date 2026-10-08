@@ -22,15 +22,18 @@ to bugs/, not into the code.
 4. Done (2026-10-08): plan 51 stage 2, context anchors (the ember regression was already gone after stage 1). Every
    oracle 0 lost, `$ExpectType` +3; late/sig-context/overload-failure channels deleted; instructions +0.1-0.5%,
    xstate +0.7% (anchor bookkeeping).
-5. **Execution: plan 52 stage 1**: manifest of ~150 repos, `thirdparty/ensure-sources.sh`, `./sourcesweep.py`, cache
-   tsc (~1 h: commit first), first numbers; fix crashes.
-6. **Perf session**: vscode (tttt's weakest ratio, 3.0x tsgo). The check phase (four checkers redo ~24% of the type
+5. Done (2026-10-08): plan 52 stage 1. 174 repos / 3359 projects, tsc cached (~1 h), `./sourcesweep.py` (~5 min,
+   `--sample 4` in oracles.py): **2241 match (746 clean under tsc), 47 / 174 repos**, 0 crash after fixing 10; nine
+   mechanism fixes on the way, every other oracle flat. Most of the missing direction is one config cascade (plan 52).
+6. **Perf session**: vscode (tttt's weakest ratio, 3.0x tsgo); also the source sweep's outliers (karakeep/packages/api
+   7x tsc, karakeep/apps/web, headlessui-react: `./sourcesweep.py` "slower than tsc"). The check phase (four checkers redo ~24% of the type
    work: measure sharing vs file-to-checker affinity vs load balance, plan 36's open question) and AST bytes per line
    (~600). Pick by measurement; write plan 53 if it's bigger than a session.
 7. **Hacks audit** (fan-out, one sub-agent per hacks.md section group): for every entry, try deleting the hack
    (many predate plans 38, 39, 42, 48); keep deletions that are 0 lost on every oracle, rewrite stale entries,
    mark the permanent ones with their reason. Goal: hacks.md shorter, not longer.
-8. **Execution: plan 52 drain** (fan-out on the source sweep's root causes).
+8. **Execution: plan 52 drain** (fan-out on the source sweep's root causes; the references-under-`-p` cascade first,
+   plan 52 says why).
 9. **Execution: plan 51 stage 3** (widening where the return type is computed, NONE/FIRST_ABSENT through anchors,
    KEY_LITERAL_CONTEXT as a stack).
 10. **Triage**: drain triage.md; also consolidate finished plans (36-42, 44, 45, 48: move live leftovers to bugs/ or

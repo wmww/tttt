@@ -3,7 +3,7 @@
 the suite (saves test/baseline_results.ts like ./fasttest.sh -s, then the components lost/gained against git HEAD's),
 every pinned corpus, the DefinitelyTyped sweep, `$ExpectType`, flagflip and the source sweep.
 
-  ./oracles.py                  # everything (~6 min)
+  ./oracles.py                  # everything (~7 min)
   ./oracles.py --quick          # suite and corpora only (~1 min)
   ./oracles.py --only sweep,expect
 The per-oracle scripts keep their --last caches per tree name in /tmp, so worktrees can run this side by side.
