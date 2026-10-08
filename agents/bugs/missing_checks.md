@@ -190,6 +190,31 @@ recursiveClassBaseType (TS2310/TS2506 once `root()` returns void) are in triage'
   circular constraint" at (16,33) plus two TS2322 that follow from it; tttt reports none. Not investigated (likely
   circular constraint detection for a mapped type's key parameter, plan 39 area).
 
+## Mutation seed 18 leftovers (2026-10-08, `MUTATE_DIR=... scripts/mutate.py -n 2000 --seed 18`: 11 -> 5)
+All four are check-order effects of tsc's checker reporting during type computation, which tttt's separate
+type/typecheck walks don't reproduce; none has a cheap rule.
+- **`satisfies` elaboration reaching a getter in the declaration's own initializer** (2 mutants of
+  noCircularitySelfReferentialGetter3/4: `const a = { prop: 42, get self() { return a; } } satisfies { prop: string;
+  self: any }`). tsc's checkSatisfiesExpression relates and elaborates while `a`'s type is being resolved;
+  elaborateElementwise reads every target property of the source (`self` -> the getter's return type -> `a`), which
+  is circular: TS7022 at `a`, TS7023 at `self`. tttt checks `satisfies` in the typecheck walk (expr.c EXPR_AS_TYPE),
+  after `a`'s type is known. Fix would be doing the satisfies relation (and on failure, the property reads the
+  elaboration does) in ty/expr.c's satisfies case while the declaration is in flight; only matters when it fails.
+- **TS2304 inside a `with` body found through flow analysis** (mut1335, sourceMapValidationStatements: a deleted
+  `var z` makes `z = 10` in `with (obj) { ... }` unresolvable). tsc never checks the body (checkWithStatement), but
+  the flow walk of a later reference `x` passes the assignment `z = 10` and isMatchingReference calls
+  getResolvedSymbol(z), which reports "Cannot find name 'z'". tttt's with-body scope (`Scope.with_body`) reports
+  nothing. Reproducing it means reporting a with-body name's TS2304 when a flow query visits its assignment.
+- **The loop's partial type reported too** (mut1660, selfReferencingSpreadInLoop with `let additional = undefined`,
+  noImplicitAny, not strict): tsc says TS2488 twice at `...additional`, once for `undefined` (the auto type's first
+  pass while the loop's flow type is computed: getAssignedType checks the assignment with the partial type and its
+  diagnostics stay) and once for `any[] | undefined`. tttt reports the final one only. Same family as other
+  "diagnostics of a flow-time check" divergences.
+- **text TS2345, an inferred object literal printed without its computed-name syntax** (mut1928, symbolProperty22:
+  `[Symbol.unscopablesX]`, an error-typed computed name): tsc prints the argument as `{ [x: number]: (s: any) => any;
+  }` (the any-named key is a number index signature, and the instantiated type has no node to reuse the name from);
+  tttt prints `{ [Symbol.unscopablesX]: ... }`. Printing only (the .types baseline reuses the syntax on both sides).
+
 ## Circularity tsc finds and tttt doesn't (the resolution stack's leftovers, ex plan 39 stage 3)
 - **Base constraint circularity and base types resolved through constraints** (re-checked 2026-10-07, errors only).
   Port, plan-sized: a resolution-identity stack for base constraints (tsc's pushTypeResolution with
