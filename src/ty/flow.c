@@ -1083,8 +1083,12 @@ static Ty const* initial_or_assigned_type_raw(FlowQuery* q, FlowAssign const* as
                 return ty_expr_type(me, assign->assignment);
             }
             // The rest are checked with the context their target gives them too, like in the walk, unless the target
-            // is auto-typed (its type is what's being worked out: it gives no context)
-            if (assignment->op == BINARY_OP_EQUAL && !is_auto(me, q->declared)) return ty_flow_assigned_value_type(me, assignment);
+            // is auto-typed (its type is what's being worked out: it gives no context). A logical assignment's too
+            // (tsc's getContextualTypeForBinaryOperand): `ctx.aug ??= new Set()` is a Set<string> even when a flow
+            // query gets there before the walk has checked it (a caller inferring the function's return type)
+            bool assigns = assignment->op == BINARY_OP_EQUAL || assignment->op == BINARY_OP_OR_OR_EQUAL ||
+                assignment->op == BINARY_OP_AND_AND_EQUAL || assignment->op == BINARY_OP_EH_EH_EQUAL;
+            if (assigns && !is_auto(me, q->declared)) return ty_flow_assigned_value_type(me, assignment);
             return ty_flow_expr_type(me, &assignment->right);
         }
         case FLOW_ASSIGN_FOR_EACH:
