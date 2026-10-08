@@ -213,8 +213,6 @@ src` finds the code-side markers; every significant one has an entry here.
   too). `TY_EVOLVING_ARRAY`: switch clauses narrow the final array, not the evolving type.
 - Class *expression* methods are FUNCTION_IS_DECLARATION; `export { x }` doesn't mark the local assigned.
   `expr_is_narrowable_reference()`: `a = b` counts whatever the left side. `expr_is_optional_chain()` is quadratic.
-- Nested destructuring assignments get assignment nodes from the outer pattern only; `pattern_path_type()` falls back
-  to the declared type for rests, computed keys, iterables.
 - Body-less functions get no start node (their parameter defaults have no flow).
 - Destructured discriminants and dependent parameters (`discriminant_access()`, `ty_destructured_narrowed_type()`,
   `ty_parameter_narrowed_type()`) query flow with a placeholder reference (`FlowQuery.pattern`/`parameters_of`) for

@@ -933,7 +933,12 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
         case FLOW_PATH_ELEMENT: {
             // (never iterates to nothing: tsc's getTypeOfDestructuredArrayElement falls back to the error type)
             if (object->flags & TYF_NEVER) return ty_intrinsic(me, TY_ERROR);
-            if (!ty_extends_array(me, object)) return nullptr;
+            if (!ty_extends_array(me, object)) {
+                // (Another iterable: what it iterates to, tsc's checkIteratedTypeOrElementType fallback)
+                Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
+                ret = element ? element : ty_intrinsic(me, TY_ERROR);
+                break;
+            }
             Value index = value_number(path->index);
             // (noUncheckedIndexedAccess's undefined: tsc's getTypeOfDestructuredArrayElement)
             ret = ty_access_reading(me, object, ty_literal(me, &index));
@@ -960,8 +965,13 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
             ret = ty_access_reading(me, object, ty_string_literal(me, cstr_sv(&item->name_string)));
             break;
         }
-        case FLOW_PATH_REST:
-            return nullptr; // TODO: the rest of a tuple or object
+        case FLOW_PATH_REST: {
+            // `[...a] = e`: an array of what e iterates to (tsc's getTypeOfDestructuredSpreadExpression); `{ ...a } = e`
+            // is tsc's errorType, which leaves the declared type
+            if (path->pattern->tag != EXPR_ARRAY) return nullptr;
+            Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
+            return ty_array(me, element ? element : ty_intrinsic(me, TY_ERROR), false);
+        }
     }
     if (ret && path->default_value) {
         Ty const* defined = type_with_facts(me, ret, TF_NE_UNDEFINED);
