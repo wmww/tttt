@@ -1834,6 +1834,15 @@ static Prop* namespace_export_prop(Checker* me, SymbolEntry const* entry) {
     }
     prop->decl->ctx = (LowerCtx){ .generic = true };
     prop->decl->name_span = symbol->name_span;
+    // Where it is declared is its valueDeclaration: the first declaration with a value, not a type-only one before it (an
+    // uninstantiated namespace block, an interface merged with a class: tsc's setValueDeclaration)
+    if (member == symbol && symbol->decl_count && !(symbol->decls[0].flags & SYMBOL_VALUE)) {
+        for (u32 i = 1; i < symbol->decl_count; i++) {
+            if (!(symbol->decls[i].flags & SYMBOL_VALUE) || !span_valid(symbol->decls[i].name)) continue;
+            prop->decl->name_span = symbol->decls[i].name;
+            break;
+        }
+    }
     // (Named by its key's type: `f[s] = v` with `s = "10"` is string named, `"10"`)
     if (symbol_rare(symbol)->late_bound_key) {
         prop->decl->name_form = ty_prop_name_form(prop->decl->name_span.sv, symbol_rare(symbol)->late_bound_key,
