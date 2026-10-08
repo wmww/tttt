@@ -6411,6 +6411,13 @@ static bool has_signatures(Checker* me, Ty const* ty, bool construct) {
 }
 
 // The union member a failed relation is most likely about (tsc's getBestMatchingType), null if none stands out
+// tsc's isArrayLikeType: an array, or assignable to `readonly any[]` (a tuple, TemplateStringsArray)
+static bool is_array_like_type(Checker* me, Ty const* ty) {
+    if (ty_is_array(me, ty) || is_tuple(ty)) return true;
+    if (ty->flags & TYF_NULLABLE || !(ty->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
+    return ty_is_related(me, ty, ty_array(me, ty_intrinsic(me, TY_ANY), true), TY_RELATION_ASSIGNABLE);
+}
+
 static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* source, Ty const* target) {
     if (target->kind != TY_UNION) return nullptr;
     TyList types = target->composite.types;
@@ -6439,9 +6446,9 @@ static Ty const* best_matching_type(Checker* me, RelationState* st, Ty const* so
     // (Of an object literal's type before widening: tsc's widened copy has no ObjectFlags.ObjectLiteral)
     if (source->kind == TY_ANONYMOUS && source->anonymous.object_literal && (source->flags & TYF_FRESH_OBJECT)) {
         bool array_like = false;
-        for (u32 i = 0; i < types.len; i++) array_like |= ty_is_array(me, types.data[i]) || is_tuple(types.data[i]);
+        for (u32 i = 0; i < types.len; i++) array_like |= is_array_like_type(me, types.data[i]);
         for (u32 i = 0; array_like && i < types.len; i++) {
-            if (!ty_is_array(me, types.data[i]) && !is_tuple(types.data[i])) return types.data[i];
+            if (!is_array_like_type(me, types.data[i])) return types.data[i];
         }
     }
     // findBestTypeForInvokable
