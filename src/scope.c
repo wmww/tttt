@@ -3141,7 +3141,7 @@ static bool scope_suggest(Scope const* me, csview name, u32 meaning, Suggestion*
 
 static Symbol* resolve_alias_target(Symbol* me) {
     PortItem* item = my alias->item;
-    ErrorCtx* errs = item && item->wrong_context ? nullptr : my alias->scope->binder->errs;
+    ErrorCtx* errs = item && (item->wrong_context || item->clause_unchecked) ? nullptr : my alias->scope->binder->errs;
     if (my alias->class_expr) return my alias->class_expr->symbol;
     if (my alias->entity) return resolve_entity_alias(me);
     if (!item) {
@@ -3977,8 +3977,8 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
     const char* flag = options->verbatim_module_syntax ? "verbatimModuleSyntax" : "isolatedModules";
     ErrorCtx* errs = binder_errs(scope->binder);
     bool import_equals = item->tag == PORT_IMPORT_ALIAS || item->is_require;
-    // tsc's error node: the whole specifier, the whole `import x = ...`, the name of `* as ns` (and of a default
-    // import's clause, which tsc spans to its named imports too)
+    // tsc's error node: the whole specifier, the whole `import x = ...`, the name of `* as ns`, a default import's
+    // whole clause (to its named imports)
     Span at = item->decl_name;
     if (import_equals) {
         at = span_with_semicolon(item->full_span);
@@ -3986,6 +3986,8 @@ static void check_alias_isolated_modules(Symbol const* alias, Symbol const* targ
         if (span_valid(item->source_name)) at = span_between(item->source_name, item->decl_name);
     } else if (item->tag == PORT_REEXPORT_GATHER) {
         at = item->full_span;
+    } else if (item->tag == PORT_IMPORT_DEFAULT && span_valid(item->clause)) {
+        at = item->clause;
     }
     PortItem const* type_only = symbol_type_only_declaration(alias);
     if (is_type || type_only) {

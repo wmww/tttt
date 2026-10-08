@@ -50,6 +50,11 @@ static bool is_string_literal(Expr const* expr) {
     return expr->tag == EXPR_LITERAL && expr->literal.tag == VALUE_STRING;
 }
 
+// An attribute value tsc's isStringLiteral takes: not a template, which is a string EXPR_LITERAL too
+static bool is_string_literal_value(Expr const* value) {
+    return is_string_literal(value) && expr_outer_span(value).sv.size && expr_outer_span(value).sv.buf[0] != '`';
+}
+
 ImportResolutionOverride import_attributes_resolution_mode(ImportAttributes const* me, ErrorCtx* errs) {
     if (!me) return IMPORT_RESOLUTION_DEFAULT;
     if (vec_import_attribute_size(&my elements) != 1) {
@@ -128,6 +133,12 @@ void port_statement_add_names(PortStatement* me, Scope* scope) {
         error_ctx_error_d(binder_errs(scope->binder), my non_string_specifier, 1141, "String literal expected.");
     }
 
+    if (my attributes && my module_ref && !my jsdoc && !my in_namespace && !my is_import_require) {
+        bool invalid = false;
+        for_each (i, vec_import_attribute, &my attributes->elements) invalid |= !is_string_literal_value(&i->value);
+        my main.clause_unchecked = invalid;
+        for_each (i, vec_port_item, &my items) i->clause_unchecked = invalid;
+    }
     my main.keyword_span = my keyword_span;
     scope_add_port(scope, &my main);
     for_each (i, vec_port_item, &my items) {
@@ -406,7 +417,7 @@ void port_statement_typecheck(PortStatement const* me, Span span, bool ambient, 
         // (a string literal: not a template, which isStringLiteral isn't)
         for_each (i, vec_import_attribute, &my attributes->elements) {
             Expr const* value = &i->value;
-            if (is_string_literal(value) && expr_outer_span(value).sv.size && expr_outer_span(value).sv.buf[0] != '`') continue;
+            if (is_string_literal_value(value)) continue;
             if (my attributes->is_assert) {
                 error_ctx_error_d(errs, expr_outer_span(value), 2837, "Import assertion values must be string literal expressions.");
             } else {

@@ -11680,6 +11680,11 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
     } else {
         return parse_fail(&p);
     }
+    if (statement.main.tag == PORT_IMPORT_DEFAULT) {
+        char const* end = p.pos;
+        while (end > span_start_ptr(statement.main.decl_name) && isspace((unsigned char)end[-1])) end--;
+        statement.main.clause = span_make(statement.main.decl_name.source, span_start_ptr(statement.main.decl_name), end);
+    }
     if (span_valid(statement.defer_clause)) {
         char const* end = p.pos;
         while (end > span_start_ptr(statement.defer_clause) && isspace((unsigned char)end[-1])) end--;

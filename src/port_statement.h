@@ -51,6 +51,7 @@ typedef struct PortItem {
     bool declared; // `declare import foo = ...` (TS1029 or so, but ambient)
     bool not_top_level; // PORT_EXPORT_AS_NAMESPACE: not directly in the file (TS1316)
     Span modifiers; // PORT_EXPORT_AS_NAMESPACE: modifiers in front (TS1184, a binder error in tsc)
+    Span clause; // PORT_IMPORT_DEFAULT: the import clause, `A, { b }` (tsc's error node for the default import)
     bool is_require; // `import foo = require("./abc")` (a PORT_IMPORT_GATHER that isn't a namespace import)
     // JavaScript's `const a = require("m").a` (a PORT_IMPORT_SPECIFIC): a property of the module's type, so only a value
     // export, and nothing is reported without one (tsc's getTargetOfImportEqualsDeclaration, getCommonJSPropertyAccess)
@@ -67,6 +68,9 @@ typedef struct PortItem {
     // Of a statement in a function or block (TS1232/TS1233): declared there, but tsc's checker never resolves it
     // (checkGrammarModuleElementContext): what resolving it says is said by no one
     bool wrong_context;
+    // An import attribute value isn't a string literal (TS2837/TS2858): the clause isn't checked, nothing its resolution
+    // finds is reported (tsc's checkExternalImportOrExportDeclaration returning false)
+    bool clause_unchecked;
     // Its name conflicted (TS2300): a symbol of its own outside the scope's table (tsc's declareSymbol), which
     // checkUnusedLocalsAndParameters never sees
     bool duplicate;
