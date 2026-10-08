@@ -70,7 +70,6 @@ typedef struct ModuleRef {
     cstr unbuilt_output; // MODULE_REF_NOT_BUILT: the output declaration file, absolute
     Symbol* module; // Memo of binder_module_of_ref()
     Symbol* detached_module; // An augmentation of nothing: what its declarations merge into (augmented_module())
-    bool jsx_runtime_reported; // SourceFile.jsx_runtime_ref: what there is to say about it was said (once per file, like tsc)
     AliasState module_state;
 } ModuleRef;
 

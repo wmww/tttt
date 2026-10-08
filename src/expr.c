@@ -1557,23 +1557,25 @@ static csview jsx_factory_name(SourceFile const* file, bool fragment) {
 }
 
 // tsc's getJsxNamespaceContainerForImplicitImport: the module the file's elements import their factory from, null if
-// there is none. When it can't be found, the first element of the file says so
-static Symbol* jsx_runtime_module(Span at, Scope* names, ErrorCtx* errs) {
+// there is none. What there is to say about it the checker says (jsx_report_runtime_module())
+static Symbol* jsx_runtime_module(Scope* names) {
     ModuleRef* ref = names->file ? names->file->jsx_runtime_ref : nullptr;
-    if (!ref) return nullptr;
-    Symbol* module = binder_module_of_ref(names->binder, ref);
-    if (ref->jsx_runtime_reported) return module;
-    ref->jsx_runtime_reported = true;
-    if (module) {
+    return ref ? binder_module_of_ref(names->binder, ref) : nullptr;
+}
+
+void jsx_report_runtime_module(SourceFile const* file, Span at, ErrorCtx* errs) {
+    ModuleRef* ref = file ? file->jsx_runtime_ref : nullptr;
+    if (!ref) return;
+    if (ref->module) {
         // (tsc's resolveExternalModule, with the element as the error node)
         module_ref_report_require_of_esm(ref, at, errs);
-        return module;
+        return;
     }
     if (!ref->ambient_only && ref->failure == MODULE_REF_IS_JS) {
         module_ref_report_implicit_any_at(ref, at, errs); // (tsc's resolveExternalModule)
-        return nullptr;
+        return;
     }
-    if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return nullptr;
+    if (!ref->ambient_only && ref->failure != MODULE_REF_NOT_FOUND) return;
     if (compiler_options()->module_resolution == MODULE_RESOLUTION_CLASSIC) {
         error_ctx_error_d(errs, at, 2792, "Cannot find module '", ref->path, "'. Did you mean to set the "
             "'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?");
@@ -1581,7 +1583,6 @@ static Symbol* jsx_runtime_module(Span at, Scope* names, ErrorCtx* errs) {
         error_ctx_error_d(errs, at, 2875, "This JSX tag requires the module path '", ref->path, "' to exist, but none "
             "could be found. Make sure you have types for the appropriate package installed.");
     }
-    return nullptr;
 }
 
 static Symbol* jsx_reference_factory(JsxElement const* el, bool fragment, csview name, Scope* names, ErrorCtx* errs) {
@@ -1610,8 +1611,7 @@ static void jsx_lookup_factory(Expr* expr, Scope* names, ErrorCtx* errs) {
     csview name = jsx_factory_name(names->file, fragment);
     el->factory_namespace = scope_resolve(names, name, SYMBOL_NAMESPACE);
     // With a runtime module the factory isn't referenced at all (tsc's markJsxAliasReferenced)
-    // (Blamed on the element, only the opening `<>` of a fragment: whichever tsc asks at first)
-    el->runtime_module = jsx_runtime_module(fragment ? el->opening_span : expr->inner_span, names, errs);
+    el->runtime_module = jsx_runtime_module(names);
     CompilerOptions const* options = compiler_options();
     SourceFile const* file = names->file;
     if (fragment && options->jsx != JSX_PRESERVE && options->jsx != JSX_REACT_NATIVE && options->jsx != JSX_NONE &&

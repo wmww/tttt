@@ -861,6 +861,9 @@ typedef struct JsxElement {
 } JsxElement;
 
 void jsx_element_drop(JsxElement* me);
+// What there is to say about the module a file's JSX imports its factory from (TS2875 when it can't be found), at the
+// element that asks first (tsc's getJsxNamespaceContainerForImplicitImport, the checker's first use)
+void jsx_report_runtime_module(SourceFile const* file, Span at, ErrorCtx* errs);
 // The element an EXPR_JSX_ATTRIBUTES belongs to (tsc's node.parent): it is always a JsxElement's `attributes`
 static inline JsxElement const* jsx_attributes_element(Expr const* attributes) {
     return c_container_of(attributes, JsxElement const, attributes);
