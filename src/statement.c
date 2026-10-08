@@ -2572,7 +2572,12 @@ static void statement_typecheck_inner(Statement* me, BlockTypecheckCtx ctx, Erro
             Checker* checker = current_checker;
             Ty const* iterable_type = ty_expr_type(checker, &my for_each_loop->iterable);
 
-            // TODO: `for await` in an async function below ES2018 (__asyncValues) needs the function it is in
+            // (`for await` in an async function below ES2018 needs __asyncValues, tsc's ForAwaitOfIncludes)
+            if (my for_each_loop->is_await && ctx.function && ctx.function->is_async &&
+                compiler_options()->target < SCRIPT_TARGET_ES2018
+            ) {
+                ty_check_emit_helpers(checker, my span, EMIT_HELPER_ASYNC_VALUES, errs);
+            }
             if (my for_each_loop->keyword == FOR_EACH_LOOP_OF && !my for_each_loop->is_await &&
                 compiler_options()->downlevel_iteration && compiler_options()->target < SCRIPT_TARGET_ES2015
             ) {
