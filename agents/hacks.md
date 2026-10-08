@@ -72,8 +72,7 @@ src` finds the code-side markers; every significant one has an entry here.
   also parses identifier names and keyword types; `parse_binding_identifier()` and enum names refuse all of
   `is_reserved_word()`. The fix is per caller: pick tsc's parseIdentifier / parseIdentifierName /
   parseBindingIdentifier (refusing all in `parse_identifier()` breaks identifier names).
-- Conflict markers (TS1185) only after `\n` in `hop_whitespace_slow()` and at file start (not after a lone `\r`);
-  `Decl()` positions don't skip back over one.
+- Conflict markers (TS1185): `Decl()` positions don't skip back over one; none after U+2028/U+2029.
 - No missing-identifier node: `written_name()` prints `(Missing)` for empty zero-width names; bindings use
   `BINDING_NOOP` where tsc declares `(Missing)`. `parse_throw()`'s missing expression is a zero-width implicit any
   (TS1142 finds the keyword by `strlen("throw")`); `statement_is_bare_return()`: `return;` is an `undefined` literal

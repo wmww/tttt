@@ -1185,6 +1185,7 @@ static void hop_whitespace_slow(Parser* parent, bool hop_comments, bool hop_newl
                 }
                 parent->whitespace = WHITESPACE_NEWLINE;
                 parent->pos++;
+                if (!parent->shared->in_jsdoc && is_conflict_marker_char(*parent->pos)) hop_conflict_markers(parent);
                 break;
 
             case ' ':
