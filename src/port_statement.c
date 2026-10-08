@@ -192,9 +192,9 @@ void port_statement_lookup_names(PortStatement* me, Scope* scope, ErrorCtx* errs
             module_ref_report_unresolved(my module_ref, errs);
         }
     } else if (my module_ref && my module_ref->file && !unchecked) {
-        // (nor about what a side effect import resolved to: tsc resolves it only for noUncheckedSideEffectImports)
-        // (A side effect import has no import clause, which is what tsc reports TS2846 for)
-        module_ref_report_resolved(my module_ref, my main.type_only || my side_effect_only, errs);
+        // (A side effect import is resolved only for noUncheckedSideEffectImports, and has no import clause, which is
+        // what tsc reports TS2846 for)
+        module_ref_report_resolved(my module_ref, my main.type_only, my side_effect_only, errs);
     }
 }
 

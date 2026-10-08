@@ -481,7 +481,8 @@ static void report_unsafe_rewrite(ModuleRef const* me, ErrorCtx* errs) {
     }
 }
 
-void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* errs) {
+// side_effect: an import without a clause, `import "./a.ts"` (TS5097, but no TS2846: tsc's importOrExport is missing)
+void module_ref_report_resolved(ModuleRef const* me, bool type_only, bool side_effect, ErrorCtx* errs) {
     CompilerOptions const* options = compiler_options();
     report_types_package(me, errs);
     if (my failure == MODULE_REF_JSX_NOT_SET) {
@@ -491,7 +492,7 @@ void module_ref_report_resolved(ModuleRef const* me, bool type_only, ErrorCtx* e
     // A declaration file named with its extension (tsc's resolveExternalModule: resolvedUsingTsExtension and
     // isDeclarationFileName), outside a type-only import; the suggestion is getSuggestedImportSource's
     csview dts = declaration_extension(cstr_sv(&my path));
-    if (dts.size && !type_only && my file && my used_ts_extension) {
+    if (dts.size && !type_only && !side_effect && my file && my used_ts_extension) {
         csview stem = csview_slice(cstr_sv(&my path), 0, cstr_size(&my path) - dts.size);
         bool esm = (options->module >= MODULE_KIND_ES2015 && options->module <= MODULE_KIND_ESNEXT) ||
             (my span.source && my span.source->is_esm);

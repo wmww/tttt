@@ -450,7 +450,7 @@ static void check_type_only_value(IdentifierExpr const* me, Scope const* names, 
 void module_ref_report(ModuleRef* ref, Scope* names, ErrorCtx* errs) {
     if (!ref) return;
     if (ref->file) {
-        module_ref_report_resolved(ref, false, errs);
+        module_ref_report_resolved(ref, false, false, errs);
     } else if (!binder_module_of_ref(names->binder, ref)) {
         module_ref_report_unresolved(ref, errs);
     }
@@ -658,7 +658,7 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         } else if (my keyword == KEYWORD_IDENTIFIER_IMPORT && identifier_module_ref(me)) {
             // `import("./a")`
             if (identifier_module_ref(me)->file) {
-                module_ref_report_resolved(identifier_module_ref(me), false, errs);
+                module_ref_report_resolved(identifier_module_ref(me), false, false, errs);
             } else if (!binder_module_of_ref(names->binder, identifier_module_ref(me))) {
                 module_ref_report_unresolved(identifier_module_ref(me), errs);
             }
