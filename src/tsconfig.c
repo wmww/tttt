@@ -548,9 +548,9 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
             for (isize i = 0; i < patterns->include.count && !wanted; i++) {
                 wanted = glob_may_match_inside(cstr_sv(&patterns->include.items[i]), cstr_sv(&path));
             }
-            if (wanted && !is_implicitly_excluded(item.name) && item.name.buf[0] != '.' &&
-                !is_excluded(patterns, cstr_sv(&path))
-            ) {
+            // (Wildcards don't go into package directories or hidden ones, glob_may_match_inside() says, but a pattern
+            // may name one: `./.vitepress/**/*.ts`)
+            if (wanted && !is_excluded(patterns, cstr_sv(&path))) {
                 str_list_push(&subdirs, cstr_sv(&path));
             }
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
