@@ -658,7 +658,9 @@ src` finds the code-side markers; every significant one has an entry here.
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
 - `collect_files()` (tsconfig.c HACK): root files from include patterns are in walk order, not tsc's include-pattern
   order (matchFiles' buckets, ported but all pushed into bucket 0): tsc's order exposes an order-dependent union
-  reduction in vue (agents/bugs/include_order.md). Differs only with several include patterns whose files interleave.
+  reduction in vue (agents/bugs/include_order.md). The base directories are walked in include order rather than
+  tsc's sorted getBasePaths order to keep disjoint includes in include order meanwhile (nest/integration's
+  `["src/**/*", "e2e/**/*"]`). Differs only with several include patterns whose files interleave.
 - `path_is_drive_rooted` (`module_resolution.h`): a DOS drive path (`c:/x`) is a directory `c:` of the current
   directory everywhere (mock fs, canonical paths, `join_rooted`/`option_path`), what POSIX does with it; tsc treats it
   as a root of its own. Enough for the harness's drive tests (TS5009 compares roots by name, `path_root_of`).

@@ -678,10 +678,6 @@ static bool has_higher_priority_sibling(ConfigLoad* me, HMapPathKind const* file
     return false;
 }
 
-static int compare_cstr(void const* a, void const* b) {
-    return strcmp(cstr_str((cstr const*)a), cstr_str((cstr const*)b));
-}
-
 static void collect_root_files(ConfigLoad* me, StrList* out) {
     for (isize i = 0; my files && i < my files->count; i++) {
         if (my files->items[i].tag != JSON_STRING) continue;
@@ -716,29 +712,30 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         if (cstr_size(&my options->declaration_dir)) str_list_push(&patterns.exclude, cstr_sv(&my options->declaration_dir));
     }
 
-    // One walk per distinct base directory, skipping bases inside another (tsc's getBasePaths: sorted first, so a
-    // directory comes before what is in it)
+    // One walk per distinct base directory, skipping bases inside another (tsc's getBasePaths). tsc sorts them first,
+    // which with its include-ordered buckets doesn't change the files' order; with one bucket (HACK, see
+    // collect_files()) walking them in include order keeps the include order of disjoint bases
     StrList found = {0};
     StrList bases = {0};
-    StrList sorted = {0};
+    StrList all = {0};
     for (isize i = 0; i < patterns.include.count; i++) {
         cstr base = pattern_base(cstr_sv(&patterns.include.items[i]));
-        str_list_push(&sorted, cstr_sv(&base));
+        str_list_push(&all, cstr_sv(&base));
         cstr_drop(&base);
     }
-    qsort(sorted.items, (size_t)sorted.count, sizeof(cstr), compare_cstr);
-    for (isize i = 0; i < sorted.count; i++) {
-        cstr base = cstr_clone(sorted.items[i]);
+    for (isize i = 0; i < all.count; i++) {
+        csview base = cstr_sv(&all.items[i]);
         bool covered = false;
-        for (isize j = 0; j < bases.count && !covered; j++) {
-            csview other = cstr_sv(&bases.items[j]);
-            covered = cstr_equals_sv(&base, other) || (cstr_starts_with_sv(&base, other) &&
-                (other.size == 1 || cstr_str(&base)[other.size] == '/'));
+        for (isize j = 0; j < all.count && !covered; j++) {
+            csview other = cstr_sv(&all.items[j]);
+            if (j == i) continue;
+            if (csview_equals_sv(base, other)) covered = j < i;
+            else covered = base.size > other.size && !memcmp(base.buf, other.buf, (size_t)other.size) &&
+                (other.size == 1 || base.buf[other.size] == '/');
         }
-        if (!covered) str_list_push(&bases, cstr_sv(&base));
-        cstr_drop(&base);
+        if (!covered) str_list_push(&bases, base);
     }
-    str_list_drop(&sorted);
+    str_list_drop(&all);
     StrList* buckets = calloc((size_t)patterns.include.count + 1, sizeof(StrList));
     for (isize i = 0; i < bases.count; i++) {
         if (fs_is_directory(my fs, cstr_sv(&bases.items[i]))) {
