@@ -25,16 +25,21 @@ schedules this**; stages 1-2 can start right away, stages 3-5 are one plan-48-si
 - **tsgo is order dependent too**: vue's vModel.ts:446 TS2345 appears under tsgo at every checker count
   (agents/bugs/include_order.md), so a 7.x vue corpus expects it, the opposite of tttt's walk-order HACK.
 
-## Decisions (proposed; insights confirms)
-1. **Target 7.1.0 stable** (2026-11-24) for the oracle switch, same commit everywhere (suite, caches, binary). If
-   the switch starts before then, pin 7.0.2 / its TypeScript commit and re-pin 7.1 later (~2% churn).
+## Decisions (confirmed by the insights of 2026-10-08, vision.md "Course correction")
+1. **Pin TypeScript `main` at a 7.1 nightly now** (`typescript@7.1.0-dev.YYYYMMDD` and the `main` commit it was
+   built from; same commit for suite, caches and benchmark binary). Not 7.0.2: only `main` has the native test tree,
+   7.0's branch keeps the old submodule + `.diff` layout, so a 7.0.2 pin writes the harness twice. Re-pin to 7.1.0
+   stable after 2026-11-24 (one session, ~2% drift). 7.1's syntax then comes with the oracle (stage 4).
 2. **Drop-in means**: every invocation and tsconfig tsc 7 accepts for checking (`-p`, `-b`, files, flags) is
    accepted; diagnostics in tsc's formats (`--pretty false` byte-identical, pretty close); tsc's exit codes. **Emit
-   stays out of scope** but is the real gap for "drop-in" (most users run tsc to emit): say so in readme.md, and
-   insights should ask the human whether `.d.ts`/JS emit enters scope after the retarget.
+   and watch stay out of scope** until the human answers (asked in report.md, 2026-10-08); readme.md says so.
 3. **Delete what 7 deleted** with the switch, plan-48 style (no dual 6/7 mode): es5/es3, amd/umd/system/none,
    node10/classic, baseUrl, outFile, downlevelIteration, esModuleInterop/allowSyntheticDefaultImports/alwaysStrict
-   false, and the JS features CHANGES.md lists as removed. Expect a net code deletion in the JS front end.
+   false, and the JS features CHANGES.md lists as removed. Expect a net code deletion in the JS front end. **Stage 2
+   lands with stage 3**, not before: on the 6.0 oracle it only loses tests.
+4. **Tools for arbitrary files** (`tscbaseline.sh`, `filetest.sh`, `mutate.py`, instrumenting the oracle): prefer
+   a Go toolchain and tsgo's own test runner built at the pinned commit (exact baselines, and a patched oracle stays
+   one `go build` away) over a CLI + `unstable/sync` reconstruction. The prototype session decides with numbers.
 
 ## Stages
 ### Stage 1: CLI parity (1 session, independent of the target, can start now)

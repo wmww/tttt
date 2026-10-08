@@ -1,51 +1,49 @@
 # Todo
-Written by the insights of 2026-10-07 (after the eleventh window); `vision.md` "Course correction" says why. **Ten
+Written by the insights of 2026-10-08 (after the twelfth window); `vision.md` "Course correction" says why. **Ten
 sessions, then insights.** Delete entries as they complete (leave a one-line "done" note with the numbers). A plan
 that overruns its entry takes its extra sessions out of this budget: when 10 sessions have run (count the commits
 since this file was written), the next session is insights, whatever is left here. New work goes into plans or
-triage.md, not ahead of the insights entry. Every entry ends with `scripts/fasttest.sh -s`, the corpus numbers
-(`scripts/realworld.py --corpus X` for every pinned corpus), `scripts/sweep.py`, `scripts/expecttypes.py` and `scripts/flagflip.py` after
-checker changes, `scripts/instrcount.sh` and a commit.
+triage.md, not ahead of the insights entry. Every entry ends with `scripts/fasttest.sh -s`, `scripts/oracles.py`
+(every oracle) after checker changes, `scripts/instrcount.sh` and a commit.
 
-Starting point: suite **14829 / 14969**, every corpus 0 but effect 3, sweep 8594 / 8595, `$ExpectType` 68628 / 68640,
-flagflip 18 / 10 / 4. **No per-test suite drains this window** (vision.md): a fix that needs a new special case goes
-to bugs/, not into the code.
+Starting point: suite **14835 / 14969**, every corpus 0 but effect 3 (zod-root = tsc's 53), sweep 8594 / 8595,
+`$ExpectType` 68631 / 68640, flagflip 17 / 11 / 4, source sweep 3003 / 3359 (71 / 174 repos).
 
-1. Done (2026-10-08): plan 51 planned from three prototypes, and its stage 1 landed (general ContextChecked + six
-   latent fixes, dead widening/return-mapper channels deleted; every oracle unchanged). Leaf-wise instantiation: no port.
-2. Done (2026-10-08): plan 52 planned from a 22-repo prototype (655 projects: 344 match tsc, 45 s tttt, 9 min tsc,
-   all installed with node 24 + corepack, pruned node_modules leave tsc's output identical). Two bugs fixed on the way
-   (no-target default lib, sweep.py's file-less diagnostics).
-3. Done (2026-10-08): plan 50, in place rather than clone + redirect (getCommonJsExportEquals merged into the
-   export= target at link time; four clone special cases deleted). Suite 14832 (+3), every other oracle flat;
-   stages 3-5 left as single-test quirks in bugs/binder_modules.md.
-4. Done (2026-10-08): plan 51 stage 2, context anchors (the ember regression was already gone after stage 1). Every
-   oracle 0 lost, `$ExpectType` +3; late/sig-context/overload-failure channels deleted; instructions +0.1-0.5%,
-   xstate +0.7% (anchor bookkeeping).
-5. Done (2026-10-08): plan 52 stage 1. 174 repos / 3359 projects, tsc cached (~1 h), `scripts/sourcesweep.py` (~5 min,
-   `--sample 4` in oracles.py): **2241 match (746 clean under tsc), 47 / 174 repos**, 0 crash after fixing 10; nine
-   mechanism fixes on the way, every other oracle flat. Most of the missing direction is one config cascade (plan 52).
-6. Done (2026-10-08): perf session. Checker sharing isn't a lever (plan 36: 4 checkers cost ~2% more CPU than one;
-   the vscode wall is SMT-bound). Found pathologies through the source sweep instead (karakeep 55 s -> 0.6 s,
-   headlessui 16 -> 1.2 s, mcp-sdk 5.5x tsc's types -> below tsc's); instructions vscode -1.8%, vue -4.5%, tsc -2.1%. Two open leads
-   in bugs/perf_leads.md (docmost's function types keyed by the whole mapper, immutable-js). `TTTT_FILE_TIMES`.
-7. Done (2026-10-08): hacks audit, 4 sub-agents. hacks.md 895 -> 784 lines, 249 -> 209 entries (`HACK` markers 61 ->
-   51): ~20 hacks deleted for tsc's rule (several entries described code already gone), permanent ones marked with
-   their measured cost, missing checks moved to bugs/. Suite 14833 (0 lost), flagflip missing 18 -> 16, sourcesweep
-   sample 555 -> 556, every other oracle flat. Near-misses (what each deletion loses) are written into the entries.
-8. Done (2026-10-08): plan 52 drain, main on the config level + 4 sub-agents x 2 rounds on the checker keys. Source
-   sweep **2251 -> 2997 / 3359, repos 49 -> 71** (`-p` reads referenced projects' built outputs: TS6305 like tsc's
-   CLI); suite 14833 -> 14835, every other oracle flat but flagflip 16/10/4 -> 17/11/4 (one TS2488 position,
-   hacks.md `checker_defer_function_body`). Leftovers in plan 52 and the agents' bugs/ files.
-9. Done (2026-10-08): plan 51 stage 3. Widening decided in infer_return_type, one KEY_CONTEXT_CHECKED for every
-   function (NONE / FIRST_ABSENT / BLOCKED / DONE / WIDENING_ABSENT / UNFIXED deleted), a latent rest-parameter
-   first-pass bug fixed on the way; KEY_LITERAL_CONTEXT as a stack written off with numbers (plan 51). Every oracle
-   and instruction count flat. Plan 51 is done but its optional ancestry item: triage decides whether it stays.
-10. Done (2026-10-08): triage. Scripts moved to `scripts/` (human's request); plans 36-42, 44, 45, 48, 49, 51
-    consolidated and deleted; the human's TypeScript 7 request researched into **plan 53** (+ 53_findings.md); ~15
-    fixes by sub-agents (vue order dependence, global-block merge order, unknown-option diagnostics, source-sweep keys,
-    docmost's mapper-keyed function types 2.7 -> 0.4 s, mutation seed 18 11 -> 5). Suite 14835 (0 lost), corpora flat,
-    sweep 8594, `$ExpectType` 68631, flagflip 17/11/4, source sweep 2997 -> 3003, instructions flat (vscode unmeasured).
-11. **Insights.** Schedule plan 53 (the human asked for it: TS 7 as target, tttt as a drop-in `tsc`): stage 1 (CLI
-    parity) can start right away; the oracle switch wants 7.1.0 stable (2026-11-24) or a 7.0.2 pin now. Also ask the
-    human whether emit enters scope (plan 53 decision 2).
+**This window is plan 53**: TypeScript 7 as the target, tttt as a drop-in `tsc` (the human's request). Read plan 53
+and 53_findings.md before any entry. Entry 2 is a prototype that may rewrite entries 3-8 (within this budget): it
+knows more than this file does. From entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only
+until nothing reads it.
+
+1. **Plan 53 stage 1: CLI parity** (execution, on today's oracle). tsc's `--pretty false` and pretty formats, exit
+   codes, no progress chatter, no diagnostic cap by default, tsgo's flag names (`--checkers`, `--builders`,
+   `--singleThreaded`, `-q`), `--version`/`--listFiles`/`--showConfig` where cheap. Every script moves to the tsc
+   format in the same session. Validate: byte-identical to `tsc --noEmit --pretty false` (4d4f005c) on every corpus
+   and a source-sweep sample, exit codes included; every oracle unchanged. Add the "checks only, no emit" note to
+   readme.md.
+2. **Plan 53 stage 3 prototype** (planning). Pin a `main` commit + its `typescript@7.1.0-dev` nightly; sparse fetch
+   (`tsc/testdata`, bundled libs, CHANGES.md); install Go and build tsgo's test runner at that commit (or decide
+   against it with numbers); run the native suite through the harness in a worktree and size the drop by mechanism
+   (failstats on the new tree); decide how each cache is regenerated (CLI vs `unstable/sync`). Write the switch as
+   **plan 54** (plan-48 shape: stages, session count, validation) and rewrite entries 3-8 below to match it.
+3. **The switch** (plan 54 stage 1): ensure-tsc.sh, harness on the native tree, 7.x libs, 7.0's option errors
+   (plan 53 stage 2), `filetest.sh`/`tscbaseline.sh` on the new oracle. Saved results regenerated: expect ~90%.
+4. **Delete what 7 deleted**: es5/es3, amd/umd/system/none, node10/classic, baseUrl, outFile, downlevelIteration,
+   the false-only interop options, and the JS/JSDoc/CommonJS features CHANGES.md removes. A net deletion; suite 0
+   lost against entry 3's saved results except tests that only passed through the deleted paths.
+5. **Oracle caches on tsgo**: corpora (re-pin the ones 7 disagrees on: webpack's JS), flagflip, scenarios, source
+   sweep through the CLI with `--noEmit --tsBuildInfoFile /tmp/...` (fixes the 26% fidelity gap), DefinitelyTyped
+   sweep and `$ExpectType` (CLI per package / `unstable/sync`), mutate.py. `scripts/oracles.py` runs on the new
+   caches; measurements.md gets the new baseline numbers.
+6. **Fan-out on the 7.x checker deltas** (4 sub-agents, by mechanism): no suggestion limit, code-point template
+   inference, the `strict: false` parameter rule, elaboration codes (TS2345 -> TS2741/2740), package dedup
+   (`deduplicatePackages`), TS6305 under references, the 7.1 ordering fixes in `ty/order.c`.
+7. **Fan-out on the JS rework** (4 sub-agents): CHANGES.md's changed JS/JSDoc/CommonJS rules (exports in branches
+   union, `@param` scope, hoisted `@typedef`, `@type` blocking narrowing, `arguments`), webpack back to 0.
+8. **Plan 53 stage 4: 7.1 language**: source phase imports, import attributes on ambient modules (TS1550-1558),
+   target-gated regex syntax, the new diagnostics, es2026 lib. Probe file per feature against the nightly.
+9. **Perf session against tsgo 7.1**: `scripts/bench.sh` re-baselined on the new binary (single- and
+   multi-threaded), instrcount after the deletions; measurements.md's perf section replaced. vscode's margin first.
+10. **Triage.** Drain triage.md, bookkeeping for the switch (documentation.md "baseline_tests", CLAUDE.md's oracle
+    paragraph and script descriptions, hacks.md entries that referred to deleted options), decide whether anything
+    still reads 4d4f005c. Write the 7.1.0 stable re-pin (after 2026-11-24) into a plan if it hasn't happened.
+11. **Insights.**

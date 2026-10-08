@@ -182,3 +182,22 @@ the workarounds list to delete the ones that are no longer needed, and lands one
 builds a new check that runs tttt on a hundred or more real TypeScript repositories at once, since every new real
 project has turned up bugs the tests never showed. One perf session targets VS Code, where our lead over TypeScript 7
 is smallest.
+
+## 2026-10-08 — insights (after the twelfth window)
+A good window. Last time's worry was that we kept adding workarounds while the pass count barely moved. This window
+replaced the biggest cluster of them with a proper port of how TypeScript types function arguments in generic calls,
+and an audit deleted about 20 more. The workaround list shrank for the first time in four windows, and nothing broke:
+14835 of 14969 tests pass, and every real project is still at zero false errors (except Effect at 3). We also built a
+new check that runs tttt on 3359 projects from 174 real repositories. It found bugs and slow spots nothing else did,
+and two sessions took it from 2241 to 3003 projects that match TypeScript exactly.
+
+The next window is your request: target TypeScript 7 and make tttt a drop-in `tsc`. First, tttt's command line output,
+options and exit codes will match tsc's. Then we switch what we test against to TypeScript 7.1's own test suite and
+compiler, pinned to a nightly build for now and moved to 7.1.0 when it ships on 2026-11-24. We'll delete the options
+and JavaScript features TypeScript 7 removed. Expect the pass rate to drop to around 90% at the switch, mostly in
+JavaScript tests, and then recover. The main risk is the testing tools, which will have to be rebuilt around
+TypeScript 7's Go compiler. The type checker itself barely changes.
+
+**A question for you:** should emitting output (`.d.ts` files and/or JavaScript) be in scope? Most people run `tsc` to
+emit files, so a checker-only tttt is a drop-in only for `tsc --noEmit`. Until you say otherwise, emit and watch mode
+stay out of scope and the readme will say so.
