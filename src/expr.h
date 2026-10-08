@@ -174,6 +174,10 @@ typedef struct Expr {
     // expr_lookup_names()
     bool undefined_assigned : 1;
     bool literal_ambient : 1; // A bigint literal in an ambient context (no TS2737). Set by expr_lookup_names()
+    // An object literal no type parameter list, function or class encloses, not in JavaScript: its type mentions no
+    // type parameters (tsc's getOuterTypeParameters is empty, instantiating it is the identity). Set by
+    // expr_lookup_names()
+    bool no_enclosing_type_params : 1;
     // The parentheses around it: how many bytes the outer span (expr_outer_span()) starts before inner_span and ends
     // after it. Set with expr_set_outer_span()
     u32 paren_before;

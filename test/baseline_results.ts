@@ -25508,7 +25508,7 @@ const baselines = {
     'noCircularitySelfReferentialGetter2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'noCircularitySelfReferentialGetter3': {
         errors: true,

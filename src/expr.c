@@ -2222,6 +2222,8 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
 
         case EXPR_OBJECT:
             my assignment_pattern = assignment_target != FLOW_TARGET_NONE;
+            my no_enclosing_type_params = !names->generics && !names->function && !(names->file && names->file->is_js) &&
+                !scope_enclosing_class(names);
             // tsc's checkGrammarObjectLiteralExpression in a destructuring: a rest property is no pattern itself
             for_each (i, vec_object_expr_item, &my object) {
                 if (!my assignment_pattern || i->tag != OBJECT_ITEM_SPREAD) continue;

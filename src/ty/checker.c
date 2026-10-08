@@ -234,9 +234,6 @@ Atom const* checker_atom(Checker* me, csview sv) {
 
 // Types
 
-#ifdef TTTT_ARENA_SITES
-__attribute__((noinline))
-#endif
 #define TY_VARIANT_END(field) ((offsetof(Ty, field) + sizeof(((Ty*)0)->field) + 7) & ~(size_t)7)
 static uint8_t const ty_kind_sizes[] = {
     [TY_INTRINSIC] = TY_VARIANT_END(intrinsic),
@@ -303,6 +300,9 @@ static void poison_verify(Checker const* checker) {
 }
 #endif
 
+#ifdef TTTT_ARENA_SITES
+__attribute__((noinline))
+#endif
 Ty* ty_alloc(Checker* me, TyKind kind, u32 flags) {
 #ifdef TTTT_ARENA_SITES
     arena_site_count(1, __builtin_return_address(0), ty_size_of_kind(kind));

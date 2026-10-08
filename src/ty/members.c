@@ -4605,7 +4605,10 @@ Ty const* ty_object_literal_alternative(
             for (u32 i = 0; i < index_count; i++) fresh->xflags |= index[i].value->xflags;
         }
         fresh->anonymous.ctx = (LowerCtx){ .generic = true };
-        fresh->anonymous.free_params_unknown = true;
+        // (Of a literal outside every function and generic declaration: none, so it's never instantiated. Keyed by
+        // every mapping it's instantiated with otherwise: a top-level zod schema literal had 280k instances in mcp-sdk)
+        Expr const* literal = kind != OBJECT_SYNTHETIC ? expr : nullptr;
+        fresh->anonymous.free_params_unknown = !(literal && literal->tag == EXPR_OBJECT && literal->no_enclosing_type_params);
         fresh->anonymous.object_literal = kind != OBJECT_SYNTHETIC;
         fresh->anonymous.no_inferable_index = no_inferable_index;
         fresh->anonymous.regular = kind == OBJECT_LITERAL_REGULAR;

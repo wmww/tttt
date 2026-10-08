@@ -262,7 +262,22 @@ static bool union_index_applies(Checker* me, Ty const* object, Ty const* index, 
     return false;
 }
 
+static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags);
+// (Memoized for a union like tsc's union property cache, resolveUnionTypeMembers' propertyCache: reading `node.type` of
+// babel's 260-member Node union again built and ordered the union of the 260 property types each time. At depth 0
+// only: the depth cutoff makes a deeper call's answer differ)
+static Ty const access_none;
 static Ty const* access(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
+    if (depth || object->kind != TY_UNION) return access_uncached(me, object, index, depth, flags);
+    u64 key[4] = { KEY_UNION_ACCESS, object->id, index->id, flags };
+    Ty const* cached = intern_get(&my links, key, 4);
+    if (cached) return cached == &access_none ? nullptr : cached;
+    Ty const* ret = access_uncached(me, object, index, depth, flags);
+    *intern_slot(me, &my links, key, 4) = ret ? ret : &access_none;
+    return ret;
+}
+
+static Ty const* access_uncached(Checker* me, Ty const* object, Ty const* index, u32 depth, u32 flags) {
     bool include_undefined = (flags & ACCESS_INCLUDE_UNDEFINED) != 0;
     if (depth > 16) return nullptr;
     // (tsc's getIndexedAccessTypeOrUndefined: the object reduced)
