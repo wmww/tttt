@@ -91,6 +91,7 @@ typedef struct Program {
     ProjectRedirects const* redirects;
     bool reference_outputs; // A referenced project's sources are read as their outputs (tsc's command line)
     u32 node_modules_depth; // How many node_modules lookups the file being loaded was reached through (tsc's currentNodeModulesDepth)
+    Span include_site; // The module name or `/// <reference path>` the file being loaded is loaded for (SourceFile.included_at)
     ModuleResolver** reference_resolvers;
     u32 reference_count;
     RealpathFn realpath; // program_set_realpath()
@@ -681,10 +682,12 @@ static void program_load_module_ref(Program* me, SourceFile* source, ModuleRef* 
     }
     ref->external_library = resolved.is_external_library;
     if (resolved.is_external_library) my node_modules_depth++;
+    my include_site = ref->span;
     program_load_resolved(me, source, ref, &resolved);
+    my include_site = span_null;
     if (resolved.is_external_library) my node_modules_depth--;
     if (is_new && ref->file && !ref->is_declaration) ref->file->loaded_by_import = true;
-    if (is_new && ref->file && !span_valid(ref->file->included_at)) ref->file->included_at = ref->span;
+    if (ref->file && !span_valid(ref->file->included_at)) ref->file->included_at = ref->span;
     resolved_module_drop(&resolved);
 }
 
@@ -793,9 +796,10 @@ static SourceFile* program_load_reference_path(Program* me, Span path_span, csvi
         csview output = source.size && my reference_outputs ? program_output_of_source(me, source) : c_sv("");
         if (output.size) source = fs_is_reg_file(my fs, output) ? output : c_sv("");
         if (source.size) {
-            bool is_new = !program_find_source(me, source);
+            my include_site = path_span;
             ret = program_add_source_idempotent(me, source);
-            if (is_new && ret && !span_valid(ret->included_at)) ret->included_at = path_span;
+            my include_site = span_null;
+            if (ret && !span_valid(ret->included_at)) ret->included_at = path_span;
         }
         cstr_drop(&candidate);
     }
@@ -1296,6 +1300,9 @@ static SourceFile* program_add_source_idempotent(Program* me, csview path) {
 
     hmap_box_source_file_insert(&my source_files_map, canonical_path, box_source_file_from_ptr(source_file));
     source_file->found_searching_node_modules = my node_modules_depth > 0;
+    // (Before what it refers to is loaded, which may refer back to it: tsc adds the file's include reason first)
+    if (span_valid(my include_site)) source_file->included_at = my include_site;
+    my include_site = span_null;
 
     // `/// <reference path>`s first, then the rest (`types`, `lib`): tsc's processReferencedFiles comes before
     // processTypeReferenceDirectives, and the order files load in is the program's

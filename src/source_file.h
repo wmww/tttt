@@ -98,8 +98,9 @@ typedef struct SourceFile {
     // (a package's file found so gets no declaration diagnostics: tsc's isSourceFileFromExternalLibrary)
     bool loaded_by_import;
     bool is_root; // program_load() loaded it: a root file of the program (tsc's rootNames)
-    // The module name or `/// <reference path>` that first brought the file into the program, where tsc's diagnostics
-    // explaining a file go (TS6307, TS6059); invalid for a root file, which gets a global one
+    // The first module name or `/// <reference path>` that refers to the file (a root file's too: tsc's first referenced-
+    // file reason), where tsc's diagnostics explaining a file go (TS6307, TS6059); invalid for a root file nothing
+    // refers to, which gets a global one
     Span included_at;
     // A JavaScript file of a package the program followed imports into (maxNodeModuleJsDepth): how many such files deep
     // (tsc's currentNodeModulesDepth), 0 for the project's own. Such a file is never checked (isSourceFileFromExternalLibrary)
