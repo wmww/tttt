@@ -276,25 +276,16 @@ src` finds the code-side markers; every significant one has an entry here.
   it the way tsc does.
 
 ## Calls and inference (`ty/call.c`, `ty/infer.c`)
-- `ty_function_note_widening_context` / `KEY_CONTEXT_WIDENING` (`ty/expr.c`, set from `infer_type_arguments`): without
-  strictNullChecks, the widening errors of a function argument (TS7011) are decided on the *parameter's* contextual
-  signature (`() => U`), recorded on the side, because tttt checks the function against the deeply instantiated one
-  (push-down contextual instantiation, type_core.md) where tsc sees the uninstantiated return. Goes away with tsc's
-  leaf-wise contextual instantiation. `ty_function_context_is_self` (TS7024) is the same kind of side channel.
-- `Checker.overload_failure_inference` (set by `overload_failure_candidate()`, read in `check_with()`'s generic-mode
-  skip, expr.c HACK): a nested generic call returning a function that is already resolved keeps its type instead of
-  being skipped (silent never), as tsc's getResolvedSignature cache makes SkipGenericFunctions do, but only in an
-  overload failure's fallback inference: tttt resolves nested calls earlier than tsc, so doing it everywhere
-  regresses effect and react.
-  It also stops the fallback inference from recording a function's late contextual type (`KEY_FUNCTION_SIG_CONTEXT`
-  in expr.c's EXPR_FUNCTION case): "the contextual type of the last check" stands in for tsc's lookup through the
-  call's resolved signature, and the checks after the fallback inference are memoized with the earlier contextual
-  type, so the fallback's constraint-typed check would win (thislessFunctionsNotContextSensitive1).
-- `KEY_CONTEXT_BLOCKED` / `Checker.implementation_elaboration` (expr.c EXPR_FUNCTION, call.c
-  add_implementation_success): a context-sensitive function whose first check without a contextual signature happens
-  in the TS2793 implementation check keeps no contextual signature (tsc's ContextChecked, vscode/eopt TS7006 x18).
-  tsc's rule is general (any first Normal-mode check decides), but tttt checks context-sensitive functions in places
-  and orders tsc doesn't, so only this one place applies it (like `KEY_CONTEXT_NONE` being for non-sensitive ones).
+- TS7011/TS7018 reportability (`ty_function_widening_reportable`): from the contextual signature before
+  `ty_fix_contextual_signature()` (`KEY_CONTEXT_UNFIXED`: tsc's getContextualSignature, a real concept under a
+  misleading name) and `KEY_CONTEXT_WIDENING_ABSENT` (a first check under inference with no signature view: stands in
+  for tsc computing the return type under resolvingSignature). Plan 51 stage 3 decides it where the return type is
+  computed. `ty_function_context_is_self` (TS7024) is the lazy contextual return of plan 51 stage 2.
+- `Checker.overload_failure_inference` (set by `overload_failure_candidate()`): the fallback inference doesn't record
+  a function's late contextual type (`KEY_FUNCTION_SIG_CONTEXT` in expr.c's EXPR_FUNCTION case): "the contextual type
+  of the last check" stands in for tsc's lookup through the call's resolved signature, and the checks after the
+  fallback inference are memoized with the earlier contextual type, so the fallback's constraint-typed check would win
+  (thislessFunctionsNotContextSensitive1). Goes with plan 51 stage 2.
 - `infer_from_objects()`, a generic mapped target `{ [P in C]: T[P] }` (the homomorphic `T[K]` shortcut, standing in
   for reverse mapping): the source goes to T as if homomorphic unless C is a conditional (Omit's
   `Exclude<keyof T, X>`, where tsc infers nothing), intersection-limited or a deferred `keyof X` whose X isn't
@@ -318,8 +309,10 @@ src` finds the code-side markers; every significant one has an entry here.
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
 - Return mapper (`infer_type_arguments`, call.c HACKs): the contextual inference through the outer return mapper fills
-  only type parameters without candidates (for all: tsc-exact on tests, but valibot +9%). Non-sensitive function
-  arguments get their parameter type fully instantiated, others top level (`instantiate_instantiable`). A pattern's
+  only type parameters without candidates (tsc's always-separate returnContext loses
+  contextualParamTypeVsNestedReturnTypeInference1-4 and nestedGenericSpreadInference, gains
+  inferFromGenericFunctionReturnTypes3: something else about the nested call's contextual type differs; valibot +9%).
+  `literal_arg_context()` pre-instantiates with the return mapper (higher-order needs it). A pattern's
   return mapper drops inferred `any` (tsc's nonInferrableAnyType) and rest patterns give none; `ty_pattern_unclone`
   copies the pattern type per call. Nested literals instantiate context only in `check_for_mutable_location()`.
 - `Inference.circularity`: `visited` records no priorities, so a pair is circular only while still on the stack.
@@ -384,12 +377,13 @@ src` finds the code-side markers; every significant one has an entry here.
   `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
   `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and
   destructuring defaults don't.
-- `KEY_CONTEXT_NONE` / `ty_late_contextual_return` (expr.c HACK): tsc's ContextChecked is set at a function's first
-  check even without a contextual signature, and getReturnTypeFromBody reads the context when the return type is
-  computed. tttt marks only functions that aren't context sensitive (it checks sensitive ones where tsc skips them or
-  with other contextual types: marking them regresses the corpora), and applies the late context only
-  when it is the function's own type (a self context keeps a returned literal; any other contextual signature would be
-  inferred eagerly, circular for compositeContextualSignature).
+- `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` / `ty_late_contextual_return` (expr.c HACK): tsc's
+  getReturnTypeFromBody reads the contextual signature when the return type is computed, through the call's resolved
+  signature; tttt records the call and the context of the last check, and applies the late context only when it is
+  the function's own type (a self context keeps a returned literal; any other contextual signature would be inferred
+  eagerly, circular for compositeContextualSignature). Plan 51 stage 2 (context anchors) replaces them.
+  (ContextChecked itself is tsc's rule since plan 51 stage 1: `KEY_CONTEXT_DONE` with a signature, `KEY_CONTEXT_BLOCKED`
+  without; a blocked function still takes `this` from the last contextual signature, which tsc asks lazily.)
 - `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_DONE`), from the first usable context; generic
   contextual signatures aren't instantiated. `KEY_CONTEXT_PARAM_PATTERN` marks pattern fallbacks for the symbols
   traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check; an earlier return type misses it.

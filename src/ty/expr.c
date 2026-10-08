@@ -25,6 +25,10 @@
 
 static const LowerCtx expr_lower_ctx = { .generic = true };
 
+// What tsc's getContextualType walks up the parents to find, pushed down instead: tsc instantiates at every level too
+// (getApparentTypeOfContextualType of the parent before a property lookup), along two chains, without flags and with
+// ContextFlags.Signature, which these carry eagerly (plan 51 measured the dynamic `outer_inference` equal to tsc's
+// node-captured inference context along every chain)
 typedef struct ExprCtx {
     Ty const* contextual; // may be null
     // While a call infers: the contextual type as a contextual signature sees it (tsc's ContextFlags.Signature, which
@@ -323,10 +327,9 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
         GenericFunctionMode* mode = ctx.generic_mode;
         ctx.generic_mode = nullptr;
         if (!mode->sig && ty_calls_generic_function_returning_function(me, expr)) {
-            // (Not a call resolved already, in an overload failure's inference: tsc's resolveCallExpression only skips
-            // under SkipGenericFunctions when getResolvedSignature has nothing cached. HACK: only there, tttt resolves
-            // nested calls earlier than tsc does, and doing it in every first pass costs effect 15 and react 2)
-            Ty const* resolved = my overload_failure_inference ? ty_call_resolved_return(me, expr->call) : nullptr;
+            // (Not a call resolved already: tsc's resolveCallExpression only skips under SkipGenericFunctions when
+            // getResolvedSignature has nothing cached)
+            Ty const* resolved = ty_call_resolved_return(me, expr->call);
             if (resolved) return resolved;
             mode->skipped = true;
             return ty_intrinsic(me, TY_SILENT_NEVER);
@@ -610,7 +613,7 @@ static Ty const* context_map(Checker* me, Ty const* contextual, ContextGetter ge
 
 static bool is_generic_mapped_context(Checker* me, Ty const* ty) {
     return ty->kind == TY_ANONYMOUS && (ty->flags & TYF_OBJECT) && !ty->anonymous.function &&
-        (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, ty)->mapped && !ty_members(me, ty)->mapped->name_type;
+        (ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && ty_members(me, ty)->mapped && !ty_mapped_is_remapping(me, ty_members(me, ty)->mapped);
 }
 
 // (tsc's appendContextualPropertyTypeConstituent: `any` says nothing next to the others)
@@ -1440,7 +1443,14 @@ static void assign_contextual_signature_as(
 ) {
     u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)function };
     if (intern_get(&my links, done_key, 2)) return;
-    if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)function }, 2)) return;
+    if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)function }, 2)) {
+        // Its parameters have no contextual types for good, but its `this` is whatever the contextual signature says when
+        // it is looked at (tsc's getContextualThisParameterType asks getContextualSignature each time): the last one, of
+        // the overload a call settles on after a candidate that gave none checked it first
+        Signature const* late = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
+        if (late && late->this_type) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_THIS, (u64)(uintptr_t)function }, 2) = late->this_type;
+        return;
+    }
     Signature const* sig = given ? given : contextual_signature(me, ty_instantiate_contextual_type_for(me, contextual, true), function, 0);
     if (!sig) return;
     // The type parameters of the generic call this is an argument of are fixed now (a contextual type that left them
@@ -1758,17 +1768,6 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
     return is_generic_type(me, ty);
 }
 
-// The contextual signature tsc's shouldReportErrorsFromWideningWithContextualSignature sees when a call
-// with a return mapper checks a function argument: the parameter type's, not the deeply instantiated one tttt checks
-// the function with (KEY_CONTEXT_WIDENING, first one wins)
-void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type) {
-    if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any || function->ret_explicit) return;
-    Signature const** slot = (Signature const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
-    if (*slot || intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return;
-    Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, param_type, true), function, 0);
-    if (sig) *slot = sig;
-}
-
 bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
     // (Only when its first check had no contextual signature: one it had then decided its return type, no circularity)
     return (intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) ||
@@ -1782,14 +1781,9 @@ bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
 bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield) {
     // (The first contextual signature, which tsc's getReturnTypeFromBody reports with: while a call infers, its type
     // parameters are still there)
-    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
-    if (!sig && intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return true;
-    if (!sig) sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
+    if (intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return true;
+    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2);
     if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
-    if (!sig) {
-        Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
-        sig = contextual ? ty_function_contextual_signature(me, function, contextual) : nullptr;
-    }
     if (!sig) return true;
     Ty const* ret = signature_return_type(me, sig);
     if (function->is_generator) {
@@ -4059,7 +4053,9 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
             has_spread = true;
             if (builder.count) spread_acc_props(me, &spread, &builder);
             literal_builder_drop(&builder);
-            Ty const* spread_type = ty_reduced(me, check_with(me, &i->value, (ExprCtx){ .contextual = ctx.contextual }));
+            Ty const* spread_type = ty_reduced(me, check_with(me, &i->value, (ExprCtx){
+                .contextual = ctx.contextual, .sig_contextual = ctx.sig_contextual, .sig_absent = ctx.sig_absent,
+            }));
             // A spread of no object (TS2698) is intersected with the rest instead (tsc's typeToIntersect)
             if (!(spread_type->flags & TYF_ANY) && !ty_is_valid_spread_type(me, spread_type)) {
                 to_intersect = to_intersect ?
@@ -4071,13 +4067,18 @@ static Ty const* check_jsx_attributes(Checker* me, Expr const* expr, ExprCtx ctx
         }
         Atom const* name = checker_atom(me, i->name.sv);
         Ty const* member_context = ctx.contextual ? contextual_named_prop_type(me, ctx.contextual, name) : nullptr;
+        // (While a call infers, the view a contextual signature sees, like check_object()'s members)
+        Ty const* member_sig_context = ctx.sig_contextual ? contextual_named_prop_type(me, ctx.sig_contextual, name) : nullptr;
         Ty const* type;
         switch (i->tag) {
             case JSX_ATTRIBUTE_NO_VALUE: type = ty_intrinsic(me, TY_TRUE); break; // `<a x />` is `<a x={true} />`
             case JSX_ATTRIBUTE_EMPTY_EXPR: type = any_type(me); break; // (the error type)
             default:
-                type = check_for_mutable_location(me, &i->value,
-                    (ExprCtx){ .contextual = member_context, .skip_sensitive = ctx.skip_sensitive });
+                type = check_for_mutable_location(me, &i->value, (ExprCtx){
+                    .contextual = member_context, .sig_contextual = member_sig_context,
+                    .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !member_sig_context),
+                    .skip_sensitive = ctx.skip_sensitive,
+                });
                 break;
         }
         {
@@ -5023,12 +5024,14 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its
             // return type only sees the context once the call is resolved (ty_late_contextual_return())
             u64 none_key[2] = { KEY_CONTEXT_NONE, (u64)(uintptr_t)expr->function };
-            // A context-sensitive function's first full check without a contextual signature, in the implementation's
-            // check of a failed overloaded call, decides it has none (tsc's ContextChecked; see
-            // add_implementation_success)
-            if (my implementation_elaboration && ty_function_is_context_sensitive(expr->function) &&
+            // A context-sensitive function's first full check without a contextual signature decides it has none (tsc's
+            // ContextChecked, set by the first check that doesn't skip it whatever it finds). Not one typed by a JSDoc
+            // `@type`, which takes its parameter types from that (tsc's getParameterTypeOfTypeTag)
+            if (ty_function_is_context_sensitive(expr->function) && !function_impl_rare(expr->function)->jsdoc_signature_type &&
                 !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
-                !contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0)
+                !intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) &&
+                (ctx.sig_absent || !(ctx.contextual || ctx.sig_contextual) ||
+                 !contextual_signature(me, ty_instantiate_contextual_type_for(me, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, true), expr->function, 0))
             ) {
                 *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2) = expr->function;
             }
@@ -5037,8 +5040,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // without one (tsc's getReturnTypeFromBody then reports widening, TS7011, whatever comes later)
             if (ctx.sig_absent && my outer_inference && !expr->function->ret_explicit && !compiler_options()->strict_null_checks &&
                 compiler_options()->no_implicit_any && !ty_function_is_context_sensitive(expr->function) &&
-                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
-                !intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)expr->function }, 2)
+                !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2)
             ) {
                 Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)expr->function }, 2);
                 if (!*slot) *slot = (Ty const*)expr->function;
@@ -5048,7 +5050,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // see ty_function_context_is_self())
             if (!ctx.contextual && !ctx.sig_contextual && my resolving_call && !expr->function->ret_explicit &&
                 !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
-                !intern_get(&my links, none_key, 2) && !ty_function_is_context_sensitive(expr->function)
+                !intern_get(&my links, none_key, 2)
             ) {
                 Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)expr->function }, 2);
                 if (!*slot) *slot = (Ty const*)my resolving_call;
@@ -5060,19 +5062,19 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // false)` with `const TConfig extends { b?: any }` keeps `() => 123`)
             if (none_call && my overload_failure_inference) {
             } else if (none_call) {
-                *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
+                // (A blocked one still takes its `this` from it, see assign_contextual_signature_as())
+                if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2)) {
+                    assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr,
+                        ctx.raw_contextual);
+                }
                 *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_SIG_CONTEXT, (u64)(uintptr_t)expr->function }, 2) =
                     ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
             } else if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
-                *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)expr->function }, 2) = ctx.contextual;
                 u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
                 bool assigned = intern_get(&my links, done_key, 2) != nullptr;
                 assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr,
                     ctx.raw_contextual);
-                // (Only one that isn't context sensitive: tttt checks those in places tsc skips them, or with other
-                // contextual types, so their parameters would miss what tsc gives them)
-                if (!assigned && my resolving_call && !intern_get(&my links, done_key, 2) &&
-                    !ty_function_is_context_sensitive(expr->function)) {
+                if (!assigned && my resolving_call && !intern_get(&my links, done_key, 2)) {
                     *intern_slot(me, &my links, none_key, 2) = my resolving_call;
                 }
                 if (assigned) {

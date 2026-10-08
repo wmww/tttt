@@ -249,7 +249,11 @@ static void check_children(Checker* me, JsxElement const* element, ErrorCtx* err
     bool explicit = false;
     for_each (i, vec_jsx_attribute, attributes) {
         if (i->tag == JSX_ATTRIBUTE_SPREAD) {
-            if (ty_expr_type(me, &i->value)->flags & TYF_ANY) return;
+            // (Not a check that decides the contextual types of the functions in it: tsc's spreads are checked in
+            // the attributes' check, with their contextual type)
+            Ty const* spread = ty_expr_is_context_sensitive(&i->value) ? ty_check_expr_skipping_sensitive(me, &i->value, nullptr, false) :
+                ty_expr_type(me, &i->value);
+            if (spread->flags & TYF_ANY) return;
         } else {
             explicit |= csview_eq(&i->name.sv, &name);
         }

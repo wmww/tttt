@@ -96,7 +96,6 @@ enum {
     KEY_WIDENED_NULLABLE, // type -> ty_widened_nullable() of it
     KEY_CHECKED_ONCE,   // AST node -> non-null once ty_first_check() saw it
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
-    KEY_FUNCTION_CONTEXT, // Function expression's FunctionImpl -> the contextual type it was last checked with
     KEY_UNDEFINED_PROPERTY, // Property name atom -> the Prop the first normalized-in optional `undefined` property of the name was made of
     KEY_SYNTHETIC_PROP_PARTS, // Prop (an intersection's property made of several, Prop.synthetic) -> SyntheticParts
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
@@ -107,7 +106,6 @@ enum {
     KEY_FUNCTION_SIG_CONTEXT, // FunctionImpl -> the contextual type of its last check after KEY_CONTEXT_NONE
     KEY_CONTEXT_BLOCKED, // FunctionImpl -> non-null once its first check decided it has no contextual signature (context sensitive)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
-    KEY_CONTEXT_WIDENING, // FunctionImpl -> its contextual signature before a return mapper instantiated it (see ty_function_note_widening_context())
     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())
     KEY_CONTEXT_WIDENING_ABSENT, // FunctionImpl -> itself if its first check under a call's inference had no contextual signature (ty_function_widening_reportable())
     KEY_CONTEXT_UNFIXED, // FunctionImpl -> that signature before ty_fix_contextual_signature(), when that changed it

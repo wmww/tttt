@@ -1,0 +1,349 @@
+diff --git a/src/ty/call.c b/src/ty/call.c
+index df9433a5..b410494c 100644
+--- a/src/ty/call.c
++++ b/src/ty/call.c
+@@ -298,6 +298,7 @@ static Ty const* shape_type_at(ParamShape const* shape, u32 i) {
+ }
+ 
+ // Checks argument i with its parameter's type as the contextual type
++static Ty const* return_mapped_context(Checker* me, Ty const* contextual);
+ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
+     Arg* arg = &args->data[i];
+     if (arg->spread || arg->part_of_spread) return;
+@@ -323,7 +324,9 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
+     arg->type = ty_check_expr(me, arg->expr, contextual);
+     // A literal its contextual type has room for is regular, so it isn't widened as a candidate (tsc's
+     // checkExpressionWithContextualType): "event1" against `K | keyof T` infers K = "event1"
+-    if (contextual && (arg->type->flags & TYF_FRESH_LITERAL) && ty_is_literal_of_contextual_type(me, arg->type, contextual)) {
++    // (plan 51 prototype: tsc's checkExpressionWithContextualType asks with instantiateContextualType(contextualType, node))
++    Ty const* literal_context = VARIANT(V_C2) && contextual ? return_mapped_context(me, contextual) : contextual;
++    if (contextual && (arg->type->flags & TYF_FRESH_LITERAL) && ty_is_literal_of_contextual_type(me, arg->type, literal_context)) {
+         arg->type = ty_regular(me, arg->type);
+     }
+ }
+@@ -526,8 +529,32 @@ typedef struct OuterInference {
+     u64 cached_no_default_count;
+     u64 serial; // See Checker.active_inferences
+     struct OuterInference* enclosing;
++    Span node; // (plan 51 prototype: the call, for the ancestry audit)
+ } OuterInference;
+ 
++static bool proto_span_contains(Span outer, Span inner) {
++    return outer.source && outer.source == inner.source && inner.sv.buf >= outer.sv.buf &&
++        inner.sv.buf + inner.sv.size <= outer.sv.buf + outer.sv.size;
++}
++
++// (plan 51 prototype: does the dynamic outer inference agree with tsc's getInferenceContext(node), the innermost
++// active inference whose call contains the node?)
++u64 proto_audit_counts[3];
++void ty_proto_inference_audit(Checker* me, Span span) {
++    OuterInference* dynamic = my outer_inference;
++    OuterInference* ancestor = nullptr;
++    for (OuterInference* a = my active_inferences; a && !ancestor; a = a->enclosing) {
++        if (proto_span_contains(a->node, span)) ancestor = a;
++    }
++    int kind = dynamic == ancestor ? 0 : !dynamic ? 1 : 2;
++    proto_audit_counts[kind]++;
++    if (kind && getenv("V_LOGAUD")) {
++        log_warn("plan51 audit: ", kind == 1 ? "cleared-but-ancestor" : ancestor ? "dynamic-is-other-ancestor" : "dynamic-not-ancestor",
++            " ", span.source ? cstr_str(&span.source->canonical_path) : "?", ":",
++            span.source ? span_line_index(span) + 1 : 0);
++    }
++}
++
+ static Ty const* instantiate_instantiable(Checker* me, Ty const* type, TyMapper const* mapper);
+ 
+ // A contextual type instantiated with a call's returnMapper: without `boolean` in it (tsc's instantiateContextualType,
+@@ -552,6 +579,11 @@ static Ty const* instantiate_with_return_mapper(Checker* me, Ty const* contextua
+     return ret;
+ }
+ 
++static Ty const* return_mapped_context(Checker* me, Ty const* contextual) {
++    OuterInference* outer = my outer_inference;
++    return outer && outer->return_mapper ? instantiate_with_return_mapper(me, contextual, outer->return_mapper) : contextual;
++}
++
+ // Changes whenever the non-fixing mapper would: candidates are only added (or replaced by ones of a better priority,
+ // which may leave their count as it was: `inf->replaced`), and fixing is for good
+ static u64 inference_count(Inference const* inf) {
+@@ -1042,7 +1074,7 @@ static bool is_literal_arg(Arg const* arg) {
+ // The contextual type of a literal argument in the first pass: what the return type says about the type parameters
+ // helps type it (a tuple, a literal)
+ static Ty const* literal_arg_context(Checker* me, Ty const* param_type, TyMapper const* return_mapper) {
+-    return param_type && return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
++    return param_type && return_mapper && !VARIANT(V_C3) ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
+ }
+ 
+ // A variadic rest parameter takes the remaining arguments as a tuple (tsc's getSpreadArgumentType at the end of
+@@ -1084,7 +1116,7 @@ static bool maybe_primitive_context(Ty const* ty) {
+ static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32 i, u32 from, bool is_const, OuterInference* self) {
+     Arg* arg = &args->data[i];
+     Ty const* contextual = rest_arg_contextual(me, shape, args, i, from);
+-    if (contextual && self && self->return_mapper && arg->expr->tag != EXPR_CALL) {
++    if (contextual && self && self->return_mapper && arg->expr->tag != EXPR_CALL && !VARIANT(V_C4)) {
+         contextual = instantiate_with_return_mapper(me, contextual, self->return_mapper);
+     }
+     OuterInference* saved = my outer_inference;
+@@ -1216,7 +1248,8 @@ static TyMapper const* infer_type_arguments(
+     if (contextual && outer && (contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) {
+         contextual = ty_instantiate(me, contextual, outer_inference_mapper(me, outer));
+     }
+-    OuterInference self = { .sig = sig, .inf = &inf, .serial = ++my inference_serial, .enclosing = my active_inferences };
++    OuterInference self = { .sig = sig, .inf = &inf, .serial = ++my inference_serial, .enclosing = my active_inferences,
++        .node = info->call_span };
+     my active_inferences = &self;
+     my inferential_depth++;
+     // (This call's own arguments aren't in the return of a function argument: see ExprCtx in expr.c)
+@@ -1314,6 +1347,12 @@ static TyMapper const* infer_type_arguments(
+                 infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
+                 return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
+                 inference_drop(&return_inf);
++            } else if (VARIANT(V_C1)) {
++                Inference return_inf;
++                inference_init(&return_inf, sig->type_params);
++                infer_types(me, &return_inf, return_source, return_type, INFER_PRIORITY_NORMAL);
++                return_mapper = return_inference_mapper(me, sig, &return_inf, nullptr);
++                inference_drop(&return_inf);
+             } else if (return_source == source || !gaps) {
+                 return_mapper = return_inference_mapper(me, sig, &inf, nullptr);
+             } else {
+@@ -1356,7 +1395,7 @@ static TyMapper const* infer_type_arguments(
+             Ty const* param_type = shape_type_at(&shape, i);
+             if (arg->context_sensitive && !arg->spread && !arg->part_of_spread && param_type) {
+                 my outer_inference = &self;
+-                Ty const* context = return_mapper ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
++                Ty const* context = return_mapper && !VARIANT(V_C3) ? instantiate_instantiable(me, param_type, return_mapper) : param_type;
+                 GenericFunctionMode mode = {0};
+                 Ty const* type = ty_check_literal_argument(me, arg->expr, context, ty_is_const_type_variable(me, param_type, 0),
+                     true, &mode);
+@@ -1377,7 +1416,7 @@ static TyMapper const* infer_type_arguments(
+                 param_type && ty_is_const_type_variable(me, param_type, 0), false, &mode);
+             arg->nested_generic = mode.skipped;
+             any_sensitive |= mode.skipped;
+-        } else if (return_mapper && !arg->spread && !arg->part_of_spread) {
++        } else if (return_mapper && !arg->spread && !arg->part_of_spread && !VARIANT(V_C2)) {
+             // What the return type says about the type parameters helps type the argument (a tuple, a literal). tsc
+             // instantiates the contextual type of each expression as it is asked for (instantiateInstantiableTypes: a
+             // function type stays as written, its return expressions instantiated where they are looked at, and a call
+diff --git a/src/ty/expr.c b/src/ty/expr.c
+index e21fb9de..57e3d3b2 100644
+--- a/src/ty/expr.c
++++ b/src/ty/expr.c
+@@ -43,6 +43,9 @@ typedef struct ExprCtx {
+     // While a call infers: `contextual` before its top-level instantiation (what a nested call resolves with: tsc's
+     // resolveCall takes getContextualType(), and instantiates it with the outer mappers itself)
+     Ty const* raw_contextual;
++    // (plan 51 prototype: the inference context captured where the push-down began, tsc's getInferenceContext(node))
++    struct OuterInference* inference;
++    bool inference_set;
+ } ExprCtx;
+ 
+ static Ty const* compute(Checker* me, Expr const* expr, ExprCtx ctx);
+@@ -283,12 +286,37 @@ static ExprCtx passed_on_context(ExprCtx ctx) {
+     return ctx;
+ }
+ 
++u64 proto_inference_mismatch = 0, proto_inference_checks = 0;
++static _Atomic u64 proto_stats[5];
++static void proto_stats_print(void) {
++    fprintf(stderr, "plan51 stats: check_with %llu, inferring %llu, instantiated-changed %llu, sig-view-asked %llu, sig-view-differs %llu\n",
++        (unsigned long long)proto_stats[4], (unsigned long long)proto_stats[0], (unsigned long long)proto_stats[1],
++        (unsigned long long)proto_stats[2], (unsigned long long)proto_stats[3]);
++}
+ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
++    if (!proto_stats[4]++ && getenv("V_STATS")) atexit(proto_stats_print);
++    if (!ctx.inference_set) {
++        void ty_proto_inference_audit(Checker* me, Span span);
++        if (my active_inferences) ty_proto_inference_audit(me, expr_outer_span(expr));
++        ctx.inference = my outer_inference;
++        ctx.inference_set = true;
++    } else {
++        if (++proto_inference_checks == 1 && getenv("V_LOGCHK")) log_warn("plan51 proto: checking");
++        if (ctx.inference != my outer_inference) {
++            if (!proto_inference_mismatch++ || getenv("V_LOGMIS")) {
++                Span sp = expr_outer_span(expr);
++                log_warn("plan51 proto: inference mismatch at ", sp.source ? cstr_str(&sp.source->canonical_path) : "?", " ", (u64)(sp.source ? sp.sv.buf - cstr_str(&sp.source->contents) : 0));
++            }
++        }
++    }
+     // (tsc's getApparentTypeOfContextualType: every node's contextual type is instantiated at its top level with what the
+     // call inferring now knows. The view a contextual signature sees only where one may be asked for: instantiating
+     // creates types, which tsc wouldn't have yet)
++    if (VARIANT(V_B1)) { ctx.sig_contextual = nullptr; ctx.sig_absent = false; }
++    if (VARIANT(V_B2)) ctx.sig_absent = false;
+     bool inferring = my outer_inference && ((ctx.contextual && (ctx.contextual->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) ||
+         ctx.sig_contextual);
++    if (VARIANT(V_B4)) inferring = false;
+     if (inferring) {
+         Ty const* raw_sig = ctx.sig_absent ? nullptr : ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
+         ctx.raw_contextual = ctx.contextual;
+@@ -296,6 +324,13 @@ static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx) {
+         Ty const* sig_view = !raw_sig ? nullptr :
+             may_want_signature(expr) ? ty_instantiate_contextual_type_for(me, raw_sig, true) : ctx.contextual;
+         ctx.sig_contextual = sig_view != ctx.contextual ? sig_view : nullptr;
++        proto_stats[0]++;
++        proto_stats[1] += ctx.contextual != ctx.raw_contextual;
++        proto_stats[2] += raw_sig && may_want_signature(expr);
++        proto_stats[3] += ctx.sig_contextual != nullptr;
++        if (VARIANT(V_B1)) { ctx.sig_contextual = nullptr; ctx.sig_absent = false; }
++        if (VARIANT(V_B2)) ctx.sig_absent = false;
++        if (VARIANT(V_B3)) ctx.raw_contextual = ctx.contextual;
+     } else {
+         ctx.sig_contextual = nullptr;
+         ctx.raw_contextual = ctx.contextual;
+@@ -1388,6 +1423,10 @@ Ty const* ty_contextual_synthetic_rest_type(Checker* me, FunctionImpl const* fun
+ // `contextualSignature === getSignatureFromDeclaration(func)`)
+ static void set_contextual_return(Checker* me, FunctionImpl const* function, Signature const* sig) {
+     if (function->ret_explicit) return;
++    {
++        Signature const** first = (Signature const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_SIGNATURE, (u64)(uintptr_t)function }, 2);
++        if (!*first || !VARIANT(V_P1F)) *first = sig;
++    }
+     // (Later checks of its return expressions see the return type it has then, like tsc's getContextualReturnType)
+     if (sig->function == function && !sig->target) {
+         *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) = function;
+@@ -1448,7 +1487,7 @@ static void assign_contextual_signature_as(
+     Signature const* unfixed = sig;
+     sig = ty_fix_contextual_signature(me, sig, function);
+     *intern_slot(me, &my links, done_key, 2) = sig;
+-    if (sig != unfixed) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2) = unfixed;
++    if (sig != unfixed && !VARIANT(V_A3) && !VARIANT(V_P1)) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_UNFIXED, (u64)(uintptr_t)function }, 2) = unfixed;
+     if (sig->this_type) {
+         u64 this_key[2] = { KEY_CONTEXT_THIS, (u64)(uintptr_t)function };
+         *intern_slot(me, &my links, this_key, 2) = sig->this_type;
+@@ -1762,7 +1801,7 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
+ // with a return mapper checks a function argument: the parameter type's, not the deeply instantiated one tttt checks
+ // the function with (KEY_CONTEXT_WIDENING, first one wins)
+ void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type) {
+-    if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any || function->ret_explicit) return;
++    if (VARIANT(V_A1) || VARIANT(V_P1) || compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any || function->ret_explicit) return;
+     Signature const** slot = (Signature const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
+     if (*slot || intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING_ABSENT, (u64)(uintptr_t)function }, 2)) return;
+     Signature const* sig = contextual_signature(me, ty_instantiate_contextual_type_for(me, param_type, true), function, 0);
+@@ -1779,7 +1818,33 @@ bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
+ // tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn (GeneratorYield with
+ // `yield`): a function expression's contextual signature, if it has one, has a generic return type (a generator's: the
+ // return or yield type it iterates with)
++static bool widening_reportable_with(Checker* me, FunctionImpl const* function, Signature const* sig, bool yield);
++// (plan 51 prototype: tsc's getReturnTypeFromBody reports widening as it computes the return type, with the contextual
++// signature it has then)
++void ty_function_decide_widening_reportable(Checker* me, FunctionImpl const* function) {
++    if (!VARIANT(V_P1) || !function->is_expression || function->ret_explicit) return;
++    // (Only where it is reported, tsc's reportErrorsFromWidening: its own signature is in flight now)
++    if (compiler_options()->strict_null_checks || !compiler_options()->no_implicit_any) return;
++    Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_SIGNATURE, (u64)(uintptr_t)function }, 2);
++    if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
++    if (!sig) {
++        Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
++        sig = contextual ? ty_function_contextual_signature(me, function, contextual) : nullptr;
++    }
++    if (sig && sig->function == function) return;
++    uintptr_t bits = 1 | (widening_reportable_with(me, function, sig, false) ? 2 : 0) |
++        (function->is_generator && widening_reportable_with(me, function, sig, true) ? 4 : 0);
++    *intern_slot(me, &my links, (u64[]){ KEY_RETURN_REPORTABLE, (u64)(uintptr_t)function }, 2) = (void const*)bits;
++}
++
+ bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield) {
++    if (VARIANT(V_P1)) {
++        uintptr_t bits = (uintptr_t)intern_get(&my links, (u64[]){ KEY_RETURN_REPORTABLE, (u64)(uintptr_t)function }, 2);
++        if (bits) return bits & (yield ? 4 : 2);
++        Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_SIGNATURE, (u64)(uintptr_t)function }, 2);
++        if (!sig) sig = ty_function_assigned_contextual_signature(me, function);
++        return widening_reportable_with(me, function, sig, yield);
++    }
+     // (The first contextual signature, which tsc's getReturnTypeFromBody reports with: while a call infers, its type
+     // parameters are still there)
+     Signature const* sig = intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)function }, 2);
+@@ -1790,6 +1855,10 @@ bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function,
+         Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_CONTEXT, (u64)(uintptr_t)function }, 2);
+         sig = contextual ? ty_function_contextual_signature(me, function, contextual) : nullptr;
+     }
++    return widening_reportable_with(me, function, sig, yield);
++}
++
++static bool widening_reportable_with(Checker* me, FunctionImpl const* function, Signature const* sig, bool yield) {
+     if (!sig) return true;
+     Ty const* ret = signature_return_type(me, sig);
+     if (function->is_generator) {
+@@ -3580,6 +3649,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
+             // getReducedType in checkObjectLiteral)
+             Ty const* spread_type = ty_reduced(me, check_with(me, &i->value, (ExprCtx){
+                 .contextual = written_context, .sig_contextual = written_sig_context, .sig_absent = ctx.sig_absent,
++                .inference = ctx.inference, .inference_set = ctx.inference_set,
+                 .skip_sensitive = ctx.skip_sensitive,
+             }));
+             // (A spread of no object is TS2698 and makes the literal errorType, tsc's checkObjectLiteral)
+@@ -3623,6 +3693,7 @@ static Ty const* check_object(Checker* me, Expr const* expr, ExprCtx ctx) {
+         ExprCtx member_ctx = {
+             .contextual = member_context, .sig_contextual = member_sig_context,
+             .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !member_sig_context),
++            .inference = ctx.inference, .inference_set = ctx.inference_set,
+             .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+             .generic_mode = ctx.generic_mode,
+         };
+@@ -3921,6 +3992,7 @@ static Ty const* check_array(Checker* me, Expr const* expr, ExprCtx ctx) {
+         ExprCtx element_ctx = {
+             .contextual = element_context, .sig_contextual = element_sig_context,
+             .sig_absent = ctx.sig_absent || (ctx.sig_contextual && !element_sig_context),
++            .inference = ctx.inference, .inference_set = ctx.inference_set,
+             .is_const = ctx.is_const, .skip_sensitive = ctx.skip_sensitive,
+             .generic_mode = ctx.generic_mode,
+         };
+@@ -5035,7 +5107,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
+             // A first check while a call infers whose contextual type, instantiated with what it knows so far, has no
+             // signature for it (`<TP extends Partial<T> = {}>(p?: TP)`: the default `{}`) decides its return type
+             // without one (tsc's getReturnTypeFromBody then reports widening, TS7011, whatever comes later)
+-            if (ctx.sig_absent && my outer_inference && !expr->function->ret_explicit && !compiler_options()->strict_null_checks &&
++            if (!VARIANT(V_A2) && !VARIANT(V_P1) && ctx.sig_absent && my outer_inference && !expr->function->ret_explicit && !compiler_options()->strict_null_checks &&
+                 compiler_options()->no_implicit_any && !ty_function_is_context_sensitive(expr->function) &&
+                 !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
+                 !intern_get(&my links, (u64[]){ KEY_CONTEXT_WIDENING, (u64)(uintptr_t)expr->function }, 2)
+diff --git a/src/ty/function.c b/src/ty/function.c
+index 8915f8fb..f88b0703 100644
+--- a/src/ty/function.c
++++ b/src/ty/function.c
+@@ -292,6 +292,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
+             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
+         }
+     }
++    ty_function_decide_widening_reportable(me, function);
+     if (function->is_async && !function->is_generator && !returned.len && function_impl_rare(function)->promise_decl &&
+         !program_get_global(my program, c_sv("Promise"), SYMBOL_VALUE)
+     ) {
+diff --git a/src/ty/ty.h b/src/ty/ty.h
+index 79717a3e..7fafc366 100644
+--- a/src/ty/ty.h
++++ b/src/ty/ty.h
+@@ -2081,6 +2081,7 @@ bool ty_is_generic_type(Checker* me, Ty const* ty); // tsc's isGenericType (expr
+ // A function expression without a contextual signature, or one with a generic return type (TS7010/TS7011 from widening)
+ void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* right, Span left_span, Span right_span, ErrorCtx* errs);
+ bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield);
++void ty_function_decide_widening_reportable(Checker* me, FunctionImpl const* function);
+ bool ty_function_context_is_self(Checker* me, FunctionImpl const* function);
+ void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type);
+ Ty const* ty_generator_return_before_widening(Checker* me, FunctionImpl const* function); // A generator's returns, if they widen to any
+diff --git a/src/ty/ty_internal.h b/src/ty/ty_internal.h
+index 62f91580..d83aedb8 100644
+--- a/src/ty/ty_internal.h
++++ b/src/ty/ty_internal.h
+@@ -110,6 +110,8 @@ enum {
+     KEY_CONTEXT_WIDENING, // FunctionImpl -> its contextual signature before a return mapper instantiated it (see ty_function_note_widening_context())
+     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())
+     KEY_CONTEXT_WIDENING_ABSENT, // FunctionImpl -> itself if its first check under a call's inference had no contextual signature (ty_function_widening_reportable())
++    KEY_CONTEXT_SIGNATURE, // (plan 51 prototype) FunctionImpl -> its contextual signature as its last check read it (tsc's getContextualSignature), before fixing
++    KEY_RETURN_REPORTABLE, // (plan 51 prototype) FunctionImpl -> 1 + widening reportable bits (return, yield), decided when its return type was computed
+     KEY_CONTEXT_UNFIXED, // FunctionImpl -> that signature before ty_fix_contextual_signature(), when that changed it
+     KEY_FLOW_REACHABLE, // FlowNode (shared ones) -> FlowReachability + 1, see flow.c
+     KEY_FLOW_REFERENCE, // (declared id, initial id, symbol | this, property names...) -> reference key id
+@@ -415,3 +417,11 @@ MappedInfo const* ty_mapped_info_instantiate(Checker* me, MappedInfo const* sour
+ bool ty_is_type_derived_from(Checker* me, Ty const* source, Ty const* target); // flow.c
+ // tsc's isMutableArrayOrTuple: an Array<T> or a tuple that isn't readonly
+ bool ty_is_mutable_array_or_tuple(Checker* me, Ty const* ty);
++
++// (plan 51 census prototype: variant toggles from the environment, cached)
++#include <stdlib.h>
++static inline bool variant_on(int* cache, char const* name) {
++    if (*cache < 0) *cache = getenv(name) != nullptr;
++    return *cache;
++}
++#define VARIANT(name) variant_on(&(static int){ -1 }, #name)

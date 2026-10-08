@@ -14,3 +14,6 @@ to plan 19. The commit message has the numbers.
   the four checkers redo ~24% of the type work (3.19M types vs 2.57M with one checker; plan 36's sharing question),
   and the AST is ~2 GB resident for 3.41M lines + 350k of .d.ts (~600 bytes a line; plan 43 was the last pass).
   `-b` on tsc's src is 2.2x tsgo, with 182 ms of `free` summed over the projects at `--build-jobs 1`.
+
+- (2026-10-08, plan 51 prototype A) vue at `--checkers 1` reports one TS2345 (vModel.ts:446), also at a7003eac; 0 at
+  the default 4 checkers: a checker-order dependence (`./checkerdiff.py vue` should show it).

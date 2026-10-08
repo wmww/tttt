@@ -988,11 +988,9 @@ struct Checker {
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
-    // Inferring an overload failure's fallback instantiation (tsc's inferSignatureInstantiationForOverloadFailure):
-    // nested generic calls already resolved keep their types instead of being skipped (see check_expr_ctx())
+    // Inferring an overload failure's fallback instantiation (tsc's inferSignatureInstantiationForOverloadFailure): it
+    // doesn't record the late contextual type of a function argument (KEY_FUNCTION_SIG_CONTEXT, expr.c)
     bool overload_failure_inference;
-    // Checking the arguments against an overload set's implementation for TS2793 (add_implementation_success)
-    bool implementation_elaboration;
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     // Printing a type the way tsc's eager error message would (see missing_property_type()): an inferred return type found
     // in progress becomes circular (TS7023) but keeps its type (tsc prints it from the body, and its types baseline
@@ -1501,6 +1499,7 @@ Ty const* ty_commonjs_exports_type(Checker* me, SourceFile const* file);
 // What a context-sensitive function is while context-sensitive arguments are skipped (tsc's anyFunctionType): no
 // members, non-inferrable, related to every function type
 Ty const* ty_any_function_type(Checker* me);
+bool ty_mapped_is_remapping(Checker* me, MappedInfo const* mapped); // tsc's getMappedTypeNameTypeKind == Remapping
 // tsc's getTypeFromBindingPattern. include_pattern: as the contextual type of an initializer (TYF_BINDING_PATTERN)
 Ty const* ty_binding_pattern_type(Checker* me, Binding const* pattern, bool include_pattern);
 bool ty_sig_param_adds_undefined(SigParam const* param);
@@ -2082,7 +2081,6 @@ bool ty_is_generic_type(Checker* me, Ty const* ty); // tsc's isGenericType (expr
 void ty_check_instanceof_has_instance(Checker* me, Ty const* left, Ty const* right, Span left_span, Span right_span, ErrorCtx* errs);
 bool ty_function_widening_reportable(Checker* me, FunctionImpl const* function, bool yield);
 bool ty_function_context_is_self(Checker* me, FunctionImpl const* function);
-void ty_function_note_widening_context(Checker* me, FunctionImpl const* function, Ty const* param_type);
 Ty const* ty_generator_return_before_widening(Checker* me, FunctionImpl const* function); // A generator's returns, if they widen to any
 bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Span tag_name, JsxComponentCheck kind, ErrorCtx* errs);
 bool ty_is_comparable_either_way(Checker* me, Ty const* a, Ty const* b);

@@ -11,13 +11,12 @@ Starting point: suite **14829 / 14969**, every corpus 0 but effect 3, sweep 8594
 flagflip 18 / 10 / 4. **No per-test suite drains this window** (vision.md): a fix that needs a new special case goes
 to bugs/, not into the code.
 
-1. **Planning: plan 51** (contextual-check state). Prototype deleting the KEY_CONTEXT_* side channels in favour of
-   tsc's ContextChecked / leaf-wise contextual instantiation / resolved-signature lookup; write the stages for
-   entries 4 and 9, or say no with numbers.
+1. Done (2026-10-08): plan 51 planned from three prototypes, and its stage 1 landed (general ContextChecked + six
+   latent fixes, dead widening/return-mapper channels deleted; every oracle unchanged). Leaf-wise instantiation: no port.
 2. **Planning: plan 52** (source sweep). Prototype on ~20 real repositories (selection, dependency install, tsc
    cache, runtime), write the plan for entries 5 and 8.
 3. **Execution: plan 50** (tsc's export= / CommonJS symbol clones). The sweep is the real oracle here.
-4. **Execution: plan 51 stage 1.**
+4. **Execution: plan 51 stage 2** (context anchors, the lazy contextual return; bisect the ember regression first).
 5. **Execution: plan 52 stage 1**: build `./sourcesweep.py`, cache tsc, first numbers; fix crashes.
 6. **Perf session**: vscode (tttt's weakest ratio, 3.0x tsgo). The check phase (four checkers redo ~24% of the type
    work: measure sharing vs file-to-checker affinity vs load balance, plan 36's open question) and AST bytes per line
@@ -26,7 +25,8 @@ to bugs/, not into the code.
    (many predate plans 38, 39, 42, 48); keep deletions that are 0 lost on every oracle, rewrite stale entries,
    mark the permanent ones with their reason. Goal: hacks.md shorter, not longer.
 8. **Execution: plan 52 drain** (fan-out on the source sweep's root causes).
-9. **Execution: plan 51 stage 2** (or whatever plan 51 says).
+9. **Execution: plan 51 stage 3** (widening where the return type is computed, NONE/FIRST_ABSENT through anchors,
+   KEY_LITERAL_CONTEXT as a stack).
 10. **Triage**: drain triage.md; also consolidate finished plans (36-42, 44, 45, 48: move live leftovers to bugs/ or
     the active plans, delete the rest, including their prototype dirs).
 11. **Insights.**

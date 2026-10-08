@@ -25,16 +25,6 @@ fails types in both configurations.
   the predicate (`test/probes/plan05/visitNodeInference.ts`); literal widening in an object literal that has a
   contextual type.
 
-- **Contextual types are instantiated eagerly** (probes `test/probes/plan37/contextual_instantiation.ts`,
-  `return_only.ts`; triage 2026-09-28): `f(() => ({ a: true, b: x => x }))` and `k2(() => () => ({ a: true }))`: tsc
-  gives the arrow the return type `{ a: boolean }` while the literal node prints `{ a: true }`; tttt the other way
-  round. tsc fixes a function's return type at its first contextual check, and instantiateContextualType only replaces
-  *instantiable leaves* (with the returnMapper's inferences, not earlier arguments'), so `true` meets raw `T` and
-  widens; the final check against the resolved signature keeps the literal. tttt instantiates the whole parameter type
-  with the inferences so far (`ty_instantiate(me, param_type, context_mapper)` in call.c's second pass) and memoizes
-  the contextual return (`KEY_CONTEXT_RETURN`). Same root as `k3(y => () => ...)` being `boolean` where tsc fixes T
-  without candidates (`unknown`): a plan-sized port of leaf-wise contextual instantiation, together with plan 37's
-  "fixing without candidates".
 - Laziness artifacts of tsc's inference (triage 2026-09-29, both need lazy return/member types to reproduce):
   genericCallWithGenericSignatureArguments3's `(n: Object) => 1` keeps its literal because tsc resolves the inner
   arrow's return type only after U's first candidate is that arrow's own function type: its contextual signature is

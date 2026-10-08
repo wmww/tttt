@@ -297,6 +297,8 @@ static Ty const* shape_type_at(ParamShape const* shape, u32 i) {
     return i < shape->count ? shape->types[i] : shape->rest_element;
 }
 
+static Ty const* return_mapped_context(Checker* me, Ty const* contextual);
+
 // Checks argument i with its parameter's type as the contextual type
 static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     Arg* arg = &args->data[i];
@@ -322,8 +324,11 @@ static void check_arg(Checker* me, ParamShape const* shape, Args* args, u32 i) {
     }
     arg->type = ty_check_expr(me, arg->expr, contextual);
     // A literal its contextual type has room for is regular, so it isn't widened as a candidate (tsc's
-    // checkExpressionWithContextualType): "event1" against `K | keyof T` infers K = "event1"
-    if (contextual && (arg->type->flags & TYF_FRESH_LITERAL) && ty_is_literal_of_contextual_type(me, arg->type, contextual)) {
+    // checkExpressionWithContextualType, which asks instantiateContextualType: what the return type says helps type it,
+    // `Promise.resolve('notReady')` returning into `Promise<Result>`): "event1" against `K | keyof T` infers K = "event1"
+    if (contextual && (arg->type->flags & TYF_FRESH_LITERAL) &&
+        ty_is_literal_of_contextual_type(me, arg->type, return_mapped_context(me, contextual))
+    ) {
         arg->type = ty_regular(me, arg->type);
     }
 }
@@ -550,6 +555,12 @@ static Ty const* instantiate_with_return_mapper(Checker* me, Ty const* contextua
     Ty const* ret = ty_union_filtered(me, type, kept.data, kept.len);
     ty_buf_drop(&kept);
     return ret;
+}
+
+// A contextual type as tsc's instantiateContextualType without ContextFlags.Signature sees it, for the call inferring now
+static Ty const* return_mapped_context(Checker* me, Ty const* contextual) {
+    OuterInference* outer = my outer_inference;
+    return outer && outer->return_mapper ? instantiate_with_return_mapper(me, contextual, outer->return_mapper) : contextual;
 }
 
 // Changes whenever the non-fixing mapper would: candidates are only added (or replaced by ones of a better priority,
@@ -1084,9 +1095,6 @@ static bool maybe_primitive_context(Ty const* ty) {
 static void check_rest_arg(Checker* me, ParamShape const* shape, Args* args, u32 i, u32 from, bool is_const, OuterInference* self) {
     Arg* arg = &args->data[i];
     Ty const* contextual = rest_arg_contextual(me, shape, args, i, from);
-    if (contextual && self && self->return_mapper && arg->expr->tag != EXPR_CALL) {
-        contextual = instantiate_with_return_mapper(me, contextual, self->return_mapper);
-    }
     OuterInference* saved = my outer_inference;
     my outer_inference = self;
     arg->type = ty_check_expr_in_const(me, arg->expr, contextual, is_const);
@@ -1377,29 +1385,6 @@ static TyMapper const* infer_type_arguments(
                 param_type && ty_is_const_type_variable(me, param_type, 0), false, &mode);
             arg->nested_generic = mode.skipped;
             any_sensitive |= mode.skipped;
-        } else if (return_mapper && !arg->spread && !arg->part_of_spread) {
-            // What the return type says about the type parameters helps type the argument (a tuple, a literal). tsc
-            // instantiates the contextual type of each expression as it is asked for (instantiateInstantiableTypes: a
-            // function type stays as written, its return expressions instantiated where they are looked at, and a call
-            // returned there infers from the raw type, the return mapper only in its own: `promise(() => new
-            // Promise(...))` against `Effect<A2>` infers nothing for Promise's T)
-            Ty const* param_type = shape_type_at(&shape, i);
-            Ty const* context = !param_type ? nullptr : instantiate_instantiable(me, param_type, return_mapper);
-            // (tsc's contextual signature is the uninstantiated one, which decides whether its widening is reported)
-            if (param_type && arg->expr->tag == EXPR_FUNCTION) ty_function_note_widening_context(me, arg->expr->function, param_type);
-            // A call's own inference reads its contextual type as it is (tsc's inferTypeArguments: getContextualType,
-            // not instantiateContextualType), instantiating it with what this call has inferred so far, and only its
-            // return mapper with ours. With ours here, `succeed(none())` returning into `Eff<Opt<[A, S]>>` would infer
-            // `none`'s A from the outer A and S that the outer inference silenced
-            arg->type = ty_check_expr_in_const(me, arg->expr, arg->expr->tag == EXPR_CALL ? param_type : context,
-                ty_is_const_type_variable(me, param_type, 0));
-            // A literal the instantiated contextual type has room for is regular, so it isn't widened as a candidate
-            // (tsc's checkExpressionWithContextualType)
-            if (context && (arg->type->flags & TYF_FRESH_LITERAL) &&
-                ty_is_literal_of_contextual_type(me, arg->type, instantiate_with_return_mapper(me, param_type, return_mapper))
-            ) {
-                arg->type = ty_regular(me, arg->type);
-            }
         } else {
             check_arg(me, &shape, args, i);
         }
@@ -2004,10 +1989,7 @@ static void add_implementation_success(Checker* me, Candidate const* candidate, 
     // (Its check may be the first full one of a context-sensitive function argument after the failing one, which then
     // has no contextual signature for good if the implementation gives none: tsc's chooseOverload([implementation])
     // sets ContextChecked, `(c: any, ...rest: unknown[])` makes `(md, opts) => ...` implicitly any, TS7006)
-    bool saved_elaboration = my implementation_elaboration;
-    my implementation_elaboration = true;
     bool fits = resolve_with_signatures(me, &impl_sig, 1, args, info, call_span, nullptr).chosen.sig;
-    my implementation_elaboration = saved_elaboration;
     // The arguments stay typed as checked against the overload (what the types baseline shows)
     ParamShape shape = call_param_shape(me, info, candidate->sig, candidate->mapper);
     check_args(me, &shape, args, false);

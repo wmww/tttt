@@ -2612,7 +2612,9 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
         return true;
     }
     // (Not tsc's emptyObjectType, which has no symbol: the apparent type of `object`)
-    if (ty == global_type(me, GLOBAL_EMPTY_OBJECT)) return false;
+    // (Nor tsc's anyFunctionType, which has no symbol either: a skipped context-sensitive function doesn't fit
+    // `Record<string, X>`)
+    if (ty == global_type(me, GLOBAL_EMPTY_OBJECT) || ty == global_type(me, GLOBAL_ANY_FUNCTION)) return false;
     if (ty->kind == TY_ANONYMOUS) {
         Ty const* origin = ty->anonymous.target && ty->anonymous.target->kind == TY_ANONYMOUS ? ty->anonymous.target : ty;
         if (ty->anonymous.no_inferable_index || origin->anonymous.no_inferable_index) return false;
@@ -3380,6 +3382,8 @@ static bool is_remapping(Checker* me, MappedInfo const* mapped) {
     return mapped->name_type && !ty_is_related(me, mapped->name_type, mapped->type_param, TY_RELATION_ASSIGNABLE);
 }
 
+bool ty_mapped_is_remapping(Checker* me, MappedInfo const* mapped) { return is_remapping(me, mapped); }
+
 // tsc's getCombinedMappedTypeOptionality: whether the mapped types a homomorphic mapped type takes its modifiers from
 // add `?` (1) or remove it (-1)
 static int combined_mapped_optionality(Checker* me, Ty const* ty, u32 depth) {
@@ -3456,7 +3460,11 @@ Ty const* ty_generic_mapped_prop_context(Checker* me, Ty const* object, Ty const
     if (!(object->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return nullptr;
     bool generic = false;
     MappedInfo const* mapped = mapped_info_of(me, object, &generic);
-    if (!mapped || !generic || mapped->name_type) return nullptr;
+    if (!mapped || !generic) return nullptr;
+    // (Not one whose `as` clause remaps the keys, only one that filters them: tsc's getMappedTypeNameTypeKind)
+    if (mapped->name_type && (is_remapping(me, mapped) || is_excluded_mapped_name(me, mapped->name_type, key))) {
+        return nullptr;
+    }
     Ty const* constraint = mapped->constraint;
     if (is_excluded_mapped_name(me, constraint, key)) return nullptr;
     // (tsc's getBaseConstraintOfType: of a union too, `[K in T["type"] | "*"]` takes any string)
