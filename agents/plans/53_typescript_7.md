@@ -66,6 +66,7 @@ es3/none), `ignoreDeprecations: "6.0"` silences nothing, TS5095 for amd/umd/syst
 code paths behind them (es5 lowering checks, amd/system module kinds, node10/classic resolution, baseUrl/outFile).
 
 ### Stage 3: oracle switch (plan-48-sized: prototype, switch, fan-out, oracles, corpora, perf: ~1 window)
+**Prototyped 2026-10-08: plan 54 replaces this stage and stage 4 below** (pin, tools decision, numbers, stages).
 - `thirdparty/ensure-tsc.sh` fetches the pinned TypeScript `main` commit sparsely (`tsc/testdata`, the bundled libs,
   `tsc/CHANGES.md`) plus the matching npm `typescript@7.1.x`. Libs from the 7.x tree.
 - Harness: the new test tree, no caret lines, the skip list; test names keep `name(option=value)`.

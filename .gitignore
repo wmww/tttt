@@ -8,3 +8,6 @@ thirdparty/corpora
 __pycache__
 thirdparty/sources
 thirdparty/node
+thirdparty/typescript
+thirdparty/typescript-gopath
+thirdparty/go

@@ -664,6 +664,9 @@ src` finds the code-side markers; every significant one has an entry here.
   order); nothing compares the printed declaration text.
 
 ## Modules and program (`module_resolution.c`, `tsconfig.c`, `program.c`, `main.c`)
+- The lib names live in three hand-written tables (`lib_names` and `aliases` in `compiler_options.c`,
+  `stdlib_priority()` in `program.c`), each a copy of tsc's libEntries/libMap: every lib release edits all three.
+  Plan 54 stage 1 generates them from tsgo's `LibMap` (`internal/tsoptions/declarations_generated.go`).
 - `collect_files()` (tsconfig.c HACK): root files from include patterns are in walk order, not tsc's include-pattern
   order (matchFiles' buckets, ported but all pushed into bucket 0): tsc's order exposes an order-dependent union
   reduction in vue (agents/bugs/include_order.md). The base directories are walked in include order rather than

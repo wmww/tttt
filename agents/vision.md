@@ -59,8 +59,10 @@ types components) are the oracle, not the goal; real projects that are clean und
   - **The oracle tooling is the risk, not the checker.** On TS code 7.0 matches our oracle on 10 of 13 corpora and
     76% of the source sweep; what's expensive is regenerating seven caches with tsgo and replacing the JS-API tools
     (`tscbaseline.sh`/`filetest.sh`/`mutate.py` need baselines for arbitrary files; `sweep_tsc.js --expect` needs
-    `getTypeAtLocation`). A planning session prototypes this first (Go toolchain + tsgo's own test runner is the
-    preferred route: exact baselines rather than a reconstruction) and may reorder the window.
+    `getTypeAtLocation`). **Prototyped (plan 54)**: the Go route works without touching the checkout (`go build
+    -overlay` maps our Go files into tsgo's tree: the test runner gives any file's baselines in 45 ms, an overlay
+    main calls the checker), and the native suite through tttt's harness is already 87.3% with a lib swap and three
+    harness changes, nearly every failure a baseline 7 changed or a test 7 added.
   - **Expect the suite to fall to ~90% at the switch** (mostly JS, where 7 removed features), then recover by fan-out
     on the 7.x mechanisms. These are mechanism changes, not per-test drains: the no-special-cases rule stands.
   - **Open question for the human** (in report.md): does emit (`.d.ts` and/or JS) enter scope? "Drop-in" for most
