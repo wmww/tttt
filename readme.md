@@ -5,8 +5,9 @@ support for the language, then beating typescript-go on speed. It started as
 [Tess](https://loginasroot.net/i_tried_to_write_a_typescript_type_checker), a solo project halted in 2025, and is
 now developed autonomously by AI agent sessions (see `CLAUDE.md` and `agents/`).
 
-State: 1917 of 13163 tsc baseline tests pass in full (errors, symbols and types output identical to tsc); tsc's
-own `src/compiler` (193k lines) typechecks end to end in 0.7 s with ~1750 spurious diagnostics left.
+State: 14835 of 14969 tsc baseline tests pass in full (errors, symbols and types output identical to tsc). tsc's own
+`src/compiler` (193k lines) and a dozen pinned real-world projects (vscode, react, zod, effect, vue...) typecheck
+with the same diagnostics as tsc, as do ~8600 DefinitelyTyped packages.
 
 Internal documentation: [documentation.md](documentation.md). Standard library: [cleat](https://codeberg.org/sphi/cleat).
 
@@ -18,8 +19,14 @@ To compile and run:
 ```bash
 meson setup release --buildtype release
 ninja -C release
-release/tttt path/to/source.ts        # or: release/tttt -p path/to/project (tsconfig.json)
+release/tttt path/to/source.ts        # or: release/tttt -p path/to/project (tsconfig.json), or -b like tsc -b
 ```
+
+tttt is meant as a drop-in `tsc` for checking: the same command lines and tsconfigs, the same diagnostics in the same
+formats (`--pretty false` byte for byte, the pretty one when the output is a terminal) and exit codes (tsc 7's: 1 with
+any error). It **only checks**: nothing is emitted, every run behaves like `tsc --noEmit` (no `.js`, `.d.ts` or
+`.tsbuildinfo` is written, `--watch` isn't supported). `--checkers`, `--builders`, `--singleThreaded` and `-q` are
+tsgo's; `release/tttt --help` lists the rest.
 
 Scripts useful for development (all rebuild first; `CLAUDE.md` has the full list):
 ```bash

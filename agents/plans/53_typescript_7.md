@@ -43,6 +43,11 @@ schedules this**; stages 1-2 can start right away, stages 3-5 are one plan-48-si
 
 ## Stages
 ### Stage 1: CLI parity (1 session, independent of the target, can start now)
+**Done 2026-10-08** (measurements.md has the numbers). Decisions: exit codes are tsc 7's (1 with diagnostics, 2 when
+the program has no file, 4 for a -b cycle; 6.0 says 2), the CLI implies `--noEmit` (tttt's `--as-emitting` undoes it
+for the oracles cached without), `-q` is tsgo's (no diagnostics), pretty keeps 6.0's related-information layout
+(tsgo's differs), `--showConfig`/`--explainFiles`/`--watch`/`--init` are refused. What clidiff.py still finds is
+checker text (triage.md). The original stage text follows.
 tttt today prints coloured progress ("Loading libraries..."), `file:line [TSxxxx] message` plus a source excerpt and
 its own summary, exits 1 on errors (tsc 6/7 exit 2 with `--noEmit` errors, 1 for some config errors: check
 `ExitStatus`), stops at 5000 diagnostics per phase (`--all-errors`), names its options `--threads`/`--build-jobs`.

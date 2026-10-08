@@ -245,87 +245,100 @@ void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorF
     cstr_append(out, newline);
 }
 
-void error_format_pretty_summary(cstr* out, VecError const* errors, char const* newline, ErrorFileNamer file_name) {
-    isize count = vec_error_size(errors);
-    if (!count) return;
-    // The files with errors in order, each with its first error's line and its error count
-    typedef struct { SourceFile const* source; unsigned line; isize errors; } FileInError;
-    FileInError* files = malloc(sizeof(FileInError) * (size_t)count);
-    isize file_count = 0;
-    bool first_has_file = false;
-    for_each (i, vec_error, errors) {
-        SourceFile const* source = span_valid(i->span) ? i->span.source : nullptr;
-        if (i == errors->data) first_has_file = source != nullptr;
-        if (!source) continue;
-        isize j = 0;
-        while (j < file_count && files[j].source != source) j++;
-        if (j == file_count) files[file_count++] = (FileInError){ source, span_line_index(i->span) + 1, 0 };
-        files[j].errors++;
+// tsc's formatDiagnostic (`--pretty false`): file(line,column): error TSxxxx: the flattened message chain
+void error_format_plain(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name) {
+    if (span_valid(my span) && my span.source) {
+        cstr_append_d(out, DEFAULT_DISPLAY, file_name(my span.source), "(", span_line_index(my span) + 1, ",",
+            span_col_index(my span) + 1, "): ");
     }
-    cstr first = cstr_null;
-    if (file_count) {
-        first = cstr_d(file_name(files[0].source), PRETTY_GREY ":", files[0].line, PRETTY_RESET);
-    }
+    cstr_append_d(out, DEFAULT_DISPLAY, error_category_name(me), " TS", my ts_code, ": ");
+    pretty_message(out, me, newline, 0);
     cstr_append(out, newline);
-    if (count == 1) {
-        if (first_has_file) cstr_append_d(out, DEFAULT_DISPLAY, "Found 1 error in ", first);
+}
+
+void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer file_name) {
+    for_each (i, vec_error, errors) {
+        if (strcmp(error_category_name(i), "error")) continue;
+        SourceFile const* source = span_valid(i->span) ? i->span.source : nullptr;
+        if (!my errors) my first_has_file = source != nullptr;
+        my errors++;
+        if (!source) continue;
+        char const* name = file_name(source);
+        isize j = 0;
+        while (j < my file_count && strcmp(cstr_str(&my files[j].name), name)) j++;
+        if (j == my file_count) {
+            my files = realloc(my files, sizeof(ErrorSummaryFile) * (size_t)(my file_count + 1));
+            my files[my file_count++] = (ErrorSummaryFile){ cstr_from(name), span_line_index(i->span) + 1, 0 };
+        }
+        my files[j].errors++;
+    }
+}
+
+void error_summary_merge(ErrorSummary* me, ErrorSummary* from) {
+    if (!my errors) my first_has_file = from->first_has_file;
+    my errors += from->errors;
+    for (isize i = 0; i < from->file_count; i++) {
+        isize j = 0;
+        while (j < my file_count && !cstr_eq(&my files[j].name, &from->files[i].name)) j++;
+        if (j < my file_count) {
+            my files[j].errors += from->files[i].errors;
+            cstr_drop(&from->files[i].name);
+            continue;
+        }
+        my files = realloc(my files, sizeof(ErrorSummaryFile) * (size_t)(my file_count + 1));
+        my files[my file_count++] = from->files[i];
+    }
+    free(from->files);
+    *from = (ErrorSummary){0};
+}
+
+void error_summary_drop(ErrorSummary* me) {
+    for (isize i = 0; i < my file_count; i++) cstr_drop(&my files[i].name);
+    free(my files);
+    *me = (ErrorSummary){0};
+}
+
+void error_summary_format(cstr* out, ErrorSummary const* me, char const* newline, bool with_files) {
+    if (!my errors) return;
+    isize file_count = with_files ? my file_count : 0;
+    cstr first = cstr_null;
+    if (file_count) first = cstr_d(my files[0].name, PRETTY_GREY ":", my files[0].line, PRETTY_RESET);
+    cstr_append(out, newline);
+    if (my errors == 1) {
+        if (file_count && my first_has_file) cstr_append_d(out, DEFAULT_DISPLAY, "Found 1 error in ", first);
         else cstr_append_lit(out, "Found 1 error.");
     } else if (!file_count) {
-        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", count, " errors.");
+        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", my errors, " errors.");
     } else if (file_count == 1) {
-        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", count, " errors in the same file, starting at: ", first);
+        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", my errors, " errors in the same file, starting at: ", first);
     } else {
-        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", count, " errors in ", file_count, " files.");
+        cstr_append_d(out, DEFAULT_DISPLAY, "Found ", my errors, " errors in ", file_count, " files.");
     }
     cstr_append(out, newline);
     cstr_append(out, newline);
     if (file_count > 1) {
         // tsc's createTabularErrorsDisplay, its lengths being log10(n) + 1 as floating point numbers
         isize max = 0;
-        for (isize j = 0; j < file_count; j++) if (files[j].errors > max) max = files[j].errors;
+        for (isize j = 0; j < file_count; j++) if (my files[j].errors > max) max = my files[j].errors;
         double max_length = log10((double)max) + 1;
         double goal = max_length > 6 ? max_length : 6;
         int header_padding = max_length - 6 > 0 ? (int)(max_length - 6) : 0;
         cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", header_padding), "Errors  Files\n");
         for (isize j = 0; j < file_count; j++) {
-            int digits = (int)(log10((double)files[j].errors) + 1);
+            int digits = (int)(log10((double)my files[j].errors) + 1);
             int padding = digits < goal ? (int)(goal - digits) : 0;
-            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", padding), files[j].errors, "  ",
-                file_name(files[j].source), PRETTY_GREY ":", files[j].line, PRETTY_RESET "\n");
+            cstr_append_d(out, DEFAULT_DISPLAY, repeated_d(" ", padding), my files[j].errors, "  ",
+                my files[j].name, PRETTY_GREY ":", my files[j].line, PRETTY_RESET "\n");
         }
     }
     cstr_drop(&first);
-    free(files);
 }
 
-intptr_t print_error_ctx_max_display = 5000;
-
-void display_error_ctx(ErrorCtx const* me, cstr* out) {
-    const intptr_t max_display = print_error_ctx_max_display;
-    intptr_t displayed = 0;
-    for_each (i, vec_error, &my errors) {
-        DisplayCtx d = display_sequence(PRINT_DISPLAY, debug_d(i), "\n\n");
-        cstr_append_sv(out, cstr_sv(&d.target));
-        display_ctx_drop(&d);
-        displayed++;
-        if (displayed >= max_display) {
-            break;
-        }
-    }
-    if (vec_error_size(&my errors) > displayed) {
-        DisplayCtx d = display_sequence(PRINT_DISPLAY,
-            color_error, "  ", vec_error_size(&my errors) - displayed, " additional errors not shown", color_normal, "\n\n"
-        );
-        cstr_append_sv(out, cstr_sv(&d.target));
-        display_ctx_drop(&d);
-    }
-}
-
-void print_error_ctx(ErrorCtx const* me) {
-    cstr out = cstr_null;
-    display_error_ctx(me, &out);
-    fputs(cstr_str(&out), stdout);
-    cstr_drop(&out);
+void error_format_pretty_summary(cstr* out, VecError const* errors, char const* newline, ErrorFileNamer file_name) {
+    ErrorSummary summary = {0};
+    error_summary_add(&summary, errors, file_name);
+    error_summary_format(out, &summary, newline, true);
+    error_summary_drop(&summary);
 }
 
 bool error_ctx_empty(ErrorCtx const* me) {
@@ -575,6 +588,44 @@ void error_ctx_sort_and_dedupe(ErrorCtx* me) {
         }
     }
     my errors.size = kept;
+}
+
+// One diagnostic of error_vec_sort_and_dedupe(): its file's path to sort by, its index for a stable order
+typedef struct SortedError {
+    Error error;
+    cstr path;
+    isize index;
+} SortedError;
+
+static int sorted_error_cmp(void const* a_, void const* b_) {
+    SortedError const* a = a_;
+    SortedError const* b = b_;
+    int ret = cstr_cmp(&a->path, &b->path);
+    if (!ret) ret = error_full_cmp(&a->error, &b->error);
+    if (!ret) ret = a->index < b->index ? -1 : a->index > b->index;
+    return ret;
+}
+
+void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* source)) {
+    isize n = vec_error_size(errors);
+    if (n < 2) return;
+    SortedError* sorted = c_new_n(SortedError, n);
+    for (isize i = 0; i < n; i++) {
+        Error* e = &errors->data[i];
+        sorted[i] = (SortedError){ *e, span_valid(e->span) && e->span.source ? path(e->span.source) : cstr_null, i };
+    }
+    qsort(sorted, (size_t)n, sizeof(SortedError), sorted_error_cmp);
+    isize kept = 0;
+    for (isize i = 0; i < n; i++) {
+        if (kept && cstr_eq(&sorted[i].path, &sorted[i - 1].path) && error_same_head(&errors->data[kept - 1], &sorted[i].error)) {
+            error_drop(&sorted[i].error);
+        } else {
+            errors->data[kept++] = sorted[i].error;
+        }
+    }
+    for (isize i = 0; i < n; i++) cstr_drop(&sorted[i].path);
+    c_free_n(sorted, n);
+    errors->size = kept;
 }
 
 Error* error_ctx_append_error(ErrorCtx* me, Error error) {

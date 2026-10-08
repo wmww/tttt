@@ -796,6 +796,20 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
     str_list_drop(&patterns.exclude);
 }
 
+// A spec as TS18003 shows it: one inherited from an extended config is rebased onto the config's directory (tsc's
+// parseConfig's updatePath: combinePaths of the relative directory and the spec, not normalized)
+static void push_shown_spec(ConfigLoad* me, StrList* list, csview dir, csview spec) {
+    if (cstr_equals_sv(&my config_dir, dir) || (spec.size && spec.buf[0] == '/') || csview_starts_with(spec, "${configDir}")) {
+        str_list_push(list, spec);
+        return;
+    }
+    cstr relative = relative_path_of(cstr_sv(&my config_dir), dir);
+    cstr shown = !cstr_size(&relative) ? cstr_from_sv(spec) : cstr_ends_with(&relative, "/") ? cstr_d(relative, spec) :
+        cstr_d(relative, "/", spec);
+    str_list_push(list, cstr_sv(&shown));
+    c_drop(cstr, &shown, &relative);
+}
+
 // tsc's configFileSpecs into the options (tsconfig_root_file_reason() reads them)
 static void record_config_specs(ConfigLoad* me) {
     CompilerOptions* o = my options;
@@ -816,6 +830,17 @@ static void record_config_specs(ConfigLoad* me) {
         cstr_drop(&pattern);
     }
     o->config_default_include = !my files && !my include;
+    str_list_clear(&o->config_include_shown);
+    str_list_clear(&o->config_exclude_shown);
+    for (isize i = 0; my include && i < my include->count; i++) {
+        if (my include->items[i].tag != JSON_STRING) continue;
+        push_shown_spec(me, &o->config_include_shown, cstr_sv(&my include_dir), cstr_sv(&my include->items[i].string));
+    }
+    for (isize i = 0; my exclude && i < my exclude->count; i++) {
+        if (my exclude->items[i].tag != JSON_STRING) continue;
+        push_shown_spec(me, &o->config_exclude_shown, cstr_sv(&my exclude_dir), cstr_sv(&my exclude->items[i].string));
+    }
+    o->config_exclude_given = my exclude != nullptr;
 }
 
 cstr tsconfig_root_file_reason(CompilerOptions const* options, csview path, csview config_name) {

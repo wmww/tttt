@@ -102,17 +102,8 @@ def expected_diagnostics(output):
 
 def actual_diagnostics(out, root):
     ret = Counter()
-    for line in ANSI.sub("", out).split("\n"):
-        m = re.match(r"^(\S+):(\d+) \[TS(\d+)\]", line)
-        if m:
-            name = m.group(1)
-            if name.startswith(root):
-                name = name[len(root):]
-            ret[(name, int(m.group(2)), int(m.group(3)))] += 1
-            continue
-        m = re.match(r"^\[TS(\d+)\]", line)
-        if m:
-            ret[("", 0, int(m.group(1)))] += 1
+    for (name, line, code), n in expected_diagnostics(ANSI.sub("", out).split("\n")).items():
+        ret[(name[len(root):] if name.startswith(root) else name, line, code)] += n
     return ret
 
 
@@ -157,7 +148,10 @@ def run(name, scenario, tttt, keep, verbose):
             os.symlink(root + target, full)
         os.makedirs(root + cwd, exist_ok=True)
         args = translate(command, root)
-        proc = subprocess.run([tttt, "--all-errors"] + args, cwd=root + cwd, capture_output=True, text=True,
+        # (tttt is `tsc --noEmit` unless told otherwise: tsc's command emits)
+        if "-b" not in args and "--build" not in args and not any(a.lower() == "--noemit" for a in args):
+            args += ["--as-emitting"]
+        proc = subprocess.run([tttt] + args, cwd=root + cwd, capture_output=True, text=True,
                               timeout=60, env=dict(os.environ, TTTT_NO_REEXEC="1"))
         out = proc.stdout + proc.stderr
         # Paths tttt prints relative to the current directory, tsc too

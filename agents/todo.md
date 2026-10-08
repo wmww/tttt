@@ -14,12 +14,9 @@ and 53_findings.md before any entry. Entry 2 is a prototype that may rewrite ent
 knows more than this file does. From entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only
 until nothing reads it.
 
-1. **Plan 53 stage 1: CLI parity** (execution, on today's oracle). tsc's `--pretty false` and pretty formats, exit
-   codes, no progress chatter, no diagnostic cap by default, tsgo's flag names (`--checkers`, `--builders`,
-   `--singleThreaded`, `-q`), `--version`/`--listFiles`/`--showConfig` where cheap. Every script moves to the tsc
-   format in the same session. Validate: byte-identical to `tsc --noEmit --pretty false` (4d4f005c) on every corpus
-   and a source-sweep sample, exit codes included; every oracle unchanged. Add the "checks only, no emit" note to
-   readme.md.
+1. ~~Plan 53 stage 1: CLI parity~~ **done**: tsc's formats (plain when piped, pretty on a terminal), sorted like
+   tsc, tsc 7's exit codes, no chatter, tsgo's flags, implied `--noEmit`; `scripts/clidiff.py` 243 / 261 byte-identical
+   against tsc 6, 551 / 827 against tsgo 7.0.2 (0 exit code or order mismatches); every oracle unchanged.
 2. **Plan 53 stage 3 prototype** (planning). Pin a `main` commit + its `typescript@7.1.0-dev` nightly; sparse fetch
    (`tsc/testdata`, bundled libs, CHANGES.md); install Go and build tsgo's test runner at that commit (or decide
    against it with numbers); run the native suite through the harness in a worktree and size the drop by mechanism

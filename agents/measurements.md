@@ -9,6 +9,16 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 53 stage 1: CLI parity (2026-10-08, thirteenth window's todo entry 1)
+`scripts/clidiff.py` (stdout byte for byte, exit codes): against tsc 6 (4d4f005c, `--sample 12 --max-ms 10000`) 243 /
+261 source sweep projects identical, 175 of them with diagnostics; the 18 others are 12 checker differences and 6
+message texts (triage.md), no ordering or exit code mismatch. Against tsgo 7.0.2 (`--tsgo --sample 4 --max-ms
+30000`) 551 / 827 identical (368 with diagnostics), 255 differ in diagnostics (7.0's removed options and checker
+deltas), 21 in text, 0 exit codes, 0 orderings. Every oracle unchanged: suite 14835, corpora, sweep 8594 / 8595,
+`$ExpectType` 68631, flagflip 17 / 11 / 4, sourcesweep sample 737 / 822, scenarios 244. Instructions: tsc 4.715, type-fest 19.625,
+valibot 3.873, react 1.516, nest 1.152, webpack 10.485, zod 5.045, xstate 2.986, drizzle 7.162, vue 6.550, effect
+10.203, vscode 91.223, excalidraw 7.930, tanstack-router 5.456 G (flat; vscode -0.3%).
+
 ## Plan 51 stage 3 (2026-10-08, twelfth window's todo entry 9)
 Every oracle unchanged against 5a04657f: suite 14835, corpora (zod-root 53, effect 3, the rest 0), sweep 8594 / 1
 missing, `$ExpectType` 68631, flagflip 17 / 11 / 4, sourcesweep sample 737 / 822. Instructions (callgrind, single

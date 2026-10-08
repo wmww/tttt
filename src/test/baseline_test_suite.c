@@ -328,6 +328,10 @@ static void destroy_program(Program* program, ErrorCtx* errs) {
     error_ctx_drop(errs);
 }
 
+static char const* results_file_name(SourceFile const* source) {
+    return cstr_str(&source->canonical_path);
+}
+
 static_failable load_saved_results(BaselineTestSuite* me, csview results_path) {
     ErrorCtx errs = error_ctx_init();
     Program* program = program_new(&errs, fs);
@@ -338,7 +342,10 @@ static_failable load_saved_results(BaselineTestSuite* me, csview results_path) {
     // Don't bother typechecking
 
     if (!error_ctx_empty(&errs)) {
-        print_error_ctx(&errs);
+        cstr text = cstr_null;
+        for_each (i, vec_error, &errs.errors) error_format_plain(&text, i, "\n", results_file_name);
+        fputs(cstr_str(&text), stdout);
+        cstr_drop(&text);
         destroy_program(program, &errs);
         return err_d("Failed to load saved results from ", results_path);
     }

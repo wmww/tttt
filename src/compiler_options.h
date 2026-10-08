@@ -206,6 +206,10 @@ typedef struct CompilerOptions {
     // (absolute), its `include` specs as written and as absolute patterns, and config_default_include: neither given
     StrList config_files, config_include_specs, config_include_patterns;
     bool config_default_include;
+    // The `include` and `exclude` specs as TS18003 shows them: an extended config's rebased onto the config's directory
+    // (tsc's `../e2e` for an `e2e` one directory up); config_exclude_given: there is an `exclude`
+    StrList config_include_shown, config_exclude_shown;
+    bool config_exclude_given;
     bool base_url_set, paths_set, type_roots_set, types_set;
     // How deep into packages the program follows JavaScript imports (tsc's maxNodeModuleJsDepth, default 0)
     u32 max_node_module_js_depth;

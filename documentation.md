@@ -282,11 +282,16 @@ them (`SourceFile.reference_const_enums_ambient`).
 Divergences of `-b` by design: never stale outputs, a referenced project's declarations typed under the referencing
 program's strictness, and no `/// <reference types="node" />` leaking from a built `.d.ts`.
 
-The CLI: `-p` on a config with references checks that project with the redirects; on a solution config (no files,
-only references) it says nothing and exits 0. `-b [PROJECT...]` checks each project in build order as its own program,
+The CLI (`main.c`) prints like tsc's: every diagnostic a program reports is collected (`report_errors()`), then sorted
+and deduplicated by file path like tsc's sortAndDeduplicateDiagnostics (`error_vec_sort_and_dedupe()`) and printed
+(`print_diagnostics()`) as `--pretty false` (`error_format_plain()`) or pretty (`error_format_pretty()`, the default
+on a terminal), with tsc's summary at the end when pretty (`ErrorSummary`, gathered across `-b`'s projects). Nothing
+else goes to stdout; exit codes are tsc 7's (0, 1 with any diagnostic, 4 for a reference cycle under `-b`).
+`scripts/clidiff.py` diffs the output byte for byte against tsc's. `-p` on a config with references checks that
+project with the redirects; on a solution config (no files, only references) it says nothing and exits 0. `-b [PROJECT...]` checks each project in build order as its own program,
 freed when done (release builds otherwise leave the last program to the exit; `program_drop()` frees the files on the
 program's threads), going on past errors (tsc 5.6+; `--stopBuildOnErrors`). No program needs another's result, so
-`--build-jobs J` projects are checked at once (default 2 with 4 threads, each program on threads/J), each into an
+`--builders J` projects are checked at once (default 2 with 4 threads, each program on threads/J), each into an
 `Output` buffer that the main thread prints in build order: the output doesn't depend on J. The project set's root
 files and every program's `ProjectRedirects` are made before the build threads start, which only read them. The config diagnostics of references (TS6053, TS6306, TS6310) are reported on the program's
 own config; composite's TS6307 and rootDir's TS6059 (`program_verify_project_files()`) go at the import that brought

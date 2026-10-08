@@ -20,6 +20,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from realworld import CORPORA, BUILD_CORPORA  # noqa: E402
 from sweep import lib_key  # noqa: E402
+import tscformat  # noqa: E402
 
 CACHE = os.path.join(ROOT, 'test/flagflip')
 TREE = os.path.basename(ROOT)
@@ -53,7 +54,6 @@ FLAGS = {
     'es2015': ['--target', 'es2015'],
 }
 TSC_DIAG = re.compile(r'(.*)\((\d+),\d+\): error TS(\d+): (.*)')
-TTTT_DIAG = re.compile(r'(\S+):(\d+) \[TS(\d+)\] (.*)')
 
 
 def shape(message):
@@ -127,7 +127,7 @@ def run_tttt(corpus, flags, timeout=600, mem_gb=12):
     cwd, project = corpus_cwd(corpus)
     limit = mem_gb << 30
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--all-errors', '-p', project,
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '-p', project,
                                *flags], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         out, code = proc.stdout, proc.returncode
@@ -135,13 +135,10 @@ def run_tttt(corpus, flags, timeout=600, mem_gb=12):
     except subprocess.TimeoutExpired as e:
         out, status = e.stdout or b'', 'timeout'
     text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))
-    diags = []
-    for line in text.split('\n'):
-        m = TTTT_DIAG.match(line)
-        if m:
-            diags.append([m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)[:200]])
-        elif status == 'ok' and ('panic' in line.lower() or re.search(r'\.c:\d+: error:', line)):
-            status = 'log_error'
+    # (Located ones only, like tsc's side)
+    diags = [[f, l, c, m[:200]] for f, l, _, c, m in tscformat.parse(text) if f]
+    if status == 'ok' and ('panic' in text.lower() or re.search(r'\.c:\d+: error:', text)):
+        status = 'log_error'
     tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''
     return {'status': status, 'diags': diags, 'tail': tail}
 

@@ -20,6 +20,7 @@ A package that wants an older major of a dependency gets it (test/sweep_links.py
 versioned directories (types/NAME/vN) are packages of their own.
 """
 import argparse, collections, concurrent.futures, gzip, json, os, re, resource, subprocess, sys, time
+import tscformat
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DT = os.path.join(ROOT, 'thirdparty/corpora/DefinitelyTyped')
@@ -31,8 +32,6 @@ FLAGS = {
     'nuia': ['--noUncheckedIndexedAccess'],
     'eopt': ['--exactOptionalPropertyTypes'],
 }
-# A diagnostic without a file (options, missing type libraries) has no `file:line ` prefix, tsc's oracle says ('', 0)
-DIAG = re.compile(r'(?:(\S+):(\d+) )?\[TS(\d+)\] (.*)')
 
 
 def list_packages(filter=None):
@@ -73,10 +72,12 @@ def run_tsc(packages, jobs, extra=(), cwd=DT):
 
 
 def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT, keep_going='--keep-going'):
+    # (--as-emitting: test/sweep_tsc.js's cached diagnostics are a program's without --noEmit, emit-only option errors
+    # included)
     limit = mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', keep_going, '--all-errors', '--threads', '1',
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--as-emitting', keep_going, '--threads', '1',
                                '--checkers', '1', '-p', package, *flags], cwd=cwd, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=timeout, env={**os.environ, 'TTTT_NO_REEXEC': '1'},
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
@@ -86,13 +87,10 @@ def run_tttt(package, timeout, mem_gb, flags=(), cwd=DT, keep_going='--keep-goin
         out, status = e.stdout or b'', 'timeout'
     wall = time.time() - start
     text = re.sub(r'\x1b\[[0-9;]*m', '', out.decode(errors='replace'))
-    diags = []
-    for line in text.split('\n'):
-        m = DIAG.match(line)
-        if m:
-            diags.append([m.group(1) or '', int(m.group(2) or 0), int(m.group(3)), m.group(4)])
-        elif status == 'ok' and re.search(r'\.c:\d+: (error|panic):', line):  # (cleat's log format)
-            status = 'log_error'
+    # (A diagnostic without a file, options or missing type libraries, is ('', 0), as tsc's oracle says)
+    diags = [[f, l, c, m] for f, l, _, c, m in tscformat.parse(text)]
+    if status == 'ok' and re.search(r'\.c:\d+: (error|panic):', text):  # (cleat's log format)
+        status = 'log_error'
     tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''
     return {'package': package, 'status': status, 'wall': wall, 'diags': diags, 'tail': tail}
 

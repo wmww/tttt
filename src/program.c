@@ -333,6 +333,15 @@ static cstr config_string_list(JsonValue const* list, char const* fallback) {
     return ret;
 }
 
+static cstr shown_spec_list(StrList const* specs) {
+    cstr ret = cstr_lit("[");
+    for (isize i = 0; i < specs->count; i++) {
+        cstr_append_d(&ret, DEFAULT_DISPLAY, i ? "," : "", "\"", specs->items[i], "\"");
+    }
+    cstr_append_lit(&ret, "]");
+    return ret;
+}
+
 bool program_report_no_inputs(Program* me) {
     if (!my config_source || my config_json.tag != JSON_OBJECT) return false;
     JsonValue const* files = json_get(&my config_json, "files");
@@ -348,9 +357,12 @@ bool program_report_no_inputs(Program* me) {
             reported = true;
         }
     } else if (!references) {
-        cstr include = config_string_list(json_get(&my config_json, "include"), "[\"**/*\"]");
-        cstr exclude = config_string_list(json_get(&my config_json, "exclude"), "[]");
-        if (!json_get(&my config_json, "exclude")) {
+        // (An extended config's specs as tsconfig_load() rebased them, else the config's own)
+        cstr include = my options.config_include_shown.count ? shown_spec_list(&my options.config_include_shown) :
+            config_string_list(json_get(&my config_json, "include"), "[\"**/*\"]");
+        cstr exclude = my options.config_exclude_given ? shown_spec_list(&my options.config_exclude_shown) :
+            config_string_list(json_get(&my config_json, "exclude"), "[]");
+        if (!my options.config_exclude_given && !json_get(&my config_json, "exclude")) {
             // (The outputs are excluded by default: tsc's getConfigFileSpecs)
             cstr_assign(&exclude, "[");
             csview dirs[] = { cstr_sv(&my options.out_dir), cstr_sv(&my options.declaration_dir) };

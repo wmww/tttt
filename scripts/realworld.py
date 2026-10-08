@@ -9,6 +9,7 @@ the token they point at. tsc reports nothing for this corpus, so every diagnosti
   scripts/realworld.py --corpus valibot   # a second-oracle corpus from thirdparty/ensure-corpora.sh (type-fest, valibot, react, nest, webpack, zod, zod-root, xstate, drizzle, vue, effect, vscode, excalidraw, tanstack-router; tsc-src and typescript-eslint: -b on a solution config)
 """
 import argparse, collections, os, re, resource, subprocess, sys, time
+import tscformat
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -53,6 +54,17 @@ KEYWORDS = set('''else in of as is asserts new function catch export import type
 typeof instanceof get set static abstract declare namespace let const var for do while return throw class extends
 yield await async keyof infer readonly unique enum super delete if try finally switch break continue'''.split())
 
+def source_line(path, lineno):
+    try:
+        with open(path, encoding='utf-8', errors='replace') as f:
+            for i, line in enumerate(f, 1):
+                if i == lineno:
+                    return line.rstrip('\n')
+    except OSError:
+        pass
+    return ''
+
+
 def main():
     ap = argparse.ArgumentParser()
     # Without entry files the corpus' own tsconfig says everything: files, target/lib es2020, strict, nodenext,
@@ -91,7 +103,7 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '-q', '--keep-going', '--all-errors', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', '--keep-going', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
@@ -109,19 +121,17 @@ def main():
     lines = text.split('\n')
 
     codes, tokens, example, files = collections.Counter(), collections.Counter(), {}, collections.Counter()
-    for i, line in enumerate(lines):
-        m = re.match(r'(\S+):(\d+) \[(TS\d+)\] (.*)', line)
-        if not m:
-            continue
-        path, lineno, code, message = m.groups()
+    for path, lineno, col, code, message in tscformat.parse(text):
+        code = f'TS{code}'
         codes[code] += 1
         files[path] += 1
-        src, underline = (lines[i + 2], lines[i + 3]) if i + 3 < len(lines) else ('', '')
+        src = source_line(os.path.join(cwd, path), lineno) if path else ''
         if args.code == code:
             print(f'{path}:{lineno} {message}\n    {src.strip()[:160]}')
         if code.startswith('TS1') and len(code) == 6:
-            s, e = underline.find('-'), underline.rfind('-') + 1
-            tok = src[s:e] if s >= 0 else ''
+            # (The token at the column: an identifier, else a character)
+            m = re.match(r'[A-Za-z_$][\w$]*|\S', src[col - 1:])
+            tok = m.group(0) if m else ''
             tok = re.sub(r'[A-Za-z_$][\w$]*', lambda w: w.group(0) if w.group(0) in KEYWORDS else 'id', tok)[:14]
             key = (code, tok)
             tokens[key] += 1

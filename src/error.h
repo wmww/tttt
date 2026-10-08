@@ -89,13 +89,34 @@ void error_ctx_drop(ErrorCtx* me);
 // files of the diagnostic and its related information
 typedef char const* (*ErrorFileNamer)(SourceFile const* source);
 void error_format_pretty(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name);
-// tsc's getErrorSummaryText: "Found 3 errors in 2 files." and a table of them (errors in the order they're printed)
+// tsc's formatDiagnostic (`--pretty false`) of one diagnostic: `file(line,col): error TSxxxx: ` and the message chain
+void error_format_plain(cstr* out, Error const* me, char const* newline, ErrorFileNamer file_name);
+// What tsc's error summary says about the diagnostics printed so far (kept past their program): how many errors, and
+// the files with errors in the order they were printed, each with its first error's line and its error count
+typedef struct ErrorSummaryFile {
+    cstr name;
+    unsigned line;
+    isize errors;
+} ErrorSummaryFile;
+typedef struct ErrorSummary {
+    isize errors;
+    bool first_has_file; // The first error has a file
+    isize file_count;
+    ErrorSummaryFile* files;
+} ErrorSummary;
+void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer file_name);
+// Adds from's to me, leaving from empty
+void error_summary_merge(ErrorSummary* me, ErrorSummary* from);
+void error_summary_drop(ErrorSummary* me);
+// tsc's getErrorSummaryText: "Found 3 errors in 2 files." and a table of them (without_files: just "Found 3 errors.",
+// what tsgo's -b says)
+void error_summary_format(cstr* out, ErrorSummary const* me, char const* newline, bool with_files);
+// The summary of the errors alone
 void error_format_pretty_summary(cstr* out, VecError const* errors, char const* newline, ErrorFileNamer file_name);
-
-extern intptr_t print_error_ctx_max_display; // tttt --all-errors lifts it
-void print_error_ctx(ErrorCtx const* me);
-// What print_error_ctx() prints, appended to *out
-void display_error_ctx(ErrorCtx const* me, cstr* out);
+// tsc's sortAndDeduplicateDiagnostics, what its CLI does to all the diagnostics of a program before printing them: by
+// the path of the file (path() of it, the diagnostics without one first), then compareDiagnostics; of those with the
+// same file, location, code and head message only the first stays
+void error_vec_sort_and_dedupe(VecError* errors, cstr (*path)(SourceFile const* source));
 bool error_ctx_empty(ErrorCtx const* me);
 void error_ctx_clear(ErrorCtx* me);
 Error* error_ctx_append_error(ErrorCtx* me, Error error);

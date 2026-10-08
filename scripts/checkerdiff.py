@@ -4,7 +4,7 @@
 With K checkers (files dealt round robin) the diagnostics may only differ from one checker's inside quoted types: ties
 that the stable type order breaks by type id (per checker), and widened object literals' `x?: undefined` properties,
 which take their position from the first property of that name the checker saw (tsc's undefinedProperties cache, one
-per program in tsc; seen in webpack's JSON schemas). This runs each corpus both ways (--all-errors) and reports:
+per program in tsc; seen in webpack's JSON schemas). This runs each corpus both ways and reports:
   exact     diagnostics (header, source excerpt, message chain) that differ at all
   modulo    what still differs once every quoted '...' part of a message is blanked: codes, positions and the
             unquoted text. Anything here is a determinism bug (a memoised report, an evaluation-order dependence)
@@ -24,20 +24,25 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from realworld import CORPORA
 
-HEADER = re.compile(r'^(\S+:\d+ )?\[TS\d+\] ')
+# tsc's pretty format (with the related information and code frames): `file:line:col - error TSxxxx: message`
+HEADER = re.compile(r'^(\S.*?:\d+:\d+ - )?error TS\d+: ')
 
 
 def run(options, checkers, timeout):
-    proc = subprocess.run(['./release/tttt', '-q', '--keep-going', '--all-errors', '--checkers', str(checkers), *options],
+    proc = subprocess.run(['./release/tttt', '--pretty', 'true', '--keep-going', '--checkers', str(checkers), *options],
                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     return re.sub(r'\x1b\[[0-9;]*m', '', proc.stdout.decode(errors='replace'))
 
 
 def diagnostics(text):
-    """The diagnostics of an --all-errors output, each the text of its header up to the next header"""
+    """The diagnostics of a pretty output, each the text of its header up to the next header (or the summary)"""
     out, current = [], None
     for line in text.split('\n'):
-        if HEADER.match(line):
+        if re.match(r'^Found \d+ errors?\b', line):
+            if current is not None:
+                out.append('\n'.join(current).strip())
+            current = None
+        elif HEADER.match(line):
             if current is not None:
                 out.append('\n'.join(current).strip())
             current = [line]

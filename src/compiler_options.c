@@ -109,6 +109,8 @@ void compiler_options_drop(CompilerOptions* me) {
     str_list_drop(&my config_files);
     str_list_drop(&my config_include_specs);
     str_list_drop(&my config_include_patterns);
+    str_list_drop(&my config_include_shown);
+    str_list_drop(&my config_exclude_shown);
 }
 
 void str_list_push(StrList* me, csview item) {

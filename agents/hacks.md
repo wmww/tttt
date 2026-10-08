@@ -697,7 +697,7 @@ src` finds the code-side markers; every significant one has an entry here.
   rule is a heuristic (gives up after `)`/`}`/`++`/`--`). What a skipped body would have done to the outside is lost:
   a `let` assigned only in it isn't `is_assigned`, `Symbol.referenced`. The parser can't tell an IIFE, so an annotated
   IIFE's body is skipped there (resolve then walks an empty body).
-- `-b`'s `--build-jobs` default (`build()`, main.c) is 2 at 4+ threads, picked on one corpus (tsc-src). (permanent:
+- `-b`'s `--builders` default (`build()`, main.c) is 2 at 4+ threads, picked on one corpus (tsc-src). (permanent:
   a tuning constant; a memory-aware scheduler would size by projects' file counts)
 - Message paths (`source_file_set_message_cwd()`, `path_for_message()`): the CLI sets a process-wide working directory
   so message text names files absolutely like tsc's CLI; unset, the harness's display paths are used. Global because
@@ -796,3 +796,9 @@ src` finds the code-side markers; every significant one has an entry here.
   f3b836b..f899e4e don't compile (fixed by 7f2a7fa): skip when bisecting.
 - `may_have_readonly_member` (check.c): a perf gate before writing through a union of keys, exact where it answers
   false, conservative (true) for unions, intersections, tuples and callables. (permanent: perf, not an approximation)
+- The CLI is `tsc --noEmit` by default (`run()` in main.c adds `--noEmit true` unless the command line names noEmit;
+  not for `-b`, which is tsc -b's and emits). `scripts/sweep.py`'s `run_tttt()` (the DefinitelyTyped and source
+  sweeps) and scenarios.py pass tttt's `--as-emitting` (no implied noEmit; `--noEmit false` would override configs
+  that say true) because their caches (`test/sweep_tsc.js`) are programs without noEmit, emit-only
+  option errors (TS5011/5055/6059...) included. Goes away when plan 53/54 regenerates the caches through the CLI.
+- `TTTT_TYPESCRIPT_VERSION` (main.c, `--version`) is hand-written: "6.0.3", the oracle's. Bump with the oracle.

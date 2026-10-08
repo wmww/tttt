@@ -82,8 +82,8 @@ if command -v tsc > /dev/null && test "$(tsc --version | sed 's/[^0-9]*\([0-9]*\
     measure "tsgo -b" sh -c "rm -rf $BUILD/built && tsc -b $BUILD/src"
     measure "tsgo -b single-threaded" sh -c "rm -rf $BUILD/built && tsc -b --singleThreaded $BUILD/src"
 fi
-echo "tttt phases (one run with --build-jobs 1, summed over the projects):"
-(./release/tttt -q --time --keep-going --build-jobs 1 -b thirdparty/tsc/src 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
+echo "tttt phases (one run with --builders 1, summed over the projects):"
+(./release/tttt -q --time --keep-going --builders 1 -b thirdparty/tsc/src 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
     awk '{ name = $0; sub(/^time: /, "", name); sub(/ [0-9.]+ ms.*/, "", name); match($0, /[0-9.]+ ms/);
         sum[name] += substr($0, RSTART, RLENGTH - 3) } END { for (n in sum) printf "  %s %.0f ms\n", n, sum[n] }'
 rm -rf $BUILD

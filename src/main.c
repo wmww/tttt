@@ -25,11 +25,17 @@
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 
 typedef struct Options {
-    bool quiet;   // Only print diagnostics and the final summary
+    bool quiet;   // -q: don't print diagnostics (tsgo's), only the summary
+    int pretty; // --pretty: 1 or 0, -1 when not given (the config's, else whether stdout is a terminal)
+    bool list_files; // --listFiles: the program's files after its diagnostics
+    bool list_files_only; // --listFilesOnly: the program's files, nothing checked
+    bool ignore_config; // --ignoreConfig: files on the command line next to a tsconfig.json
+    bool as_emitting; // --as-emitting: no implied --noEmit, the config's noEmit decides (an oracle cached that way)
     bool print_ast; // Dump the parsed AST of the (last) file before typechecking
     bool time;    // Print how long each phase took to stderr
     bool keep_going; // Typecheck and report everything even after syntactic or options diagnostics (tsc stops)
@@ -43,7 +49,7 @@ typedef struct Options {
     u32 checkers; // --checkers
     u32 threads; // --threads
     const char* expect_types; // --expect-types FILE: print the types of the expressions it lists (expect_types.h)
-    u32 build_jobs; // --build-jobs: how many projects -b checks at once (0: decided by threads)
+    u32 build_jobs; // --builders: how many projects -b checks at once (0: decided by threads)
     const char** paths;
     intptr_t path_count;
     // --strictNullChecks false, --target es2020 and so on, in order
@@ -57,7 +63,17 @@ typedef struct Options {
 typedef struct Output {
     bool buffered;
     cstr out, err;
+    ErrorSummary summary; // Of the diagnostics printed
+    bool pretty; // How the last program printed its diagnostics
 } Output;
+
+static void output_write(Output* me, FILE* file, csview text) {
+    if (my buffered) {
+        cstr_append_sv(file == stdout ? &my out : &my err, text);
+    } else {
+        fwrite(text.buf, 1, (size_t)text.size, file);
+    }
+}
 
 static void output_put(Output* me, FILE* file, DisplayCtx d) {
     if (my buffered) {
@@ -164,10 +180,9 @@ static i64 file_size_of(void* ctx, csview path) {
 }
 
 // The tsconfig if there is one, then whatever was on the command line
-static_failable apply_compiler_options(Options const* opts, Output* out, csview config, Program* program) {
+static_failable apply_compiler_options(Options const* opts, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
     if (config.size) {
-        if (!opts->quiet) out_println(out, color_good, "Project ", config, color_normal);
         // Files on the command line replace the config's
         TsconfigDiagnostics diagnostics = {0};
         try (tsconfig_load_diagnosed(fs, config, options, nullptr, &diagnostics)) cleanup {
@@ -219,18 +234,48 @@ static void destroy_program(Program* program, ErrorCtx* errs, [[maybe_unused]] b
     free(errs);
 }
 
-// Prints and clears whatever errors have accumulated so far, returning how many there were
-static intptr_t report_errors(Output* out, ErrorCtx* errs) {
-    if (error_ctx_empty(errs)) {
-        return 0;
-    }
+// Moves whatever errors have accumulated so far to the ones to print (shown), returning how many there were
+static intptr_t report_errors(VecError* shown, ErrorCtx* errs) {
     const intptr_t count = vec_error_size(&errs->errors);
-    if (out->buffered) {
-        display_error_ctx(errs, &out->out);
-    } else {
-        print_error_ctx(errs);
-    }
+    for_each (i, vec_error, &errs->errors) vec_error_push(shown, *i);
+    errs->errors.size = 0;
     error_ctx_clear(errs);
+    return count;
+}
+
+// How the CLI names a diagnostic's file: relative to the working directory (tsc's convertToRelativePath)
+static char const* cli_file_name(SourceFile const* source) {
+    char const* name = cstr_str(&source->canonical_path);
+    return strncmp(name, "./", 2) == 0 ? name + 2 : name;
+}
+
+// tsc's emitFilesAndReportErrors: the diagnostics of a program sorted and deduplicated by their files' paths,
+// printed in the format asked for, then the files with --listFiles. Returns how many were printed
+static intptr_t print_diagnostics(Options const* opts, Output* out, Program* program, VecError* shown) {
+    error_vec_sort_and_dedupe(shown, source_file_message_path);
+    cstr text = cstr_null;
+    if (!opts->quiet) {
+        for_each (i, vec_error, shown) {
+            if (out->pretty) {
+                error_format_pretty(&text, i, "\n", cli_file_name);
+                cstr_append_lit(&text, "\n");
+            } else {
+                error_format_plain(&text, i, "\n", cli_file_name);
+            }
+        }
+    }
+    if (program && (opts->list_files || opts->list_files_only)) {
+        for (intptr_t i = 0; i < program_get_file_count(program); i++) {
+            cstr path = source_file_message_path(program_source_at(program, (u32)i));
+            cstr_append_d(&text, DEFAULT_DISPLAY, path, "\n");
+            cstr_drop(&path);
+        }
+    }
+    output_write(out, stdout, cstr_sv(&text));
+    cstr_drop(&text);
+    error_summary_add(&out->summary, shown, cli_file_name);
+    intptr_t count = vec_error_size(shown);
+    vec_error_drop(shown);
     return count;
 }
 
@@ -326,9 +371,18 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     set_lib_dir(program);
     program_follow_lib_references(program);
     StrList root_files = {0};
-    try (apply_compiler_options(opts, out, config, program)) cleanup {
+    try (apply_compiler_options(opts, config, program)) cleanup {
         destroy_program(program, errs, last);
     }
+    // tsc's shouldBePretty: --pretty, else the config's, else whether the output is a terminal (and NO_COLOR isn't
+    // set). -b only asks the command line
+    {
+        CompilerOptions const* options = program_options(program);
+        int pretty = opts->pretty >= 0 || opts->build || !options->is_set[COMPILER_OPTION_pretty] ? opts->pretty :
+            options->pretty;
+        out->pretty = pretty >= 0 ? pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
+    }
+    VecError shown = {0}; // What's printed at the end
     // The config's root files, unless there are files on the command line
     if (config.size && !opts->path_count) {
         StrList const* listed = project_set_root_files(projects, project);
@@ -346,14 +400,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
         if (config.size) program_verify_options(program);
         // A solution config: only references (tsc says nothing, and builds nothing without -b)
         bool solution = config.size && project_set_at(projects, project)->reference_count;
-        intptr_t config_errors = report_errors(out, errs);
+        report_errors(&shown, errs);
+        intptr_t config_errors = print_diagnostics(opts, out, program, &shown);
         if (counts) counts->errors += config_errors;
         str_list_drop(&root_files);
         destroy_program(program, errs, last);
-        if (solution || no_inputs) {
-            if (solution && !opts->quiet && !opts->build) out_println(out, "Only project references to check: use -b to check them");
-            return ok(config_errors ? 1 : 0);
-        }
+        // (tsgo: diagnostics and no file to emit is ExitStatus.DiagnosticsPresent_OutputsGenerated, 2)
+        if (solution || no_inputs) return ok(config_errors ? 2 : 0);
         return err_d("No input files: none on the command line and none from a tsconfig.json");
     }
     double last_time = now_ms();
@@ -380,20 +433,13 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     }
 
     if (!opts->no_lib) {
-        if (!opts->quiet) out_println(out, color_good, "Loading libraries...", color_normal);
         // (What's been reported so far, the config's syntax errors, is kept aside from the libraries' errors)
         VecError earlier = errs->errors;
         errs->errors = (VecError){0};
         try (load_stdlib(program)) cleanup {
             vec_error_drop(&earlier);
+            vec_error_drop(&shown);
             destroy_program(program, errs, last);
-        }
-
-        if (!error_ctx_empty(errs)) {
-            const intptr_t lib_errors = vec_error_size(&errs->errors);
-            out_println(out, "Encountered ", color_error, lib_errors, " errors", color_normal, " loading libraries.");
-            //print_error_ctx(errs);
-            error_ctx_clear(errs);
         }
         vec_error_drop(&errs->errors);
         errs->errors = earlier;
@@ -402,29 +448,39 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (config.size) verify_references(program, projects, project, true);
 
     SourceFile* source = nullptr;
+    bool loaded_any = false;
     for (intptr_t i = 0; i < opts->path_count + root_files.count; i++) {
         csview path = i < opts->path_count ? csview_from(opts->paths[i]) : cstr_sv(&root_files.items[i - opts->path_count]);
-        if (!opts->quiet) out_println(out, color_good, "Loading ", path, "...", color_normal);
         bool from_config = i >= opts->path_count;
         FailableResult loaded = program_load(program, path, &source);
-        if (loaded.error && from_config) {
-            // A `files` entry that doesn't exist: tsc's TS6053, and the rest is checked anyway
+        if (loaded.error) {
+            // A file on the command line or a `files` entry that doesn't exist: tsc's TS6053, and the rest is checked
             failable_result_drop(&loaded);
             Error* error = error_ctx_global_error_d(errs, 6053, "File '", path, "' not found.");
             error_sub_error_d(error, span_null, TS_CODE_NONE, "The file is in the program because:");
-            error_sub_error_d(
-                vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE, "Part of 'files' list in tsconfig.json"
-            );
+            error_sub_error_d(vec_error_back_mut(&error->sub_errors), span_null, TS_CODE_NONE,
+                from_config ? "Part of 'files' list in tsconfig.json" : "Root file specified for compilation");
             continue;
         }
         try (loaded) cleanup {
             str_list_drop(&root_files);
+            vec_error_drop(&shown);
             destroy_program(program, errs, last);
         }
+        loaded_any = true;
     }
     str_list_drop(&root_files);
     program_load_automatic_types(program);
     phase_done(opts, out, "load+parse files", &last_time);
+    if (opts->list_files_only) {
+        // (tsc's listFilesOnly: the options and syntactic diagnostics, nothing checked)
+        drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
+        report_errors(&shown, errs);
+        intptr_t count = print_diagnostics(opts, out, program, &shown);
+        if (counts) counts->errors += count;
+        destroy_program(program, errs, last);
+        return ok(0); // (tsgo's)
+    }
 
     int ret = 0;
     // tsc's emitFilesAndReportErrors: semantic diagnostics only without syntactic, options and global ones. With
@@ -438,7 +494,7 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     bool gated = (!ungated && syntactic) || (!options_ungated && kinds[DIAGNOSTIC_OPTIONS]);
     if (!options_ungated && kinds[DIAGNOSTIC_SYNTACTIC]) drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
     if (gated) drop_diagnostic_kind(errs, DIAGNOSTIC_SEMANTIC);
-    const intptr_t parse_errors = report_errors(out, errs);
+    const intptr_t parse_errors = report_errors(&shown, errs);
     if (parse_errors) ret = 1;
 
     // Gated, the emit still reports the declaration diagnostics: checked only for them. Gated by options diagnostics
@@ -473,23 +529,12 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
             drop_diagnostic_kind(&names, DIAGNOSTIC_OPTIONS);
             drop_diagnostic_kind(errs, DIAGNOSTIC_OPTIONS);
         }
-        name_errors = report_errors(out, &names);
+        name_errors = report_errors(&shown, &names);
         error_ctx_drop(&names);
         if (name_errors) ret = 1;
-
-        if (error_ctx_empty(errs)) {
-            out_println(out, color_good, "Typecheck passed", color_normal);
-        } else {
-            out_println(out, color_error, "Typecheck failed", color_normal);
-        }
-
-        type_errors = report_errors(out, errs);
+        type_errors = report_errors(&shown, errs);
         if (type_errors) ret = 1;
         phase_done(opts, out, "typecheck", &last_time);
-        if (opts->expect_types && typecheck) {
-            output_flush(out);
-            program_print_expect_types(program, opts->expect_types);
-        }
         if (opts->time) {
             for (u32 i = 0; i < program_checker_count(program); i++) {
                 Checker const* checker = program_checker_at(program, i);
@@ -510,33 +555,48 @@ static_failable check_files(Options const* opts, Output* out, csview config, Pro
     if (!(typecheck || !syntactic) && options_ungated) {
         // (Names aren't resolved after syntactic errors, but the options diagnostics are still asked for)
         program_verify_options(program);
-        name_errors = report_errors(out, errs);
+        name_errors = report_errors(&shown, errs);
         if (name_errors) ret = 1;
     }
-
-    if (parse_errors || name_errors || type_errors) {
-        out_println(out,
-            "Checked ", program_get_file_count(program), " files, found ",
-            parse_errors ? color_error : color_none, parse_errors, " parse errors", color_normal, ", ",
-            name_errors  ? color_error : color_none, name_errors,  " name errors",  color_normal, " and ",
-            type_errors  ? color_error : color_none, type_errors,  " type errors",  color_normal, "."
-        );
-    } else {
-        out_println(out, color_good, "Checked ", program_get_file_count(program), " files, no errors found!", color_normal);
+    intptr_t printed = print_diagnostics(opts, out, program, &shown);
+    if (opts->expect_types && typecheck) {
+        output_flush(out);
+        program_print_expect_types(program, opts->expect_types);
     }
 
-    //println(color_good, "Running...", color_normal);
-    //run_in_engine(source, arc_js_object_init());
-    //println(color_good, "Run succeeded", color_normal);
-
-    if (counts) counts->errors += parse_errors + name_errors + type_errors;
+    if (counts) counts->errors += printed;
+    // (tsgo: diagnostics and no file to emit, every root file missing, is 2)
+    if (ret && !loaded_any) ret = 2;
     destroy_program(program, errs, last);
     if (!last) phase_done(opts, out, "free", &last_time);
     return ok(ret);
 }
 
+// tsc's reportErrorSummary, pretty only: "Found 2 errors in 2 files." (with_files: and the table of them)
+static void print_summary(Output* out, bool pretty, bool with_files) {
+    if (pretty) {
+        cstr text = cstr_null;
+        error_summary_format(&text, &out->summary, "\n", with_files);
+        output_write(out, stdout, cstr_sv(&text));
+        cstr_drop(&text);
+    }
+    error_summary_drop(&out->summary);
+}
+
+static int command_line_error(int pretty, unsigned code, cstr message);
+
 // Without -b: the files on the command line, else the project (-p, else the nearest tsconfig.json)
 static_failable check_command_line(Options const* opts, returns int) {
+    if (opts->path_count && !opts->project && !opts->ignore_config) {
+        // tsc's executeCommandLine: files on the command line and a tsconfig.json from here upwards are a mistake
+        cstr found = tsconfig_find(fs, c_sv("."));
+        bool present = cstr_size(&found) > 0;
+        cstr_drop(&found);
+        if (present) {
+            return ok(command_line_error(opts->pretty, 5112, cstr_from("tsconfig.json is present but will not be loaded "
+                "if files are specified on commandline. Use '--ignoreConfig' to skip this error.")));
+        }
+    }
     cstr config = opts->project ? cstr_from(opts->project) :
         opts->path_count ? cstr_null : tsconfig_find(fs, c_sv("."));
     if (cstr_size(&config) && fs_is_directory(fs, cstr_sv(&config))) cstr_append_lit(&config, "/tsconfig.json");
@@ -546,6 +606,7 @@ static_failable check_command_line(Options const* opts, returns int) {
     Output out = {0};
     FailableResult result =
         check_files(opts, &out, cstr_sv(&config), projects, project, redirects, true, nullptr, _OUTPUT_PARAM);
+    print_summary(&out, out.pretty, true);
     // (The program may not have been freed: a release build leaves that to the exit)
 #ifdef DEBUG_BUILD
     project_redirects_destroy(redirects);
@@ -584,7 +645,10 @@ static void build_run(Build* me, u32 i) {
     if (!project->readable) {
         ErrorCtx errs = error_ctx_init();
         error_ctx_global_error_d(&errs, 5083, "Cannot read file '", project->config, "'.");
-        job->counts.errors += report_errors(&job->out, &errs);
+        VecError shown = {0};
+        report_errors(&shown, &errs);
+        job->out.pretty = my opts->pretty >= 0 ? my opts->pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
+        job->counts.errors += print_diagnostics(my opts, &job->out, nullptr, &shown);
         error_ctx_drop(&errs);
         job->ret = 1;
         return;
@@ -624,13 +688,16 @@ static_failable build(Options const* opts, returns int) {
     u32 count = project_set_build_order(projects, roots, (u32)root_count, &order, &cycles);
     c_free_n(roots, root_count);
     int ret = 0;
-    Output direct = {0};
+    // (Where the summary of every project's diagnostics is gathered, in build order)
+    Output direct = { .pretty = opts->pretty >= 0 ? opts->pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR") };
     if (cycles.count) {
         ErrorCtx errs = error_ctx_init();
         for (isize i = 0; i < cycles.count; i++) error_ctx_global_error_s(&errs, 6202, cstr_clone(cycles.items[i]));
-        report_errors(&direct, &errs);
+        VecError shown = {0};
+        report_errors(&shown, &errs);
+        print_diagnostics(opts, &direct, nullptr, &shown);
         error_ctx_drop(&errs);
-        ret = 1;
+        ret = 4; // (tsc's ExitStatus.ProjectReferenceCycle_OutputsSkipped)
         count = 0; // (tsc builds nothing then)
     }
     str_list_drop(&cycles);
@@ -665,7 +732,6 @@ static_failable build(Options const* opts, returns int) {
     }
 
     CheckCounts counts = {0};
-    u32 failed = 0;
     FailableResult failure = {0};
     for (u32 i = 0; i < count; i++) {
         BuildJob* job = &b.jobs[i];
@@ -677,6 +743,7 @@ static_failable build(Options const* opts, returns int) {
         } else {
             build_run(&b, i);
         }
+        error_summary_merge(&direct.summary, &job->out.summary);
         if (job->result.error) {
             // (What stops us checking at all: a later project's error isn't any less fatal, but this one comes first)
             failure = job->result;
@@ -686,7 +753,6 @@ static_failable build(Options const* opts, returns int) {
         }
         counts.errors += job->counts.errors;
         if (job->ret || job->counts.errors) {
-            failed++;
             ret = 1;
             if (opts->stop_build_on_errors) {
                 atomic_store(&b.end, 0);
@@ -704,6 +770,7 @@ static_failable build(Options const* opts, returns int) {
         // (Whatever was checked past where the build stopped isn't printed)
         cstr_drop(&b.jobs[i].out.out);
         cstr_drop(&b.jobs[i].out.err);
+        error_summary_drop(&b.jobs[i].out.summary);
         failable_result_drop(&b.jobs[i].result);
         project_redirects_destroy(b.jobs[i].redirects);
     }
@@ -715,10 +782,8 @@ static_failable build(Options const* opts, returns int) {
 #endif
         return failure;
     }
-    if (!opts->quiet || failed) {
-        println(failed ? color_error : color_good, "Checked ", count, count == 1 ? " project" : " projects", ", ",
-            failed, " with errors (", counts.errors, " errors)", color_normal);
-    }
+    // (tsgo's -b summary is the count alone)
+    print_summary(&direct, direct.pretty, false);
 #ifdef DEBUG_BUILD
     project_set_destroy(projects);
 #endif
@@ -742,34 +807,69 @@ static void reexec_with_huge_pages(char const* const* argv) {
 #endif
 }
 
+// The TypeScript version tttt checks like (what --version says)
+#define TTTT_TYPESCRIPT_VERSION "6.0.3"
+
+// A command line error (tsc's TS5023 and friends) in the format diagnostics are printed in
+static int command_line_error(int pretty, unsigned code, cstr message) {
+    ErrorCtx errs = error_ctx_init();
+    error_ctx_global_error_s(&errs, code, message);
+    cstr text = cstr_null;
+    bool colors = pretty >= 0 ? pretty : isatty(STDOUT_FILENO) && !getenv("NO_COLOR");
+    if (colors) error_format_pretty(&text, vec_error_front(&errs.errors), "\n", cli_file_name);
+    else error_format_plain(&text, vec_error_front(&errs.errors), "\n", cli_file_name);
+    fputs(cstr_str(&text), stdout);
+    cstr_drop(&text);
+    error_ctx_drop(&errs);
+    return 1;
+}
+
+// A count option's value (--checkers 4): positive
+static bool count_value(int argc, const char** argv, int i) {
+    return i + 1 < argc && atoi(argv[i + 1]) > 0;
+}
+
 static int run(int argc, const char** argv) {
     long cores = sysconf(_SC_NPROCESSORS_ONLN);
-    Options opts = { .paths = argv, .checkers = 4, .threads = cores < 1 ? 1 : cores > 4 ? 4 : (u32)cores };
+    Options opts = { .paths = argv, .pretty = -1, .checkers = 4, .threads = cores < 1 ? 1 : cores > 4 ? 4 : (u32)cores };
+    bool single_threaded = false;
     for (int i = 1; i < argc; i++) {
         if (streq(argv[i], "--help") || streq(argv[i], "-h")) {
             println(
-                "The Tess TypeScript Typechecker\n\nUSAGE: tttt [OPTIONS] [TSPATH...]\n\n"
-                "  -q, --quiet   only print diagnostics and the summary\n"
-                "  --time        print how long each phase took to stderr\n"
-                "  --print-ast   print the parsed AST of the last file (debugging)\n"
+                "The Tess TypeScript Typechecker: checks like `tsc --noEmit` (nothing is emitted)\n\n"
+                "USAGE: tttt [OPTIONS] [TSPATH...]\n\n"
                 "  -p, --project PATH  a tsconfig.json or its directory: options and, without TSPATHs, the files.\n"
                 "                Without TSPATHs and -p, the nearest tsconfig.json from here upwards. Referenced\n"
                 "                projects are read from their sources, not built outputs, and aren't checked\n"
                 "  -b, --build [PROJECT...]  check each project (`.` by default) and everything it references, each\n"
                 "                with its own options, references first (-v, -f are accepted and ignored)\n"
                 "  --stopBuildOnErrors  with -b, stop after the first project with errors\n"
-                "  --build-jobs J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
-                "                4 threads, else 1). The output doesn't depend on it\n"
-                "  --no-lib      don't load the standard library\n"
-                "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
-                "  --keep-going  typecheck even after parse or options errors\n"
-                "  --all-errors  print every diagnostic, not just the first 5000 of each phase\n"
+                "  --pretty [false]  tsc's formats: with colours and code frames and a summary (the default when the\n"
+                "                output is a terminal), else `file(line,col): error TSxxxx: message`\n"
+                "  -q, --quiet   don't print diagnostics (only the summary, when pretty)\n"
+                "  --listFiles   print the program's files after its diagnostics\n"
+                "  --listFilesOnly  print the program's files and stop\n"
+                "  -v, --version print the version of TypeScript tttt checks like\n"
                 "  --checkers K  check with K checkers (default 4): each gets contiguous runs of the files. Only the\n"
                 "                order of union members in messages depends on K\n"
+                "  --builders J  with -b, check J projects at once, each on threads/J threads (default: 2 with\n"
+                "                4 threads, else 1). The output doesn't depend on it\n"
+                "  --singleThreaded  one checker on one thread, one project at a time\n"
                 "  --threads N   run the checkers on N threads (default: the number of cores, at most 4)\n"
                 "  --OPTION [VALUE]  a tsc compiler option: --target es2020, --lib es2015,dom, --strict false,\n"
-                "                --noImplicitAny... (strict is on by default, a boolean without a value means true)"
+                "                --noImplicitAny... (strict is on by default, a boolean without a value means true)\n\n"
+                "tttt's own (debugging and oracles):\n"
+                "  --time        print how long each phase took to stderr\n"
+                "  --print-ast   print the parsed AST of the last file\n"
+                "  --no-lib      don't load the standard library\n"
+                "  --expect-types FILE  after checking, print the types of the expressions FILE lists by span\n"
+                "  --keep-going  typecheck and report everything even after parse or options errors (tsc stops)\n"
+                "  --keep-going=options  only options errors don't stop anything\n"
+                "  --as-emitting  check like tsc without --noEmit (the config's noEmit decides): emit-only option errors"
             );
+            return 0;
+        } else if (!opts.build && (streq(argv[i], "--version") || streq(argv[i], "-v"))) {
+            println("Version " TTTT_TYPESCRIPT_VERSION);
             return 0;
         } else if (streq(argv[i], "--quiet") || streq(argv[i], "-q")) {
             opts.quiet = true;
@@ -781,8 +881,14 @@ static int run(int argc, const char** argv) {
             opts.keep_going = true;
         } else if (streq(argv[i], "--keep-going=options")) {
             opts.keep_going_options = true;
-        } else if (streq(argv[i], "--all-errors")) {
-            print_error_ctx_max_display = INTPTR_MAX;
+        } else if (streq(argv[i], "--as-emitting")) {
+            opts.as_emitting = true;
+        } else if (streq(argv[i], "--ignoreConfig")) {
+            opts.ignore_config = true;
+        } else if (streq(argv[i], "--listFiles")) {
+            opts.list_files = true;
+        } else if (streq(argv[i], "--listFilesOnly")) {
+            opts.list_files_only = true;
         } else if ((streq(argv[i], "-p") || streq(argv[i], "--project")) && i + 1 < argc) {
             opts.project = argv[++i];
         } else if (streq(argv[i], "-b") || streq(argv[i], "--build")) {
@@ -793,24 +899,27 @@ static int run(int argc, const char** argv) {
             // (Nothing is built, so there's nothing to say about it, nor anything up to date)
         } else if (streq(argv[i], "--stopBuildOnErrors")) {
             opts.stop_build_on_errors = true;
-        } else if (opts.build && (streq(argv[i], "--dry") || streq(argv[i], "-d") || streq(argv[i], "--clean") ||
-            streq(argv[i], "-w") || streq(argv[i], "--watch"))
+        } else if ((opts.build && (streq(argv[i], "--dry") || streq(argv[i], "-d") || streq(argv[i], "--clean"))) ||
+            streq(argv[i], "-w") || streq(argv[i], "--watch") || streq(argv[i], "--init") ||
+            streq(argv[i], "--showConfig") || streq(argv[i], "--explainFiles")
         ) {
-            println(color_error, "-b ", argv[i], " isn't supported: tttt only checks", color_normal);
+            eprintln("tttt: ", argv[i], " isn't supported: tttt only checks");
             return 1;
-        } else if (streq(argv[i], "--checkers") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
+        } else if (streq(argv[i], "--checkers") && count_value(argc, argv, i)) {
             opts.checkers = (u32)atoi(argv[++i]);
-        } else if (streq(argv[i], "--threads") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
+        } else if (streq(argv[i], "--threads") && count_value(argc, argv, i)) {
             opts.threads = (u32)atoi(argv[++i]);
-        } else if (streq(argv[i], "--build-jobs") && i + 1 < argc && atoi(argv[i + 1]) > 0) {
+        } else if (streq(argv[i], "--builders") && count_value(argc, argv, i)) {
             opts.build_jobs = (u32)atoi(argv[++i]);
+        } else if (streq(argv[i], "--singleThreaded")) {
+            single_threaded = true;
         } else if (streq(argv[i], "--expect-types") && i + 1 < argc) {
             opts.expect_types = argv[++i];
         } else if (streq(argv[i], "--no-lib")) {
             opts.no_lib = true;
         } else if (argv[i][0] == '-' && argv[i][1] == '-') {
             if (opts.option_count == MAX_COMPILER_OPTION_ARGS) {
-                println(color_error, "Too many options", color_normal);
+                eprintln("tttt: too many options");
                 return 1;
             }
             // Whether this is an option we know is checked once there's a CompilerOptions to try it on. A boolean
@@ -823,17 +932,27 @@ static int run(int argc, const char** argv) {
             // nothing is checked. One of its options that we have no use for (most emit options) is ignored
             cstr message = cstr_null;
             unsigned unknown = compiler_option_unknown_diagnostic(csview_from(argv[i] + 2), true, csview_from(argv[i]), &message);
-            if (unknown) {
-                println(color_error, "error TS", unknown, ": ", message, color_normal);
-                cstr_drop(&message);
-                return 1;
-            }
+            if (unknown) return command_line_error(opts.pretty, unknown, message);
             opts.option_names[opts.option_count] = argv[i] + 2;
             opts.option_values[opts.option_count++] = has_value ? argv[++i] : "true";
+            if (!strcasecmp(argv[i - has_value] + 2, "pretty")) opts.pretty = !has_value || !streq(argv[i], "false");
         } else {
             // Paths are compacted to the front of argv, which is fine as they never outnumber what we've already read
             opts.paths[opts.path_count++] = argv[i];
         }
+    }
+    if (single_threaded) opts.checkers = opts.threads = opts.build_jobs = 1;
+    // tttt only checks: it is `tsc --noEmit` (no emit-only option errors), unless the command line says otherwise or
+    // --as-emitting (an oracle cached without it). -b is tsc -b's, which emits
+    bool no_emit_given = false;
+    for (intptr_t i = 0; i < opts.option_count; i++) no_emit_given |= !strcasecmp(opts.option_names[i], "noEmit");
+    if (!opts.build && !no_emit_given && !opts.as_emitting) {
+        if (opts.option_count == MAX_COMPILER_OPTION_ARGS) {
+            eprintln("tttt: too many options");
+            return 1;
+        }
+        opts.option_names[opts.option_count] = "noEmit";
+        opts.option_values[opts.option_count++] = "true";
     }
 
     {
