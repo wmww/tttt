@@ -2220,7 +2220,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 function_impl_add_names(my function, name_scope, (DeclStatementProps){0}, false);
             }
             my function->syntactically_contextual = flow->contextual_depth > 0;
+            u32 enclosing_body = resolve_enter_deferred_body();
             function_impl_lookup_names_as(my function, FUNCTION_IS_EXPRESSION, !function_impl_is_arrow(me->function), name_scope, errs);
+            resolve_leave_deferred_body(enclosing_body);
         }   break;
 
         case EXPR_OBJECT:
@@ -2309,7 +2311,9 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 class_name_scope = scope_new(names, SCOPE_BLOCK);
                 class_decl_add_names(my class_decl, class_name_scope, (DeclStatementProps){0});
             }
+            u32 enclosing_body = resolve_enter_deferred_body();
             class_decl_lookup_names(my class_decl, class_name_scope, errs);
+            resolve_leave_deferred_body(enclosing_body);
         }   break;
 
         case EXPR_SPREAD:

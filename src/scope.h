@@ -639,7 +639,18 @@ typedef struct ResolveShard {
     struct DeferredEvent* deferred; // malloc'd
     u32 deferred_count;
     u32 deferred_cap;
+    // The bodies tsc's checker defers (checkNodeDeferred: function expressions, arrow functions, object literal methods
+    // and accessors, class expressions), by the order the walk enters them: the parent of each (0 is the file's
+    // top level, body i is body_parent[i - 1]'s child), and the one the walk is in. Suggestions are counted in tsc's
+    // check order, which takes the deferred bodies breadth first after the top level (resolve_shard_merge())
+    u32* body_parent; // malloc'd
+    u32 body_count;
+    u32 body_cap;
+    u32 current_body;
 } ResolveShard;
+// Entering a body tsc defers (see ResolveShard.body_parent): returns what resolve_leave_deferred_body() restores
+u32 resolve_enter_deferred_body(void);
+void resolve_leave_deferred_body(u32 previous);
 extern thread_local ResolveShard* resolve_shard;
 // Where the binder's symbols, scopes and tables are allocated: the resolve thread's arena while one walks a file
 static inline Arena* binder_arena(Binder* me) {

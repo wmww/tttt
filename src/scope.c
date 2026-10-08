@@ -4502,6 +4502,7 @@ typedef struct DeferredEvent {
     bool namespace;
     MisspelledFallback fallback;
     u32 index;
+    u32 body; // The deferred body it is in (ResolveShard.current_body): the order it counts in
     // DEFERRED_EXPANDO
     Expr* object;
     Span member;
@@ -4530,8 +4531,77 @@ static ErrorCtx* shard_lasting_errs(ResolveShard* shard, ErrorCtx* errs) {
 
 static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope const* scope, ErrorCtx* errs) {
     DeferredEvent* ret = list_push((void**)&shard->deferred, &shard->deferred_count, &shard->deferred_cap, sizeof(DeferredEvent));
-    *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs) };
+    *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs), .body = shard->current_body };
     return ret;
+}
+
+u32 resolve_enter_deferred_body(void) {
+    ResolveShard* shard = resolve_shard;
+    if (!shard) return 0;
+    u32 previous = shard->current_body;
+    *(u32*)list_push((void**)&shard->body_parent, &shard->body_count, &shard->body_cap, sizeof(u32)) = previous;
+    shard->current_body = shard->body_count;
+    return previous;
+}
+
+void resolve_leave_deferred_body(u32 previous) {
+    if (resolve_shard) resolve_shard->current_body = previous;
+}
+
+static bool counts_suggestion(DeferredKind kind) {
+    return kind == DEFERRED_NOT_FOUND || kind == DEFERRED_MISSPELLED || kind == DEFERRED_COUNT || kind == DEFERRED_PENDING;
+}
+
+// Each counting event's place in tsc's check order (see ResolveShard.body_parent): the top level first, then the
+// deferred bodies breadth first, a body's children in the order the walk met them (checkDeferredNodes' FIFO set)
+static u32* suggestion_count_order(ResolveShard const* me, u32* count_out) {
+    u32 bodies = me->body_count + 1;
+    // Breadth first: level by level, each level's bodies by their parents' rank then by when they were entered
+    u32* rank = malloc(sizeof(u32) * bodies);
+    u32* queue = malloc(sizeof(u32) * bodies);
+    u32* child_start = calloc(bodies + 1, sizeof(u32));
+    u32* children = malloc(sizeof(u32) * bodies);
+    panic_if(!rank || !queue || !child_start || !children, "out of memory");
+    for (u32 b = 1; b < bodies; b++) child_start[me->body_parent[b - 1] + 1]++;
+    for (u32 b = 0; b < bodies; b++) child_start[b + 1] += child_start[b];
+    u32* fill = malloc(sizeof(u32) * bodies);
+    panic_if(!fill, "out of memory");
+    for (u32 b = 0; b < bodies; b++) fill[b] = child_start[b];
+    for (u32 b = 1; b < bodies; b++) children[fill[me->body_parent[b - 1]]++] = b;
+    u32 head = 0, tail = 0;
+    queue[tail++] = 0;
+    while (head < tail) {
+        u32 b = queue[head];
+        rank[b] = head++;
+        for (u32 c = child_start[b]; c < child_start[b + 1]; c++) queue[tail++] = children[c];
+    }
+    free(fill);
+    free(children);
+    free(child_start);
+    free(queue);
+    // The counting events, stably by their body's rank
+    u32 count = 0;
+    for (u32 i = 0; i < me->deferred_count; i++) count += counts_suggestion(me->deferred[i].kind);
+    u32* order = malloc(sizeof(u32) * (count ? count : 1));
+    panic_if(!order, "out of memory");
+    count = 0;
+    for (u32 i = 0; i < me->deferred_count; i++) {
+        if (counts_suggestion(me->deferred[i].kind)) order[count++] = i;
+    }
+    // (Insertion sort by rank: stable, and the events are mostly in order already)
+    for (u32 i = 1; i < count; i++) {
+        u32 e = order[i];
+        u32 r = rank[me->deferred[e].body];
+        u32 j = i;
+        while (j > 0 && rank[me->deferred[order[j - 1]].body] > r) {
+            order[j] = order[j - 1];
+            j--;
+        }
+        order[j] = e;
+    }
+    free(rank);
+    *count_out = count;
+    return order;
 }
 
 // The shard of a JavaScript file's walk (plan 45 stage 2), whose assignment declarations wait for the replay: their
@@ -6189,25 +6259,34 @@ void resolve_shard_merge(ResolveShard* me) {
     ErrorCtx* discarded = binder_discarded_errs(binder);
     // (What the shard's pending reports go to once its contexts are merged)
     #define MERGED_ERRS(e) ((e) == &my errs ? errs : (e) == &my discarded ? discarded : (e))
+    // Which of the counting events may suggest, counted in tsc's check order; then everything replays in walk order
+    bool* may_suggest = nullptr;
+    if (my deferred_count) {
+        may_suggest = calloc(my deferred_count, sizeof(bool));
+        panic_if(!may_suggest, "out of memory");
+        u32 count;
+        u32* order = suggestion_count_order(me, &count);
+        for (u32 i = 0; i < count; i++) may_suggest[order[i]] = binder->suggestion_count++ < 10;
+        free(order);
+    }
     for (u32 i = 0; i < my deferred_count; i++) {
         DeferredEvent const* event = &my deferred[i];
         ErrorCtx* event_errs = event->errs;
         switch (event->kind) {
             case DEFERRED_NOT_FOUND:
-                report_not_found_counted(event->scope, event->at, event->meaning, event->shorthand, binder->suggestion_count++ < 10, event_errs);
+                report_not_found_counted(event->scope, event->at, event->meaning, event->shorthand, may_suggest[i], event_errs);
                 break;
             case DEFERRED_MISSPELLED:
                 if (!report_misspelled_counted(event->scope, event->at, event->name, event->meaning, event->namespace,
-                    binder->suggestion_count++ < 10, misspelled_fallback_code(event->fallback), event_errs)
+                    may_suggest[i], misspelled_fallback_code(event->fallback), event_errs)
                 ) {
                     report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
                 }
                 break;
             case DEFERRED_COUNT:
-                binder->suggestion_count++;
                 break;
             case DEFERRED_PENDING:
-                my pending_not_found[event->index].may_suggest = binder->suggestion_count++ < 10;
+                my pending_not_found[event->index].may_suggest = may_suggest[i];
                 break;
             case DEFERRED_EXPANDO:
                 add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
@@ -6267,7 +6346,9 @@ void resolve_shard_merge(ResolveShard* me) {
     error_ctx_merge(discarded, &my discarded);
     error_ctx_drop(&my errs);
     error_ctx_drop(&my discarded);
+    free(may_suggest);
     free(my deferred);
+    free(my body_parent);
     free(my symbols);
     free(my pending_not_found);
     free(my pending_type_as_value);
