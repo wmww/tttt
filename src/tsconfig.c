@@ -94,6 +94,14 @@ static void apply_compiler_options(ConfigLoad* me, csview config, csview dir, Js
     for (isize i = 0; i < compiler_options->count; i++) {
         const char* name = cstr_str(&compiler_options->members[i].key);
         JsonValue const* value = &compiler_options->members[i].value;
+        // A name that isn't one of tsc's options (in exact case: tsc ignores `"Target"`): TS5023 at it, and nothing set
+        cstr message = cstr_null;
+        unsigned unknown = compiler_option_unknown_diagnostic(csview_from(name), false, csview_from(name), &message);
+        if (unknown) {
+            config_diagnostic(me, unknown, message, config, compiler_options->members[i].key_start,
+                compiler_options->members[i].key_end);
+            continue;
+        }
         if (value->tag == JSON_NULL) {
             // null takes back what an extended config gave (tsc: the option is undefined again), e.g. a config
             // extending one with the 6.0-deprecated baseUrl. Only the options that tell "unset" from a value here
@@ -421,6 +429,24 @@ static_failable load_config(ConfigLoad* me, csview path) {
         cstr_drop(&base);
     }
 
+    // tsc's parseOwnConfigOfJsonSourceFile on the root's own keys: `excludes` (TS6114), and the first compiler option
+    // written outside compilerOptions when there is none (TS6258)
+    bool has_compiler_options = json_get(document, "compilerOptions");
+    bool root_option_reported = false;
+    for (isize i = 0; document->tag == JSON_OBJECT && i < document->count; i++) {
+        JsonMember const* member = &document->members[i];
+        if (cstr_equals(&member->key, "excludes")) {
+            config_diagnostic(me, 6114, cstr_lit("Unknown option 'excludes'. Did you mean 'exclude'?"), path,
+                member->key_start, member->key_end);
+        }
+        if (!has_compiler_options && !root_option_reported &&
+            compiler_option_is_command_option_without_build(cstr_sv(&member->key))
+        ) {
+            root_option_reported = true;
+            config_diagnostic(me, 6258, cstr_d("'", member->key, "' should be set inside the 'compilerOptions' object of the config json file"),
+                path, member->key_start, member->key_end);
+        }
+    }
     JsonValue const* compiler_options = json_get_tagged(document, "compilerOptions", JSON_OBJECT);
     if (compiler_options) apply_compiler_options(me, path, cstr_sv(&dir), compiler_options);
 

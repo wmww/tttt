@@ -241,6 +241,14 @@ cstr compiler_options_lib_files(CompilerOptions const* me);
 
 bool compiler_option_is_boolean(csview name);
 
+// tsc's createUnknownOptionError with compilerOptionsDidYouMeanDiagnostics: 0 if name is one of tsc's compiler options
+// (its optionDeclarations; exact case in a config's compilerOptions, ignore_case for the command line), else the code
+// (TS5023, TS5025 "Did you mean", TS5093 a --build only option, TS6369 `build`) with its message in *message. `shown`
+// is the name as the message quotes it (the command line's `--x`)
+unsigned compiler_option_unknown_diagnostic(csview name, bool ignore_case, csview shown, cstr* message);
+// tsc's commandOptionsWithoutBuild: an option a config may only set inside compilerOptions (TS6258 at its root)
+bool compiler_option_is_command_option_without_build(csview name);
+
 // tsc's isIdentifierText / parseIsolatedEntityName, for jsxFactory, jsxFragmentFactory, reactNamespace and the JSX
 // pragmas: `h`, `React.createElement` (any non-ASCII character counts as an identifier character)
 bool compiler_option_is_identifier(csview text);

@@ -198,7 +198,7 @@ static_failable apply_compiler_options(Options const* opts, Output* out, csview 
         csview name = csview_from(opts->option_names[i]);
         switch (compiler_options_set(options, name, csview_from(opts->option_values[i]))) {
             case COMPILER_OPTION_OK: break;
-            case COMPILER_OPTION_UNKNOWN: return err_d("Unknown option --", name);
+            case COMPILER_OPTION_UNKNOWN: break; // (One of tsc's we ignore: main() rejected any other)
             case COMPILER_OPTION_BAD_VALUE:
                 return err_d("Bad value '", opts->option_values[i], "' for option --", name);
         }
@@ -819,11 +819,13 @@ static int run(int argc, const char** argv) {
                 !compiler_option_is_boolean(csview_from(argv[i] + 2)) ||
                 streq(argv[i + 1], "true") || streq(argv[i + 1], "false") || streq(argv[i + 1], "null")
             );
-            CompilerOptions scratch = compiler_options_init();
-            bool unknown = compiler_options_set(&scratch, csview_from(argv[i] + 2), c_sv("")) == COMPILER_OPTION_UNKNOWN;
-            compiler_options_drop(&scratch);
+            // tsc's parseCommandLineWorker: a name that isn't one of its options (case insensitive here) is TS5023 and
+            // nothing is checked. One of its options that we have no use for (most emit options) is ignored
+            cstr message = cstr_null;
+            unsigned unknown = compiler_option_unknown_diagnostic(csview_from(argv[i] + 2), true, csview_from(argv[i]), &message);
             if (unknown) {
-                println(color_error, "Unknown option ", argv[i], color_normal);
+                println(color_error, "error TS", unknown, ": ", message, color_normal);
+                cstr_drop(&message);
                 return 1;
             }
             opts.option_names[opts.option_count] = argv[i] + 2;

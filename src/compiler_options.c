@@ -1,6 +1,9 @@
 #include "compiler_options.h"
 #include "string_helpers.h"
 
+// (scope.h's, which this can't include: it has another name_equals)
+isize spelling_suggestion(csview name, csview const* names, isize count);
+
 typedef struct EnumValue {
     const char* name;
     int value;
@@ -527,6 +530,80 @@ bool compiler_option_is_boolean(csview name) {
 #define X(field, lowercase, strict_family) if (name_equals(name, lowercase)) return true;
     COMPILER_BOOL_OPTIONS(X)
 #undef X
+    return false;
+}
+
+// tsc's optionDeclarations in its order (the order getSpellingSuggestion sees them in): its commonOptionsWithBuild, then
+// from `all` on its commandOptionsWithoutBuild
+static const char* const tsc_option_names[] = {
+    "help", "help", "watch", "preserveWatchOutput", "listFiles", "explainFiles", "listEmittedFiles", "pretty",
+    "traceResolution", "diagnostics", "extendedDiagnostics", "generateCpuProfile", "generateTrace", "incremental",
+    "declaration", "declarationMap", "emitDeclarationOnly", "sourceMap", "inlineSourceMap", "noCheck", "noEmit",
+    "assumeChangesOnlyAffectDirectDependencies", "locale", "all", "version", "init", "project", "showConfig",
+    "listFilesOnly", "ignoreConfig", "target", "module", "lib", "allowJs", "checkJs", "jsx", "outFile", "outDir",
+    "rootDir", "composite", "tsBuildInfoFile", "removeComments", "importHelpers", "importsNotUsedAsValues",
+    "downlevelIteration", "isolatedModules", "verbatimModuleSyntax", "isolatedDeclarations", "erasableSyntaxOnly",
+    "libReplacement", "strict", "noImplicitAny", "strictNullChecks", "strictFunctionTypes", "strictBindCallApply",
+    "strictPropertyInitialization", "strictBuiltinIteratorReturn", "stableTypeOrdering", "noImplicitThis",
+    "useUnknownInCatchVariables", "alwaysStrict", "noUnusedLocals", "noUnusedParameters",
+    "exactOptionalPropertyTypes", "noImplicitReturns", "noFallthroughCasesInSwitch", "noUncheckedIndexedAccess",
+    "noImplicitOverride", "noPropertyAccessFromIndexSignature", "moduleResolution", "baseUrl", "paths", "rootDirs",
+    "typeRoots", "types", "allowSyntheticDefaultImports", "esModuleInterop", "preserveSymlinks",
+    "allowUmdGlobalAccess", "moduleSuffixes", "allowImportingTsExtensions", "rewriteRelativeImportExtensions",
+    "resolvePackageJsonExports", "resolvePackageJsonImports", "customConditions", "noUncheckedSideEffectImports",
+    "sourceRoot", "mapRoot", "inlineSources", "experimentalDecorators", "emitDecoratorMetadata", "jsxFactory",
+    "jsxFragmentFactory", "jsxImportSource", "resolveJsonModule", "allowArbitraryExtensions", "out",
+    "reactNamespace", "skipDefaultLibCheck", "charset", "emitBOM", "newLine", "noErrorTruncation", "noLib",
+    "noResolve", "stripInternal", "disableSizeLimit", "disableSourceOfProjectReferenceRedirect",
+    "disableSolutionSearching", "disableReferencedProjectLoad", "noImplicitUseStrict", "noEmitHelpers",
+    "noEmitOnError", "preserveConstEnums", "declarationDir", "skipLibCheck", "allowUnusedLabels",
+    "allowUnreachableCode", "suppressExcessPropertyErrors", "suppressImplicitAnyIndexErrors",
+    "forceConsistentCasingInFileNames", "maxNodeModuleJsDepth", "noStrictGenericChecks", "useDefineForClassFields",
+    "preserveValueImports", "keyofStringsOnly", "plugins", "moduleDetection", "ignoreDeprecations",
+};
+#define TSC_COMMON_OPTIONS_WITH_BUILD 23
+// What buildOpts adds to commonOptionsWithBuild (tsc's optionsForBuild)
+static const char* const tsc_build_only_option_names[] = { "build", "verbose", "dry", "force", "clean", "stopBuildOnErrors" };
+
+static bool option_name_equals(csview a, const char* b, bool ignore_case) {
+    isize len = (isize)strlen(b);
+    if (a.size != len) return false;
+    if (!ignore_case) return !memcmp(a.buf, b, (size_t)len);
+    for (isize i = 0; i < len; i++) {
+        if (tolower((unsigned char)a.buf[i]) != tolower((unsigned char)b[i])) return false;
+    }
+    return true;
+}
+
+unsigned compiler_option_unknown_diagnostic(csview name, bool ignore_case, csview shown, cstr* message) {
+    for (isize i = 0; i < (isize)c_arraylen(tsc_option_names); i++) {
+        if (option_name_equals(name, tsc_option_names[i], ignore_case)) return 0;
+    }
+    // (createUnknownOptionError's alternate mode, looked up in lowercase: the --build options)
+    for (isize i = 0; i < (isize)c_arraylen(tsc_build_only_option_names); i++) {
+        if (!option_name_equals(name, tsc_build_only_option_names[i], true)) continue;
+        if (!i) {
+            *message = cstr_lit("Option '--build' must be the first command line argument.");
+            return 6369;
+        }
+        *message = cstr_d("Compiler option '--", name, "' may only be used with '--build'.");
+        return 5093;
+    }
+    csview candidates[c_arraylen(tsc_option_names)];
+    for (isize i = 0; i < (isize)c_arraylen(tsc_option_names); i++) candidates[i] = csview_from(tsc_option_names[i]);
+    isize suggestion = spelling_suggestion(name, candidates, (isize)c_arraylen(tsc_option_names));
+    if (suggestion >= 0) {
+        *message = cstr_d("Unknown compiler option '", shown, "'. Did you mean '", tsc_option_names[suggestion], "'?");
+        return 5025;
+    }
+    *message = cstr_d("Unknown compiler option '", shown, "'.");
+    return 5023;
+}
+
+bool compiler_option_is_command_option_without_build(csview name) {
+    for (isize i = TSC_COMMON_OPTIONS_WITH_BUILD; i < (isize)c_arraylen(tsc_option_names); i++) {
+        if (option_name_equals(name, tsc_option_names[i], false)) return true;
+    }
     return false;
 }
 
