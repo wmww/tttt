@@ -26,11 +26,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-// What gets loaded when neither --lib nor --target say otherwise (tsc would load just lib.d.ts, which makes for..of
-// over anything but an array an error; bench.sh gives tsc the same list)
-static const char* const default_libs =
-    "es5,dom,webworker.importscripts,scripthost,es2015.collection,es2015.iterable,es2015.generator";
-
 enum { MAX_COMPILER_OPTION_ARGS = 64 };
 
 typedef struct Options {
@@ -168,7 +163,6 @@ static i64 file_size_of(void* ctx, csview path) {
 // The tsconfig if there is one (else strict, unless told otherwise), then whatever was on the command line
 static_failable apply_compiler_options(Options const* opts, Output* out, csview config, Program* program) {
     CompilerOptions* options = program_options(program);
-    bool libs_decided = false;
     if (config.size) {
         if (!opts->quiet) out_println(out, color_good, "Project ", config, color_normal);
         // Files on the command line replace the config's
@@ -176,7 +170,6 @@ static_failable apply_compiler_options(Options const* opts, Output* out, csview 
         try (tsconfig_load_diagnosed(fs, config, options, nullptr, &diagnostics)) cleanup {
             tsconfig_diagnostics_drop(&diagnostics);
         }
-        libs_decided = options->target_set || cstr_size(&options->lib);
         // (Where the diagnostics about the options go, named like the files: relative to the working directory)
         cstr cwd = cstr_null;
         try (fs_get_cwd(fs, &cwd)) cleanup {
@@ -208,9 +201,7 @@ static_failable apply_compiler_options(Options const* opts, Output* out, csview 
             case COMPILER_OPTION_BAD_VALUE:
                 return err_d("Bad value '", opts->option_values[i], "' for option --", name);
         }
-        if (csview_equals(name, "lib") || csview_equals(name, "target")) libs_decided = true;
     }
-    if (!libs_decided) ignore compiler_options_set(options, c_sv("lib"), csview_from(default_libs));
     compiler_options_resolve(options);
     return ok;
 }

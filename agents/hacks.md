@@ -778,8 +778,7 @@ src` finds the code-side markers; every significant one has an entry here.
   once so message text names files absolutely like tsc's CLI (module names, TS2306, TS6053, resolved paths); unset, the
   harness's display paths are used. A global rather than per program because messages are built where no `Program` is
   at hand (scope.c, statement.c).
-- `main.c`: strict by default only without a tsconfig; `default_libs` when nothing picks `--lib`/`--target`;
-  `--keep-going` unvalidated.
+- `main.c`: strict by default only without a tsconfig; `--keep-going` unvalidated.
 
 ## Display and baselines (`ty_display.c`, `symbol_chain.c`, `baseline_test_case.c`)
 - `program_module_display_name()`: import types and module symbols named from a place use

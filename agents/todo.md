@@ -13,11 +13,13 @@ to bugs/, not into the code.
 
 1. Done (2026-10-08): plan 51 planned from three prototypes, and its stage 1 landed (general ContextChecked + six
    latent fixes, dead widening/return-mapper channels deleted; every oracle unchanged). Leaf-wise instantiation: no port.
-2. **Planning: plan 52** (source sweep). Prototype on ~20 real repositories (selection, dependency install, tsc
-   cache, runtime), write the plan for entries 5 and 8.
+2. Done (2026-10-08): plan 52 planned from a 22-repo prototype (655 projects: 344 match tsc, 45 s tttt, 9 min tsc,
+   all installed with node 24 + corepack, pruned node_modules leave tsc's output identical). Two bugs fixed on the way
+   (no-target default lib, sweep.py's file-less diagnostics).
 3. **Execution: plan 50** (tsc's export= / CommonJS symbol clones). The sweep is the real oracle here.
 4. **Execution: plan 51 stage 2** (context anchors, the lazy contextual return; bisect the ember regression first).
-5. **Execution: plan 52 stage 1**: build `./sourcesweep.py`, cache tsc, first numbers; fix crashes.
+5. **Execution: plan 52 stage 1**: manifest of ~150 repos, `thirdparty/ensure-sources.sh`, `./sourcesweep.py`, cache
+   tsc (~1 h: commit first), first numbers; fix crashes.
 6. **Perf session**: vscode (tttt's weakest ratio, 3.0x tsgo). The check phase (four checkers redo ~24% of the type
    work: measure sharing vs file-to-checker affinity vs load balance, plan 36's open question) and AST bytes per line
    (~600). Pick by measurement; write plan 53 if it's bigger than a session.

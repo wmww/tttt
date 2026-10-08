@@ -31,7 +31,8 @@ FLAGS = {
     'nuia': ['--noUncheckedIndexedAccess'],
     'eopt': ['--exactOptionalPropertyTypes'],
 }
-DIAG = re.compile(r'(\S+):(\d+) \[TS(\d+)\] (.*)')
+# A diagnostic without a file (options, missing type libraries) has no `file:line ` prefix, tsc's oracle says ('', 0)
+DIAG = re.compile(r'(?:(\S+):(\d+) )?\[TS(\d+)\] (.*)')
 
 
 def list_packages(filter=None):
@@ -89,7 +90,7 @@ def run_tttt(package, timeout, mem_gb, flags=()):
     for line in text.split('\n'):
         m = DIAG.match(line)
         if m:
-            diags.append([m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)])
+            diags.append([m.group(1) or '', int(m.group(2) or 0), int(m.group(3)), m.group(4)])
         elif status == 'ok' and ('panic' in line.lower() or re.search(r'\.c:\d+: error:', line)):
             status = 'log_error'
     tail = '\n'.join(l for l in text.split('\n') if l.strip())[-600:] if status != 'ok' else ''

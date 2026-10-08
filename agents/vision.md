@@ -50,7 +50,8 @@ types components) are the oracle, not the goal; real projects that are clean und
   new project found tens to hundreds of bugs; the DefinitelyTyped sweep is declarations plus small tests. A sweep of
   ~100+ real TypeScript repositories (their own tsconfigs, installed dependencies, tsc 4d4f005c's diagnostics cached,
   strict flag flips for the missing direction) is the source-code analogue of plan 44. It also exercises tsconfig/CLI
-  shapes the corpora don't.
+  shapes the corpora don't. (2026-10-08 prototype, 22 repos / 655 projects: only 344 match tsc, ~2700 missing and
+  ~2600 spurious checker diagnostics plus config-level ones; the premise holds.)
 - **Perf stays a session per window**: vscode's 3.0x is the margin to defend (checkers redoing type work, AST bytes
   per line).
 
