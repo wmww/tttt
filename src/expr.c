@@ -2375,11 +2375,6 @@ static BinaryOp binary_op_without_assignment(BinaryOp op) {
     }
 }
 
-static bool extends_strict_nulls(Ty const* source, TyIntrinsic target) {
-    Checker* checker = current_checker;
-    return ty_is_related(checker, source, ty_intrinsic(checker, target), TY_RELATION_ASSIGNABLE_STRICT_NULLS);
-}
-
 Expr const* expr_effective_check_node(Expr const* me) {
     while (my tag == EXPR_AS_TYPE && my as_type->is_satisfies) me = &my as_type->expr;
     return me;

@@ -787,9 +787,6 @@ typedef struct SymbolLinks {
 typedef enum TyRelation {
     TY_RELATION_ASSIGNABLE,
     TY_RELATION_COMPARABLE,
-    // Assignable, except that null and undefined are never assignable to other types, whatever strictNullChecks says.
-    // HACK: what the legacy operator checks mean by "extends number"
-    TY_RELATION_ASSIGNABLE_STRICT_NULLS,
     // tsc's subtypeRelation (overload resolution's first round, common supertypes, narrowing's fallback): `any` is only
     // a subtype of `any`/`unknown`, and a type that lacks an optional property of the target isn't a subtype of it
     TY_RELATION_SUBTYPE,

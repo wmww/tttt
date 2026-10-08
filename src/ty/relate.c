@@ -489,8 +489,7 @@ static bool is_simple_related_enum(Checker* me, RelationState const* st, Ty cons
             return true;
         }
     }
-    if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE ||
-        st->relation == TY_RELATION_ASSIGNABLE_STRICT_NULLS
+    if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE
     ) {
         // Type number is assignable to any computed numeric enum type or any numeric enum literal type, and a numeric
         // literal type to a computed one or an enum literal with the same value (enums as bit flags)
@@ -558,7 +557,7 @@ static bool is_simple_related(Checker* me, RelationState const* st, Ty const* s,
     // (tsc's isSimpleTypeRelatedTo: in every relation, but a subtype of a union or intersection has to be a subtype
     // of its members; tttt's `boolean` isn't taken apart)
     if ((sf & TYF_NULLABLE) && !compiler_options()->strict_null_checks &&
-        st->relation != TY_RELATION_ASSIGNABLE_STRICT_NULLS && st->relation != TY_RELATION_IDENTITY &&
+        st->relation != TY_RELATION_IDENTITY &&
         (!is_subtype_relation(st->relation) || (tf & TYF_BOOLEAN) || !(tf & (TYF_UNION | TYF_INTERSECTION)))
     ) {
         return true;
@@ -6575,8 +6574,7 @@ static csview jsx_attribute_suggestion(Checker* me, Ty const* target, Atom const
 static bool has_excess_properties(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
     if (!is_excess_property_check_target(target)) return false;
     bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
-    if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE ||
-        st->relation == TY_RELATION_ASSIGNABLE_STRICT_NULLS
+    if (st->relation == TY_RELATION_ASSIGNABLE || st->relation == TY_RELATION_COMPARABLE
     ) {
         Ty const* object = global_type(me, GLOBAL_OBJECT);
         bool object_in_target = object && (target == object || (target->kind == TY_UNION && union_has_member(target, object)));

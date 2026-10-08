@@ -2448,8 +2448,10 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
 
 // Operators
 
+// tsc's isTypeAssignableToKind with `strict`: any, unknown, void, null and undefined are no number or string
 static bool extends_strict_nulls(Checker* me, Ty const* source, TyIntrinsic target) {
-    return ty_is_related(me, source, ty_intrinsic(me, target), TY_RELATION_ASSIGNABLE_STRICT_NULLS);
+    if (source->flags & (TYF_NULLABLE | TYF_VOID | TYF_ANY | TYF_UNKNOWN)) return false;
+    return ty_is_related(me, source, ty_intrinsic(me, target), TY_RELATION_ASSIGNABLE);
 }
 
 static bool is_definitely_falsy(Ty const* ty) {
