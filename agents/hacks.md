@@ -382,42 +382,27 @@ src` finds the code-side markers; every significant one has an entry here.
   so `{ ...{} }` doesn't count.
 
 ## Relations (`ty/relate.c`)
-- `find_prop()` of an intersection: tttt keeps optional properties' types without undefined and has readers add it,
-  where tsc's getTypeOfSymbol includes it. An intersection property that is optional (all its *members'* properties
-  are) but has a non-member part (a namespace's function, `typeof f & { m?: X }`) is `F & (X | undefined)` = `F & X`
-  in tsc, without undefined; tttt drops PROP_OPTIONAL from it then (decided by flags, not a relation), which also
-  makes it required as a target (tsc: optional). Real fix: optional property types that carry their undefined.
-- relate.c sits at GCC's `inline-unit-growth` limit: code added anywhere in it can cost a hot inlining elsewhere
-  (`find_prop` into `props_related_impl`, `global_type` into `apparent_type`). The reporting helpers (`report_line`,
-  `display_for_report`...) are `[[gnu::cold]]` so the message building in `if (report)` branches doesn't eat the
-  budget; rare relation paths go out of line as `[[gnu::noinline, gnu::cold]]` (`source_indexes_related()`). Check
-  `-fopt-info-inline-missed` for "inline-unit-growth limit reached" when an innocent change shows up in
-  `./instrcount.sh`.
-- **Constraint functions are approximations** (the real fix for several entries below: tsc's getConstraintOfType vs
-  getBaseConstraintOfType as two separate, cached, circularity-aware functions):
+- `find_prop()` of an intersection: optional property types are kept without undefined (readers add it; tsc's
+  getTypeOfSymbol includes it). An optional intersection property with a non-member part (`typeof f & { m?: X }`) is
+  `F & X` in tsc; tttt drops PROP_OPTIONAL from it by flags, which also makes it required as a target (tsc: optional).
+  Real fix: optional property types that carry their undefined.
+- relate.c sits at GCC's `inline-unit-growth` limit (permanent: a build constraint): code added anywhere can cost a
+  hot inlining elsewhere (`find_prop` into `props_related_impl`). Reporting helpers are `[[gnu::cold]]`, rare paths
+  `[[gnu::noinline, gnu::cold]]`; check `-fopt-info-inline-missed` when an innocent change shows in `./instrcount.sh`.
+- **Constraint functions are approximations** (real fix: tsc's getConstraintOfType and getBaseConstraintOfType as two
+  cached, circularity-aware functions):
   - `base_constraint()` cuts off at depth 8 instead of tsc's circularity stack, so its memo (KEY_BASE_CONSTRAINT) only
-    holds depth-0 answers; a display path (`display_mapped` -> `expand_generic_homomorphic` -> `ty_apparent_type`)
-    relies on the cutoff to stop (`Compute<A[K]>`, computedTypesKeyofNoIndexSignatureType). perf_leads.md.
-  - `base_constraint()` of an indexed access builds the access of the constraints even where it isn't valid (`T[P]`
-    with `T extends object`, `P extends keyof T`), where tsc's getIndexedAccessTypeOrUndefined gives none. Null there
-    breaks xstate (TS2344 on `NonNullable<TStateValue[K]>` in a mapped type), so only two users check validity first:
-    `report_relation_error_now()` (the "could be instantiated" line) and `spread_base_constraint()` (check.c HACK, the
-    spread check). Some other tsc rule is missing.
-  - Distributive constraint of a conditional source (`structured_related_members`'s TY_CONDITIONAL case, HACK): tsc
-    takes the check type's immediate constraint (`(any[] & T)[K]` -> `(any[] & T)[keyof T]`), tttt's
-    `distributive_constraint()` its base constraint. The relation tries the base one first, then the immediate one
-    (`distributive_constraint_as(.., true)`, cached per conditional) only when a base one exists (standing in for
-    tsc's hasNonCircularBaseConstraint, else react-hook-form's Path types hit TS2589), and reports through the
-    immediate one like tsc. While measuring variances it reports the measurement unreliable instead (cost).
-    `base_constraint()` and the other users keep the base version: the immediate one there stops at unions of
-    conditional types.
-  - `apparent_type`: indexed/conditional without base constraint stays itself (tsc: `{}`); an intersection member whose
-    apparent type is any/unknown stays itself (HACK) because `base_constraint()` of a conditional keeps `any` branches
-    (webpack's `Reflect.get(...) & any[]`).
-- `structured_related_members` TY_CONDITIONAL source (HACK): the first try of the true/false branches pushes the
-  target on the deep-nesting stack too, where tsc relates its default constraint with RecursionFlags.Source only (the
-  other generic-source constraint steps follow tsc). tsc's flags cost ~10% on the react corpus (react-hook-form's
-  nested `T[a][b]...` chains related level by level, Maybe results not cached; 9831d7ea).
+    holds depth-0 answers; `display_mapped` -> `expand_generic_homomorphic` -> `ty_apparent_type` relies on the cutoff
+    (`Compute<A[K]>`, computedTypesKeyofNoIndexSignatureType). perf_leads.md.
+  - `conditional_source_related()`: the distributive constraint is tried as the check type's *base* constraint first,
+    then the immediate one (tsc: immediate only, `distributive_constraint_as(.., true)`); while measuring variances the
+    immediate step only marks the measurement unreliable. Immediate alone loses 6 suite tests
+    (keyofAndIndexedAccess, styledComponentsInstantiaionLimitNotReached, substituteReturnTypeSatisfiesConstraint,
+    instantiateContextualTypes, ...). `base_constraint()` and other users keep the base version: the immediate one
+    stops at unions of conditional types there.
+- `conditional_source_related()` (permanent: perf): the default-constraint step pushes the target on the deep-nesting
+  stack too (tsc: RecursionFlags.Source only); tsc's flags cost +8.6% instructions on react (react-hook-form's
+  `T[a][b]...` chains).
 - Error reporting (plan 34): `flush_incompatible()` reads the property name back out of its message; `headMessage`
   approximated by `RelationState.at_top`; `report_truncate()` doesn't restore `skipped_source/target`,
   `override_next_head`. `intersection_props_related`'s TS2741 member choice fitted to one probe
@@ -425,86 +410,64 @@ src` finds the code-side markers; every significant one has an entry here.
 - Elaboration (`elaborate_error`) reads memos (`ty_mutable_location_type`, `ty_array_literal_as_tuple`) instead of
   re-checking; `ty_best_matching_type` has no key-property map; `type_decl_span` covers declared types, function type
   nodes and type literals only (renaming `as` properties lose declarations).
-- `RelationState.intersection_source` (HACK): tsc keeps IntersectionState.Source into properties; doing so hit zod's
-  instantiation limits.
-- `structured_related_members`: the distributive-constraint fallback for intersection targets covers conditional
-  sources only.
+- `RelationState.intersection_source`: tsc keeps IntersectionState.Source down into the members' properties, tttt only
+  for the members themselves. Keeping it (the one-line change in `structured_related_impl`) is clean on the suite but
+  gives vue a spurious TS2769 (`h(Suspense, ...)` in runtime-core/__tests__/hydration.spec.ts).
+- `structured_related_members`: the whole-source fallback for an intersection target (tsc: any instantiable source
+  goes on to its constraints) covers conditional sources only.
 - `props_related`: the same-symbol skip is by `Prop` identity plus a rule for object literal accessors of one function
   (tsc: same symbol).
-- `generic_mapped_target_related` (HACK): a generic source failing isGenericMappedType falls through to member
-  comparison, which memberless mapped types pass (`Readonly<T>` to `T`); arrays, non-variadic tuples and objects
-  without properties don't (tsc: nothing but a mapped source does). What still needs it: zod's `SortItem<output<T>>`
-  against a Flatten-like `{ [K in keyof A | keyof B]: (A & B)[K] }`, `[...Foo<T>]` for a lone spread argument (tsc's
-  getSpreadArgumentType has `Foo<T>`, restTypeRetainsMappyness). `write_constraint_of_indexed` (HACK) lacks
-  NoIndexSignatures.
-- Array<S> -> ReadonlyArray<T> relates element types (HACK); `is_rest_array` (HACK) takes any non-type-parameter as a
-  rest array.
-- Variances: arrays/tuples/synthetic targets hardcoded covariant; `VARIANCE_UNRELIABLE` from a checker-wide flag
-  (`variance_reports`, set when a compared type mentions a marker), cached as `CACHE_UNRELIABLE`. Alias markers by type
-  id (`KEY_ALIAS_MARKER`).
+- `generic_mapped_target_related` (HACK): a generic source failing it falls through to member comparison, which
+  memberless mapped types pass (`Readonly<T>` to `T`); arrays, non-variadic tuples and objects without properties
+  don't (tsc: only a mapped source goes on). Returning its result outright loses circularConstrainedMappedTypeNoCrash,
+  restTypeRetainsMappyness (`[...Foo<T>]` of a lone spread, tsc's getSpreadArgumentType has `Foo<T>`),
+  mappedTypeRelationships, and zod's `SortItem<output<T>>` against a Flatten-like mapped type.
+- `is_rest_array` (HACK) takes any non-type-parameter as a rest array; real fix: normalize `[...X]` (X no type
+  variable) when the tuple is made, like tsc's createNormalizedTupleType.
+- Variances: `VARIANCE_UNRELIABLE` comes from a checker-wide flag (`variance_reports`, set when a compared type mentions
+  a marker), cached as `CACHE_UNRELIABLE`; alias markers by type id (`KEY_ALIAS_MARKER`).
 - Identity (`identity_structured`): differently shaped tuples never identical, no `infer` in the two-conditional rule.
   TS2403 (`check_subsequent_declaration`) uses it and exposes every approximation between two spellings.
-- Cache keys are (source id, target id) plus two intersection-state bits. `RelationState.overflow` reports TS2321
-  like tsc, but trips at 100 nested recursive_related() calls (`st->depth`), where tsc counts its source and target
-  stacks separately (a call that skips a push doesn't count): tttt overflows at least as early.
-- `this` types: `Prop.thisless` follows isThisless; a reference with a this-argument relates structurally.
+- `RelationState.overflow` (TS2321) trips at 100 nested recursive_related() calls (`st->depth`); tsc counts source
+  and target stacks separately (a call that skips a push doesn't count): tttt overflows at least as early.
+- `this` types: a reference with a this-argument relates structurally.
 - Alias variance (`in out` annotations): the reporting pass falls back to the interface's own variances on an
-  invariant failure only for two references to the same target; other shapes keep the old path. The null-base TS2417
-  check takes the first `extends` of the first merged interface, not getBaseTypes.
+  invariant failure only for two references to the same target. The null-base TS2417 check takes the first `extends`
+  of the first merged interface, not getBaseTypes.
 - `TY_INDEXED`'s IncludeUndefined (noUncheckedIndexedAccess) is dropped wherever an indexed access is rebuilt from its
   parts (`simplified_parts`, `ty_actual_type_variable`).
 - **Every anonymous object type has an inferable index** (`has_inferable_index`): tsc's isObjectTypeWithInferableIndex
-  wants a symbol (an object literal, type literal, ...) and excludes types the checker makes without one. tttt only
-  knows `anonymous.no_inferable_index` (`OBJECT_NO_INFERABLE_INDEX`: the literal-keyof inference object) and the
-  global empty object; other symbolless synthetic types (spreads? reverse mapped types?) may wrongly relate to index
-  signatures.
+  wants a symbol and excludes types the checker makes without one. tttt only knows `anonymous.no_inferable_index`
+  (`OBJECT_NO_INFERABLE_INDEX`) and the global empty object; other symbolless synthetic types (spreads? reverse mapped
+  types?) may wrongly relate to index signatures.
 
 ## Type core (`src/ty/`)
 - `name_type_filters()`/`peek_cond_branch()` (`ty/members.c`): whether a mapped type's `as` clause filters or remaps
-  (tsc's getMappedTypeNameTypeKind, which decides whether its properties keep their declarations and so their stable
-  order) is told by the declared clause's shape (each union member / conditional branch is the key, never, or an
-  intersection with it), not by relating it to the key as tsc does: relating, or even lowering a self-referential
-  branch, reaches the members being resolved (mappedTypeAsClauseRecursiveNoCrash1). A pending lazy branch counts as
-  remapping. The fix is a relation that can't resolve these members (or tsc's resolution order).
-- Stable type ordering (`ty/order.c`, tsc 6's compareTypes): conditional types compare by their root's node position
-  (`TyConditionalOuter.node`, the TernaryType span) and deferred references by their node's first token
-  (`type_node_start()`: identifier, tuple, type literal, through arrays and union/intersection members) before the
-  mapper, like tsc's compareNodes; fresh literals sort after their regular twin; unique symbols without a position go
-  after positioned ones, then by owner name. Still tsc-id ties that fall back to tttt's ids: roots not lowered from a
-  node (no `outer`), deferred references whose node has no cheap position (a parenthesized or keyword element type),
-  two nodes starting at the same token (`(A extends B ? 1 : 2) extends C ? ...` against its check type), unique
-  symbols of the same name without positions, bigint literals, intrinsic variants and every final tie
-  (same-symbol anonymous types with equal mappers). noImplicitAnyUnionNormalizedObjectLiteral1 is not a comparator
-  rule: tttt's nullable-widening pass keeps one member's id where tsc's widening recreates both (triage, agent D third
-  pass).
-  `Ty.order_key` caches the comparison prefix (8 bytes per type).
-- Member order (`builder_sort_stable()`, members.c, tsc's getNamedMembers): applied to object literals, mapped types,
-  namespaces and merged values only; class/interface members keep tttt's own-then-inherited order (matches the
-  contained/non-contained split in every case seen), `builder_prototype_last()` moves a static side's synthetic
-  `prototype` after the rest. Props without a declaration sort by name bytes (tsc: escapedName, then symbol id).
-- `KEY_AUTO_FLOW_ISSUE` (`identifier_flow_type()`): TS7005/TS7034 for a reference whose flow type was still auto when
-  first evaluated inside a loop's incomplete pass (tsc reports from checkExpression there), remembered per expression.
-- `conditional_branch_lacks_constraint()` (expr.c, is_literal_of_contextual_type): tsc's base constraint of a union
-  needs every member's, ty_base_constraint() leaves unconstrained members out (relations depend on that: making it strict
-  broke doNotElaborateAssignabilityToTypeParameters). The literal-room check special-cases a conditional's union
-  branches only; other places asking "what is this at least" for `T | string` may be too permissive.
-- `instantiate_inner()` TY_INDEXED (HACK): an indexed access distributed over a union index keeps its alias (tsc's
-  getIndexedAccessTypeOrUndefined), except when the result is a union of unit types (`ConditionalKeys<B, C>` of
-  type-fest): the aliased identity made every mapped type over the keys (Pick, ConditionalPick) resolve again (+2%).
-  tsc prints those key unions by the alias.
+  (tsc's getMappedTypeNameTypeKind, deciding whether properties keep their declarations and stable order) is told by
+  the clause's shape (each union member / conditional branch is the key, never, or an intersection with it), not by
+  relating it to the key: relating, or lowering a self-referential branch, reaches the members being resolved
+  (mappedTypeAsClauseRecursiveNoCrash1). A pending lazy branch counts as remapping.
+- Stable type ordering (`ty/order.c`, tsc 6's compareTypes): ties that still fall back to tttt's ids: roots not
+  lowered from a node (no `outer`), deferred references whose node has no cheap position (`type_node_start()`:
+  parenthesized or keyword element types), two nodes starting at the same token (`(A extends B ? 1 : 2) extends C ?
+  ...`), unique symbols of one name without positions, bigint literals, intrinsic variants, same-symbol anonymous types
+  with equal mappers. noImplicitAnyUnionNormalizedObjectLiteral1: tttt's nullable widening keeps one member's id where
+  tsc's recreates both.
+- Member order (`builder_sort_stable()`, tsc's getNamedMembers): object literals, mapped types, namespaces and merged
+  values only; class/interface members keep tttt's own-then-inherited order, `builder_prototype_last()` moves a static
+  side's `prototype` last. Props without a declaration sort by name bytes (tsc: escapedName, then symbol id).
+- `KEY_AUTO_FLOW_ISSUE` (`identifier_flow_type()`): TS7005/TS7034 for a reference whose flow type was still auto in
+  a loop's incomplete pass (tsc reports from checkExpression there), remembered per expression.
 - `UnaryOpExpr.no_type_params_in_scope` approximates getResolvedSignature's instantiation for `yield` (TS7057): only a
   bare type parameter counts as a call's, a contextual `T[]` is taken as is.
 - Union origins (`Ty.composite.origin`): not instantiated, dropped by union-mapping helpers (plan 37 B stage 2).
 - `ty_realias`: a renamed object type is a second `Ty` (members resolved twice); renamed deferred types are copies. No
   "local alias" exception. `renames` in `lower`: whether an alias instance keeps the name is syntactic.
-- `ty_conditional_resolve` (conditional.c HACK): an unsatisfied `infer X extends C` falls back to C only if C is then
-  non-generic, and `infer` constraints mentioning type variables are otherwise unchecked (tsc falls back to a generic
-  constraint too, which leaks valibot's LazyPath `TValue` here because deferred conditionals don't keep their
-  inferences: `inferred_true_branch()` recomputes; `test/probes/plan19/zod/ark_infer_constraint.ts`).
-  `ty_implied_infer_constraint` lacks the mapped-extends rule. Permissive/restrictive instantiations only replace what
-  `mentions_type_variables` finds (8192 types / 48 deep, then "unsure": defer), since TYF_COULD_CONTAIN_TYPE_VARIABLES
-  is on every function/object literal; `mentions_type_variables` treats an object literal getter whose return type is
-  in flight as unsure (asking would re-infer it below a call's barrier: zod's recursive getters became TS7023).
+- Conditional types (`conditional.c`): deferred conditionals don't keep their inferences (`inferred_true_branch()`
+  recomputes); `ty_implied_infer_constraint` lacks the mapped-extends rule. Permissive/restrictive instantiations only
+  replace what `mentions_type_variables` finds (8192 types / 48 deep, then "unsure": defer), since
+  TYF_COULD_CONTAIN_TYPE_VARIABLES is on every function/object literal; an object literal getter whose return type is
+  in flight counts as unsure (asking re-infers it below a call's barrier: zod's recursive getters became TS7023).
 - `instantiate_conditional`: outer parameters from `collect_free_params`, falling back to the uncached full-mapper path
   on `TyConditionalOuter.unknown`. `collect_free_params` gives up on `typeof`, a non-class `this`, parameter
   initializers, bodies without a return annotation, JSDoc callbacks. `TyMapper` is flat.
@@ -516,48 +479,41 @@ src` finds the code-side markers; every significant one has an entry here.
 - `expand_mapped()` (members.c HACK): a homomorphic mapped type over `T extends A | B` gets the union's properties but
   not its index signatures (tsc gives both; they cost valibot 3.6% because `T[string]`'s constraint comes out unknown).
   Real fix: that constraint (`T[string]` of a union of index-signature objects is the union of their values).
-- `ty_indexed` stays deferred beyond props, index signatures and list elements.
 - `class_base()` (members.c HACK): base class names found syntactically; other expressions take the first fitting
   construct signature (TS2510 by `ty_class_base_constructors_differ()`). A base constructing `any` is no base;
   `ty_has_unresolved_base()` gates TS2339/TS7053 instead (tsc: `[x: string]: any`). Type-parameter bases take the
   constraint's members at declaration. `ty_non_augmenting_base()` from syntax. See also `ClassDecl.jsdoc_base`.
 - A bare `C`/`this` inside generic `C` isn't its own instantiation (lower.c TODO).
-- Enums (`ty_resolve_enum`, `evaluate`): no `const` object property accesses; other files' `const`s count as constant;
-  ambient non-const members auto-increment (tsc: computed). `member_value()` (enums.c HACK) counts a reference to a
-  string enum member as syntactically a string (TS18055 under isolatedModules): tsc keeps the referenced member's own
-  isSyntacticallyString.
-- `never_reduced_prop` (checker.c): `ty_reduced()` (tsc's getReducedType) doesn't judge members flagged
-  `TYF_COULD_CONTAIN_TYPE_VARIABLES` unless `is_known_object_for_reduction` (tsc's isNeverReducedProperty looks at
-  every member; judging them cost valibot +29%: find why tsc doesn't pay that first).
-  `check_related`'s fast path runs on the unreduced types like tsc's isTypeRelatedTo (`any` is assignable to an
-  intersection that is never), is_related_to() then reduces both sides.
+- `never_reduced_prop` (checker.c) (permanent: perf, judging them with `is_known_object` costs zod +4.1%, drizzle
+  +0.9% instructions): `ty_reduced()` (getReducedType) doesn't judge members flagged `TYF_COULD_CONTAIN_TYPE_VARIABLES`
+  unless `is_known_object_for_reduction` (a written type literal mentioning no type parameter); tsc looks at every
+  member.
 - `reduce_type_variable_intersection` (checker.c HACKs): type parameters only, not indexed accesses (valibot's
-  `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint); constraints with a
-  deferred type aren't reduced (`primitive_constraint_of`, tsc asks the base constraint, 5% of valibot). Real fix:
-  cheaper conditional base constraints (bugs/perf_leads.md).
-- Generic tuples: `base_constraint` replaces only variadics with array constraints; `normalized_tuple` makes
-  `...readonly T[]` into `...T[]`; `lower_tuple` keeps the written `T[]` for rests (tsc: `T`).
+  `NonNullable<TSchema['~types']>` became never via a premature `undefined` base constraint; letting `TY_INDEXED` in
+  through `primitive_constraint_of` now crashes the suite: unbounded recursion). `primitive_constraint_of` takes a
+  deferred type in the declared constraint as no primitive (permanent: perf; asking its base constraint like tsc costs
+  valibot +6% instructions).
+- Generic tuples: `base_constraint` replaces only variadics with array constraints; `lower_tuple` keeps the written
+  `T[]` for rests (tsc: `T`).
 - `lower_identifier`: `object` is a builtin declaration named "object".
 - `builder_add_interface_member`: index signature types lowered eagerly; non-literal computed keys dropped (tsc:
   late-bound index signatures).
-- `ty_union` doesn't subtype-reduce (`ty_union_subtype_reduced` on request) or drop nullables without
-  strictNullChecks. Cross-product caps give the error type silently: `intersect_unions` and `ty_template_literal`
-  (100k, TS2590 unreported), `normalized_tuple` (10k).
+- Cross-product caps give the error type silently: `intersect_unions` and `ty_template_literal` (100k, TS2590
+  unreported), `normalized_tuple` (10k).
 - `append_mapped_code_point()` (template.c HACK): Uppercase & co. cover ASCII, Latin-1, basic Greek, Cyrillic;
   `apply_mapping`'s placeholders step code points (JS: UTF-16 units). `${symbol}` templates are silently `string`.
 - Unique symbols: escaped names (`__@sym@12`) mapped back through `ty_unique_symbol_of_name`, so a string property
   `__@x@3` passes as a symbol; `instanceof_target_ok` matches `__@hasInstance@<id>` by text; one unique symbol per
-  declaration (tsc: per merged property), so `check_subsequent_property` (check.c HACK) skips TS2717 between them.
-  `SymbolConstructor`'s `symbol` properties are unique (interface_decl.c HACK, tsc's too).
+  declaration (tsc: per merged property), so `check_subsequent_property` (check.c HACK) skips TS2717 between two.
+  (`SymbolConstructor`'s `symbol` properties being unique, interface_decl.c: permanent, tsc does the same.)
 - Private names (`ty_private_name`): the lexical lookup scans class items by text (`class_decl_find_private_name`);
   an undeclared one looks up the plain `"#x"` atom. Object literal accessors have no `write_node`
   (`prop_decl_rare()`).
 - `Checker.current_node` (TS2589/TS2615/TS4110/TS1062 location): `lower()` makes a generic reference current while
   lowering it (a guess at tsc's order). `Foo<X>` isn't lowered in the walk (resolving every alias changed type ids).
-- Instantiation limit: what an exhausted budget produced is memoized like tsc's (errorType stays in links/instantiation
-  caches: later users are silently any, `test/probes/instantiation_limit/`), but tttt instantiates more eagerly than
-  tsc, so a tttt-only TS2589 (variance measurement, eager members) poisons what tsc would still compute. A cut-short
-  conditional instance is re-reported only within its epoch; later hits only bump `instantiation_limit_hits`.
+- Instantiation limit: what an exhausted budget produced is memoized like tsc's (`test/probes/instantiation_limit/`),
+  but tttt instantiates more eagerly than tsc, so a tttt-only TS2589 (variance measurement, eager members) poisons what
+  tsc would still compute. A cut-short conditional instance is re-reported only within its epoch.
 
 ## Checks (`ty/check.c`, `unused.c`, `statement.c`, `class_decl.c`)
 - `source_file_check_verbatim_exports()` (TS1287) finds the `export` keyword by scanning the statement text
