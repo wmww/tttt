@@ -3834,6 +3834,19 @@ static Ternary generic_mapped_target_related(
         Ty const* both[2] = { target_keys, source_keys };
         Ty const* common = ty_intersection(me, both, 2, nullptr, (TyList){0});
         if (common->flags & TYF_NEVER) return TERNARY_FALSE;
+        // `{ [P in Q]?: X[P] }`: S against X (tsc's fast path, which decides on its own)
+        Ty const* non_null = template;
+        if (template->kind == TY_UNION) {
+            TyBuf kept = {0};
+            for (u32 i = 0; i < template->composite.types.len; i++) {
+                if (!(template->composite.types.data[i]->flags & TYF_NULLABLE)) ty_buf_push(&kept, template->composite.types.data[i]);
+            }
+            non_null = kept.len == 1 ? kept.data[0] : template;
+            ty_buf_drop(&kept);
+        }
+        if (non_null->kind == TY_INDEXED && non_null->indexed.index == mapped->type_param) {
+            return is_related_to(me, st, source, non_null->indexed.object, report);
+        }
         // The keys that are known: S[K] against the template with P = K
         TyBuf known = {0};
         Ty const* const* members = &common;

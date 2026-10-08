@@ -2458,15 +2458,23 @@ Ty const* ty_keyof_without_index_signatures(Checker* me, Ty const* operand) {
     Members const* members = ty_members(me, operand);
     if (members->mapped || members->expanded_from) {
         // A mapped type's keys, less those that are index signatures, `string` (tsc's getIndexTypeForMappedType with
-        // IndexFlags.NoIndexSignatures): `{ [P in string]: X }` has none
+        // IndexFlags.NoIndexSignatures): `{ [P in string]: X }` has none but `number` (its addMemberForKeyType makes a
+        // string key `string | number` before the filter)
         Ty const* keys = ty_keyof(me, operand);
         if (keys->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return keys;
         TyList all = keys->kind == TY_UNION ? keys->composite.types : (TyList){ .data = &keys, .len = 1 };
         TyBuf kept = {0};
+        bool changed = false;
         for (u32 i = 0; i < all.len; i++) {
-            if (!(all.data[i]->kind == TY_INTRINSIC && (all.data[i]->flags & (TYF_ANY | TYF_STRING)))) ty_buf_push(&kept, all.data[i]);
+            Ty const* key = all.data[i];
+            if (key->kind == TY_INTRINSIC && (key->flags & (TYF_ANY | TYF_STRING))) {
+                changed = true;
+                if (key->flags & TYF_STRING) ty_buf_push(&kept, ty_intrinsic(me, TY_NUMBER));
+            } else {
+                ty_buf_push(&kept, key);
+            }
         }
-        Ty const* ret = kept.len == all.len ? keys : ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
+        Ty const* ret = !changed ? keys : ty_union(me, kept.data, kept.len, nullptr, (TyList){0});
         ty_buf_drop(&kept);
         return ret;
     }
