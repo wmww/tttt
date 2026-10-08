@@ -1080,19 +1080,8 @@ static void report_relation_error_now(Checker* me, RelationState* st, Ty const* 
     Ty const* param_target = target->kind == TY_INDEXED && source->kind != TY_INDEXED ? target->indexed.object : target;
     if (param_target->kind == TY_TYPE_PARAM && !param_target->param.state->is_check_marker) {
         // What a type parameter target could be (tsc's reportRelationError), below the head reported next
-        Ty const* constraint = target;
-        if (target->kind == TY_INDEXED) {
-            // (HACK: base_constraint() makes an access that isn't valid anyway, where tsc's getBaseConstraintOfType has
-            // none: `T[P]` with `T extends object`. Relations depend on it, so only the report asks first)
-            Ty const* object = base_constraint(me, target->indexed.object, 0);
-            Ty const* index = base_constraint(me, target->indexed.index, 0);
-            bool valid = ty_simplified(me, target, false) != target ||
-                indexed_or_null(me, object ? object : target->indexed.object, index ? index : target->indexed.index);
-            constraint = valid ? base_constraint(me, target, 0) : nullptr;
-        } else {
-            // (tsc's getBaseConstraintOfType: resolved all the way, `keyof T` to `string | number | symbol`)
-            constraint = base_constraint(me, target, 0);
-        }
+        // (tsc's getBaseConstraintOfType: resolved all the way, `keyof T` to `string | number | symbol`)
+        Ty const* constraint = base_constraint(me, target, 0);
         bool generalized_fits = constraint && ty_is_related(me, generalized, constraint, TY_RELATION_ASSIGNABLE);
         bool original_fits = constraint && !generalized_fits && ty_is_related(me, source, constraint, TY_RELATION_ASSIGNABLE);
         if (generalized_fits || original_fits) {
@@ -4118,9 +4107,15 @@ static Ty const* base_constraint_uncached(Checker* me, Ty const* ty, u32 depth) 
             // `T[K]` with `K extends keyof T` isn't `T[string] | T[number] | T[symbol]`)
             if (!object_constraint && (object->kind == TY_TYPE_PARAM || (object->flags & TYF_DEFERRED))) return nullptr;
             if (!index_constraint && (index->kind == TY_TYPE_PARAM || (index->flags & TYF_DEFERRED))) return nullptr;
-            Ty const* ret = ty_indexed_include_undefined(me, object_constraint ? object_constraint : object,
-                index_constraint ? index_constraint : index, ty->indexed.include_undefined);
+            Ty const* base_object = object_constraint ? object_constraint : object;
+            Ty const* base_index = index_constraint ? index_constraint : index;
+            Ty const* ret = ty_indexed_include_undefined(me, base_object, base_index, ty->indexed.include_undefined);
             if (ret == ty) return nullptr;
+            // (None where the constraints' access isn't valid, tsc's getIndexedAccessTypeOrUndefined: `T[P]` with
+            // `T extends object`; only an unknown/error/any access can be one)
+            if ((ret->flags & (TYF_UNKNOWN | TYF_ERROR | TYF_ANY)) && !indexed_or_null_flagged(me, base_object, base_index, ty->indexed.include_undefined)) {
+                return nullptr;
+            }
             if (ret->kind == TY_UNION) {
                 bool lacks;
                 Ty const* base = composite_base_constraint(me, ret, depth + 1, &lacks);

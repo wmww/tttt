@@ -1310,20 +1310,8 @@ bool ty_check_jsx_component(Checker* me, Ty const* source, Ty const* target, Spa
 }
 
 // tsc's isValidSpreadType
-// The base constraint as tsc's isValidSpreadType sees it: of an indexed access, null where the constraints' access finds
-// nothing (getIndexedAccessTypeOrUndefined: `T[keyof T]` with T a union of classes, keyof T's constraint being
-// string | number | symbol, stays itself). HACK: base_constraint() itself has unknown there, which xstate's
-// ToTestStateValue (`NonNullable<T[K]>` satisfying StateValue in a mapped type) needs: some other rule is missing
 static Ty const* spread_base_constraint(Checker* me, Ty const* ty) {
     if (!(ty->flags & (TYF_TYPE_PARAM | TYF_DEFERRED))) return nullptr;
-    if (ty->kind == TY_INDEXED) {
-        Ty const* object = ty_base_constraint(me, ty->indexed.object);
-        Ty const* index = ty_base_constraint(me, ty->indexed.index);
-        if (!object && !index) return nullptr;
-        Ty const* access = ty_indexed_or_null(me, object ? object : ty->indexed.object, index ? index : ty->indexed.index,
-            ty->indexed.include_undefined);
-        if (!access || access == ty) return nullptr;
-    }
     return ty_base_constraint(me, ty);
 }
 
