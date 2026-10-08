@@ -606,7 +606,6 @@ static inline Error* add_error_to_parser(Parser* me, Error error) {
 
 static bool last_error_starts_at(Parser* me, Span span);
 static int invalid_char_size(const char* c);
-static bool is_grammar_code(unsigned code);
 // A checker's code (TS2xxx) the parser reports in tttt: not one of tsc's parse diagnostics, which parseErrorAtPosition
 // compares with
 static bool is_semantic_code(unsigned code) { return code >= 2000 && code < 3000; }
@@ -635,7 +634,7 @@ static Error* parse_error_inner(Parser* me, Span span, unsigned ts_code, cstr me
     }
     // (A grammar error is the checker's to tsc: no position is taken by another; nor is a semantic one the parser
     // reports, TS2523/TS2524)
-    if (!is_grammar_code(ts_code) && !is_semantic_code(ts_code) && last_error_starts_at(me, span)) {
+    if (!is_semantic_code(ts_code) && last_error_starts_at(me, span)) {
         cstr_drop(&message);
         return nullptr;
     } else if (vec_error_size(&my shared->errors) >= MAX_ERRORS) {
@@ -658,8 +657,8 @@ static Error* parse_error_s(Parser* me, Span span, unsigned ts_code, cstr messag
     return parse_error_inner(me, span, ts_code, message, false);
 }
 
-// A grammar error (tsc's checker's, dropped in a file with parse errors, see is_grammar_code()) whose code is also a
-// parse error's elsewhere (TS1003)
+// A grammar error: tsc's checker's (or binder's), not a parse error: dropped in a file with parse errors
+// (SourceFile.has_parse_errors), and never takes a position from a parse error
 static Error* grammar_error_s(Parser* me, Span span, unsigned ts_code, cstr message) {
     my shared->errors_attempted++;
     return add_error_to_parser(me, (Error){ .message = message, .span = span, .ts_code = ts_code,
@@ -941,8 +940,8 @@ static bool hop_private_name(Parser* parent) {
     if (!parse_identifier_or_keyword(parent, nullptr)) {
         parse_error(parent, span_from(a), 1127, "Invalid character.");
     } else if (span_equals(span_from(a), "#constructor")) {
-        // (tsc's binder, checkPrivateIdentifier: unless the file has parse errors, see is_grammar_code())
-        parse_error(parent, span_from(a), 18012, "'#constructor' is a reserved word.");
+        // (tsc's binder, checkPrivateIdentifier: unless the file has parse errors)
+        grammar_error(parent, span_from(a), 18012, "'#constructor' is a reserved word.");
     }
     return true;
 }
@@ -2289,6 +2288,7 @@ static bool check_modifiers(Parser* parent, ModifierList const* me, ModifiedNode
     ErrorCtx errs = { .phase = ERROR_PHASE_PARSE };
     bool reported = modifier_list_check_grammar(me, &node, &errs);
     for_each (i, vec_error, &errs.errors) {
+        i->grammar = true; // (tsc's checkGrammarModifiers)
         add_error_to_parser(parent, *i);
         *i = (Error){0};
     }
@@ -2499,7 +2499,7 @@ static bool parse_generic_params(Parser* parent, bool fail_on_error, VecSpannedT
     }
 
     if (span_valid(trailing_comma_span)) {
-        parse_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
+        grammar_error(&p, trailing_comma_span, 1009, "Trailing comma not allowed.");
     }
 
     if (!expect_char(&p, '>')) {
@@ -2610,10 +2610,10 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
         expect_type(&p, TYPE_PRECEDENCE_NULL, &elem.type);
         if (!p.shared->in_jsdoc) elem.span = span_make(p.shared->source, element_start, p.pos);
         if (named && type_rest) {
-            parse_error(&p, span_make(p.shared->source, type_rest_start, p.pos), 5087,
+            grammar_error(&p, span_make(p.shared->source, type_rest_start, p.pos), 5087,
                 "A labeled tuple element is declared as rest with a '...' before the name, rather than before the type.");
         } else if (named && elem.rest && elem.optional) {
-            parse_error(&p, span_make(p.shared->source, element_start, p.pos), 5085, "A tuple member cannot be both optional and rest.");
+            grammar_error(&p, span_make(p.shared->source, element_start, p.pos), 5085, "A tuple member cannot be both optional and rest.");
         }
         // JSDoc `[T?]`: the postfix `?` that would make `T | null` marks an optional element instead
         if (!named && p.shared->in_jsdoc && p.shared->jsdoc_postfix_nullable_start == type_start &&
@@ -2635,7 +2635,7 @@ static bool parse_tuple(Parser* parent, VecTupleElement* ret) {
             span_start_ptr(elem.type.jsdoc->span) == type_start
         ) {
             if (named) {
-                parse_error(&p, elem.type.jsdoc->span, 5086, "A labeled tuple element is declared as optional with a question "
+                grammar_error(&p, elem.type.jsdoc->span, 5086, "A labeled tuple element is declared as optional with a question "
                     "mark after the name and before the colon, rather than after the type.");
             }
             TypeNode* nullable = &elem.type.jsdoc->type;
@@ -2811,7 +2811,7 @@ static void jsdoc_type_outside_jsdoc(Parser* p, char const* start, TypeNode* ret
     Span span = span_make(p->shared->source, start, p->pos);
     if (!nullable && !non_null) {
         if (!p->shared->source->is_js) {
-            parse_error(p, span, 8020, "JSDoc types can only be used inside documentation comments.");
+            grammar_error(p, span, 8020, "JSDoc types can only be used inside documentation comments.");
         }
         return;
     }
@@ -3023,7 +3023,7 @@ static bool parse_identifier_type(Parser* parent, IdentifierType* ret) {
     while (hop_char(&p, '.')) {
         if (*p.pos == '<') { // JSDoc's `Array.<T>` (outside JSDoc tsc's checkTypeReferenceNode complains)
             if (!p.shared->in_jsdoc && !p.shared->source->is_js) {
-                parse_error(&p, span_make(p.shared->source, p.pos - 1, p.pos), 8020, "JSDoc types can only be used inside documentation comments.");
+                grammar_error(&p, span_make(p.shared->source, p.pos - 1, p.pos), 8020, "JSDoc types can only be used inside documentation comments.");
             }
             break;
         }
@@ -3956,7 +3956,7 @@ static const char* parse_jsdoc_tag(Parser* parent, const char* c, const char* en
                     Span w_span = span_make(source, word, c);
                     if (other) {
                         Parser e = parser(parent);
-                        parse_error(&e, w_span, 1273, "'", w, "' modifier cannot appear on a type parameter");
+                        grammar_error(&e, w_span, 1273, "'", w, "' modifier cannot appear on a type parameter");
                         jsdoc_keep_errors(&e);
                         parse_fail(&e);
                     }
@@ -5732,9 +5732,9 @@ static bool parse_interface(Parser* parent, bool is_declaration, Interface* ret)
     // tsc's checkGrammarMappedType / checkGrammarProperty: a type literal is a mapped type only if it starts like one,
     // and then may have no other members; anywhere else `[K in T]` is a property named by an `in` expression
     if (first_mapped && member_count > 1) {
-        parse_error(&p, member_error_spans[1], 7061, "A mapped type may not declare properties or methods.");
+        grammar_error(&p, member_error_spans[1], 7061, "A mapped type may not declare properties or methods.");
     } else if (misplaced_mapped) {
-        parse_error(&p, member_error_spans[0], 7061, "A mapped type may not declare properties or methods.");
+        grammar_error(&p, member_error_spans[0], 7061, "A mapped type may not declare properties or methods.");
     }
 
     *ret = (Interface) {
@@ -5966,31 +5966,31 @@ static void parse_heritage_clauses(Parser* p, HeritageClauses* h) {
         if (grammar_done) continue;
         if (is_extends) {
             if (seen_extends) {
-                parse_error(p, keyword, 1172, "'extends' clause already seen.");
+                grammar_error(p, keyword, 1172, "'extends' clause already seen.");
                 grammar_done = true;
             } else if (seen_implements) {
-                parse_error(p, keyword, 1173, "'extends' clause must precede 'implements' clause.");
+                grammar_error(p, keyword, 1173, "'extends' clause must precede 'implements' clause.");
                 grammar_done = true;
             } else if (h->is_class && count > 1) {
-                parse_error(p, second_element, 1174, "Classes can only extend a single class.");
+                grammar_error(p, second_element, 1174, "Classes can only extend a single class.");
                 grammar_done = true;
             }
             seen_extends = true;
         } else if (!h->is_class) {
-            parse_error(p, keyword, 1176, "Interface declaration cannot have 'implements' clause.");
+            grammar_error(p, keyword, 1176, "Interface declaration cannot have 'implements' clause.");
             grammar_done = true;
         } else if (seen_implements) {
-            parse_error(p, keyword, 1175, "'implements' clause already seen.");
+            grammar_error(p, keyword, 1175, "'implements' clause already seen.");
             grammar_done = true;
         } else {
             seen_implements = true;
         }
         if (grammar_done) continue;
         if (span_valid(trailing_comma)) {
-            parse_error(p, trailing_comma, 1009, "Trailing comma not allowed.");
+            grammar_error(p, trailing_comma, 1009, "Trailing comma not allowed.");
         } else if (count == 0) {
             Span at = span_make(p->shared->source, span_end_ptr(keyword), span_end_ptr(keyword));
-            parse_error(p, at, 1097, "'", keyword, "' list cannot be empty.");
+            grammar_error(p, at, 1097, "'", keyword, "' list cannot be empty.");
         }
     }
     list_leave(p, saved_clauses);
@@ -6505,7 +6505,7 @@ static bool parse_function_args_inner(
                     // tsc's checkGrammarParameterList: checkGrammarForDisallowedTrailingComma after a rest parameter
                     // (Allowed in ambient declarations, GH#23070)
                     if (rest && closes && *comma.sv.buf == ',' && !p.shared->in_ambient) {
-                        parse_error(&p, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
+                        grammar_error(&p, comma, 1013, "A rest parameter or binding pattern may not have a trailing comma.");
                     }
                 }
             }
@@ -7188,7 +7188,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
             if (!span_valid(async_modifier)) async_modifier = i->span;
             continue;
         }
-        parse_error(&p, i->span, 1042, "'", i->span, "' modifier cannot be used here.");
+        grammar_error(&p, i->span, 1042, "'", i->span, "' modifier cannot be used here.");
         report_modifiers_cannot_appear = true;
     }
     Span first_modifier = vec_spanned_modifier_is_empty(&modifiers.spanned) ?
@@ -7274,7 +7274,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
         hop_whitespace(&p);
     }
     if (*p.pos == '!' && p.pos[1] != '=') {
-        parse_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1255,
+        grammar_error(&p, span_make(p.shared->source, p.pos, p.pos + 1), 1255,
             "A definite assignment assertion '!' is not permitted in this context.");
         p.pos++;
         hop_whitespace(&p);
@@ -7282,12 +7282,12 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     // (A property with an `async` modifier: a grammar error)
     if (span_valid(async_modifier) && !must_be_method && *p.pos != '(' && *p.pos != '<') {
-        parse_error(&p, async_modifier, 1042, "'async' modifier cannot be used here.");
+        grammar_error(&p, async_modifier, 1042, "'async' modifier cannot be used here.");
     }
     FunctionImpl func;
     if ((*p.pos == '(' || *p.pos == '<') && parse_non_arrow_function(&p, flags, &func)) {
         if (report_modifiers_cannot_appear && item.tag == OBJECT_ITEM_PROPERTY) {
-            parse_error(&p, first_modifier, 1184, "Modifiers cannot appear here.");
+            grammar_error(&p, first_modifier, 1184, "Modifiers cannot appear here.");
         }
         if (item.tag == OBJECT_ITEM_PROPERTY) {
             item.tag = OBJECT_ITEM_METHOD;
@@ -7362,7 +7362,7 @@ static bool parse_object_item(Parser* parent, ObjectExprItem* ret) {
 
     if (span_valid(question)) {
         if (item.tag != OBJECT_ITEM_PROPERTY && item.tag != OBJECT_ITEM_SHORTHAND) {
-            parse_error(&p, question, 1162, "An object member cannot be declared optional.");
+            grammar_error(&p, question, 1162, "An object member cannot be declared optional.");
         } else {
             isize offset = span_start_ptr(question) - span_end_ptr(item.name_span) + 1;
             item.question_offset = offset < UINT16_MAX ? (uint16_t)offset : 0; // (Past a 64k comment: not reported)
@@ -7622,7 +7622,7 @@ static bool is_index_signature_start(Parser* p) {
 
 // An index signature (tsc's parseIndexSignatureDeclaration): once is_index_signature_start() says so, the brackets are
 // a parameter list whatever is in them. The parameter grammar errors of tsc's checkGrammarIndexSignatureParameters are
-// reported here (grammar codes, see is_grammar_code()); the type ones and TS1021 by interface_member_typecheck()
+// reported here (grammar errors); the type ones and TS1021 by interface_member_typecheck()
 static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     if (!is_index_signature_start(parent)) return false;
     Parser p = parser(parent);
@@ -7733,21 +7733,21 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
     bool reported = true;
     if (count != 1) {
         // (At the whole signature for `[]`: the span is finished below)
-        if (count) parse_error(&p, name, 1096, "An index signature must have exactly one parameter.");
+        if (count) grammar_error(&p, name, 1096, "An index signature must have exactly one parameter.");
     } else {
         if (span_valid(trailing_comma)) {
-            parse_error(&p, trailing_comma, 1025, "An index signature cannot have a trailing comma.");
+            grammar_error(&p, trailing_comma, 1025, "An index signature cannot have a trailing comma.");
         }
         if (span_valid(first_rest)) {
-            parse_error(&p, first_rest, 1017, "An index signature cannot have a rest parameter.");
+            grammar_error(&p, first_rest, 1017, "An index signature cannot have a rest parameter.");
         } else if (span_valid(first_modifier_name)) {
-            parse_error(&p, name, 1018, "An index signature parameter cannot have an accessibility modifier.");
+            grammar_error(&p, name, 1018, "An index signature parameter cannot have an accessibility modifier.");
         } else if (span_valid(first_question)) {
-            parse_error(&p, first_question, 1019, "An index signature parameter cannot have a question mark.");
+            grammar_error(&p, first_question, 1019, "An index signature parameter cannot have a question mark.");
         } else if (first_has_initializer) {
-            parse_error(&p, name, 1020, "An index signature parameter cannot have an initializer.");
+            grammar_error(&p, name, 1020, "An index signature parameter cannot have an initializer.");
         } else if (!first_has_type) {
-            parse_error(&p, name, 1022, "An index signature parameter must have a type annotation.");
+            grammar_error(&p, name, 1022, "An index signature parameter must have a type annotation.");
         } else {
             reported = false;
         }
@@ -7771,7 +7771,7 @@ static bool parse_index_signature(Parser* parent, InterfaceMember* ret) {
         parse_fail(&q);
     }
     ret->key.index->node = node;
-    if (count == 0) parse_error(&p, node, 1096, "An index signature must have exactly one parameter.");
+    if (count == 0) grammar_error(&p, node, 1096, "An index signature must have exactly one parameter.");
 
     return parse_success(&p);
 }
@@ -7839,7 +7839,7 @@ static void parse_computed_key_comma(Parser* p, Expr* key) {
     parse_fail(&comma);
     if (!is_comma) return;
     parse_comma_ops_right_side(p, key);
-    parse_error(p, expr_outer_span(key), 1171, "A comma expression is not allowed in a computed property name.");
+    grammar_error(p, expr_outer_span(key), 1171, "A comma expression is not allowed in a computed property name.");
 }
 
 static bool parse_class_computed_key(Parser* parent, Expr** ret) {
@@ -8110,7 +8110,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 char const* at = span_valid(function_impl_ret_span(&func)) && span_end_ptr(function_impl_ret_span(&func)) > span_end_ptr(function_impl_args_span(&func)) ?
                     span_end_ptr(function_impl_ret_span(&func)) : span_end_ptr(function_impl_args_span(&func));
                 while (at < p.pos && *at != '{') at++;
-                parse_error(&p, span_make(p.shared->source, at, p.pos), 1183, "An implementation cannot be declared in ambient contexts.");
+                grammar_error(&p, span_make(p.shared->source, at, p.pos), 1183, "An implementation cannot be declared in ambient contexts.");
             }
             if (is_type && modified.kind == MODIFIED_METHOD_SIGNATURE) {
                 js_syntax_function(&p, &func, false);
@@ -8141,13 +8141,13 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
             bool modifier_reported = check_modifiers(&p, &modifiers, modified);
             if (!modifier_reported && modifiers.includes[MODIFIER_ACCESSOR] && optional) {
                 // (tsc's checkGrammarProperty)
-                parse_error(&p, question, 1276, "An 'accessor' property cannot be declared optional.");
+                grammar_error(&p, question, 1276, "An 'accessor' property cannot be declared optional.");
             }
             // (tsc's checkGrammarProperty: a class field named by the string "constructor")
             if (!is_type && !computed_key && name_span.sv.size == 13 && (name_span.sv.buf[0] == '"' || name_span.sv.buf[0] == '\'') &&
                 !memcmp(name_span.sv.buf + 1, "constructor", 11)
             ) {
-                parse_error(&p, name_span, 18006, "Classes may not have a field named 'constructor'.");
+                grammar_error(&p, name_span, 18006, "Classes may not have a field named 'constructor'.");
             }
             *ret = (ClassItem){
                 .tag = CLASS_ITEM_FIELD,
@@ -8200,11 +8200,11 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                 p.shared->in_ambient || ret->field.is_declare || ret->field.is_static || ret->field.is_abstract)
             ) {
                 if (initialized) {
-                    parse_error(&p, definite, 1263, "Declarations with initializers cannot also have definite assignment assertions.");
+                    grammar_error(&p, definite, 1263, "Declarations with initializers cannot also have definite assignment assertions.");
                 } else if (!ret->field.has_explicit_type) {
-                    parse_error(&p, definite, 1264, "Declarations with definite assignment assertions must also have type annotations.");
+                    grammar_error(&p, definite, 1264, "Declarations with definite assignment assertions must also have type annotations.");
                 } else {
-                    parse_error(&p, definite, 1255, "A definite assignment assertion '!' is not permitted in this context.");
+                    grammar_error(&p, definite, 1255, "A definite assignment assertion '!' is not permitted in this context.");
                 }
             }
 
@@ -9566,7 +9566,7 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
         }
         // (tsc's checkGrammarTaggedTemplateChain: grammarErrorOnNode of the whole template)
         if (optional_template) {
-            parse_error(&p, span_from(template_a), 1358, "Tagged template expressions are not permitted in an optional chain.");
+            grammar_error(&p, span_from(template_a), 1358, "Tagged template expressions are not permitted in an optional chain.");
         }
         *left_and_ret = expr_template(
             span_from(a),
@@ -10046,13 +10046,13 @@ static bool parse_identifier_expr(Parser* parent, Expr* ret) {
 static bool last_error_starts_at(Parser* me, Span span) {
     for (intptr_t i = vec_error_size(&my shared->errors); i-- > 0;) {
         Error const* last = vec_error_at(&my shared->errors, i);
-        if (is_js_syntax_code(last->ts_code) || is_grammar_code(last->ts_code) || last->grammar || is_semantic_code(last->ts_code)) continue;
+        if (is_js_syntax_code(last->ts_code) || last->grammar || is_semantic_code(last->ts_code)) continue;
         // A scanner error came before the errors tttt reported at or after its token (tsc's scanner reports it when
         // the token is scanned): the latest of those is tsc's last error
         if (i == my shared->scanner_error_index && my shared->scanner_error_token && my shared->scanner_error_first <= i) {
             for (intptr_t j = my shared->scanner_error_first; j-- > 0;) {
                 Error const* before = vec_error_at(&my shared->errors, j);
-                if (is_js_syntax_code(before->ts_code) || is_grammar_code(before->ts_code) || before->grammar ||
+                if (is_js_syntax_code(before->ts_code) || before->grammar ||
                     is_semantic_code(before->ts_code)) continue;
                 if (before->span.source == last->span.source && span_start_ptr(before->span) >= my shared->scanner_error_token) {
                     last = before;
@@ -11545,7 +11545,7 @@ static bool parse_import_export_statement(Parser* parent, Statement* ret) {
         parse_fail(&import_p);
         if (starts_with_followed_by_word_break(&p, "import")) {
             // `export import x from "m"`: an import declaration with a modifier (tsc's checkGrammarModifiers)
-            parse_error(&p, statement.keyword_span, 1191, "An import declaration cannot have modifiers.");
+            grammar_error(&p, statement.keyword_span, 1191, "An import declaration cannot have modifiers.");
             if (parse_import_export_statement(&p, ret)) return parse_success(&p);
             return parse_fail(&p);
         }
@@ -12309,7 +12309,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                     continue;
                 }
             } else if (span_valid(comma_span)) {
-                parse_error(&p, comma_span, 1009, "Trailing comma not allowed.");
+                grammar_error(&p, comma_span, 1009, "Trailing comma not allowed.");
                 p.pos = span_end_ptr(comma_span);
             } else if (vec_initialized_binding_is_empty(&ret->initializers)) {
                 if (ret->keyword == VAR_INIT_LET && !empty_for_of && !in_for) {
@@ -12324,7 +12324,7 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
                 } else {
                     Span s = span_from(end_of_keyword);
                     s.sv.size = 0;
-                    parse_error(&p, s, 1123, "Variable declaration list cannot be empty.");
+                    grammar_error(&p, s, 1123, "Variable declaration list cannot be empty.");
                 }
             } else if (list_is_terminator(PARSING_VARIABLE_DECLARATIONS, tok_peek(&p))) {
                 // After a missing `,` or a skipped token (`var v = (a): => {}` ends at the `=>`)
@@ -12376,12 +12376,12 @@ static bool parse_variable_statement(Parser* parent, ExprCtx ctx, bool in_for, V
         if (span_valid(definite)) {
             bool const_like = ret->keyword != VAR_INIT_VAR && ret->keyword != VAR_INIT_LET;
             if (initialized) {
-                parse_error(&p, definite, 1263, "Declarations with initializers cannot also have definite assignment assertions.");
+                grammar_error(&p, definite, 1263, "Declarations with initializers cannot also have definite assignment assertions.");
             } else if (const_like && !p.shared->in_ambient) {
             } else if (!typed) {
-                parse_error(&p, definite, 1264, "Declarations with definite assignment assertions must also have type annotations.");
+                grammar_error(&p, definite, 1264, "Declarations with definite assignment assertions must also have type annotations.");
             } else if (p.shared->in_ambient) {
-                parse_error(&p, definite, 1255, "A definite assignment assertion '!' is not permitted in this context.");
+                grammar_error(&p, definite, 1255, "A definite assignment assertion '!' is not permitted in this context.");
             } else {
                 initializer.binding.definitely_assigned = true;
             }
@@ -12565,7 +12565,7 @@ static bool parse_for_loop_statement(Parser* parent, Statement* ret) {
         if (!keyword_is_in && !is_await && !p.shared->in_async && !p.shared->in_static_block && statement.tag == STATEMENT_EXPR && statement.expr.tag == EXPR_IDENTIFIER &&
             !expr_is_perenthisized(&statement.expr) && span_equals(statement.expr.inner_span, "async")
         ) {
-            parse_error(&p, statement.expr.inner_span, 1106, "The left-hand side of a 'for...of' statement may not be 'async'.");
+            grammar_error(&p, statement.expr.inner_span, 1106, "The left-hand side of a 'for...of' statement may not be 'async'.");
         }
         if (is_await && keyword_is_in) {
             // `for await (x in y)`: still a for-in loop
@@ -13225,7 +13225,7 @@ static bool parse_try_catch_statement(Parser* parent, Statement* ret) {
                     hop_whitespace(&p);
                     Expr initializer;
                     if (expect_expr(&p, expr_ctx_null, &initializer)) {
-                        parse_error(&p, expr_outer_span(&initializer), 1197, "Catch clause variable cannot have an initializer.");
+                        grammar_error(&p, expr_outer_span(&initializer), 1197, "Catch clause variable cannot have an initializer.");
                     }
                     try_catch.catch_initializer = c_new(Expr, initializer);
                     hop_whitespace(&p);
@@ -13639,7 +13639,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         if (!span_valid(parsed.class.name) && decl_props.exported != DECL_EXPORTED_YES_DEFAULT) {
             // tsc's checkClassDeclaration, on the declaration's first token
             Tok first = tok_at(&p, a.start, false);
-            parse_error(&p, span_make(p.shared->source, first.start, first.end), 1211,
+            grammar_error(&p, span_make(p.shared->source, first.start, first.end), 1211,
                 "A class declaration without the 'default' modifier must have a name.");
         }
         *ret = (Statement){
@@ -13752,7 +13752,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         p.shared->in_ambient = outer_ambient;
         // (tsc's checkGrammarModifiers: decorators first, at their first token)
         if (!vec_expr_is_empty(&decorators)) {
-            parse_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
+            grammar_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
                 "Decorators are not valid here.");
             if (ret->tag == STATEMENT_IMPORT_EXPORT) {
                 ret->import_export->decorators = decorators;
@@ -13767,9 +13767,9 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
         Span first = vec_spanned_modifier_front(&modifiers.spanned)->span;
         // (tsc's checker never checks an `export as namespace`'s modifiers, its binder says TS1184: scope_add_port())
         if (modified.kind != MODIFIED_NAMESPACE_EXPORT && !check_modifiers(&p, &modifiers, modified)) {
-            if (code == 1120) parse_error(&p, first, 1120, "An export assignment cannot have modifiers.");
-            if (code == 1191) parse_error(&p, first, 1191, "An import declaration cannot have modifiers.");
-            if (code == 1193) parse_error(&p, first, 1193, "An export declaration cannot have modifiers.");
+            if (code == 1120) grammar_error(&p, first, 1120, "An export assignment cannot have modifiers.");
+            if (code == 1191) grammar_error(&p, first, 1191, "An import declaration cannot have modifiers.");
+            if (code == 1193) grammar_error(&p, first, 1193, "An export declaration cannot have modifiers.");
         }
         modifier_list_drop(&modifiers);
         vec_expr_drop(&decorators);
@@ -13813,7 +13813,7 @@ static bool parse_decl_statement(Parser* parent, bool toplevel, Statement* ret) 
             ret->decl.class->decorators = decorators;
         } else {
             // (tsc's grammarErrorOnFirstToken: the `@`)
-            parse_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
+            grammar_error(&p, span_make(p.shared->source, decorators_span.sv.buf, decorators_span.sv.buf + 1), 1206,
                 "Decorators are not valid here.");
             if (statement_declares_name(ret->tag) && !ret->decl.props.invalid_decorators) {
                 ret->decl.props.invalid_decorators = c_new(VecExpr, decorators);
@@ -14269,18 +14269,6 @@ static bool parse_block(Parser* parent, bool toplevel, Block* ret) {
     return parse_success(&p);
 }
 
-static bool is_grammar_code(unsigned code) {
-    static unsigned const grammar_codes[] = {
-        1009, 1017, 1018, 1019, 1020, 1022, 1024, 1025, 1028, 1029, 1030, 1031, 1038, 1040, 1042, 1044, 1070, 1071,
-        1079, 1089, 1090, 1096, 1097, 1120, 1123, 1162, 1172, 1173, 1174, 1175, 1176, 1184, 1191, 1193, 1206, 1242, 1243, 1244,
-        1013, 1106, 1171, 1197, 1211, 1248, 1253, 1358, 18006, 1255, 1263, 1264, 1273, 1274, 1275, 1276, 1277, 1319, 1491, 1495, 18010, 18012, 18019, 8020, 1183, 7061, 5085, 5086, 5087,
-    };
-    for (u32 c = 0; c < c_arraylen(grammar_codes); c++) {
-        if (code == grammar_codes[c]) return true;
-    }
-    return false;
-}
-
 // tsc's convertToJson over a JSON file's value (parseSourceFile adds its errors to the parse diagnostics): only
 // double-quoted strings, numbers (maybe negated), true, false, null, objects of property assignments and arrays
 static void json_check_value(Parser* p, Expr const* value) {
@@ -14483,7 +14471,6 @@ static bool parse_file_pass(SourceFile* source, ErrorCtx* errs, bool top_level_a
     source->parse_error_starts = nullptr;
     source->parse_error_count = 0;
     for_each (i, vec_error, &shared.errors) {
-        i->grammar |= is_grammar_code(i->ts_code) && !i->js_syntax;
         if (i->grammar || i->js_syntax || is_js_syntax_code(i->ts_code)) continue;
         source->has_parse_errors = true;
         source->parse_error_starts = realloc(source->parse_error_starts, sizeof(char const*) * (source->parse_error_count + 1));

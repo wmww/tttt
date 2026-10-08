@@ -113,11 +113,6 @@ src` finds the code-side markers; every significant one has an entry here.
 - `await_is_operator`, `yield_is_operator_outside_generator`, `yield_await_is_keyword_here`: `ParserShared` flags plus a
   character peek; `parse_class_item_inner` saves/restores a `FunctionCtx` inline instead of `function_ctx_enter()`.
 - `mark_named_evaluation()`: every construction site that names an anonymous class must call it.
-- Grammar vs parse errors (`is_grammar_code()`, `SourceFile.has_parse_errors`): tsc drops checker grammar errors in
-  files with parse errors. `Error.grammar` (`grammar_error()` in the parser, `error_ctx_grammar_error_d` in the
-  checker) is the real mechanism, but `is_grammar_code()` still classifies ~67 codes for errors made without it, and
-  some checks still use plain `error_ctx_error_d` and always report (TS1039/TS1254 in `statement.c`,
-  `modifier_list_check_grammar`). Fix: move those to the grammar variants, then drop `is_grammar_code()`.
 - Parsed and dropped: decorators before an import in `parse_decl_statement()`'s fallback (TS1206 lost); decorators
   without a declaration (MissingDeclaration: TS1128 at `@` instead of TS1146); index signature parameter initializers
   (`parse_index_signature()`, not a `FunctionArg` list: TS2304 in `[a = b]` lost); computed non-literal enum keys

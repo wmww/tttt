@@ -208,12 +208,12 @@ void variable_statement_typecheck(VariableStatement* me, bool declared, bool exp
             initialized_binding_value(i)->tag != EXPR_IMPLICIT_ANY
         ) {
             if (i->binding.has_explicit_type || !variable_statement_is_const(me)) {
-                error_ctx_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1039,
+                error_ctx_grammar_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1039,
                     "Initializers are not allowed in ambient contexts.");
             } else {
                 bool valid = expr_is_ambient_const_initializer(initialized_binding_value(i));
                 if (!valid) {
-                    error_ctx_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1254,
+                    error_ctx_grammar_error_d(errs, expr_outer_span(initialized_binding_value(i)), 1254,
                         "A 'const' initializer in an ambient context must be a string or numeric literal or literal enum reference.");
                 }
                 if (valid) variable_statement_check_let_names(me, i, errs);
