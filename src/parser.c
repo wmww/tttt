@@ -5159,7 +5159,11 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
     const char* last = tag->tag_name.sv.buf + tag->tag_name.sv.size; // Past the last token
     const char* c = jsdoc_skip_space(last, end);
     bool clause = false;
-    if (c < end && (is_identifier_char(*c) || *c == '{' || *c == '*')) {
+    const char* word_end = c;
+    while (word_end < end && is_identifier_char(*word_end)) word_end++;
+    // (A reserved word isn't a default import's name: `@import import { A } from "m"` has no clause)
+    bool name = word_end > c && !(*c >= '0' && *c <= '9') && !is_reserved_word(csview_from_range(c, word_end));
+    if (c < end && (name || *c == '{' || *c == '*')) {
         clause = true;
         if (*c == '{') {
             while (c < end && *c != '}') c++;
@@ -5194,7 +5198,11 @@ static void jsdoc_import_statement(Parser* parent, JsDocTag const* tag, const ch
             bad = true;
         }
     }
-    if (c >= end) {
+    if (!clause && !name && c < end && *c != '"' && *c != '\'') {
+        // tsc's parseModuleSpecifier parses an expression where the string isn't: a keyword or number is none
+        parse_error(&p, span_make(source, c, word_end > c ? word_end : c + 1), 1109, "Expression expected.");
+        bad = true;
+    } else if (c >= end) {
         // After the tag name, tsc's current token is the JSDoc scanner's whitespace or newline token there
         const char* token_end = last;
         if (!clause && token_end < end) {
@@ -9663,11 +9671,11 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     }
 
     Parser generic_p = parser(&p);
-    // Never in JavaScript files, to avoid the ambiguity with `<` and `>` (tsc's parseTypeArgumentsInExpression)
-    // (A `typeof` type's type arguments are on its line: tsc's parseTypeQuery)
+    // Never in JavaScript files, to avoid the ambiguity with `<` and `>` (tsc's parseTypeArgumentsInExpression), but
+    // a `typeof` type's are a type's (a JSDoc `{typeof f<T>}`), on its line: tsc's parseTypeQuery
     bool outer_import_type_args = p.shared->import_type_args;
     p.shared->import_type_args = left_and_ret->tag == EXPR_IDENTIFIER && left_and_ret->identifier.keyword == KEYWORD_IDENTIFIER_IMPORT;
-    bool type_args = c == '<' && !p.shared->source->is_js && !(ctx.entity_name && hit_newline) &&
+    bool type_args = c == '<' && (!p.shared->source->is_js || ctx.entity_name) && !(ctx.entity_name && hit_newline) &&
         parse_generic_params(&generic_p, true, &parsed.generic_params);
     p.shared->import_type_args = outer_import_type_args;
     if (type_args) {

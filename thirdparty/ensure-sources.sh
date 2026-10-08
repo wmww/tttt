@@ -66,7 +66,7 @@ def install_command(d):
     has = lambda f: os.path.exists(os.path.join(d, f))
     if pm.startswith('pnpm') or (not pm and has('pnpm-lock.yaml')):
         return ['corepack', pm.split('+')[0] if pm else 'pnpm@10', 'install', '--ignore-scripts',
-                f'--store-dir={CACHE}/pnpm-store', '--frozen-lockfile']
+                f'--store-dir={CACHE}/pnpm-store', '--frozen-lockfile', '--config.engine-strict=false']
     if pm.startswith('yarn') or (not pm and has('yarn.lock')):
         if not pm or pm.startswith('yarn@1'):
             return ['corepack', pm.split('+')[0] if pm else 'yarn@1', 'install', '--ignore-scripts', '--ignore-engines',
