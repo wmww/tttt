@@ -2767,6 +2767,17 @@ static void union_members(Ty const* const* ty_ref, Ty const* const** out, u32* c
 
 static Members const* expand_generic_intersection_homomorphic(Checker* me, Members const* members, TyList parts);
 
+// A reference whose type arguments aren't generic, only its this-argument: `T extends I` with an interface I that has a
+// this-type is apparently `I<this = T>`, whose property names are I's
+static bool only_this_arg_generic(Checker* me, Ty const* ty) {
+    if (ty->kind != TY_REFERENCE || !ty->reference.this_arg || ty_is_array(me, ty) || ty_is_tuple(ty)) return false;
+    TyList args = ty_reference_args(me, ty);
+    for (u32 i = 0; i < args.len; i++) {
+        if (args.data[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return false;
+    }
+    return true;
+}
+
 // `{ [K in keyof T]: X }` with T generic stays a mapped type, but has a property per property of T's apparent type (its
 // constraint), X with K the property's name, with T's modifiers (tsc's resolveMappedTypeMembers, whose modifiers type
 // is the apparent type): `Mutable<T>` with `T extends Node` has `pos: T["pos"]`
@@ -2783,7 +2794,9 @@ static Members const* expand_generic_homomorphic(Checker* me, Members const* mem
     if (apparent == mapped->modifiers_type && apparent->kind == TY_ANONYMOUS && ty_members(me, apparent)->mapped) {
         return expand_generic_intersection_homomorphic(me, members, (TyList){ .data = &apparent, .len = 1 });
     }
-    if (apparent == mapped->modifiers_type || (apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return members;
+    if (apparent == mapped->modifiers_type || ((apparent->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) && !only_this_arg_generic(me, apparent))) {
+        return members;
+    }
     // (Of a constraint that's an intersection, `T extends Node & { x: X }`, the properties of its parts)
     if (apparent->kind == TY_INTERSECTION) return expand_generic_intersection_homomorphic(me, members, apparent->composite.types);
     if (!(apparent->flags & (TYF_OBJECT | TYF_UNKNOWN))) return members;
