@@ -2484,9 +2484,9 @@ TyList ty_reference_args(Checker* me, Ty const* reference) {
     return deferred->args;
 }
 
-// `[a, b, ...rest]`: what `rest` gets out of a tuple or array, `start` being its index in the pattern
+// `[a, b, ...rest]`: what `rest` gets out of a tuple, `start` being its index in the pattern. Mutable even of a readonly
+// tuple (tsc's sliceTupleType)
 static Ty const* binding_rest_elements(Checker* me, Ty const* object, u32 start) {
-    if (!ty_is_tuple(object)) return object; // An array (TODO: a readonly array gives a mutable one), or the empty tuple
     TupleShape const* shape = object->reference.target->declared.tuple;
     TyList elements = ty_reference_args(me, object);
     // Past the leading fixed elements: an array of what the elements from there on can be, the empty tuple without
@@ -3180,8 +3180,10 @@ static Ty const* binding_element_context(Checker* me, Binding const* element) {
     }
     ObjectBindingItem const* item = element->parent_item;
     Ty const* key = item->computed_key ? ty_expr_type(me, item->computed_key) : ty_literal(me, &item->source);
-    if (!(key->flags & (TYF_STRING_LITERAL | TYF_NUMBER_LITERAL | TYF_UNIQUE_ES_SYMBOL))) return nullptr;
-    return ty_contextual_prop_type(me, parent_type, key);
+    Atom const* name = ty_literal_name(me, key);
+    if (!name) return nullptr;
+    FoundProp found = ty_find_prop(me, parent_type, name);
+    return found.found ? found.type : nullptr;
 }
 
 Ty const* ty_binding_default_type(Checker* me, Binding const* element) {
