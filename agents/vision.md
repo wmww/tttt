@@ -141,5 +141,8 @@ string-keyed relation caches (-> id-keyed), no control flow analysis (-> plan 05
    tsgo 7~~ done.
 12. **Now**: contextual-check state (plan 51), a source-code breadth sweep (plan 52), a
    hacks audit, a perf session (check-phase sharing / load balance on vscode, AST bytes per line).
-13. Then: parallel declare/link (bugs/perf_leads.md "Parallelism"), a token cache / node arenas in the parser, compact instantiated Props / the
+13. **Next (the human's request, 2026-10-08)**: TypeScript 7 as the target and tttt as a drop-in `tsc` (plan 53:
+   CLI parity first, then the oracle switch to tsgo's native suite and caches at a pinned 7.x, then 7.1's syntax).
+   4d4f005c is the last JS TypeScript; TS 7's checker matches it on TS code, its options and JS front end don't.
+14. Then: parallel declare/link (bugs/perf_leads.md "Parallelism"), a token cache / node arenas in the parser, compact instantiated Props / the
    `Signature` split, whatever plan 52's sweep ranks first.
