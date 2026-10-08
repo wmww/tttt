@@ -9,6 +9,15 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 51 stage 2 (2026-10-08, twelfth window's todo entry 4)
+Context anchors: suite 14832 / 14969 (0 lost), corpora unchanged (0 but effect 3, zod-root 53), sweep 8594 / 8595,
+`$ExpectType` 68628 -> 68631 / 68640, flagflip 18 / 10 / 4. Instructions (callgrind, vs plan 50's): tsc 4.780
+(+0.13%), type-fest 19.754, valibot 4.247 (+0.24%), react 1.544, nest 1.150, webpack 10.628 (+0.12%), zod 5.107
+(+0.33%), xstate 3.207 (+0.72%: anchor bookkeeping, one more intern table doubling), drizzle 8.061, vue 7.068 (+0.41%),
+effect 10.090 (+0.49%), vscode 92.853 (+0.42%), excalidraw 7.979 (+0.14%), tanstack-router 5.892 (+0.26%) G. The
+unoptimised port was +12.6% on vue (`this` re-deriving through anchors) and +2.8% on tanstack-router (discriminating
+huge unions per property): see plan 51's stage 2 notes for the caches.
+
 ## Plan 50 (2026-10-08, twelfth window's todo entry 3)
 CommonJS export= merged in place at link time: suite 14829 -> 14832 / 14969 (0 lost), corpora unchanged (0 but
 effect 3, zod-root 53), sweep 8594 / 8595, `$ExpectType` 68628 / 68640, flagflip 18 / 10 / 4. Instructions

@@ -24,10 +24,11 @@ types components) are the oracle, not the goal; real projects that are clean und
   resolution + tsconfig, iteration protocol, generators, `this` types, mixins, decorators, union origins, elaboration,
   JSX, tsc's type printer and symbol chains, JSDoc + CommonJS + expandos, parallel loading / resolving / checking,
   declaration diagnostics, project references / `-b`, tsc's laziness and deferred checks. ~124k lines of C.
-- **Absent or approximated tsc mechanisms**: the lazy reads of a function's contextual signature (its return type and
-  `this` read "the contextual type of the last check", where tsc goes through the call's resolved signature: plan 51
-  stages 2-3; the push-down contextual typing itself is tsc's two contextual chains evaluated eagerly, and
-  ContextChecked is tsc's rule since plan 51 stage 1); tsc's namespace-import clones (cloneTypeAsModuleType: predicates, hacks.md) and a few clone-ordering quirks (bugs/binder_modules.md; the CommonJS export= merge is done in place, plan 50); permissive
+- **Absent or approximated tsc mechanisms**: parts of the lazy reads of a function's contextual signature (since
+  plan 51 stage 2 a resolved call's arguments read their contextual return and `this` through its resolved signature,
+  context anchors; left for stage 3: when widening is decided, "first check had no signature" as three keys, the
+  literal context persisted past its check; the push-down contextual typing itself is tsc's two contextual chains
+  evaluated eagerly, and ContextChecked is tsc's rule since plan 51 stage 1); tsc's namespace-import clones (cloneTypeAsModuleType: predicates, hacks.md) and a few clone-ordering quirks (bugs/binder_modules.md; the CommonJS export= merge is done in place, plan 50); permissive
   instantiation; TS7056 and TS5088; member identity (members aren't Symbols; the symbols *harness* rebuilds tsc's
   merges for display, decided acceptable). Out of scope: emit (JS and `.d.ts` text), watch mode, the language
   service, 7.0's removal of deprecated options (until 7.x has a JS-free test oracle).
@@ -44,7 +45,7 @@ types components) are the oracle, not the goal; real projects that are clean und
   its "contextual type of the last check" (KEY_CONTEXT_*). Two triage agents in a row patched it again. Plan 51
   prototypes tsc's model (ContextChecked, instantiateContextualType, the resolved-signature lookup) and deletes the
   side channels, plan-47 style: prototype the deletion first, measure what breaks (2026-10-08: the push-down turned out
-  to be tsc's instantiation evaluated eagerly, ContextChecked landed; the lazy reads are stages 2-3). A second session audits every
+  to be tsc's instantiation evaluated eagerly, ContextChecked landed; stage 2's anchors landed the lazy reads, 0 lost). A second session audits every
   hacks.md entry for hacks whose reason is gone (many predate plans 38, 39, 42, 48).
 - **The next oracle is real source code at breadth** (plan 52). The pinned corpora go quiet once drained, and every
   new project found tens to hundreds of bugs; the DefinitelyTyped sweep is declarations plus small tests. A sweep of

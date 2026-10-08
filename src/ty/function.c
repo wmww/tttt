@@ -175,6 +175,15 @@ Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual) {
     return ret;
 }
 
+// What an async function's return expressions are contextually typed by, given its contextual return type: the
+// awaited type or a PromiseLike of it (tsc's getContextualTypeForReturnExpression), null if none
+Ty const* ty_async_return_expressions_context(Checker* me, Ty const* contextual) {
+    Ty const* awaited = contextual ? ty_async_contextual_awaited(me, contextual) : nullptr;
+    if (!awaited || (awaited->flags & TYF_ANY)) return nullptr;
+    Ty const* both[2] = { awaited, ty_promise_like_of(me, awaited) };
+    return both[1] ? ty_union(me, both, 2, nullptr, (TyList){0}) : awaited;
+}
+
 Ty const* ty_element_before_widening(Checker* me, Binding const* element) {
     return intern_get(&my links, (u64[]){ KEY_ELEMENT_WIDENED_ANY, (u64)(uintptr_t)element }, 2);
 }
@@ -264,7 +273,11 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
         } else {
             // An async function returns what its return expressions await to, and the context is about that too
             // (tsc's getPromisedTypeOfPromise of the contextual return type)
-            Ty const* contextual = ty_instantiate_contextual_type(me, ty_contextual_return_type(me, function));
+            ContextSelf self = CONTEXT_OTHER;
+            Ty const* contextual = ty_instantiate_contextual_type(me, ty_contextual_return_type_self(me, function, &self));
+            // (What TS7024 asks: the return type was inferred with the function's own signature as its context, tsc's
+            // getReturnTypeFromBody reporting widening then)
+            if (self != CONTEXT_OTHER) *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) = function;
             if (function->is_async) {
                 for (u32 i = 0; i < returned.len; i++) returned.data[i] = ty_awaited_returned(me, returned.data[i]);
                 contextual = contextual ? promised_context(me, contextual) : nullptr;
@@ -286,7 +299,7 @@ static Ty const* infer_return_type(Checker* me, FunctionImpl const* function) {
                 *intern_slot(me, &my links, (u64[]){ KEY_RETURN_WIDENED_ANY, (u64)(uintptr_t)function }, 2) = ret;
             }
             // (Its context is its own type: see set_contextual_return() in expr.c)
-            if (!contextual && intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2)) {
+            if (!contextual && self == CONTEXT_OWN) {
                 contextual = ret;
             }
             if (!(ret->flags & TYF_NEVER)) ret = ty_widened_return_type(me, ret, contextual);
@@ -390,7 +403,6 @@ static Ty const* function_return_type(Checker* me, FunctionImpl const* function,
     struct OuterInference* outer = my outer_inference;
     if (!keep_outer) my outer_inference = nullptr;
     inferred_promise_missing = false;
-    if (function->is_expression) ty_late_contextual_return(me, function);
     Ty const* type = infer_return_type(me, function);
     bool promise_missing = inferred_promise_missing;
     inferred_promise_missing = false;

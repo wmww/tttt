@@ -97,14 +97,15 @@ enum {
     KEY_WIDENED_NULLABLE, // type -> ty_widened_nullable() of it
     KEY_CHECKED_ONCE,   // AST node -> non-null once ty_first_check() saw it
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
+    KEY_LITERAL_ANCHOR, // Object literal Expr -> ContextAnchor (expr.c)
+    KEY_FUNCTION_ANCHOR, // FunctionImpl -> ContextAnchor (expr.c): where its contextual type comes from, if from a call argument
     KEY_UNDEFINED_PROPERTY, // Property name atom -> the Prop the first normalized-in optional `undefined` property of the name was made of
     KEY_SYNTHETIC_PROP_PARTS, // Prop (an intersection's property made of several, Prop.synthetic) -> SyntheticParts
     KEY_JS_IMPLICIT_ANY, // Expr (a JS assignment declaration's value) -> it was `[]`, made any[]; Symbol -> only null/undefined, made any
     KEY_RETURN_WIDENED_ANY, // FunctionImpl -> its return type before widening, when that widens null/undefined to any
     KEY_FUNCTION_RETURN, // FunctionImpl -> its inferred return type (FunctionReturn in function.c)
     KEY_CONTEXT_NONE,   // FunctionImpl -> the call being resolved when its first check had a contextual type without signature
-    KEY_CONTEXT_FIRST_ABSENT, // FunctionImpl -> the call being resolved when its first check had no contextual type at all
-    KEY_FUNCTION_SIG_CONTEXT, // FunctionImpl -> the contextual type of its last check after KEY_CONTEXT_NONE
+    KEY_CONTEXT_FIRST_ABSENT, // FunctionImpl -> itself once its first check, under a call or in an argument, had no contextual type at all
     KEY_CONTEXT_BLOCKED, // FunctionImpl -> non-null once its first check decided it has no contextual signature (context sensitive)
     KEY_CONTEXT_DONE,   // FunctionImpl -> non-null once its contextual signature was assigned (it's assigned once)
     KEY_IMPLEMENTATION_SIGNATURE, // Signature -> its clone with fresh type parameters (implementation_signature())
@@ -307,7 +308,11 @@ Ty const* ty_generic_function_in_context(Checker* me, Ty const* type, Ty const* 
 GenericFunctionMode ty_outer_generic_function_mode(Checker* me); // The call inferring now's (my outer_inference)
 bool ty_calls_generic_function_returning_function(Checker* me, Expr const* expr);
 Ty const* ty_call_resolved_return(Checker* me, CallExpr const* call); // call.c: a remembered resolution's return, or null
-void ty_late_contextual_return(Checker* me, FunctionImpl const* function); // expr.c
+void ty_record_call_anchors(Checker* me, CallExpr const* call); // expr.c
+// A call's resolved signature (or overload failure candidate) once it is resolved, with what argument `index` was
+// checked against if that is known (else null). False while unresolved, or when the arguments' contextual types were
+// the resolved ones already (a non-generic call of one signature)
+bool ty_call_resolved_candidate(Checker* me, CallExpr const* call, u32 index, Signature const** sig, TyMapper const** mapper, Ty const** param_type); // call.c
 Ty const* ty_mapped_template_fresh(Checker* me, MappedInfo const* mapped); // relate.c
 // tsc's isDeeplyNestedType (relate.c): `ty` and at least two types on the stack with the same recursion identity
 bool ty_is_deeply_nested(Checker* me, Ty const* ty, Ty const* const* stack, u32 depth, u32 max); // tsc's maxDepth: 3 for relations, 2 for inference

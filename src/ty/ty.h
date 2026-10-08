@@ -992,9 +992,6 @@ struct Checker {
     u32 resolving_cap;
     u32 resolving_start; // Cycles aren't looked for below this (tsc's resolutionStart)
     bool resolving_nested_call; // The next resolve_call() is a call re-entered while in flight (no barrier)
-    // Inferring an overload failure's fallback instantiation (tsc's inferSignatureInstantiationForOverloadFailure): it
-    // doesn't record the late contextual type of a function argument (KEY_FUNCTION_SIG_CONTEXT, expr.c)
-    bool overload_failure_inference;
     u32 resolving_call_start; // resolving_start outside the call being resolved: what its return type is resolved with
     // Printing a type the way tsc's eager error message would (see missing_property_type()): an inferred return type found
     // in progress becomes circular (TS7023) but keeps its type (tsc prints it from the body, and its types baseline
@@ -1699,6 +1696,10 @@ Ty const* ty_contextual_element_type(Checker* me, Ty const* contextual, u32 inde
 // the end (tsc's getContextualTypeForElementExpression with a length)
 Ty const* ty_contextual_element_type_of(Checker* me, Ty const* contextual, u32 index, u32 length);
 Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function); // null if none
+// What the contextual signature of a function is to itself: its own (tsc's getReturnTypeFromBody keeps its unit return
+// type), or a composite with its own while that is inferred (no contextual return type, but TS7024's circularity)
+typedef enum ContextSelf { CONTEXT_OTHER, CONTEXT_OWN, CONTEXT_COMPOSITE_OWN } ContextSelf;
+Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* function, ContextSelf* self);
 // What its return expressions are contextually typed by: the contextual return type, or an IIFE's call's contextual type
 Ty const* ty_return_expressions_context(Checker* me, FunctionImpl const* function);
 // `import.meta` (the property access on the `import` keyword) and its type
@@ -2177,6 +2178,7 @@ void ty_check_await_operand(Checker* me, Ty const* ty, Span at, ErrorCtx* errs);
 Ty const* ty_promised_type(Checker* me, Ty const* ty); // What a thenable resolves to, else null (tsc's getPromisedTypeOfPromise)
 Ty const* ty_awaited_no_alias(Checker* me, Ty const* ty);
 Ty const* ty_async_contextual_awaited(Checker* me, Ty const* contextual); // function.c
+Ty const* ty_async_return_expressions_context(Checker* me, Ty const* contextual); // function.c
 Ty const* ty_promise_of(Checker* me, struct FunctionImpl const* function, Ty const* type); // Promise<type>, for an async function (function.c)
 Ty const* ty_awaited_returned(Checker* me, Ty const* ty);
 

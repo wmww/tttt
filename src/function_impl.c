@@ -464,12 +464,8 @@ Ty const* function_impl_enter_return_context(FunctionImpl const* me) {
         if (!my ret_explicit) {
             // The contextual return type's awaited type, or a PromiseLike of it (tsc's getContextualReturnType for
             // async functions)
-            Ty const* contextual = ty_return_expressions_context(checker, me);
-            Ty const* awaited = contextual ? ty_async_contextual_awaited(checker, contextual) : nullptr;
-            if (awaited && !(awaited->flags & TYF_ANY)) {
-                Ty const* both[2] = { awaited, ty_promise_like_of(checker, awaited) };
-                checker->return_context = both[1] ? ty_union(checker, both, 2, nullptr, (TyList){0}) : awaited;
-            }
+            Ty const* context = ty_async_return_expressions_context(checker, ty_return_expressions_context(checker, me));
+            if (context) checker->return_context = context;
         }
     } else if (my is_constructor && function_impl_rare(me)->constructed_class) {
         // A constructor's return expressions replace the instance: its type is their context (tsc's

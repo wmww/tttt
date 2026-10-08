@@ -181,6 +181,9 @@ static bool in_const_context(Checker* me, Expr const* expr, ExprCtx ctx) {
 }
 
 static Ty const* check_with(Checker* me, Expr const* expr, ExprCtx ctx);
+static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextual, ObjectExpr const* object);
+static Ty const* apparent_literal_context(Checker* me, Ty const* contextual);
+static Ty const* literal_context_now(Checker* me, Expr const* literal, u64* inference);
 static bool has_context_sensitive_params(FunctionImpl const* function);
 
 static _Thread_local struct { Expr const* data[64]; u32 len; bool overflow; } collected_returns;
@@ -1318,21 +1321,18 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     if (!compiler_options()->no_implicit_this && !in_js) return nullptr;
     if (function_impl_rare(function)->this_literal && !function_impl_rare(function)->this_literal_parenthesized) {
         Expr const* literal = function_impl_rare(function)->this_literal;
-        u64 context_key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)literal };
-        Ty const* contextual = intern_get(&my links, context_key, 2);
+        u64 ignored_serial = 0;
+        Ty const* contextual = literal_context_now(me, literal, &ignored_serial);
         // A ThisType<T> marker in the contextual type of the literal or of the literals it is a property value of
         // (tsc's getThisTypeOfObjectLiteral)
         Expr const* outer = literal;
         for (u32 depth = 0; outer && depth < 32; depth++) {
-            u64 key[2] = { KEY_LITERAL_CONTEXT, (u64)(uintptr_t)outer };
-            Ty const* outer_context = intern_get(&my links, key, 2);
+            u64 serial = 0;
+            Ty const* outer_context = literal_context_now(me, outer, &serial);
             if (!outer_context) break;
             Ty const* marker = this_type_marker(me, ty_apparent_type(me, outer_context));
             // (A ThisType<T> marker, and only that, fixes what it mentions: tsc's getContextualThisParameterType)
-            if (marker) {
-                u64 inference_key[2] = { KEY_LITERAL_INFERENCE, (u64)(uintptr_t)outer };
-                return ty_instantiate_fixing(me, marker, (u64)(uintptr_t)intern_get(&my links, inference_key, 2));
-            }
+            if (marker) return ty_instantiate_fixing(me, marker, serial);
             u64 parent_key[2] = { KEY_LITERAL_PARENT, (u64)(uintptr_t)outer };
             outer = intern_get(&my links, parent_key, 2);
         }
@@ -1350,9 +1350,53 @@ Ty const* ty_contextual_this_type(Checker* me, FunctionImpl const* function) {
     return nullptr;
 }
 
-Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function) {
+// The state of one read through anchors
+typedef struct AnchorRead {
+    bool anchored; // The call is resolved (else the reader goes by what its last check had)
+    bool transient; // It depended on a return type being in flight (not cached)
+} AnchorRead;
+
+static Signature const* anchored_signature(Checker* me, FunctionImpl const* function, AnchorRead* read, u32 depth, bool* composite_own);
+static bool composite_in_flight(Checker* me, Ty const* contextual, FunctionImpl const* function, bool* own);
+
+// `self`: the contextual signature is the function's own (tsc's getReturnTypeFromBody keeps its unit return type)
+Ty const* ty_contextual_return_type_self(Checker* me, FunctionImpl const* function, ContextSelf* self) {
+    *self = CONTEXT_OTHER;
+    if (!function->ret_explicit && function->is_expression) {
+        AnchorRead read = {0};
+        bool composite_own = false;
+        Signature const* sig = anchored_signature(me, function, &read, 0, &composite_own);
+        if (read.anchored) {
+            // (A composite of signatures with its own while that is inferred: none, tsc's
+            // isResolvingReturnTypeOfSignature; but TS7024's circularity, tsc's widening check asks for its return type
+            // without that guard)
+            if (composite_own) *self = CONTEXT_COMPOSITE_OWN;
+            if (!sig) return nullptr;
+            // (Its own: none while it is inferred, else what it was inferred as)
+            if (sig->function == function && !sig->target) {
+                *self = CONTEXT_OWN;
+                if (ty_function_return_in_flight(me, function)) return nullptr;
+            }
+            Ty const* ret = signature_return_type(me, sig);
+            u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
+            return ret && !(ret->flags & ignored) ? ret : nullptr;
+        }
+    }
     u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
-    return intern_get(&my links, key, 2);
+    Signature const* sig = intern_get(&my links, key, 2);
+    if (!sig) return nullptr;
+    if (sig->function == function && !sig->target) {
+        *self = CONTEXT_OWN;
+        if (ty_function_return_in_flight(me, function)) return nullptr;
+    }
+    Ty const* ret = signature_return_type(me, sig);
+    u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
+    return ret && !(ret->flags & ignored) ? ret : nullptr;
+}
+
+Ty const* ty_contextual_return_type(Checker* me, FunctionImpl const* function) {
+    ContextSelf self;
+    return ty_contextual_return_type_self(me, function, &self);
 }
 
 Ty const* ty_return_expressions_context(Checker* me, FunctionImpl const* function) {
@@ -1391,48 +1435,240 @@ Ty const* ty_contextual_synthetic_rest_type(Checker* me, FunctionImpl const* fun
 // `contextualSignature === getSignatureFromDeclaration(func)`)
 static void set_contextual_return(Checker* me, FunctionImpl const* function, Signature const* sig) {
     if (function->ret_explicit) return;
-    // (Later checks of its return expressions see the return type it has then, like tsc's getContextualReturnType)
-    if (sig->function == function && !sig->target) {
-        *intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) = function;
-        // (Not while its return type is being decided: a call re-entered from its body checks it against itself)
-        if (ty_function_return_in_flight(me, function)) return;
-    }
-    Ty const* ret = signature_return_type(me, sig);
+    // (The signature: its return type is read when asked, tsc's getContextualReturnType. Resolved now unless it is the
+    // function's own, which is what tsc's first contextual check does, reporting what goes wrong there: TS2590)
+    if (sig->function != function) signature_return_type(me, sig);
     u64 key[2] = { KEY_CONTEXT_RETURN, (u64)(uintptr_t)function };
-    // (A `void` context says nothing about what a function returns, except an async one's: its return expressions are
-    // contextually typed `void | PromiseLike<void>`, so `return new Promise(r => r())` infers `void`: tsc's
-    // getContextualTypeForReturnExpression)
-    u32 ignored = function->is_async && !function->is_generator ? 0 : TYF_VOID;
-    if (ret && !(ret->flags & ignored)) *intern_slot(me, &my links, key, 2) = ret;
+    if (intern_get(&my links, key, 2)) return;
+    *intern_slot(me, &my links, key, 2) = sig;
 }
 
-// A function whose first check had no contextual signature (KEY_CONTEXT_NONE) has its return type inferred with the
-// context of its last check once the call it is an argument of is resolved, and without any while it isn't (tsc's
-// getReturnTypeFromBody asks getContextualSignatureForFunctionLikeDeclaration, through the call's resolvedSignature
-// or resolvingSignature): `asFunction(() => 1)` returns `() => 1` (its own signature is the context)
-void ty_late_contextual_return(Checker* me, FunctionImpl const* function) {
-    CallExpr const* call = intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2);
-    if (!call || !ty_call_resolved_return(me, call)) return;
-    Ty const* contextual = intern_get(&my links, (u64[]){ KEY_FUNCTION_SIG_CONTEXT, (u64)(uintptr_t)function }, 2);
-    if (!contextual) return;
-    // HACK: only its own type (what the call inferred from it), whose signature keeps a literal it returns: tsc only asks
-    // for the contextual return type of a unit return type, any other would be inferred now, eagerly, and may need this
-    // very return type (a composite of it and its siblings: compositeContextualSignature)
-    Ty const* own = ty_function_type(me, function);
-    if (contextual->kind == TY_UNION) {
-        // (Its own type among members without signatures: `T | number`)
-        bool found = false;
-        for (u32 i = 0; i < contextual->composite.types.len; i++) {
-            Ty const* member = contextual->composite.types.data[i];
-            if (member == own) found = true;
-            else if ((member->flags & (TYF_OBJECT | TYF_INTERSECTION)) && ty_members(me, member)->call_count) return;
-        }
-        if (!found) return;
-    } else if (contextual != own) {
-        return;
+// Where a function expression's contextual type comes from when that is a call's argument (tsc's getContextualType
+// walking up to getContextualTypeForArgumentAtIndex): the argument, then a path down from it. Read when asked, through
+// the call's resolved signature (tsc's links.resolvedSignature), so a return type inferred late sees the context as
+// it is then
+typedef struct ContextAnchor ContextAnchor;
+struct ContextAnchor {
+    enum { ANCHOR_ARG, ANCHOR_PROP, ANCHOR_ELEM, ANCHOR_RETURN } kind;
+    u32 index; // ARG, ELEM
+    CallExpr const* call; // ARG
+    Expr const* literal; // PROP: the object literal, ELEM: the array literal
+    ObjectExprItem const* item; // PROP: the property
+    FunctionImpl const* function; // RETURN: the function whose return expression it is
+    struct ContextAnchor const* parent; // PROP, ELEM
+    // Once the call is resolved the derivation is for good, unless it went through a return type in flight
+    bool cached;
+    Ty const* cached_type;
+    // The same for the object literal at the anchor, its apparent and discriminated contextual type (ternary branches
+    // share an anchor)
+    Expr const* literal_cached_for;
+    Ty const* literal_cached_type;
+};
+
+
+static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const* anchor, u32 depth);
+
+static void record_anchors_in_block(Checker* me, Block const* block, ContextAnchor const* anchor, u32 depth) {
+    for_each (s, vec_statement, &block->statements) {
+        if (s->tag == STATEMENT_RETURN_EXPR) record_anchors_in(me, &s->expr, anchor, depth + 1);
+        else if (s->tag == STATEMENT_BLOCK) record_anchors_in_block(me, &s->block, anchor, depth + 1);
     }
-    Members const* members = ty_members(me, own);
-    if (members->call_count == 1) set_contextual_return(me, function, members->call[0]);
+}
+
+static ContextAnchor* new_anchor(Checker* me, ContextAnchor a) {
+    ContextAnchor* ret = arena_new(&my arena, ContextAnchor);
+    *ret = a;
+    return ret;
+}
+
+static void record_anchors_in(Checker* me, Expr const* expr, ContextAnchor const* anchor, u32 depth) {
+    if (depth > 16) return;
+    switch (expr->tag) {
+        case EXPR_FUNCTION: {
+            FunctionImpl const* function = expr->function;
+            void const** slot = intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_ANCHOR, (u64)(uintptr_t)function }, 2);
+            if (*slot) return;
+            *slot = anchor;
+            // (A generator's return expressions are about its TReturn: ty_generator_context())
+            if (function->ret_explicit || function->is_generator) return;
+            record_anchors_in_block(me, &function->body, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_RETURN, .function = function }), depth);
+            return;
+        }
+        case EXPR_OBJECT: {
+            void const** slot = intern_slot(me, &my links, (u64[]){ KEY_LITERAL_ANCHOR, (u64)(uintptr_t)expr }, 2);
+            if (*slot) return;
+            *slot = anchor;
+            for_each (i, vec_object_expr_item, &expr->object) {
+                if (i->tag != OBJECT_ITEM_PROPERTY && i->tag != OBJECT_ITEM_METHOD) continue;
+                if (object_item_is_private_name(i)) continue;
+                if (i->value.tag != EXPR_FUNCTION && i->value.tag != EXPR_OBJECT && i->value.tag != EXPR_ARRAY &&
+                    i->value.tag != EXPR_TERNARY) continue;
+                record_anchors_in(me, &i->value, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_PROP, .literal = expr, .item = i,
+                    .parent = anchor }), depth + 1);
+            }
+            return;
+        }
+        case EXPR_ARRAY:
+            for_each (i, vec_expr, &expr->array) {
+                if (i->tag != EXPR_FUNCTION && i->tag != EXPR_OBJECT && i->tag != EXPR_ARRAY) continue;
+                record_anchors_in(me, i, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_ELEM, .literal = expr,
+                    .index = (u32)i_index, .parent = anchor }), depth + 1);
+            }
+            return;
+        case EXPR_TERNARY:
+            record_anchors_in(me, &expr->ternary->yes, anchor, depth + 1);
+            record_anchors_in(me, &expr->ternary->no, anchor, depth + 1);
+            return;
+        default: return;
+    }
+}
+
+void ty_record_call_anchors(Checker* me, CallExpr const* call) {
+    for_each (i, vec_expr, &call->args) {
+        if (i->tag == EXPR_SPREAD) break;
+        if (i->tag != EXPR_FUNCTION && i->tag != EXPR_OBJECT && i->tag != EXPR_ARRAY && i->tag != EXPR_TERNARY) continue;
+        record_anchors_in(me, i, new_anchor(me, (ContextAnchor){ .kind = ANCHOR_ARG, .call = call, .index = (u32)i_index }), 0);
+    }
+}
+
+static Ty const* anchor_context(Checker* me, ContextAnchor const* anchor, AnchorRead* read, u32 depth);
+
+// A union contextual type whose signatures make a composite with one whose return type is being inferred (tsc's
+// isResolvingReturnTypeOfSignature of compositeSignatures). *own: `function` is among them
+static bool composite_in_flight(Checker* me, Ty const* contextual, FunctionImpl const* function, bool* own) {
+    *own = false;
+    if (!contextual || contextual->kind != TY_UNION) return false;
+    u32 functions = 0;
+    bool in_flight = false;
+    for (u32 i = 0; i < contextual->composite.types.len; i++) {
+        Ty const* member = contextual->composite.types.data[i];
+        if (!(member->flags & (TYF_OBJECT | TYF_INTERSECTION)) || !ty_members(me, member)->call_count) continue;
+        functions++;
+        FunctionImpl const* member_function = member->kind == TY_ANONYMOUS ? member->anonymous.function : nullptr;
+        if (member_function && member_function->has_body && ty_function_return_in_flight(me, member_function)) {
+            in_flight = true;
+            *own |= member_function == function;
+        }
+    }
+    if (functions > 1 && in_flight) return true;
+    *own = false;
+    return false;
+}
+
+// Null for a composite with a signature whose return type is being inferred (*composite_own: one is its own)
+static Signature const* anchored_signature(Checker* me, FunctionImpl const* function, AnchorRead* read, u32 depth, bool* composite_own) {
+    *composite_own = false;
+    ContextAnchor const* anchor = intern_get(&my links, (u64[]){ KEY_FUNCTION_ANCHOR, (u64)(uintptr_t)function }, 2);
+    if (!anchor || depth > 16) return nullptr;
+    Ty const* contextual = anchor_context(me, anchor, read, depth + 1);
+    if (!contextual) return nullptr;
+    if (composite_in_flight(me, contextual, function, composite_own)) {
+        read->transient = true;
+        return nullptr;
+    }
+    return contextual_signature(me, contextual, function, 0);
+}
+
+static Ty const* derive_anchor_context(Checker* me, ContextAnchor const* anchor, AnchorRead* read, u32 depth);
+
+// Null with read->anchored false: not anchored, or the call isn't resolved (the caller goes by what it has); with
+// read->anchored true: no contextual type there
+static Ty const* anchor_context(Checker* me, ContextAnchor const* anchor, AnchorRead* read, u32 depth) {
+    if (anchor->cached) {
+        read->anchored = true;
+        return anchor->cached_type;
+    }
+    AnchorRead here = {0};
+    Ty const* ret = derive_anchor_context(me, anchor, &here, depth);
+    if (here.anchored && !here.transient) {
+        ContextAnchor* cache = (ContextAnchor*)anchor;
+        cache->cached = true;
+        cache->cached_type = ret;
+    }
+    read->anchored |= here.anchored;
+    read->transient |= here.transient;
+    return ret;
+}
+
+// The contextual type of the object literal at the anchor, as check_object() narrows it
+static Ty const* anchor_literal_context(Checker* me, ContextAnchor const* anchor, Expr const* literal, AnchorRead* read, u32 depth) {
+    if (anchor->literal_cached_for == literal) {
+        read->anchored = true;
+        return anchor->literal_cached_type;
+    }
+    AnchorRead here = {0};
+    Ty const* type = anchor_context(me, anchor, &here, depth);
+    if (type) {
+        type = apparent_literal_context(me, type);
+        if (type->kind == TY_UNION) type = discriminate_by_object_members(me, type, &literal->object);
+    }
+    if (here.anchored && !here.transient) {
+        ContextAnchor* cache = (ContextAnchor*)anchor;
+        cache->literal_cached_for = literal;
+        cache->literal_cached_type = type;
+    }
+    read->anchored |= here.anchored;
+    read->transient |= here.transient;
+    return type;
+}
+
+static Ty const* derive_anchor_context(Checker* me, ContextAnchor const* anchor, AnchorRead* read, u32 depth) {
+    switch (anchor->kind) {
+        case ANCHOR_ARG: {
+            Signature const* sig = nullptr;
+            TyMapper const* mapper = nullptr;
+            Ty const* checked = nullptr;
+            if (!ty_call_resolved_candidate(me, anchor->call, anchor->index, &sig, &mapper, &checked)) return nullptr;
+            read->anchored = true;
+            if (checked) return checked;
+            Ty const* type = signature_type_at(me, sig, anchor->index, false);
+            return type && mapper ? ty_instantiate(me, type, mapper) : type;
+        }
+        case ANCHOR_PROP: {
+            Ty const* parent = anchor_literal_context(me, anchor->parent, anchor->literal, read, depth + 1);
+            if (!parent) return nullptr;
+            ObjectExprItem const* item = anchor->item;
+            if (item->computed_key) return contextual_prop_type(me, parent, ty_expr_type(me, item->computed_key));
+            return contextual_named_prop_type(me, parent, checker_atom(me, cstr_sv(&item->name_string)));
+        }
+        case ANCHOR_ELEM: {
+            Ty const* parent = anchor_context(me, anchor->parent, read, depth + 1);
+            return parent ? contextual_array_element_type(me, parent, anchor->literal, anchor->index) : nullptr;
+        }
+        case ANCHOR_RETURN: {
+            FunctionImpl const* function = anchor->function;
+            bool composite_own;
+            Signature const* sig = anchored_signature(me, function, read, depth + 1, &composite_own);
+            if (!sig) return nullptr;
+            // (Its own: none while that is being inferred, tsc's isResolvingReturnTypeOfSignature, so not for good
+            // until it is known)
+            if (sig->function == function && !ty_function_return_known(me, function)) {
+                read->transient = true;
+                if (ty_function_return_in_flight(me, function)) return nullptr;
+            }
+            Ty const* ret = signature_return_type(me, sig);
+            // (What function_impl_enter_return_context() makes of it)
+            if (function->is_async) return ret ? ty_async_return_expressions_context(me, ret) : nullptr;
+            return ret && !(ret->flags & TYF_VOID) ? ret : nullptr;
+        }
+    }
+    return nullptr;
+}
+
+// The contextual type of an object literal: through its anchor once the call is resolved (tsc's getContextualType then
+// goes through the resolved signature), else what its last check had (*inference: the OuterInference serial then)
+static Ty const* literal_context_now(Checker* me, Expr const* literal, u64* inference) {
+    ContextAnchor const* anchor = intern_get(&my links, (u64[]){ KEY_LITERAL_ANCHOR, (u64)(uintptr_t)literal }, 2);
+    if (anchor) {
+        AnchorRead read = {0};
+        Ty const* type = anchor_literal_context(me, anchor, literal, &read, 0);
+        if (read.anchored) {
+            *inference = 0;
+            return type;
+        }
+    }
+    *inference = (u64)(uintptr_t)intern_get(&my links, (u64[]){ KEY_LITERAL_INFERENCE, (u64)(uintptr_t)literal }, 2);
+    return intern_get(&my links, (u64[]){ KEY_LITERAL_CONTEXT, (u64)(uintptr_t)literal }, 2);
 }
 
 // `evaluating`: the parameter whose type evaluation asked for this, which takes its contextual type like the others
@@ -1770,9 +2006,11 @@ bool ty_is_generic_type(Checker* me, Ty const* ty) {
 
 bool ty_function_context_is_self(Checker* me, FunctionImpl const* function) {
     // (Only when its first check had no contextual signature: one it had then decided its return type, no circularity)
-    return (intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) ||
-            intern_get(&my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)function }, 2)) &&
-        intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2);
+    if (!intern_get(&my links, (u64[]){ KEY_CONTEXT_NONE, (u64)(uintptr_t)function }, 2) &&
+        !intern_get(&my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)function }, 2)) return false;
+    // (Its return type was inferred with its own signature as the context)
+    ty_function_return_type(me, function);
+    return intern_get(&my links, (u64[]){ KEY_CONTEXT_RETURN_SELF, (u64)(uintptr_t)function }, 2) != nullptr;
 }
 
 // tsc's shouldReportErrorsFromWideningWithContextualSignature for WideningKind.FunctionReturn (GeneratorYield with
@@ -3356,11 +3594,14 @@ static void push_missing_discriminators(
     }
 }
 
+// (The literal's member names, atomized once)
+typedef struct MemberNames { Atom const** data; u32 len; } MemberNames;
+
 static bool object_has_member(void const* literal, Checker* me, Atom const* name) {
-    for_each (item, vec_object_expr_item, (ObjectExpr const*)literal) {
-        if (item->tag == OBJECT_ITEM_SPREAD) continue;
-        Atom const* own = item->computed_key ? nullptr : checker_atom(me, cstr_sv(&item->name_string));
-        if (own == name) return true;
+    (void)me;
+    MemberNames const* names = literal;
+    for (u32 i = 0; i < names->len; i++) {
+        if (names->data[i] == name) return true;
     }
     return false;
 }
@@ -3379,7 +3620,13 @@ static Ty const* discriminate_by_object_members(Checker* me, Ty const* contextua
         panic_if(!items, "out of memory");
         items[count++] = (Discriminator){ .name = name, .type = ty_expr_type(me, &item->value) };
     }
-    push_missing_discriminators(me, contextual, object_has_member, object, nullptr, &items, &count);
+    MemberNames names = { .data = malloc(sizeof(Atom const*) * (vec_object_expr_item_size(object) + 1)) };
+    panic_if(!names.data, "out of memory");
+    for_each (item, vec_object_expr_item, object) {
+        if (item->tag != OBJECT_ITEM_SPREAD && !item->computed_key) names.data[names.len++] = checker_atom(me, cstr_sv(&item->name_string));
+    }
+    push_missing_discriminators(me, contextual, object_has_member, &names, nullptr, &items, &count);
+    free(names.data);
     Ty const* ret = discriminate_by_items(me, contextual, items, count);
     free(items);
     return ret;
@@ -5022,7 +5269,7 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // A first check, under a call's resolution, with a contextual type that has no signature for it decides
             // that it has none (tsc's ContextChecked is set either way): `m(() => 1, (z) => () => 2)` with `zero: Z`
             // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its
-            // return type only sees the context once the call is resolved (ty_late_contextual_return())
+            // return type only sees the context once the call is resolved (ty_contextual_return_type_self())
             u64 none_key[2] = { KEY_CONTEXT_NONE, (u64)(uintptr_t)expr->function };
             // A context-sensitive function's first full check without a contextual signature decides it has none (tsc's
             // ContextChecked, set by the first check that doesn't skip it whatever it finds). Not one typed by a JSDoc
@@ -5048,27 +5295,25 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
             // (A first check without any contextual type leaves its return type undecided too: `id({ d: () => null })`,
             // whose `d` the object literal's contextual type U has nothing for until U is inferred as the literal itself,
             // see ty_function_context_is_self())
-            if (!ctx.contextual && !ctx.sig_contextual && my resolving_call && !expr->function->ret_explicit &&
+            if (!ctx.contextual && !ctx.sig_contextual && !expr->function->ret_explicit &&
+                (my resolving_call || intern_get(&my links, (u64[]){ KEY_FUNCTION_ANCHOR, (u64)(uintptr_t)expr->function }, 2)) &&
                 !intern_get(&my links, (u64[]){ KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function }, 2) &&
                 !intern_get(&my links, none_key, 2)
             ) {
                 Ty const** slot = (Ty const**)intern_slot(me, &my links, (u64[]){ KEY_CONTEXT_FIRST_ABSENT, (u64)(uintptr_t)expr->function }, 2);
-                if (!*slot) *slot = (Ty const*)my resolving_call;
+                if (!*slot) *slot = (Ty const*)expr->function;
             }
             CallExpr const* none_call = (ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent ? intern_get(&my links, none_key, 2) : nullptr;
             // (Not from an overload failure's fallback inference, which checks the arguments against the constraints:
             // tsc's contextual signature goes through the resolved failure signature, and the checks against that
             // one are memoized with the contextual type they had before, `T2({ b: function () { return 123 } },
             // false)` with `const TConfig extends { b?: any }` keeps `() => 123`)
-            if (none_call && my overload_failure_inference) {
-            } else if (none_call) {
+            if (none_call) {
                 // (A blocked one still takes its `this` from it, see assign_contextual_signature_as())
                 if (intern_get(&my links, (u64[]){ KEY_CONTEXT_BLOCKED, (u64)(uintptr_t)expr->function }, 2)) {
                     assign_contextual_signature_as(me, expr->function, ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual, nullptr, nullptr,
                         ctx.raw_contextual);
                 }
-                *intern_slot(me, &my links, (u64[]){ KEY_FUNCTION_SIG_CONTEXT, (u64)(uintptr_t)expr->function }, 2) =
-                    ctx.sig_contextual ? ctx.sig_contextual : ctx.contextual;
             } else if ((ctx.contextual || ctx.sig_contextual) && !ctx.sig_absent) {
                 u64 done_key[2] = { KEY_CONTEXT_DONE, (u64)(uintptr_t)expr->function };
                 bool assigned = intern_get(&my links, done_key, 2) != nullptr;

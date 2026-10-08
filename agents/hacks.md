@@ -280,12 +280,9 @@ src` finds the code-side markers; every significant one has an entry here.
   `ty_fix_contextual_signature()` (`KEY_CONTEXT_UNFIXED`: tsc's getContextualSignature, a real concept under a
   misleading name) and `KEY_CONTEXT_WIDENING_ABSENT` (a first check under inference with no signature view: stands in
   for tsc computing the return type under resolvingSignature). Plan 51 stage 3 decides it where the return type is
-  computed. `ty_function_context_is_self` (TS7024) is the lazy contextual return of plan 51 stage 2.
-- `Checker.overload_failure_inference` (set by `overload_failure_candidate()`): the fallback inference doesn't record
-  a function's late contextual type (`KEY_FUNCTION_SIG_CONTEXT` in expr.c's EXPR_FUNCTION case): "the contextual type
-  of the last check" stands in for tsc's lookup through the call's resolved signature, and the checks after the
-  fallback inference are memoized with the earlier contextual type, so the fallback's constraint-typed check would win
-  (thislessFunctionsNotContextSensitive1). Goes with plan 51 stage 2.
+  computed. `ty_function_context_is_self` (TS7024) reads `KEY_CONTEXT_RETURN_SELF`, written by `infer_return_type()`
+  when the anchored contextual signature was its own (or a composite with its own) while it was inferred, but still
+  needs `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (tsc: no return type decided at the first contextual check).
 - `infer_from_objects()`, a generic mapped target `{ [P in C]: T[P] }` (the homomorphic `T[K]` shortcut, standing in
   for reverse mapping): the source goes to T as if homomorphic unless C is a conditional (Omit's
   `Exclude<keyof T, X>`, where tsc infers nothing), intersection-limited or a deferred `keyof X` whose X isn't
@@ -303,8 +300,7 @@ src` finds the code-side markers; every significant one has an entry here.
 - Overload failure fallback (`resolve_with_signatures`, tsc's getCandidateForOverloadFailure): with explicit type
   arguments, fitting arity and no candidate checked, the result is the union of every candidate's inferred return
   (not tsc's).
-- `KEY_CONTEXT_RETURN` is rewritten per check (`set_contextual_return()`); `ExprCtx.sig_contextual` only where
-  `may_want_signature()`.
+- `ExprCtx.sig_contextual` only where `may_want_signature()`.
 - Higher-order (`inference_propagate_generic`, `Arg.generic_function`/`generic_call`, `waits_for_sensitive`): a failed
   call is re-inferred without them, then arguments re-checked against the failed candidate only to restore memos
   (`add_implementation_success` likewise). `ty_generic_function_in_context` (HACK) isn't tsc's branch.
@@ -351,9 +347,9 @@ src` finds the code-side markers; every significant one has an entry here.
 - Async: `ty_awaited()` wraps generics in `Awaited<T>`, but generators use `ty_awaited_no_alias()` and async returns
   `ty_awaited_returned()` (call.c HACKs) because tttt can't relate `Awaited<T>` to T through the conditional's default
   constraint; once it can, use ty_awaited() everywhere.
-- Contextual `this` (`ty_contextual_this_type`): literal context/parent remembered at check
-  (`KEY_LITERAL_CONTEXT`/`KEY_LITERAL_PARENT`, last wins); `ThisType<T>` by name, instantiated with
-  `ty_instantiate_fixing()`.
+- Contextual `this` (`ty_contextual_this_type`): a literal's context through its anchor once the call is resolved,
+  else remembered at check (`KEY_LITERAL_CONTEXT`, last wins: tsc's pushed contextual type while the call infers);
+  `KEY_LITERAL_PARENT` is a parent side table; `ThisType<T>` by name, instantiated with `ty_instantiate_fixing()`.
 - `implementation_signature()` (src/ty/call.c, tsc's getImplementationSignature): clones a generic signature for a call
   inside the function that declares its type parameters by span containment of `sig->function`; skips construct
   signatures (tsc goes by the class declaration for `new C()` inside class C, tttt doesn't track where class type
@@ -377,13 +373,23 @@ src` finds the code-side markers; every significant one has an entry here.
   `kind_uses_context` decides rechecks. Rests on "whoever knows the context checks first";
   `initial_or_assigned_type()` re-derives it for `x = e` and annotated declarations, compound/logical assignments and
   destructuring defaults don't.
-- `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` / `ty_late_contextual_return` (expr.c HACK): tsc's
-  getReturnTypeFromBody reads the contextual signature when the return type is computed, through the call's resolved
-  signature; tttt records the call and the context of the last check, and applies the late context only when it is
-  the function's own type (a self context keeps a returned literal; any other contextual signature would be inferred
-  eagerly, circular for compositeContextualSignature). Plan 51 stage 2 (context anchors) replaces them.
-  (ContextChecked itself is tsc's rule since plan 51 stage 1: `KEY_CONTEXT_DONE` with a signature, `KEY_CONTEXT_BLOCKED`
-  without; a blocked function still takes `this` from the last contextual signature, which tsc asks lazily.)
+- Context anchors (expr.c `ContextAnchor`, plan 51 stage 2): once a call is resolved, the contextual return type of
+  its function arguments and the contextual type of its literal arguments (for `this`) are derived through its resolved
+  signature (tsc's getContextualType walking up to links.resolvedSignature), along a path recorded syntactically after
+  resolution (arguments, literal members, array elements, ternary branches, return expressions; not through calls,
+  first call wins). Unresolved (during inference) the reader falls back to the push-down value: `KEY_CONTEXT_RETURN`
+  (the first contextual signature, tsc's ContextChecked) and `KEY_LITERAL_CONTEXT`. Not derived for a non-generic call
+  of one signature (`CallResolution.exact`: the push-down was the resolved context; deriving it again built
+  normalizedIntersectionTooComplex's TS2590 union outside its report). The ARG step reuses the parameter types the
+  final check used (`CallOutcome.param_types`), else instantiates. Derivations are cached per anchor unless they went
+  through a return type that isn't known yet (`AnchorRead.transient`). Generators' return expressions aren't anchored.
+- `KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` (expr.c): "the first check had no contextual signature / type", so
+  the return type wasn't decided then (tsc's contextuallyCheckFunctionExpressionOrObjectLiteralMethod only computes it
+  with a signature). NONE only under a call's resolution, FIRST_ABSENT also for anchored functions checked after it
+  (`getColorTheme: () => ({ getColor: () => undefined })` in `Object.assign`'s argument: the inner one's first check
+  is while the outer's return is in flight). Plan 51 stage 3 tries expressing both through anchors. (ContextChecked
+  itself is tsc's rule since plan 51 stage 1: `KEY_CONTEXT_DONE` with a signature, `KEY_CONTEXT_BLOCKED` without; a
+  blocked function still takes `this` from the last contextual signature, which tsc asks lazily.)
 - `assign_contextual_signature_as`: once per function (`KEY_CONTEXT_DONE`), from the first usable context; generic
   contextual signatures aren't instantiated. `KEY_CONTEXT_PARAM_PATTERN` marks pattern fallbacks for the symbols
   traversal. `KEY_CONTEXT_IIFE_RETURN`: recorded at the IIFE's first contextual check; an earlier return type misses it.

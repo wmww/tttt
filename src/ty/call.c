@@ -78,8 +78,19 @@ typedef struct Candidate {
     TyList inferred_type_params; // what the returned function is generic in, see infer_type_arguments()
 } Candidate;
 
+// What call_return_type() keeps besides the chosen candidate
+typedef struct CallOutcome {
+    Candidate failure; // If nothing fit, the overload failure candidate (tsc's resolvedSignature then)
+    u32 signatures; // How many signatures the call had to choose from (0: none, it didn't get that far)
+    // The chosen signature's parameter types its arguments were checked with last (arena), param_count of them
+    Ty const* const* param_types;
+    u32 param_count;
+} CallOutcome;
+
 typedef struct Resolution {
     Candidate chosen; // sig is null if nothing fit
+    Ty const* const* chosen_types; // Its parameter types as checked (arena, only with CallInfo.outcome_out)
+    u32 chosen_count;
     Candidate failure; // If nothing fit, the candidate the call is taken to be anyway (tsc's getCandidateForOverloadFailure)
     Ty const* ret;
 } Resolution;
@@ -102,6 +113,7 @@ typedef struct CallInfo {
     bool super_fill;
     Candidate* chosen_out; // Where to leave the signature the call resolved to, may be null
     bool failure_out; // chosen_out gets the overload failure candidate if nothing fit
+    struct CallOutcome* outcome_out; // May be null
     // The signatures before reorder_candidates(): tsc's getArgumentArityError reads the original list (whose first
     // signature needing the fewest arguments names the missing parameter). Null: the same order
     Signature* const* declared_order;
@@ -2398,15 +2410,6 @@ static Candidate make_candidate(
     return make_candidate_skipping(me, sig, args, info, skip_sensitive, skip_generic, false);
 }
 
-// make_candidate() for an overload failure's fallback (tsc's inferSignatureInstantiationForOverloadFailure)
-static Candidate overload_failure_candidate(Checker* me, Signature const* sig, Args* args, CallInfo const* info, bool skip_sensitive, bool skip_generic) {
-    bool saved = my overload_failure_inference;
-    my overload_failure_inference = true;
-    Candidate ret = make_candidate(me, sig, args, info, skip_sensitive, skip_generic);
-    my overload_failure_inference = saved;
-    return ret;
-}
-
 static Resolution resolve_with_signatures_inner(
     Checker* me, Signature* const* signatures, u32 count, Args* args, CallInfo const* info, Span call_span,
     ErrorCtx* errs
@@ -2542,6 +2545,12 @@ static Resolution resolve_with_signatures_inner(
             fits = fits && this_fits(me, &candidate, info, rounds[round]);
             if (fits) {
                 ret.chosen = candidate;
+                if (info->outcome_out && shape.count) {
+                    Ty const** types = arena_new_n(&my arena, Ty const*, shape.count);
+                    memcpy(types, shape.types, sizeof(Ty const*) * shape.count);
+                    ret.chosen_types = types;
+                    ret.chosen_count = shape.count;
+                }
             } else {
                 unfit[unfit_count++] = candidate;
             }
@@ -2638,9 +2647,9 @@ static Resolution resolve_with_signatures_inner(
             if (longest && longest->type_params.len && unfit[picked].sig != longest && !info->type_arg_nodes) {
                 // A generic one that wasn't checked (too many parameters for the arguments: vitest's `spyOn(o, k,
                 // accessor)` before `spyOn(o, k)`) is still the one, inferred from the arguments
-                fallback = overload_failure_candidate(me, longest, args, info, true, true);
+                fallback = make_candidate(me, longest, args, info, true, true);
             } else if (fallback.sig->type_params.len && !info->type_arg_nodes) {
-                fallback = overload_failure_candidate(me, fallback.sig, args, info, true, true);
+                fallback = make_candidate(me, fallback.sig, args, info, true, true);
                 // (The arguments are left as checked against the candidate, which is what the types baseline shows)
                 ParamShape shape = call_param_shape(me, info, unfit[picked].sig, unfit[picked].mapper);
                 check_args(me, &shape, args, false);
@@ -2702,7 +2711,7 @@ static Resolution resolve_with_signatures_inner(
             // (The arguments are checked against it: an arrow's parameters get its types, tsc's
             // getContextualTypeForArgument going by the resolved failure signature)
             Candidate candidate = signatures[best]->type_params.len ?
-                overload_failure_candidate(me, signatures[best], args, info, true, true) : (Candidate){ .sig = signatures[best] };
+                make_candidate(me, signatures[best], args, info, true, true) : (Candidate){ .sig = signatures[best] };
             ParamShape shape = call_param_shape(me, info, candidate.sig, candidate.mapper);
             check_args(me, &shape, args, false);
             free(shape.types);
@@ -3179,6 +3188,14 @@ static Ty const* resolve_call_inner(Checker* me, Ty const* callee, CallInfo cons
     free(declared_order);
     ret = resolution.ret;
     if (info->chosen_out) *info->chosen_out = !resolution.chosen.sig && info->failure_out ? resolution.failure : resolution.chosen;
+    if (info->outcome_out) {
+        if (!resolution.chosen.sig) info->outcome_out->failure = resolution.failure;
+        info->outcome_out->signatures = count;
+        if (resolution.chosen.sig) {
+            info->outcome_out->param_types = resolution.chosen_types;
+            info->outcome_out->param_count = resolution.chosen_count;
+        }
+    }
     free(args.data);
     free(signatures);
     return ret;
@@ -3324,11 +3341,11 @@ JsxResolution ty_resolve_jsx_element(Checker* me, JsxElement const* element, Err
 
 static Ty const* resolve_into(
     Checker* me, Ty const* callee, CallExpr const* call, Expr const* tagged_template, Ty const* contextual,
-    Span call_span, ErrorCtx* errs, Candidate* chosen_out
+    Span call_span, ErrorCtx* errs, Candidate* chosen_out, CallOutcome* outcome_out
 ) {
     CallInfo info = {
         .call = call, .tagged_template = tagged_template, .contextual = contextual, .chosen_out = chosen_out,
-        .call_span = call_span, .failure_out = chosen_out && !errs,
+        .call_span = call_span, .failure_out = chosen_out && !errs, .outcome_out = outcome_out,
     };
     Ty const* type_args[32];
     // `super(x)` in `class A extends B<T>`: B's constructors with the type arguments of the heritage clause (tsc's
@@ -3435,7 +3452,7 @@ CallEffects ty_call_effects(Checker* me, Ty const* callee, CallExpr const* call)
         bool some = false;
         for (u32 i = 0; i < members->call_count && !some; i++) some = has_predicate_or_declared_never(me, members->call[i]);
         if (!some) return none;
-        resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen);
+        resolve_into(me, callee, call, nullptr, nullptr, span_null, nullptr, &chosen, nullptr);
     }
     if (!chosen.sig || !has_predicate_or_declared_never(me, chosen.sig)) return none;
     CallEffects ret = { .returns_never = signature_declared_never(chosen.sig) };
@@ -3489,6 +3506,14 @@ static Ty const* require_type(Checker* me, CallExpr const* call) {
 typedef struct CallResolution {
     Ty const* ret;
     Signature const* sig; // The signature it resolved to, null if none fit
+    TyMapper const* mapper; // Its inferred type arguments
+    Signature const* failure_sig; // If none fit: the candidate for overload failure (tsc's resolvedSignature then)
+    TyMapper const* failure_mapper;
+    Ty const* const* param_types; // See CallOutcome
+    u32 param_count;
+    // A non-generic signature, the only one: the contextual types its arguments were checked with are the resolved
+    // ones already, nothing to derive again (ty_call_resolved_candidate())
+    bool exact;
     ErrorCtx errs; // (Registered in Checker.call_errors when not empty)
     bool in_flight;
 } CallResolution;
@@ -3508,20 +3533,31 @@ static Ty const* call_return_type(
         // set only for a call's first resolution)
         bool saved = my resolving_nested_call;
         my resolving_nested_call = true;
-        Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
+        Ty const* ret = resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr, nullptr);
         my resolving_nested_call = saved;
         return ret;
     }
     if (my flow_uncached) {
-        return resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr);
+        return resolve_into(me, callee, call, tagged_template, contextual, span_null, nullptr, nullptr, nullptr);
     }
     // (Not remembered while control flow analysis has nothing memoized: tsc's flowLoopStart === flowLoopCount)
     resolution = arena_new(&my arena, CallResolution);
     *resolution = (CallResolution){ .errs = { .phase = ERROR_PHASE_TYPECHECK }, .in_flight = true };
     *intern_slot(me, &my links, key, 2) = resolution;
     Candidate chosen = {0};
-    resolution->ret = resolve_into(me, callee, call, tagged_template, contextual, call_span, &resolution->errs, &chosen);
+    CallOutcome outcome = {0};
+    resolution->ret = resolve_into(me, callee, call, tagged_template, contextual, call_span, &resolution->errs, &chosen, &outcome);
     resolution->sig = chosen.sig;
+    resolution->mapper = chosen.mapper;
+    if (!chosen.sig) {
+        resolution->failure_sig = outcome.failure.sig;
+        resolution->failure_mapper = outcome.failure.mapper;
+    }
+    resolution->exact = chosen.sig && !chosen.mapper && outcome.signatures == 1;
+    resolution->param_types = outcome.param_types;
+    resolution->param_count = outcome.param_count;
+    // (Only read once it is resolved, and not needed then if exact)
+    if (!resolution->exact && !tagged_template && node == call) ty_record_call_anchors(me, call);
     resolution->in_flight = false;
     if (!error_ctx_empty(&resolution->errs)) {
         if (my call_errors_len == my call_errors_cap) {
@@ -3548,6 +3584,22 @@ Signature const* ty_call_resolved_signature(Checker* me, CallExpr const* call) {
     return resolution && !resolution->in_flight ? resolution->sig : nullptr;
 }
 
+bool ty_call_resolved_candidate(Checker* me, CallExpr const* call, u32 index, Signature const** sig, TyMapper const** mapper, Ty const** param_type) {
+    u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)call };
+    CallResolution const* resolution = intern_get(&my links, key, 2);
+    if (!resolution || resolution->in_flight || resolution->exact) return false;
+    *param_type = resolution->sig && index < resolution->param_count ? resolution->param_types[index] : nullptr;
+    if (!resolution->sig) {
+        if (!resolution->failure_sig) return false;
+        *sig = resolution->failure_sig;
+        *mapper = resolution->failure_mapper;
+        return true;
+    }
+    *sig = resolution->sig;
+    *mapper = resolution->mapper;
+    return true;
+}
+
 // Reports what the call's resolution reported. One never remembered (a `class A extends B` stand-in, a call only
 // typed by control flow) is resolved now
 static void call_typecheck(
@@ -3557,7 +3609,7 @@ static void call_typecheck(
     u64 key[2] = { KEY_CALL_RESOLUTION, (u64)(uintptr_t)node };
     CallResolution const* resolution = node ? intern_get(&my links, key, 2) : nullptr;
     if (!resolution || resolution->in_flight) {
-        resolve_into(me, callee, call, tagged_template, contextual, call_span, errs, nullptr);
+        resolve_into(me, callee, call, tagged_template, contextual, call_span, errs, nullptr, nullptr);
         return;
     }
     if (!errs) return;

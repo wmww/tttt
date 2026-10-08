@@ -37,46 +37,36 @@ overload failure's inference: hacks.md's "regresses effect and react" no longer 
 against the return-mapped context, tsc's checkExpressionWithContextualType). Suite 14829, corpora unchanged, sweep
 8594, `$ExpectType` 68628, flagflip 18/10/4; instructions within +0.12% (A) and +-0.05% (C).
 
-## Stage 2 (todo entry 4): context anchors and the lazy contextual return
-Start from `51_prototypes/B_anchor.patch` (rebase onto stage 1: the EXPR_FUNCTION case in expr.c conflicts; the
-`KEY_FUNCTION_CONTEXT` and `overload_failure_inference` generic-mode parts are already done). Design:
-- `ContextAnchor` {ARG(call, index) | PROP(literal, name/computed key, parent) | ELEM(literal, index, parent) |
-  RETURN(function)}, arena-allocated; `ty_record_call_anchors()` walks a call's arguments syntactically once when
-  its resolution starts (call.c `call_return_type`): object literal members, array elements, conditional branches,
-  return expressions of function arguments; records `KEY_FUNCTION_ANCHOR` / `KEY_LITERAL_ANCHOR`, first wins. No AST
-  field (tsc's `node.parent` would be a second, pull-shaped copy of every check_* context rule: B chose anchors
-  for that).
-- `anchor_context()` derives the contextual type now: ARG = the resolved signature's parameter type at the index with
-  the resolved mapper (CallResolution keeps the mapper and, for a failed call, the overload-failure candidate);
-  PROP/ELEM reuse check_object/check_array's helpers; RETURN = the enclosing function's anchored contextual signature's
-  return (not while that return type is in flight). Unresolved call: "not anchored", the reader keeps the push-down
-  value (tsc's pushed type during inference).
-- `KEY_CONTEXT_RETURN` holds the contextual Signature, first wins; `ty_contextual_return_type_self()` reads its return
-  type when asked and says whether it is the function's own. A union contextual type with 2+ callable members, one of
-  them in flight, gives no contextual signature (compositeContextualSignature).
-- Deletes: `ty_late_contextual_return`, `KEY_FUNCTION_SIG_CONTEXT`, `KEY_CONTEXT_RETURN_SELF` as a read
-  (function.c writes it for TS7024 only), the `none_call && my overload_failure_inference` branch and with it
-  `Checker.overload_failure_inference`, set_contextual_return's in-flight case, the per-check rewrite of
-  `KEY_CONTEXT_RETURN` (first-wins loses 7 tests without anchors, 0 with).
-
-Prototype numbers (on a7003eac): suite 14827 (lost neverReturningFunctions1 TYP, normalizedIntersectionTooComplex ERR
-TS2590), corpora clean, sweep 8590 (ember, ember/v3, ember__object, ember__object/v3: spurious TS2578), `$ExpectType`
-68595 (-36 ember `this.foo` in `extend()` argument methods is `any`; +3 ember__service `""` gained), flagflip other
-code 4 -> 6 (not looked at); instructions tsc +0.19%, valibot +0.85%, xstate +1.16%, effect +0.74% (unoptimised).
-In this order:
-1. **Bisect the ember regression first** with `B_anchor_envswitches.patch` (TTTT_RET_FIRST, TTTT_NO_ANCHOR, ...,
-   TTTT_DEBUG_ANCHOR); B ruled out the literal-`this` anchors and the overload-failure candidate. `./expectprobe.py`
-   on `types/ember__object` cuts it down. If the cause is a design flaw (an anchor derived through the wrong
-   signature, a read that tsc does mid-inference), fix the design, not the case.
-2. Skip the derivation where it can't differ: a non-generic call with one signature (the push-down context is the
-   resolved one). Recovers most of the instruction cost, probably normalizedIntersectionTooComplex too (the anchored
-   derivation builds the huge union outside the place TS2590 is reported).
-3. neverReturningFunctions1: probe which check tsc's types baseline prints for `parse() { return [true]; }` in a
-   ThisType'd literal argument (`true[]` vs tttt's `boolean[]`).
-4. Replace the prototype's thread-local `resolve_failure_sink` with a CallInfo out-parameter.
-5. The flagflip "other code" +2: look at them (`./flagflip.py -k`).
-Bar: 0 lost on every oracle (`./oracles.py`), instructions within ~0.5%. If the ember regression shows anchors can't
-express some read, stop and write that up here rather than patching around it.
+## Stage 2 (landed 2026-10-08, todo entry 4; 0 lost on every oracle)
+Prototype B's context anchors (`B_anchor.patch`), as designed above in the prototype report, cleaned up:
+`ContextAnchor` {ARG | PROP | ELEM | RETURN} recorded by `ty_record_call_anchors()`; `KEY_CONTEXT_RETURN` holds the
+first contextual Signature; `ty_contextual_return_type_self()` reads the return through the anchor once the call is
+resolved. Deleted: `ty_late_contextual_return`, `KEY_FUNCTION_SIG_CONTEXT`, `Checker.overload_failure_inference` /
+`overload_failure_candidate()`, the per-check rewrite of `KEY_CONTEXT_RETURN`, set_contextual_return's self special
+case. The thread-local failure sink became `CallInfo.outcome_out` (`CallOutcome`: failure candidate, signature count,
+the chosen candidate's checked parameter types). What differed from the prototype:
+- **The ember regression was already gone**: stage 1's fixes (`this` decided apart from the parameters) removed it;
+  nothing to bisect. `$ExpectType` +3 (ember__service `""`, the type_core.md item).
+- **Own signature, not in flight: its return type is the context** (prototype: none). tsc's getContextualReturnType
+  only refuses it while it resolves; the types baseline's final check sees `boolean[]`, so `[true]` is `true[]`
+  (neverReturningFunctions1).
+- **Composite with its own in flight** (`composite_in_flight()`, `ContextSelf`): no contextual signature (the guard
+  stays before `contextual_signature()`, which would otherwise resolve the in-flight return: spurious TS7024 on vue),
+  but it counts as self for TS7024 (tsc's widening check asks the composite's return type unguarded: vue
+  hydration.spec.ts:1691). Only a direct own signature keeps a unit return.
+- **`KEY_CONTEXT_FIRST_ABSENT` also for anchored functions first checked after the resolution** (not only under
+  `my resolving_call`): with lazy reads the inner function of `getColorTheme: () => ({ getColor: () => undefined })`
+  is first checked while the outer's return is in flight (vscode sessionView.test.ts:106 TS7023, nosnc).
+- **`CallResolution.exact`** (non-generic, one signature): not anchored, not even recorded (recording moved after
+  resolution, the only time anchors are read). Recovered normalizedIntersectionTooComplex's TS2590.
+- **RETURN anchors mirror `function_impl_enter_return_context()`**: async return expressions get
+  `ty_async_return_expressions_context()` (now shared), generators' returns aren't anchored.
+- **Cost**: derivations cached per anchor (`AnchorRead.transient` when they went through an own return type not yet
+  known, or a composite in flight), per literal for the discriminated context, ARG reuses the final check's parameter
+  types; `discriminate_by_object_members` atomizes the literal's names once (was props x members `checker_atom`
+  calls: also cheaper for check_object). Instructions vs HEAD: see measurements.md (all within ~0.5% but xstate
+  +0.7%: anchor bookkeeping plus one extra intern table doubling).
+Oracles: suite 14832 (0 lost), corpora unchanged, sweep 8594, `$ExpectType` 68628 -> 68631, flagflip 18 / 10 / 4.
 
 ## Stage 3 (todo entry 9): what stage 2 makes possible
 1. **Widening decided where the return type is computed** (C's P1 in `C_proto_full.patch`, `V_P1=1`): a reportability
@@ -87,7 +77,9 @@ express some read, stop and write that up here rather than patching around it.
    eager return-type computation tsc doesn't do (ty_argument_return_type in EXPR_FUNCTION is the suspect).
 2. **`KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` through anchors**: each still loses something alone (A: NONE 2
    tests + effect 2; FIRST_ABSENT flagflip -22 TS7023). With the lazy return in place, try expressing "its first check
-   had no signature" as the anchored read being unresolved at that moment (tsc's resolvingSignature).
+   had no signature" as the anchored read being unresolved at that moment (tsc's resolvingSignature). Stage 2 already
+   widened FIRST_ABSENT to anchored functions checked after resolution; what tsc has is one rule (ContextChecked
+   without a signature leaves the return type lazy), tttt's NONE / FIRST_ABSENT / BLOCKED are three slices of it.
 3. **`KEY_LITERAL_CONTEXT` as a push/pop stack** (pushed in check_object, popped on return): if nothing reads it after
    the check returns and before the call resolves, the persisted key and check_with's generic-mode save/restore go and
    `KEY_LITERAL_INFERENCE` becomes the stack entry's inference. It carries hundreds of corpus diagnostics (vue, zod,
