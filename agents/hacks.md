@@ -320,9 +320,6 @@ src` finds the code-side markers; every significant one has an entry here.
   else remembered at check (`KEY_LITERAL_CONTEXT`, last wins: tsc's pushed contextual type while the call infers; a
   push/pop stack is plan 51 stage 3 item 3); `ThisType<T>` by name, instantiated with `ty_instantiate_fixing()`.
   `KEY_LITERAL_PARENT` is a parent side table (permanent: ThisType markers of outer literals, plan 51).
-- `implementation_signature()` (tsc's getImplementationSignature): clones a generic signature for a call inside the
-  function that declares its type parameters, by span containment of `sig->function`; skips construct signatures
-  (tsc goes by the class declaration for `new C()` inside C; tttt doesn't track where class type parameters live).
 
 ## Expressions and contextual typing (`ty/expr.c`, `ty/access.c`)
 - `access()` any-key case (`ACCESS_ELEMENT`, HACK): only an element access *expression* reads an intersection's index

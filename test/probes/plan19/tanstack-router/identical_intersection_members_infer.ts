@@ -2,8 +2,7 @@
 // link.test-d.tsx:4023: `const CustomLink: LinkComponent<C> = (props) => <CreatedLinkComponent preload="intent" {...props} />`.
 // The arrow takes its contextual signature's type parameters, the very ones of the called signature, so the spread
 // `{ preload } & Props<"a", TFrom, TTo>` has members identical to the parameter's, and tsc infers from those before they
-// cancel out (inferFromMatchingTypes): TFrom to TFrom, not the defaults. Inside the called function itself (r5/r6),
-// tsc resolves with a clone of the signature (getImplementationSignature), so nothing is identical there
+// cancel out (inferFromMatchingTypes): TFrom to TFrom, not the defaults
 interface Req<TFrom extends string> { to: TFrom & {} }
 interface Opt<TFrom extends string> { to?: TFrom & {} }
 type MakeReq<TFrom extends string, TTo extends string | undefined> = string extends TFrom

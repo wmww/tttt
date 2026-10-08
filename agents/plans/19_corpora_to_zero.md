@@ -289,8 +289,7 @@ dist: router-core's sources inside react-router's program fail under tsc (react-
 Three runtime tests need 5.9's lib.dom (`textContent: string`) and are excluded. tsc 5.8: 0 in 17.5 s (41k lines +
 101k of .d.ts; tttt 0.43 s at one checker). Drained by a sub-agent (probes `test/probes/plan19/tanstack-router/`):
 optional discriminants with their undefined, a homomorphic mapped type inferring nothing from a source that isn't
-reverse mappable (`window.scrollTo = vi.fn()`), inference from identical intersection members with tsc's
-getImplementationSignature for recursive calls (hacks.md), conditional sources against weak intersection members.
+reverse mappable (`window.scrollTo = vi.fn()`), inference from identical intersection members, conditional sources against weak intersection members.
 Flag flips found the base constraint of a union with an unconstrained type variable (none, tsc's
 computeBaseConstraint: NavigateFn's `TFrom extends RoutePaths<...> | string` widens '/posts').
 
