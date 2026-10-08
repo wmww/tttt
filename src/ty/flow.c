@@ -644,6 +644,18 @@ static Atom const* access_name(Checker* me, PropertyExpr const* access) {
         if (declared.source == key->inner_span.source && span_start_ptr(declared) > span_start_ptr(key->inner_span)) {
             return nullptr;
         }
+        // An unannotated `const k = e` goes by e's type, not k's declared type (tsc's getTypeOfExpression(initializer)):
+        // the reference may be narrowed while k's own initializer is being checked, `const idx = this.a.findIndex(...)`
+        // in a loop that assigns `this.a[idx] = ...`, and asking for k's type there is a circularity tsc doesn't have
+        if (binding == root && binding && binding->tag == BINDING_IDENTIFIER && !binding->has_explicit_type &&
+            binding->source && binding->source->tag == LAZY_TYPE_INITIALIZED_BINDING
+        ) {
+            InitializedBinding const* initialized = c_container_of(binding->source, InitializedBinding, lazy_type);
+            if (initialized->value && initialized->value->tag != EXPR_IMPLICIT_ANY) {
+                bool is_number = false;
+                return ty_property_name_of_key(me, ty_flow_expr_type(me, initialized->value), &is_number);
+            }
+        }
     } else if (!is_constant_entity_name(me, key)) {
         return nullptr;
     }
