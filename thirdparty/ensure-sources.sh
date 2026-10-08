@@ -65,7 +65,13 @@ def install_command(d):
     pm = pj.get('packageManager', '') or ''
     has = lambda f: os.path.exists(os.path.join(d, f))
     if pm.startswith('pnpm') or (not pm and has('pnpm-lock.yaml')):
-        return ['corepack', pm.split('+')[0] if pm else 'pnpm@10', 'install', '--ignore-scripts',
+        if not pm:
+            # Without a packageManager field: an exact `engines.pnpm`, else the major that writes the lockfile's format
+            engine = (pj.get('engines') or {}).get('pnpm', '')
+            lock = open(os.path.join(d, 'pnpm-lock.yaml')).readline() if has('pnpm-lock.yaml') else ''
+            pm = (f'pnpm@{engine}' if engine[:1].isdigit() else 'pnpm@8' if "'6." in lock else
+                  'pnpm@7' if lock.startswith('lockfileVersion: 5') else 'pnpm@10')
+        return ['corepack', pm.split('+')[0], 'install', '--ignore-scripts',
                 f'--store-dir={CACHE}/pnpm-store', '--frozen-lockfile', '--config.engine-strict=false']
     if pm.startswith('yarn') or (not pm and has('yarn.lock')):
         if not pm or pm.startswith('yarn@1'):
