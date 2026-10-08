@@ -1831,7 +1831,10 @@ bool ty_expr_is_context_sensitive(Expr const* expr) {
     switch (expr->tag) {
         case EXPR_FUNCTION: return ty_function_is_context_sensitive(expr->function);
         case EXPR_OBJECT:
+            // (Not through its accessors: tsc's isContextSensitive only looks at property assignments, methods and
+            // shorthands, so `{ items: [true], get f() { return this.items } }` is inferred from in one pass)
             for_each (i, vec_object_expr_item, &expr->object) {
+                if (i->tag == OBJECT_ITEM_GETTER || i->tag == OBJECT_ITEM_SETTER) continue;
                 if (ty_expr_is_context_sensitive(&i->value)) return true;
             }
             return false;
