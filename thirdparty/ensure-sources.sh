@@ -176,13 +176,14 @@ def main():
         except subprocess.CalledProcessError as e:
             return name, 'fetch', 1, str(e)
         return install(name, d)
-    with concurrent.futures.ThreadPoolExecutor(4) as ex:
-        for name, cmd, rc, info in ex.map(one, todo):
-            print(f'{name:28} {cmd:28} ' + ('ok ' + info if rc == 0 else f'FAILED ({rc})\n    ' + info.replace('\n', '\n    ')), flush=True)
-            if rc != 0:
-                failed.append(name)
-    if todo:
-        # The package managers' caches are only needed while installing; the installed files are copies or hardlinks
+    # In batches: the package managers' caches are only needed while installing (the installed files are copies or
+    # hardlinks), and pnpm's store keeps every file it ever fetched, unpruned (25 GB after 50 repos)
+    for batch in range(0, len(todo), 20):
+        with concurrent.futures.ThreadPoolExecutor(4) as ex:
+            for name, cmd, rc, info in ex.map(one, todo[batch:batch + 20]):
+                print(f'{name:28} {cmd:28} ' + ('ok ' + info if rc == 0 else f'FAILED ({rc})\n    ' + info.replace('\n', '\n    ')), flush=True)
+                if rc != 0:
+                    failed.append(name)
         shutil.rmtree(CACHE, ignore_errors=True)
     if failed:
         sys.exit(f'{len(failed)} failed: {" ".join(failed)}')

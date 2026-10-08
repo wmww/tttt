@@ -14,6 +14,7 @@ shape (quoted parts elided), and for a diagnostic in node_modules the dependency
   ./sourcesweep.py --names spurious # the projects of a verdict (crash, timeout, spurious, missing, both, match)
   ./sourcesweep.py --last ...       # reuse the last run's results (-k, --names) without running tttt again
   ./sourcesweep.py --tsc [-f ...]   # regenerate tsc's cached verdicts (all projects, or -f's)
+  ./sourcesweep.py --tsc-new        # tsc on the projects without a cached verdict (repos added to the manifest)
 """
 import argparse, collections, concurrent.futures, gzip, json, os, re, signal, subprocess, sys, threading, time
 
@@ -92,8 +93,13 @@ def run_tsc(projects, jobs):
 def root_cause(project, diag, spurious):
     """The key a mismatching diagnostic is ranked under: its code, for a spurious one its message shape, and for a
     file in node_modules the dependency (the same declaration read wrong in 40 projects is one bug)"""
-    dep = sweep.dependency(diag[0]) if '/node_modules/' in '/' + diag[0] else ''
-    where = f' in {dep[dep.index("node_modules"):]}' if dep else ''
+    # (The innermost node_modules: pnpm's are node_modules/.pnpm/NAME@VERSION/node_modules/NAME)
+    parts = diag[0].split('/')
+    dep = ''
+    if 'node_modules' in parts:
+        i = len(parts) - 1 - parts[::-1].index('node_modules')
+        dep = '/'.join(parts[i:i + (3 if parts[i + 1:i + 2] and parts[i + 1].startswith('@') else 2)])
+    where = f' in {dep}' if dep else ''
     return f'+TS{diag[2]}{where} {sweep.shape(diag[3])}' if spurious else f'-TS{diag[2]}{where}'
 
 
@@ -106,16 +112,19 @@ def main():
     ap.add_argument('--names', help='list the projects with this verdict')
     ap.add_argument('--last', action='store_true', help="reuse the last run's results")
     ap.add_argument('--tsc', action='store_true', help="regenerate tsc's cached verdicts (all projects, or -f's)")
+    ap.add_argument('--tsc-new', action='store_true', help='tsc on the projects without a cached verdict')
     ap.add_argument('--timeout', type=int, default=120)
     ap.add_argument('--mem-gb', type=int, default=8)
     ap.add_argument('--no-build', action='store_true')
     args = ap.parse_args()
 
     projects = list_projects(args.filter)
-    if args.tsc:
+    if args.tsc or args.tsc_new:
         oracle = {}
-        if os.path.exists(ORACLE) and args.filter:
+        if os.path.exists(ORACLE) and (args.filter or args.tsc_new):
             oracle = {r['project']: r for r in map(json.loads, gzip.open(ORACLE, 'rt'))}
+        if args.tsc_new:
+            projects = [p for p in projects if p not in oracle]
         start = time.time()
         oracle.update(run_tsc(projects, args.jobs))
         with gzip.open(ORACLE, 'wt') as f:

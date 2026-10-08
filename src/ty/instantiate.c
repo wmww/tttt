@@ -190,6 +190,8 @@ static Ty const* homomorphic_variable(Checker* me, Ty const* ty, MappedInfo cons
     // Asking for the members of every object type that gets instantiated would defeat their laziness, so look at the
     // syntax first
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
+    // (An instantiation expression's target is any object type: an interface's `typeof f<T>` too)
+    if (root->kind != TY_ANONYMOUS) return nullptr;
     TypeNode const* node = root->anonymous.node;
     if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return nullptr;
     InterfaceMember const* member = vec_interface_member_at(&node->interface.members, 0);

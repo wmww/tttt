@@ -21,7 +21,8 @@ cheerio https://github.com/cheeriojs/cheerio.git f45ff5629600351d307a249e02ce70d
 chokidar https://github.com/paulmillr/chokidar.git b6812ddd1341d34da841b3ce0a24eb8b19daf661
 chrome-devtools-mcp https://github.com/ChromeDevTools/chrome-devtools-mcp.git 6f2b48ae5bfb04592be5151b7eb6c2054d29b0f3
 class-validator https://github.com/typestack/class-validator.git 2e1a5c27dbd65b80e27fe96b49bd6e6641fa3603
-cmdk https://github.com/dip/cmdk.git dd2250ed608443e8f32bafc5fa2d1d07a3746aa3
+# cmdk: dropped, its pnpm-lock.yaml is a format pnpm 8.8 (its packageManager) rejects
+#cmdk https://github.com/dip/cmdk.git dd2250ed608443e8f32bafc5fa2d1d07a3746aa3
 coc.nvim https://github.com/neoclide/coc.nvim.git 44e254732db696245a14d35fb6d294d3141964bc
 commerce https://github.com/vercel/commerce.git 3761e52e60df9c6a316e067dbfd7032e494d3634
 commitlint https://github.com/conventional-changelog/commitlint.git 1d92a16a1c4f48f9e6f98a4a150294895216ea61

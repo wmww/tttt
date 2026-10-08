@@ -1211,7 +1211,7 @@ static bool is_known_object_for_reduction(Checker* me, Ty const* ty) {
     // (An instantiation of one, by a mapper whose types have no type variables: the literal instantiated inside a
     // generic signature)
     Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
-    if (root->anonymous.target || !root->anonymous.free_params_unknown || root->anonymous.free_params.len) return false;
+    if (root->kind != TY_ANONYMOUS || root->anonymous.target || !root->anonymous.free_params_unknown || root->anonymous.free_params.len) return false;
     TyMapper const* mapper = ty->anonymous.target ? ty->anonymous.mapper : nullptr;
     for (u32 i = 0; mapper && i < mapper->len; i++) {
         if (mapper->targets[i]->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES) return false;
@@ -1906,7 +1906,8 @@ bool ty_is_const_type_variable(Checker* me, Ty const* ty, u32 depth) {
             // A homomorphic mapped type over one (tsc's isConstMappedType). (Syntax first, as members are lazy)
             if (!(ty->flags & TYF_COULD_CONTAIN_TYPE_VARIABLES)) return false;
             Ty const* root = ty->anonymous.target ? ty->anonymous.target : ty;
-            TypeNode const* node = root->anonymous.node;
+            // (An instantiation expression's target is any object type)
+            TypeNode const* node = root->kind == TY_ANONYMOUS ? root->anonymous.node : nullptr;
             if (!node || node->tag != TYPE_INTERFACE || vec_interface_member_size(&node->interface.members) != 1) return false;
             if (vec_interface_member_at(&node->interface.members, 0)->key.tag != INTERFACE_KEY_MAPPED) return false;
             MappedInfo const* mapped = ty_members(me, ty)->mapped;
@@ -2549,7 +2550,7 @@ Ty const* ty_keyof(Checker* me, Ty const* operand) {
         // getIndexTypeForMappedType)
         if (operand->kind == TY_ANONYMOUS) {
             Ty const* root = operand->anonymous.target ? operand->anonymous.target : operand;
-            TypeNode const* node = root->anonymous.node;
+            TypeNode const* node = root->kind == TY_ANONYMOUS ? root->anonymous.node : nullptr;
             if (node && node->tag == TYPE_INTERFACE && vec_interface_member_size(&node->interface.members) == 1 &&
                 vec_interface_member_at(&node->interface.members, 0)->key.tag == INTERFACE_KEY_MAPPED) {
                 MappedInfo const* mapped = ty_mapped_info_unexpanded(me, operand);
