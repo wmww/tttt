@@ -171,6 +171,7 @@ typedef struct CompilerOptions {
     JsxKind jsx;
     ModuleDetectionKind module_detection;
     cstr lib; // Comma separated, lowercase, as written ("es2015,dom"). Empty: the default library of the target
+    bool lib_set; // `lib` was given: empty means none at all (`"lib": []`, tsc's options.lib of no names)
     // As written, empty if not given
     cstr jsx_factory; // `h`, `React.createElement`
     cstr jsx_fragment_factory;

@@ -210,6 +210,7 @@ CompilerOptionSetResult compiler_options_set(CompilerOptions* me, csview name, c
 
     if (name_equals(name, "lib")) {
         cstr_clear(&my lib);
+        my lib_set = !name_equals(value, "null");
         while (value.size) {
             isize end = csview_find_sv(value, c_sv(","));
             csview single = csview_trim_whitespace(csview_slice(value, 0, end));
@@ -492,6 +493,7 @@ csview compiler_options_lib_file_name(csview name) {
 
 cstr compiler_options_lib_files(CompilerOptions const* me) {
     if (my no_lib) return cstr_null;
+    if (!cstr_size(&my lib) && my lib_set) return cstr_null;
     if (!cstr_size(&my lib)) {
         switch (my target) {
             case SCRIPT_TARGET_ES3:
