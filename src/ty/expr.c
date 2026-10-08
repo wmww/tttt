@@ -2894,11 +2894,13 @@ static Ty const* assignment_value_context(Checker* me, BinaryOpExpr const* binar
         assigned_context = left;
     }
     // `a.b = v` or `this.b = v` that declares b (an expando): v's type is what b is, so it gives v no context
-    // unless b is declared with a type, or `a` is (tsc's getContextualTypeForAssignmentDeclaration)
+    // unless b is declared with a type, or `a` is (tsc's getContextualTypeForAssignmentDeclaration). A class field
+    // the class body declares with a type is that declaration's (the symbol's valueDeclaration in
+    // getContextualTypeForThisPropertyAssignment): `/** @type {M} */ map;` then `this.map = {...}`
     if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_PROPERTY && binary->left.property->declares &&
         !binary->jsdoc_type && !expando_target_is_annotated(binary->left.property)
     ) {
-        assigned_context = nullptr;
+        assigned_context = annotated_property_context(me, binary);
     }
     if (binary->op == BINARY_OP_EQUAL && binary->left.tag == EXPR_OBJECT && binary->left.assignment_pattern &&
         (left->flags & TYF_OBJECT) && left->kind == TY_ANONYMOUS && binary->right.tag != EXPR_CALL
