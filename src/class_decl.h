@@ -67,6 +67,7 @@ typedef struct ClassItem {
             bool is_abstract;
             bool is_declare; // `declare x: T`: nothing is emitted, so it can't be decorated
             bool is_auto_accessor; // `accessor x = 1`
+            bool is_definite; // `x!: T`
             cstr name_string; // See method.name_string
             Span name_span;
             bool name_is_value;
@@ -101,7 +102,6 @@ Span class_item_private_name(ClassItem const* me);
 Ty const* class_item_field_evaluate_type(ClassItem* me);
 Ty const* class_item_accessor_evaluate_type(ClassItem* me);
 Ty const* class_item_get_type(ClassItem* me);
-bool class_item_field_is_definite(ClassItem const* me); // `x!: T`
 
 #define g_class_key ClassItem, class_item
 #define g_no_clone

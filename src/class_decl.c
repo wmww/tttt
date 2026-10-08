@@ -686,15 +686,6 @@ static bool item_has_member_name(Checker* checker, ClassDecl const* me, ClassIte
     return item_member_name(checker, me, item) == name;
 }
 
-// What an instance member of a class is, for tsc's checkKindsOfPropertyMemberOverrides()
-bool class_item_field_is_definite(ClassItem const* me) {
-    check(my tag == CLASS_ITEM_FIELD);
-    if (!span_valid(my field.name_span)) return false;
-    char const* after = span_end_ptr(my field.name_span); // (the parser doesn't keep the `!`)
-    while (*after == ' ' || *after == '\t') after++;
-    return *after == '!';
-}
-
 // tsc's containsUndefinedType
 static bool contains_undefined(Ty const* ty) {
     if (ty->flags & TYF_UNDEFINED) return true;
@@ -739,6 +730,7 @@ static ClassItem const* class_constructor_with_body(ClassDecl const* me) {
     return nullptr;
 }
 
+// What an instance member of a class is, for tsc's checkKindsOfPropertyMemberOverrides()
 typedef enum MemberKind {
     MEMBER_NONE,
     MEMBER_PROPERTY,
@@ -769,10 +761,7 @@ static MemberInfo class_instance_member(Checker* checker, ClassDecl const* me, A
             ret.is_abstract = i->field.is_abstract;
             ret.is_declare = i->field.is_declare;
             ret.uninitialized_field = !i->field.is_auto_accessor && i->field.value.tag == EXPR_IMPLICIT_ANY;
-            // `x!: T` (the parser doesn't keep the `!`)
-            char const* after = span_valid(i->field.name_span) ? span_end_ptr(i->field.name_span) : nullptr;
-            while (after && (*after == ' ' || *after == '\t')) after++;
-            ret.definite = after && *after == '!';
+            ret.definite = i->field.is_definite;
             ret.identifier_name = !i->field.computed_key && !i->field.name_is_value;
             Expr const* key = i->field.computed_key;
             ret.late_bound = key && (key->tag == EXPR_IDENTIFIER || key->tag == EXPR_PROPERTY);
@@ -1878,7 +1867,7 @@ static void class_check_property_initialization(ClassDecl const* me, ErrorCtx* e
         // (Auto-accessors and JavaScript fields too)
         if (i->field.value.tag != EXPR_IMPLICIT_ANY || !span_valid(i->field.name_span)) continue;
         if (i->field.name_is_value && !i->field.computed_key) continue; // (a string or numeric name)
-        if (class_item_field_is_definite(i)) continue;
+        if (i->field.is_definite) continue;
         Ty const* type = class_item_get_type((ClassItem*)i);
         if ((type->flags & (TYF_ANY | TYF_UNKNOWN)) || contains_undefined(type)) continue;
         if (constructor && field_initialized_in_constructor(checker, me, i, type, constructor)) continue;

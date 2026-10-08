@@ -8158,6 +8158,7 @@ static bool parse_class_item_inner(Parser* parent, bool is_type, bool is_abstrac
                     .is_auto_accessor = modifiers.includes[MODIFIER_ACCESSOR],
                     .is_static = modifiers.includes[MODIFIER_STATIC],
                     .is_optional = optional,
+                    .is_definite = span_valid(definite),
                     .name_string = cstr_move(&name_string),
                     .name_span = name_span,
                     .name_is_value = name_is_value,

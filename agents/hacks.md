@@ -100,11 +100,9 @@ src` finds the code-side markers; every significant one has an entry here.
   flattens `else if` (no `Statement` for the nested if: no TS7027 on it; `Statement.flow` costs 8 bytes per statement
   for TS7027 only, labeled statements have none). `statement_start_needs_check()` gates isStartOfStatement by first
   word (a new rejecting case must be added).
-- Dropped syntax the checker re-peeks: class field `x!: T` (`definite` in class_decl.c and
-  `check_used_before_initialization` look at the character after the name); `in`/`out` type parameter modifiers never
-  print; private names outside classes have no flag (`object_item_is_private_name`,
-  `interface_member_is_private_name`, `enum_decl_typecheck` check the first character; such an enum member is
-  declared and prints `__missing`).
+- Dropped syntax: `in`/`out` type parameter modifiers never print; private names outside classes have no flag
+  (`object_item_is_private_name`, `interface_member_is_private_name`, `enum_decl_typecheck` check the first character;
+  such an enum member is declared and prints `__missing`).
 - Accessors: class accessors pair by name+staticness in `class_decl_lookup_names` (raw pointers in one vec); readonly
   means "no setter". Interface accessors become properties in `parse_interface` (`InterfaceMember.write_type`,
   `second_name`, `setter_param`; `interface_declaration_kind()` in check.c re-reads `get`/`set` from the span text).

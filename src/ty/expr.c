@@ -2434,7 +2434,7 @@ void ty_check_property_used_before_assigned(Checker* me, Expr const* expr, Error
     if (!class_decl || class_decl->is_ambient) return;
     ClassItem const* field = class_decl_find_member(class_decl, access->prop.inner_span.sv, false);
     if (!field || field->tag != CLASS_ITEM_FIELD || field->field.value.tag != EXPR_IMPLICIT_ANY || field->field.is_abstract ||
-        field->field.is_declare || field->field.is_auto_accessor || class_item_field_is_definite(field)
+        field->field.is_declare || field->field.is_auto_accessor || field->field.is_definite
     ) {
         return;
     }
