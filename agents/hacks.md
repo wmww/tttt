@@ -668,8 +668,16 @@ src` finds the code-side markers; every significant one has an entry here.
 - CommonJS: module indicator syntactic (`saw_commonjs`, failed attempts too). `exports.x =` from top-level statements
   and their blocks (`add_nested_commonjs_exports()`), in functions only in IIFEs; `Object.defineProperty` only as an
   expression statement; `is_exports_alias()` module-level only (queue of 16); `require()` is parser-synthesized
-  `PortItem`s (flat patterns only); `readonly_assignment()` never reports `exports.x =`. `export=` absorbs other
-  exports in place (tsc copies: typedefCrossModule3); `exports.x = a.b` isn't an alias; `import * as ns` of CommonJS
+  `PortItem`s (flat patterns only); `readonly_assignment()` never reports `exports.x =`. `export=` absorbs the module's other
+  exports in place at link time (`merge_commonjs_export_equals()`, tsc's getCommonJsExportEquals clone + its merged
+  symbol): equivalent while nothing needs the unmerged original, except two laziness artifacts of tsc emulated by
+  rules: a variable's function/class initializer lacks the merged exports (`is_commonjs_merged_export()`, members.c:
+  tsc cached the expression's type before the clone) and `export import a = x.c`'s TS2708 ignores a value meaning
+  only the merge gave a namespace (`symbol_is_commonjs_merged_value_only()`: tsc checks it before
+  checkExternalModuleExports clones). `merged_export_equals_type()` (lower.c) keeps a typed view of `module.exports
+  = <expr>` plus the exports (and of a variable as its own file's `module.exports`) under its own keys,
+  `export_equals_view` on the type; conflicting same-named exports stay unmerged (tsc reports them, only TS's
+  `check_export_equals_merge()` does here); a module target (`module.exports = require("./y")`) isn't merged; `exports.x = a.b` isn't an alias; `import * as ns` of CommonJS
   has the module's type. Exported class expressions alias the class (`scope_reparent`, top level only).
   `exports.x = undefined` with later `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias (the
   last one resolves), and the declarations' left sides are `any`; tttt keeps a property + alias symbol.

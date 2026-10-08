@@ -1,8 +1,30 @@
 # Plan 50: tsc's symbol clones (export= targets, CommonJS export merging, namespace-import clones)
 
-Status: planned (triage 2026-10-07). Not started. Payoff: ~12 suite tests (mostly the symbols component, a few types,
-one errors), the removal of four display/harness special cases, and correct identity for augmented `export =`
-modules on real code (DefinitelyTyped augments `export =` packages a lot: the sweep is the real oracle here).
+Status: stages 0-2 done (2026-10-08), **in place rather than by a redirect** (see "Outcome" below). Stages 3-5 are
+left as bugs/binder_modules.md entries: each is one or two tests of tsc's ordering, not worth a session on its own.
+
+## Outcome (2026-10-08)
+- Stage 0 (tsc's run.js instrumented through the harness, `RUNJS=` in test/diffapp/tsc_custom_baseline.js; see the
+  memory note on instrumenting tsc): getCommonJsExportEquals runs for **every** module whose file is checked
+  (checkExternalModuleExports, or the file's first `module.exports` access), not only when an importer resolves it:
+  a static "always at link time" rule is right. lateBoundAssignmentDeclarationSupport7 and es6ExportEqualsInterop
+  involve no clone at all. jsExportMemberMergedWithModuleAugmentation3's merge is
+  getInitializerTypeFromAssignmentDeclaration's mergeSymbol, not this. moduleAugmentationDuringSyntheticDefaultCheck
+  depends on which alias resolutions happen inside initializeTypeChecker (one test of ordering).
+- Design change: tttt's binder already merges in place (merge_symbol retargets declarations, the source is left
+  behind), so "clone + record as merged + redirect every lookup" is the same as "merge into the target" as long as
+  nothing needs the unmerged original. `merge_commonjs_export_equals()` (scope.c, binder_link before the
+  augmentations, tsc's order) adds the module's other exports to the target's exports, merges same-named ones
+  (assignment declarations always merge), repoints the module's export entry, and gives a function/class/namespace
+  target a node-less expando declaration so the existing expando typing types it. `SymbolRare.export_equals_module`
+  marks the target. No symbol identity changes, so no redirect, no per-lookup cost, no debug assertion needed.
+- Deleted: the clone (`merged_export_equals()`, `SymbolModule.merged_export_equals`,
+  `SymbolRare.merged_export_equals_of`), binder_redirect's clone line, symbol_chain.c's clone naming, ty_display.c's
+  `export_equals_clone_of()`, the harness's `namespace_export_equals_clone()`. Kept: `merged_export_equals_type()`
+  for `module.exports = <expr>` and a variable's own-file `module.exports` (tsc types those differently), keyed on
+  the target with `export_equals_view` on the view type.
+- Where in-place isn't tsc: two laziness artifacts (tsc caches a type or reports before the clone exists), now
+  small rules listed in hacks.md (CommonJS entry). Suite +3, every other oracle unchanged.
 
 ## tsc's mechanism
 Three places make a *transient copy* of a symbol and either record it as the original's merged symbol or hand it out

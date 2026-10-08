@@ -1564,13 +1564,15 @@ static void check_export_equals_merge(Symbol const* module, Symbol* export_equal
         if (!existing || existing == source) continue;
         Symbol const* resolved = existing->flags & SYMBOL_ALIAS ? symbol_resolve_alias(existing) : existing;
         if (!resolved || resolved->is_placeholder || !(resolved->flags & excluded_flags(source->flags))) continue;
-        // (A merge of the checker: each side points at the other's declarations, tsc's addDuplicateDeclarationError)
+        // (A merge of the checker: each side points at the other's declarations, tsc's addDuplicateDeclarationError,
+        // with reportMergeSymbolError's message)
+        unsigned code = (existing->flags | source->flags) & SYMBOL_BLOCK_SCOPED_VARIABLE ? 2451 : 2300;
         for (u32 d = 0; d < existing->decl_count; d++) {
-            Error* error = report_conflict(errs, existing->decls[d].name, 2300);
+            Error* error = report_conflict(errs, existing->decls[d].name, code);
             for (u32 o = 0; o < source->decl_count; o++) add_duplicate_related(error, existing->decls[d].name, source->decls[o].name);
         }
         for (u32 d = 0; d < source->decl_count; d++) {
-            Error* error = report_conflict(errs, source->decls[d].name, 2300);
+            Error* error = report_conflict(errs, source->decls[d].name, code);
             for (u32 o = 0; o < existing->decl_count; o++) add_duplicate_related(error, source->decls[d].name, existing->decls[o].name);
         }
     }

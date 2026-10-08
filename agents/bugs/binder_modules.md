@@ -4,8 +4,8 @@ Leftovers of the 2026-10-07 triage (binder/modules share). Each entry: the test,
 and what a fix needs. JS/JSDoc-specific items are in plans/26_js_jsdoc.md's Leftovers.
 
 ## Export= clones (tsc's mergeSymbol clone, getCommonJsExportEquals, cloneTypeAsModuleType)
-**Planned: plans/50_export_equals_clones.md** (a link-time original -> clone redirect replacing tttt's
-reverse-direction special cases). The entries below are its tests.
+Plan 50 (plans/50_export_equals_clones.md) did getCommonJsExportEquals in place at link time (2026-10-08); the
+entries below are what is left of it (its stages 3-5).
 tttt merges augmentations straight into what `export =` assigns (merge_augmentations()); tsc clones it and records
 the clone as the merged symbol, which everything that resolves names sees. That is equivalent except where tsc's
 clone is a *different* symbol than the one a later lookup finds:
@@ -18,14 +18,23 @@ clone is a *different* symbol than the one a later lookup finds:
 - jsExportMemberMergedWithModuleAugmentation3 (symbols): `module.exports.x = 1; module.exports = require("./y.js")`
   with y's `export type x`: getCommonJsExportEquals clones y's *module* and mergeSymbol's x.js's `x` into y's `x`
   (an Assignment merges with anything), so every reference to either `x` shows both declarations.
-  module_export_equals() never clones a module target (`target->is_module` returns it), and x.js's own exports
-  table would have to point at the merged symbol too. Tried adding the declarations to y's x: not enough.
+  Stage 0 (2026-10-08, tsc instrumented) says otherwise: tsc's export= here is a Property|Assignment symbol (not
+  an alias), and the merge of the two `x` is getInitializerTypeFromAssignmentDeclaration's `mergeSymbol(s,
+  exportedMember)` while typing `module.exports` (x.js's x cloned, y's x recorded into it). tttt makes the export=
+  an alias to y's module and merge_commonjs_export_equals() skips module targets; tried adding the declarations to
+  y's x: not enough (x.js's own exports table must point at the merged symbol too).
 - mergedDeclarations7: `import { Passport } from "passport"` of an `export =` const+namespace. tsc's
   getExternalModuleMember combines the namespace's interface `Passport` with the const's property `Passport`
   (combineValueAndTypeSymbols): a fresh transient symbol with the interface's flags, so getDeclaredTypeOfSymbol makes
   a *second* `Passport` interface type with its own `this`; `passport.use()` (PassportStatic) is then not assignable
   to it (TS2322, "'this' could be instantiated with a different subtype"), printed `Passport` vs `passport.Passport`.
   A tsc quirk; emulating it means a declared type per combined alias symbol (PortItem value_target + type target).
+- jsExportMemberMergedWithModuleAugmentation: `module.exports = { Abcde }` (shorthand only) binds each property as an
+  alias export, no export= (tsc's bindModuleExportsAssignment); the augmentation merges into the file's module
+  symbol (a clone recorded as its merged symbol), printed `Symbol("./test", Decl(test.js, 0, 0), Decl(index.ts, 0,
+  31))` and `typeof module."./test"` where tttt says `module.exports`.
+- es6ExportEqualsInterop (`z2.a` named `a2`) and lateBoundAssignmentDeclarationSupport7 (`x.F.F[_str]`) involve no
+  clone at all (stage 0 logged none): symbol-chain naming bugs of their own.
 - jsExportMemberMergedWithModuleAugmentation2: `module.exports = { a: "ok" }` is a Property|ValueModule export= to
   tsc's binder (bindModuleExportsAssignment), so `declare module "./test" { export const a: number }` merges into it
   (tttt: TS2671, merge_augmentations() wants SYMBOL_NAMESPACE), and getInitializerTypeFromAssignmentDeclaration unions
