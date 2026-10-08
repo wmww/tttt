@@ -3756,7 +3756,14 @@ static Members const* resolve_intersection_members(Checker* me, Ty const* ty) {
     panic_if(!parts || !mixin, "out of memory");
     u32 constructors = 0, mixins = 0;
     for (u32 i = 0; i < types.len; i++) {
-        parts[i] = part_members(me, types.data[i]);
+        // Its members see the whole intersection as their `this` (tsc's getApparentTypeOfIntersectionType, which
+        // getSignaturesOfType goes through): `DD & Base` with `(a: A): X & this` in DD returns `X & DD & Base`. (A
+        // reference with a `this` of its own keeps it, like find_prop()'s)
+        Ty const* part = types.data[i];
+        if (part->kind != TY_TYPE_PARAM && !(part->kind == TY_REFERENCE && part->reference.this_arg)) {
+            part = ty_with_this_arg(me, part, ty);
+        }
+        parts[i] = part_members(me, part);
         mixin[i] = is_mixin_constructor(me, parts[i]);
         constructors += parts[i]->construct_count > 0;
         mixins += mixin[i];
