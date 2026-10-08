@@ -2850,17 +2850,27 @@ static bool has_literal_length(Checker* me, Ty const* ty) {
 }
 
 static Ternary tuple_shapes_related(
-    Checker* me, RelationState* st, TupleShape const* source_shape, TyList source_args, Ty const* target, bool report
+    Checker* me, RelationState* st, TupleShape const* source_shape, TyList source_args, Ty const* target, bool report,
+    Atom const* const* excluded, u32 excluded_len
 );
-static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+// `excluded`: discriminant positions already related (tsc's propertiesRelatedTo excludedProperties), skipped up to the
+// first variable-length element
+static Ternary tuples_related_excluding(
+    Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report, Atom const* const* excluded, u32 excluded_len
+) {
     TupleShape const* source_shape = is_empty_tuple(source) ? source->declared.tuple : source->reference.target->declared.tuple;
     TyList source_args = is_empty_tuple(source) ? (TyList){0} : ty_reference_args(me, source);
-    return tuple_shapes_related(me, st, source_shape, source_args, target, report);
+    return tuple_shapes_related(me, st, source_shape, source_args, target, report, excluded, excluded_len);
+}
+
+static Ternary tuples_related(Checker* me, RelationState* st, Ty const* source, Ty const* target, bool report) {
+    return tuples_related_excluding(me, st, source, target, report, nullptr, 0);
 }
 
 // (An array source is one rest element: tsc's propertiesRelatedTo for isArrayOrTupleType(source))
 static Ternary tuple_shapes_related(
-    Checker* me, RelationState* st, TupleShape const* source_shape, TyList source_args, Ty const* target, bool report
+    Checker* me, RelationState* st, TupleShape const* source_shape, TyList source_args, Ty const* target, bool report,
+    Atom const* const* excluded, u32 excluded_len
 ) {
     TupleShape const* target_shape = is_empty_tuple(target) ? target->declared.tuple : target->reference.target->declared.tuple;
     // (TS4104 is report_relation_error()'s, tsc's propertiesRelatedTo says nothing)
@@ -2906,6 +2916,7 @@ static Ternary tuple_shapes_related(
         target_end++;
     }
     Ternary result = TERNARY_TRUE;
+    bool can_exclude = excluded_len > 0;
     for (u32 i = 0; i < source_arity; i++) {
         u32 from_end = source_arity - 1 - i;
         u32 target_index = target_variable && i >= target_start ? target_arity - 1 - (from_end < target_end ? from_end : target_end) : i;
@@ -2928,6 +2939,17 @@ static Ternary tuple_shapes_related(
         if (target_required && !source_required) {
             if (report) report_line(st, 2623, cstr_d("Source provides no match for required element at position ", target_index, " in target."));
             return TERNARY_FALSE;
+        }
+        if (can_exclude) {
+            if ((source_flags | target_flags) & TUPLE_ELEMENT_REST) can_exclude = false;
+            if (can_exclude) {
+                char digits[16];
+                snprintf(digits, sizeof(digits), "%u", i);
+                Atom const* name = checker_atom(me, csview_from(digits));
+                bool skip = false;
+                for (u32 d = 0; d < excluded_len && !skip; d++) skip = excluded[d] == name;
+                if (skip) continue;
+            }
         }
         // A variadic source element against a rest one relates as a whole to the rest's array type
         // (tsc's removeMissingType: an optional element's missing only matches an optional one)
@@ -4506,28 +4528,9 @@ static Ternary related_to_discriminated(Checker* me, RelationState* st, Ty const
             Ty const* part = apparent_type(me, parts.data[p]);
             if (!(part->flags & TYF_OBJECT)) continue;
             if (is_tuple(apparent) && is_tuple(part)) {
-                // Tuples by their elements, the discriminant positions left out while the lengths are fixed (tsc's
-                // propertiesRelatedTo with excludedProperties); their methods are the arrays' (tsc returns there)
-                TupleShape const* source_shape = apparent->reference.target->declared.tuple;
-                TupleShape const* target_shape = part->reference.target->declared.tuple;
-                bool fixed = source_shape->arity == target_shape->arity;
-                for (u32 i = 0; i < source_shape->arity && fixed; i++) {
-                    fixed = !((source_shape->flags[i] | target_shape->flags[i]) & (TUPLE_ELEMENT_OPTIONAL | TUPLE_ELEMENT_REST));
-                }
-                if (!fixed) {
-                    result &= tuples_related(me, st, apparent, part, false);
-                    continue;
-                }
-                TyList source_elements = ty_reference_args(me, apparent);
-                TyList target_elements = ty_reference_args(me, part);
-                for (u32 i = 0; i < source_shape->arity && result; i++) {
-                    char digits[16];
-                    snprintf(digits, sizeof(digits), "%u", i);
-                    Atom const* name = checker_atom(me, csview_from(digits));
-                    bool skip = false;
-                    for (u32 d = 0; d < count; d++) skip |= discriminants[d] == name;
-                    if (!skip) result &= is_related_to(me, st, source_elements.data[i], target_elements.data[i], false);
-                }
+                // Tuples by their elements, the discriminant positions left out up to the first variable-length element
+                // (tsc's propertiesRelatedTo with excludedProperties); their methods are the arrays' (tsc returns there)
+                result &= tuples_related_excluding(me, st, apparent, part, false, discriminants, count);
                 continue;
             }
             Members const* part_members = ty_members(me, part);
@@ -5678,7 +5681,7 @@ static Ternary structured_related_members(
             if (has_rest) {
                 unsigned char rest_flag = TUPLE_ELEMENT_REST;
                 TupleShape as_tuple = { .arity = 1, .flags = &rest_flag, .readonly = source->reference.target == my readonly_array_target };
-                return tuple_shapes_related(me, st, &as_tuple, (TyList){ .data = &source, .len = 1 }, target, report);
+                return tuple_shapes_related(me, st, &as_tuple, (TyList){ .data = &source, .len = 1 }, target, report, nullptr, 0);
             }
             u32 min = 0;
             for (u32 i = 0; i < shape->arity; i++) {
