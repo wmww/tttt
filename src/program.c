@@ -2214,6 +2214,12 @@ static void program_verify_emit_paths(Program* me) {
 // global diagnostic saying why it is in the program
 static void program_error_explaining_file(Program* me, SourceFile const* file, unsigned code, cstr message) {
     if (span_valid(file->included_at)) {
+        // (Not in a file that isn't checked, a skipLibCheck declaration file: tsc's getProgramDiagnostics skips them)
+        SourceFile const* at = file->included_at.source;
+        if (at && at->unchecked && !at->plain_js) {
+            cstr_drop(&message);
+            return;
+        }
         error_ctx_error_s(my errs, file->included_at, code, message);
         return;
     }
