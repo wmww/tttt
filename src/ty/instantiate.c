@@ -267,7 +267,10 @@ static Ty const* mapped_over_array_or_tuple(
     if (ty_is_array(me, list)) {
         bool readonly = mapped->readonly ? mapped->readonly > 0 : list->reference.target == my readonly_array_target;
         TyMapper const* element_mapper = ty_mapper_with(me, mapper, mapped->type_param, ty_intrinsic(me, TY_NUMBER));
-        return ty_array(me, mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), true), readonly);
+        Ty const* element = mapped_element_optionality(me, mapped, ty_instantiate(me, ty_mapped_template(me, mapped), element_mapper), true);
+        // (An error element makes the whole the error type: `Promise.all` of an unresolved import's results is
+        // `Promise<any>`, and callbacks of a method of the awaited any get no contextual type)
+        return element->flags & TYF_ERROR ? ty_intrinsic(me, TY_ERROR) : ty_array(me, element, readonly);
     }
     if (!ty_is_tuple(list)) return nullptr;
     TupleShape const* shape = list->reference.target->declared.tuple;
@@ -325,6 +328,13 @@ static Ty const* mapped_over_array_or_tuple(
         .names = shape->names,
         .labels = shape->labels,
     };
+    // (Like an array's, an error element makes the whole the error type; tsc compares with errorType itself)
+    for (u32 i = 0; i < shape->arity; i++) {
+        if (mapped_elements[i] == ty_intrinsic(me, TY_ERROR)) {
+            ret = mapped_elements[i];
+            goto done;
+        }
+    }
     Ty const* target = ty_tuple_target(me, &new_shape);
     ret = !shape->arity ? target : ty_reference(me, target, (TyList){ .data = mapped_elements, .len = shape->arity });
 done:
