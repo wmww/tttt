@@ -4130,6 +4130,9 @@ void binder_link(Binder* me) {
         Symbol const* container = symbol->alias->scope->container;
         if (container && !port_item_declares_export(symbol->alias->item)) {
             Symbol* exported = symbol_table_get(container->exports, symbol->name);
+            // (Not what the import resolves to: an augmentation merged through `export { A }` of an imported A makes
+            // the export its target, see merge_into_exports())
+            if (exported == target) exported = nullptr;
             if (exported && exported != symbol) local_flags |= exported->flags & ~(u32)SYMBOL_ALIAS;
             if (exported && exported != symbol && (exported->flags & SYMBOL_VALUE) && !(exported->flags & SYMBOL_ALIAS)) {
                 symbol->alias->export_value = exported;
