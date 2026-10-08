@@ -2819,6 +2819,8 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (source->is_stdlib || !source_file_is_checked(source) || share_of(me, index++) != c) continue;
         checker->file_order = index - 1;
         checker->flow_analysis_disabled = false;
+        struct timespec file_start;
+        if (debug_env.file_times) timespec_get(&file_start, TIME_UTC);
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
         source_file_check_verbatim_exports(source, checker->errs);
         checker->defer_checks = true;
@@ -2829,6 +2831,12 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
         checker->deferred_count = 0;
         checker->defer_checks = false;
+        if (debug_env.file_times) {
+            struct timespec file_end;
+            timespec_get(&file_end, TIME_UTC);
+            double ms = (double)(file_end.tv_sec - file_start.tv_sec) * 1e3 + (double)(file_end.tv_nsec - file_start.tv_nsec) / 1e6;
+            fprintf(stderr, "file time: %10.1f ms %s\n", ms, cstr_str(&source->canonical_path));
+        }
     }
     // After its files are checked: the checker marks members it reads
     index = 0;

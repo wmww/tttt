@@ -1136,33 +1136,37 @@ static void intersect_unions_of_primitives(Checker* me, TyBuf* buf) {
     }
     buf->len = out;
 
-    TyBuf result = {0};
+    // Each member once (tsc's `checked` set): `keyof (A | B | ...)` of many types sharing their keys is otherwise
+    // quadratic in the number of unions (the result is a union, which orders it anyway)
+    TyBuf candidates = {0};
     for (u32 u = 0; u < count; u++) {
         TyList members = unions[u]->composite.types;
-        for (u32 i = 0; i < members.len; i++) {
-            Ty const* t = members.data[i];
-            // A member of the first union was decided there (tsc's `checked` set): without this `keyof (A | B | ...)`
-            // of many types sharing their keys was quadratic in the number of unions
-            if (u && union_contains(unions[0], t)) continue;
-            bool everywhere = true;
-            for (u32 other = 0; other < count && everywhere; other++) {
-                if (union_contains(unions[other], t)) continue;
-                // undefined and exactOptionalPropertyTypes' missing type match each other (tsc's eachUnionContains)
-                if (t == my intrinsics[TY_MISSING] || t == my intrinsics[TY_UNDEFINED]) {
-                    everywhere = union_contains(unions[other], my intrinsics[t == my intrinsics[TY_MISSING] ? TY_UNDEFINED : TY_MISSING]);
-                    continue;
-                }
-                // A literal is also matched by its primitive: `("a" | 1) & (string | 2)` keeps "a"
-                u32 family = t->kind == TY_LITERAL ? primitive_family(t) : 0;
-                Ty const* primitive =
-                    family == TYF_STRING ? my intrinsics[TY_STRING] :
-                    family == TYF_NUMBER ? my intrinsics[TY_NUMBER] :
-                    family == TYF_BIGINT ? my intrinsics[TY_BIGINT] : nullptr;
-                everywhere = primitive && union_contains(unions[other], primitive);
-            }
-            if (everywhere) ty_buf_push(&result, t);
-        }
+        for (u32 i = 0; i < members.len; i++) ty_buf_push(&candidates, members.data[i]);
     }
+    sort_by_id(candidates.data, candidates.len);
+    TyBuf result = {0};
+    for (u32 c = 0; c < candidates.len; c++) {
+        Ty const* t = candidates.data[c];
+        if (c && candidates.data[c - 1] == t) continue;
+        bool everywhere = true;
+        for (u32 other = 0; other < count && everywhere; other++) {
+            if (union_contains(unions[other], t)) continue;
+            // undefined and exactOptionalPropertyTypes' missing type match each other (tsc's eachUnionContains)
+            if (t == my intrinsics[TY_MISSING] || t == my intrinsics[TY_UNDEFINED]) {
+                everywhere = union_contains(unions[other], my intrinsics[t == my intrinsics[TY_MISSING] ? TY_UNDEFINED : TY_MISSING]);
+                continue;
+            }
+            // A literal is also matched by its primitive: `("a" | 1) & (string | 2)` keeps "a"
+            u32 family = t->kind == TY_LITERAL ? primitive_family(t) : 0;
+            Ty const* primitive =
+                family == TYF_STRING ? my intrinsics[TY_STRING] :
+                family == TYF_NUMBER ? my intrinsics[TY_NUMBER] :
+                family == TYF_BIGINT ? my intrinsics[TY_BIGINT] : nullptr;
+            everywhere = primitive && union_contains(unions[other], primitive);
+        }
+        if (everywhere) ty_buf_push(&result, t);
+    }
+    ty_buf_drop(&candidates);
     // (Both: the missing type, which a union with undefined would drop: tsc's intersectUnionsOfPrimitiveTypes)
     bool has_missing = false;
     for (u32 i = 0; i < result.len; i++) has_missing |= result.data[i] == my intrinsics[TY_MISSING];

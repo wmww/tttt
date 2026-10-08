@@ -23,5 +23,6 @@ static void read_debug_env() {
         .debug_relate = getenv("TTTT_DEBUG_RELATE") != nullptr,
         .debug_relate_nested = getenv("TTTT_DEBUG_RELATE_NESTED") != nullptr,
         .parallel_resolve = getenv("TTTT_PARALLEL_RESOLVE") != nullptr,
+        .file_times = getenv("TTTT_FILE_TIMES") != nullptr,
     };
 }

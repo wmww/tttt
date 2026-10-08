@@ -30,6 +30,7 @@ typedef struct DebugEnv {
     bool debug_relate;         // TTTT_DEBUG_RELATE
     bool debug_relate_nested;  // TTTT_DEBUG_RELATE_NESTED
     bool parallel_resolve;     // TTTT_PARALLEL_RESOLVE: resolve names on --threads threads even for a few files (tests)
+    bool file_times;           // TTTT_FILE_TIMES: each checked file's check time (with its deferred checks) on stderr
 } DebugEnv;
 extern DebugEnv debug_env;
 
