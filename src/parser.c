@@ -976,6 +976,23 @@ static void note_jsdoc_comment(Parser* parent, const char* start, const char* en
     vec_jsdoc_range_push(comments, (JsDocRange){ .start = start, .end = end });
 }
 
+// Whether at (a NUL byte) is a character of the file rather than its end (tsc's scanner reads past it)
+static bool nul_at_inside_file(Parser const* p, char const* at) {
+    char const* file_start = cstr_str(&p->shared->source->contents);
+    return at >= file_start && at < file_start + cstr_size(&p->shared->source->contents);
+}
+
+// strchr() that goes on past NUL bytes inside the file
+static char const* find_char_in_file(Parser const* p, char const* from, char c) {
+    while (true) {
+        char const* found = strchr(from, c);
+        if (found) return found;
+        char const* nul = from + strlen(from);
+        if (!nul_at_inside_file(p, nul)) return nullptr;
+        from = nul + 1;
+    }
+}
+
 static inline bool hop_comment(Parser* parent) {
     if (*parent->pos != '/') {
         return false;
@@ -984,6 +1001,9 @@ static inline bool hop_comment(Parser* parent) {
     switch (*(parent->pos + 1)) {
         case '/': {
             parent->pos += 2 + strcspn(parent->pos + 2, "\n\r");
+            while (!*parent->pos && nul_at_inside_file(parent, parent->pos)) {
+                parent->pos += 1 + strcspn(parent->pos + 1, "\n\r");
+            }
             if (parent->whitespace == WHITESPACE_NONE) {
                 parent->whitespace = WHITESPACE_PARSED;
             }
@@ -1002,11 +1022,12 @@ static inline bool hop_comment(Parser* parent) {
             const char* pos = start + 2;
             const char* slash;
             while (true) {
-                slash = strchr(pos, '/');
+                slash = find_char_in_file(parent, pos, '/');
                 if (!slash) {
                     // (tsc's scanner: the comment goes to the end of the file, '*/' expected there)
-                    if (strchr(start, '\n')) parent->whitespace = WHITESPACE_NEWLINE;
-                    parent->pos = start + 2 + strlen(start + 2);
+                    if (find_char_in_file(parent, start, '\n')) parent->whitespace = WHITESPACE_NEWLINE;
+                    parent->pos = cstr_str(&parent->shared->source->contents) + cstr_size(&parent->shared->source->contents);
+                    if (!nul_at_inside_file(parent, start)) parent->pos = start + 2 + strlen(start + 2);
                     parent->shared->unterminated_comment = true;
                     return true;
                 }
