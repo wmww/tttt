@@ -55,3 +55,12 @@
 - largeControlFlowGraph (types): tsc's first deep flow query comes from the end of the file (its checker reaches the
   last statement's reference first through some deferred check), so every `data` is errorType there; tttt's from the
   2000th statement. Check order, not a flow bug; one test.
+- Moved from hacks.md (hacks audit 2026-10-08), missing program/config diagnostics:
+  - `/// <reference lib>` with an unknown name is silently ignored (tsc: TS2726); `@libReplacement: true` is
+    unimplemented (libTypeScriptOverrideSimple & co.).
+  - Config syntax: not reported are syntax errors in configs it extends (no SourceFile for them), tokens after the root
+    value (tsc's TS1012 + TS5092), TS5092 for a non-object root.
+  - Project references: `program_error_explaining_file()` gives a root file's TS6059/TS6307 without tsc's "The file is
+    in the program because: Matched by include pattern ..." chain (the program doesn't know which spec matched).
+    Config diagnostics of references are only for the program's own config's direct references (tsc walks them
+    transitively, reported on the parent config).

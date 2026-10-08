@@ -297,6 +297,8 @@ jsDeclarationsExportAssignedConstructorFunctionWithSub (TS9005), jsDeclarationsT
 (TS9006).
 - CommonJS leftovers: `exports.Date = Date; exports.Date = 1` also gets TS2322; `function f() { var z = 1; exports.z =
   z; }` gets TS2339 (exports inside functions).
+- TS2417 (class static side) doesn't see a JS class's expando members; `export as namespace` in a JS file isn't bound
+  (`scope_add_port()`). (From hacks.md, 2026-10-08)
 ## Parser recovery (plan 27 territory, each its own mechanism)
 - Error dedupe order at the end of the file: tsc reports two errors at the same EOF position because another error
   came in between (labeledStatementDeclarationListInLoopNoCrash4: '}' expected + TS1160; jsxAndTypeAssertion: ':'
