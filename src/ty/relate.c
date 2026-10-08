@@ -3853,10 +3853,6 @@ static Ternary generic_mapped_target_related(
     return is_related_to(me, st, indexed, ty_instantiate(me, template, mapper), report);
 }
 
-// What can be written to `T[K]` whatever T and K turn out to be (tsc's structuredTypeRelatedTo with AccessFlags.Writing):
-// the access on the base constraints, if that isn't generic any more. Through a union of keys, a value has to fit
-// every key's property, so it's the intersection; a union object is read like any union (the union of the members'
-// properties). HACK: tsc also ignores index signatures when the object is a constraint (AccessFlags.NoIndexSignatures)
 // Whether `object[key]` would be read from an index signature whose key isn't number (tsc's getPropertyTypeForIndexType:
 // not a property the literal key names)
 [[gnu::noinline, gnu::cold]] static bool through_non_number_index(Checker* me, Ty const* object, Ty const* key) {
@@ -3876,6 +3872,10 @@ static Ty const* write_type_or_null(Checker* me, Ty const* type) {
     return type ? ty_remove_missing(me, type, true) : nullptr;
 }
 
+// What can be written to `T[K]` whatever T and K turn out to be (tsc's structuredTypeRelatedTo with AccessFlags.Writing):
+// the access on the base constraints, if that isn't generic any more. Through a union of keys, a value has to fit
+// every key's property, so it's the intersection; a union object is read like any union (the union of the members'
+// properties)
 static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     Ty const* object = indexed->indexed.object;
     Ty const* index = indexed->indexed.index;
@@ -3905,10 +3905,6 @@ static Ty const* write_constraint_of_indexed(Checker* me, Ty const* indexed) {
     return ret;
 }
 
-// A distributive conditional type with its check type replaced by the constraint (tsc's
-// getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C, `Extract<keyof T, string>`
-// is string. The root's check type parameter is what gets mapped, so an instantiated check type like `keyof T` has its
-// constraint distributed over. Null if that's no different
 // The conditional types a root instantiated to (one, or a distribution's union of them) as instances of the alias
 // `like` goes by (tsc keeps the alias on the root, so they print as `ReturnType<T[keyof T]>`). Only when the alias's
 // type parameters are what the root's mapper maps (checked on `like`)
@@ -3937,6 +3933,10 @@ static Ty const* realias_conditional_instances(Checker* me, Ty const* ty, Ty con
 }
 
 static Ty const* distributive_constraint_as(Checker* me, Ty const* conditional, u32 depth, bool immediate);
+// A distributive conditional type with its check type replaced by the constraint (tsc's
+// getConstraintOfDistributiveConditionalType): InstanceType<T> for `T extends typeof C` is C, `Extract<keyof T, string>`
+// is string. The root's check type parameter is what gets mapped, so an instantiated check type like `keyof T` has its
+// constraint distributed over. Null if that's no different
 static Ty const* distributive_constraint(Checker* me, Ty const* conditional, u32 depth) {
     return distributive_constraint_as(me, conditional, depth, false);
 }
