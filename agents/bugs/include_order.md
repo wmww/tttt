@@ -29,3 +29,11 @@ it only if more such cases show up (`scripts/checkerdiff.py` finds them).
 
 Reduction: `/tmp`-style tsconfig extending vue's tsconfig.corpus.json with `"types": []`, `files`: packages/global.d.ts
 and runtime-dom/src/directives/vModel.ts: tsc clean, tttt clean at `--checkers 1`, TS2345 at 2..4.
+
+tsgo 7.0.2 (2026-10-08, `tsc` on PATH, vue's tsconfig.corpus.json, `--noEmit`): reports this TS2345 at vModel.ts:446
+at `--checkers 1`, 2, 4 and `--singleThreaded` alike (10 errors in all, the other 9 in dts-test's
+defineComponent.test-d.tsx), so tsgo's single-checker order already differs from tsc 6's full check here. On the
+reduction above tsgo reports it at `--checkers 1` and 2 but not at 4: tsgo's per-checker caches are order dependent
+too. For a TS7 retarget vue's corpus would expect the TS2345 (and tttt's walk-order HACK would then be the wrong way
+round); which order tsgo's checkers measure in would need a look at its checker-assignment (likely file index modulo
+the checker count, unlike tttt's contiguous runs).
