@@ -579,7 +579,9 @@ static bool resolves_json(CompilerOptions const* options) {
         options->module_set && options->module == MODULE_KIND_PRESERVE;
 }
 
-static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrList* out, int depth) {
+// The files of dir (and below) the include patterns match, each into the bucket of the first pattern that matches it
+// (tsc's matchFiles keeps them in the order of the include patterns)
+static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrList* buckets, int depth) {
     if (depth > 64) return;
     StrList subdirs = {0};
     for_each (item, fs_listdir_sorted, my fs, dir) {
@@ -597,7 +599,9 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
         } else if (has_source_extension(me, item.name) && !is_excluded(patterns, cstr_sv(&path))) {
             for (isize i = 0; i < patterns->include.count; i++) {
                 if (glob_matches(cstr_sv(&patterns->include.items[i]), cstr_sv(&path), false)) {
-                    str_list_push(out, cstr_sv(&path));
+                    // HACK: one bucket, walk order (agents/bugs/include_order.md: tsc's include order exposes an
+                    // order-dependent union reduction in vue)
+                    str_list_push(&buckets[0], cstr_sv(&path));
                     break;
                 }
             }
@@ -614,7 +618,7 @@ static void collect_files(ConfigLoad* me, Patterns* patterns, csview dir, StrLis
         }
         cstr_drop(&path);
     }
-    for (isize i = 0; i < subdirs.count; i++) collect_files(me, patterns, cstr_sv(&subdirs.items[i]), out, depth + 1);
+    for (isize i = 0; i < subdirs.count; i++) collect_files(me, patterns, cstr_sv(&subdirs.items[i]), buckets, depth + 1);
     str_list_drop(&subdirs);
 }
 
@@ -674,6 +678,10 @@ static bool has_higher_priority_sibling(ConfigLoad* me, HMapPathKind const* file
     return false;
 }
 
+static int compare_cstr(void const* a, void const* b) {
+    return strcmp(cstr_str((cstr const*)a), cstr_str((cstr const*)b));
+}
+
 static void collect_root_files(ConfigLoad* me, StrList* out) {
     for (isize i = 0; my files && i < my files->count; i++) {
         if (my files->items[i].tag != JSON_STRING) continue;
@@ -708,11 +716,19 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         if (cstr_size(&my options->declaration_dir)) str_list_push(&patterns.exclude, cstr_sv(&my options->declaration_dir));
     }
 
-    // One walk per distinct base directory, skipping bases inside one already walked
+    // One walk per distinct base directory, skipping bases inside another (tsc's getBasePaths: sorted first, so a
+    // directory comes before what is in it)
     StrList found = {0};
     StrList bases = {0};
+    StrList sorted = {0};
     for (isize i = 0; i < patterns.include.count; i++) {
         cstr base = pattern_base(cstr_sv(&patterns.include.items[i]));
+        str_list_push(&sorted, cstr_sv(&base));
+        cstr_drop(&base);
+    }
+    qsort(sorted.items, (size_t)sorted.count, sizeof(cstr), compare_cstr);
+    for (isize i = 0; i < sorted.count; i++) {
+        cstr base = cstr_clone(sorted.items[i]);
         bool covered = false;
         for (isize j = 0; j < bases.count && !covered; j++) {
             csview other = cstr_sv(&bases.items[j]);
@@ -722,11 +738,18 @@ static void collect_root_files(ConfigLoad* me, StrList* out) {
         if (!covered) str_list_push(&bases, cstr_sv(&base));
         cstr_drop(&base);
     }
+    str_list_drop(&sorted);
+    StrList* buckets = calloc((size_t)patterns.include.count + 1, sizeof(StrList));
     for (isize i = 0; i < bases.count; i++) {
         if (fs_is_directory(my fs, cstr_sv(&bases.items[i]))) {
-            collect_files(me, &patterns, cstr_sv(&bases.items[i]), &found, 0);
+            collect_files(me, &patterns, cstr_sv(&bases.items[i]), buckets, 0);
         }
     }
+    for (isize i = 0; i < patterns.include.count; i++) {
+        for (isize j = 0; j < buckets[i].count; j++) str_list_push(&found, cstr_sv(&buckets[i].items[j]));
+        str_list_drop(&buckets[i]);
+    }
+    free(buckets);
     HMapPathKind files = {0};
     for (isize i = 0; i < out->count; i++) hmap_path_kind_insert(&files, cstr_clone(out->items[i]), 1);
     for (isize i = 0; i < found.count; i++) hmap_path_kind_insert(&files, cstr_clone(found.items[i]), 2);
