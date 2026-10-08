@@ -6693,15 +6693,19 @@ static bool lacks_common_properties(Checker* me, RelationState* st, Ty const* so
     Ty const* apparent = ty_apparent_type(me, source);
     if (!(apparent->flags & (TYF_OBJECT | TYF_INTERSECTION))) return false;
     Members const* members = ty_members(me, apparent);
-    u32 prop_count;
-    SourceProp* props = source_props(me, apparent, members, &prop_count);
-    bool ret = prop_count || members->call_count || members->construct_count;
     bool is_jsx = source->kind == TY_ANONYMOUS && source->anonymous.jsx_attributes;
-    for (u32 i = 0; i < prop_count && ret; i++) {
-        if (is_known_property(me, target, props[i].prop->name)) ret = false;
-        if (is_jsx && csview_contains(atom_sv(props[i].prop->name), "-")) ret = false; // `data-x`
+    // Only the names (tsc's hasCommonProperties over getPropertiesOfType): not the property types, which may be what is
+    // being resolved (`parent?: Ref<TreeNode>` whose conditional relates `TreeNode & object` to a weak type)
+    TyList parts = apparent->kind == TY_INTERSECTION ? apparent->composite.types : (TyList){ .data = &apparent, .len = 1 };
+    bool ret = members->call_count || members->construct_count;
+    for (u32 p = 0; p < parts.len; p++) {
+        Members const* part = apparent->kind == TY_INTERSECTION ? ty_members(me, parts.data[p]) : members;
+        ret |= part->prop_count != 0;
+        for (u32 i = 0; i < part->prop_count; i++) {
+            if (is_known_property(me, target, part->props[i]->name)) return false;
+            if (is_jsx && csview_contains(atom_sv(part->props[i]->name), "-")) return false; // `data-x`
+        }
     }
-    free(props);
     return ret;
 }
 
