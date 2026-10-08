@@ -3543,6 +3543,11 @@ static void collect_declared_infers(Checker* me, TypeNode const* node, TyBuf* ou
         case TYPE_TEMPLATE:
             for_each (i, vec_type, &node->template_->types) collect_declared_infers(me, i, out);
             break;
+        case TYPE_TYPEOF:
+            if (node->typeof_->expr->tag == EXPR_GENERIC_PARAMS) {
+                for_each (i, vec_spanned_type, &node->typeof_->expr->generic_params->params) collect_declared_infers(me, &i->type, out);
+            }
+            break;
         default: break;
     }
 }

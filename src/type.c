@@ -239,7 +239,14 @@ static void type_add_inferred_names_at(TypeNode const* me, Scope* scope, InferPo
             type_add_inferred_names_at(&my keyof->interface, scope, INFER_POSITION_OTHER, nullptr, 0);
             break;
 
-        case TYPE_TYPEOF: break;
+        // (`typeof Type<infer V>`: the type arguments of an instantiation expression in a type query)
+        case TYPE_TYPEOF:
+            if (my typeof_->expr->tag == EXPR_GENERIC_PARAMS) {
+                for_each (i, vec_spanned_type, &my typeof_->expr->generic_params->params) {
+                    type_add_inferred_names_at(&i->type, scope, INFER_POSITION_OTHER, nullptr, 0);
+                }
+            }
+            break;
 
         case TYPE_TERNARY:
             // A nested conditional's extends type declares its own `infer`s, the rest belong to the nearest
