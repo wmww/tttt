@@ -319,7 +319,13 @@ void namespace_decl_drop(NamespaceDecl* me) {
     block_drop(&my contents);
 }
 
-static bool block_is_instantiated(Block const* me, bool const_enums, Scope const* outer, u32 depth);
+// The blocks of the namespaces around the one being looked at, innermost first (tsc walks up the parent nodes)
+typedef struct BlockChain { Block const* block; struct BlockChain const* parent; } BlockChain;
+
+static bool block_is_instantiated_in(Block const* me, bool const_enums, Scope const* outer, BlockChain const* enclosing, u32 depth);
+static bool block_is_instantiated(Block const* me, bool const_enums, Scope const* outer, u32 depth) {
+    return block_is_instantiated_in(me, const_enums, outer, nullptr, depth);
+}
 
 typedef enum InstanceState { NON_INSTANTIATED, CONST_ENUM_ONLY, INSTANTIATED } InstanceState;
 
@@ -368,7 +374,7 @@ static InstanceState statement_instance_state_of(Statement const* me, csview nam
 
 // tsc's getModuleInstanceStateForAliasTarget: `export { a }` is as instantiated as the declarations of `a` in the
 // nearest block that has any (`me`, then the blocks of the scopes around it). Instantiated if there are none
-static InstanceState alias_target_state(Block const* me, csview name, Scope const* outer, u32 depth) {
+static InstanceState alias_target_state(Block const* me, csview name, Scope const* outer, BlockChain const* enclosing, u32 depth) {
     if (depth > 16) return NON_INSTANTIATED; // (A cycle: tsc's visited map says non-instantiated)
     Block const* block = me;
     Scope const* scope = outer;
@@ -383,6 +389,12 @@ static InstanceState alias_target_state(Block const* me, csview name, Scope cons
             if (s > state) state = s;
         }
         if (any) return state;
+        // (The enclosing namespaces' blocks first, then the scopes around the outermost one)
+        if (enclosing) {
+            block = enclosing->block;
+            enclosing = enclosing->parent;
+            continue;
+        }
         while (scope && (!scope->block || scope->block == block)) scope = scope->parent;
         block = scope ? scope->block : nullptr;
     }
@@ -392,7 +404,8 @@ static InstanceState alias_target_state(Block const* me, csview name, Scope cons
 // tsc's getModuleInstanceState(), syntactically: a namespace is a value if it contains more than types
 // const_enums: whether a `const enum` counts (it does for the symbol, for unreachable code only when it is emitted).
 // outer: the scope the namespace is declared in, where the names it exports without declaring are looked up
-static bool block_is_instantiated(Block const* me, bool const_enums, Scope const* outer, u32 depth) {
+static bool block_is_instantiated_in(Block const* me, bool const_enums, Scope const* outer, BlockChain const* enclosing, u32 depth) {
+    BlockChain here = { me, enclosing };
     for_each (i, vec_statement, &my statements) {
         switch (i->tag) {
             case STATEMENT_NOOP:
@@ -415,7 +428,7 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
                     // `export { a, b }`
                     for_each (item, vec_port_item, &port->items) {
                         Span source = span_valid(item->source_name) ? item->source_name : item->decl_name;
-                        InstanceState state = alias_target_state(me, port_item_name(source), outer, depth);
+                        InstanceState state = alias_target_state(me, port_item_name(source), outer, enclosing, depth);
                         if (state == INSTANTIATED || (state == CONST_ENUM_ONLY && const_enums)) return true;
                     }
                     break;
@@ -426,7 +439,7 @@ static bool block_is_instantiated(Block const* me, bool const_enums, Scope const
 
             case STATEMENT_DECL_NAMESPACE:
                 // (A `declare global` too, by its contents: tsc's getModuleInstanceState)
-                if (block_is_instantiated(&i->decl.namespace->contents, const_enums, outer, depth + 1)) {
+                if (block_is_instantiated_in(&i->decl.namespace->contents, const_enums, outer, &here, depth + 1)) {
                     return true;
                 }
                 break;
