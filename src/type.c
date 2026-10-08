@@ -354,7 +354,11 @@ void type_lookup_names(TypeNode* me, Scope* names, ErrorCtx* errs) {
             // Computed names in there are in a type: not uses of values (tsc's isInAmbientOrTypeNode)
             bool saved_type_query = names->flow->in_type_query;
             names->flow->in_type_query = true;
-            scope_rare_mut(literal_scope)->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
+            // (Not a mapped type's: it has no member declarations for getThisContainer to stop at, `{ [K in keyof
+            // this["a"]]: ... }` in an interface member is about the interface)
+            bool mapped = vec_interface_member_size(&my interface.members) == 1 &&
+                my interface.members.data[0].key.tag == INTERFACE_KEY_MAPPED;
+            if (!mapped) scope_rare_mut(literal_scope)->this_ref = (ThisRef){ .kind = THIS_TYPE_LITERAL };
             if (vec_interface_member_size(&my interface.members) == 1) {
                 InterfaceMember const* only = my interface.members.data;
                 if (only->key.tag == INTERFACE_KEY_EXPR && !only->is_method && !only->computed_accessor) {
