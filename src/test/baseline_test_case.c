@@ -1085,8 +1085,10 @@ BaselineTestCase run_baseline_test_case(
         for (u32 j = 0; j < checker->painted_kept_count; j++) kept[at++] = checker->painted_kept[j];
     }
     symbol_chain_set_kept_painted(kept, kept_count);
+    // (@noTypesAndSymbols: there are no .types and .symbols to compare with, and printing every type in full can take
+    // long: tsgo's declarationEmitOversizedCachedType has one of 3^13 properties)
     for_each (i, vec_baseline_test_file, &ret.files) {
-        if (!i->source) continue;
+        if (!i->source || ret.no_types_and_symbols) continue;
         // PERF: perhaps mark the file as "current" so we don't have to look it up
         ret.enclosing = i->source->scope;
         // (Types as the checker that checked the file knows them, whatever the checker count)
