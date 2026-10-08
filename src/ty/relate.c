@@ -2608,7 +2608,13 @@ static bool has_inferable_index(Checker* me, Ty const* ty) {
     // (Not tsc's emptyObjectType, which has no symbol: the apparent type of `object`)
     // (Nor tsc's anyFunctionType, which has no symbol either: a skipped context-sensitive function doesn't fit
     // `Record<string, X>`)
-    if (ty == global_type(me, GLOBAL_EMPTY_OBJECT) || ty == global_type(me, GLOBAL_ANY_FUNCTION)) return false;
+    // (Nor tsc's unknownEmptyObjectType, the `{}` of a narrowed unknown: `if (u) f(u)` with u unknown doesn't fit
+    // `{ [key: string]: unknown }`)
+    if (ty == global_type(me, GLOBAL_EMPTY_OBJECT) || ty == global_type(me, GLOBAL_ANY_FUNCTION) ||
+        ty == global_type(me, GLOBAL_UNKNOWN_EMPTY_OBJECT)
+    ) {
+        return false;
+    }
     if (ty->kind == TY_ANONYMOUS) {
         Ty const* origin = ty->anonymous.target && ty->anonymous.target->kind == TY_ANONYMOUS ? ty->anonymous.target : ty;
         if (ty->anonymous.no_inferable_index || origin->anonymous.no_inferable_index) return false;
