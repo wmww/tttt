@@ -418,6 +418,14 @@ void checker_defer(Checker* me, DeferredCheckKind kind, void const* node) {
     my deferred[my deferred_count++] = (DeferredCheck){ kind, node };
 }
 
+void checker_defer_function_body(Checker* me, FunctionImpl const* function) {
+    u64 key[2] = { KEY_DEFERRED_BODY, (u64)(uintptr_t)function };
+    void const** slot = intern_slot(me, &my links, key, 2);
+    if (*slot) return;
+    *slot = function;
+    checker_defer(me, DEFERRED_FUNCTION_BODY, function);
+}
+
 void checker_drop(Checker* me) {
     if (!me) return;
 #ifdef TTTT_TY_POISON

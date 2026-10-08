@@ -5293,6 +5293,11 @@ static Ty const* compute_inner(Checker* me, Expr const* expr, ExprCtx ctx) {
         case EXPR_CALL: return check_call(me, expr->call, expr->inner_span, ctx);
 
         case EXPR_FUNCTION: {
+            // (Its body is checked after the file's statements, from now on if it is in the file being checked: tsc's
+            // checkNodeDeferred. The walk does it where it meets it otherwise)
+            if (my defer_checks && expr->function->full_span.source == my checking_file && expr->function->has_body) {
+                checker_defer_function_body(me, expr->function);
+            }
             // A first check, under a call's resolution, with a contextual type that has no signature for it decides
             // that it has none (tsc's ContextChecked is set either way): `m(() => 1, (z) => () => 2)` with `zero: Z`
             // doesn't take Z's inference (the function itself) as its contextual signature while m is resolved. Its

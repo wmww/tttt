@@ -96,6 +96,7 @@ enum {
     KEY_PRIVATE_NAME,   // (class symbol, `#x` atom) -> the class's own `#x` atom, see ty_private_name()
     KEY_PRIVATE_NAME_CLASS, // Private name atom -> its class symbol
     KEY_WIDENED_NULLABLE, // type -> ty_widened_nullable() of it
+    KEY_DEFERRED_BODY,  // FunctionImpl -> non-null once its body is in Checker.deferred
     KEY_CHECKED_ONCE,   // AST node -> non-null once ty_first_check() saw it
     KEY_REFERENCED_MEMBER, // Start of a class member's declaration span -> non-null once read (noUnusedLocals)
     KEY_LITERAL_ANCHOR, // Object literal Expr -> ContextAnchor (expr.c)

@@ -2948,6 +2948,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         if (source->is_declaration) block_check_required_declare(&source->ast, checker->errs);
         source_file_check_verbatim_exports(source, checker->errs);
         checker->defer_checks = true;
+        checker->checking_file = source;
         block_typecheck(&source->ast, (BlockTypecheckCtx){ .ambient = source->is_declaration }, checker->errs);
         // (What a deferred check defers joins the end of the queue)
         for (u32 d = 0; d < checker->deferred_count; d++) {
@@ -2955,6 +2956,7 @@ static void check_share(Program* me, u32 c, u32 count) {
         }
         checker->deferred_count = 0;
         checker->defer_checks = false;
+        checker->checking_file = nullptr;
         if (debug_env.file_times) print_file_time("check", file_start, source);
     }
     // After its files are checked: the checker marks members it reads

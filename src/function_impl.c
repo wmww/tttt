@@ -1240,7 +1240,7 @@ void function_impl_typecheck(FunctionImpl* me, ErrorCtx* errs) {
         if (!my ret_explicit && my has_body && ty_function_assigned_contextual_signature(current_checker, me)) {
             ty_function_return_type(current_checker, me);
         }
-        checker_defer(current_checker, DEFERRED_FUNCTION_BODY, me);
+        checker_defer_function_body(current_checker, me);
     } else {
         function_impl_typecheck_body(me, errs);
     }

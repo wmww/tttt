@@ -944,6 +944,7 @@ struct Checker {
     // accessors), class expression members, JSX elements and `void` operands. What they ask is then asked after
     // everything around them settled, which decides cycles and the order types are made in (union order)
     bool defer_checks;
+    struct SourceFile const* checking_file; // The file whose statements are being checked (defer_checks)
     DeferredCheck* deferred;
     u32 deferred_count;
     u32 deferred_cap;
@@ -1080,6 +1081,10 @@ Checker* checker_new(Program* program);
 void checker_drop(Checker* me);
 // Checks something after the statements of the file being checked (Checker.defer_checks)
 void checker_defer(Checker* me, DeferredCheckKind kind, void const* node);
+// A function expression's body is checked after the statements of the file being checked, from the first time the
+// function is checked on (tsc's checkNodeDeferred in checkFunctionExpressionOrObjectLiteralMethod): where the walk
+// meets it, or earlier where its type is checked (the return type of the function around it). Once
+void checker_defer_function_body(Checker* me, struct FunctionImpl const* function);
 
 // The checker that code without a context parameter works for: lazy_type_get() uses its slots (through
 // current_lazy_slots). One per Program; set by program_typecheck() and stays set until that program is destroyed or
