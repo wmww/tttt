@@ -37,8 +37,10 @@ to bugs/, not into the code.
    sweep **2251 -> 2997 / 3359, repos 49 -> 71** (`-p` reads referenced projects' built outputs: TS6305 like tsc's
    CLI); suite 14833 -> 14835, every other oracle flat but flagflip 16/10/4 -> 17/11/4 (one TS2488 position,
    hacks.md `checker_defer_function_body`). Leftovers in plan 52 and the agents' bugs/ files.
-9. **Execution: plan 51 stage 3** (widening where the return type is computed, NONE/FIRST_ABSENT through anchors,
-   KEY_LITERAL_CONTEXT as a stack).
+9. Done (2026-10-08): plan 51 stage 3. Widening decided in infer_return_type, one KEY_CONTEXT_CHECKED for every
+   function (NONE / FIRST_ABSENT / BLOCKED / DONE / WIDENING_ABSENT / UNFIXED deleted), a latent rest-parameter
+   first-pass bug fixed on the way; KEY_LITERAL_CONTEXT as a stack written off with numbers (plan 51). Every oracle
+   and instruction count flat. Plan 51 is done but its optional ancestry item: triage decides whether it stays.
 10. **Triage**: drain triage.md; also consolidate finished plans (36-42, 44, 45, 48: move live leftovers to bugs/ or
     the active plans, delete the rest, including their prototype dirs).
 11. **Insights.**

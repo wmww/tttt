@@ -68,29 +68,32 @@ the chosen candidate's checked parameter types). What differed from the prototyp
   +0.7%: anchor bookkeeping plus one extra intern table doubling).
 Oracles: suite 14832 (0 lost), corpora unchanged, sweep 8594, `$ExpectType` 68628 -> 68631, flagflip 18 / 10 / 4.
 
-## Stage 3 (todo entry 9): what stage 2 makes possible
-1. **Widening decided where the return type is computed** (C's P1 in `C_proto_full.patch`, `V_P1=1`): a reportability
-   bit stored when `infer_return_type` runs (under !strictNullChecks && noImplicitAny), deleting
-   `KEY_CONTEXT_WIDENING_ABSENT` and `ty_function_widening_reportable`'s fallback chain. Before stage 2 it gave +48
-   spurious TS7011 (valibot `optional(string(), () => undefined)`) and +2 TS7023 (excalidraw): tttt computed those
-   return types at other moments than tsc. Measure again on top of stage 2; if the timing still differs, find which
-   eager return-type computation tsc doesn't do (ty_argument_return_type in EXPR_FUNCTION is the suspect).
-2. **`KEY_CONTEXT_NONE` / `KEY_CONTEXT_FIRST_ABSENT` through anchors**: each still loses something alone (A: NONE 2
-   tests + effect 2; FIRST_ABSENT flagflip -22 TS7023). With the lazy return in place, try expressing "its first check
-   had no signature" as the anchored read being unresolved at that moment (tsc's resolvingSignature). Stage 2 already
-   widened FIRST_ABSENT to anchored functions checked after resolution; what tsc has is one rule (ContextChecked
-   without a signature leaves the return type lazy), tttt's NONE / FIRST_ABSENT / BLOCKED are three slices of it.
-3. **`KEY_LITERAL_CONTEXT` as a push/pop stack** (pushed in check_object, popped on return): if nothing reads it after
-   the check returns and before the call resolves, the persisted key and check_with's generic-mode save/restore go and
-   `KEY_LITERAL_INFERENCE` becomes the stack entry's inference. It carries hundreds of corpus diagnostics (vue, zod,
-   valibot `this`), so measure carefully.
-4. Cleanups: merge `KEY_CONTEXT_DONE` and `KEY_CONTEXT_BLOCKED` into one `KEY_CONTEXT_CHECKED` (a sentinel for "no
-   signature"); rename `KEY_CONTEXT_UNFIXED` (it is tsc's getContextualSignature before fixing; store it always).
-Optional, only if time is left: the inference context by ancestry at chain *entries* (tsc's getInferenceContext: a
-stack of (node, OuterInference) pushed per argument check, looked up by span containment), replacing ~15
-save/clear/restore sites of `my outer_inference` in call.c and stopping the flow engine's leak (C's audit, `V_LOGAUD=1`:
-121 entries where flow narrowing evaluates an unrelated type-guard call while another call infers). No baseline
-changes today, so it is hygiene.
+## Stage 3 (landed 2026-10-08, todo entry 9; 0 lost on every oracle)
+1. **Widening decided where the return type is computed**: `ty_function_decide_widening_reportable()` at the end of
+   `infer_return_type()` (tsc's getReturnTypeFromBody), with the contextual signature of that moment (through the
+   anchor once the call is resolved, else `KEY_CONTEXT_RETURN`, the first one). `KEY_CONTEXT_WIDENING_ABSENT` and
+   `KEY_CONTEXT_UNFIXED` deleted. The prototype's +48 TS7011 / +2 TS7023 were gone after stage 2: neutral.
+2. **`KEY_CONTEXT_FIRST_ABSENT` and `KEY_CONTEXT_NONE` deleted.** TS7023/TS7024's own-context circularity is just
+   `KEY_CONTEXT_RETURN_SELF` (the gate on "the first check had no signature" changed nothing once returns are read
+   through anchors). NONE became the general rule below.
+4. **One `KEY_CONTEXT_CHECKED`** (tsc's ContextChecked) for every function expression, not only context-sensitive
+   ones: the first check that doesn't skip it decides its contextual signature, `context_checked_none` without one;
+   it replaces DONE + BLOCKED + NONE. Generalizing cost vscode 1 + 8 nosnc TS7018/TS7010 until a latent bug was fixed:
+   `infer_rest_variadic()`'s first pass checked a literal with context-sensitive functions in it without the call's
+   inference, so `ConstructorParameters<C>[0]` didn't see C's candidate (`test/probes/rest_skip_pass_outer_inference.ts`).
+3. **`KEY_LITERAL_CONTEXT` as a stack: written off.** Measured (`this` reads by `literal_context_now()`, one checker):
+   while the literal is being checked the frame always equals the persisted value (0 differ on 8 corpora), and the
+   persisted key is read after the check returns, both before the call resolves (valibot 266, zod 296, vue 148,
+   effect 130: a method's return type inferred during the call's inference, zod's `defineLazy(inst, { check() {
+   this.def } })`; tsc reads resolvingSignature there) and after everything without an anchor (valibot 1086, vue 514,
+   effect 500, vscode 322: `<any>{...}`, declarations, exact non-generic calls). Replacing the key needs anchors for
+   every context source, i.e. a general lazy getContextualType (tsc's parent walk), not a stack. Not planned.
+
+Optional, not done: the inference context by ancestry at chain *entries* (tsc's getInferenceContext: a stack of
+(node, OuterInference) pushed per argument check, looked up by span containment), replacing ~15 save/clear/restore
+sites of `my outer_inference` in call.c and stopping the flow engine's leak (C's audit, `V_LOGAUD=1`: 121 entries
+where flow narrowing evaluates an unrelated type-guard call while another call infers). No baseline changes expected,
+but item 4's latent bug (a first pass that forgot to set `my outer_inference`) is exactly what it would prevent.
 
 ## Permanent (justified, documented in hacks.md / code)
 ExprCtx's four chain fields; `KEY_CONTEXT_IIFE_RETURN` (getContextualType(iife), fixed at the first check);

@@ -9,6 +9,13 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 51 stage 3 (2026-10-08, twelfth window's todo entry 9)
+Every oracle unchanged against 5a04657f: suite 14835, corpora (zod-root 53, effect 3, the rest 0), sweep 8594 / 1
+missing, `$ExpectType` 68631, flagflip 17 / 11 / 4, sourcesweep sample 737 / 822. Instructions (callgrind, single
+checker) 5a04657f -> end: tsc 4.715 -> 4.717 G, type-fest 19.644 -> 19.645, valibot 3.874 -> 3.873, react 1.516 ->
+1.515, nest 1.153, webpack 10.485 -> 10.484, zod 5.050 -> 5.048, xstate 2.990, drizzle 7.172, vue 6.559 -> 6.556,
+effect 10.217 -> 10.209, vscode 91.523 -> 91.463, excalidraw 7.931 -> 7.930, tanstack-router 5.614 -> 5.612.
+
 ## Hacks audit (2026-10-08, twelfth window's todo entry 7, 4 sub-agents)
 hacks.md 895 -> 784 lines (249 -> 209 entries), ~20 hacks deleted: suite 14833 / 14969 (0 lost), corpora 0 but effect 3
 and zod-root 53, sweep 8594 / 8595, `$ExpectType` 68631, flagflip 18 -> 16 / 10 / 4, sourcesweep sample 4 555 -> 556
