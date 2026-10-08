@@ -41,6 +41,9 @@ to bugs/, not into the code.
    function (NONE / FIRST_ABSENT / BLOCKED / DONE / WIDENING_ABSENT / UNFIXED deleted), a latent rest-parameter
    first-pass bug fixed on the way; KEY_LITERAL_CONTEXT as a stack written off with numbers (plan 51). Every oracle
    and instruction count flat. Plan 51 is done but its optional ancestry item: triage decides whether it stays.
-10. **Triage**: drain triage.md; also consolidate finished plans (36-42, 44, 45, 48: move live leftovers to bugs/ or
-    the active plans, delete the rest, including their prototype dirs).
-11. **Insights.**
+10. Done (2026-10-08): triage. Scripts moved to `scripts/` (human's request); plans 36-42, 44, 45, 48, 49, 51
+    consolidated and deleted; the human's TypeScript 7 request researched into **plan 53** (+ 53_findings.md); ~15
+    fixes by sub-agents (vue order dependence, global-block merge order, unknown-option diagnostics, source-sweep keys).
+11. **Insights.** Schedule plan 53 (the human asked for it: TS 7 as target, tttt as a drop-in `tsc`): stage 1 (CLI
+    parity) can start right away; the oracle switch wants 7.1.0 stable (2026-11-24) or a 7.0.2 pin now. Also ask the
+    human whether emit enters scope (plan 53 decision 2).
