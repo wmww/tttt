@@ -24,6 +24,7 @@ void inference_drop(Inference* inf) {
     }
     free(inf->params);
     free(inf->visited);
+    free(inf->circular);
     free(inf->array_literals);
     free(inf->inferred_type_params);
     *inf = (Inference){0};
@@ -1715,7 +1716,11 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
             for (u32 i = 0; i < inf->object_depth && !inf->circularity; i++) {
                 inf->circularity = inf->object_sources[i] == source && inf->object_targets[i] == target;
             }
+            u64 key = ((u64)source->id << 32) | target->id;
+            for (u32 i = 0; i < inf->circular_len && !inf->circularity; i++) inf->circularity = inf->circular[i] == key;
         } else if (source->flags & (TYF_OBJECT | TYF_INTERSECTION)) {
+            bool outer_circularity = inf->circularity;
+            inf->circularity = false;
             unsigned saved_expanding = inf->expanding;
             // (Two of a kind already stop an inference walk, where relations take three: tsc's invokeOnce)
             if (!(inf->expanding & 1) && ty_is_deeply_nested(me, source, inf->object_sources, inf->object_depth, 2)) inf->expanding |= 1;
@@ -1730,6 +1735,15 @@ static void infer_from(Checker* me, Inference* inf, Ty const* source, Ty const* 
                 inf->circularity = true;
             }
             inf->expanding = saved_expanding;
+            if (inf->circularity) {
+                if (inf->circular_len == inf->circular_cap) {
+                    inf->circular_cap = inf->circular_cap ? inf->circular_cap * 2 : 8;
+                    inf->circular = realloc(inf->circular, sizeof(u64) * inf->circular_cap);
+                    panic_if(!inf->circular, "out of memory");
+                }
+                inf->circular[inf->circular_len++] = ((u64)source->id << 32) | target->id;
+            }
+            inf->circularity |= outer_circularity;
         }
     }
     inf->depth--;
@@ -1778,6 +1792,7 @@ static void infer_types_from(Checker* me, Inference* inf, Ty const* source, Ty c
         memset(inf->visited, 0, sizeof(u64) * inf->visited_cap);
         inf->visited_len = 0;
     }
+    inf->circular_len = 0;
     infer_from(me, inf, source, target);
 }
 

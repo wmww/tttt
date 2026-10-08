@@ -279,8 +279,6 @@ src` finds the code-side markers; every significant one has an entry here.
   give none; `ty_pattern_unclone` copies the pattern type per call. Nested literals instantiate context only in
   `check_for_mutable_location()`. Plan 51 keeps these until someone explains the four tests under tsc's exact
   returnMapper (a plan 37 lead).
-- `Inference.circularity`: `visited` records no priorities, so a pair is circular only while still on the stack. Real
-  fix: store the circularity with the visited pair, as tsc's invokeOnce stores the inference priority.
 - Reverse mapped types of arrays/tuples are eager like tsc's, but cut at depth 4 (`Checker.reverse_mapped_depth`, HACK:
   tsc's reverseMappedSourceStack/isDeeplyNestedType needs a mapped-type `Ty`). Object ones are lazy (plan 42 stage 1).
   Instantiating a generic reverse mapped type goes through `{target, mapper}`, not tsc's instantiateReverseMappedType.

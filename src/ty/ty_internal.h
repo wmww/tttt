@@ -245,6 +245,11 @@ typedef struct Inference {
     u64* visited;
     u32 visited_cap;
     u32 visited_len;
+    // The visited pairs whose walk was cut short by circularity: met again, they are circular too (tsc's invokeOnce
+    // remembers each pair's inference priority)
+    u64* circular;
+    u32 circular_cap;
+    u32 circular_len;
     // tsc's invokeOnce: the object pairs being walked, and whether each side is expanding (the same recursion identity
     // twice, ever newer: an infinitely expanding generic). With both expanding, inference stops going deeper
     Ty const* object_sources[INFER_MAX_DEPTH];
