@@ -934,9 +934,9 @@ static Ty const* pattern_path_type(Checker* me, FlowAssign const* assign, FlowPa
             // (never iterates to nothing: tsc's getTypeOfDestructuredArrayElement falls back to the error type)
             if (object->flags & TYF_NEVER) return ty_intrinsic(me, TY_ERROR);
             if (!ty_extends_array(me, object)) {
-                // (Another iterable: what it iterates to, tsc's checkIteratedTypeOrElementType fallback)
+                // (Another iterable: what it iterates to, tsc's includeUndefinedInIndexSignature(checkIteratedTypeOrElementType))
                 Ty const* element = ty_iterated_type(me, ITERATION_DESTRUCTURING, object, span_null, nullptr);
-                ret = element ? element : ty_intrinsic(me, TY_ERROR);
+                ret = element ? ty_possibly_out_of_bounds(me, element) : ty_intrinsic(me, TY_ERROR);
                 break;
             }
             Value index = value_number(path->index);
