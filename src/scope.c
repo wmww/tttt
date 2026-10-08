@@ -4404,7 +4404,7 @@ static bool name_is_one_of(csview name, char const* const* names, u32 count) {
 // tsc's getCannotFindNameDiagnosticForName (but `await` as a callee and shorthand properties)
 static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, bool shorthand) {
     static char const* const dom[] = { "document", "console" };
-    static char const* const test_runner[] = { "describe", "suite", "it", "test" };
+    static char const* const test_runner[] = { "beforeEach", "describe", "suite", "it", "test" };
     static char const* const node[] = { "process", "require", "Buffer", "module", "NodeJS" };
     static char const* const later_lib[] = {
         "Map", "Set", "Promise", "Symbol", "WeakMap", "WeakSet", "Iterator", "AsyncIterator", "SharedArrayBuffer",
@@ -4424,7 +4424,7 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
         error_ctx_error_d(errs, name, types ? 2592 : 2581, "Cannot find name '", name, "'. Do you need to install type "
             "definitions for jQuery? Try `npm i --save-dev @types/jquery`",
             types ? " and then add 'jquery' to the types field in your tsconfig." : ".");
-    } else if (name_is_one_of(n, test_runner, 4)) {
+    } else if (name_is_one_of(n, test_runner, 5)) {
         error_ctx_error_d(errs, name, types ? 2593 : 2582, "Cannot find name '", name, "'. Do you need to install type "
             "definitions for a test runner? Try `npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`",
             types ? " and then add 'jest' or 'mocha' to the types field in your tsconfig." : ".");
