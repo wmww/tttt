@@ -349,6 +349,10 @@ arrayFakeFlatNoCrashInferenceDeclarations (TS5088), declarationEmitPrivatePromis
   (TS1206 lost); decorators without a declaration (tsc's MissingDeclaration: TS1128 at `@` instead of TS1146); index
   signature parameter initializers (`parse_index_signature()` has no `FunctionArg` list: TS2304 in `[a = b]` lost).
 - `let o: { x?: number } | number = 1; ({ ...o } = { x: 1 });`: tsc reports TS2698 at the rest target `o` (narrowed
-  to number), tttt nothing.
+  to number), tttt nothing. Mechanism: the right side asks for its contextual type, which is getTypeOfExpression of
+  the left pattern, i.e. checkObjectLiteral with its spread check (no TS2698 when the right asks for none: `= v as T`).
+  tttt computes the assignment's context eagerly (`assignment_value_context`) and `expr_typecheck` skips the spread
+  check for `assignment_pattern`, so a faithful fix needs "does this right side ask for its context" (a lazy context,
+  or the list of expression kinds that ask).
 - A declaration file in an export context (`declare function f(): void; export function f(x: number): void;`): tsc
   reports TS2383 (overloads must all be exported or non-exported) at the exported one, tttt nothing.
