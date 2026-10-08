@@ -4566,7 +4566,7 @@ static Ty const* apply_type_arguments_part(Checker* me, Ty const* ty, TyList arg
         }
     }
     // (None of them fits and none was dropped: the type as it is. HACK: with some dropped, the ones that don't fit are
-    // dropped too, where tsc keeps them uninstantiated)
+    // dropped too, where tsc keeps them uninstantiated: the mapper can't say "kept as is", see hacks.md)
     if (!fitting && applicable && applicable == total) return ty;
     TyMapper const* mapper = ty_mapper_new(me, (TyList){ .data = sources, .len = len }, (TyList){ .data = targets, .len = len });
     return ty_apply_type_arguments_mapper(me, ty, mapper);

@@ -899,8 +899,11 @@ void identifier_expr_typecheck(IdentifierExpr const* me, ErrorCtx* errs) {
 }
 
 // `f<A, B>` outside of a call (there the type arguments are the call's business, ty/call.c)
-// tsc's getInstantiationExpressionType, as far as its TS2635 goes: what signatures a type (a part of a union member) has
+// tsc's getInstantiationExpressionType, as far as its diagnostics go: what signatures a type (a part of a union member)
+// has (TS2635), and the constraints of each that takes the type arguments (TS2344, getInstantiatedSignatures)
 typedef struct InstantiationScan {
+    GenericParamsExpr const* expr; // Null: only TS2635
+    ErrorCtx* errs;
     u32 written; // Type arguments
     bool has_signatures, has_applicable; // Of the union member being looked at
     bool some_applicable; // Of any
@@ -908,6 +911,23 @@ typedef struct InstantiationScan {
 } InstantiationScan;
 
 static void instantiation_scan_type(Checker* checker, InstantiationScan* scan, Ty const* type, u32 depth);
+
+// The first type argument that doesn't satisfy its constraint in `sig` (tsc's checkTypeArguments with reportErrors)
+static bool check_type_argument_constraints(Checker* checker, GenericParamsExpr const* me, Signature const* sig, ErrorCtx* errs) {
+    for (u32 i = 0; i < sig->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
+        Ty const* constraint = ty_param_constraint(checker, sig->type_params.data[i]);
+        if (!constraint || ty_type_argument_satisfies_constraint(checker, sig->type_params, &my params, i)) continue;
+        SpannedType const* arg = vec_spanned_type_at(&my params, i);
+        // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo)
+        Ty const* arg_type = ty_of_node(&arg->type);
+        // (The head names the target as isRelatedTo left it: `T | undefined` is T for a non-nullable argument)
+        cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
+            ty_report_target(checker, arg_type, constraint), "'.");
+        ty_report_unassignable_with_head(checker, arg_type, constraint, 2344, head, arg->span, errs);
+        return false;
+    }
+    return true;
+}
 
 static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, Ty const* type, u32 depth) {
     if (depth > 8) return;
@@ -925,7 +945,10 @@ static void instantiation_scan_part(Checker* checker, InstantiationScan* scan, T
             for (u32 j = 0; j < sig->type_params.len; j++) {
                 if (!ty_param_default(checker, sig->type_params.data[j])) min = j + 1;
             }
-            if (sig->type_params.len && scan->written >= min && scan->written <= sig->type_params.len) scan->has_applicable = true;
+            if (sig->type_params.len && scan->written >= min && scan->written <= sig->type_params.len) {
+                scan->has_applicable = true;
+                if (scan->expr) check_type_argument_constraints(checker, scan->expr, sig, scan->errs);
+            }
         }
     } else if (type->flags & (TYF_TYPE_PARAM | TYF_DEFERRED)) { // (tsc's InstantiableNonPrimitive)
         Ty const* constraint = ty_base_constraint(checker, type);
@@ -953,57 +976,37 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     Checker* checker = current_checker;
     Ty const* callee = ty_expr_type(checker, &my expr);
     if (callee->flags & TYF_ANY) return;
-    // The first signature that takes this many type arguments (TODO: all of them, like ty_apply_type_arguments())
-    Members const* members = ty_members(checker, callee);
-    Signature const* sig = members->call_count ? members->call[0] : members->construct_count ? members->construct[0] : nullptr;
     u32 written = (u32)vec_spanned_type_size(&my params);
+    if (!my heritage) {
+        InstantiationScan scan = { .expr = me, .errs = errs, .written = written };
+        instantiation_scan_type(checker, &scan, callee, 0);
+        Ty const* error_type = scan.some_applicable ? scan.non_applicable : callee;
+        if (error_type) {
+            error_ctx_error_d(errs, span_between(vec_spanned_type_at(&my params, 0)->span, vec_spanned_type_back(&my params)->span),
+                2635, "Type '", error_type, "' has no signatures for which the type argument list is applicable.");
+        }
+        return;
+    }
+    // A base class expression: the constraints of each signature that takes this many type arguments up to the first
+    // that fails (tsc's checkClassLikeDeclaration, getConstructorsForTypeArguments), else of the first signature
+    Members const* members = ty_members(checker, callee);
+    u32 total = members->call_count + members->construct_count;
     bool fits = false;
-    for (u32 i = 0; i < members->call_count + members->construct_count; i++) {
+    for (u32 i = 0; i < total; i++) {
         Signature const* each = i < members->call_count ? members->call[i] : members->construct[i - members->call_count];
         signature_resolve(checker, each);
         u32 min = 0;
         for (u32 j = 0; j < each->type_params.len; j++) {
             if (!ty_param_default(checker, each->type_params.data[j])) min = j + 1;
         }
-        if (written >= min && written <= each->type_params.len) {
-            sig = each;
-            fits = true;
-            break;
-        }
+        if (!each->type_params.len || written < min || written > each->type_params.len) continue;
+        fits = true;
+        if (!check_type_argument_constraints(checker, me, each, errs)) break;
     }
-    if (sig) signature_resolve(checker, sig);
-    if ((!sig || !sig->type_params.len) && my heritage) return;
-    InstantiationScan scan = { .written = written };
-    if (!my heritage) instantiation_scan_type(checker, &scan, callee, 0);
-    Ty const* error_type = my heritage ? nullptr : scan.some_applicable ? scan.non_applicable : callee;
-    if (error_type) {
-        error_ctx_error_d(errs, span_between(vec_spanned_type_at(&my params, 0)->span, vec_spanned_type_back(&my params)->span),
-            2635, "Type '", error_type, "' has no signatures for which the type argument list is applicable.");
-    }
-    // (Only the signatures that take the type arguments have their constraints checked, each of them, the first
-    // argument that doesn't fit: getInstantiatedSignatures -> checkTypeArguments)
-    if (!sig || !sig->type_params.len || (!fits && !my heritage)) return;
-    u32 total = members->call_count + members->construct_count;
-    for (u32 s = 0; s < (fits ? total : 1); s++) {
-        Signature const* each = !fits ? sig : s < members->call_count ? members->call[s] : members->construct[s - members->call_count];
-        signature_resolve(checker, each);
-        u32 min = 0;
-        for (u32 j = 0; j < each->type_params.len; j++) {
-            if (!ty_param_default(checker, each->type_params.data[j])) min = j + 1;
-        }
-        if (fits && (!each->type_params.len || written < min || written > each->type_params.len)) continue;
-        for (u32 i = 0; i < each->type_params.len && (isize_t)i < vec_spanned_type_size(&my params); i++) {
-            Ty const* constraint = ty_param_constraint(checker, each->type_params.data[i]);
-            if (!constraint || ty_type_argument_satisfies_constraint(checker, each->type_params, &my params, i)) continue;
-            SpannedType const* arg = vec_spanned_type_at(&my params, i);
-            // (Explained like any unassignable pair: tsc's checkTypeArgumentConstraints -> checkTypeAssignableTo)
-            Ty const* arg_type = ty_of_node(&arg->type);
-            // (The head names the target as isRelatedTo left it: `T | undefined` is T for a non-nullable argument)
-            cstr head = cstr_d("Type '", ty_base_type_of_literal(checker, arg_type), "' does not satisfy the constraint '",
-                ty_report_target(checker, arg_type, constraint), "'.");
-            ty_report_unassignable_with_head(checker, arg_type, constraint, 2344, head, arg->span, errs);
-            break;
-        }
+    if (!fits && total) {
+        Signature const* first = members->call_count ? members->call[0] : members->construct[0];
+        signature_resolve(checker, first);
+        check_type_argument_constraints(checker, me, first, errs);
     }
 }
 
