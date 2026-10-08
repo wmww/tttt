@@ -20,49 +20,34 @@ exponential (or missing cache) blow-up.
   `multicast.spec.ts:41`, `zip.spec.ts:75`, arktype `ark/type/match.ts:57` (and mikro-orm's copy of arktype in
   node_modules).
 
-## +TS7022 lexical `LexicalCaretUtils.ts:561` (`adjacent`, 6 projects)
-Standalone (tsc clean, tttt TS7022 on `adjacent`):
-```ts
-type Dir = 'next' | 'previous';
-interface Base<D extends Dir> { direction: D; kind: string }
-interface ChildCaret<D extends Dir = Dir> extends Base<D> { child: true }
-interface SiblingCaret<D extends Dir = Dir> extends Base<D> { sib: true }
-type PointCaret<D extends Dir = Dir> = ChildCaret<D> | SiblingCaret<D>;
-declare function isChildCaret<D extends Dir>(caret: null | undefined | PointCaret<D>): caret is ChildCaret<D>;
-declare function getAdjacentChildCaret<D extends Dir>(caret: null | PointCaret<D>): null | PointCaret<D>;
-function deepest<Caret extends null | PointCaret<Dir>>(initialCaret: Caret): ChildCaret<NonNullable<Caret>['direction']> | Caret {
-  let caret: ChildCaret<NonNullable<Caret>['direction']> | Caret = initialCaret;
-  while (isChildCaret(caret)) {
-    const adjacent = getAdjacentChildCaret(caret);
-    if (!isChildCaret(adjacent)) break;
-    caret = adjacent;
-  }
-  return caret;
-}
-```
-Instrumenting tsc (log in getAssignmentReducedTypeWorker and getTypeAtFlowLoopLabel): for `caret` in
-`isChildCaret(caret)`, checked inferentially (declared type *not* substituted), tsc's getInitialOrAssignedType still
-substitutes the initial type (`Caret` -> `PointCaret<Dir> | null`): it calls getNarrowableTypeForReference without the
-check mode. The reduction then gives up (`isTypeAssignableTo(assigned, reduced)` fails) and returns the declared type,
-so the loop's first antecedent is the declared type and the back edge (`caret = adjacent`) is never walked. tttt
-substitutes the assigned type only when the declared type was substituted (35ab441e,
-`Checker.flow_substitutes_constraints`), so it walks the back edge and `adjacent` is circular.
-Tried: substituting whenever the reference's position allows it (`constraint_position || contextual non-generic`,
-ignoring inferential_depth). Fixes this, but regressed docmost (below), so it was reverted. The precise tsc rule
-needs the contextual type tsc sees with no check mode (for an argument of the call being resolved: the
-resolvingSignature's, i.e. any).
-
-## docmost `apps/server/src/database/pagination/cursor-pagination.ts:288,293,298` +TS2345 (since 35ab441e)
-`for (const [key, value] of values) switch (typeof value) { case 'string': cursor.set(key, value) }` with
-`values: EncodeCursorValues<DB, TB, O, T>` (kysely types): tttt now reports key as
-`string | number | symbol | (string & DynamicReferenceBuilder<any>) | ...`. Reproduces with the file copied alone
-into a project whose node_modules links to docmost/apps/server's. Logging tsc shows it never reduces an assignment
-for `key` there: its declared type isn't a union for tsc, i.e. tsc's getNarrowableTypeForReference does *not*
-substitute the declared `ExtractSortFieldKey<DB, TB, O, ...>` (isGenericTypeWithUnionConstraint false, or the
-substituted type isn't a union), while tttt does (has_generic_with_union_constraint / base_constraint_or_type in
-expr.c disagree with tsc's base constraint of that conditional). Before 35ab441e the wrong substitution was masked by
-reducing it with the unsubstituted initial type.
-
 ## +TS7022 chatbox `packages/chatbox-core/src/application/session/message-tree.ts:323` (`rest`), not investigated
 `const { [forkMessageId]: _removed, ...rest } = resultHash ?? {}` inside a loop that assigns `resultHash = ...rest...`.
-Likely the same family (a destructuring declaration's initial type through a loop back edge).
+TTTT_DEBUG_CYCLE shows the pattern `{ [forkMessageId]: _removed, ...rest }` reaching itself (no expression between).
+A cut-down with `Record<string, { n: number }> | undefined` for `Session['messageForksHash']` doesn't reproduce: the
+real type (zod-inferred Session) matters. Next step: copy message-tree.ts with chatbox's node_modules into a probe
+project and cut it down.
+
+## +TS7023 tiptap `packages/core/src/Extendable.test.ts` (11 lines, `addAttributes`)
+Reduced (tsc: only TS2339 on `parent`; tttt adds TS7023 on addAttributes):
+```ts
+interface ExtensionConfig<O = any> { name?: string; addOptions?: (this: { parent: any }) => O; [key: string]: any }
+interface NodeConfig<O = any> { name?: string; group?: string; addOptions?: (this: { parent: any }) => O }
+declare class Ext<Options = any> {
+  extend<EO = Options, EC = ExtensionConfig<EO> | NodeConfig<EO>>(config?: Partial<EC>): Ext<EO>
+}
+declare const x: Ext;
+export const e = x.extend({ addAttributes() { return { ...this.parent?.(), bar: {} } } });
+```
+The TS7023 comes from Checker.print_probe (missing_property_type() prints the object type the way tsc's eager
+TS2339 message would): in the deferred body check `this` is `Partial<{ addAttributes: () => ... }>`, whose method's
+return type is in flight, so printing marks it circular. tsc had already resolved that return type during the call
+(its `this` there was the uninstantiated contextual type, so `this.parent` was the error type and the return type
+any), and prints `() => any`. Likely fix: resolve the method's return type during argument checking like tsc (or make
+the print probe skip a return type whose first evaluation is the current deferred check).
+
+## Spelling suggestions run out in a different order (angular-components `task-state-zone-interceptor.ts`, 3 projects)
+tsc counts every unresolved name toward its 10 spelling suggestions in *check* order, which is lazy: a method's
+parameter types are resolved when a call in the constructor first needs them, so line 55's `HasTaskState` gets its
+"Did you mean 'TaskState'?" (TS2552) before line 48's names use up the budget. tttt resolves names in the binder, in
+source order (suggestion_count_order() approximates some of tsc's order), so line 55 is TS2304. Architectural; only
+worth it if more cases turn up.
