@@ -413,6 +413,9 @@ struct Ty {
             // first use, plus the mapper it has been instantiated with since
             TyCondBranch* branches; // [0] false, [1] true
             bool distributive; // the check type was written as a naked type parameter
+            // tsc's checkTuples: the check and extends types were written as tuples of one arity without optional or rest
+            // elements (`[T] extends [U]`), whose generic elements defer it like a generic check type
+            bool check_tuples;
             // Like tsc's ConditionalRoot + mapper: the conditional type as it was written, and how to get from there
             // to this one (null for the root itself). Instantiation always starts over from the root, because
             // distribution has to see what the *written* check type parameter ends up as (`Exclude<keyof T, K>`
@@ -1268,6 +1271,7 @@ Ty const* ty_conditional(
     Checker* me, Ty const* check, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
     Ty const* root, TyMapper const* mapper, // null for a root
     bool distributive,
+    bool check_tuples, // (Of a root: instances take the root's)
     TyList infers // The `infer` type parameters its extends type declares (ty_conditional_own_infers of the root)
 );
 Ty const* ty_realias(Checker* me, Ty const* ty, Symbol const* alias, TyList alias_args);
@@ -1595,8 +1599,10 @@ void relation_cache_drop(RelationCache* me);
 // of its `infer X extends C` are the root's)
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
-    TyCondBranch const* if_false, TyMapper const* mapper, Ty const* constraint_root
+    TyCondBranch const* if_false, TyMapper const* mapper, Ty const* constraint_root, bool check_tuples
 );
+// Tuples of the same arity without optional or rest elements (tsc's isSimpleTupleType of both, of one length)
+bool ty_conditional_simple_tuples(Ty const* check_type, Ty const* extends);
 // Assignable whatever the type parameters in either side turn out to be (tsc's check on their restrictive instantiations)
 bool ty_definitely_assignable(Checker* me, Ty const* source, Ty const* target);
 // What a deferred conditional type's `infer` type parameters infer from its check type, null if that one is deferred

@@ -3903,8 +3903,11 @@ static Ty const* lower_node(Checker* me, TypeNode const* node, LowerCtx outer_ct
             bool distributive = is_naked_type_param_node(&node->ternary->maybe_sub) && check_type->kind == TY_TYPE_PARAM;
             TyBuf infers = {0};
             collect_declared_infers(me, extends_node, &infers);
+            // (tsc's checkTuples looks at the nodes: `T extends [infer A]` with T a tuple doesn't defer on its elements)
+            bool check_tuples = node->ternary->maybe_sub.tag == TYPE_TUPLE && extends_node->tag == TYPE_TUPLE &&
+                ty_conditional_simple_tuples(check_type, extends);
             Ty const* ret = ty_conditional(
-                me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive,
+                me, check_type, extends, &if_true, &if_false, nullptr, nullptr, distributive, check_tuples,
                 (TyList){ .data = infers.data, .len = infers.len }
             );
             if (ret->kind == TY_CONDITIONAL && ret->conditional.root == ret) {

@@ -148,7 +148,7 @@ static Ty const* conditional_from_root(Checker* me, Ty const* root, Ty const* ch
     TyCondBranch if_false = instantiate_branch(me, &root->conditional.branches[0], mapper);
     return ty_conditional(
         me, check_type, ty_instantiate(me, root->conditional.extends, mapper), &if_true, &if_false, root, mapper,
-        root->conditional.distributive, ty_conditional_own_infers(me, root)
+        root->conditional.distributive, root->conditional.check_tuples, ty_conditional_own_infers(me, root)
     );
 }
 

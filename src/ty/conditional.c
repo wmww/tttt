@@ -269,7 +269,7 @@ static Ty const* branch_type_with(Checker* me, TyCondBranch const* branch, TyMap
 
 // `[T] extends [X]`: tuples of the same arity (no optional or rest elements), where tsc's isDeferredType with
 // checkTuples looks at the elements: a generic one in either side defers like a generic check type
-static bool simple_tuples(Ty const* check_type, Ty const* extends) {
+bool ty_conditional_simple_tuples(Ty const* check_type, Ty const* extends) {
     TupleShape const* check_shape = ty_tuple_shape(check_type);
     TupleShape const* extends_shape = ty_tuple_shape(extends);
     if (!check_shape || !extends_shape || check_shape->arity != extends_shape->arity) return false;
@@ -482,13 +482,13 @@ static bool check_type_deferred(Checker* me, Ty const* check_type, bool check_tu
 TyMapper const* ty_conditional_inferred_mapper(Checker* me, Ty const* conditional, TyList infers) {
     Ty const* check_type = ty_actual_type_variable(me, conditional->conditional.check);
     Ty const* extends = conditional->conditional.extends;
-    if (check_type_deferred(me, check_type, simple_tuples(check_type, extends))) return nullptr;
+    if (check_type_deferred(me, check_type, conditional->conditional.check_tuples)) return nullptr;
     return conditional_infer(me, check_type, extends, infers, conditional->conditional.mapper);
 }
 
 Ty const* ty_conditional_resolve(
     Checker* me, Ty const* check_type, Ty const* extends, TyList infers, TyCondBranch const* if_true,
-    TyCondBranch const* if_false, TyMapper const* outer, Ty const* constraint_root
+    TyCondBranch const* if_false, TyMapper const* outer, Ty const* constraint_root, bool check_tuples
 ) {
     bool for_constraint = constraint_root != nullptr;
     // (tsc compares with errorType itself, before deferring: an unresolved reference's error type (ty_unresolved, tsc's
@@ -496,7 +496,6 @@ Ty const* ty_conditional_resolve(
     Ty const* error = ty_intrinsic(me, TY_ERROR);
     if (check_type == error || extends == error) return error;
     // (tsc's isDeferredType of the check type: `Required<T> extends {}` waits for T)
-    bool check_tuples = simple_tuples(check_type, extends);
     if (check_type_deferred(me, check_type, check_tuples)) return nullptr;
 
     TyMapper const* mapper = infers.len ? conditional_infer(me, check_type, extends, infers, outer) : nullptr;

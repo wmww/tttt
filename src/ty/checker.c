@@ -3064,15 +3064,16 @@ static u32 cond_branch_key(u64* key, TyCondBranch const* branch) {
 // Resolves right away unless the check type is generic (conditional.c)
 Ty const* ty_conditional(
     Checker* me, Ty const* check_type, Ty const* extends, TyCondBranch const* if_true, TyCondBranch const* if_false,
-    Ty const* root, TyMapper const* mapper, bool distributive, TyList infers
+    Ty const* root, TyMapper const* mapper, bool distributive, bool check_tuples, TyList infers
 ) {
+    if (root) check_tuples = root->conditional.check_tuples;
     if (check_type == my intrinsics[TY_WILDCARD] || extends == my intrinsics[TY_WILDCARD]) return my intrinsics[TY_WILDCARD];
     // (Only this resolution is for a constraint: what its branches instantiate isn't, tsc's forConstraint parameter)
     Ty const* constraint_root = root && root == my for_constraint_root ? root : nullptr;
     Ty const* saved_constraint_root = my for_constraint_root;
     my for_constraint_root = nullptr;
     Ty const* resolved = ty_conditional_resolve(me, ty_actual_type_variable(me, check_type), extends, infers, if_true, if_false, mapper,
-        constraint_root);
+        constraint_root, check_tuples);
     my for_constraint_root = saved_constraint_root;
     if (resolved) return resolved;
     u64 stack_key[64];
@@ -3081,7 +3082,7 @@ Ty const* ty_conditional(
     panic_if(!key, "out of memory");
     key[0] = KEY_CONDITIONAL;
     key[1] = ty_id_pair(check_type, extends);
-    key[2] = (u64)(root ? root->id : 0) << 1 | distributive;
+    key[2] = (u64)(root ? root->id : 0) << 2 | (u64)check_tuples << 1 | distributive;
     u32 count = 3;
     count += cond_branch_key(key + count, if_true);
     count += cond_branch_key(key + count, if_false);
@@ -3097,6 +3098,7 @@ Ty const* ty_conditional(
         branches[1] = *if_true;
         fresh->conditional.branches = branches;
         fresh->conditional.distributive = distributive;
+        fresh->conditional.check_tuples = check_tuples;
         fresh->conditional.root = root ? root : fresh;
         fresh->conditional.mapper = root ? mapper : nullptr;
     }
