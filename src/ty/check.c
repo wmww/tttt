@@ -2078,7 +2078,13 @@ static void check_indexed_access_part(Checker* me, Ty const* apparent, Ty const*
     }
     // (A symbol that only a string index signature takes reads it, TS2538: tsc's getPropertyTypeForIndexType)
     if (is_key && ty_symbol_reads_string_index(me, apparent, index)) is_key = false;
-    if (is_key && ty_access(me, apparent, index)) return;
+    // (ty_access() reads past a union's null and undefined, which have no properties or index signatures: `X[] |
+    // undefined` indexed by number is TS2537, tsc's getPropertyTypeForIndexType on the union)
+    bool nullable_member = false;
+    for (u32 i = 0; apparent->kind == TY_UNION && i < apparent->composite.types.len; i++) {
+        nullable_member |= (apparent->composite.types.data[i]->flags & TYF_NULLABLE) != 0;
+    }
+    if (is_key && !nullable_member && ty_access(me, apparent, index)) return;
     // A numeric name of tuples is their element (tsc's isNumericLiteralName(propName)): `T["1"]` as `T[1]`
     if ((index->flags & TYF_STRING_LITERAL) && !(index->flags & TYF_ENUM_LITERAL) && index->literal.string &&
         ty_is_numeric_name(index->literal.string)

@@ -2790,6 +2790,13 @@ static Ty const* try_resolve_indexed(Checker* me, Ty const* object, Ty const* in
         TupleShape const* shape = object->reference.target->declared.tuple;
         if (ty_tuple_fixed_length(shape) == shape->arity) return my intrinsics[TY_UNDEFINED];
     }
+    // Written as a type, a union with null or undefined has nothing to index: TS2537/TS2339 (check_indexed_access_part)
+    // and the error type (tsc's getPropertyTypeForIndexType on the union, which ty_access() reads past)
+    if (written && object->kind == TY_UNION) {
+        for (u32 i = 0; i < object->composite.types.len; i++) {
+            if (object->composite.types.data[i]->flags & TYF_NULLABLE) return my intrinsics[TY_ERROR];
+        }
+    }
     Ty const* ret = ty_access_without_node_include_undefined(me, object, index, include_undefined); // (A symbol key reads a string index signature, tsc reports TS2538 separately)
     // Past the end of tuples (TS2493 where written) is undefined (tsc's getTupleElementTypeOutOfStartCount)
     if (!ret && (((index->flags & TYF_NUMBER_LITERAL) && index->literal.value.number >= 0) ||
