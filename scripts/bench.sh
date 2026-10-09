@@ -85,11 +85,11 @@ cp -r $TS6/src $TS6/scripts $TS6/package.json $BUILD/
 ln -s "$PWD/$TS6/node_modules" $BUILD/node_modules
 echo
 echo "-b $TS6/src: $(find $TS6/src -name '*.ts' | wc -l) files, $(find $TS6/src -name tsconfig.json | wc -l) configs"
-measure "tttt" ./release/tttt -q --keep-going -b $TS6/src
+measure "tttt" ./release/tttt -b $TS6/src -q --keep-going
 measure "tsgo -b" sh -c "rm -rf $BUILD/built && $PWD/$TSGO -b $BUILD/src"
 measure "tsgo -b single-threaded" sh -c "rm -rf $BUILD/built && $PWD/$TSGO -b --singleThreaded $BUILD/src"
 echo "tttt phases (one run with --builders 1, summed over the projects):"
-(./release/tttt -q --time --keep-going --builders 1 -b $TS6/src 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
+(./release/tttt -b $TS6/src -q --time --keep-going --builders 1 2>&1 > /dev/null || true) | grep -a '^time:' | grep -v checker |
     awk '{ name = $0; sub(/^time: /, "", name); sub(/ [0-9.]+ ms.*/, "", name); match($0, /[0-9.]+ ms/);
         sum[name] += substr($0, RSTART, RLENGTH - 3) } END { for (n in sum) printf "  %s %.0f ms\n", n, sum[n] }'
 rm -rf $BUILD

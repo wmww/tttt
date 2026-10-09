@@ -167,7 +167,10 @@ def main():
     limit = args.mem_gb << 30
     start = time.time()
     try:
-        proc = subprocess.run([os.path.join(ROOT, 'release/tttt'), '--pretty', 'false', *args.options.split(), *args.entry], stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        opts = args.options.split()
+        # (`-b` must be the first argument, like tsc's TS6369)
+        cmd = [os.path.join(ROOT, 'release/tttt'), *(opts + ['--pretty', 'false'] if opts[:1] == ['-b'] else ['--pretty', 'false'] + opts), *args.entry]
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               timeout=args.timeout, cwd=cwd,
                               preexec_fn=lambda: resource.setrlimit(resource.RLIMIT_AS, (limit, limit)))
         status = 'exit ' + str(proc.returncode) if proc.returncode >= 0 else 'KILLED BY SIGNAL ' + str(-proc.returncode)
