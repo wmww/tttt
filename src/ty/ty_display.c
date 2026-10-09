@@ -3435,7 +3435,16 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 // (`#x` written as a private name is tsc's __missing below, `"#x"` written as a string is a name)
                 EnumCase const* member_case = symbol_find_node(ty->literal.enum_member, SYMBOL_DECL_ENUM_MEMBER);
                 bool private_name = member_name.size && member_name.buf[0] == '#' && !(member_case && member_case->name_is_value);
-                if (member && (private_name ? false : !is_identifier_name(member_name) || (member_name.size && member_name.buf[0] == '#'))) {
+                // `enum E { #x }`, `enum E { 0n }`: tsgo's binder names the member InternalSymbolNameMissing ("\xFEmissing"),
+                // not an identifier, which the printer escapes as U+FFFD: `(typeof E)["\uFFFDmissing"]`
+                bool missing = private_name || (csview_equals(member_name, "__missing") && !(member_case && member_case->name_is_value));
+                if (member && missing) {
+                    out_lit(d, "(typeof ");
+                    out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_VALUE);
+                    out_lit(d, ")[\"\\uFFFDmissing\"]");
+                    break;
+                }
+                if (member && (!is_identifier_name(member_name) || (member_name.size && member_name.buf[0] == '#'))) {
                     // `(typeof E)["a b"]`: a member whose name isn't an identifier
                     out_lit(d, "(typeof ");
                     out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_VALUE);
@@ -3448,8 +3457,7 @@ void ty_display(Checker* me, TyDisplay d, Ty const* ty) {
                 out_symbol_name(me, d, ty->literal.enum_decl, SYMBOL_TYPE);
                 if (member) {
                     out_lit(d, ".");
-                    // `enum E { #x }`: tsc's binder names a private name outside a class InternalSymbolName.Missing
-                    out(d, private_name ? c_sv("__missing") : member_name);
+                    out(d, member_name);
                 }
             } else if (ty->literal.string) {
                 display_string_literal(d, atom_sv(ty->literal.string));

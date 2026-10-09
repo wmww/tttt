@@ -11673,7 +11673,7 @@ const baselines = {
     'enumWithBigint': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'enumWithComputedMember': {
         errors: true,
@@ -37443,7 +37443,7 @@ const baselines = {
     'privateNameEnum': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'privateNameField': {
         errors: true,
