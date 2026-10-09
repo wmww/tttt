@@ -57,6 +57,8 @@ void enum_decl_lookup_names(EnumDecl* me, Scope* names, ErrorCtx* errs) {
     my namespace->flow = names->flow; // The scope was made when the enum was declared
     my namespace->self = my symbol;
     for_each (i, vec_enum_case, &my cases) {
+        // (tsgo's checkEnumMember checks a computed name's expression too)
+        if (i->computed_key) expr_lookup_names(i->computed_key, my namespace, errs);
         expr_lookup_names(&i->value, my namespace, errs);
     }
     my namespace->flow = nullptr;
@@ -135,6 +137,7 @@ void enum_decl_typecheck(EnumDecl* me, ErrorCtx* errs) {
             previous_number = auto_number && !i->computed_name;
         }
         previous_other_file = i->value.tag != EXPR_IMPLICIT_ANY && references_other_file(&i->value, my name.source);
+        if (i->computed_key) expr_typecheck(i->computed_key, errs);
         current_checker->enum_member_initializer = &i->value;
         expr_typecheck(&i->value, errs);
         current_checker->enum_member_initializer = nullptr;

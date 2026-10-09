@@ -17226,7 +17226,7 @@ const baselines = {
         types: true,
     },
     'incompatibleAssignmentInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -21591,7 +21591,7 @@ const baselines = {
         types: true,
     },
     'localReferenceInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -22231,7 +22231,7 @@ const baselines = {
         types: true,
     },
     'missingIdentifierInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22246,7 +22246,7 @@ const baselines = {
         types: true,
     },
     'missingModuleInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -22296,7 +22296,7 @@ const baselines = {
         types: true,
     },
     'misspelledIdentifierInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
@@ -28036,7 +28036,7 @@ const baselines = {
         types: true,
     },
     'redundantDeclareInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -30301,7 +30301,7 @@ const baselines = {
         types: true,
     },
     'stringIncrementInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -33436,7 +33436,7 @@ const baselines = {
         types: true,
     },
     'unusedCommaOperandInEnumComputedNameNoFlake': {
-        errors: false,
+        errors: true,
         symbols: false,
         types: false,
     },
@@ -57161,7 +57161,7 @@ const baselines = {
         types: true,
     },
     'parserES5ComputedPropertyName6(target=es2015)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60356,7 +60356,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName16': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60411,7 +60411,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName26': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60436,7 +60436,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName30': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60456,7 +60456,7 @@ const baselines = {
         types: true,
     },
     'parserComputedPropertyName34': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
