@@ -600,13 +600,17 @@ src` finds the code-side markers; every significant one has an entry here.
   the traversal (`EXPR_PROPERTY` case: tsgo's `exports` member symbol of `module`, which tttt doesn't make).
 - CommonJS `export =`: absorbs the module's other exports that have a type or namespace meaning in place at link time
   (`merge_commonjs_export_equals()`, tsgo's bindCommonJSTypeExports, but into the resolved target, not the `export=`
-  symbol; values stay hidden), with two of tsc's laziness artifacts emulated by rules: a variable's
-  function/class initializer lacks the merged exports (`is_commonjs_merged_export()`), and `export import a = x.c`'s
-  TS2708 ignores a value meaning only the merge gave (`symbol_is_commonjs_merged_value_only()`).
-  `merged_export_equals_type()` (lower.c) keeps a typed view (`export_equals_view`) under its own keys; conflicting
-  same-named exports stay unmerged (only TS's `check_export_equals_merge()` reports); a module target
-  (`module.exports = require("./y")`) isn't merged; `exports.x = a.b` isn't an alias; `import * as ns` of CommonJS has
-  the module's type.
+  symbol; values stay hidden; in a CommonJS JS module the target only gets SYMBOL_NAMESPACE_MODULE). tsgo leaves an
+  aliasing `export=` with types unresolved (it's a namespace of its own); tttt emulates the visible effects with rules:
+  the target's declarations list the typedefs (typedefCrossModule3), a class target isn't named through the module
+  when the module has types (`commonjs_module_has_types()` in symbol_chain.c). TS keeps 6.0's merge for values (TS
+  modules), with two of tsc's laziness artifacts emulated by rules: a variable's function/class initializer lacks the
+  merged exports (`is_commonjs_merged_export()`), and `export import a = x.c`'s TS2708 ignores a value meaning only
+  the merge gave (`symbol_is_commonjs_merged_value_only()`). `merged_export_equals_type()` (lower.c) keeps a typed
+  view (`export_equals_view`) under its own keys; conflicting same-named exports stay unmerged (only TS's
+  `check_export_equals_merge()` reports); a module target (`module.exports = require("./y")`) isn't merged.
+- Named class expressions a CommonJS module exports are named by their own name inside their body only through a
+  thread-local the baseline traversal sets (`symbol_chain_enter_class()`): error messages name from the file.
 - tsc reports a member's widening errors (TS7008) only when something resolves its type,
   `BaselineTestCase.any_keeps_rendering` leaks to the next line if no types line follows.
 - Symbols lines: container from the traversal or `Prop.parent`; `collect_prop_symbol()` counts a non-object union
