@@ -219,6 +219,9 @@ typedef struct SourceFile {
     struct ExpandoContainer { struct Expr const* literal; Symbol const* host; }* expando_containers;
     u32 expando_container_count;
     cstr decl_override; // Used for the tests
+    // A default lib's name in tsgo's CLI (bundled:///libs/lib.es5.d.ts, lib.d.ts for default.d.ts): tsgo reads its libs
+    // from the executable, so its messages name them by that URL, not relative to the working directory
+    cstr bundled_path;
     const char* display_path_override; // Used for the tests
     ModuleRef** module_refs; // Owned, in source order
     u32 module_ref_count;
@@ -289,6 +292,7 @@ cstr path_for_message(csview path);
 // How message text names the file (a module "from external module ...", TS2306's file): its display path, absolute in
 // the CLI
 static inline cstr source_file_message_path(SourceFile const* me) {
+    if (my is_stdlib && cstr_size(&my bundled_path) && messages_use_absolute_paths()) return cstr_clone(my bundled_path);
     return path_for_message(source_file_display_path(me));
 }
 

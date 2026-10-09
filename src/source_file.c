@@ -131,6 +131,7 @@ void source_file_drop(SourceFile* me) {
     free(my line_starts);
     block_drop(&my ast);
     cstr_drop(&my decl_override);
+    cstr_drop(&my bundled_path);
     cstr_drop(&my package_json);
     for (u32 i = 0; i < my module_ref_count; i++) {
         cstr_drop(&my module_refs[i]->path);

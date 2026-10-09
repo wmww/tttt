@@ -1174,6 +1174,8 @@ static SourceFile* program_make_source(Program const* me, csview canonical_path,
         source_file->is_stdlib = true;
         csview filename = basename_of(cstr_sv(&source_file->canonical_path));
         cstr_take(&source_file->decl_override, cstr_d("lib.", filename, ", --, --"));
+        cstr_take(&source_file->bundled_path, csview_equals(filename, "default.d.ts") ?
+            cstr_from("bundled:///libs/lib.d.ts") : cstr_d("bundled:///libs/lib.", filename));
     }
 
     CompilerOptions const* options = program_options_of(me, source_file);

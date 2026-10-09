@@ -98,6 +98,7 @@ void error_format_plain(cstr* out, Error const* me, char const* newline, ErrorFi
 // the files with errors in the order they were printed, each with its first error's line and its error count
 typedef struct ErrorSummaryFile {
     cstr name;
+    cstr path; // What the table is sorted by: the file's absolute path (tsgo's FileName()), source_file_message_path()
     unsigned line;
     isize errors;
 } ErrorSummaryFile;

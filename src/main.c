@@ -241,6 +241,8 @@ static intptr_t report_errors(VecError* shown, ErrorCtx* errs) {
 
 // How the CLI names a diagnostic's file: relative to the working directory (tsc's convertToRelativePath)
 static char const* cli_file_name(SourceFile const* source) {
+    // (A default lib by tsgo's URL for it, source_file_message_path())
+    if (source->is_stdlib && cstr_size(&source->bundled_path)) return cstr_str(&source->bundled_path);
     char const* name = cstr_str(&source->canonical_path);
     return strncmp(name, "./", 2) == 0 ? name + 2 : name;
 }

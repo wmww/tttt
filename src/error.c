@@ -259,7 +259,8 @@ void error_summary_add(ErrorSummary* me, VecError const* errors, ErrorFileNamer 
         while (j < my file_count && strcmp(cstr_str(&my files[j].name), name)) j++;
         if (j == my file_count) {
             my files = realloc(my files, sizeof(ErrorSummaryFile) * (size_t)(my file_count + 1));
-            my files[my file_count++] = (ErrorSummaryFile){ cstr_from(name), span_line_index(i->span) + 1, 0 };
+            my files[my file_count++] = (ErrorSummaryFile){ cstr_from(name), source_file_message_path(source),
+                span_line_index(i->span) + 1, 0 };
         }
         my files[j].errors++;
     }
@@ -274,6 +275,7 @@ void error_summary_merge(ErrorSummary* me, ErrorSummary* from) {
         if (j < my file_count) {
             my files[j].errors += from->files[i].errors;
             cstr_drop(&from->files[i].name);
+            cstr_drop(&from->files[i].path);
             continue;
         }
         my files = realloc(my files, sizeof(ErrorSummaryFile) * (size_t)(my file_count + 1));
@@ -284,7 +286,7 @@ void error_summary_merge(ErrorSummary* me, ErrorSummary* from) {
 }
 
 void error_summary_drop(ErrorSummary* me) {
-    for (isize i = 0; i < my file_count; i++) cstr_drop(&my files[i].name);
+    for (isize i = 0; i < my file_count; i++) c_drop(cstr, &my files[i].name, &my files[i].path);
     free(my files);
     *me = (ErrorSummary){0};
 }
@@ -308,7 +310,7 @@ void error_summary_format(cstr* out, ErrorSummary const* me, char const* newline
     cstr_append(out, newline);
     cstr_append(out, newline);
     if (file_count > 1) {
-        // tsgo's writeTabularErrorsDisplay: the files by name, the counts right-aligned to the longest of them or
+        // tsgo's writeTabularErrorsDisplay: the files by absolute path, the counts right-aligned to the longest of them or
         // `Errors`, a newline after the table
         isize max = 0;
         for (isize j = 0; j < file_count; j++) if (my files[j].errors > max) max = my files[j].errors;
@@ -321,7 +323,7 @@ void error_summary_format(cstr* out, ErrorSummary const* me, char const* newline
         panic_if(!order, "out of memory");
         for (isize j = 0; j < file_count; j++) {
             isize k = j;
-            while (k > 0 && strcmp(cstr_str(&my files[order[k - 1]].name), cstr_str(&my files[j].name)) > 0) {
+            while (k > 0 && strcmp(cstr_str(&my files[order[k - 1]].path), cstr_str(&my files[j].path)) > 0) {
                 order[k] = order[k - 1];
                 k--;
             }
