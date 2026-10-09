@@ -1122,6 +1122,16 @@ static void class_check_override_modifiers(ClassDecl* me, Ty const* base, ErrorC
                 bool is_field = i->tag == CLASS_ITEM_FIELD;
                 Expr const* computed_key = is_field ? i->field.computed_key : i->method.computed_key;
                 Atom const* name = item_member_name(checker, me, i);
+                // A JavaScript method's `@overload`s are members of their own first, at their tag names, without the
+                // method's `@override` (tsgo's reparsed signatures)
+                FunctionImplRare const* rare = is_field ? nullptr : function_impl_rare(&i->method.func);
+                for (u32 o = 0; rare && o < rare->jsdoc_overload_count; o++) {
+                    Span tag = rare->jsdoc_overloads[o].callable->function->full_span;
+                    if (!csview_starts_with(tag.sv, "@overload")) continue;
+                    Span at = span_make(tag.source, tag.sv.buf + 1, tag.sv.buf + 9);
+                    check_member_override(&ctx, name, computed_key && !name, false, i->method.is_abstract,
+                        class_item_is_static(i), false, at, errs);
+                }
                 check_member_override(&ctx, name, computed_key && !name, i->is_override,
                     is_field ? i->field.is_abstract : i->method.is_abstract, class_item_is_static(i), false,
                     is_field ? i->field.name_span : i->method.name_span, errs);
