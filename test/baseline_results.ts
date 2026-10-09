@@ -11263,7 +11263,7 @@ const baselines = {
     'emitIncompleteDoStatement': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'emitMemberAccessExpression': {
         errors: true,

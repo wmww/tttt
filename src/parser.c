@@ -12626,6 +12626,10 @@ static bool parse_do_while_loop_statement(Parser* parent, Statement* ret) {
         else expect_char(&p, ')');
     } else {
         expected_token_error(&p, "while");
+        // (tsc's parseDoStatement goes on with the condition: a missing expression)
+        expr_drop(&condition);
+        condition = expr_implicit_any(span_from_pos(&p));
+        condition.missing = true;
     }
 
     *ret = (Statement){
