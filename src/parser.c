@@ -4862,6 +4862,9 @@ static void jsdoc_apply_function(Parser* p, VecJsDocTag* tags, FunctionImpl* fun
         function->jsdoc_getter_type = true;
         type_tag = nullptr;
     }
+    // (A `@this` made a typed `this` parameter: tsgo's reparser applies `@type` only to a function without typed
+    // parameters)
+    if (type_tag && vec_function_arg_size(&function->args) && function->args.data[0].jsdoc_this) type_tag = nullptr;
     // A `@type` that isn't a written signature: its signature is resolved by the checker
     if (type_tag && (declaration || (type_tag->type.tag != TYPE_CALLABLE && type_tag->type.tag != TYPE_INTERFACE)) &&
         !function_impl_rare(function)->jsdoc_signature_type
