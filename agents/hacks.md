@@ -599,8 +599,8 @@ src` finds the code-side markers; every significant one has an entry here.
   whole-file `ast_walk_statement()` in `scope_add_commonjs_module()` (only for CommonJS JS files); `require()` is
   parser-synthesized `PortItem`s (flat patterns only); `readonly_assignment()` never reports `exports.x =`. Exported
   class expressions alias the class (`scope_reparent`, top level only: nested ones are properties).
-  `exports.x = undefined` then `exports.x = a` (moduleExportDuplicateAlias*): tsc makes every one an alias, tttt a
-  property + alias symbol. `module.exports` of the `module` variable gets its symbols line from a span override in
+  `exports.x = undefined` then `exports.x = a` (moduleExportDuplicateAlias*): tsgo makes every one an alias, tttt a
+  property + alias symbol; an alias declaration keeps its value (`SymbolDeclJs.commonjs_value`) for the union. `module.exports` of the `module` variable gets its symbols line from a span override in
   the traversal (`EXPR_PROPERTY` case: tsgo's `exports` member symbol of `module`, which tttt doesn't make).
 - CommonJS `export =`: absorbs the module's other exports that have a type or namespace meaning in place at link time
   (`merge_commonjs_export_equals()`, tsgo's bindCommonJSTypeExports, but into the resolved target, not the `export=`

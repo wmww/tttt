@@ -1885,8 +1885,10 @@ static void declare_commonjs_export(
             symbol->alias->entity = nullptr;
             symbol->alias->name = value->inner_span;
         }
+        SymbolDeclJs* js = symbol_decl_js(my binder, nullptr, true);
+        js->commonjs_value = value;
         symbol_add_decl(symbol, (SymbolDecl){
-            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = left, .full = statement,
+            .kind = SYMBOL_DECL_ALIAS, .flags = SYMBOL_ALIAS, .name = left, .full = statement, .js = js,
         });
     } else {
         symbol_add_decl(symbol, (SymbolDecl){

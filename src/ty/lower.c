@@ -1813,6 +1813,10 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     bool commonjs_export = csview_equals(symbol->name, "export=") || (symbol->parent && symbol->parent->is_module);
     for (u32 i = 0; i < symbol->decl_count; i++) {
         SymbolDecl const* decl = &symbol->decls[i];
+        if (commonjs_export && decl->kind == SYMBOL_DECL_ALIAS && decl->js && decl->js->commonjs_value) {
+            types[count++] = ty_regular(me, ty_expr_type(me, decl->js->commonjs_value));
+            continue;
+        }
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
         if (constructor_only && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
         Ty const* type = commonjs_export && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY ?

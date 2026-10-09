@@ -60836,8 +60836,8 @@ const baselines = {
         types: true,
     },
     'assignmentToVoidZero1': {
-        errors: false,
-        symbols: false,
+        errors: true,
+        symbols: true,
         types: true,
     },
     'assignmentToVoidZero2': {
@@ -61246,19 +61246,19 @@ const baselines = {
         types: true,
     },
     'moduleExportDuplicateAlias': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportDuplicateAlias2': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportDuplicateAlias3': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'moduleExportNestedNamespaces': {
         errors: true,

@@ -3715,6 +3715,16 @@ static bool binary_op_typecheck(
 
         case BINARY_OP_EQUAL:
             if (is_container_declaration(expr->binary_op)) break;
+            // `exports.x = undefined` of an export assigned more than once isn't checked (tsgo's checkAssignmentOperator)
+            if (right && (right->flags & TYF_UNDEFINED) && right->kind != TY_UNION) {
+                Span name = span_null;
+                if (binary_commonjs_declaration(expr->binary_op, &name) == COMMONJS_TARGET_EXPORTS_PROPERTY) {
+                    SourceFile const* file = expr_outer_span(expr).source;
+                    Symbol const* module = file && file->scope ? file->scope->container : nullptr;
+                    Symbol const* exported = module && module->exports ? symbol_table_get(module->exports, name.sv) : nullptr;
+                    if (exported && exported->decl_count > 1) break;
+                }
+            }
             // Nor is `module.exports = v` of an object type, which the module's other exports add to
             if (right && (right->flags & TYF_OBJECT) &&
                 binary_commonjs_declaration(expr->binary_op, nullptr) == COMMONJS_TARGET_MODULE_EXPORTS
@@ -4955,14 +4965,5 @@ CommonJsTarget binary_commonjs_declaration(BinaryOpExpr const* assignment, Span*
     if (assignment->op != BINARY_OP_EQUAL) return COMMONJS_TARGET_NONE;
     SourceFile const* file = assignment->left.inner_span.source;
     if (!file || !file->is_commonjs) return COMMONJS_TARGET_NONE;
-    Expr const* value = &assignment->right;
-    while (value->tag == EXPR_BINARY_OP && value->binary_op->op == BINARY_OP_EQUAL && !expr_is_perenthisized(value)) {
-        value = &value->binary_op->right;
-    }
-    if (value->tag == EXPR_UNARY_OP && value->unary_op->op == UNARY_OP_VOID && value->unary_op->expr.tag == EXPR_LITERAL &&
-        value->unary_op->expr.literal.tag == VALUE_NUMBER && value->unary_op->expr.literal.number == 0
-    ) {
-        return COMMONJS_TARGET_NONE;
-    }
     return expr_commonjs_target(&assignment->left, name_ret);
 }

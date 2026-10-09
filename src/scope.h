@@ -167,6 +167,9 @@ typedef struct SymbolDeclJs {
     // SYMBOL_DECL_ASSIGNMENT of a dot access (`f.x = v`, `this.x = v`): the control flow container (FlowBuilder.container)
     // the assignment is in, set by the resolve walk
     void const* flow_container;
+    // SYMBOL_DECL_ALIAS of a CommonJS export (`exports.x = a`): the value, whose type joins the others' when the export
+    // isn't only aliases (tsgo's getWidenedTypeForAssignmentDeclaration of a variable with Alias declarations)
+    struct Expr const* commonjs_value;
 } SymbolDeclJs;
 
 typedef struct SymbolDecl {

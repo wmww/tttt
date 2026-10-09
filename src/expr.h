@@ -345,8 +345,7 @@ Symbol const* expr_entity_name_symbol(Expr const* me);
 IdentifierExpr const* expr_this_keyword(Expr const* me);
 // `name_ret` (may be null): the name of the property an EXPORTS_PROPERTY target exports (in the source, no quotes)
 CommonJsTarget expr_commonjs_target(Expr const* left, Span* name_ret);
-// What an assignment declares, in a CommonJS file (`file` of the assignment): tsc's getAssignmentDeclarationKind, which
-// ignores assignments of `void 0`
+// What an assignment declares, in a CommonJS file (`file` of the assignment): tsgo's getAssignmentDeclarationKind
 CommonJsTarget binary_commonjs_declaration(struct BinaryOpExpr const* assignment, Span* name_ret);
 // `void 0` as the rightmost value of an assignment chain: no assignment declaration (tsc's isVoidZero of
 // getRightMostAssignedExpression in getAssignmentDeclarationKind)
