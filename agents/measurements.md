@@ -11,6 +11,22 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 54 stage 5, the 7.1 language and new tests fan-out (2026-10-09, todo entry 9)
+4 agents by list over the 189 failing tests new in tsgo's tree (A source phase imports + module/config, B ambient-module
+import attributes + content mappers + merging/JS, C regex/enums/strings/declaration diagnostics, D checker
+regressions), then second tasks (A clidiff/scenarios, B source sweep, C DT sweep/`$ExpectType`/mutate, D flagflip);
+~110 picks, 0 lost components at every merge. Failing new-tree tests **189 -> 43**; plan 56 (content mappers) written,
+plan 57 (distributed type parameters) written and done.
+- suite **13148 -> 13309 / 13568** (98.1%); errors 13309 -> 13444, symbols 13431 -> 13488, types 13322 -> 13418.
+- corpora 0 / 0 but webpack 0 / 5, drizzle 25 -> **3**, vue 6 -> **4**, effect 3 / 3 -> **3 / 0**, vscode 0 / 0.
+  DT sweep 8581 -> **8592 / 8595**, `$ExpectType` 68619 -> **68631**, flagflip 594 / 17 / 6 -> **145 / 17 / 6**,
+  source sweep 3069 -> **3119 / 3363** (88 repos; sample 4 762 / 822), scenarios 203 -> **209 / 213**, clidiff
+  `--sample 4` 758 -> 779 / 839.
+- Instructions (callgrind): tsc 4.691, type-fest 19.677, valibot 3.496, react 1.525, nest 1.162, webpack 10.386, zod
+  5.034, xstate 2.927, drizzle 7.135, vue 6.572, effect 10.186, vscode 91.013, excalidraw 7.942, tanstack-router
+  5.414 G (valibot -9.3%, not bisected; +0.3..+0.9% elsewhere, mostly the distributed type parameters' accepted cost;
+  a +0.8% type-fest from a relation shortcut was bisected and fixed mid-session).
+
 ## Plan 54 stage 5, the JS rework fan-out (2026-10-09, todo entry 8)
 4 agents by CHANGES.md table (A expandos/JS classes, B CommonJS, C JSDoc tags and types, D calls/JS syntax/rest),
 then second and third tasks (webpack, flagflip's webpack cells, JS mutants); ~75 picks, 0 lost components at every

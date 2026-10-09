@@ -44,9 +44,10 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
 8. ~~Fan-out on the JS rework~~ **done**: suite 12681 -> **13148 / 13568** (96.9%), failing JS tests 530 -> 79,
    `src/` net -2246 lines (constructor functions, value-as-type, `@enum`, Closure syntax, CommonJS aliases deleted),
    webpack 589 -> 5 missing, flagflip 7818 / 106 -> 594 / 17; leftovers in triage.md "JS fan-out"; instructions flat.
-9. **7.1 language and the new tests** (281 tests; fan-out if they split cleanly): source phase imports,
-   ambient-module import attributes, target-gated regex, the new diagnostics. A probe per feature against
-   `thirdparty/typescript/built/tsc`.
+9. ~~7.1 language and the new tests~~ **done**: suite 13148 -> **13309 / 13568** (98.1%), failing new-tree tests
+   189 -> 43 (source phase imports, ambient-module import attributes, 7.1 regex, distributed type parameters (plan 57,
+   done), enum computed names; content mappers written up as **plan 56**); second tasks: source sweep 3069 -> 3119,
+   DT sweep 8592, `$ExpectType` 68631, flagflip 594 -> 145 missing, scenarios 209, drizzle 3 / vue 4 / effect 3 / 0.
 10. **Triage.** Drain triage.md, bookkeeping for the switch (CLAUDE.md's script descriptions, hacks.md entries that
     referred to deleted options). The perf session against tsgo 7.1 (`bench.sh`
     re-baselined, measurements.md's perf section) didn't fit this window: schedule it for the next. Write the
