@@ -5378,7 +5378,7 @@ const baselines = {
     'computedTypesKeyofNoIndexSignatureType': {
         errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'computerPropertiesInES5ShouldBeTransformed(target=es2015)': {
         errors: true,

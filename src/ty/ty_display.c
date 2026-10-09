@@ -2711,17 +2711,31 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
     } else {
         ty_display(me, cd, mapped->constraint);
     }
+    // Inside a mapped type with the same type parameter (an instantiation nested in another, `Compute<A[K]>`), it is
+    // another one: tsgo's instantiateMappedType clones the type parameter for every instantiation, so the inner one is
+    // named anew (`K_1`). tttt's instantiations share it: a clone for printing, the template and name type over it
+    Ty const* type_param = mapped->type_param;
+    TyMapper const* fresh_mapper = nullptr;
+    if (d.param_names && type_param->kind == TY_TYPE_PARAM) {
+        bool named = false;
+        for (u32 i = 0; i < d.param_names->len && !named; i++) named = d.param_names->given[i].param == type_param;
+        if (named) {
+            Ty const* clone = ty_clone_type_param(me, type_param, nullptr, nullptr);
+            fresh_mapper = ty_mapper_new(me, (TyList){ .data = &type_param, .len = 1 }, (TyList){ .data = &clone, .len = 1 });
+            type_param = clone;
+        }
+    }
     u32 saved = param_names_enter(d);
     out_lit(d, "{ ");
     if (mapped->readonly) out(d, mapped->readonly > 0 ? c_sv("readonly ") : c_sv("-readonly "));
     out_lit(d, "[");
-    ty_display(me, reused_if(d, true), mapped->type_param); // (tsc reuses the name of the declared type parameter)
+    ty_display(me, reused_if(d, !fresh_mapper), type_param); // (tsc reuses the name of the declared type parameter)
     out_lit(d, " in ");
     cstr_append_sv(d.target, cstr_sv(&constraint_text));
     cstr_drop(&constraint_text);
     if (mapped->name_type) {
         out_lit(d, " as ");
-        ty_display(me, d, mapped->name_type);
+        ty_display(me, d, fresh_mapper ? ty_instantiate(me, mapped->name_type, fresh_mapper) : mapped->name_type);
     }
     out_lit(d, "]");
     if (mapped->optional) out(d, mapped->optional > 0 ? c_sv("?") : c_sv("-?"));
@@ -2734,9 +2748,11 @@ static void display_mapped_body(Checker* me, TyDisplay d, MappedInfo const* mapp
         // modifiers type indexed): its type parameter is this one's, its modifiers type the wrapper
         MappedInfo const* root = mapped_root(mapped);
         Ty const* sources[2] = { root->type_param, root->modifiers_type };
-        Ty const* targets[2] = { mapped->type_param, wrapper };
+        Ty const* targets[2] = { type_param, wrapper };
         template = ty_instantiate(me, ty_mapped_template(me, root),
             ty_mapper_new(me, (TyList){ .data = sources, .len = 2 }, (TyList){ .data = targets, .len = 2 }));
+    } else if (fresh_mapper) {
+        template = ty_instantiate(me, template, fresh_mapper);
     }
     if (mapped->optional > 0 && compiler_options()->strict_null_checks && !compiler_options()->exact_optional_property_types) {
         Ty const* parts[2] = { template, ty_intrinsic(me, TY_UNDEFINED) };
