@@ -5200,6 +5200,9 @@ static void add_this_property(Scope* me, Expr* left, Expr* value, TypeNode const
         case THIS_CLASS_STATIC: {
             Symbol* class_symbol = (Symbol*)this->target;
             if (!class_symbol) return;
+            // (A static the class body declares is the symbol: tsgo's declareSymbolEx finds it in the exports)
+            ClassDecl const* static_class = symbol_find_node(class_symbol, SYMBOL_DECL_CLASS);
+            if (static_class && class_decl_find_member(static_class, name.sv, true)) return;
             symbol_ensure_exports(class_symbol);
             mark_expando_host(class_symbol, left);
             declare_assignment_member(me, &class_symbol->exports, class_symbol, name, left, value, jsdoc_type, ASSIGNMENT_DECL_THIS_IN_METHOD, jsdoc_modifiers);

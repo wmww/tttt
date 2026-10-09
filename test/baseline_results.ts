@@ -19662,7 +19662,7 @@ const baselines = {
     },
     'jsDeclarationEmitThisAssignmentDuplicatingMethod': {
         errors: true,
-        symbols: false,
+        symbols: true,
         types: true,
     },
     'jsDeclarationEmitThisAssignmentWithBaseProperty': {

@@ -1,3 +1,4 @@
+#include "ast_walk.h"
 #include "source_file.h"
 #include "ty/ty_internal.h"
 #include "program.h"
@@ -1749,6 +1750,27 @@ static Ty const* flow_type_in_constructor(Checker* me, Symbol const* symbol) {
     return nullptr;
 }
 
+typedef struct SameThisProperty { csview name; bool found; } SameThisProperty;
+
+static AstWalk visit_same_this_property(Expr const* expr, void* arg) {
+    SameThisProperty* state = arg;
+    if (expr->tag == EXPR_FUNCTION) return AST_WALK_SKIP;
+    if (expr->tag == EXPR_PROPERTY && expr_this_keyword(&expr->property->expr) &&
+        csview_equals_sv(name_cooked(expr_static_property_name(expr).sv), state->name)
+    ) {
+        state->found = true;
+        return AST_WALK_STOP;
+    }
+    return AST_WALK_CONTINUE;
+}
+
+// Whether `value` reads `this.<name>` outside of nested functions (tsgo's containsSameNamedThisProperty)
+static bool reads_same_this_property(Expr const* value, csview name) {
+    SameThisProperty state = { .name = name };
+    ast_walk_expr(value, visit_same_this_property, &state);
+    return state.found;
+}
+
 // tsc's getWidenedTypeForAssignmentDeclaration: the union of what the assignments assign. A member `this.x = v`
 // declares in a class constructor has the type the constructor gives it (flow_type_in_constructor()), else (a
 // constructor function's) the union of the constructor's assignments. TODO: a JSDoc type on one of them is the type
@@ -1785,28 +1807,27 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     }
     Ty const* stack[16];
     Ty const** types = symbol->decl_count <= c_arraylen(stack) ? stack : malloc(sizeof(Ty const*) * symbol->decl_count);
-    bool constructor_declared = ty_is_constructor_declared(symbol);
-    Ty const* in_constructor_type = constructor_declared ? flow_type_in_constructor(me, symbol) : nullptr;
+    // `this.x = v` declarations only (tsgo's isConstructorDeclaredThisProperty): one in the constructor gives the type
+    // `this.x` has at its end (getFlowTypeInConstructor), unless that is only null or undefined; only methods' take
+    // the base class's namesake (getTypeOfPropertyInBaseClass), else what they assign, possibly undefined
+    bool all_this = symbol->decl_count > 0, in_constructor = false;
+    for (u32 i = 0; i < symbol->decl_count; i++) {
+        AssignmentDeclKind kind = symbol->decls[i].assignment;
+        all_this &= symbol->decls[i].kind == SYMBOL_DECL_ASSIGNMENT &&
+            (kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || kind == ASSIGNMENT_DECL_THIS_IN_METHOD);
+        in_constructor |= kind == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
+    }
+    Ty const* in_constructor_type = all_this && in_constructor && ty_is_constructor_declared(symbol) ? flow_type_in_constructor(me, symbol) : nullptr;
     if (in_constructor_type) {
         if (types != stack) free(types);
         // (Widened like any assignment declaration's type: tsc's getWidenedTypeForAssignmentDeclaration)
         return ty_widened_objects(me, ty_widened_literal(me, in_constructor_type));
     }
-    bool in_constructor = false, in_method = false;
-    for (u32 i = 0; i < symbol->decl_count; i++) {
-        in_constructor |= symbol->decls[i].assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR;
-        in_method |= symbol->decls[i].assignment == ASSIGNMENT_DECL_THIS_IN_METHOD;
-    }
-    // The constructor's assignments, unless they only assign null or undefined
-    bool constructor_only = false;
-    if (in_constructor) {
-        for (u32 i = 0; i < symbol->decl_count && !constructor_only; i++) {
-            if (symbol->decls[i].assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
-            // (As assigned: without strictNullChecks a widened undefined would be any. A union counts whatever is in it,
-            // tsc's `t.flags & ~TypeFlags.Nullable`)
-            Ty const* assigned = ty_expr_type(me, symbol->decls[i].node);
-            constructor_only = assigned->kind == TY_UNION || !(assigned->flags & TYF_NULLABLE);
-        }
+    bool in_method = all_this && !in_constructor;
+    Ty const* base_type = in_method ? base_class_property_type(me, symbol) : nullptr;
+    if (base_type) {
+        if (types != stack) free(types);
+        return ty_widened_nullable(me, base_type);
     }
     u32 count = 0;
     // (`module.exports = v`, `exports.x = v`: tsgo's getAssignmentDeclarationInitializerType keeps their literals)
@@ -1818,7 +1839,12 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
             continue;
         }
         if (decl->kind != SYMBOL_DECL_ASSIGNMENT) continue;
-        if (constructor_only && decl->assignment != ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR) continue;
+        // (Not one that reads `this.x` itself: tsgo's containsSameNamedThisProperty)
+        if ((decl->assignment == ASSIGNMENT_DECL_THIS_IN_CONSTRUCTOR || decl->assignment == ASSIGNMENT_DECL_THIS_IN_METHOD) &&
+            decl->node && reads_same_this_property(decl->node, symbol->name)
+        ) {
+            continue;
+        }
         Ty const* type = commonjs_export && decl->assignment != ASSIGNMENT_DECL_DEFINE_PROPERTY ?
             ty_regular(me, ty_expr_type(me, decl->node)) : assignment_declaration_type(me, symbol, decl);
         // (A CommonJS export's first assignment of undefined is ignored when there are others: tsgo's
@@ -1830,11 +1856,8 @@ static Ty const* assignment_symbol_type(Checker* me, Symbol const* symbol) {
     // subtypes: tsc's getUnionType(types, UnionReduction.Subtype), a CommonJS export's literals only, like tsgo's)
     Ty const* ret = ty_widened_objects(me, count > 1 && !commonjs_export ? ty_union_subtype_reduced(me, types, count) : ty_union(me, types, count, nullptr, (TyList){0}));
     if (types != stack) free(types);
-    // Only methods assign it: what a base class declares it as, else possibly undefined
-    Ty const* base_type = in_method && !in_constructor ? base_class_property_type(me, symbol) : nullptr;
-    if (base_type && !(base_type->flags & TYF_NULLABLE)) {
-        ret = base_type;
-    } else if (in_method && !in_constructor && compiler_options()->strict_null_checks) {
+    // Only methods assign it: possibly undefined
+    if (in_method && count && compiler_options()->strict_null_checks) {
         Ty const* parts[2] = { ret, ty_intrinsic(me, TY_UNDEFINED) };
         ret = ty_union(me, parts, 2, nullptr, (TyList){0});
     }
