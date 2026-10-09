@@ -278,7 +278,10 @@ static void infer_from_params(
         if (target_param->rest) {
             // `(...args: A) => any`: the rest of the source's parameters as a tuple
             if (i < source->param_count && source->params[i].rest && i + 1 == source->param_count) {
-                infer_step(me, inf, step, ty_instantiate(me, source->params[i].type, mapper), target_param->type);
+                // (A rest parameter of type any is any[]: tsc's getEffectiveRestType)
+                Ty const* rest = ty_instantiate(me, source->params[i].type, mapper);
+                if (rest->kind == TY_INTRINSIC && (rest->flags & TYF_ANY)) rest = ty_array(me, rest, false);
+                infer_step(me, inf, step, rest, target_param->type);
             } else {
                 // (Readonly for a const type parameter that isn't constrained to a mutable array-like, tsc's
                 // applyToParameterTypes)
