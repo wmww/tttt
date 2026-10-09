@@ -41,8 +41,9 @@ entry 3 on, the oracle is the pinned 7.1 nightly; 4d4f005c stays fetched only un
 7. ~~Fan-out on the 7.x TS deltas~~ **done**: suite 11892 -> **12681 / 13568** (93.5%), failing non-JS old-tree tests
    904 -> 182 (leftovers in triage.md "From the TS 7.1 delta fan-out"; plan 55 written: tsgo's pseudochecker); DT sweep
    8581, source sweep 3057, flagflip 7818 / 106 / 6, drizzle 25, vue 6, effect 3 / 3; instructions flat.
-8. **Fan-out on the JS rework** (4 sub-agents by CHANGES.md table; 452 tests): deletions first; webpack's corpus
-   expectations re-checked.
+8. ~~Fan-out on the JS rework~~ **done**: suite 12681 -> **13148 / 13568** (96.9%), failing JS tests 530 -> 79,
+   `src/` net -2246 lines (constructor functions, value-as-type, `@enum`, Closure syntax, CommonJS aliases deleted),
+   webpack 589 -> 5 missing, flagflip 7818 / 106 -> 594 / 17; leftovers in triage.md "JS fan-out"; instructions flat.
 9. **7.1 language and the new tests** (281 tests; fan-out if they split cleanly): source phase imports,
    ambient-module import attributes, target-gated regex, the new diagnostics. A probe per feature against
    `thirdparty/typescript/built/tsc`.

@@ -168,7 +168,8 @@ are only the option codes. Suite: 0 lost except tests that passed only through d
   unused type parameters TS6196, duplicate identifiers TS2300 (+20), the suggestion limit (TS2552), circular imports
   TS2303, source quote style in the printer, alias symbol naming, lib declaration lists, the 7.1 ordering fixes in
   `ty/order.c`, `new` of abstract classes. Same-code text diffs (171) through errtextdiff.
-- **JS rework** (fan-out, 4 sub-agents by CHANGES.md table): 452 tests. Expect deletions (constructor functions,
+- **JS rework** — done 2026-10-09 (todo entry 8): failing JS tests 530 -> 79, suite 13148, `src/` -2246 lines,
+  webpack 589 -> 5 missing; leftovers in triage.md "JS fan-out". Original text: (fan-out, 4 sub-agents by CHANGES.md table): 452 tests. Expect deletions (constructor functions,
   prototype assignment, `@class`/`@constructor`/`@enum`, value-as-type, `this`/`module.exports` aliases, nested
   expandos) before additions; jsstats.py on the new tree sizes each.
 - **7.1 language and the new tests** (281): source phase imports, ambient-module import attributes (TS1550-1558),

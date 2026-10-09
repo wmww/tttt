@@ -11,6 +11,20 @@ them: compare walls only within one session. Callgrind instruction counts (`valg
 -q --keep-going -p DIR`) are the stable measure across sessions. tsgo 7.0.2 isn't clean on webpack, drizzle, vue and
 effect (TS 7 differences, plan 48 stage 5), so it may do less work there than a clean run.
 
+## Plan 54 stage 5, the JS rework fan-out (2026-10-09, todo entry 8)
+4 agents by CHANGES.md table (A expandos/JS classes, B CommonJS, C JSDoc tags and types, D calls/JS syntax/rest),
+then second and third tasks (webpack, flagflip's webpack cells, JS mutants); ~75 picks, 0 lost components at every
+merge. `src/` net **-2246 lines** (constructor functions, value-as-type, `@enum`, Closure syntax, CommonJS aliases
+deleted). Failing JS tests **530 -> 79** (1086 / 1165 pass).
+- suite **12681 -> 13148 / 13568** (96.9%); errors 13047 -> 13309, symbols 13083 -> 13431, types 12970 -> 13322.
+- webpack 0 / 589 -> **0 / 5**; every other corpus unchanged (drizzle 0 / 25, vue 0 / 6, effect 3 / 3, vscode 0 / 10).
+  flagflip 7818 / 106 / 6 -> **594 / 17 / 6** (webpack's JS cells at its default-flag misses). DT sweep 8581,
+  `$ExpectType` 68619, source sweep 3057 -> 3069 / 3363 mid-session (sample 4: 752 -> 753 / 822), scenarios 203 / 213.
+  JS mutants (`mutate.py --tests js -n 3000`, seeds 1-3): 83 / 28 / 31 differing -> 19 / 18 / 19.
+- Instructions (callgrind): tsc 4.696, type-fest 19.608, valibot 3.856, react 1.515, nest 1.154, webpack 10.308, zod
+  5.031, xstate 2.965, drizzle 7.069, vue 6.544, effect 10.143, vscode 90.823, excalidraw 7.910, tanstack-router
+  5.417 G (flat: webpack -1.2%, the rest -0.4% .. +0.2%).
+
 ## Plan 54 stage 5, the TS checker deltas fan-out (2026-10-09, todo entry 7)
 4 agents (A relation elaboration, B diagnostic code deltas, C types printer, D symbols/alias naming/union order), ~95
 picks, 0 lost components at every merge. The failing non-JS tests that existed in 6.0's tree went **904 -> 182**

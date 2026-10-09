@@ -168,17 +168,8 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   RequiresWidening) propagates differently in tsgo; find which and port it.
 - importTag13: `@import x = require("m")` after 'from' expected, tsgo parses the module specifier as an expression and
   says TS1141 over `= require("types")`; tttt's JSDoc @import parser stops.
-- webpack (160 missing after D): owners by mechanism. C: TS2370/TS2345 `@param {...string} args` in a @callback
-  is a rest parameter of type string in tsgo (ProgressPlugin ReportProgress, ~12), `@overload` on an arrow
-  function ignored (`decodeEntities`, ~40 TS2345/TS2339 'string | DecodedEntitiesWithMap'), `@template` on a
-  variable statement not a host (TS2304 'T'). B: TS2315/TS2694 "Type 'export=' is not generic" / "Namespace
-  '...export=' has no exported member" (module.exports = class with JSDoc typedefs, ~20), TS2309. A: a typed
-  this-property assignment checks its value against its own @type even when a base class or another method
-  declares the property (`/** @type {string} */ this.details = error.stack`, ~10 TS2322), TS2565, TS2683/TS7009
-  (constructor functions), `typeof SourceProcessor` static expandos (TS2339 deferredWrite).
 
 ## JS fan-out, agent B: CommonJS (2026-10-09)
-- webpack's B items in D's note above (TS2315/TS2694 through export= with typedefs, TS2309) all match tsc now.
 - A JSDoc `@typedef T` and a same-named class/variable in a JS module (ES or CommonJS) is TS2300 in tsgo (the typedef
   gets a local twin, declareModuleMember), none in tttt (typedefCrossModule2's Foo, probe `/** @typedef {number} Foo */
   class Foo {}`). Also tsgo binds top-level typedefs after every other statement: declaration lists put them last
@@ -186,8 +177,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
 - `Object.defineProperty(o, "name", ...)` on a non-exports object names the member as written, `"name"` with quotes
   (checkObjectDefineProperty); exports already do (add_define_property_export()). A's expando code: needs a display
   span separate from the lookup name in add_expando_member().
-- `this.x = v` in an object literal's accessor (a defineProperty descriptor's setter) shows no symbol in tsgo (`this`
-  is any by ThisType<any>), tttt's this-property override shows one (checkExportsObjectAssignProperty, A).
 - `exports.fn2 = Math.min`: tsgo's symbols baseline names `Math.min` `Symbol(fn2, Decl(lib.es5.d.ts...))` (an alias
   declaration's entity name shows the alias's name with the target's declarations: moduleExportsAliasLoop1/2). Quirk.
 - JS declaration emit diagnostics: only TS6424 is ported (`js_declaration_diagnostics_check()`); TS4023 for JS files
@@ -205,9 +194,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   script files report TS2300 "Duplicate identifier '(Missing)'". callbackTag4: tsgo's symbols baseline names a
   `@this` tag's synthetic `this` parameter by the tag's whole text (`Symbol(@this {{ a: string, b: number }}\n, ...)`).
   Both are tsgo quirks; port only if cheap.
-- @callback/@type contextual return types (callbackTag1/2, typedefTagTypeResolution): an arrow typed by a `@type`
-  callback infers its own return type in tsgo (`obj => void obj.title` is `=> undefined`, not the callback's `any`).
-  C's @type-on-function host rules.
 ## JS fan-out, agent A (2026-10-09)
 - `obj3.y = Object.values(obj3)` (expandoObjectIndexSignatures, expandoNoInferredIndex): tsgo reports TS7022 for the
   cycle through the container's type inside the call's inference; tttt's guarded_assignment_symbol_type() doesn't
@@ -247,15 +233,6 @@ leftovers are in bugs/include_order.md, harness.md, sourcesweep_checker.md, miss
   - An astral-plane JSDoc `@param` name underlines one `~` in tsgo (render of extendedUnicodePlaneIdentifiersJSDoc).
   - TS5024 maxNodeModuleJsDepth with a string value; TS8030 for `@type {Foo}` naming a deleted type alias
     (jsDeclarationEmitFunction).
-- webpack ChunkRenderError.js:33 / CodeGenerationError.js:30 (TS2322 missing): a subclass constructor's
-  `/** @type {string} */ this.details = error.stack` where the base class declares `this.details` as `string=`. tsgo's
-  subclass member has its own declared type (thisAssignmentDeclarationTyped) and the value is checked against it;
-  tttt's `this.details` resolves to the base class's property. JS class this-properties (agent A's area). (Agent C)
-- webpack LoaderRunner.js:278 (TS2322 missing): a JS class with a `request` getter (string) and setter
-  (LoaderItemInput) whose constructor assigns `this.request = loader`. tsgo's bindThisPropertyAssignment merges a
-  Property|Assignment declaration into the accessor's symbol, and getWriteTypeOfSymbol of a Property is its read type:
-  the assignment is checked against the getter's type. tttt keeps the assignment in Symbol.members and types
-  `this.request` there by its value. JS this-properties (agent A's area). (Agent C)
 - webpack NormalModuleFactory.js:658-666 (TS2322 missing): `/** @type {TypedHookMap<...>} */ createParser: new
   HookMap(() => new SyncBailHook([...]))`: tsgo infers HookMap<SyncBailHook<ParserOptions | [EmptyParserOptions],
   HtmlParser, ...>> under that context and it isn't assignable; tttt's inference produces something that is.
