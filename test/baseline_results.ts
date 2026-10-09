@@ -20501,9 +20501,9 @@ const baselines = {
         types: true,
     },
     'jsdocTypesWithPrefixesAndUnionTypes1': {
-        errors: false,
+        errors: true,
         symbols: true,
-        types: false,
+        types: true,
     },
     'jsdocUnexpectedCharacter': {
         errors: true,

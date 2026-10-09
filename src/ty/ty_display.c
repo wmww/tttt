@@ -1494,7 +1494,7 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
         // A member that needs parentheses without having them written: JSDoc's `?T`, `T=` of a union or function
         // type, and a union or intersection in a union or intersection (tsc's visitor recreates the list node, and the
         // factory's parenthesizeConstituentTypeOfUnionType/IntersectionType wraps them)
-        bool parens = !i->parenthesized && (i->tag == TYPE_CALLABLE || i->tag == TYPE_UNION ||
+        bool parens = !i->parenthesized && !i->readonly_invalid && (i->tag == TYPE_CALLABLE || i->tag == TYPE_UNION ||
             i->tag == TYPE_INTERSECTION || i->tag == TYPE_TERNARY ||
             (i->tag == TYPE_JSDOC && !i->jsdoc->non_null && i->jsdoc->type.tag == TYPE_UNION));
         if (parens) out(reused_if(d, false), c_sv("("));
@@ -1507,6 +1507,21 @@ static void display_node_list(Checker* me, TyDisplay d, VecTypeNode const* list,
 
 // Prints an annotation as written, as reused
 static void display_node(Checker* me, TyDisplay d, TypeNode const* node) {
+    // `readonly T` of what isn't an array or tuple (TS1354): reprinted as written, `readonly (T | null)` around a
+    // JSDoc `?T` (the operator is printed, then the node again without it)
+    static _Thread_local TypeNode const* readonly_printed;
+    if (node->readonly_invalid && readonly_printed != node) {
+        out_lit(d, "readonly ");
+        bool parens = !node->parenthesized && (node->tag == TYPE_UNION || node->tag == TYPE_INTERSECTION ||
+            node->tag == TYPE_CALLABLE || node->tag == TYPE_TERNARY);
+        if (parens) out(reused_if(d, false), c_sv("("));
+        TypeNode const* outer = readonly_printed;
+        readonly_printed = node;
+        display_node(me, d, node);
+        readonly_printed = outer;
+        if (parens) out(reused_if(d, false), c_sv(")"));
+        return;
+    }
     d.reused = !node->synthesized;
     // (Only a fallback of this very node, see display_node_identifier() and display_node_typeof(), is an element)
     bool array_element = d.array_element_node && !node->parenthesized;

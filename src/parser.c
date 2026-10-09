@@ -2724,6 +2724,7 @@ static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
             expect_type(&p, TYPE_PRECEDENCE_OPERATOR, &inner);
         }
         *ret = jsdoc_union(inner, jsdoc_synthesized(type_null));
+        ret->jsdoc_nullable = true;
         if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, true, false, false);
         return parse_success(&p);
     }
@@ -2735,6 +2736,7 @@ static bool parse_jsdoc_prefix_type(Parser* parent, TypeNode* ret) {
         } else {
             expect_type(&p, TYPE_PRECEDENCE_OPERATOR, ret);
         }
+        ret->jsdoc_non_null = in_jsdoc;
         if (!in_jsdoc) jsdoc_type_outside_jsdoc(&p, a.start, ret, false, true, false);
         return parse_success(&p);
     }
@@ -2778,6 +2780,7 @@ static bool parse_jsdoc_postfix_type(Parser* parent, char const* left_start, Typ
         parse_fail(&next);
         if (!type_follows) {
             *left_and_ret = jsdoc_union(*left_and_ret, jsdoc_synthesized(type_null));
+            left_and_ret->jsdoc_nullable = true;
             if (in_jsdoc) {
                 p.shared->jsdoc_postfix_nullable_start = left_start;
                 p.shared->jsdoc_postfix_nullable_end = p.pos;
@@ -3452,10 +3455,10 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     if (span_valid(readonly_span) && !readonly_operator_operand) {
         // `readonly` applies to the whole postfix chain: `readonly T[][]` is a readonly array of `T[]`
         while (parse_type_right_side(&p, TYPE_PRECEDENCE_OPERATOR, left_start, ret)) {}
-        if (ret->tag == TYPE_ARRAY) {
+        if (ret->tag == TYPE_ARRAY && !ret->jsdoc_non_null) {
             ret->array.readonly = true;
             readonly_span = span_null;
-        } else if (ret->tag == TYPE_TUPLE) {
+        } else if (ret->tag == TYPE_TUPLE && !ret->jsdoc_non_null) {
             ret->tuple.readonly = true;
             readonly_span = span_null;
         }
@@ -3464,6 +3467,7 @@ static bool parse_type_inner(Parser* parent, TypePrecedence min_precedence, Type
     ret->parsed = true; // (Also what the right side made)
 
     if (span_valid(readonly_span)) {
+        ret->readonly_invalid = true;
         parse_error(
             &p,
             readonly_span,

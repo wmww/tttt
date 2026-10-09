@@ -130,6 +130,12 @@ typedef struct TypeNode {
     bool placeholder : 1; // The empty operand before a leading `|` or `&` (`| A | B`), not written
     // JSDoc `T=`: the union `T | undefined` it means, which an `@param` takes for an optional parameter of type `T`
     bool jsdoc_optional : 1;
+    // JSDoc `?T`/`T?`: the union `T | null` it means, one member of an enclosing union (tsgo's JSDocNullableType node)
+    bool jsdoc_nullable : 1;
+    // JSDoc `!T`: T itself, but no array or tuple to a `readonly` (tsgo's JSDocNonNullableType node, TS1354)
+    bool jsdoc_non_null : 1;
+    // `readonly T` of something other than an array or tuple (TS1354): T's type, reprinted with its `readonly`
+    bool readonly_invalid : 1;
     // An annotation that a JSDoc tag gave (the root of its type): not part of the baselines' walk
     bool from_jsdoc : 1;
     bool synthesized : 1; // Not written: the `undefined` of JSDoc's `T=`, the `null` of `?T` (not reused when printed)

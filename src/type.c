@@ -32,8 +32,9 @@ const TypeNode type_undefined = { .tag = TYPE_VALUE, .value.tag = VALUE_UNDEFINE
 
 TypeNode type_composite_without_simplify(typeof((TypeNode){}.tag) tag, TypeNode a, TypeNode b) {
     // (A written operand in parentheses stays one, for reprinting)
-    if (a.parenthesized && a.tag == tag) a = (TypeNode){ .tag = tag, .parsed = true, .composite = c_init(vec_type, {a}) };
-    if (b.parenthesized && b.tag == tag) b = (TypeNode){ .tag = tag, .parsed = true, .composite = c_init(vec_type, {b}) };
+    // (So does a JSDoc `?T`, a node of its own)
+    if ((a.parenthesized || a.jsdoc_nullable) && a.tag == tag) a = (TypeNode){ .tag = tag, .parsed = true, .composite = c_init(vec_type, {a}) };
+    if ((b.parenthesized || b.jsdoc_nullable) && b.tag == tag) b = (TypeNode){ .tag = tag, .parsed = true, .composite = c_init(vec_type, {b}) };
     if (a.tag == tag && b.tag == tag) {
         // Doesn't seem to be a more elegant way to append one vec to another
         vec_type_insert_n(&a.composite, vec_type_size(&a.composite), b.composite.data, vec_type_size(&b.composite));
