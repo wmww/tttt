@@ -1452,8 +1452,11 @@ static void port_statement_compile_test_info_inner(PortStatement const* me, Base
                 });
             }
             ctx->any_keeps_rendering = true;
+            // (Printed for the specifier, like its alias: tsgo's originalModuleSpecifier of the enclosing ExportSpecifier)
+            ctx->usage_ref = i->module_ref;
             if (!quoted) baseline_test_case_add_symbol_value(ctx, i->source_name, i->symbol);
             else ctx->any_keeps_rendering = false;
+            ctx->usage_ref = nullptr;
         }
         port_item_add_alias(i, ctx, my main.type_only);
     }
