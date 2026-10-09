@@ -9279,8 +9279,9 @@ static bool parse_expr_right_side(Parser* parent, ExprCtx ctx, Expr* left_and_re
     // template doesn't continue it (`(x as any(1))` is missing a `)`). Not a JSDoc assertion, whose type comes first
     if (left_and_ret->tag == EXPR_AS_TYPE && !expr_is_perenthisized(left_and_ret) &&
         span_start_ptr(left_and_ret->as_type->keyword_span) > span_start_ptr(expr_outer_span(&left_and_ret->as_type->expr)) &&
-        (c == '(' || c == '[' || c == '.' || c == '`' || (c == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')))
+        (c == '(' || c == '[' || c == '.' || c == '`' || c == '<' || (c == '?' && p.pos[1] == '.' && !(p.pos[2] >= '0' && p.pos[2] <= '9')))
     ) {
+        // (Nor type arguments: `x as T < U > (y)` compares)
         goto operators;
     }
     bool missing_call_args = false;

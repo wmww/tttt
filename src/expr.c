@@ -941,7 +941,8 @@ void generic_params_expr_typecheck(GenericParamsExpr* me, ErrorCtx* errs) {
     if (vec_spanned_type_is_empty(&my params)) return;
     Checker* checker = current_checker;
     Ty const* callee = ty_expr_type(checker, &my expr);
-    if (callee->flags & TYF_ANY) return;
+    // (Only the error type has nothing to say: `any<T>` is TS2635 too, tsgo's getInstantiationExpressionType)
+    if (callee == ty_intrinsic(checker, TY_ERROR) || ((callee->flags & TYF_ANY) && my heritage)) return;
     u32 written = (u32)vec_spanned_type_size(&my params);
     if (!my heritage) {
         InstantiationScan scan = { .expr = me, .errs = errs, .written = written };
