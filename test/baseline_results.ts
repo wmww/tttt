@@ -1026,7 +1026,7 @@ const baselines = {
         types: true,
     },
     'arrayCast': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -1421,7 +1421,7 @@ const baselines = {
         types: true,
     },
     'assigningFromObjectToAnythingElse': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -12911,7 +12911,7 @@ const baselines = {
         types: true,
     },
     'excessPropertyCheckWithUnions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -15236,7 +15236,7 @@ const baselines = {
         types: true,
     },
     'genericCallAtYieldExpressionInGenericCall1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -18456,7 +18456,7 @@ const baselines = {
         types: true,
     },
     'intTypeCheck': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -19566,7 +19566,7 @@ const baselines = {
         types: true,
     },
     'iterableTReturnTNext(strictbuiltiniteratorreturn=true)': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23456,7 +23456,7 @@ const baselines = {
         types: true,
     },
     'mutuallyRecursiveCallbacks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -23946,7 +23946,7 @@ const baselines = {
         types: true,
     },
     'nestedCallbackErrorNotFlattened': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -26986,17 +26986,17 @@ const baselines = {
         types: true,
     },
     'promisePermutations': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'promisePermutations2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'promisePermutations3': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -30181,7 +30181,7 @@ const baselines = {
         types: true,
     },
     'strictFunctionTypesErrors': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -32256,7 +32256,7 @@ const baselines = {
         types: true,
     },
     'typeParameterArgumentEquivalence5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45571,7 +45571,7 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck25': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -45776,12 +45776,12 @@ const baselines = {
         types: true,
     },
     'generatorTypeCheck62': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'generatorTypeCheck63': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -63641,7 +63641,7 @@ const baselines = {
         types: true,
     },
     'types.asyncGenerators.es2018.2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -64446,7 +64446,7 @@ const baselines = {
         types: true,
     },
     'objectTypeHidingMembersOfObjectAssignmentCompat2': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -66596,7 +66596,7 @@ const baselines = {
         types: true,
     },
     'covariantCallbacks': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67021,7 +67021,7 @@ const baselines = {
         types: true,
     },
     'subtypingWithNumericIndexer5': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -67566,7 +67566,7 @@ const baselines = {
         types: true,
     },
     'intraExpressionInferences': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

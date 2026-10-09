@@ -399,9 +399,11 @@ src` finds the code-side markers; every significant one has an entry here.
 - `conditional_source_related()` (permanent: perf): the default-constraint step pushes the target on the deep-nesting
   stack too (tsc: RecursionFlags.Source only); tsc's flags cost +8.6% instructions on react (react-hook-form's
   `T[a][b]...` chains).
-- Error reporting (plan 34): `flush_incompatible()` reads the property name back out of its message; `headMessage`
-  approximated by `RelationState.at_top`; `report_truncate()` doesn't restore `skipped_source/target`,
-  `override_next_head`. `intersection_props_related`'s TS2741 member choice fitted to one probe
+- Error reporting (plan 34, tsgo's chain since plan 54): `TyReportLine` has no message arguments, so
+  `report_property_incompatible()` reads paths back out of messages (`incompatible_line_path()`) and
+  `relation_line_said()` compares a missing property line's text with the pair's (tsgo's chainArgsMatch compares
+  argument strings); `headMessage` approximated by `RelationState.at_top` and `head_code`.
+  `intersection_props_related`'s TS2741 member choice fitted to one probe
   (`test/probes/plan19/valibot/overload_omit_intersection_missing_prop.ts`).
 - Elaboration (`elaborate_error`) reads memos (`ty_mutable_location_type`, `ty_array_literal_as_tuple`) instead of
   re-checking; `ty_best_matching_type` has no key-property map; `type_decl_span` covers declared types, function type
