@@ -593,7 +593,6 @@ typedef struct Binder {
     Symbol* require_symbol;
     // Set while the program is typechecked: nothing makes symbols anymore (several checkers share them)
     bool frozen;
-    u32 suggestion_count; // Names not found so far: only the first ones get spelling suggestions (tsc's suggestionCount)
     // Values not found in class members, reported once types are known (scope_report_missing_prefixes())
     struct PendingNotFound* pending_not_found; // malloc'd
     u32 pending_not_found_count;
@@ -640,35 +639,7 @@ typedef struct ResolveShard {
     struct DeferredEvent* deferred; // malloc'd
     u32 deferred_count;
     u32 deferred_cap;
-    // The bodies tsc's checker defers (checkNodeDeferred: function expressions, arrow functions, object literal methods
-    // and accessors, class expressions), by the order the walk enters them: the parent of each (0 is the file's
-    // top level, body i is body_parent[i - 1]'s child), and the one the walk is in. Suggestions are counted in tsc's
-    // check order, which takes the deferred bodies breadth first after the top level (resolve_shard_merge())
-    u32* body_parent; // malloc'd
-    u32 body_count;
-    u32 body_cap;
-    u32 current_body;
-    // Of a contextually typed function expression without a return type annotation, the body around it: tsc infers
-    // its return type when it checks the expression (getReturnTypeFromBody), which checks the return expressions and,
-    // asking whether the end is reachable, the callees of the call statements (getEffectsSignature). Those count
-    // there. UINT32_MAX if none
-    u32 early_body;
-    struct Expr const* early_call; // The call statement whose callee is being walked early
-    // Walking the arguments of a call whose callee is a name that resolves to nothing: an untyped call, no contextual
-    // signature for a function argument (tsc's resolveUntypedCall), whose body is then simply deferred
-    bool contextless_args;
 } ResolveShard;
-// Entering the body of a function tsc defers (see ResolveShard.body_parent), `early`: whether its return expressions
-// and call statements' callees are checked where it is. Returns what resolve_leave_deferred_body() restores
-typedef struct DeferredBodySave {
-    u32 body;
-    u32 early;
-} DeferredBodySave;
-DeferredBodySave resolve_enter_deferred_body(bool early);
-void resolve_leave_deferred_body(DeferredBodySave previous);
-// Around a return expression or a call statement's callee: counted early if the function allows it
-u32 resolve_enter_early(void);
-void resolve_leave_early(u32 previous);
 extern thread_local ResolveShard* resolve_shard;
 // Where the binder's symbols, scopes and tables are allocated: the resolve thread's arena while one walks a file
 static inline Arena* binder_arena(Binder* me) {
@@ -864,7 +835,6 @@ void scope_report_type_as_value(Binder* binder, Symbol const* type, Span name, b
 // TS2503, or TS2833 for a namespace with a close name in scope (tsc's resolveEntityName with a namespace meaning)
 void scope_report_namespace_not_found(Scope const* me, Span at, ErrorCtx* errs);
 // A name not found that tsc counts among its suggestions without making one (`await` outside an async function)
-void scope_count_suggestion(Binder* binder);
 // The same for a value used in an expression, which in a class may be a member missing `this.` (TS2663/TS2662): that
 // waits for the checker
 void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, ErrorCtx* errs);

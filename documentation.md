@@ -229,8 +229,8 @@ The parser creates an AST from the source code string, see below.
 **The parallel walk** (`program_resolve_walk()`): files are walked in any order (biggest first) by a pool,
 each into a `ResolveShard` of its own (thread-local `resolve_shard`): `binder_arena()` is the thread's arena,
 `binder_errs()` the file's `ErrorCtx` (parent: the program's, frozen meanwhile), new symbols and pending reports go to
-the shard's lists. What depends on the files walked before is *deferred* into the shard: tsc's first ten spelling
-suggestions (every not-found report, misspelling and count) and expandos (`f.x = v` in a function body) whose host
+the shard's lists. What depends on the files walked before is *deferred* into the shard: spelling suggestions (every
+not-found report and misspelling: they look at every file's globals) and expandos (`f.x = v` in a function body) whose host
 another file can see. A JavaScript file defers *all* its assignment declarations (`this.x = v`, `F.prototype.x = v`,
 expandos, `Object.defineProperty`, a script's `this.x = v`, `@constructor` marks of symbols not local to a function:
 `DEFERRED_JS_*`), whose hosts may be other files' and which read what earlier ones declared: replayed in walk order,

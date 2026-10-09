@@ -5131,7 +5131,7 @@ const baselines = {
         types: true,
     },
     'commonMissingSemicolons': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -21896,7 +21896,7 @@ const baselines = {
         types: true,
     },
     'maximum10SpellingSuggestions': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -58906,12 +58906,12 @@ const baselines = {
         types: true,
     },
     'parserharness': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserindenter': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60176,17 +60176,17 @@ const baselines = {
         types: true,
     },
     'parserRealSource11': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserRealSource12': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserRealSource13': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60216,22 +60216,22 @@ const baselines = {
         types: true,
     },
     'parserRealSource6': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserRealSource7': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
     'parserRealSource8': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: false,
     },
     'parserRealSource9': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -60256,7 +60256,7 @@ const baselines = {
         types: true,
     },
     'parserS7.6_A4.2_T1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },
@@ -61941,7 +61941,7 @@ const baselines = {
         types: true,
     },
     'scannerS7.6_A4.2_T1': {
-        errors: false,
+        errors: true,
         symbols: true,
         types: true,
     },

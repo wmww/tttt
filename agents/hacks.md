@@ -28,7 +28,7 @@ src` finds the code-side markers; every significant one has an entry here.
   its walk never sees what they declare (a `this.x = v`'s SYMBOL_CLASS, members, an expando's
   `FunctionImpl.class_symbol`; nothing reads them there); the `@constructor` mark of a function's local stays in the
   walk. Files sharing merged type parameters walk serially (`binder_mark_serial_resolves()`; tsc makes them in its
-  binder, tttt could in declare). Replayed in program order: suggestion counting, expandos into a non-private host
+  binder, tttt could in declare). Replayed in program order: not-found reports (their suggestions), expandos into a non-private host
   (`expando_host_is_private()` is conservative). Cross-file writes: `Symbol.referenced` (atomic OR),
   `has_assignment_flow_containers` (atomic store), `flow_start` (only the first declaring file writes it;
   `outer_reference` treats a symbol first declared elsewhere as outer without reading it). A walk's scratch `ErrorCtx`

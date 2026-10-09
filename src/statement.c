@@ -1684,15 +1684,8 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
             try_catch_resolve_names(my try_catch, my try_catch->has_catch, my try_catch->has_finally, names, errs);
             break;
 
-        case STATEMENT_EXPR: {
-            // (tsc's flow call nodes: a call statement with a dotted callee, see ResolveShard.early_body)
-            Expr const* saved_call = resolve_shard ? resolve_shard->early_call : nullptr;
-            if (resolve_shard && my expr.tag == EXPR_CALL && !my expr.call->uses_new && expr_is_dotted_name(&my expr.call->callable)) {
-                resolve_shard->early_call = &my expr;
-            }
+        case STATEMENT_EXPR:
             expr_lookup_names_statement(&my expr, names, errs);
-            if (resolve_shard) resolve_shard->early_call = saved_call;
-        }
             if (my expr_jsdoc_type) {
                 type_lookup_names(my expr_jsdoc_type, names, errs);
                 scope_add_this_declaration(names, &my expr, my expr_jsdoc_type);
@@ -1749,9 +1742,7 @@ static void statement_resolve_names_reachable(Statement* me, u32 label_count, Sc
                     "A 'return' statement can only be used within a function body.");
             }
             if (container || !errs) {
-                u32 saved_body = resolve_enter_early();
                 expr_lookup_names(&my expr, names, errs);
-                resolve_leave_early(saved_body);
             } else {
                 // (tsc's checkReturnStatement stops there: nothing in the expression is reported)
                 ErrorCtx ignored = error_ctx_scratch(errs);

@@ -2449,7 +2449,6 @@ static void resolve_lane_run(ResolveLane* me, u32 thread) {
             .binder = binder, .arena = arena,
             .errs = { .phase = my program->errs->phase, .parent = my program->errs },
             .discarded = error_ctx_scratch(my program->errs),
-            .early_body = UINT32_MAX,
         };
         resolve_shard = shard;
         resolve_file(my files[i], &shard->errs);

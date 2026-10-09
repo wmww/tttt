@@ -755,7 +755,6 @@ void identifier_expr_lookup_names(IdentifierExpr* me, Scope* names, ErrorCtx* er
         }
     } else if (my call_child && span_equals(identifier_expr_name(me), "await")) {
         // (tsc's getCannotFindNameDiagnosticForName)
-        scope_count_suggestion(names->binder);
         error_ctx_error_d(errs, identifier_expr_name(me), 2311, "Cannot find name 'await'. Did you mean to write this in an "
             "async function?");
     } else if (!my shorthand_unchecked) {
@@ -2173,24 +2172,10 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 // checkSuperExpression, isCallExpression)
                 callee->identifier.super_member = true;
             }
-            // (A call statement's dotted callee is checked early in a function whose return type is inferred where
-            // it is, see ResolveShard.early_body)
-            bool early_callee = resolve_shard && resolve_shard->early_call == me;
-            u32 saved_body = early_callee ? resolve_enter_early() : UINT32_MAX;
             expr_lookup_names(&my call->callable, names, errs);
-            if (early_callee) resolve_leave_early(saved_body);
-            bool saved_contextless = resolve_shard && resolve_shard->contextless_args;
-            if (resolve_shard) {
-                Expr const* root = &my call->callable;
-                if (root->tag == EXPR_GENERIC_PARAMS) root = &root->generic_params->expr;
-                while (root->tag == EXPR_PROPERTY) root = &root->property->expr;
-                resolve_shard->contextless_args = root->tag == EXPR_IDENTIFIER && !root->identifier.target &&
-                    root->identifier.keyword == KEYWORD_IDENTIFIER_NONE;
-            }
             for_each (i, vec_expr, &my call->args) {
                 expr_lookup_names(i, names, errs);
             }
-            if (resolve_shard) resolve_shard->contextless_args = saved_contextless;
             if (callee->tag == EXPR_IDENTIFIER && callee->identifier.keyword == KEYWORD_IDENTIFIER_SUPER &&
                 !my call->uses_new && !flow->dead
             ) {
@@ -2297,9 +2282,7 @@ void expr_lookup_names(Expr* me, Scope* names, ErrorCtx* errs) {
                 class_name_scope = scope_new(names, SCOPE_BLOCK);
                 class_decl_add_names(my class_decl, class_name_scope, (DeclStatementProps){0});
             }
-            DeferredBodySave enclosing_body = resolve_enter_deferred_body(false);
             class_decl_lookup_names(my class_decl, class_name_scope, errs);
-            resolve_leave_deferred_body(enclosing_body);
         }   break;
 
         case EXPR_SPREAD:

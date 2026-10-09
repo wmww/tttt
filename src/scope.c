@@ -3116,7 +3116,7 @@ static Symbol* resolve_alias_target(Symbol* me) {
                 if (my alias->state == ALIAS_CIRCULAR) return nullptr;
             }
         }
-        if (!found && span_valid(my alias->name) && my binder->suggestion_count < 10 && !binder_shard(my binder)) {
+        if (!found && span_valid(my alias->name) && !binder_shard(my binder)) {
             // (tsc's resolveEntityName reports TS2304 through resolveName, whose spelling suggestion resolves the
             // aliases among the candidates: one that reaches this alias in flight makes it TS2303. The TS2304 itself
             // comes from the expression)
@@ -4403,29 +4403,24 @@ static void error_cannot_find_name(ErrorCtx* errs, Span name, char const* lib, b
     }
 }
 
-static bool report_misspelled_counted(
-    Scope const* me, Span at, csview name, u32 meaning, bool namespace, bool may_suggest, unsigned canonical, ErrorCtx* errs
-);
+static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, unsigned canonical, ErrorCtx* errs);
 
-// `may_suggest`: within tsc's maximumSuggestionCount, counted already
-static void report_not_found_counted(Scope const* me, Span name, u32 meaning, bool shorthand, bool may_suggest, ErrorCtx* errs) {
+static void report_not_found(Scope const* me, Span name, u32 meaning, bool shorthand, ErrorCtx* errs) {
     // A global of a later lib is said to be so rather than misspelled
     char const* lib = lib_feature_of_global(name.sv);
     if (lib) {
         error_cannot_find_name(errs, name, lib, shorthand);
         return;
     }
-    if (report_misspelled_counted(me, name, name.sv, meaning, false, may_suggest, 2304, errs)) return;
+    if (report_misspelled(me, name, name.sv, meaning, false, 2304, errs)) return;
     error_cannot_find_name(errs, name, nullptr, shorthand);
 }
 
-// What a resolve shard leaves to resolve_shard_merge(): an event that counts toward tsc's ten suggestions (which ones
-// get one depends on the files before), or an expando whose host other files share
+// What a resolve shard leaves to resolve_shard_merge(): a name not found (its suggestion looks at the globals of every
+// file), or an expando whose host other files share
 typedef enum DeferredKind {
     DEFERRED_NOT_FOUND, // scope_report_not_found()
     DEFERRED_MISSPELLED, // report_misspelled_or(), `fallback` if there is no suggestion
-    DEFERRED_COUNT, // scope_count_suggestion()
-    DEFERRED_PENDING, // the count of pending_not_found[index]
     DEFERRED_EXPANDO, // add_expando_member()
     // A JavaScript file's assignment declarations, all of them: the file's walk then writes no symbol other files see
     DEFERRED_JS_EXPANDO, // add_expando()
@@ -4445,8 +4440,6 @@ typedef struct DeferredEvent {
     bool shorthand;
     bool namespace;
     MisspelledFallback fallback;
-    u32 index;
-    u32 body; // The deferred body it is in (ResolveShard.current_body): the order it counts in
     // DEFERRED_EXPANDO
     Expr* object;
     Span member;
@@ -4475,88 +4468,8 @@ static ErrorCtx* shard_lasting_errs(ResolveShard* shard, ErrorCtx* errs) {
 
 static DeferredEvent* defer_event(ResolveShard* shard, DeferredKind kind, Scope const* scope, ErrorCtx* errs) {
     DeferredEvent* ret = list_push((void**)&shard->deferred, &shard->deferred_count, &shard->deferred_cap, sizeof(DeferredEvent));
-    *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs), .body = shard->current_body };
+    *ret = (DeferredEvent){ .kind = kind, .scope = (Scope*)scope, .errs = shard_lasting_errs(shard, errs) };
     return ret;
-}
-
-DeferredBodySave resolve_enter_deferred_body(bool early) {
-    ResolveShard* shard = resolve_shard;
-    if (!shard) return (DeferredBodySave){0};
-    DeferredBodySave previous = { shard->current_body, shard->early_body };
-    *(u32*)list_push((void**)&shard->body_parent, &shard->body_count, &shard->body_cap, sizeof(u32)) = previous.body;
-    shard->current_body = shard->body_count;
-    shard->early_body = early ? previous.body : UINT32_MAX;
-    return previous;
-}
-
-void resolve_leave_deferred_body(DeferredBodySave previous) {
-    if (!resolve_shard) return;
-    resolve_shard->current_body = previous.body;
-    resolve_shard->early_body = previous.early;
-}
-
-u32 resolve_enter_early(void) {
-    ResolveShard* shard = resolve_shard;
-    if (!shard) return UINT32_MAX;
-    u32 previous = shard->current_body;
-    if (shard->early_body != UINT32_MAX) shard->current_body = shard->early_body;
-    return previous;
-}
-
-void resolve_leave_early(u32 previous) {
-    if (resolve_shard && previous != UINT32_MAX) resolve_shard->current_body = previous;
-}
-
-static bool counts_suggestion(DeferredKind kind) {
-    return kind == DEFERRED_NOT_FOUND || kind == DEFERRED_MISSPELLED || kind == DEFERRED_COUNT || kind == DEFERRED_PENDING;
-}
-
-// Each counting event's place in tsc's check order (see ResolveShard.body_parent): the top level first, then the
-// deferred bodies breadth first, a body's children in the order the walk met them (checkDeferredNodes' FIFO set)
-static u32* suggestion_count_order(ResolveShard const* me, u32* count_out) {
-    u32 bodies = me->body_count + 1;
-    // Breadth first: level by level, each level's bodies by their parents' rank then by when they were entered
-    u32* rank = malloc(sizeof(u32) * bodies);
-    u32* queue = malloc(sizeof(u32) * bodies);
-    u32* child_start = calloc(bodies + 1, sizeof(u32));
-    u32* children = malloc(sizeof(u32) * bodies);
-    panic_if(!rank || !queue || !child_start || !children, "out of memory");
-    for (u32 b = 1; b < bodies; b++) child_start[me->body_parent[b - 1] + 1]++;
-    for (u32 b = 0; b < bodies; b++) child_start[b + 1] += child_start[b];
-    u32* fill = malloc(sizeof(u32) * bodies);
-    panic_if(!fill, "out of memory");
-    for (u32 b = 0; b < bodies; b++) fill[b] = child_start[b];
-    for (u32 b = 1; b < bodies; b++) children[fill[me->body_parent[b - 1]]++] = b;
-    u32 head = 0, tail = 0;
-    queue[tail++] = 0;
-    while (head < tail) {
-        u32 b = queue[head];
-        rank[b] = head++;
-        for (u32 c = child_start[b]; c < child_start[b + 1]; c++) queue[tail++] = children[c];
-    }
-    free(fill);
-    free(children);
-    free(child_start);
-    free(queue);
-    // The counting events, stably by their body's rank (a counting sort: a file can have thousands)
-    u32 count = 0;
-    u32* per_rank = calloc(bodies + 1, sizeof(u32));
-    panic_if(!per_rank, "out of memory");
-    for (u32 i = 0; i < me->deferred_count; i++) {
-        if (!counts_suggestion(me->deferred[i].kind)) continue;
-        count++;
-        per_rank[rank[me->deferred[i].body] + 1]++;
-    }
-    for (u32 r = 0; r < bodies; r++) per_rank[r + 1] += per_rank[r];
-    u32* order = malloc(sizeof(u32) * (count ? count : 1));
-    panic_if(!order, "out of memory");
-    for (u32 i = 0; i < me->deferred_count; i++) {
-        if (counts_suggestion(me->deferred[i].kind)) order[per_rank[rank[me->deferred[i].body]]++] = i;
-    }
-    free(per_rank);
-    free(rank);
-    *count_out = count;
-    return order;
 }
 
 // The shard of a JavaScript file's walk (plan 45 stage 2), whose assignment declarations wait for the replay: their
@@ -4588,13 +4501,7 @@ void scope_report_not_found(Scope const* me, Span name, u32 meaning, bool shorth
         event->shorthand = shorthand;
         return;
     }
-    report_not_found_counted(me, name, meaning, shorthand, my binder->suggestion_count++ < 10, errs);
-}
-
-void scope_count_suggestion(Binder* binder) {
-    ResolveShard* shard = binder_shard(binder);
-    if (shard) defer_event(shard, DEFERRED_COUNT, nullptr, nullptr);
-    else binder->suggestion_count++;
+    report_not_found(me, name, meaning, shorthand, errs);
 }
 
 static unsigned misspelled_fallback_code(MisspelledFallback fallback) {
@@ -4609,7 +4516,7 @@ static void report_misspelled_fallback(Span at, csview name, MisspelledFallback 
     }
 }
 
-// A misspelling of `name` (which `at` needs) if tsc's count allows a suggestion and there is one, else `fallback`
+// A misspelling of `name` (which `at` needs) if there is one, else `fallback`
 static void report_misspelled_or(
     Scope const* me, Span at, csview name, u32 meaning, bool namespace, MisspelledFallback fallback, ErrorCtx* errs
 ) {
@@ -4624,20 +4531,16 @@ static void report_misspelled_or(
         event->fallback = fallback;
         return;
     }
-    if (!report_misspelled_counted(me, at, name, meaning, namespace, my binder->suggestion_count++ < 10,
-        misspelled_fallback_code(fallback), errs)
-    ) {
+    if (!report_misspelled(me, at, name, meaning, namespace, misspelled_fallback_code(fallback), errs)) {
         report_misspelled_fallback(at, name, fallback, errs);
     }
 }
 
 // `canonical`: the code of the error there would be without a suggestion (tsc's nameNotFoundMessage), which the
 // suggestion's diagnostic sorts by (its canonicalHead)
-static bool report_misspelled_counted(
-    Scope const* me, Span at, csview name, u32 meaning, bool namespace, bool may_suggest, unsigned canonical, ErrorCtx* errs
-) {
+static bool report_misspelled(Scope const* me, Span at, csview name, u32 meaning, bool namespace, unsigned canonical, ErrorCtx* errs) {
     Suggestion suggestion = {0};
-    if (!may_suggest || !scope_suggest(me, name, meaning, &suggestion)) return false;
+    if (!scope_suggest(me, name, meaning, &suggestion)) return false;
     Error* error = namespace ?
         error_ctx_error_d(errs, at, 2833, "Cannot find namespace '", name, "'. Did you mean '", suggestion.name, "'?") :
         error_ctx_error_d(errs, at, 2552, "Cannot find name '", name, "'. Did you mean '", suggestion.name, "'?");
@@ -4667,9 +4570,6 @@ typedef struct PendingNotFound {
     Scope const* scope;
     Span name;
     bool shorthand;
-    // Its place among tsc's suggestions is where it was found missing (tsc's addLazyDiagnostic callbacks run in order)
-    bool may_suggest;
-    bool uncounted; // Counted when reported (see scope_report_value_not_found)
     ErrorCtx* errs;
 } PendingNotFound;
 
@@ -4685,25 +4585,16 @@ void scope_report_value_not_found(Scope const* me, Span name, bool shorthand, Er
         scope_report_not_found(me, name, SYMBOL_VALUE, shorthand, errs);
         return;
     }
+    // (A member of a class around it needs types to tell: reported once they are, scope_report_missing_prefixes())
     Binder* binder = my binder;
-    // tsc doesn't count what checkAndReportErrorForMissingPrefix reports: a member of a class around it, which needs
-    // types to tell. Counted now unless a class around it declares a member of that name (then when reported)
-    bool maybe_member = false;
-    for (Scope const* scope = me; scope && !maybe_member; scope = scope->parent) {
-        ClassDecl const* class_decl = scope_rare(scope)->this_ref.class_decl;
-        maybe_member = class_decl && (class_decl_find_member(class_decl, name.sv, true) || class_decl_find_member(class_decl, name.sv, false));
-    }
     ResolveShard* shard = binder_shard(binder);
     if (shard) {
-        u32 index = shard->pending_not_found_count;
         *(PendingNotFound*)list_push((void**)&shard->pending_not_found, &shard->pending_not_found_count,
-            &shard->pending_not_found_cap, sizeof(PendingNotFound)) = (PendingNotFound){ me, name, shorthand, maybe_member, maybe_member, shard_lasting_errs(shard, errs) };
-        if (!maybe_member) defer_event(shard, DEFERRED_PENDING, me, errs)->index = index;
+            &shard->pending_not_found_cap, sizeof(PendingNotFound)) = (PendingNotFound){ me, name, shorthand, shard_lasting_errs(shard, errs) };
         return;
     }
     *(PendingNotFound*)list_push((void**)&binder->pending_not_found, &binder->pending_not_found_count,
-        &binder->pending_not_found_cap, sizeof(PendingNotFound)) =
-        (PendingNotFound){ me, name, shorthand, maybe_member || binder->suggestion_count++ < 10, maybe_member, errs };
+        &binder->pending_not_found_cap, sizeof(PendingNotFound)) = (PendingNotFound){ me, name, shorthand, errs };
 }
 
 // tsc's checkAndReportErrorForMissingPrefix: from the `this` container (a class member, or a function in one) out, a
@@ -4796,8 +4687,7 @@ void scope_report_missing_prefixes(Binder* me) {
         if (field) {
             scope_report_invalid_initializer_reference(field, pending->name, pending->errs);
         } else {
-            bool may_suggest = pending->uncounted ? my suggestion_count++ < 10 : pending->may_suggest;
-            report_not_found_counted(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, may_suggest, pending->errs);
+            report_not_found(pending->scope, pending->name, SYMBOL_VALUE, pending->shorthand, pending->errs);
         }
     }
     free(my pending_not_found);
@@ -6220,34 +6110,20 @@ void resolve_shard_merge(ResolveShard* me) {
     ErrorCtx* discarded = binder_discarded_errs(binder);
     // (What the shard's pending reports go to once its contexts are merged)
     #define MERGED_ERRS(e) ((e) == &my errs ? errs : (e) == &my discarded ? discarded : (e))
-    // Which of the counting events may suggest, counted in tsc's check order; then everything replays in walk order
-    bool* may_suggest = nullptr;
-    if (my deferred_count) {
-        may_suggest = calloc(my deferred_count, sizeof(bool));
-        panic_if(!may_suggest, "out of memory");
-        u32 count;
-        u32* order = suggestion_count_order(me, &count);
-        for (u32 i = 0; i < count; i++) may_suggest[order[i]] = binder->suggestion_count++ < 10;
-        free(order);
-    }
+    // (Everything replays in walk order)
     for (u32 i = 0; i < my deferred_count; i++) {
         DeferredEvent const* event = &my deferred[i];
         ErrorCtx* event_errs = event->errs;
         switch (event->kind) {
             case DEFERRED_NOT_FOUND:
-                report_not_found_counted(event->scope, event->at, event->meaning, event->shorthand, may_suggest[i], event_errs);
+                report_not_found(event->scope, event->at, event->meaning, event->shorthand, event_errs);
                 break;
             case DEFERRED_MISSPELLED:
-                if (!report_misspelled_counted(event->scope, event->at, event->name, event->meaning, event->namespace,
-                    may_suggest[i], misspelled_fallback_code(event->fallback), event_errs)
+                if (!report_misspelled(event->scope, event->at, event->name, event->meaning, event->namespace,
+                    misspelled_fallback_code(event->fallback), event_errs)
                 ) {
                     report_misspelled_fallback(event->at, event->name, event->fallback, event_errs);
                 }
-                break;
-            case DEFERRED_COUNT:
-                break;
-            case DEFERRED_PENDING:
-                my pending_not_found[event->index].may_suggest = may_suggest[i];
                 break;
             case DEFERRED_EXPANDO:
                 add_expando_member(event->scope, event->object, event->member, event->left, event->right, event->jsdoc_type,
@@ -6307,9 +6183,7 @@ void resolve_shard_merge(ResolveShard* me) {
     error_ctx_merge(discarded, &my discarded);
     error_ctx_drop(&my errs);
     error_ctx_drop(&my discarded);
-    free(may_suggest);
     free(my deferred);
-    free(my body_parent);
     free(my symbols);
     free(my pending_not_found);
     free(my pending_type_as_value);
