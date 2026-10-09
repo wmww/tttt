@@ -277,12 +277,19 @@ static bool may_map_specially(Checker* me, Ty const* ty, TyMapper const* mapper,
     }
 }
 
+// tsc's removeMissingOrUndefinedType: under exactOptionalPropertyTypes only the missing type goes, a written undefined
+// stays (`Required<[(string | undefined)?]>` takes undefined)
+static Ty const* remove_missing_or_undefined(Checker* me, Ty const* ty) {
+    if (compiler_options()->exact_optional_property_types) return ty_remove_missing(me, ty, true);
+    return ty_without_undefined(me, ty);
+}
+
 // A `?` mapped type adds undefined to what an array or rest element maps to under strictNullChecks (tsc's
 // instantiateMappedTypeTemplate for instantiateMappedArrayType/instantiateMappedTupleType): Partial<string[]> is
 // (string | undefined)[]. A `-?` one takes it out of an array's elements (`is_optional`: they are)
 static Ty const* mapped_element_optionality(Checker* me, MappedInfo const* mapped, Ty const* element, bool is_optional) {
     if (!compiler_options()->strict_null_checks) return element;
-    if (mapped->optional < 0 && is_optional) return ty_without_undefined(me, element);
+    if (mapped->optional < 0 && is_optional) return remove_missing_or_undefined(me, element);
     if (mapped->optional <= 0) return element;
     if (element->flags & (TYF_UNDEFINED | TYF_VOID | TYF_ANY | TYF_UNKNOWN)) return element;
     if (element->kind == TY_UNION) {
@@ -352,7 +359,7 @@ static Ty const* mapped_over_array_or_tuple(
         // `-?` takes undefined out of an element that was optional (tsc's instantiateMappedTypeTemplate), and an
         // optional element has undefined added like a written one (createNormalizedTupleType's addOptionality)
         if (mapped->optional < 0 && (flags[i] & TUPLE_ELEMENT_OPTIONAL) && compiler_options()->strict_null_checks) {
-            element = ty_without_undefined(me, element);
+            element = remove_missing_or_undefined(me, element);
         }
         if (mapped->optional > 0) flags[i] |= TUPLE_ELEMENT_OPTIONAL;
         if (mapped->optional < 0) flags[i] &= ~(unsigned)TUPLE_ELEMENT_OPTIONAL;
