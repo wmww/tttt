@@ -474,9 +474,9 @@ static void builder_add_interface_member(
                                 ty_prop_name_form(existing->decl->name_span.sv, nullptr, nullptr, false),
                                 ty_prop_name_form(i->key.span.sv, nullptr, nullptr, false));
                         }
-                    } else if (!is_method && !i->has_write_type && !i->computed_accessor) {
-                        // A property after a method of its name (or a class member of a merged class) joins its symbol
-                        // (PropertyExcludes is nothing), which stays what it was: only a declaration more
+                    } else if (!is_method && !i->has_write_type && !i->computed_accessor && !(existing->flags & PROP_METHOD)) {
+                        // A property after a class accessor of its name (a merged class) joins its symbol, which stays
+                        // what it was: only a declaration more. (After a method it conflicts: a symbol of its own, TS2300)
                         { u32 n; Span const* d = interface_member_declarations(i, &n); prop_add_shared_decl_spans(me, existing, d, n); }
                     }
                     break;
@@ -1108,10 +1108,11 @@ static Prop* builder_add_class_prop(
     }
     Prop* existing = builder_find_prop(builder, name);
     if (existing) {
-        // A field after a parameter property of its name: one symbol, the parameter's type (tsc's PropertyExcludes)
-        // A field after any other member of its name (an interface's merged with the class too) joins its symbol the
-        // same way (tsc's PropertyExcludes), the first declaration's type
-        if (item->tag == CLASS_ITEM_FIELD) prop_add_shared_decl_spans(me, existing, &item->span, 1);
+        // A member after another of its name joins its symbol unless it conflicts (bind_member_symbols(): a field
+        // after a property or accessor, an accessor after a property), the first declaration's type. A field after a
+        // parameter property of its name, or after an interface's member merged with the class, joins it too
+        bool joins = item->symbol_first ? item->symbol_first != item : item->tag == CLASS_ITEM_FIELD;
+        if (joins) prop_add_shared_decl_spans(me, existing, &item->span, 1);
         return nullptr;
     }
     Prop* prop = prop_new_declared(me);

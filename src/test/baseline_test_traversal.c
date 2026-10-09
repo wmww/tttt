@@ -876,7 +876,7 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
                     redeclared = prop;
                 }
             }
-            // A property after a method or accessor of its name joined its symbol (see builder_add_interface_member)
+            // A property after an accessor of its name joined its symbol (see builder_add_interface_member)
             Prop const* joined = nullptr;
             if (!my key.name_is_member_function && ctx->member_owner && !redeclared && span_valid(my declaration)) {
                 Checker* checker = current_checker;
@@ -913,15 +913,14 @@ void interface_member_compile_test_info(InterfaceMember const* me, Span scope, B
             Ty const* type = merged ? optional_member_type(prop_type(current_checker, declared_member), declared_member->flags & PROP_OPTIONAL) :
                 optional_member_type(ty_of_node(&my type), my optional);
             if (redeclared) type = prop_type(current_checker, redeclared);
-            // A property declared after a method of its name is that method's symbol (PropertyExcludes is nothing)
-            if (!merged && !redeclared && !my key.name_is_member_function && ctx->member_owner && !my has_write_type) {
+            // A property declared after an accessor of its name is that accessor's symbol (after a method it conflicts:
+            // a symbol of its own)
+            if (joined) {
                 Checker* checker = current_checker;
                 Prop const* prop = ty_get_prop(checker, ctx->member_owner, checker_atom(checker, cstr_sv(&my key.name_string)));
                 Prop const* root = prop;
                 while (root && root->target && !root->decl->decl_span_count) root = root->target;
-                if (prop && (root->flags & (PROP_METHOD | PROP_ACCESSOR)) && root->decl->decl_span_count && span_valid(my declaration) &&
-                    !span_eq(root->decl->decl_spans[0], my declaration)
-                ) {
+                if (prop && root->decl->decl_span_count && !span_eq(root->decl->decl_spans[0], my declaration)) {
                     type = prop_type(checker, prop);
                 }
             }

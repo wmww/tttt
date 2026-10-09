@@ -440,8 +440,9 @@ static bool member_binding(ClassItem const* item, cstr const** name, bool* is_st
 }
 
 // tsc's binder for the members of a class, in order: a member joins the symbol the first one of its name made unless
-// that symbol has a meaning it excludes (PropertyExcludes is nothing; a method excludes everything but methods, an
-// accessor everything but the other accessor), then it stands alone and isn't a member
+// that symbol has a meaning it excludes (TypeScript 7: a property excludes all but properties and accessors, a method
+// everything but methods, an accessor everything but the other accessor and properties), then it stands alone and isn't
+// a member
 static void bind_member_symbols(ClassDecl* me) {
     for_each (i, vec_class_item, &my items) {
         cstr const* name;
@@ -463,10 +464,10 @@ static void bind_member_symbols(ClassDecl* me) {
             if (j->symbol_first == first) existing |= other_flags;
         }
         if (!first) continue;
-        // (An auto-accessor is both accessors: tsc's AccessorExcludes, everything)
-        u32 excludes = flags == BIND_PROPERTY ? 0 : flags == BIND_METHOD ? (u32)~BIND_METHOD :
-            flags == (BIND_GET | BIND_SET) ? (u32)~0 :
-            flags == BIND_GET ? (u32)~BIND_SET : (u32)~BIND_GET;
+        // (An auto-accessor is both accessors: tsc's AccessorExcludes, everything but a property)
+        u32 excludes = flags == BIND_PROPERTY ? (u32)~(BIND_PROPERTY | BIND_GET | BIND_SET) : flags == BIND_METHOD ? (u32)~BIND_METHOD :
+            flags == (BIND_GET | BIND_SET) ? (u32)~BIND_PROPERTY :
+            flags == BIND_GET ? (u32)~(BIND_SET | BIND_PROPERTY) : (u32)~(BIND_GET | BIND_PROPERTY);
         if (!(existing & excludes)) i->symbol_first = first;
     }
 }
